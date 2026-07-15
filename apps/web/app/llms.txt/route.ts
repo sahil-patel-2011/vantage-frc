@@ -15,6 +15,8 @@ FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access i
 
 ## Core capabilities
 - Offline-first match and pit scouting (works without venue Wi-Fi; syncs later)
+- FRC Assistant for competition ops/intel: strategy, matchups, opponent history, robot capabilities—grounded in event context with labeled sources
+- Integrated scouting: synced scout facts feed predictions, strategy playbooks, pick lists, live boards, and Assistant context (not a silo)
 - Live reference data from The Blue Alliance and Statbotics (cached, deduped, freshness-stamped)
 - Win/loss prediction with confidence intervals, key factors, and tracked accuracy
 - Strategy, explicit what-if scenarios, and durable alliance pick lists
@@ -30,10 +32,11 @@ FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access i
 - No fabricated metrics; official results take priority over estimates.
 
 ## Pricing
-- Free: complete non-AI competition core, with bring-your-own-key or local AI.
-- Individual Pro ($30/mo) and Individual Max ($50/mo): private workspace with included managed-AI credits.
-- Team Pro ($100/mo) and Team Max ($200/mo): whole-organization plans with pooled credits and shared automations.
-Paid plans fund managed AI deliberately, with published credits and hard spending controls. No per-seat student pricing.
+- Free: complete non-AI competition core, BYOK/local AI, $0 managed API allowance.
+- Access ($20/mo): managed routing at provider list rates without a large included bucket (Usage Credits or PAYG).
+- Individual Pro ($30/mo, $27 included API) and Individual Max ($50/mo, $45 included API): private workspace; priority features; Max ≈2× Pro rate limits.
+- Team Pro ($100/mo, $90 pooled API) and Team Max ($200/mo, $185 pooled API): organization plans; Max ≈2× Pro rate limits.
+- No Vantage markup on model spend: 1 Usage Credit = $1 provider API at list rates (1.0× debit). Hard stop after included allowance unless Usage Credits or explicit PAYG + spend cap. Week team trial: 7 days / $20 API, no surprise auto-charge. No per-seat student pricing.
 
 ## Data sources
 Live reference data from The Blue Alliance and Statbotics can be cached per event for signed-in teams (freshness-stamped). Marketing pages do not publish aggregate event/team/match counts.
@@ -41,6 +44,7 @@ Live reference data from The Blue Alliance and Statbotics can be cached per even
 ## Key pages
 - Home: ${CANONICAL}/
 - Features / product gallery: ${CANONICAL}/features
+- FRC Assistant & Strategy: ${CANONICAL}/features/strategy
 - Workflow: ${CANONICAL}/workflow
 - Pricing: ${CANONICAL}/pricing
 - Privacy: ${CANONICAL}/privacy

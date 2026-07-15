@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { expireTrials, evaluateEntitlement, evaluateFreeManagedUsage, evaluateManagedUsage,isPlanPeriodActive, processStripeEvent } from "../src";
+import {
+  allocateCreditDebit,
+  CreditCapExceededError,
+  DEFAULT_SERVICE_MULTIPLIER,
+  expireTrials,
+  evaluateEntitlement,
+  evaluateFreeManagedUsage,
+  evaluateManagedUsage,
+  isPlanPeriodActive,
+  processStripeEvent,
+} from "../src";
 import type { PoolClient } from "@neondatabase/serverless";
 import type Stripe from "stripe";
 
@@ -28,21 +38,126 @@ describe("managed allowance and opt-in PAYG", () => {
     expect(evaluateManagedUsage({ ...base, killSwitch: true })).toMatchObject({ allowed: false, reason: "kill_switch" });
     expect(evaluateManagedUsage({ ...base, includedRemainingUsd: 0, paygEnabled: true, prepaidBalanceUsd: 0 })).toMatchObject({ reason: "insufficient_prepaid_balance" });
   });
+  it("hard-stops when included allowance is exhausted and PAYG is off", () => {
+    expect(
+      evaluateManagedUsage({ ...base, includedRemainingUsd: 0, paygEnabled: false, prepaidBalanceUsd: 0 }),
+    ).toMatchObject({ allowed: false, reason: "payg_not_enabled" });
+  });
 });
 
-describe("table-driven entitlement boundaries",()=>{
- const free={planCode:"free" as const,managedAllowanceUsd:0,contextTokenLimit:4000,agentStepLimit:6,cadIterationLimit:3,cadConcurrentJobs:1,codeAnalysisMb:5,jobPriority:0,featureFlags:{advanced_strategy:false,core:true}};
- it("keeps feature entitlement separate from BYOK provider cost",()=>{
-  expect(evaluateEntitlement({entitlement:free,feature:"core",managedProviderCostUsedUsd:0,estimatedManagedCostUsd:99,keySource:"byo"})).toMatchObject({allowed:true,bucket:"external_provider"});
-  expect(evaluateEntitlement({entitlement:free,feature:"core",managedProviderCostUsedUsd:0,estimatedManagedCostUsd:99,keySource:"local_cli"})).toMatchObject({allowed:true,bucket:"external_provider"});
-  expect(evaluateEntitlement({entitlement:free,feature:"advanced_strategy",managedProviderCostUsedUsd:0,estimatedManagedCostUsd:0,keySource:"local"})).toMatchObject({allowed:false,reason:"feature_not_in_plan"});
- });
- it("stops managed usage at the snapshotted period allowance",()=>{
-  const pro={...free,planCode:"managed_20" as const,managedAllowanceUsd:18,featureFlags:{core:true}};
-  expect(evaluateEntitlement({entitlement:pro,feature:"core",managedProviderCostUsedUsd:17.9,estimatedManagedCostUsd:.2,keySource:"platform"})).toMatchObject({allowed:false,reason:"managed_allowance_exhausted"});
-  expect(isPlanPeriodActive({periodStart:new Date("2026-07-01"),periodEnd:new Date("2026-08-01"),status:"active"},new Date("2026-07-15"))).toBe(true);
-  expect(isPlanPeriodActive({periodStart:new Date("2026-07-01"),periodEnd:new Date("2026-08-01"),status:"active"},new Date("2026-08-01"))).toBe(false);
- });
+describe("1.0× usage credit debit (no Vantage markup)", () => {
+  it("defaults the service multiplier to 1.0 for list-rate equivalence", () => {
+    expect(DEFAULT_SERVICE_MULTIPLIER).toBe(1);
+  });
+
+  it("debits provider cost 1:1 as Usage Credits at the launch multiplier", () => {
+    const allocation = allocateCreditDebit({
+      included: 27,
+      purchased: 0,
+      gifted: 0,
+      providerCostUsd: 2.5,
+      serviceMultiplier: DEFAULT_SERVICE_MULTIPLIER,
+    });
+    expect(allocation.debit).toBeCloseTo(2.5);
+    expect(allocation.fromIncluded).toBeCloseTo(2.5);
+    expect(allocation.bucket).toBe("included");
+  });
+
+  it("hard-stops when included + purchased + gifted cannot cover the debit", () => {
+    expect(() =>
+      allocateCreditDebit({
+        included: 1,
+        purchased: 0,
+        gifted: 0,
+        providerCostUsd: 1.01,
+        serviceMultiplier: 1,
+      }),
+    ).toThrow(CreditCapExceededError);
+  });
+
+  it("does not apply the retired 1.25× markup default", () => {
+    const atParity = allocateCreditDebit({
+      included: 10,
+      purchased: 0,
+      gifted: 0,
+      providerCostUsd: 8,
+      serviceMultiplier: 1,
+    });
+    expect(atParity.debit).toBe(8);
+    expect(atParity.debit).not.toBeCloseTo(8 * 1.25);
+  });
+});
+
+describe("table-driven entitlement boundaries", () => {
+  const free = {
+    planCode: "free" as const,
+    managedAllowanceUsd: 0,
+    contextTokenLimit: 4000,
+    agentStepLimit: 6,
+    cadIterationLimit: 3,
+    cadConcurrentJobs: 1,
+    codeAnalysisMb: 5,
+    jobPriority: 0,
+    featureFlags: { advanced_strategy: false, core: true },
+  };
+  it("keeps feature entitlement separate from BYOK provider cost", () => {
+    expect(
+      evaluateEntitlement({
+        entitlement: free,
+        feature: "core",
+        managedProviderCostUsedUsd: 0,
+        estimatedManagedCostUsd: 99,
+        keySource: "byo",
+      }),
+    ).toMatchObject({ allowed: true, bucket: "external_provider" });
+    expect(
+      evaluateEntitlement({
+        entitlement: free,
+        feature: "core",
+        managedProviderCostUsedUsd: 0,
+        estimatedManagedCostUsd: 99,
+        keySource: "local_cli",
+      }),
+    ).toMatchObject({ allowed: true, bucket: "external_provider" });
+    expect(
+      evaluateEntitlement({
+        entitlement: free,
+        feature: "advanced_strategy",
+        managedProviderCostUsedUsd: 0,
+        estimatedManagedCostUsd: 0,
+        keySource: "local",
+      }),
+    ).toMatchObject({ allowed: false, reason: "feature_not_in_plan" });
+  });
+  it("stops managed usage at the snapshotted period allowance", () => {
+    const pro = {
+      ...free,
+      planCode: "individual_pro" as const,
+      managedAllowanceUsd: 27,
+      featureFlags: { core: true, priority_features: true },
+    };
+    expect(
+      evaluateEntitlement({
+        entitlement: pro,
+        feature: "core",
+        managedProviderCostUsedUsd: 26.9,
+        estimatedManagedCostUsd: 0.2,
+        keySource: "platform",
+      }),
+    ).toMatchObject({ allowed: false, reason: "managed_allowance_exhausted" });
+    expect(
+      isPlanPeriodActive(
+        { periodStart: new Date("2026-07-01"), periodEnd: new Date("2026-08-01"), status: "active" },
+        new Date("2026-07-15"),
+      ),
+    ).toBe(true);
+    expect(
+      isPlanPeriodActive(
+        { periodStart: new Date("2026-07-01"), periodEnd: new Date("2026-08-01"), status: "active" },
+        new Date("2026-08-01"),
+      ),
+    ).toBe(false);
+  });
 });
 
 describe("free sponsored AI guardrails", () => {
@@ -115,7 +230,7 @@ describe("Stripe and trial ledgers", () => {
       query: async (sql: string, params: unknown[]) => {
         calls.push([sql, params]);
         if (sql.startsWith("UPDATE org_entitlements"))
-          return { rowCount: 1, rows: [{ orgId: "org", planCode: "managed_20" }] };
+          return { rowCount: 1, rows: [{ orgId: "org", planCode: "team_trial" }] };
         return { rowCount: 1, rows: [] };
       },
     } as unknown as PoolClient;

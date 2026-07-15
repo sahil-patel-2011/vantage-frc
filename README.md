@@ -134,7 +134,9 @@ The model catalog seeds display names only. Provider endpoint model IDs, prices,
 plan eligibility, routing weight, and included allowances must be configured by a platform admin. An enabled
 model without a provider model ID is never routed. Fable 5 is always PAYG-only. Provider keys are envelope
 encrypted and are never returned by APIs. Stripe checkout remains inactive until both Stripe credentials and
-an admin-configured Price ID exist.
+an admin-configured Price ID exist. Launch pricing defaults debit managed usage at provider list rates
+(1.0×; 1 Usage Credit = $1 API) with hard cut-offs after included allowances; numbers stay in the admin
+catalog for future entitlement versions.
 
 Private memories are user-owned RLS rows and bounded before injection. Team memory is disabled by default.
 Only messages written in a visibly team-shared channel, or a private message explicitly promoted by its

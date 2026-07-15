@@ -3,7 +3,15 @@
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It brings scouting, live match data, win/loss prediction, strategy, CAD, and robot-code review into one shared, source-attributed event context.",
+    a: "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It brings scouting, live match data, win/loss prediction, an FRC Assistant, strategy, CAD, and robot-code review into one shared, source-attributed event context.",
+  },
+  {
+    q: "What is the FRC Assistant?",
+    a: "The FRC Assistant helps with competition ops and intel inside your active event—strategy, matchups, predicting what other teams tend to do from history, and robot capabilities. It grounds replies in TBA/Statbotics plus your scouted observations, with sources labeled. It does not invent fake dashboards when your workspace is empty.",
+  },
+  {
+    q: "How does scouting connect to everything else?",
+    a: "Scouting is integrated, not a silo. Offline match and pit forms sync into attributed team facts that feed predictions, strategy playbooks, pick lists, live match boards, and Assistant context—so drive team and strategy work from the same event.",
   },
   {
     q: "Who is Vantage for?",
@@ -15,11 +23,11 @@ const faqs = [
   },
   {
     q: "Where does the match data come from?",
-    a: "Live reference data is sourced from The Blue Alliance and Statbotics, cached, deduped, and freshness-stamped. Official results always take priority over estimates.",
+    a: "Live reference data is sourced from The Blue Alliance and Statbotics, cached, deduped, and freshness-stamped. Official results always take priority over estimates. Your team's scout observations are separate, attributed records.",
   },
   {
     q: "How much does Vantage cost?",
-    a: "The complete non-AI competition core is free, with bring-your-own-key or local AI. Paid individual ($30–$50/mo) and team ($100–$200/mo) plans fund managed AI with published credits and hard spending controls. There is no per-seat student pricing.",
+    a: "The complete non-AI competition core is free, with bring-your-own-key or local AI. Paid plans: Individual Pro $30/mo ($27 API), Individual Max $50/mo ($45 API), Team Pro $100/mo ($90 pooled API), Team Max $200/mo ($185 pooled API). Usage is debited at provider list rates with no Vantage markup; after the included allowance, usage hard-stops unless you buy Usage Credits or enable PAYG. Access ($20/mo) unlocks managed routing without a large included bucket. There is no per-seat student pricing.",
   },
   {
     q: "Is our team's data private?",
@@ -27,7 +35,7 @@ const faqs = [
   },
   {
     q: "How is Vantage different from a scouting spreadsheet?",
-    a: "A spreadsheet holds one slice of the season. Vantage connects the whole loop — scout, predict, strategize, build, present — in one context where every number carries its source, so you can tell real data from a guess.",
+    a: "A spreadsheet holds one slice of the season. Vantage connects the whole loop — scout, predict, assist, strategize, build, present — in one context where every number carries its source, so you can tell real data from a guess.",
   },
 ];
 

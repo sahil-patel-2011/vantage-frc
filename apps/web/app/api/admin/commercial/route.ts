@@ -67,8 +67,14 @@ export async function POST(request: Request) {
           reason: String(body.reason ?? ""),
         });
       } else if (body.action === "trial") {
-        if (!["managed_20", "managed_50"].includes(String(body.planCode))) throw new Error("Invalid trial plan");
-        await grantTrial(client, { orgId: String(body.orgId), planCode: body.planCode as "managed_20" | "managed_50", actorUserId: actor });
+        if (!["team_trial", "team_pro", "individual_pro", "individual_max", "managed_20", "managed_50"].includes(String(body.planCode)))
+          throw new Error("Invalid trial plan");
+        await grantTrial(client, {
+          orgId: String(body.orgId),
+          planCode: body.planCode as "team_trial" | "team_pro" | "individual_pro" | "individual_max" | "managed_20" | "managed_50",
+          actorUserId: actor,
+          creditsCapUsd: 20,
+        });
       } else if (body.action === "revoke-trial") {
         await client.query(
           `UPDATE org_entitlements SET status='revoked',valid_until=now(),updated_by=$2,updated_at=now()

@@ -1,29 +1,72 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { PricingCatalog } from "./pricing-catalog";
 
 export const metadata: Metadata = {
   title: "Pricing — Vantage",
-  description: "Individual and team Vantage plans, included service credits, and explicit overage controls.",
+  description:
+    "Individual and team Vantage plans with included managed API allowances at provider list rates, Usage Credits, Access + PAYG, and hard cut-offs—no Vantage markup on model spend.",
   alternates: { canonical: "/pricing" },
 };
 
-const individualPlans = [
-  { name: "Free", price: "$0", signal: "COMPLETE CORE + BYOK / LOCAL", features: ["Complete non-AI core: offline scouting, cached TBA/Statbotics, manual strategy and pick lists, exports, and team operations", "Bring a supported API key or pair a local OpenAI-compatible relay", "Limited sponsored AI may appear only when a commercially approved provider is explicitly funded and enabled; launch default is unavailable", "No silent paid-model routing or surprise provider charges"] },
-  { name: "Individual Pro", price: "$30", signal: "ONE USER / PRIVATE", featured: true, features: ["15 included Vantage Credits per paid period", "Private workspace and personal AI jobs only", "Larger personal context, agent, CAD, and code limits", "Does not unlock team-wide premium features"] },
-  { name: "Individual Max", price: "$50", signal: "ONE USER / HIGHER", features: ["30 included Vantage Credits per paid period", "Private workspace and personal AI jobs only", "Higher personal context, agent, CAD, and code limits", "Does not fund shared automations by default"] },
-];
-const teamPlans = [
-  { name: "Team Pro", price: "$100", signal: "WHOLE ORGANIZATION", featured: true, features: ["60 pooled Vantage Credits per paid period", "Premium shared AI and team automations", "Shared memory, scheduled research, team CAD/artifacts and TV intelligence", "Org budget/member/feature controls"] },
-  { name: "Team Max", price: "$200", signal: "WHOLE ORGANIZATION / MAX", features: ["130 pooled Vantage Credits per paid period", "Highest team limits, context, priority, and concurrency", "Advanced CAD, strategy, code, shared analytics and admin workflows", "Not priced per student seat"] },
-];
-
 export default function PricingPage() {
-  return <div className="marketing-site marketing-v2"><SiteHeader />
-    <main className="pricing-page">
-      <section className="pricing-hero"><span className="section-id">PRICING / INDIVIDUAL OR TEAM</span><h1>Fund private work or the whole team—deliberately.</h1><p>Free keeps the competition core useful with BYOK/local AI. Paid plans add managed recommended models, routing and failover, larger context and memory, more tool steps, scheduled agents, advanced CAD/strategy/coding, and support. No per-seat student pricing and no surprise charges.</p></section>
-      <section className="pricing-toggle" aria-label="Pricing groups"><a href="#individual">Individual</a><a href="#team">Team</a></section>
-      <section id="individual"><span className="section-id">INDIVIDUAL / PRIVATE WORKSPACE</span><div className="pricing-grid">{individualPlans.map((plan) => <article className={plan.featured ? "featured" : undefined} key={plan.name}>{plan.featured && <em className="plan-flag">Popular starting point</em>}<span>{plan.signal}</span><h2>{plan.name}</h2><div><strong>{plan.price}</strong><small>/ month</small></div><ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul><a className="button primary" href="/#waitlist">Join early access</a></article>)}</div></section>
-      <section id="team"><span className="section-id">TEAM / ENTIRE ORGANIZATION</span><div className="pricing-grid">{teamPlans.map((plan) => <article className={plan.featured ? "featured" : undefined} key={plan.name}>{plan.featured && <em className="plan-flag">Most teams start here</em>}<span>{plan.signal}</span><h2>{plan.name}</h2><div><strong>{plan.price}</strong><small>/ month</small></div><ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul><a className="button primary" href="/#waitlist">Join early access</a></article>)}</div></section>
-      <section className="payg"><div><span className="section-id">VANTAGE CREDITS</span><h2>Service credits, not API dollars</h2></div><div><p>Included credits reset and expire at the end of their paid period. Purchased/gifted credits are separate, non-withdrawable service credits. Launch routing debit uses a configurable 1.25× provider-cost multiplier for routing, tools, context processing, and support: for example, $1 provider cost may debit 1.25 credits under the published model table.</p><p>Purchased $10 = 10 Vantage Credits. Prepaid stopping at zero is the default. PAYG requires explicit enrollment, a payment method, hard monthly cap, and warnings. BYOK/local cost does not consume credits, but plan entitlements and all org limits still apply.</p><p>Sponsored free AI, when available, is clearly labeled, low priority, capped per user/org/IP and never falls through to a paid model. Exhaustion offers BYOK, local relay, or upgrade.</p><p>Org admins may explicitly allow a member&apos;s individual plan to fund an authorized private run against org data. The output stays org-scoped and cannot bypass org policy. Shared automations always use the team billing account.</p><p className="pricing-note">Prices, credits, limits, multiplier, and future effective dates are versioned catalog configuration. Existing paid periods keep their purchased terms until renewal.</p></div></section>
-    </main><SiteFooter /></div>;
+  return (
+    <div className="marketing-site marketing-v2 marketing-dense">
+      <SiteHeader />
+      <main className="pricing-page">
+        <section className="pricing-hero">
+          <span className="section-id">PRICING / INDIVIDUAL OR TEAM</span>
+          <h1>Fund private work or the whole team—deliberately.</h1>
+          <p>
+            Free keeps the competition core useful with BYOK/local AI. Paid plans add Vantage managed routing, tools,
+            and context with included API allowance at published provider rates—then a hard stop unless you buy Usage
+            Credits or enable PAYG. No per-seat student pricing and no surprise charges.
+          </p>
+        </section>
+
+        <PricingCatalog />
+
+        <section className="payg">
+          <div>
+            <span className="section-id">USAGE &amp; ECONOMICS</span>
+            <h2>No markup on model spend.</h2>
+          </div>
+          <div>
+            <p>
+              <strong>Usage Credit = $1 of provider API cost at list rates</strong> (Anthropic, OpenAI, and other
+              published tables). Launch debit multiplier is <strong>1.0×</strong>—Vantage does not mark up model spend.
+              Included allowances reset with the paid period; purchased or gifted Usage Credits are separate and
+              non-withdrawable.
+            </p>
+            <p>
+              After included allowance is exhausted: <strong>hard stop</strong> unless you opt into Usage Credits or
+              PAYG (explicit enable + spend cap). Prepaid stopping at zero is the default. BYOK/local cost does not
+              consume managed allowance, but plan entitlements and org limits still apply. Managed is stronger via
+              integrated routing, tools, and context—not because BYOK is sabotaged.
+            </p>
+            <p>
+              Sponsored free AI, when available, is clearly labeled, low priority, capped per user/org/IP, and never
+              falls through to a paid model. Exhaustion offers BYOK, local relay, or upgrade.
+            </p>
+            <p>
+              Checkout stays inactive until Stripe credentials and admin-configured Price IDs exist. Until then, join
+              the early-access waitlist—plan numbers live in the admin-configurable catalog and can change for future
+              periods with notice; active paid periods keep their snapshotted terms.
+            </p>
+            <p className="pricing-note">
+              Launch defaults: Free $0 / $0 API · Individual Pro $30 / $27 · Individual Max $50 / $45 · Team Pro $100 /
+              $90 · Team Max $200 / $185 · Access $20 + PAYG · Week team trial $20 API / 7 days.
+            </p>
+            <p className="pricing-footnote">
+              <strong>Free vs FRC Assistant:</strong> Free includes offline scouting, cached reference data, manual
+              strategy, and pick lists—the competition core that feeds the Assistant. Managed Assistant replies (paid
+              allowance, Usage Credits, PAYG, or BYOK/local) still need real event context; they do not invent DEMO
+              dashboards or fabricated win rates.
+            </p>
+          </div>
+        </section>
+      </main>
+      <SiteFooter />
+    </div>
+  );
 }

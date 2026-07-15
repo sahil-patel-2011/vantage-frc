@@ -568,7 +568,7 @@ export function evaluateManagedUsage(input: {
 }
 
 export type PlanEntitlement={
-  planCode:"free"|"individual_pro"|"individual_max"|"team_pro"|"team_max"|"managed_20"|"managed_50";
+  planCode:"free"|"access"|"individual_pro"|"individual_max"|"team_pro"|"team_max"|"team_trial"|"managed_20"|"managed_50";
   managedAllowanceUsd:number;
   contextTokenLimit:number;
   agentStepLimit:number;
@@ -578,6 +578,11 @@ export type PlanEntitlement={
   jobPriority:number;
   featureFlags:Record<string,boolean>;
 };
+
+/** Launch default: 1 Usage Credit = $1 provider API at list rates (no Vantage markup). */
+export const DEFAULT_SERVICE_MULTIPLIER = 1;
+
+export type TrialPlanCode = "team_trial" | "team_pro" | "individual_pro" | "individual_max" | "managed_20" | "managed_50";
 export type FreeManagedPolicy={
   enabled:boolean;
   providerCommercialUseApproved:boolean;
@@ -817,24 +822,49 @@ export async function giftUsageCredits(
 
 export async function grantTrial(
   client: PoolClient,
-  input: { orgId: string; planCode: "managed_20" | "managed_50"; actorUserId: string },
+  input: { orgId: string; planCode: TrialPlanCode; actorUserId: string; creditsCapUsd?: number },
 ) {
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const allowed: TrialPlanCode[] = ["team_trial", "team_pro", "individual_pro", "individual_max", "managed_20", "managed_50"];
+  if (!allowed.includes(input.planCode)) throw new Error("Invalid trial plan");
+  const planCode = input.planCode === "managed_20" || input.planCode === "managed_50" ? "team_trial" : input.planCode;
+  const creditsCap = input.creditsCapUsd ?? 20;
+  const startsAt = new Date();
+  const expiresAt = new Date(startsAt.getTime() + 7 * 24 * 60 * 60 * 1000);
   await client.query(
     `INSERT INTO org_entitlements(org_id,plan_code,source,status,trial_ends_at,valid_until,updated_by)
      VALUES($1,$2,'admin_trial','active',$3,$3,$4)
      ON CONFLICT(org_id) DO UPDATE SET plan_code=excluded.plan_code,source='admin_trial',
       status='active',trial_ends_at=$3,valid_until=$3,updated_by=$4,updated_at=now()`,
-    [input.orgId, input.planCode, expiresAt, input.actorUserId],
+    [input.orgId, planCode, expiresAt, input.actorUserId],
   );
+  const entitlement = await client.query<{ id: string; managedAllowanceUsd: string }>(
+    `SELECT id, managed_allowance_usd AS "managedAllowanceUsd"
+     FROM plan_entitlement_versions
+     WHERE plan_code=$1 AND effective_at<=$2
+     ORDER BY version DESC LIMIT 1`,
+    [planCode, startsAt],
+  );
+  const allowance = Number(entitlement.rows[0]?.managedAllowanceUsd ?? creditsCap);
+  if (entitlement.rows[0]?.id) {
+    await client.query(
+      `INSERT INTO org_plan_periods(org_id,plan_code,entitlement_version_id,period_start,period_end,managed_allowance_usd,status)
+       VALUES($1,$2,$3,$4,$5,$6,'active')
+       ON CONFLICT(org_id,period_start) DO UPDATE SET
+         plan_code=excluded.plan_code,entitlement_version_id=excluded.entitlement_version_id,
+         period_end=excluded.period_end,managed_allowance_usd=excluded.managed_allowance_usd,status='active'`,
+      [input.orgId, planCode, entitlement.rows[0].id, startsAt, expiresAt, Math.min(allowance, creditsCap)],
+    );
+  }
   await client.query(
-    `INSERT INTO entitlement_events(org_id,plan_code,action,source,expires_at,actor_user_id)
-     VALUES($1,$2,'trial_granted','admin',$3,$4)`,
-    [input.orgId, input.planCode, expiresAt, input.actorUserId],
+    `INSERT INTO entitlement_events(org_id,plan_code,action,source,expires_at,actor_user_id,metadata)
+     VALUES($1,$2,'trial_granted','admin',$3,$4,$5::jsonb)`,
+    [input.orgId, planCode, expiresAt, input.actorUserId, JSON.stringify({ creditsCapUsd: creditsCap, autoCharge: false })],
   );
   await notifyOrgAdmins(client, input.orgId, "trial.granted", {
-    planCode: input.planCode,
+    planCode,
+    creditsCapUsd: creditsCap,
     expiresAt: expiresAt.toISOString(),
+    autoCharge: false,
   });
   return expiresAt;
 }
