@@ -11,6 +11,7 @@ type Me = {
   teamNumber?: number | null;
   role?: string | null;
   platformAdmin?: boolean;
+  unreadNotificationCount?: number;
 };
 
 type NavItem = { href: string; label: string; icon: IconName; state?: "setup" | "planned" };
@@ -119,6 +120,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   const [open, setOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [me, setMe] = useState<Me>({});
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -133,10 +135,12 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
       .then((data) => {
         if (!data) return;
         setMe(data);
+        const count = Number(data.unreadNotificationCount ?? 0);
+        setUnreadCount(Number.isFinite(count) && count > 0 ? Math.floor(count) : 0);
         if (!orgId && data.orgId) setOrgId(data.orgId);
       })
       .catch(() => undefined);
-  }, [orgId]);
+  }, [orgId, pathname]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -185,9 +189,13 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
           <button className="soft-icon-btn" type="button" aria-label="Search" onClick={() => setCommandOpen(true)}>
             <Icon name="search" />
           </button>
-          <button className="soft-icon-btn soft-notif" type="button" aria-label="Notifications">
+          <button
+            className="soft-icon-btn soft-notif"
+            type="button"
+            aria-label={unreadCount >= 1 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+          >
             <Icon name="bell" />
-            <b>0</b>
+            {unreadCount >= 1 ? <b>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
           </button>
           <a className="soft-avatar" href="/account" aria-label="Account">
             {initial}

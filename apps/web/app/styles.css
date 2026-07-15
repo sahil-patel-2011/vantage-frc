@@ -77,3 +77,25 @@ body.has-app-shell{padding:64px 0 0 248px;background:var(--app-bg);overflow-x:hi
 @media(max-width:1000px){.strategy-workbench,.code-workbench{grid-template-columns:1fr}.strategy-primary,.code-source{grid-row:auto}}@media(max-width:650px){.module-page{padding:18px 12px}.factor-table li{grid-template-columns:45px 1fr}.factor-table li small{grid-column:1/-1}.strategy-probability strong{font-size:54px}.code-source pre{min-height:260px}}
 html[data-theme="light"] .auth-page .primary-action,html[data-theme="light"] .auth-page .text-button{background:#1457d9;color:#fff}html[data-theme="light"] .auth-page .eyebrow{color:#1457d9}.has-app-shell .cad-visual{min-height:520px;grid-template-rows:minmax(280px,52vh) auto}.has-app-shell .cad-timeline{min-height:110px}
 @media(max-width:700px){.has-app-shell .cad-visual{min-height:420px;grid-template-rows:300px auto}}
+
+/* Account settings */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.account-page .account-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.account-page .account-tabs button{min-height:40px;padding:8px 14px;color:var(--app-muted);background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;font-weight:700}
+.account-page .account-tabs button.active{color:var(--app-ink);border-color:var(--app-accent);box-shadow:inset 0 0 0 1px var(--app-accent)}
+.account-panel{max-width:720px}
+.account-identity{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+.account-identity strong{display:block;font-size:22px}
+.account-identity span{color:var(--app-muted)}
+.account-form{display:grid;gap:14px}
+.account-form label{display:grid;gap:7px;color:var(--app-muted);font-size:12px;font-weight:700}
+.account-form input{min-height:46px;padding:12px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font-size:15px}
+.account-form input:disabled{opacity:.7}
+.account-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.account-prefs{margin:18px 0;padding:0;list-style:none}
+.account-prefs li{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--app-line)}
+.account-prefs strong{display:block}
+.account-prefs small{display:block;margin-top:4px;color:var(--app-muted);line-height:1.45}
+.account-switch input{width:20px;height:20px}
+.account-page .admin-grid .intel-panel .app-badge{margin:10px 0 12px}
+.account-page .admin-grid a{color:var(--app-accent);font-weight:700;text-decoration:none}

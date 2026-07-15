@@ -1,40 +1,252 @@
+import { cadFixture, codeFixture, codeSample, strategyFixture } from "../../lib/marketing/demo-fixtures";
+
+function DemoChrome({
+  title,
+  meta,
+}: {
+  title: string;
+  meta: string;
+}) {
+  return (
+    <header className="product-demo-chrome">
+      <span className="app-badge demo">Demo data</span>
+      <strong>{title}</strong>
+      <b>{meta}</b>
+    </header>
+  );
+}
+
 export function StrategyPreview({ compact = false }: { compact?: boolean }) {
-  return <div className={`demo-window strategy-demo ${compact ? "compact" : ""}`} aria-label="Demo of the implemented prediction and strategy engine">
-    <header><span>DEMO · QUALIFICATION 42</span><b>MODEL weighted-current-v1</b></header>
-    <div className="strategy-score">
-      <section><small>OUR ALLIANCE</small><strong>64%</strong><span>confidence 55–73%</span></section>
-      <div className="probability-track" aria-label="Demo win probability 64 percent"><i style={{ width: "64%" }} /></div>
-      <section><small>WHAT-IF</small><strong>+7%</strong><span>protect auto + one practiced defender</span></section>
+  const { prediction, scenario, playbook, ourAlliance } = strategyFixture;
+  const pct = Math.round(prediction.pRed * 100);
+  const low = Math.round(prediction.confidenceLow * 100);
+  const high = Math.round(prediction.confidenceHigh * 100);
+  const whatIf = Math.round(scenario.pRed * 100);
+  const delta = Math.round(scenario.delta * 100);
+
+  return (
+    <div
+      className={`product-demo strategy-product-demo ${compact ? "compact" : ""}`}
+      aria-label="Demo data preview of the Win/Loss and Strategy Engine"
+    >
+      <DemoChrome title="Qualification 42 · Win / Loss + Strategy" meta={prediction.modelVersion} />
+      <div className={`strategy-workbench marketing-demo-board ${compact ? "compact-board" : ""}`}>
+        <article className="app-card strategy-primary">
+          <header>
+            <div>
+              <span className="app-badge good">Available</span>
+              <h2>Qualification 42</h2>
+            </div>
+            <small>{prediction.modelVersion}</small>
+          </header>
+          <div className="strategy-probability">
+            <strong>{pct}%</strong>
+            <span>{ourAlliance === "red" ? "Red" : "Blue"} alliance</span>
+            <small>
+              {low}–{high}% confidence · effective sample {prediction.effectiveSampleSize}
+            </small>
+          </div>
+          <div className="mini-probability" aria-label={`Demo win probability ${pct} percent`}>
+            <i style={{ width: `${pct}%` }} />
+          </div>
+          <h3>Key factors</h3>
+          <ul className="factor-table">
+            {prediction.keyFactors.slice(0, compact ? 2 : 3).map((factor) => {
+              const favorable = factor.alliance === ourAlliance;
+              return (
+                <li key={factor.name} className={favorable ? undefined : "risk"}>
+                  <b>
+                    {favorable ? "+" : "−"}
+                    {factor.impact}
+                  </b>
+                  <span>{factor.name}</span>
+                  {!compact && <small>{factor.evidence}</small>}
+                </li>
+              );
+            })}
+          </ul>
+          {!compact &&
+            prediction.caveats.map((item) => (
+              <p className="app-muted" key={item}>
+                {item}
+              </p>
+            ))}
+        </article>
+        {!compact && (
+          <>
+            <article className="app-card what-if-card">
+              <header>
+                <h2>What-if scenario</h2>
+                <span className="app-badge demo">Demo data</span>
+              </header>
+              <div>
+                <strong>{whatIf}%</strong>
+                <span>
+                  {delta >= 0 ? "+" : ""}
+                  {delta} pts
+                </span>
+              </div>
+              <ul>
+                {scenario.assumptions.map((item) => (
+                  <li key={item.label}>
+                    <span>{item.label}</span>
+                    <b>
+                      {item.pointDelta > 0 ? "+" : ""}
+                      {item.pointDelta} points
+                    </b>
+                  </li>
+                ))}
+              </ul>
+              <p className="app-muted">Scenario changes are stored as assumptions, not observations.</p>
+            </article>
+            <article className="app-card playbook-card">
+              <header>
+                <h2>Alliance playbook</h2>
+                <span className="app-badge demo">Demo data</span>
+              </header>
+              <ol>
+                {playbook.priorities.slice(0, 3).map((item, index) => (
+                  <li key={item}>
+                    <b>{index + 1}</b>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ol>
+            </article>
+          </>
+        )}
+      </div>
     </div>
-    <div className="factor-list"><span>KEY FACTORS</span><ol><li><b>+8.4</b><span>Weighted scoring margin</span></li><li><b>+3.1</b><span>Autonomous consistency</span></li><li className="risk"><b>−1.2</b><span>Observed foul exposure</span></li></ol></div>
-    {!compact && <footer><div><small>PLAYBOOK PRIORITY</small><strong>Protect cycle consistency; define the missed-auto fallback.</strong></div><span>Decision support, not a guarantee.</span></footer>}
-  </div>;
+  );
 }
 
 export function CadPreview({ compact = false }: { compact?: boolean }) {
-  return <div className={`demo-window cad-demo-v2 ${compact ? "compact" : ""}`} aria-label="Demo of the implemented Vantage CAD builder">
-    <header><span>DEMO · ENGINEERING THREAD</span><b>SETUP REQUIRED</b></header>
-    <div className="cad-demo-body">
-      <section><small>CONFIRMED BRIEF</small><h3>Serviceable intake guard</h3><p>Frame perimeter clear · existing 10-32 mounts · inspect interference before export</p><div className="connector-row"><span>Onshape hosted</span><span>Fusion local relay</span></div></section>
-      <ol><li className="done"><b>01</b><span>Requirements + assumptions</span><small>Confirmed</small></li><li className="active"><b>02</b><span>Create reviewed action plan</span><small>Approval</small></li><li><b>03</b><span>Geometry + topology checkpoint</span><small>Queued</small></li><li><b>04</b><span>Render / BOM artifact</span><small>Queued</small></li></ol>
+  return (
+    <div
+      className={`product-demo cad-product-demo ${compact ? "compact" : ""}`}
+      aria-label="Demo data preview of the AI CAD Builder"
+    >
+      <DemoChrome title="AI CAD Builder · Engineering thread" meta="Setup required" />
+      <div className="cad-demo-shell">
+        <section>
+          <span className="app-badge setup">Setup required</span>
+          <small>CONFIRMED BRIEF</small>
+          <h3>{cadFixture.title}</h3>
+          <p>{cadFixture.brief}</p>
+          <div className="connector-row">
+            {cadFixture.connectors.map((item) => (
+              <span key={item.name}>
+                {item.name}
+                <i>{item.status}</i>
+              </span>
+            ))}
+          </div>
+        </section>
+        <ol>
+          {cadFixture.steps.map((step, index) => (
+            <li key={step.id} className={index === 0 ? "done" : index === 1 ? "active" : undefined}>
+              <b>{step.id}</b>
+              <span>{step.label}</span>
+              <small>{step.state}</small>
+            </li>
+          ))}
+        </ol>
+      </div>
+      {!compact && (
+        <footer className="product-demo-footer">
+          <span>Human approval required before mutation</span>
+          <b>Checkpoint 0 / 3</b>
+        </footer>
+      )}
     </div>
-    {!compact && <footer><span>Human approval required before mutation</span><b>CHECKPOINT 0 / 3</b></footer>}
-  </div>;
+  );
 }
 
 export function CodePreview({ compact = false }: { compact?: boolean }) {
-  return <div className={`demo-window code-demo ${compact ? "compact" : ""}`} aria-label="Demo of the implemented FRC code review">
-    <header><span>DEMO · DriveSubsystem.java</span><b>PROPOSAL ONLY</b></header>
-    <div className="code-demo-body">
-      <pre aria-label="Example code diff"><span>@@ periodic() @@</span>{"\n"}<del>- Timer.delay(0.02);</del>{"\n"}<ins>+ // keep command scheduler non-blocking</ins>{"\n"}<ins>+ updateDriveRequest();</ins></pre>
-      <aside><span className="risk-label">HIGH RISK</span><h3>Blocking robot loop</h3><p>Blocking calls can starve command scheduling and safety feeds.</p><ul><li>Review CAN IDs and limits</li><li>Run unit/simulation tests</li><li>Test enable/disable transitions</li></ul></aside>
+  const review = codeFixture;
+  const risks = review.risks.slice(0, compact ? 1 : 3);
+
+  return (
+    <div
+      className={`product-demo code-product-demo ${compact ? "compact" : ""}`}
+      aria-label="Demo data preview of the FRC Code Builder / Debugger"
+    >
+      <DemoChrome title="FRC Code Builder / Debugger · DriveSubsystem.java" meta="Proposal only" />
+      <div className={`code-workbench marketing-demo-board ${compact ? "compact-board" : ""}`}>
+        <article className="app-card code-source">
+          <header>
+            <div>
+              <span className="app-badge">Repository input</span>
+              <h2>DriveSubsystem.java</h2>
+            </div>
+            <span className="app-badge demo">Demo data</span>
+          </header>
+          <pre aria-label="Demo repository input">{codeSample}</pre>
+          {!compact && (
+            <footer>
+              <span>Read-only example input</span>
+              <b>{codeSample.split("\n").length} lines</b>
+            </footer>
+          )}
+        </article>
+        <article className="app-card code-findings">
+          <header>
+            <div>
+              <span className={`app-badge ${review.riskLevel === "high" ? "danger" : ""}`}>
+                {review.riskLevel} risk
+              </span>
+              <h2>Review findings</h2>
+            </div>
+            <strong>{review.risks.length}</strong>
+          </header>
+          <ul>
+            {risks.map((risk) => (
+              <li key={risk.pattern}>
+                <div>
+                  <span className={`severity ${risk.severity}`}>{risk.severity}</span>
+                  <b>{risk.pattern.replaceAll("-", " ")}</b>
+                </div>
+                <p>{risk.message}</p>
+                {!compact && <code>{risk.evidence}</code>}
+              </li>
+            ))}
+          </ul>
+        </article>
+        {!compact && (
+          <article className="app-card code-checks">
+            <header>
+              <h2>Required checks</h2>
+              <span className="app-badge good">Policy</span>
+            </header>
+            <ol>
+              {review.requiredChecks.map((check, index) => (
+                <li key={check}>
+                  <b>{index + 1}</b>
+                  <span>{check}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="proposal-state">
+              <span>OUTPUT STATE</span>
+              <strong>Proposal only · human approval required</strong>
+            </div>
+          </article>
+        )}
+      </div>
     </div>
-    {!compact && <footer><span>Unified diff · source-linked finding</span><b>Human approval required</b></footer>}
-  </div>;
+  );
 }
 
 export function WorkflowStrip() {
-  return <ol className="unified-flow" aria-label="Unified Vantage workflow">
-    {["Scout", "Predict", "Strategize", "CAD", "Code", "Maintain"].map((stage, index) => <li key={stage}><b>{String(index + 1).padStart(2, "0")}</b><span>{stage}</span>{index < 5 && <i aria-hidden="true" />}</li>)}
-  </ol>;
+  return (
+    <ol className="unified-flow" aria-label="Unified Vantage workflow">
+      {["Scout", "Predict", "Strategize", "CAD", "Code", "Maintain"].map((stage, index) => (
+        <li key={stage}>
+          <b>{String(index + 1).padStart(2, "0")}</b>
+          <span>{stage}</span>
+          {index < 5 && <i aria-hidden="true" />}
+        </li>
+      ))}
+    </ol>
+  );
 }
