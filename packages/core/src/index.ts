@@ -10,11 +10,25 @@ import {
   createEmailProvider,
   deterministicLocalOtp,
 } from "./email";
-import { getAuthCapabilities, isEmailProviderConfigured, isGoogleAuthConfigured } from "./access-policy";
+import {
+  envOrFallback,
+  getAuthCapabilities,
+  isEmailProviderConfigured,
+  isGoogleAuthConfigured,
+} from "./access-policy";
+import {
+  WAITLIST_ONLY_MESSAGE,
+  resolveAuthEmailAccess,
+} from "./auth-access";
 
 const emailProvider = createEmailProvider();
 const googleConfigured = isGoogleAuthConfigured();
 const emailOtpEnabled = isEmailProviderConfigured();
+const authBaseURL = envOrFallback(process.env.BETTER_AUTH_URL, "http://localhost:3001");
+const authSecret = envOrFallback(
+  process.env.BETTER_AUTH_SECRET,
+  "local-development-secret-change-me",
+);
 
 export const OTP_POLICY = {
   expiresInSeconds: 300,
@@ -59,7 +73,25 @@ export const auth = betterAuth({
       authMethod: { type: "string", required: false, input: false, defaultValue: "unknown" },
     },
   },
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+      allowDifferentEmails: false,
+    },
+  },
   databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const access = await resolveAuthEmailAccess(user.email);
+          if (!access.allowed) {
+            throw new Error(WAITLIST_ONLY_MESSAGE);
+          }
+          return { data: user };
+        },
+      },
+    },
     session: {
       create: {
         before: async (session, context) => {
@@ -81,8 +113,10 @@ export const auth = betterAuth({
         google: {
           clientId: process.env.GOOGLE_CLIENT_ID!,
           clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-          disableSignUp: true,
-          disableImplicitSignUp: true,
+          // New Google users are gated by databaseHooks.user.create.before
+          // (platform owner / existing / pending invite only).
+          disableSignUp: false,
+          disableImplicitSignUp: false,
         },
       }
     : {},
@@ -126,13 +160,14 @@ export const auth = betterAuth({
     max: 20,
   },
   advanced: { database: { generateId: "uuid" } },
-  secret: process.env.BETTER_AUTH_SECRET ?? "local-development-secret-change-me",
-  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3001",
+  secret: authSecret,
+  baseURL: authBaseURL,
 });
 
 export * from "./email";
 export * from "./mfa";
 export * from "./access-policy";
+export * from "./auth-access";
 export * from "./bootstrap-owner";
 export { getAuthCapabilities };
 

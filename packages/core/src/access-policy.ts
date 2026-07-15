@@ -43,6 +43,7 @@ export function getAuthCapabilities(): AuthCapabilityReport {
   const emailProvider = isEmailProviderConfigured();
   const emailOtpAvailable = databaseConfigured && emailProvider;
   const passwordSignInAvailable = databaseConfigured;
+  const ownerEmail = configuredPlatformOwnerEmail();
   return {
     waitlistOnly: true,
     publicSignup: false,
@@ -58,6 +59,12 @@ export function getAuthCapabilities(): AuthCapabilityReport {
     passwordReason: !databaseConfigured
       ? "Password sign-in is unavailable until the production database is configured."
       : null,
-    ownerEmailHint: configuredPlatformOwnerEmail(),
+    ownerEmailHint: ownerEmail,
   };
+}
+
+/** Treat blank env values as unset (Vercel can store empty strings). */
+export function envOrFallback(value: string | undefined, fallback: string) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : fallback;
 }

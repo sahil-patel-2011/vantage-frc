@@ -74,6 +74,45 @@ describe("waitlist-only auth access policy", () => {
     process.env.AUTH_EMAIL_FROM = previous.from;
     process.env.DATABASE_AUTH_URL = previous.db;
   });
+
+  it("always allowlists the platform owner email for password and Google access", async () => {
+    const previous = {
+      owner: process.env.PLATFORM_OWNER_EMAIL,
+      db: process.env.DATABASE_URL,
+      auth: process.env.DATABASE_AUTH_URL,
+      admin: process.env.DATABASE_ADMIN_URL,
+    };
+    process.env.PLATFORM_OWNER_EMAIL = "sahiljpatel2011@gmail.com";
+    delete process.env.DATABASE_URL;
+    delete process.env.DATABASE_AUTH_URL;
+    delete process.env.DATABASE_ADMIN_URL;
+    const { isPlatformOwnerEmail, resolveAuthEmailAccess } = await import("./auth-access");
+    expect(isPlatformOwnerEmail("sahiljpatel2011@gmail.com")).toBe(true);
+    expect(isPlatformOwnerEmail("SahilJPatel2011@gmail.com")).toBe(true);
+    expect(isPlatformOwnerEmail("waitlist@example.com")).toBe(false);
+    const access = await resolveAuthEmailAccess("sahiljpatel2011@gmail.com");
+    expect(access).toEqual({
+      allowed: true,
+      reason: "platform_owner",
+      email: "sahiljpatel2011@gmail.com",
+    });
+    const denied = await resolveAuthEmailAccess("random-waitlisted@example.com");
+    expect(denied.allowed).toBe(false);
+    expect(denied.reason).toBe("denied");
+    process.env.PLATFORM_OWNER_EMAIL = previous.owner;
+    process.env.DATABASE_URL = previous.db;
+    process.env.DATABASE_AUTH_URL = previous.auth;
+    process.env.DATABASE_ADMIN_URL = previous.admin;
+  });
+
+  it("treats blank auth env values as unset", async () => {
+    const { envOrFallback } = await import("./access-policy");
+    expect(envOrFallback("", "https://vantage-frc-web.vercel.app")).toBe("https://vantage-frc-web.vercel.app");
+    expect(envOrFallback("  ", "fallback")).toBe("fallback");
+    expect(envOrFallback("https://vantage-frc-web.vercel.app", "fallback")).toBe(
+      "https://vantage-frc-web.vercel.app",
+    );
+  });
 });
 
 describe("closed organization provisioning", () => {
