@@ -259,7 +259,12 @@ export default function DashboardClient() {
   }
 
   const firstName = (me.name ?? "coach").split(" ")[0] || "coach";
-  const tbaConfigured = context.tbaConfigured ?? me.tbaConfigured;
+  const tbaConfigured =
+    typeof context.tbaConfigured === "boolean"
+      ? context.tbaConfigured
+      : typeof me.tbaConfigured === "boolean"
+        ? me.tbaConfigured
+        : undefined;
   const setupRequired = Boolean(context.setupRequired);
   const gridLayout: Layout = layout.map((item) => ({
     i: item.i,
