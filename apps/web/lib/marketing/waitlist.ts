@@ -5,7 +5,7 @@ export const DISCLOSURE_VERSION = "waitlist-2026-07-14";
 
 const email = z.string().trim().toLowerCase().email().max(254).refine(
   (value) => value.split("@")[1]?.includes("."),
-  "Enter a deliverable-looking email address"
+  "Enter a deliverable-looking email address",
 );
 
 export const waitlistSchema = z.object({
@@ -13,43 +13,43 @@ export const waitlistSchema = z.object({
   teamNumber: z.coerce.number().int().min(1).max(99999),
   phone: z.string().trim().max(20).optional().default("").refine(
     (value) => value === "" || /^\+[1-9]\d{7,14}$/.test(value),
-    "Use E.164 format, such as +12025550123"
+    "Use E.164 format, such as +12025550123",
   ),
   smsConsent: z.boolean().optional().default(false),
-  website: z.string().max(0).optional().default("")
+  website: z.string().max(0).optional().default(""),
 }).superRefine((value, context) => {
   if (value.phone && !value.smsConsent) {
     context.addIssue({
       code: "custom",
       path: ["smsConsent"],
-      message: "SMS consent is required when a phone number is provided"
+      message: "SMS consent is required when a phone number is provided",
     });
   }
   if (!value.phone && value.smsConsent) {
     context.addIssue({
       code: "custom",
       path: ["phone"],
-      message: "A phone number is required for SMS updates"
+      message: "A phone number is required for SMS updates",
     });
   }
 });
 
 export type WaitlistInput = z.infer<typeof waitlistSchema>;
-export type WaitlistRecord = WaitlistInput & { updatedAt: Date };
-
 export interface WaitlistStore {
   upsert(input: WaitlistInput): Promise<void>;
 }
 
-const localRows = new Map<string, WaitlistRecord>();
+const localRows = new Map<string, WaitlistInput & { updatedAt: Date }>();
 
 export class MemoryWaitlistStore implements WaitlistStore {
   async upsert(input: WaitlistInput) {
     localRows.set(input.email, { ...input, updatedAt: new Date() });
   }
+
   get(emailAddress: string) {
     return localRows.get(emailAddress.toLowerCase());
   }
+
   clear() {
     localRows.clear();
   }
@@ -57,9 +57,11 @@ export class MemoryWaitlistStore implements WaitlistStore {
 
 export class NeonWaitlistStore implements WaitlistStore {
   private readonly sql;
+
   constructor(url: string) {
     this.sql = neon(url);
   }
+
   async upsert(input: WaitlistInput) {
     const now = new Date();
     await this.sql`
@@ -68,7 +70,7 @@ export class NeonWaitlistStore implements WaitlistStore {
          sms_consent_at, consent_disclosure_version, source)
       VALUES
         (${input.email}, ${input.teamNumber}, ${input.phone || null}, ${now},
-         ${input.smsConsent ? now : null}, ${DISCLOSURE_VERSION}, ${"marketing-site"})
+         ${input.smsConsent ? now : null}, ${DISCLOSURE_VERSION}, ${"unified-site"})
       ON CONFLICT (email_normalized) DO UPDATE SET
         team_number = EXCLUDED.team_number,
         phone_e164 = EXCLUDED.phone_e164,

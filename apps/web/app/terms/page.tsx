@@ -1,6 +1,6 @@
 export default function Terms() {
   return (
-    <main className="legal">
+    <main className="legal marketing-site">
       <a href="/">← Vantage</a>
       <h1>Prelaunch terms</h1>
       <p>Effective July 14, 2026</p>

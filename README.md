@@ -6,9 +6,9 @@ pricing controls, and durable private/team agent context.
 
 ## Repository map
 
-- `apps/marketing` — public Next.js site and consent-aware waitlist. It has no product auth dependency
-  and uses only `MARKETING_DATABASE_URL`.
-- `apps/web` — product shell, Better Auth endpoint, platform-admin gate, and verified Stripe webhook edge.
+- `apps/web` — the single public deployment: marketing, legal/pricing/waitlist, Better Auth, and every
+  session-protected product route.
+- `apps/marketing` — retirement shim only. Its Vercel project permanently redirects every path to `apps/web`.
 - `packages/db` — typed Drizzle schema, request-scoped RLS client, worker-only admin client, and SQL migrations.
 - `packages/core` — auth, tenancy, active-context, invite, notification, and admin-audit helpers.
 - `packages/billing` — serialized credit enforcement, append-only usage ledger, BYO-key envelope encryption,
@@ -24,13 +24,14 @@ pricing controls, and durable private/team agent context.
 
 1. Install Node 22+ and run `npm install`.
 2. Copy `.env.example` to `.env.local`. Do not commit it.
-3. The marketing app runs without cloud credentials using in-memory persistence and rate limiting:
-   `npm run dev`.
-4. For the product app and SQL integration, create Postgres databases/roles and run all migration files in
+3. The unified app runs on `http://localhost:3001` with `npm run dev`; waitlist persistence and rate limiting
+   use in-memory development stores when cloud credentials are absent.
+4. For product auth and SQL integration, create Postgres databases/roles and run all migration files in
    numeric order as the schema owner. Set `DATABASE_URL` to an RLS-enforced app-role URL,
    `DATABASE_ADMIN_URL` to the worker role, `DATABASE_AUTH_URL` to the identity-only role, and
    `MARKETING_DATABASE_URL` to the least-privilege marketing role.
-5. Run `npm run dev --workspace=@vantage/web` for the product shell.
+5. Public routes are `/`, `/pricing`, `/privacy`, and `/terms`. Product routes redirect to
+   `/signin?next=...` and successful authentication continues to the requested route or `/dashboard`.
 
 Product sign-in uses Google when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are configured. Numeric email
 OTP uses Better Auth’s database-backed hashed verification records (five-minute expiry, one-time consumption,
@@ -38,6 +39,17 @@ attempt limits, and request/verify rate limits). Production delivery uses Resend
 `AUTH_EMAIL_FROM`. Development uses a deterministic in-memory mailbox and never needs email credentials.
 There is no public organization creation or team-number join path: a platform admin provisions each team and
 seeds a verified owner, then owners/admins invite exact email addresses.
+
+## Deployment
+
+The canonical production origin is **https://vantage-frc-web.vercel.app**. Configure the Vercel project root
+as `apps/web` (with the repository workspace available), set `BETTER_AUTH_URL` to that exact HTTPS origin, and
+attach the existing private Git repository. `apps/marketing` must either be retired or deployed once with its
+permanent redirect configuration so historical Vercel URLs converge on the canonical origin.
+
+Production requires `DATABASE_AUTH_URL`, a strong `BETTER_AUTH_SECRET`, `MARKETING_DATABASE_URL`, and the
+credentials for each explicitly enabled integration. Never enable `E2E_AUTH_FIXTURE` in production; the code
+also refuses that fixture whenever `NODE_ENV=production`.
 
 The local key service is development-only and refuses to initialize in production. Production BYO key
 encryption requires `AWS_KMS_KEY_ID` plus normal AWS workload credentials. Stripe processing requires its

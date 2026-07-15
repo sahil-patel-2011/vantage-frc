@@ -2,13 +2,13 @@
 
 declare global {
   interface Window {
-    plausible?: (event: string, options?: { props?: Record<string, string> }) => void;
+    plausible?: (event: string) => void;
   }
 }
 
 export type MarketingEvent = "hero_cta" | "section_cta" | "waitlist_success";
 
-/** No user values are accepted, preventing accidental PII from entering analytics. */
+/** Fixed event names prevent contact details from entering analytics. */
 export function track(event: MarketingEvent) {
   try {
     window.plausible?.(event);

@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
+    "dev:test": "next dev --port 3310",
     "build": "next build",
     "start": "next start --port 3001",
     "typecheck": "tsc --noEmit"
@@ -17,10 +18,12 @@
     "@vantage/reference": "*",
     "@vantage/cad": "*",
     "@vantage/scouting": "*",
+    "@neondatabase/serverless": "latest",
     "better-auth": "latest",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "zod": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",

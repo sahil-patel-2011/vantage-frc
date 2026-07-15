@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function SignInClient({ googleEnabled }: { googleEnabled: boolean }) {
+export default function SignInClient({ googleEnabled, nextPath = "/dashboard" }: { googleEnabled: boolean; nextPath?: string }) {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
@@ -28,7 +28,7 @@ export default function SignInClient({ googleEnabled }: { googleEnabled: boolean
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email, otp: code }),
     });
-    if (response.ok) window.location.assign("/");
+    if (response.ok) window.location.assign(nextPath);
     else setMessage("That code is invalid, expired, or has reached its attempt limit.");
   }
 
@@ -36,17 +36,18 @@ export default function SignInClient({ googleEnabled }: { googleEnabled: boolean
     const response = await fetch("/api/auth/sign-in/social", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ provider: "google", callbackURL: "/" }),
+      body: JSON.stringify({ provider: "google", callbackURL: nextPath }),
     });
     const data = await response.json();
     if (data.url) window.location.assign(data.url);
   }
-  async function passwordSignIn(event:React.FormEvent){event.preventDefault();const response=await fetch("/api/auth/sign-in/email",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,password})});if(response.ok)window.location.assign("/");else setMessage("Unable to sign in with those credentials.");}
+  async function passwordSignIn(event:React.FormEvent){event.preventDefault();const response=await fetch("/api/auth/sign-in/email",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,password})});if(response.ok)window.location.assign(nextPath);else setMessage("Unable to sign in with those credentials.");}
   async function resetPassword(event:React.FormEvent){event.preventDefault();if(!sent){await fetch("/api/auth/email-otp/request-password-reset",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email})});setSent(true);setMessage("If the account exists, a short-lived reset code is on the way.");return;}const response=await fetch("/api/auth/email-otp/reset-password",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email,otp:code,password})});setMessage(response.ok?"Password updated. Existing sessions were revoked.":"That reset code is invalid, expired, or has reached its attempt limit.");if(response.ok){setSent(false);setMode("password");}}
 
   return (
     <main className="auth-page">
       <section className="auth-card">
+        <a className="brand" href="/">VANTAGE</a>
         <span className="eyebrow">VANTAGE / SECURE ACCESS</span>
         <h1>Sign in to your team workspace</h1>
         <p>Membership is invite-only. Signing in does not automatically join a team.</p>

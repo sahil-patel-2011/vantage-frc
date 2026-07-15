@@ -1,6 +1,6 @@
 /* global self, caches, fetch, URL */
-const CACHE = "vantage-shell-v1";
-const SHELL = ["/scouting", "/manifest.webmanifest", "/icon.svg"];
+const CACHE = "vantage-assets-v2";
+const SHELL = ["/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
@@ -22,18 +22,10 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
 
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(async () => (await caches.match(request)) || (await caches.match("/scouting"))),
-    );
-    return;
-  }
+  // Never cache protected document responses: a cached page must not outlive
+  // its server-validated session. Feature data remains offline-capable in the
+  // scouting client's authenticated IndexedDB store.
+  if (request.mode === "navigate") return;
 
   event.respondWith(
     caches.match(request).then(
