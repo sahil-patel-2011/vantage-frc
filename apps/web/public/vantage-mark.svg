@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
   <title id="title">Vantage mark</title>
-  <path d="M12 16l52 96 52-96H90L64 66 38 16z" fill="#182126"/>
-  <path d="M53 16h22L64 43z" fill="#087f92"/>
+  <path d="M12 18h13l39 72 39-72h13L64 114z" fill="#14243a"/>
+  <path d="M12 45h13l39 45-7 13zM12 72h13l32 31-7 13z" fill="#1457d9"/>
+  <rect x="58" y="87" width="12" height="12" fill="#1457d9"/>
 </svg>

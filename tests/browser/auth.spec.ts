@@ -15,7 +15,7 @@ test("landing sign in reaches dashboard with local auth fixture", async ({ conte
   }]);
   await page.goto("/signin");
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("heading", { name: "Every decision starts from shared evidence." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Competition Command Center" })).toBeVisible();
 });
 
 test("protected routes preserve their requested destination", async ({ page }) => {

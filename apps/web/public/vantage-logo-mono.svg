@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 128" role="img" aria-labelledby="title">
   <title id="title">Monochrome Vantage logo</title>
-  <g fill="#182126">
-    <path d="M20 26l52 94 52-94H98L72 76 46 26z"/>
-    <path d="M61 26h22L72 52z"/>
-    <text x="148" y="94" font-family="Inter,Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2">Vantage</text>
+  <g fill="#14243a">
+    <path d="M16 20h13l39 72 39-72h13L68 116z"/>
+    <path d="M16 47h13l39 45-7 13zM16 74h13l32 31-7 13z"/>
+    <rect x="62" y="89" width="12" height="12"/>
+    <text x="148" y="86" font-family="Arial,sans-serif" font-size="58" font-weight="700" letter-spacing="5">VANTAGE</text>
   </g>
 </svg>

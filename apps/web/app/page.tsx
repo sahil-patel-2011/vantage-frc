@@ -1,98 +1,38 @@
 import { WaitlistForm } from "../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
+import { CadPreview, CodePreview, StrategyPreview, WorkflowStrip } from "../components/marketing/product-demos";
 
-const decisionLayers = [
-  ["01", "Observe", "Versioned scouting works in the stands, offline, with confidence and attribution intact."],
-  ["02", "Understand", "Official event data, team research, and your own observations share one active-event context."],
-  ["03", "Decide", "Strategy and prediction outputs stay connected to their evidence, assumptions, and revisions."],
-  ["04", "Build", "Confirmed decisions can move into controlled CAD and coding workflows without losing context."],
+const operations = [
+  ["Offline scouting", "Assigned match and pit forms keep attribution, confidence, media hooks, and conflict review through venue connectivity changes."],
+  ["Active event command", "One deliberate event context drives next-match queue, team controls, reference freshness, and display setup."],
+  ["Pit and stands displays", "Saved boards and public snapshot tokens feed purpose-built high-contrast kiosk views."],
+  ["Maintenance handoff", "Failures, fouls, battery state, and debrief prompts carry forward instead of disappearing after the match."],
 ];
 
 export default function Home() {
-  return (
-    <div className="marketing-site">
-      <SiteHeader />
+  return <div className="marketing-site marketing-v2"><SiteHeader/><main>
+    <section className="v2-hero">
+      <div className="v2-hero-copy"><span className="section-id">COMPETITION OPERATIONS FOR FRC</span><h1>One shared context—from match data to robot decisions.</h1><p>Vantage connects scouting, prediction, strategy, CAD, and code around the same event evidence so coaches, mentors, and students can move with confidence.</p><div className="actions"><a className="button primary" href="#hero-email">Join the waitlist</a><a className="button secondary" href="/features">Explore the product</a></div><div className="hero-trust"><span>Offline-aware</span><span>Source-linked</span><span>Approval-gated</span></div></div>
+      <div className="hero-product-composition"><div className="composition-label"><span>DEMO</span><b>Competition Command Center</b></div><StrategyPreview compact/><div className="composition-queue"><span>NEXT MATCH</span><strong>Qualification 42</strong><div><b>18:24</b><small>walk in 6 minutes</small></div></div><div className="composition-state"><span>ROBOT READINESS</span><b>3 checks remaining</b><i style={{width:"72%"}}/></div></div>
+      <aside className="hero-waitlist" id="hero-waitlist" aria-labelledby="hero-waitlist-title"><span className="section-id">EARLY ACCESS</span><h2 id="hero-waitlist-title">Bring one team context into the next event.</h2><WaitlistForm idPrefix="hero" compact/></aside>
+    </section>
 
-      <main id="top">
-        <section className="hero">
-          <div className="hero-intro">
-            <span className="eyebrow">OPERATIONS SOFTWARE FOR FRC TEAMS</span>
-            <h1>One reliable context for every competition decision.</h1>
-            <p className="hero-copy">
-              Vantage connects scouting, strategy, prediction, CAD, and robot code around the same
-              event evidence—so teams can move from observation to action without rebuilding context.
-            </p>
-            <div className="actions">
-              <a className="button primary" href="#hero-email">Join the waitlist</a>
-              <a className="text-link" href="/workflow">See how the system works →</a>
-            </div>
-            <p className="hero-note">Invite-only early access for FRC teams. No account is created by joining.</p>
-          </div>
+    <section className="signature-intro"><span className="section-id">SIGNATURE ENGINES</span><h2>From evidence to an action your team can review.</h2><p>Three substantial workflows share the same provenance and approval model. Each preview uses deterministic demo data and reflects implemented product behavior.</p></section>
 
-          <aside className="hero-waitlist" id="hero-waitlist" aria-labelledby="hero-waitlist-title">
-            <span className="section-id">EARLY ACCESS</span>
-            <h2 id="hero-waitlist-title">Get the launch signal.</h2>
-            <WaitlistForm idPrefix="hero" compact />
-          </aside>
+    <section className="signature-section strategy-signature"><div className="signature-copy"><span className="app-badge good">Available</span><small>01 / WIN–LOSS + STRATEGY</small><h2>See the probability. Inspect the factors. Build the playbook.</h2><p>The weighted-current model reports confidence, effective sample size, key factors, and caveats. What-if changes remain explicit assumptions; playbooks preserve priorities and debrief prompts.</p><ul><li>Probability and confidence interval</li><li>What-if, defense, and role planning</li><li>Outcome accuracy and Brier score history</li></ul><a className="text-link" href="/features/strategy">Explore the Strategy Engine →</a></div><StrategyPreview/></section>
 
-          <div className="product-preview" aria-label="Example Vantage decision brief">
-            <header><div><span>DEMO DATA / WORKSPACE</span><strong>2026 Regional</strong></div><div><span>NEXT MATCH</span><strong>Qualification 42</strong></div><b>AVAILABLE</b></header>
-            <div className="preview-body">
-              <aside>
-                <span>INPUTS</span>
-                <ul><li>Scouting observations <b>18</b></li><li>Official match records <b>36</b></li><li>Source-linked findings <b>7</b></li></ul>
-              </aside>
-              <article>
-                <span>STRATEGY BRIEF / REV 03</span>
-                <h2>Recommendations remain traceable to team evidence.</h2>
-                <p>Confidence, freshness, and unresolved disagreements stay visible before a coach approves the plan.</p>
-                <div><span>SCOUTING</span><span>PREDICTION</span><span>CAD + CODE CONTEXT</span></div>
-              </article>
-            </div>
-          </div>
-        </section>
+    <section className="signature-section cad-signature-v2"><CadPreview/><div className="signature-copy"><span className="app-badge setup">Connectors require setup</span><small>02 / AI CAD BUILDER</small><h2>Confirm engineering intent before geometry changes.</h2><p>A strategy-linked brief becomes requirements, assumptions, a reviewed action plan, approval-gated steps, and verified topology/render checkpoints.</p><ul><li>Onshape hosted path with configured OAuth</li><li>Fusion 360 execution through a paired local relay</li><li>Versioned artifacts, checkpoints, and BOM context</li></ul><a className="text-link" href="/features/cad">Explore the CAD Builder →</a></div></section>
 
-        <section className="system-story" id="system">
-          <div className="section-heading"><span className="section-id">ONE CONTEXT / THE WHOLE LOOP</span><h2>Stop rebuilding the same decision in five tools.</h2></div>
-          <p className="section-lede">Vantage is organized around the competition loop, not a catalog of disconnected features. <a className="text-link" href="/features">Review implemented features →</a></p>
-          <div className="decision-grid">
-            {decisionLayers.map(([id, title, copy]) => <article key={id}><span>{id}</span><h3>{title}</h3><p>{copy}</p></article>)}
-          </div>
-        </section>
+    <section className="signature-section code-signature"><div className="signature-copy"><span className="app-badge good">Available</span><small>03 / FRC CODE REVIEW</small><h2>Find robot-code risk before it reaches hardware.</h2><p>Repository-aware reviews identify WPILib and vendor-pattern risks, attach file evidence, and package proposed changes as human-approved unified diffs.</p><ul><li>Blocking loops, CAN IDs, units, and disabled-state checks</li><li>Test, simulation, and code-freeze artifacts</li><li>Proposal only—no autonomous robot deployment claim</li></ul><a className="text-link" href="/features/code">Explore Code Review →</a></div><CodePreview/></section>
 
-        <section className="workflow-story" id="workflow">
-          <div>
-            <span className="section-id">ACTIVE EVENT CONTEXT</span>
-            <h2>Set the event once. Every authorized workflow follows.</h2>
-            <p>Schedules, reference metrics, scouting assignments, research, and the next-match queue align to one deliberate team context. Source freshness and offline state remain visible.</p>
-            <a className="text-link" href="/pricing">Review straightforward pricing →</a>
-          </div>
-          <ol>
-            <li><b>01</b><span><strong>Capture</strong>Assigned forms continue offline and retain authorship.</span></li>
-            <li><b>02</b><span><strong>Reconcile</strong>Conflicts and confidence are reviewed, not hidden.</span></li>
-            <li><b>03</b><span><strong>Plan</strong>Predictions and recommendations cite current inputs.</span></li>
-            <li><b>04</b><span><strong>Execute</strong>Approved intent moves into pit, CAD, and code work.</span></li>
-          </ol>
-        </section>
+    <section className="workflow-band"><header><span className="section-id">ONE CONTEXT / SIX HANDOFFS</span><h2>The competition loop stays connected.</h2><p>Sources, organization scope, active event, assumptions, and approvals travel with the work.</p></header><WorkflowStrip/><a className="text-link" href="/workflow">See the complete system workflow →</a></section>
 
-        <section className="technical-proof">
-          <div className="section-heading"><span className="section-id">BUILT FOR VENUE REALITY</span><h2>Technical controls that earn trust.</h2></div>
-          <div className="proof-grid">
-            <article><h3>Offline by design</h3><p>Scouting captures locally, syncs deliberately, and surfaces disagreements instead of overwriting them.</p></article>
-            <article><h3>Evidence stays attached</h3><p>Observations, official metrics, research claims, and generated recommendations keep distinct provenance.</p></article>
-            <article><h3>Engineering actions are reviewed</h3><p>CAD mutations require a confirmed brief and checkpoints; coding context remains scoped to authorized work.</p></article>
-          </div>
-        </section>
+    <section className="ops-proof"><header><span className="section-id">COMPETITION OPERATIONS</span><h2>Built for the moments around the signature engines.</h2></header><div>{operations.map(([title,copy],index)=><article key={title}><b>{String(index+1).padStart(2,"0")}</b><h3>{title}</h3><p>{copy}</p></article>)}</div></section>
 
-        <section className="waitlist" id="waitlist">
-          <div><span className="section-id">EARLY ACCESS</span><h2>Bring your team’s workflows into one operational picture.</h2>
-            <p>Join the prelaunch list. At launch, you will explicitly verify your account and accept current terms. Team access remains administrator-created and invite-only.</p>
-          </div>
-          <WaitlistForm idPrefix="final" />
-        </section>
-      </main>
+    <section className="trust-controls"><div><span className="section-id">TRUST / CONTROL</span><h2>Technical controls are part of the product.</h2></div><ul><li><strong>Team-private boundaries</strong><span>Organization context and row-level database policies scope protected work.</span></li><li><strong>Visible sources</strong><span>Official metrics, observations, research, predictions, and model inference remain distinct.</span></li><li><strong>Usage limits</strong><span>Provider policy, budgets, and hard caps are checked before managed calls.</span></li><li><strong>Approval gates</strong><span>CAD mutation and code proposals remain reviewable human decisions.</span></li></ul></section>
 
-      <SiteFooter />
-    </div>
-  );
+    <section className="pricing-preview"><div><span className="section-id">PRICING</span><h2>Start with the complete non-AI competition core.</h2><p>Free supports scouting, reference data, manual strategy, exports, and team operations. Paid individual and team plans fund managed AI deliberately, with published credits and hard controls.</p></div><a className="button secondary" href="/pricing">Review plans and controls</a></section>
+
+    <section className="waitlist v2-final-waitlist" id="waitlist"><div><span className="section-id">EARLY ACCESS</span><h2>Put one operational picture in front of the whole team.</h2><p>Join the prelaunch list. Account verification, current terms, and administrator-created team access remain separate launch steps.</p></div><WaitlistForm idPrefix="final"/></section>
+  </main><SiteFooter/></div>;
 }

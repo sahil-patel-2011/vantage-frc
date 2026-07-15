@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" role="img" aria-labelledby="title desc">
+  <title id="title">Vantage stacked logo</title>
+  <desc id="desc">Multiple data lines converge into one decision point inside a geometric V.</desc>
+  <g transform="translate(184 38) scale(1.2)">
+    <path d="M12 18h13l39 72 39-72h13L64 114z" fill="#14243a"/>
+    <path d="M12 45h13l39 45-7 13zM12 72h13l32 31-7 13z" fill="#1457d9"/>
+    <rect x="58" y="87" width="12" height="12" fill="#1457d9"/>
+  </g>
+  <text x="260" y="300" text-anchor="middle" fill="#14243a" font-family="Arial,sans-serif" font-size="58" font-weight="700" letter-spacing="7">VANTAGE</text>
+  <text x="260" y="346" text-anchor="middle" fill="#536172" font-family="Arial,sans-serif" font-size="18" letter-spacing="2">ONE CONTEXT. BETTER DECISIONS.</text>
+</svg>
