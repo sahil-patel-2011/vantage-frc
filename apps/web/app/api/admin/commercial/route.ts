@@ -19,6 +19,7 @@ export async function GET() {
     return Response.json(await runAdmin(async (client) => {
       const config=(await client.query(`SELECT stripe_fee_percent AS "stripeFeePercent",stripe_fixed_fee_usd AS "stripeFixedFeeUsd",infrastructure_allocation_usd AS "infrastructureAllocationUsd",gross_margin_warning_percent AS "grossMarginWarningPercent" FROM platform_margin_config WHERE id='default'`)).rows[0]??{stripeFeePercent:"2.9",stripeFixedFeeUsd:".30",infrastructureAllocationUsd:"2",grossMarginWarningPercent:"10"};
       const margin=(await client.query(`SELECT COALESCE(sum(p.monthly_price_usd),0)::text AS revenue,COALESCE(sum(period.provider_cost_used_usd),0)::text AS "providerCost",count(*)::int AS subscriptions FROM org_entitlements e JOIN pricing_plans p ON p.code=e.plan_code LEFT JOIN org_plan_periods period ON period.org_id=e.org_id AND period.status='active' WHERE e.status IN ('active','trialing')`)).rows[0];
+      const freeAiEconomics=(await client.query(`SELECT * FROM free_ai_economics`)).rows[0]??null;
       return{
       organizations: (await client.query(
         `SELECT o.id,o.name,o.team_number AS "teamNumber",e.plan_code AS "planCode",e.status,
@@ -28,6 +29,7 @@ export async function GET() {
       )).rows,
       packs: (await client.query("SELECT * FROM credit_packs ORDER BY purchase_price_usd")).rows,
       margin:{...margin,config},
+      freeAiEconomics,
     };}));
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Request failed" }, { status: 403 });

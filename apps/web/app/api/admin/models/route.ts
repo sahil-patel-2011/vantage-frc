@@ -21,11 +21,17 @@ export async function GET() {
   try {
     return Response.json(
       await adminWork(async (client) => {
-        const [models, keys, plans, connectors] = await Promise.all([
+        const [models, keys, plans, connectors, freePolicy] = await Promise.all([
           client.query(`SELECT id,display_name AS "displayName",provider,provider_model_id AS "providerModelId",
             input_price_per_million_usd AS "inputPrice",output_price_per_million_usd AS "outputPrice",
             capabilities,eligible_plans AS "eligiblePlans",payg_only AS "paygOnly",enabled,
-            routing_weight AS "routingWeight" FROM model_catalog ORDER BY display_name`),
+            routing_weight AS "routingWeight",funding_mode AS "fundingMode",
+            commercial_use_approved AS "commercialUseApproved",
+            commercial_approval_source AS "commercialApprovalSource",
+            commercial_approval_reviewed_at AS "commercialApprovalReviewedAt",
+            provider_rate_limit_rpm AS "providerRateLimitRpm",
+            provider_concurrency_limit AS "providerConcurrencyLimit",
+            sponsored_enabled AS "sponsoredEnabled" FROM model_catalog ORDER BY display_name`),
           client.query(`SELECT id,provider,label,last_used_at AS "lastUsedAt",disabled_at AS "disabledAt",
             created_at AS "createdAt" FROM platform_provider_keys ORDER BY created_at DESC`),
           client.query(`SELECT code,name,monthly_price_usd AS "monthlyPriceUsd",
@@ -35,8 +41,16 @@ export async function GET() {
             approval_reference AS "approvalReference",approval_date AS "approvalDate",approval_acknowledged AS "approvalAcknowledged",
             health_verified_at AS "healthVerifiedAt",daily_quota AS "dailyQuota"
             FROM platform_connectors ORDER BY created_at DESC`),
+          client.query(`SELECT id,enabled,sponsored_model_id AS "sponsoredModelId",
+            monthly_allowance_usd AS "monthlyAllowanceUsd",
+            org_daily_request_limit AS "orgDailyRequestLimit",
+            user_daily_request_limit AS "userDailyRequestLimit",
+            ip_daily_request_limit AS "ipDailyRequestLimit",concurrency_limit AS "concurrencyLimit",
+            priority,require_verified_email AS "requireVerifiedEmail",
+            require_closed_team_membership AS "requireClosedTeamMembership"
+            FROM platform_free_ai_policy WHERE id='default'`),
         ]);
-        return { models: models.rows, keys: keys.rows, plans: plans.rows, connectors: connectors.rows };
+        return { models: models.rows, keys: keys.rows, plans: plans.rows, connectors: connectors.rows, freePolicy: freePolicy.rows[0] };
       }),
     );
   } catch (error) {
@@ -63,15 +77,30 @@ export async function POST(request: Request) {
           `UPDATE model_catalog SET provider=$2,provider_model_id=NULLIF($3,''),
             input_price_per_million_usd=$4,output_price_per_million_usd=$5,
             capabilities=$6::text[],eligible_plans=$7::text[],enabled=$8,
-            routing_weight=$9,updated_at=now() WHERE id=$1`,
+            routing_weight=$9,funding_mode=$10,commercial_use_approved=$11,
+            commercial_approval_source=NULLIF($12,''),commercial_approval_reviewed_at=CASE WHEN $11 THEN now() ELSE NULL END,
+            provider_rate_limit_rpm=$13,provider_concurrency_limit=$14,sponsored_enabled=$15,
+            updated_at=now() WHERE id=$1`,
           [body.id, body.provider, body.providerModelId, body.inputPrice, body.outputPrice,
-            body.capabilities, body.eligiblePlans, body.enabled, body.routingWeight],
+            body.capabilities, body.eligiblePlans, body.enabled, body.routingWeight,
+            body.fundingMode ?? "managed_paid",Boolean(body.commercialUseApproved),body.commercialApprovalSource,
+            body.providerRateLimitRpm || null,body.providerConcurrencyLimit || null,Boolean(body.sponsoredEnabled)],
         );
       } else if (body.action === "plan") {
         await client.query(
           `UPDATE pricing_plans SET included_allowance_usd=$2,features=$3::jsonb,active=$4,updated_at=now()
            WHERE code=$1`,
           [body.code, body.includedAllowanceUsd, JSON.stringify(body.features ?? []), body.active],
+        );
+      } else if (body.action === "freePolicy") {
+        await client.query(
+          `UPDATE platform_free_ai_policy SET enabled=$1,sponsored_model_id=$2,
+            monthly_allowance_usd=$3,org_daily_request_limit=$4,user_daily_request_limit=$5,
+            ip_daily_request_limit=$6,concurrency_limit=$7,updated_by=$8,updated_at=now()
+           WHERE id='default'`,
+          [Boolean(body.enabled),body.sponsoredModelId || null,Number(body.monthlyAllowanceUsd ?? 0),
+            Number(body.orgDailyRequestLimit ?? 0),Number(body.userDailyRequestLimit ?? 0),
+            Number(body.ipDailyRequestLimit ?? 0),Number(body.concurrencyLimit ?? 1),user.rows[0]!.id],
         );
       } else if (body.action === "disableKey") {
         await client.query("UPDATE platform_provider_keys SET disabled_at=now() WHERE id=$1", [body.id]);

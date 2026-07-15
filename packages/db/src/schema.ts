@@ -1061,6 +1061,13 @@ export const modelCatalog = pgTable("model_catalog", {
   paygOnly: boolean("payg_only").notNull().default(false),
   enabled: boolean("enabled").notNull().default(false),
   routingWeight: doublePrecision("routing_weight").notNull().default(1),
+  fundingMode: text("funding_mode").$type<"managed_paid"|"byok"|"local"|"sponsored">().notNull().default("managed_paid"),
+  commercialUseApproved: boolean("commercial_use_approved").notNull().default(false),
+  commercialApprovalSource: text("commercial_approval_source"),
+  commercialApprovalReviewedAt: timestamp("commercial_approval_reviewed_at", { withTimezone: true }),
+  providerRateLimitRpm: integer("provider_rate_limit_rpm"),
+  providerConcurrencyLimit: integer("provider_concurrency_limit"),
+  sponsoredEnabled: boolean("sponsored_enabled").notNull().default(false),
   ...timestamps,
 });
 

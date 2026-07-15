@@ -537,7 +537,7 @@ export function evaluateManagedUsage(input: {
 }
 
 export type PlanEntitlement={
-  planCode:"free"|"managed_20"|"managed_50";
+  planCode:"free"|"individual_pro"|"individual_max"|"team_pro"|"team_max"|"managed_20"|"managed_50";
   managedAllowanceUsd:number;
   contextTokenLimit:number;
   agentStepLimit:number;
@@ -547,10 +547,41 @@ export type PlanEntitlement={
   jobPriority:number;
   featureFlags:Record<string,boolean>;
 };
-export function evaluateEntitlement(input:{entitlement:PlanEntitlement;feature:string;managedProviderCostUsedUsd:number;estimatedManagedCostUsd:number;keySource:"platform"|"byo"|"local"}){
+export type FreeManagedPolicy={
+  enabled:boolean;
+  providerCommercialUseApproved:boolean;
+  approvalSource:string|null;
+  monthlyAllowanceUsd:number;
+  monthlyUsedUsd:number;
+  orgDailyRequests:number;
+  orgDailyLimit:number;
+  userDailyRequests:number;
+  userDailyLimit:number;
+  ipDailyRequests:number;
+  ipDailyLimit:number;
+  activeRequests:number;
+  concurrencyLimit:number;
+};
+export function evaluateFreeManagedUsage(input:FreeManagedPolicy&{estimatedCostUsd:number;verifiedEmail:boolean;closedTeamMember:boolean}){
+  const fallback={offers:["byok","local","upgrade"] as const};
+  if(!input.enabled)return{allowed:false as const,reason:"sponsored_ai_unavailable" as const,...fallback};
+  if(!input.providerCommercialUseApproved||!input.approvalSource)return{allowed:false as const,reason:"commercial_approval_required" as const,...fallback};
+  if(!input.verifiedEmail||!input.closedTeamMember)return{allowed:false as const,reason:"verified_invited_member_required" as const,...fallback};
+  if(input.estimatedCostUsd<0)throw new Error("Estimated sponsored cost cannot be negative");
+  if(input.monthlyUsedUsd+input.estimatedCostUsd>input.monthlyAllowanceUsd)return{allowed:false as const,reason:"sponsored_allowance_exhausted" as const,...fallback};
+  if(input.orgDailyRequests>=input.orgDailyLimit)return{allowed:false as const,reason:"org_rate_limit" as const,...fallback};
+  if(input.userDailyRequests>=input.userDailyLimit)return{allowed:false as const,reason:"user_rate_limit" as const,...fallback};
+  if(input.ipDailyRequests>=input.ipDailyLimit)return{allowed:false as const,reason:"ip_rate_limit" as const,...fallback};
+  if(input.activeRequests>=input.concurrencyLimit)return{allowed:false as const,reason:"low_priority_capacity_busy" as const,...fallback};
+  return{allowed:true as const,bucket:"sponsored" as const,priority:"low" as const,remainingAllowanceUsd:input.monthlyAllowanceUsd-input.monthlyUsedUsd-input.estimatedCostUsd};
+}
+export function evaluateEntitlement(input:{entitlement:PlanEntitlement;feature:string;managedProviderCostUsedUsd:number;estimatedManagedCostUsd:number;keySource:"platform"|"byo"|"local"|"sponsored"}){
   if(!input.entitlement.featureFlags[input.feature])return{allowed:false as const,reason:"feature_not_in_plan" as const,remainingAllowanceUsd:Math.max(0,input.entitlement.managedAllowanceUsd-input.managedProviderCostUsedUsd)};
   const remaining=Math.max(0,input.entitlement.managedAllowanceUsd-input.managedProviderCostUsedUsd);
-  if(input.keySource!=="platform")return{allowed:true as const,bucket:"external_provider" as const,remainingAllowanceUsd:remaining};
+  if(input.keySource==="byo"||input.keySource==="local")return{allowed:true as const,bucket:"external_provider" as const,remainingAllowanceUsd:remaining};
+  if(input.keySource==="sponsored")return input.estimatedManagedCostUsd<=remaining
+    ?{allowed:true as const,bucket:"sponsored" as const,remainingAllowanceUsd:remaining-input.estimatedManagedCostUsd}
+    :{allowed:false as const,reason:"managed_allowance_exhausted" as const,remainingAllowanceUsd:remaining};
   if(input.estimatedManagedCostUsd>remaining)return{allowed:false as const,reason:"managed_allowance_exhausted" as const,remainingAllowanceUsd:remaining};
   return{allowed:true as const,bucket:"managed_allowance" as const,remainingAllowanceUsd:remaining-input.estimatedManagedCostUsd};
 }
