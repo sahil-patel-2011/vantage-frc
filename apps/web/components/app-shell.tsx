@@ -26,8 +26,8 @@ type IconName =
 const groups: NavGroup[] = [
   {
     label: "Core",
-    tone: "#2563eb",
-    toneBg: "#dbeafe",
+    tone: "#1f4fd6",
+    toneBg: "#e8eefc",
     icon: "swords",
     items: [
       { href: "/dashboard", label: "Home", icon: "home" },
@@ -37,8 +37,8 @@ const groups: NavGroup[] = [
   },
   {
     label: "Scouting",
-    tone: "#16a34a",
-    toneBg: "#dcfce7",
+    tone: "#1f4fd6",
+    toneBg: "#e8eefc",
     icon: "scout",
     items: [
       { href: "/scouting", label: "Scouting Hub", icon: "clipboard" },
@@ -48,8 +48,8 @@ const groups: NavGroup[] = [
   },
   {
     label: "Build",
-    tone: "#7c3aed",
-    toneBg: "#ede9fe",
+    tone: "#1f4fd6",
+    toneBg: "#e8eefc",
     icon: "cube",
     items: [
       { href: "/cad", label: "AI CAD", icon: "cube", state: "setup" },
@@ -59,8 +59,8 @@ const groups: NavGroup[] = [
   },
   {
     label: "Team",
-    tone: "#0f766e",
-    toneBg: "#ccfbf1",
+    tone: "#1f4fd6",
+    toneBg: "#e8eefc",
     icon: "gear",
     items: [
       { href: "/team", label: "Admin", icon: "gear" },
