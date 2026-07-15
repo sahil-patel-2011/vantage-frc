@@ -79,6 +79,15 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   },
 };
 
+function emptyHintFor(type: string): EmptyHint {
+  return (
+    EMPTY_COPY[type] ?? {
+      title: "Nothing to show yet",
+      body: "Complete workspace and event setup to load live data. Vantage does not invent stats.",
+    }
+  );
+}
+
 function StatusBadge({ status }: { status: WidgetPayload["status"] | "waiting" }) {
   if (status === "live") return <span className="app-badge good">Live</span>;
   if (status === "empty") return <span className="app-badge">No data</span>;
@@ -208,10 +217,7 @@ export function DashboardWidgetView({
 }) {
   const data = payload?.data ?? {};
   const withOrg = (href: string) => (orgId ? `${href}${href.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(orgId)}` : href);
-  const hint = EMPTY_COPY[type] ?? {
-    title: "Nothing to show yet",
-    body: "Complete workspace and event setup to load live data. Vantage does not invent stats.",
-  };
+  const hint = emptyHintFor(type);
 
   switch (type) {
     case "next_match": {
@@ -338,7 +344,7 @@ export function DashboardWidgetView({
             title="Alerts"
             payload={payload}
             href={withOrg("/scouting")}
-            emptyHint={EMPTY_COPY.alerts}
+            emptyHint={emptyHintFor("alerts")}
             orgId={orgId}
             preferChildren
           >
@@ -461,7 +467,7 @@ export function DashboardWidgetView({
       const unread = Number(data.unread ?? 0);
       if (payload?.status === "live" && items.length === 0) {
         return (
-          <Shell title="Notifications" payload={payload} emptyHint={EMPTY_COPY.notifications} orgId={orgId} preferChildren>
+          <Shell title="Notifications" payload={payload} emptyHint={emptyHintFor("notifications")} orgId={orgId} preferChildren>
             <div className="dash-empty calm">
               <strong>Inbox clear</strong>
               <p>No notifications yet. Unread count stays at zero until something is sent.</p>
