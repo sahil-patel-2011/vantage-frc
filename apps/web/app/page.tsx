@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { WaitlistForm } from "../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import {
+  AssistantPreview,
   CadPreview,
   CodePreview,
   DashboardPreview,
@@ -22,6 +23,14 @@ const capIcons: Record<string, ReactNode> = {
     </>
   ),
   activity: <path d="M3 12h4l2.5 6 4-15 2.5 9H21" />,
+  chat: (
+    <>
+      <path d="M5 6h14v9H9l-4 4V6z" />
+      <circle cx="9" cy="10.5" r=".8" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="10.5" r=".8" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="10.5" r=".8" fill="currentColor" stroke="none" />
+    </>
+  ),
   target: (
     <>
       <circle cx="12" cy="12" r="8" />
@@ -32,6 +41,12 @@ const capIcons: Record<string, ReactNode> = {
     <>
       <path d="M6 21V4" />
       <path d="M6 5h11l-2 3 2 3H6" />
+    </>
+  ),
+  link: (
+    <>
+      <path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5.93" />
+      <path d="M14 11a5 5 0 0 0-7.07 0L5.52 12.4a5 5 0 0 0 7.07 7.07L14 18.07" />
     </>
   ),
   cube: (
@@ -78,7 +93,13 @@ const capabilities = [
     icon: "clipboard",
     status: "Available",
     title: "Offline scouting → shared data",
-    copy: "Match and pit forms keep working without venue Wi-Fi. Synced observations become team-shared facts with attribution—not a lost spreadsheet tab.",
+    copy: "Match and pit forms keep working without venue Wi-Fi. Synced observations become team-shared facts with attribution—and they feed strategy, predictions, and the Assistant.",
+  },
+  {
+    icon: "chat",
+    status: "Available",
+    title: "FRC Assistant for competition ops",
+    copy: "Ask about strategy, matchups, opponent history, and robot capabilities inside your active event. Answers stay source-labeled; empty context stays empty.",
   },
   {
     icon: "target",
@@ -91,6 +112,12 @@ const capabilities = [
     status: "Available",
     title: "Strategy & pick lists",
     copy: "What-if assumptions stay labeled as assumptions. Playbooks and pick lists travel with the active event so drive team and strategy stay aligned.",
+  },
+  {
+    icon: "link",
+    status: "Available",
+    title: "Scouting integrated—not a silo",
+    copy: "One connected system: scout sync informs predictions, playbooks, pick lists, live boards, and Assistant context where it matters.",
   },
   {
     icon: "cube",
@@ -132,11 +159,11 @@ export default function Home() {
         <section className="v2-hero thesis-rule">
           <div className="v2-hero-copy">
             <span className="section-id">COMPETITION OPS FOR FRC TEAMS</span>
-            <h1>Scout, decide, build, and present from one shared event.</h1>
+            <h1>Scout, ask, decide, build, and present from one shared event.</h1>
             <p>
-              Vantage is the operations layer for one FRC team: offline scouting that syncs into shared facts,
-              TBA/Statbotics-backed strategy, approval-gated AI CAD, robot-code review, live TV boards, and a
-              customizable home dashboard—each number labeled with its source.
+              Vantage is the operations layer for one FRC team: offline scouting that syncs into shared facts, an FRC
+              Assistant for strategy and competitor intel, TBA/Statbotics-backed predictions, approval-gated AI CAD,
+              robot-code review, live TV boards, and a customizable home dashboard—each number labeled with its source.
             </p>
             <div className="actions">
               <a className="button primary" href="#hero-email">
@@ -167,8 +194,8 @@ export default function Home() {
             <span className="section-id">WHAT YOU ACTUALLY GET</span>
             <h2 id="capabilities-title">Concrete workflows from pit to playoffs.</h2>
             <p>
-              Not a feature laundry list—each module exists so scouts, strategy, CAD, code, and pit displays share
-              one organization-scoped event context.
+              Not a feature laundry list—each module exists so scouting, the FRC Assistant, strategy, CAD, code, and pit
+              displays share one organization-scoped event context.
             </p>
             <div className="status-legend">
               <span className="app-badge good">Available</span>
@@ -222,12 +249,12 @@ export default function Home() {
               <h3>With Vantage</h3>
               <ul>
                 <li>Scout offline → sync into team data</li>
+                <li>FRC Assistant grounded in that same context</li>
                 <li>Predict from TBA + scouted facts</li>
-                <li>Strategy playbooks tied to the event</li>
+                <li>Strategy playbooks &amp; pick lists in-event</li>
                 <li>CAD &amp; code behind human approval</li>
-                <li>TV boards + customizable home widgets</li>
               </ul>
-              <p>One continuous, source-labeled loop for the competition day.</p>
+              <p>One continuous, source-labeled loop—scouting feeds the rest, not a silo.</p>
             </article>
           </div>
         </section>
@@ -243,11 +270,33 @@ export default function Home() {
 
         <section className="signature-intro">
           <span className="section-id">CORE ENGINES</span>
-          <h2>Strategy, CAD, and code—with the same provenance rules.</h2>
+          <h2>Assistant, strategy, CAD, and code—with the same provenance rules.</h2>
           <p>
-            Each preview is labeled demo data. Signed-in Strategy stays empty until workspace, event, and TBA/Statbotics
-            metrics exist—it does not invent win probability.
+            Each preview is labeled demo data. Signed-in Strategy and the FRC Assistant stay empty until workspace,
+            event, and TBA/Statbotics (plus scout sync when you have it) exist—they do not invent win probability.
           </p>
+        </section>
+
+        <section className="signature-section assistant-signature" id="frc-assistant">
+          <div className="signature-copy">
+            <span className="app-badge good">Available</span>
+            <small>00 / FRC ASSISTANT</small>
+            <h2>Competition ops and intel in one grounded chat.</h2>
+            <p>
+              Ask about strategy, best matchups, what other teams tend to do from history, and robot capabilities.
+              Scouting, TBA/Statbotics, and event context travel with the thread—so answers stay useful for drive team
+              and strategy, not a detached chatbot.
+            </p>
+            <ul>
+              <li>Strategy, matchups, and opponent patterns from attributed evidence</li>
+              <li>Scout sync + public metrics kept distinct and labeled</li>
+              <li>Feeds the same pick lists, playbooks, and live boards as the rest of the app</li>
+            </ul>
+            <a className="text-link" href="/features/strategy#frc-assistant">
+              Explore FRC Assistant &amp; Strategy →
+            </a>
+          </div>
+          <AssistantPreview />
         </section>
 
         <section className="signature-section strategy-signature">
@@ -257,7 +306,8 @@ export default function Home() {
             <h2>Probability you can inspect, then a playbook the drive team can use.</h2>
             <p>
               Combine live TBA/Statbotics metrics with scouted observations. Confidence bands, key factors, and
-              caveats stay visible. What-if changes are stored as assumptions—not as fake observations.
+              caveats stay visible. What-if changes are stored as assumptions—not as fake observations. Scout data is
+              an input to the model and pick lists, not a separate spreadsheet nobody opens.
             </p>
             <ul>
               <li>Weighted-current model with confidence interval</li>
@@ -317,8 +367,11 @@ export default function Home() {
         <section className="workflow-band">
           <header>
             <span className="section-id">END-TO-END LOOP</span>
-            <h2>Scout → predict → strategize → CAD → code → maintain</h2>
-            <p>Sources, org scope, active event, assumptions, and approvals travel with the work.</p>
+            <h2>Scout → predict → assist → strategize → build → present</h2>
+            <p>
+              Sources, org scope, active event, scout attributions, assumptions, and approvals travel with the work—so
+              the FRC Assistant and Strategy see the same facts as pick lists and live boards.
+            </p>
           </header>
           <WorkflowStrip />
           <a className="text-link" href="/workflow">
@@ -337,6 +390,7 @@ export default function Home() {
             <ul>
               <li>Email invites into an organization-scoped workspace</li>
               <li>Row-level scope on protected competition data</li>
+              <li>Team channel and private member messaging in-app</li>
               <li>Budgets and hard caps on managed AI calls</li>
             </ul>
           </div>
@@ -348,8 +402,9 @@ export default function Home() {
             <span className="section-id">PRICING</span>
             <h2>Start with the complete non-AI competition core.</h2>
             <p>
-              Free covers scouting, reference data, manual strategy, exports, and team operations. Paid plans fund
-              managed AI deliberately, with published credits and hard controls.
+              Free covers scouting, reference data, manual strategy, exports, and team operations—the same core the FRC
+              Assistant uses when AI is enabled. Paid plans add managed API allowance at provider list rates (no Vantage
+              markup), then a hard stop unless you buy Usage Credits or enable PAYG.
             </p>
           </div>
           <a className="button secondary" href="/pricing">

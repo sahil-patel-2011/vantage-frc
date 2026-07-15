@@ -419,16 +419,41 @@ export function AssistantPreview({ compact = false }: { compact?: boolean }) {
       aria-label="Demo data preview of the FRC Assistant"
     >
       <DemoChrome title="FRC Assistant · Qual 42 context" meta="Event-scoped · source-labeled" />
-      <div className={`marketing-demo-board ${compact ? "compact-board" : ""}`}>
-        <article className="app-card">
-          <header>
-            <span className="app-badge demo">Demo data</span>
-            <h2>Grounded competition ask</h2>
-          </header>
-          <p className="app-muted">
-            Strategy, matchups, and scout-attributed notes in one event context—without inventing confidence.
+      <div className={`assistant-demo-body ${compact ? "compact-board" : ""}`}>
+        <article className="assistant-demo-prompt">
+          <span>TEAM ASK</span>
+          <p>
+            Who should we prioritize for a defensive third, and how does 1678 typically play midfield based on this
+            weekend’s scouting?
           </p>
         </article>
+        <article className="assistant-demo-answer">
+          <header>
+            <span className="app-badge demo">Demo data</span>
+            <strong>Grounded reply</strong>
+          </header>
+          <ul>
+            <li>
+              <b>Scout</b>
+              <span>Defense rating · Qual coverage 6/8</span>
+            </li>
+            <li>
+              <b>History</b>
+              <span>Prior events · midfield pressure pattern</span>
+            </li>
+            <li>
+              <b>Capability</b>
+              <span>Pit note · climb L3 · limited intake</span>
+            </li>
+          </ul>
+          <p className="app-muted">Cites org scout sync + TBA/Statbotics—does not invent a fake confidence %.</p>
+        </article>
+        {!compact && (
+          <footer className="product-demo-footer">
+            <span>Strategy · matchups · pick lists · live ops</span>
+            <b>One connected event context</b>
+          </footer>
+        )}
       </div>
     </div>
   );
@@ -437,7 +462,7 @@ export function AssistantPreview({ compact = false }: { compact?: boolean }) {
 export function WorkflowStrip() {
   return (
     <ol className="unified-flow" aria-label="Unified Vantage workflow">
-      {["Scout", "Predict", "Strategize", "CAD", "Code", "Maintain"].map((stage, index) => (
+      {["Scout", "Predict", "Assist", "Strategize", "Build", "Present"].map((stage, index) => (
         <li key={stage}>
           <b>{String(index + 1).padStart(2, "0")}</b>
           <span>{stage}</span>
