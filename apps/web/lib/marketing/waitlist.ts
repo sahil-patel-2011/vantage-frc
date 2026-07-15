@@ -85,11 +85,12 @@ export class NeonWaitlistStore implements WaitlistStore {
 const globalStore = globalThis as typeof globalThis & { vantageWaitlist?: MemoryWaitlistStore };
 
 export function createWaitlistStore(): WaitlistStore {
-  if (process.env.MARKETING_DATABASE_URL) {
-    return new NeonWaitlistStore(process.env.MARKETING_DATABASE_URL);
+  const url = process.env.MARKETING_DATABASE_URL ?? process.env.DATABASE_URL;
+  if (url) {
+    return new NeonWaitlistStore(url);
   }
   if (process.env.NODE_ENV === "production") {
-    throw new Error("MARKETING_DATABASE_URL is required in production");
+    throw new Error("MARKETING_DATABASE_URL or DATABASE_URL is required in production");
   }
   return (globalStore.vantageWaitlist ??= new MemoryWaitlistStore());
 }

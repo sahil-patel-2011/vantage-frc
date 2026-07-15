@@ -50,29 +50,29 @@ describe("organization authentication and MFA",()=>{
   });
 });
 
-describe("passwordless authentication policy", () => {
-  it("delivers deterministic numeric codes through the local mailbox", async () => {
-    localMailbox.clear();
-    const otp = deterministicLocalOtp("User@Example.com", "sign-in");
-    expect(otp).toMatch(/^\d{6}$/);
-    expect(deterministicLocalOtp("user@example.com", "sign-in")).toBe(otp);
-    await new LocalMailboxProvider().sendOtp({
-      email: "User@Example.com",
-      otp,
-      type: "sign-in",
-    });
-    expect(localMailbox.get("user@example.com")?.[0]?.otp).toBe(otp);
-  });
-
-  it("locks short expiry, one-time rotation, attempt, and rate limits", () => {
-    expect(OTP_POLICY).toEqual({
-      expiresInSeconds: 300,
-      allowedAttempts: 5,
-      requestWindowSeconds: 60,
-      requestLimit: 5,
-    });
-    // Better Auth's emailOTP plugin stores `${hash}:attempts`, deletes it on
-    // successful sign-in (preventing replay), and rejects expired records.
+describe("waitlist-only auth access policy", () => {
+  it("reports public signup closed and gates email OTP when Resend is missing in production", async () => {
+    const previous = {
+      nodeEnv: process.env.NODE_ENV,
+      resend: process.env.RESEND_API_KEY,
+      from: process.env.AUTH_EMAIL_FROM,
+      db: process.env.DATABASE_AUTH_URL,
+    };
+    process.env.NODE_ENV = "production";
+    delete process.env.RESEND_API_KEY;
+    delete process.env.AUTH_EMAIL_FROM;
+    process.env.DATABASE_AUTH_URL = "postgresql://example";
+    const { getAuthCapabilities } = await import("./access-policy");
+    const report = getAuthCapabilities();
+    expect(report.publicSignup).toBe(false);
+    expect(report.waitlistOnly).toBe(true);
+    expect(report.emailOtpAvailable).toBe(false);
+    expect(report.emailOtpReason).toMatch(/RESEND_API_KEY/);
+    expect(report.passwordSignInAvailable).toBe(true);
+    process.env.NODE_ENV = previous.nodeEnv;
+    process.env.RESEND_API_KEY = previous.resend;
+    process.env.AUTH_EMAIL_FROM = previous.from;
+    process.env.DATABASE_AUTH_URL = previous.db;
   });
 });
 
