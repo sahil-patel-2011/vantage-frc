@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
-  transpilePackages: ["@vantage/core", "@vantage/db", "@vantage/billing"],
+  transpilePackages: [
+    "@vantage/agent",
+    "@vantage/billing",
+    "@vantage/cad",
+    "@vantage/core",
+    "@vantage/db",
+    "@vantage/export-center",
+    "@vantage/intel-research",
+    "@vantage/prediction-strategy",
+    "@vantage/reference",
+    "@vantage/scouting",
+  ],
   poweredByHeader: false,
   async headers() {
     return [{

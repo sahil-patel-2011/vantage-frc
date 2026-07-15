@@ -1,5 +1,3 @@
 {
-  "installCommand": "cd ../.. && npm install --legacy-peer-deps",
-  "buildCommand": "cd ../.. && npm run build --workspace=@vantage/web",
   "framework": "nextjs"
 }
