@@ -13,6 +13,7 @@ import {
   uniqueIndex,
   uuid,
   primaryKey,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 const timestamps = {
@@ -103,6 +104,7 @@ export const sessions = pgTable(
     token: text("token").notNull().unique(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
+    authMethod: text("auth_method").notNull().default("unknown"),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -177,8 +179,67 @@ export const organizations = pgTable("organizations", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   teamNumber: integer("team_number"),
+  isDemo: boolean("is_demo").notNull().default(false),
   createdAt: timestamps.createdAt,
 });
+
+export const orgAuthPolicies = pgTable("org_auth_policies", {
+  orgId: uuid("org_id").primaryKey().references(() => organizations.id, { onDelete: "cascade" }),
+  allowPassword: boolean("allow_password").notNull().default(false),
+  allowGoogle: boolean("allow_google").notNull().default(true),
+  allowEmailOtp: boolean("allow_email_otp").notNull().default(true),
+  mfaPolicy: text("mfa_policy").$type<"off" | "optional" | "required">().notNull().default("optional"),
+  rememberedDeviceDays: integer("remembered_device_days").notNull().default(14),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  ...timestamps,
+});
+
+export const userMfaEnrollments = pgTable("user_mfa_enrollments", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  encryptedSecret: text("encrypted_secret").notNull(),
+  confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+  recoveryGeneration: integer("recovery_generation").notNull().default(1),
+  ...timestamps,
+});
+
+export const mfaRecoveryCodes = pgTable("mfa_recovery_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  codeHash: text("code_hash").notNull(),
+  generation: integer("generation").notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamps.createdAt,
+}, (table) => [uniqueIndex("mfa_recovery_user_hash_uq").on(table.userId, table.codeHash)]);
+
+export const mfaStepUpSessions = pgTable("mfa_step_up_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  sessionId: uuid("session_id").notNull().references(() => sessions.id, { onDelete: "cascade" }),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  totpStep: text("totp_step"),
+}, (table) => [uniqueIndex("mfa_step_up_session_org_uq").on(table.sessionId, table.orgId)]);
+
+export const rememberedMfaDevices = pgTable("remembered_mfa_devices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  label: text("label").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  createdAt: timestamps.createdAt,
+});
+
+export const authPolicyAuditEvents = pgTable("auth_policy_audit_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+  action: text("action").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamps.createdAt,
+}, (table) => [index("auth_policy_audit_org_created_idx").on(table.orgId, table.createdAt)]);
 
 export const memberships = pgTable(
   "memberships",
@@ -449,6 +510,87 @@ export const syncCursors = pgTable(
   },
   (table) => [primaryKey({ columns: [table.source, table.resource] })],
 );
+
+export const dataSourceCredentials = pgTable("data_source_credentials", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+  source: text("source").notNull(),
+  opaqueKeyId: text("opaque_key_id").notNull().unique(),
+  encryptedSecret: text("encrypted_secret").notNull(),
+  status: text("status").notNull().default("untested"),
+  lastTestedAt: timestamp("last_tested_at", { withTimezone: true }),
+  lastTestStatus: integer("last_test_status"),
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  updatedBy: uuid("updated_by").notNull().references(() => users.id),
+  ...timestamps,
+}, (table) => [index("data_source_credentials_source_org_idx").on(table.source, table.orgId)]);
+
+export const dataSourceHealth = pgTable("data_source_health", {
+  source: text("source").primaryKey(),
+  status: text("status").notNull(),
+  requestsLastHour: integer("requests_last_hour").notNull().default(0),
+  rateLimitRemaining: integer("rate_limit_remaining"),
+  consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+  lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+  lastFailureAt: timestamp("last_failure_at", { withTimezone: true }),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+  keySourceOpaqueId: text("key_source_opaque_id"),
+  details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
+  updatedAt: timestamps.updatedAt,
+});
+
+export const referenceTimeline = pgTable("reference_timeline", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  source: text("source").notNull(),
+  eventKey: text("event_key").references(() => eventsRef.eventKey, { onDelete: "cascade" }),
+  entityType: text("entity_type").notNull(),
+  entityKey: text("entity_key").notNull(),
+  eventType: text("event_type").notNull(),
+  fingerprint: text("fingerprint").notNull().unique(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+  sourceTimestamp: timestamp("source_timestamp", { withTimezone: true }),
+  observedAt: timestamp("observed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("reference_timeline_event_observed_idx").on(table.eventKey, table.observedAt)]);
+
+export const sourceConflicts = pgTable("source_conflicts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventKey: text("event_key").references(() => eventsRef.eventKey, { onDelete: "cascade" }),
+  entityType: text("entity_type").notNull(),
+  entityKey: text("entity_key").notNull(),
+  field: text("field").notNull(),
+  officialSource: text("official_source").notNull(),
+  officialValue: jsonb("official_value").notNull(),
+  conflictingSource: text("conflicting_source").notNull(),
+  conflictingValue: jsonb("conflicting_value").notNull(),
+  status: text("status").notNull().default("open"),
+  detectedAt: timestamp("detected_at", { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+}, (table) => [index("source_conflicts_event_entity_idx").on(table.eventKey, table.entityKey)]);
+
+export const orgLiveSubscriptions = pgTable("org_live_subscriptions", {
+  orgId: uuid("org_id").primaryKey().references(() => organizations.id, { onDelete: "cascade" }),
+  enabled: boolean("enabled").notNull().default(true),
+  fallbackCredentialId: uuid("fallback_credential_id").references(() => dataSourceCredentials.id, { onDelete: "set null" }),
+  lastEvaluatedAt: timestamp("last_evaluated_at", { withTimezone: true }),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  ...timestamps,
+});
+
+export const orgLiveAlerts = pgTable("org_live_alerts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  eventKey: text("event_key").references(() => eventsRef.eventKey),
+  type: text("type").notNull(),
+  severity: text("severity").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  dedupeKey: text("dedupe_key").notNull(),
+  sourceRefs: jsonb("source_refs").$type<Array<{source:string;id:string;observedAt:string}>>().notNull().default([]),
+  aiRunId: uuid("ai_run_id"),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  createdAt: timestamps.createdAt,
+}, (table) => [uniqueIndex("org_live_alerts_org_dedupe_uq").on(table.orgId, table.dedupeKey),index("org_live_alerts_org_created_idx").on(table.orgId, table.createdAt)]);
 
 export const orgActiveContext = pgTable("org_active_context", {
   orgId: uuid("org_id")
@@ -751,6 +893,118 @@ export const pricingPlans = pgTable("pricing_plans", {
   ...timestamps,
 });
 
+export const planEntitlementVersions = pgTable("plan_entitlement_versions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  planCode: text("plan_code").notNull().references(() => pricingPlans.code),
+  version: integer("version").notNull(),
+  effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
+  managedAllowanceUsd: numeric("managed_allowance_usd", { precision: 12, scale: 6 }).notNull(),
+  billingOwnerType: text("billing_owner_type").$type<"user"|"org">().notNull().default("org"),
+  includedCredits: numeric("included_credits", { precision: 12, scale: 6 }).notNull().default("0"),
+  serviceMultiplier: numeric("service_multiplier", { precision: 8, scale: 4 }).notNull().default("1.25"),
+  fairUse: jsonb("fair_use").$type<Record<string, unknown>>().notNull().default({}),
+  contextTokenLimit: integer("context_token_limit").notNull(),
+  agentStepLimit: integer("agent_step_limit").notNull(),
+  cadIterationLimit: integer("cad_iteration_limit").notNull(),
+  cadConcurrentJobs: integer("cad_concurrent_jobs").notNull(),
+  codeAnalysisMb: integer("code_analysis_mb").notNull(),
+  jobPriority: integer("job_priority").notNull(),
+  featureFlags: jsonb("feature_flags").$type<Record<string, boolean>>().notNull(),
+  changeNotice: text("change_notice").notNull(),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamps.createdAt,
+}, (table) => [uniqueIndex("plan_entitlement_version_uq").on(table.planCode, table.version)]);
+
+export const orgPlanPeriods = pgTable("org_plan_periods", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  planCode: text("plan_code").notNull().references(() => pricingPlans.code),
+  entitlementVersionId: uuid("entitlement_version_id").notNull().references(() => planEntitlementVersions.id),
+  periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+  periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+  managedAllowanceUsd: numeric("managed_allowance_usd", { precision: 12, scale: 6 }).notNull(),
+  providerCostUsedUsd: numeric("provider_cost_used_usd", { precision: 12, scale: 6 }).notNull().default("0"),
+  status: text("status").notNull(),
+  createdAt: timestamps.createdAt,
+}, (table) => [uniqueIndex("org_plan_period_org_start_uq").on(table.orgId, table.periodStart)]);
+
+export const platformMarginConfig = pgTable("platform_margin_config", {
+  id: text("id").primaryKey().default("default"),
+  stripeFeePercent: numeric("stripe_fee_percent", { precision: 6, scale: 4 }).notNull().default("2.9"),
+  stripeFixedFeeUsd: numeric("stripe_fixed_fee_usd", { precision: 8, scale: 4 }).notNull().default("0.30"),
+  infrastructureAllocationUsd: numeric("infrastructure_allocation_usd", { precision: 10, scale: 2 }).notNull().default("2"),
+  supportReservePercent: numeric("support_reserve_percent", { precision: 6, scale: 2 }).notNull().default("5"),
+  serviceMultiplier: numeric("service_multiplier", { precision: 8, scale: 4 }).notNull().default("1.25"),
+  grossMarginWarningPercent: numeric("gross_margin_warning_percent", { precision: 6, scale: 2 }).notNull().default("10"),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  updatedAt: timestamps.updatedAt,
+});
+
+export const billingAccounts = pgTable("billing_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerType: text("owner_type").$type<"user"|"org">().notNull(),
+  ownerUserId: uuid("owner_user_id").references(() => users.id, { onDelete: "cascade" }),
+  ownerOrgId: uuid("owner_org_id").references(() => organizations.id, { onDelete: "cascade" }),
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  status: text("status").notNull().default("active"),
+  ...timestamps,
+});
+export const billingSubscriptions = pgTable("billing_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  billingAccountId: uuid("billing_account_id").notNull().references(() => billingAccounts.id, { onDelete: "cascade" }),
+  planCode: text("plan_code").notNull().references(() => pricingPlans.code),
+  entitlementVersionId: uuid("entitlement_version_id").notNull().references(() => planEntitlementVersions.id),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  stripePriceId: text("stripe_price_id"),
+  status: text("status").notNull(),
+  currentPeriodStart: timestamp("current_period_start", { withTimezone: true }).notNull(),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }).notNull(),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  termsSnapshot: jsonb("terms_snapshot").$type<Record<string, unknown>>().notNull(),
+  ...timestamps,
+});
+export const creditWallets = pgTable("credit_wallets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  billingAccountId: uuid("billing_account_id").notNull().unique().references(() => billingAccounts.id, { onDelete: "cascade" }),
+  includedBalance: numeric("included_balance", { precision: 12, scale: 6 }).notNull().default("0"),
+  purchasedBalance: numeric("purchased_balance", { precision: 12, scale: 6 }).notNull().default("0"),
+  giftedBalance: numeric("gifted_balance", { precision: 12, scale: 6 }).notNull().default("0"),
+  paygEnabled: boolean("payg_enabled").notNull().default(false),
+  paygMonthlyCapUsd: numeric("payg_monthly_cap_usd", { precision: 12, scale: 2 }).notNull().default("0"),
+  ...timestamps,
+});
+export const creditLedger = pgTable("credit_ledger", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  billingAccountId: uuid("billing_account_id").notNull().references(() => billingAccounts.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  credits: numeric("credits", { precision: 12, scale: 6 }).notNull(),
+  providerCostUsd: numeric("provider_cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),
+  serviceMultiplier: numeric("service_multiplier", { precision: 8, scale: 4 }).notNull().default("1.25"),
+  bucket: text("bucket").notNull(),
+  referenceId: text("reference_id"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamps.createdAt,
+}, (table) => [index("credit_ledger_account_created_idx").on(table.billingAccountId, table.createdAt)]);
+export const orgMemberFundingPolicies = pgTable("org_member_funding_policies", {
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  allowIndividualFunding: boolean("allow_individual_funding").notNull().default(false),
+  enabledBy: uuid("enabled_by").notNull().references(() => users.id),
+  updatedAt: timestamps.updatedAt,
+}, (table) => [primaryKey({ columns: [table.orgId, table.userId] })]);
+export const trialGrants = pgTable("trial_grants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  billingAccountId: uuid("billing_account_id").notNull().references(() => billingAccounts.id, { onDelete: "cascade" }),
+  planCode: text("plan_code").notNull().references(() => pricingPlans.code),
+  creditsCap: numeric("credits_cap", { precision: 12, scale: 6 }).notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  autoChargeConsent: boolean("auto_charge_consent").notNull().default(false),
+  grantedBy: uuid("granted_by").notNull().references(() => users.id),
+  createdAt: timestamps.createdAt,
+}, (table) => [uniqueIndex("trial_grants_account_once_uq").on(table.billingAccountId)]);
+
 export const orgUsagePolicies = pgTable("org_usage_policies", {
   orgId: uuid("org_id")
     .primaryKey()
@@ -814,7 +1068,7 @@ export const agentThreads = pgTable(
   "agent_threads",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
     createdBy: uuid("created_by").notNull().references(() => users.id),
     scope: text("scope").notNull(),
     title: text("title").notNull(),
@@ -830,6 +1084,7 @@ export const agentMessages = pgTable(
     threadId: uuid("thread_id")
       .notNull()
       .references(() => agentThreads.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
     authorUserId: uuid("author_user_id").references(() => users.id),
     role: text("role").notNull(),
     content: text("content").notNull(),
@@ -910,6 +1165,185 @@ export const agentContextUsage = pgTable("agent_context_usage", {
   createdAt: timestamps.createdAt,
 });
 
+export const aiRuns = pgTable("ai_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  threadId: uuid("thread_id").references(() => agentThreads.id, { onDelete: "set null" }),
+  capability: text("capability").notNull(),
+  status: text("status").notNull().default("running"),
+  privacyScope: text("privacy_scope").notNull(),
+  provider: text("provider"),
+  model: text("model"),
+  requestId: text("request_id").notNull().unique(),
+  input: jsonb("input").$type<Record<string, unknown>>().notNull().default({}),
+  output: jsonb("output").$type<Record<string, unknown>>(),
+  contextSources: jsonb("context_sources").$type<Array<{type:string;id:string;classification:string}>>().notNull().default([]),
+  usageEventId: uuid("usage_event_id").references(() => aiUsageEvents.id),
+  billingOwnerType: text("billing_owner_type").$type<"user"|"org">(),
+  billingOwnerId: uuid("billing_owner_id"),
+  entitlementSnapshot: jsonb("entitlement_snapshot").$type<Record<string, unknown>>(),
+  allowanceBucket: text("allowance_bucket"),
+  providerCostUsd: numeric("provider_cost_usd", { precision: 12, scale: 6 }),
+  creditDebit: numeric("credit_debit", { precision: 12, scale: 6 }),
+  routingDecision: jsonb("routing_decision").$type<Record<string, unknown>>(),
+  error: text("error"),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamps.createdAt,
+});
+
+export const aiRunSteps = pgTable("ai_run_steps", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  runId: uuid("run_id").notNull().references(() => aiRuns.id, { onDelete: "cascade" }),
+  sequence: integer("sequence").notNull(),
+  kind: text("kind").notNull(),
+  toolName: text("tool_name"),
+  input: jsonb("input").$type<Record<string, unknown>>().notNull().default({}),
+  output: jsonb("output").$type<Record<string, unknown>>(),
+  provenance: jsonb("provenance").$type<Array<{type:string;id:string}>>().notNull().default([]),
+  createdAt: timestamps.createdAt,
+});
+
+export const aiArtifacts = pgTable("ai_artifacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  runId: uuid("run_id").notNull().references(() => aiRuns.id, { onDelete: "cascade" }),
+  threadId: uuid("thread_id").references(() => agentThreads.id, { onDelete: "set null" }),
+  parentArtifactId: uuid("parent_artifact_id").references((): AnyPgColumn => aiArtifacts.id, { onDelete: "set null" }),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  version: integer("version").notNull().default(1),
+  content: jsonb("content").$type<Record<string, unknown>>().notNull(),
+  claimProvenance: jsonb("claim_provenance").$type<Array<{claim:string;classification:string;sourceIds:string[]}>>().notNull().default([]),
+  createdAt: timestamps.createdAt,
+});
+
+export const artifactLinks = pgTable("artifact_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  fromArtifactId: uuid("from_artifact_id").notNull().references(() => aiArtifacts.id, { onDelete: "cascade" }),
+  toArtifactId: uuid("to_artifact_id").notNull().references(() => aiArtifacts.id, { onDelete: "cascade" }),
+  relation: text("relation").notNull(),
+  createdAt: timestamps.createdAt,
+});
+
+export const cadConnections = pgTable("cad_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  platform: text("platform").$type<"onshape"|"fusion360">().notNull(),
+  executionMode: text("execution_mode").$type<"hosted"|"local">().notNull(),
+  label: text("label").notNull(),
+  encryptedCredentials: text("encrypted_credentials"),
+  scopes: text("scopes").array().notNull().default([]),
+  status: text("status").notNull().default("disconnected"),
+  externalAccountRef: text("external_account_ref"),
+  lastTestedAt: timestamp("last_tested_at", { withTimezone: true }),
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [index("cad_connections_org_user_idx").on(table.orgId, table.userId)]);
+
+export const cadJobs = pgTable("cad_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  threadId: uuid("thread_id").references(() => agentThreads.id, { onDelete: "set null" }),
+  connectionId: uuid("connection_id").references(() => cadConnections.id, { onDelete: "set null" }),
+  executionMode: text("execution_mode").$type<"hosted"|"local">().notNull(),
+  platform: text("platform").$type<"onshape"|"fusion360"|"mock">().notNull(),
+  title: text("title").notNull(),
+  status: text("status").notNull().default("draft"),
+  brief: jsonb("brief").$type<Record<string, unknown>>().notNull(),
+  briefConfirmedAt: timestamp("brief_confirmed_at", { withTimezone: true }),
+  actionPlan: jsonb("action_plan").$type<Array<Record<string, unknown>>>().notNull().default([]),
+  documentRef: jsonb("document_ref").$type<Record<string, unknown>>(),
+  currentCheckpointId: uuid("current_checkpoint_id"),
+  cancelRequestedAt: timestamp("cancel_requested_at", { withTimezone: true }),
+  leaseOwner: text("lease_owner"),
+  leaseTokenHash: text("lease_token_hash"),
+  leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+  lastHeartbeatAt: timestamp("last_heartbeat_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [index("cad_jobs_org_updated_idx").on(table.orgId, table.updatedAt)]);
+
+export const cadJobSteps = pgTable("cad_job_steps", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id").notNull().references(() => cadJobs.id, { onDelete: "cascade" }),
+  sequence: integer("sequence").notNull(),
+  operation: text("operation").notNull(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  parameters: jsonb("parameters").$type<Record<string, unknown>>().notNull(),
+  status: text("status").notNull().default("planned"),
+  requiresApproval: boolean("requires_approval").notNull().default(true),
+  approvalStatus: text("approval_status").notNull().default("pending"),
+  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  progress: integer("progress").notNull().default(0),
+  output: jsonb("output").$type<Record<string, unknown>>(),
+  error: text("error"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamps.createdAt,
+}, (table) => [uniqueIndex("cad_job_steps_job_sequence_uq").on(table.jobId, table.sequence),uniqueIndex("cad_job_steps_idempotency_uq").on(table.idempotencyKey)]);
+
+export const cadArtifacts = pgTable("cad_artifacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id").notNull().references(() => cadJobs.id, { onDelete: "cascade" }),
+  stepId: uuid("step_id").references(() => cadJobSteps.id, { onDelete: "set null" }),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  version: integer("version").notNull().default(1),
+  parentArtifactId: uuid("parent_artifact_id"),
+  content: jsonb("content").$type<Record<string, unknown>>().notNull().default({}),
+  storageKey: text("storage_key"),
+  checksum: text("checksum").notNull(),
+  sourceRefs: jsonb("source_refs").$type<Array<{type:string;id:string}>>().notNull().default([]),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamps.createdAt,
+}, (table) => [index("cad_artifacts_org_job_idx").on(table.orgId, table.jobId)]);
+
+export const cadCheckpoints = pgTable("cad_checkpoints", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id").notNull().references(() => cadJobs.id, { onDelete: "cascade" }),
+  stepId: uuid("step_id").references(() => cadJobSteps.id, { onDelete: "set null" }),
+  externalVersionRef: text("external_version_ref"),
+  branchRef: text("branch_ref"),
+  topologyFingerprint: text("topology_fingerprint").notNull(),
+  topology: jsonb("topology").$type<Record<string, unknown>>().notNull(),
+  renderArtifactId: uuid("render_artifact_id").references(() => cadArtifacts.id, { onDelete: "set null" }),
+  humanEditDetected: boolean("human_edit_detected").notNull().default(false),
+  createdAt: timestamps.createdAt,
+});
+
+export const cadMechanisms = pgTable("cad_mechanisms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  description: text("description").notNull(),
+  requirements: jsonb("requirements").$type<Record<string, unknown>>().notNull().default({}),
+  sourceArtifactId: uuid("source_artifact_id").references(() => cadArtifacts.id, { onDelete: "set null" }),
+  version: integer("version").notNull().default(1),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  ...timestamps,
+}, (table) => [uniqueIndex("cad_mechanisms_org_name_version_uq").on(table.orgId, table.name, table.version)]);
+
+export const cadAuditEvents = pgTable("cad_audit_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id").references(() => cadJobs.id, { onDelete: "set null" }),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+  action: text("action").notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamps.createdAt,
+}, (table) => [index("cad_audit_org_created_idx").on(table.orgId, table.createdAt)]);
+
 export const stripeWebhookEvents = pgTable("stripe_webhook_events", {
   eventId: text("event_id").primaryKey(),
   type: text("type").notNull(),
@@ -917,6 +1351,88 @@ export const stripeWebhookEvents = pgTable("stripe_webhook_events", {
   error: text("error"),
   receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow().notNull(),
   processedAt: timestamp("processed_at", { withTimezone: true }),
+});
+
+export const cadRelayDevices = pgTable("cad_relay_devices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  machineName: text("machine_name").notNull(),
+  platform: text("platform").$type<"onshape"|"fusion360">().notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  scopes: text("scopes").array().notNull().default([]),
+  cliVersion: text("cli_version"),
+  status: text("status").notNull().default("paired"),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [index("cad_relay_devices_org_user_idx").on(table.orgId, table.userId)]);
+
+export const cadPairingCodes = pgTable("cad_pairing_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userCodeHash: text("user_code_hash").notNull().unique(),
+  pollTokenHash: text("poll_token_hash").notNull().unique(),
+  machineName: text("machine_name").notNull(),
+  cliVersion: text("cli_version").notNull(),
+  requestedPlatform: text("requested_platform"),
+  approvedOrgId: uuid("approved_org_id").references(() => organizations.id, { onDelete: "cascade" }),
+  approvedUserId: uuid("approved_user_id").references(() => users.id, { onDelete: "cascade" }),
+  deviceId: uuid("device_id").references(() => cadRelayDevices.id, { onDelete: "set null" }),
+  encryptedDeviceToken: text("encrypted_device_token"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamps.createdAt,
+});
+
+export const showcaseDecks = pgTable("showcase_decks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  theme: text("theme").notNull().default("impact"),
+  isDemo: boolean("is_demo").notNull().default(false),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  ...timestamps,
+}, (table) => [index("showcase_decks_org_updated_idx").on(table.orgId, table.updatedAt)]);
+
+export const showcaseSections = pgTable("showcase_sections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  deckId: uuid("deck_id").notNull().references(() => showcaseDecks.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  studentContent: text("student_content").notNull().default(""),
+  aiAssistedDraft: text("ai_assisted_draft"),
+  approvedContent: text("approved_content"),
+  evidenceRefs: jsonb("evidence_refs").$type<Array<{type:string;id:string;label:string}>>().notNull().default([]),
+  sortOrder: integer("sort_order").notNull(),
+  approvedBy: uuid("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [uniqueIndex("showcase_sections_deck_order_uq").on(table.deckId, table.sortOrder)]);
+
+export const showcaseShareTokens = pgTable("showcase_share_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  deckId: uuid("deck_id").notNull().references(() => showcaseDecks.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  allowedSectionIds: uuid("allowed_section_ids").array().notNull(),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  createdAt: timestamps.createdAt,
+});
+
+export const judgePracticeSessions = pgTable("judge_practice_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  deckId: uuid("deck_id").references(() => showcaseDecks.id, { onDelete: "set null" }),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  questions: jsonb("questions").$type<Array<{question:string;evidenceRefs:Array<{type:string;id:string}>}>>().notNull(),
+  responses: jsonb("responses").$type<Array<{question:string;response:string;reflection?:string}>>().notNull().default([]),
+  createdAt: timestamps.createdAt,
 });
 
 export const creditPacks = pgTable("credit_packs", {
@@ -999,6 +1515,8 @@ export const platformConnectors = pgTable("platform_connectors", {
   label: text("label").notNull(),
   endpoint: text("endpoint"),
   workspaceId: text("workspace_id"),
+  appId: text("app_id"),
+  bridgeUrl: text("bridge_url"),
   credentialCiphertext: text("credential_ciphertext"),
   credentialNonce: text("credential_nonce"),
   credentialAuthTag: text("credential_auth_tag"),
@@ -1007,8 +1525,37 @@ export const platformConnectors = pgTable("platform_connectors", {
   modelMappings: jsonb("model_mappings").$type<Record<string, string>>().notNull().default({}),
   meteringMode: text("metering_mode").notNull().default("unverified"),
   enabled: boolean("enabled").notNull().default(false),
+  featureFlagEnabled: boolean("feature_flag_enabled").notNull().default(false),
+  approvalReference: text("approval_reference"),
+  approvalDate: date("approval_date"),
+  approvalAcknowledged: boolean("approval_acknowledged").notNull().default(false),
+  healthVerifiedAt: timestamp("health_verified_at", { withTimezone: true }),
+  dailyQuota: integer("daily_quota").notNull().default(0),
   createdBy: uuid("created_by").notNull().references(() => users.id),
   ...timestamps,
+});
+
+export const base44UsageEvents = pgTable("base44_usage_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectorId: uuid("connector_id").notNull().references(() => platformConnectors.id, { onDelete: "cascade" }),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  requestId: text("request_id").notNull().unique(),
+  feature: text("feature").notNull(),
+  modelMapping: text("model_mapping").notNull(),
+  status: text("status").notNull(),
+  returnedUsage: jsonb("returned_usage").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamps.createdAt,
+}, (table) => [index("base44_usage_connector_created_idx").on(table.connectorId, table.createdAt)]);
+
+export const base44BridgeNonces = pgTable("base44_bridge_nonces", {
+  nonceHash: text("nonce_hash").primaryKey(),
+  connectorId: uuid("connector_id").notNull().references(() => platformConnectors.id, { onDelete: "cascade" }),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamps.createdAt,
 });
 
 export const orgProviderConfigs = pgTable(
@@ -1034,6 +1581,189 @@ export const orgProviderConfigs = pgTable(
   },
   (table) => [index("org_provider_configs_org_idx").on(table.orgId)],
 );
+
+export const orgApiBudgetPolicies = pgTable("org_api_budget_policies", {
+  orgId: uuid("org_id").primaryKey().references(() => organizations.id, { onDelete: "cascade" }),
+  dailySpendLimitUsd: numeric("daily_spend_limit_usd", { precision: 12, scale: 6 }),
+  monthlySpendLimitUsd: numeric("monthly_spend_limit_usd", { precision: 12, scale: 6 }),
+  dailyTokenLimit: integer("daily_token_limit"),
+  monthlyTokenLimit: integer("monthly_token_limit"),
+  warningThresholds: integer("warning_thresholds").array().notNull().default([50, 75, 90]),
+  enforceByoTokenLimits: boolean("enforce_byo_token_limits").notNull().default(true),
+  modelAllowlistEnabled: boolean("model_allowlist_enabled").notNull().default(false),
+  providerAllowlistEnabled: boolean("provider_allowlist_enabled").notNull().default(false),
+  killSwitch: boolean("kill_switch").notNull().default(false),
+  updatedBy: uuid("updated_by").notNull().references(() => users.id),
+  ...timestamps,
+});
+
+export const orgApiMemberLimits = pgTable(
+  "org_api_member_limits",
+  {
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    dailySpendLimitUsd: numeric("daily_spend_limit_usd", { precision: 12, scale: 6 }),
+    monthlySpendLimitUsd: numeric("monthly_spend_limit_usd", { precision: 12, scale: 6 }),
+    dailyTokenLimit: integer("daily_token_limit"),
+    monthlyTokenLimit: integer("monthly_token_limit"),
+    updatedBy: uuid("updated_by").notNull().references(() => users.id),
+    updatedAt: timestamps.updatedAt,
+  },
+  (table) => [primaryKey({ columns: [table.orgId, table.userId] })],
+);
+
+export const orgApiFeatureLimits = pgTable(
+  "org_api_feature_limits",
+  {
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    feature: text("feature").notNull(),
+    dailySpendLimitUsd: numeric("daily_spend_limit_usd", { precision: 12, scale: 6 }),
+    monthlySpendLimitUsd: numeric("monthly_spend_limit_usd", { precision: 12, scale: 6 }),
+    dailyTokenLimit: integer("daily_token_limit"),
+    monthlyTokenLimit: integer("monthly_token_limit"),
+    updatedBy: uuid("updated_by").notNull().references(() => users.id),
+    updatedAt: timestamps.updatedAt,
+  },
+  (table) => [primaryKey({ columns: [table.orgId, table.feature] })],
+);
+
+export const orgApiModelLimits = pgTable(
+  "org_api_model_limits",
+  {
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    allowed: boolean("allowed").notNull().default(true),
+    dailySpendLimitUsd: numeric("daily_spend_limit_usd", { precision: 12, scale: 6 }),
+    monthlySpendLimitUsd: numeric("monthly_spend_limit_usd", { precision: 12, scale: 6 }),
+    dailyTokenLimit: integer("daily_token_limit"),
+    monthlyTokenLimit: integer("monthly_token_limit"),
+    updatedBy: uuid("updated_by").notNull().references(() => users.id),
+    updatedAt: timestamps.updatedAt,
+  },
+  (table) => [primaryKey({ columns: [table.orgId, table.provider, table.model] })],
+);
+
+export const platformApiSafetyCaps = pgTable("platform_api_safety_caps", {
+  tier: billingTier("tier").primaryKey(),
+  maxDailySpendUsd: numeric("max_daily_spend_usd", { precision: 12, scale: 6 }),
+  maxMonthlySpendUsd: numeric("max_monthly_spend_usd", { precision: 12, scale: 6 }),
+  maxDailyTokens: integer("max_daily_tokens"),
+  maxMonthlyTokens: integer("max_monthly_tokens"),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  updatedAt: timestamps.updatedAt,
+});
+
+export const apiUsageDenials = pgTable(
+  "api_usage_denials",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    feature: text("feature").notNull(),
+    provider: text("provider"),
+    model: text("model"),
+    estimatedCostUsd: numeric("estimated_cost_usd", { precision: 12, scale: 6 }).notNull(),
+    estimatedTokens: integer("estimated_tokens").notNull(),
+    reason: text("reason").notNull(),
+    requestId: text("request_id").notNull().unique(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("api_usage_denials_org_created_idx").on(table.orgId, table.createdAt)],
+);
+
+export const budgetPolicyAudit = pgTable(
+  "budget_policy_audit",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+    action: text("action").notNull(),
+    before: jsonb("before").$type<Record<string, unknown> | null>(),
+    after: jsonb("after").$type<Record<string, unknown> | null>(),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("budget_policy_audit_org_created_idx").on(table.orgId, table.createdAt)],
+);
+
+export type DisplayWidget = {
+  type:
+    | "next_match"
+    | "prediction"
+    | "strategy"
+    | "robot_readiness"
+    | "event_status"
+    | "scouting_coverage"
+    | "alerts"
+    | "team_intel";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+export const displayBoards = pgTable(
+  "display_boards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    preset: text("preset").notNull(),
+    widgets: jsonb("widgets").$type<DisplayWidget[]>().notNull().default([]),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [uniqueIndex("display_boards_org_name_uq").on(table.orgId, table.name)],
+);
+
+export const displayTokens = pgTable(
+  "display_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    boardId: uuid("board_id").notNull().references(() => displayBoards.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    label: text("label").notNull(),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("display_tokens_board_idx").on(table.boardId)],
+);
+
+export const exportJobs = pgTable("export_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  requestedBy: uuid("requested_by").notNull().references(() => users.id),
+  scope: text("scope").$type<"team"|"private">().notNull(),
+  status: text("status").$type<"queued"|"running"|"completed"|"failed"|"cancelled"|"expired">().notNull().default("queued"),
+  domains: text("domains").array().notNull(),
+  filters: jsonb("filters").$type<{eventKey?:string;from?:string;to?:string;excelBom?:boolean}>().notNull().default({}),
+  progress: integer("progress").notNull().default(0),
+  objectKey: text("object_key"),
+  encryptedArchive: text("encrypted_archive"),
+  downloadTokenHash: text("download_token_hash"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  cancelRequestedAt: timestamp("cancel_requested_at", { withTimezone: true }),
+  error: text("error"),
+  sizeBytes: integer("size_bytes"),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [index("export_jobs_org_created_idx").on(table.orgId, table.createdAt)]);
+
+export const exportAuditEvents = pgTable("export_audit_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  jobId: uuid("job_id").references(() => exportJobs.id, { onDelete: "set null" }),
+  actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+  action: text("action").notNull(),
+  reason: text("reason"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamps.createdAt,
+}, (table) => [index("export_audit_org_created_idx").on(table.orgId, table.createdAt)]);
 
 export type ScoutFieldDefinition = {
   key: string;

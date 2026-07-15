@@ -5,6 +5,7 @@ export default function QuickActions({ orgId }: { orgId: string }) {
     ["S","SCOUT NOW","Open offline form",`/scouting?orgId=${orgId}`],
     ["I","TEAM INTEL","Lookup or compare",`/intel?orgId=${orgId}`],
     ["A","VANTAGE AGENT","Plan with context",`/chat?orgId=${orgId}`],
+    ["C","AI CAD BUILDER","Strategy to verified geometry",`/cad?orgId=${orgId}`],
   ];
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

@@ -1,0 +1,2 @@
+import { getShowcasePool } from "@vantage/db/showcase";
+export async function GET(request:Request){try{const token=new URL(request.url).searchParams.get("token");if(!token)throw new Error("Showcase token is required");const result=await getShowcasePool().query<{snapshot:unknown}>(`SELECT get_showcase_snapshot($1) AS snapshot`,[token]);return Response.json(result.rows[0]?.snapshot??null);}catch(error){return Response.json({error:error instanceof Error?error.message:"Showcase unavailable"},{status:400});}}

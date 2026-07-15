@@ -38,13 +38,14 @@ export async function POST(request: Request) {
       scope?: "private" | "team"; title?: string; message?: string;
     };
     if (!body.orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
-    const data = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
+    const orgId=body.orgId;
+    const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const repository = new AgentRepository(client);
       const membership = await client.query("SELECT 1 FROM memberships WHERE org_id=$1", [body.orgId]);
       if (!membership.rowCount) throw new Error("Organization access denied");
       if (body.action === "thread") {
         if (!body.scope || !body.title) throw new Error("Thread scope and title are required");
-        return { threadId: await repository.createThread(session.user.id, { orgId: body.orgId, scope: body.scope, title: body.title }) };
+        return { threadId: await repository.createThread(session.user.id, { orgId, scope: body.scope, title: body.title }) };
       }
       if (!body.threadId || !body.message?.trim() || !body.scope) throw new Error("Thread, scope, and message are required");
       return repository.sendMessage({

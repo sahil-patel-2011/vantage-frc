@@ -62,7 +62,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   }
   return (
     <main className="intel-app">
-      <header className="intel-header"><div><span className="eyebrow">VANTAGE / TEAM ADMIN</span><h1>Membership control</h1></div><a href={`/intel?orgId=${orgId}`}>Open Intel →</a></header>
+      <header className="intel-header"><div><span className="eyebrow">VANTAGE / TEAM ADMIN</span><h1>Membership control</h1></div><nav className="intel-actions"><a href={`/team/security?orgId=${orgId}`}>Sign-in + 2FA</a><a href={`/team/data?orgId=${orgId}`}>Live data</a><a href={`/team/budgets?orgId=${orgId}`}>API budgets</a><a href={`/exports?orgId=${orgId}`}>Export</a><a href={`/showcase?orgId=${orgId}`}>Showcase</a><a href={`/intel?orgId=${orgId}`}>Intel →</a></nav></header>
       <section className="admin-grid">
         <form className="intel-panel" onSubmit={invite}>
           <span className="eyebrow">INVITE A SPECIFIC EMAIL</span>

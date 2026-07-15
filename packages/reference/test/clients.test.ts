@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { StatboticsClient } from "../src/statbotics-client";
 import { TbaClient } from "../src/tba-client";
+import { tbaPollingInterval } from "../src/live-coordinator";
+import { resolveSourceConflict } from "../src/source-registry";
 
 describe("TbaClient", () => {
   it("sends validators and accepts a 304 without parsing a body", async () => {
@@ -27,6 +29,21 @@ describe("TbaClient", () => {
     });
     expect(fetcher).toHaveBeenCalledOnce();
   });
+  it("deduplicates concurrent conditional requests",async()=>{
+    const fetcher=vi.fn(async()=>{await Promise.resolve();return new Response(JSON.stringify([{key:"2026test"}]),{status:200,headers:{"content-type":"application/json",etag:'"one"'}});});
+    const client=new TbaClient({authKey:"redacted-fixture",fetch:fetcher});
+    const [first,second]=await Promise.all([client.get("events/2026"),client.get("events/2026")]);
+    expect(first).toEqual(second);expect(fetcher).toHaveBeenCalledOnce();
+  });
+});
+
+describe("live ingestion policy",()=>{
+ it("accelerates active events and keeps official values on conflict",()=>{
+  expect(tbaPollingInterval({eventActive:true,eventWithinDays:0,sourceHealthy:true})).toBe(30_000);
+  expect(tbaPollingInterval({eventActive:false,eventWithinDays:null,sourceHealthy:true})).toBe(6*60*60_000);
+  const resolved=resolveSourceConflict({value:{red:120},source:"tba"},{value:{red:125},source:"qualitative-web"});
+  expect(resolved.value).toEqual({red:120});expect(resolved.conflict).not.toBeNull();
+ });
 });
 
 describe("StatboticsClient", () => {

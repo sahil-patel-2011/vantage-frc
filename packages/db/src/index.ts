@@ -13,6 +13,14 @@ export type RequestContext = {
   orgId?: string;
 };
 
+/** Commits an intentional audit/denial row, then surfaces the public error. */
+export class CommitAndThrowError extends Error {
+  constructor(readonly publicError: Error) {
+    super(publicError.message);
+    this.name = "CommitAndThrowError";
+  }
+}
+
 /**
  * The only request-path transaction entry point. SET LOCAL ensures pooled
  * connections cannot leak identity between requests.
@@ -30,6 +38,10 @@ export async function withRls<T>(
     await client.query("COMMIT");
     return result;
   } catch (error) {
+    if (error instanceof CommitAndThrowError) {
+      await client.query("COMMIT");
+      throw error.publicError;
+    }
     await client.query("ROLLBACK");
     throw error;
   } finally {

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   detectDisagreements,
   evaluateFormula,
+  importScoutData,
+  smallTeamAssignments,
   validatePayload,
   type SchemaDefinition,
 } from "../src";
@@ -52,5 +54,41 @@ describe("coach value formulas", () => {
         { auto: 3, teleop: 5 },
       ),
     ).toBe(11);
+  });
+});
+
+describe("interoperable scouting fallback", () => {
+  it("imports ScoutingPASS-style CSV with explicit provenance", () => {
+    const [record] = importScoutData({
+      content: "event,match,team,auto,notes\n2026test,qm1,254,3,\"clean, fast\"\n",
+      format: "csv",
+      source: "scoutingpass",
+      sourceFile: "export.csv",
+      now: new Date("2026-07-15T00:00:00Z"),
+    });
+    expect(record).toMatchObject({
+      eventKey: "2026test",
+      matchKey: "qm1",
+      teamKey: "frc254",
+      payload: { auto: "3", notes: "clean, fast" },
+      provenance: { format: "csv", source: "scoutingpass", sourceFile: "export.csv" },
+    });
+  });
+
+  it("round-trips a QR-safe JSON payload", () => {
+    const encoded = Buffer.from(
+      JSON.stringify({ eventKey: "2026test", teamKey: "frc111", payload: { score: 8 } }),
+    ).toString("base64url");
+    expect(importScoutData({ content: `vantage://${encoded}`, format: "qr" })[0]?.payload).toEqual({
+      score: 8,
+    });
+  });
+
+  it("rotates limited scouts across every team assignment", () => {
+    const assignments = smallTeamAssignments({
+      scouts: ["u1", "u2"],
+      matches: [{ matchKey: "qm1", teamKeys: ["frc1", "frc2", "frc3"] }],
+    });
+    expect(assignments.map(({ userId }) => userId)).toEqual(["u1", "u2", "u1"]);
   });
 });

@@ -1,14 +1,15 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
 import { boundedContext, type ChatAdapter, type ContextItem } from "./index";
+import { AIOrchestrator,type ContextSource } from "./orchestrator";
+import { createVantageToolRegistry } from "./tools";
 
 export class AgentRepository {
   constructor(private readonly client: PoolClient) {}
 
-  async createThread(userId: string, input: { orgId?: string; scope: "private" | "team"; title: string }) {
+  async createThread(userId: string, input: { orgId: string; scope: "private" | "team"; title: string }) {
     const result = await this.client.query<{ id: string }>(
       `INSERT INTO agent_threads(org_id,created_by,scope,title) VALUES($1,$2,$3,$4) RETURNING id`,
-      [input.scope === "team" ? input.orgId ?? null : null, userId, input.scope, input.title.trim()],
+      [input.orgId, userId, input.scope, input.title.trim()],
     );
     return result.rows[0]!.id;
   }
@@ -156,28 +157,17 @@ export class AgentRepository {
     requestId: string;
   }) {
     const message = await this.client.query<{ id: string }>(
-      `INSERT INTO agent_messages(thread_id,author_user_id,role,content,explicitly_shared)
-       VALUES($1,$2,'user',$3,$4) RETURNING id`,
-      [input.threadId, input.userId, input.message, input.scope === "team"],
+      `INSERT INTO agent_messages(thread_id,org_id,author_user_id,role,content,explicitly_shared)
+       VALUES($1,$2,$3,'user',$4,$5) RETURNING id`,
+      [input.threadId,input.orgId, input.userId, input.message, input.scope === "team"],
     );
-    const context = await this.retrieveContext(input.userId, input.orgId);
-    const text = await meteredAI({
-      client: this.client,
-      orgId: input.orgId,
-      userId: input.userId,
-      feature: "agent_chat",
-      requestId: input.requestId,
-      estimatedCostUsd: 0.01,
-      metadata: { threadId: input.threadId, scope: input.scope },
-      invoke: async () => {
-        const result = await input.adapter.complete({ message: input.message, context: context.items });
-        return { value: result.text, ...result, model: input.adapter.model, provider: input.adapter.provider };
-      },
-    });
+    const context = await this.retrieveContext(input.userId, input.scope === "team" ? input.orgId : undefined);
+    const orchestrated=await new AIOrchestrator(this.client,createVantageToolRegistry()).run({orgId:input.orgId,userId:input.userId,threadId:input.threadId,requestId:input.requestId,capability:"chat",privacyScope:input.scope,message:input.message,adapter:input.adapter,contextSources:context.items.map(item=>({...item,classification:item.type==="private_memory"?"private_memory":"team_memory"} as ContextSource)),tokenBudget:context.estimatedTokens+1000});
+    const text=orchestrated.text;
     const assistant = await this.client.query<{ id: string }>(
-      `INSERT INTO agent_messages(thread_id,role,content,explicitly_shared,provider,model)
-       VALUES($1,'assistant',$2,$3,$4,$5) RETURNING id`,
-      [input.threadId, text, input.scope === "team", input.adapter.provider, input.adapter.model],
+      `INSERT INTO agent_messages(thread_id,org_id,role,content,explicitly_shared,provider,model)
+       VALUES($1,$2,'assistant',$3,$4,$5,$6) RETURNING id`,
+      [input.threadId,input.orgId, text, input.scope === "team", input.adapter.provider, input.adapter.model],
     );
     await this.client.query(
       `INSERT INTO agent_context_usage(thread_id,message_id,user_id,org_id,source_refs,token_count)

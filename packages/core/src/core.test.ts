@@ -7,6 +7,11 @@ import {
   localMailbox,
   OTP_POLICY,
   requireOrg,
+  evaluateOrgAuthAccess,
+  validateOrgAuthPolicy,
+  totpAt,
+  verifyTotp,
+  isTotpReplay,
 } from ".";
 import { createOrganizationAsPlatformAdmin } from "./membership";
 import type { PoolClient } from "@neondatabase/serverless";
@@ -25,6 +30,23 @@ describe("core tenancy helpers", () => {
     expect(invite.token).not.toBe(invite.tokenHash);
     expect(hashInviteToken(invite.token)).toBe(invite.tokenHash);
     expect(invite.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+});
+
+describe("organization authentication and MFA",()=>{
+  const relaxed={allowPassword:false,allowGoogle:true,allowEmailOtp:true,mfaPolicy:"optional" as const,rememberedDeviceDays:14};
+  it("keeps method and MFA policy organization-specific",()=>{
+    expect(evaluateOrgAuthAccess(relaxed,"google",false,false).allowed).toBe(true);
+    expect(evaluateOrgAuthAccess({...relaxed,allowGoogle:false},"google",true,true).reason).toBe("sign_in_method_not_allowed");
+    expect(evaluateOrgAuthAccess({...relaxed,mfaPolicy:"required"},"email_otp",true,false).reason).toBe("mfa_step_up_required");
+    expect(evaluateOrgAuthAccess({...relaxed,mfaPolicy:"required"},"email_otp",true,true).allowed).toBe(true);
+    expect(()=>validateOrgAuthPolicy({...relaxed,allowGoogle:false,allowEmailOtp:false})).toThrow("At least one");
+  });
+  it("verifies authenticator windows and identifies replay",()=>{
+    const secret="JBSWY3DPEHPK3PXP",at=1_700_000_000_000,current=totpAt(secret,at);
+    expect(verifyTotp(secret,current.code,at)).toBe(current.step);
+    expect(isTotpReplay(current.step,current.step)).toBe(true);
+    expect(verifyTotp(secret,"000000",at)).toBeNull();
   });
 });
 

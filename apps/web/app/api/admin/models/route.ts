@@ -1,14 +1,16 @@
 import { createKms, decryptSecret, encryptSecret } from "@vantage/billing";
-import { auth } from "@vantage/core";
+import { assertPlatformPrivilegeMfa,auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { HttpBase44BridgeTransport } from "@vantage/agent";
 import { headers } from "next/headers";
 
-async function adminWork<T>(work: Parameters<typeof withRls<T>>[1]) {
+async function adminWork<T>(work: Parameters<typeof withRls<T>>[1],requireMfa=false) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("Authentication required");
   return withRls({ userId: session.user.id }, async (client) => {
     const result = await client.query("SELECT is_platform_admin() AS value");
     if (!result.rows[0]?.value) throw new Error("Platform administrator access required");
+    if(requireMfa)await assertPlatformPrivilegeMfa(client,{userId:session.user.id,sessionId:session.session.id});
     return work(client);
   });
 }
@@ -28,8 +30,10 @@ export async function GET() {
             created_at AS "createdAt" FROM platform_provider_keys ORDER BY created_at DESC`),
           client.query(`SELECT code,name,monthly_price_usd AS "monthlyPriceUsd",
             included_allowance_usd AS "includedAllowanceUsd",features,active FROM pricing_plans ORDER BY monthly_price_usd`),
-          client.query(`SELECT id,kind,label,endpoint,workspace_id AS "workspaceId",
-            model_mappings AS "modelMappings",metering_mode AS "meteringMode",enabled
+          client.query(`SELECT id,kind,label,app_id AS "appId",bridge_url AS "bridgeUrl",
+            model_mappings AS "modelMappings",metering_mode AS "meteringMode",enabled,feature_flag_enabled AS "featureFlagEnabled",
+            approval_reference AS "approvalReference",approval_date AS "approvalDate",approval_acknowledged AS "approvalAcknowledged",
+            health_verified_at AS "healthVerifiedAt",daily_quota AS "dailyQuota"
             FROM platform_connectors ORDER BY created_at DESC`),
         ]);
         return { models: models.rows, keys: keys.rows, plans: plans.rows, connectors: connectors.rows };
@@ -100,17 +104,21 @@ export async function POST(request: Request) {
           ? await encryptSecret(String(body.credential), createKms())
           : null;
         await client.query(
-          `INSERT INTO platform_connectors(kind,label,endpoint,workspace_id,credential_ciphertext,
+          `INSERT INTO platform_connectors(kind,label,app_id,bridge_url,credential_ciphertext,
             credential_nonce,credential_auth_tag,encrypted_dek,kms_key_id,model_mappings,
-            metering_mode,enabled,created_by)
-           VALUES('base44',$1,NULLIF($2,''),NULLIF($3,''),$4,$5,$6,$7,$8,$9::jsonb,$10,false,$11)`,
-          [body.label,body.endpoint,body.workspaceId,encrypted?.ciphertext ?? null,
+            metering_mode,enabled,feature_flag_enabled,approval_reference,approval_date,approval_acknowledged,daily_quota,created_by)
+           VALUES('base44',$1,NULLIF($2,''),NULLIF($3,''),$4,$5,$6,$7,$8,$9::jsonb,'external_opaque',false,false,NULLIF($10,''),$11,$12,$13,$14)`,
+          [body.label,body.appId,body.bridgeUrl,encrypted?.ciphertext ?? null,
             encrypted?.nonce ?? null,encrypted?.authTag ?? null,encrypted?.encryptedDek ?? null,
             encrypted?.kmsKeyId ?? null,JSON.stringify(body.modelMappings ?? {}),
-            body.meteringMode ?? "unverified",user.rows[0]!.id],
+            body.approvalReference,body.approvalDate??null,Boolean(body.approvalAcknowledged),Number(body.dailyQuota??0),user.rows[0]!.id],
         );
+      } else if(body.action==="testBase44"){
+        const row=(await client.query<{app_id:string;bridge_url:string;credential_ciphertext:string;credential_nonce:string;credential_auth_tag:string;encrypted_dek:string;kms_key_id:string;model_mappings:Record<string,string>}>(`SELECT app_id,bridge_url,credential_ciphertext,credential_nonce,credential_auth_tag,encrypted_dek,kms_key_id,model_mappings FROM platform_connectors WHERE id=$1 AND kind='base44'`,[body.id])).rows[0];if(!row)throw new Error("Base44 bridge configuration not found");const secret=await decryptSecret({ciphertext:row.credential_ciphertext,nonce:row.credential_nonce,authTag:row.credential_auth_tag,encryptedDek:row.encrypted_dek,kmsKeyId:row.kms_key_id},createKms()),mapping=Object.values(row.model_mappings)[0];if(!mapping)throw new Error("At least one documented model mapping is required");const transport=new HttpBase44BridgeTransport();const payload={requestId:crypto.randomUUID(),orgId:"platform-health-test",userId:user.rows[0]!.id,feature:"chat" as const,modelDisplay:mapping,messages:[{role:"user" as const,content:"Return the word healthy."}],maxTokens:8,nonce:crypto.randomUUID(),issuedAt:new Date().toISOString()};const response=await transport.invoke({bridgeUrl:row.bridge_url,appId:row.app_id,signingSecret:secret,timeoutMs:10_000},payload);if((response.status??500)>=400)throw new Error(`Base44 bridge health test returned ${response.status}`);await client.query(`UPDATE platform_connectors SET health_verified_at=now(),updated_at=now() WHERE id=$1`,[body.id]);
+      } else if(body.action==="enableBase44"){
+        const updated=await client.query(`UPDATE platform_connectors SET enabled=true,feature_flag_enabled=true,updated_at=now() WHERE id=$1 AND kind='base44' AND approval_acknowledged=true AND approval_reference IS NOT NULL AND approval_date IS NOT NULL AND health_verified_at IS NOT NULL RETURNING id`,[body.id]);if(!updated.rowCount)throw new Error("Base44 requires written approval acknowledgement and a passing health test before enablement");
       } else throw new Error("Unknown configuration action");
-    });
+    },true);
     return Response.json({ success: true });
   } catch (error) {
     return errorResponse(error);

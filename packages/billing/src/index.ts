@@ -10,6 +10,7 @@ import {
   KMSClient
 } from "@aws-sdk/client-kms";
 import type { PoolClient } from "@neondatabase/serverless";
+import { CommitAndThrowError } from "@vantage/db";
 import Stripe from "stripe";
 
 export class CreditCapExceededError extends Error {
@@ -42,9 +43,246 @@ export type MeteredAIInput<T> = {
   feature: string;
   requestId: string;
   estimatedCostUsd: number;
+  estimatedPromptTokens?: number;
+  estimatedCompletionTokens?: number;
+  provider?: string;
+  model?: string;
   metadata?: Record<string, unknown>;
+  billingOwner?: { type: "user" | "org"; id: string };
   invoke: (keySource: "platform" | "byo") => Promise<UsageReceipt<T>>;
 };
+type LockedCreditWallet={accountId:string;included:number;purchased:number;gifted:number;serviceMultiplier:number;entitlementSnapshot:Record<string,unknown>;planCode:string};
+async function lockCreditWallet<T>(input:MeteredAIInput<T>,keySource:"platform"|"byo"):Promise<LockedCreditWallet|null>{
+  if(!input.billingOwner)return null;const owner=input.billingOwner;
+  const result=await input.client.query<{accountId:string;included:string;purchased:string;gifted:string;serviceMultiplier:string;termsSnapshot:Record<string,unknown>;planCode:string}>(`SELECT a.id AS "accountId",w.included_balance AS included,w.purchased_balance AS purchased,w.gifted_balance AS gifted,
+    v.service_multiplier AS "serviceMultiplier",s.terms_snapshot AS "termsSnapshot",s.plan_code AS "planCode"
+    FROM billing_accounts a JOIN billing_subscriptions s ON s.billing_account_id=a.id AND s.status IN ('active','trialing')
+    JOIN plan_entitlement_versions v ON v.id=s.entitlement_version_id JOIN credit_wallets w ON w.billing_account_id=a.id
+    WHERE (($1='user' AND a.owner_user_id=$2) OR ($1='org' AND a.owner_org_id=$2))
+      AND s.current_period_start<=now() AND s.current_period_end>now() FOR UPDATE OF w`,[owner.type,owner.id]);
+  const row=result.rows[0];if(!row)return null;const featureFlags=(row.termsSnapshot.featureFlags??{}) as Record<string,boolean>;if(featureFlags[input.feature]===false)throw new Error("This feature is not included in the billing owner's entitlement snapshot");
+  const wallet={accountId:row.accountId,included:Number(row.included),purchased:Number(row.purchased),gifted:Number(row.gifted),serviceMultiplier:Number(row.serviceMultiplier),entitlementSnapshot:row.termsSnapshot,planCode:row.planCode};
+  if(keySource==="platform"&&input.estimatedCostUsd*wallet.serviceMultiplier>wallet.included+wallet.purchased+wallet.gifted)throw new CreditCapExceededError();return wallet;
+}
+export function allocateCreditDebit(input:{included:number;purchased:number;gifted:number;providerCostUsd:number;serviceMultiplier:number}){let remaining=input.providerCostUsd*input.serviceMultiplier;const fromIncluded=Math.min(input.included,remaining);remaining-=fromIncluded;const fromPurchased=Math.min(input.purchased,remaining);remaining-=fromPurchased;const fromGifted=Math.min(input.gifted,remaining);remaining-=fromGifted;if(remaining>1e-9)throw new CreditCapExceededError();return{debit:input.providerCostUsd*input.serviceMultiplier,fromIncluded,fromPurchased,fromGifted,bucket:fromIncluded>0&&fromPurchased+fromGifted===0?"included":fromPurchased>0&&fromIncluded+fromGifted===0?"purchased":fromGifted>0&&fromIncluded+fromPurchased===0?"gifted":"mixed"};}
+
+const numberOrNull = (value: unknown) =>
+  value === null || value === undefined ? null : Number(value);
+
+async function enforceApiBudgets<T>(
+  input: MeteredAIInput<T>,
+  tier: string,
+  keySource: "platform" | "byo",
+) {
+  const [policyResult, memberResult, featureResult, modelResult, usageResult, safetyResult] =
+    await Promise.all([
+      input.client.query(
+        `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit,
+          enforce_byo_token_limits,model_allowlist_enabled,provider_allowlist_enabled,kill_switch
+         FROM org_api_budget_policies WHERE org_id=$1`,
+        [input.orgId],
+      ),
+      input.client.query(
+        `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit
+         FROM org_api_member_limits WHERE org_id=$1 AND user_id=$2`,
+        [input.orgId, input.userId],
+      ),
+      input.client.query(
+        `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit
+         FROM org_api_feature_limits WHERE org_id=$1 AND feature=$2`,
+        [input.orgId, input.feature],
+      ),
+      input.client.query(
+        `SELECT allowed,daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit
+         FROM org_api_model_limits WHERE org_id=$1 AND provider=$2 AND model IN ($3,'*')
+         ORDER BY CASE WHEN model=$3 THEN 0 ELSE 1 END LIMIT 1`,
+        [input.orgId, input.provider ?? "", input.model ?? ""],
+      ),
+      input.client.query(
+        `SELECT
+          COALESCE(sum(cost_usd) FILTER(WHERE created_at>=date_trunc('day',now())),0)::text AS org_day_cost,
+          COALESCE(sum(cost_usd),0)::text AS org_month_cost,
+          COALESCE(sum(total_tokens) FILTER(WHERE created_at>=date_trunc('day',now())),0)::text AS org_day_tokens,
+          COALESCE(sum(total_tokens),0)::text AS org_month_tokens,
+          COALESCE(sum(cost_usd) FILTER(WHERE user_id=$2 AND created_at>=date_trunc('day',now())),0)::text AS member_day_cost,
+          COALESCE(sum(cost_usd) FILTER(WHERE user_id=$2),0)::text AS member_month_cost,
+          COALESCE(sum(total_tokens) FILTER(WHERE user_id=$2 AND created_at>=date_trunc('day',now())),0)::text AS member_day_tokens,
+          COALESCE(sum(total_tokens) FILTER(WHERE user_id=$2),0)::text AS member_month_tokens,
+          COALESCE(sum(cost_usd) FILTER(WHERE feature=$3 AND created_at>=date_trunc('day',now())),0)::text AS feature_day_cost,
+          COALESCE(sum(cost_usd) FILTER(WHERE feature=$3),0)::text AS feature_month_cost,
+          COALESCE(sum(total_tokens) FILTER(WHERE feature=$3 AND created_at>=date_trunc('day',now())),0)::text AS feature_day_tokens,
+          COALESCE(sum(total_tokens) FILTER(WHERE feature=$3),0)::text AS feature_month_tokens,
+          COALESCE(sum(cost_usd) FILTER(WHERE provider=$4 AND model=$5 AND created_at>=date_trunc('day',now())),0)::text AS model_day_cost,
+          COALESCE(sum(cost_usd) FILTER(WHERE provider=$4 AND model=$5),0)::text AS model_month_cost,
+          COALESCE(sum(total_tokens) FILTER(WHERE provider=$4 AND model=$5 AND created_at>=date_trunc('day',now())),0)::text AS model_day_tokens,
+          COALESCE(sum(total_tokens) FILTER(WHERE provider=$4 AND model=$5),0)::text AS model_month_tokens
+         FROM ai_usage_events WHERE org_id=$1 AND created_at>=date_trunc('month',now())`,
+        [input.orgId, input.userId, input.feature, input.provider ?? "", input.model ?? ""],
+      ),
+      input.client.query(
+        `SELECT max_daily_spend_usd AS daily_spend_limit_usd,
+          max_monthly_spend_usd AS monthly_spend_limit_usd,max_daily_tokens AS daily_token_limit,
+          max_monthly_tokens AS monthly_token_limit FROM platform_api_safety_caps WHERE tier=$1`,
+        [tier],
+      ),
+    ]);
+  const policy = policyResult.rows[0] as Record<string, unknown> | undefined;
+  const member = memberResult.rows[0] as Record<string, unknown> | undefined;
+  const feature = featureResult.rows[0] as Record<string, unknown> | undefined;
+  const model = modelResult.rows[0] as Record<string, unknown> | undefined;
+  const usage = (usageResult.rows[0] ?? {}) as Record<string, unknown>;
+  const safety = safetyResult.rows[0] as Record<string, unknown> | undefined;
+  const estimatedTokens =
+    keySource === "byo" && policy?.enforce_byo_token_limits === false
+      ? 0
+      : (input.estimatedPromptTokens ?? 0) + (input.estimatedCompletionTokens ?? 0);
+  const deny = async (reason: string) => {
+    await input.client.query(
+      `INSERT INTO api_usage_denials(org_id,user_id,feature,provider,model,estimated_cost_usd,
+        estimated_tokens,reason,request_id,metadata)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
+       ON CONFLICT(request_id) DO NOTHING`,
+      [
+        input.orgId, input.userId, input.feature, input.provider ?? null, input.model ?? null,
+        input.estimatedCostUsd, estimatedTokens, reason, input.requestId,
+        JSON.stringify(input.metadata ?? {}),
+      ],
+    );
+    throw new CommitAndThrowError(new BudgetLimitExceededError(reason));
+  };
+  if (policy?.kill_switch === true) await deny("org.kill_switch");
+  if (
+    (policy?.model_allowlist_enabled === true || policy?.provider_allowlist_enabled === true) &&
+    (!input.provider || !input.model || !model)
+  )
+    await deny("model.not_allowed");
+  if (model?.allowed === false) await deny("model.not_allowed");
+  const createLayer = (
+    name: string,
+    limit: Record<string, unknown> | undefined,
+    prefix: string,
+  ): LayeredBudget | null =>
+    limit
+      ? {
+          name,
+          dailySpendLimit: numberOrNull(limit.daily_spend_limit_usd),
+          monthlySpendLimit: numberOrNull(limit.monthly_spend_limit_usd),
+          dailyTokenLimit: numberOrNull(limit.daily_token_limit),
+          monthlyTokenLimit: numberOrNull(limit.monthly_token_limit),
+          dailySpendUsed: Number(usage[`${prefix}_day_cost`] ?? 0),
+          monthlySpendUsed: Number(usage[`${prefix}_month_cost`] ?? 0),
+          dailyTokensUsed: Number(usage[`${prefix}_day_tokens`] ?? 0),
+          monthlyTokensUsed: Number(usage[`${prefix}_month_tokens`] ?? 0),
+        }
+      : null;
+  const layers = [
+    createLayer("platform", safety, "org"),
+    createLayer("org", policy, "org"),
+    createLayer("member", member, "member"),
+    createLayer("feature", feature, "feature"),
+    createLayer("model", model, "model"),
+  ].filter((value): value is LayeredBudget => value !== null);
+  const violation = findBudgetViolation(layers, input.estimatedCostUsd, estimatedTokens);
+  if (violation) await deny(violation);
+}
+
+export class BudgetLimitExceededError extends Error {
+  constructor(readonly reason: string) {
+    super(`API budget limit reached (${reason}).`);
+    this.name = "BudgetLimitExceededError";
+  }
+}
+
+async function emitBudgetWarnings(client: PoolClient, orgId: string) {
+  const result = await client.query<{
+    warningThresholds: number[];
+    dailySpendLimit: string | null;
+    monthlySpendLimit: string | null;
+    dailyTokenLimit: number | null;
+    monthlyTokenLimit: number | null;
+    dailySpend: string;
+    monthlySpend: string;
+    dailyTokens: string;
+    monthlyTokens: string;
+  }>(
+    `SELECT p.warning_thresholds AS "warningThresholds",
+      p.daily_spend_limit_usd AS "dailySpendLimit",p.monthly_spend_limit_usd AS "monthlySpendLimit",
+      p.daily_token_limit AS "dailyTokenLimit",p.monthly_token_limit AS "monthlyTokenLimit",
+      COALESCE(sum(a.cost_usd) FILTER(WHERE a.created_at>=date_trunc('day',now())),0)::text AS "dailySpend",
+      COALESCE(sum(a.cost_usd),0)::text AS "monthlySpend",
+      COALESCE(sum(a.total_tokens) FILTER(WHERE a.created_at>=date_trunc('day',now())),0)::text AS "dailyTokens",
+      COALESCE(sum(a.total_tokens),0)::text AS "monthlyTokens"
+     FROM org_api_budget_policies p LEFT JOIN ai_usage_events a
+       ON a.org_id=p.org_id AND a.created_at>=date_trunc('month',now())
+     WHERE p.org_id=$1 GROUP BY p.org_id`,
+    [orgId],
+  );
+  const row = result.rows[0];
+  if (!row) return;
+  const ratios = [
+    row.dailySpendLimit ? Number(row.dailySpend) / Number(row.dailySpendLimit) : 0,
+    row.monthlySpendLimit ? Number(row.monthlySpend) / Number(row.monthlySpendLimit) : 0,
+    row.dailyTokenLimit ? Number(row.dailyTokens) / row.dailyTokenLimit : 0,
+    row.monthlyTokenLimit ? Number(row.monthlyTokens) / row.monthlyTokenLimit : 0,
+  ];
+  const percent = Math.floor(Math.max(...ratios) * 100);
+  const threshold = [...(Array.isArray(row.warningThresholds) ? row.warningThresholds : [50, 75, 90])].sort((a, b) => b - a).find((value) => percent >= value);
+  if (!threshold) return;
+  const elapsedDays = Math.max(1, new Date().getUTCDate());
+  const dailyRate = Number(row.monthlySpend) / elapsedDays;
+  const projectedExhaustionDays =
+    row.monthlySpendLimit && dailyRate > 0
+      ? Math.max(0, (Number(row.monthlySpendLimit) - Number(row.monthlySpend)) / dailyRate)
+      : null;
+  await client.query(
+    `INSERT INTO notifications(user_id,org_id,type,payload)
+     SELECT m.user_id,$1,$2,$3::jsonb FROM memberships m
+     WHERE m.org_id=$1 AND m.role IN ('owner','admin') AND NOT EXISTS(
+       SELECT 1 FROM notifications n WHERE n.user_id=m.user_id AND n.org_id=$1
+        AND n.type=$2 AND n.created_at>=date_trunc('day',now())
+     )`,
+    [
+      orgId,
+      `api_budget.warning.${threshold}`,
+      JSON.stringify({
+        threshold,
+        currentPercent: percent,
+        projectedExhaustionDays,
+        delivery: ["in_app", "email"],
+      }),
+    ],
+  );
+}
+
+export type LayeredBudget = {
+  name: string;
+  dailySpendLimit: number | null;
+  monthlySpendLimit: number | null;
+  dailyTokenLimit: number | null;
+  monthlyTokenLimit: number | null;
+  dailySpendUsed: number;
+  monthlySpendUsed: number;
+  dailyTokensUsed: number;
+  monthlyTokensUsed: number;
+};
+
+export function findBudgetViolation(
+  budgets: LayeredBudget[],
+  estimatedCostUsd: number,
+  estimatedTokens: number,
+) {
+  for (const budget of budgets) {
+    if (budget.dailySpendLimit !== null && budget.dailySpendUsed + estimatedCostUsd > budget.dailySpendLimit)
+      return `${budget.name}.daily_spend`;
+    if (budget.monthlySpendLimit !== null && budget.monthlySpendUsed + estimatedCostUsd > budget.monthlySpendLimit)
+      return `${budget.name}.monthly_spend`;
+    if (budget.dailyTokenLimit !== null && budget.dailyTokensUsed + estimatedTokens > budget.dailyTokenLimit)
+      return `${budget.name}.daily_tokens`;
+    if (budget.monthlyTokenLimit !== null && budget.monthlyTokensUsed + estimatedTokens > budget.monthlyTokenLimit)
+      return `${budget.name}.monthly_tokens`;
+  }
+  return null;
+}
 
 /**
  * Must be called inside the same transaction established by withRls().
@@ -74,7 +312,10 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       [input.orgId]
     );
     if (!key.rowCount) throw new Error("Free organizations must configure a BYO AI key");
-  } else {
+  }
+  const creditWallet = await lockCreditWallet(input, keySource);
+  await enforceApiBudgets(input, account.tier, keySource);
+  if (keySource !== "byo") {
     const totals = await input.client.query<{ used: string; grants: string }>(
       `SELECT
          COALESCE((SELECT SUM(cost_usd) FROM ai_usage_events
@@ -111,6 +352,19 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       JSON.stringify(input.metadata ?? {})
     ]
   );
+  if(creditWallet&&keySource==="platform"){
+    const allocation=allocateCreditDebit({...creditWallet,providerCostUsd:receipt.costUsd});
+    await input.client.query(`UPDATE credit_wallets SET included_balance=included_balance-$2,purchased_balance=purchased_balance-$3,gifted_balance=gifted_balance-$4,updated_at=now() WHERE billing_account_id=$1`,[creditWallet.accountId,allocation.fromIncluded,allocation.fromPurchased,allocation.fromGifted]);
+    await input.client.query(`INSERT INTO credit_ledger(billing_account_id,kind,credits,provider_cost_usd,service_multiplier,bucket,reference_id,metadata) VALUES($1,'ai_debit',$2,$3,$4,$5,$6,$7::jsonb)`,[creditWallet.accountId,-allocation.debit,receipt.costUsd,creditWallet.serviceMultiplier,allocation.bucket,input.requestId,JSON.stringify({orgId:input.orgId,userId:input.userId,feature:input.feature,planCode:creditWallet.planCode})]);
+  }
+  if (keySource !== "byo") {
+    await input.client.query(
+      `UPDATE org_plan_periods SET provider_cost_used_usd=provider_cost_used_usd+$2
+       WHERE org_id=$1 AND status='active' AND period_start<=now() AND period_end>now()`,
+      [input.orgId, receipt.costUsd],
+    );
+  }
+  await emitBudgetWarnings(input.client, input.orgId);
   return receipt.value;
 }
 
@@ -281,6 +535,26 @@ export function evaluateManagedUsage(input: {
     return { allowed: false, bucket: "blocked" as const, reason: "spend_cap" };
   return { allowed: true, bucket: "payg" as const };
 }
+
+export type PlanEntitlement={
+  planCode:"free"|"managed_20"|"managed_50";
+  managedAllowanceUsd:number;
+  contextTokenLimit:number;
+  agentStepLimit:number;
+  cadIterationLimit:number;
+  cadConcurrentJobs:number;
+  codeAnalysisMb:number;
+  jobPriority:number;
+  featureFlags:Record<string,boolean>;
+};
+export function evaluateEntitlement(input:{entitlement:PlanEntitlement;feature:string;managedProviderCostUsedUsd:number;estimatedManagedCostUsd:number;keySource:"platform"|"byo"|"local"}){
+  if(!input.entitlement.featureFlags[input.feature])return{allowed:false as const,reason:"feature_not_in_plan" as const,remainingAllowanceUsd:Math.max(0,input.entitlement.managedAllowanceUsd-input.managedProviderCostUsedUsd)};
+  const remaining=Math.max(0,input.entitlement.managedAllowanceUsd-input.managedProviderCostUsedUsd);
+  if(input.keySource!=="platform")return{allowed:true as const,bucket:"external_provider" as const,remainingAllowanceUsd:remaining};
+  if(input.estimatedManagedCostUsd>remaining)return{allowed:false as const,reason:"managed_allowance_exhausted" as const,remainingAllowanceUsd:remaining};
+  return{allowed:true as const,bucket:"managed_allowance" as const,remainingAllowanceUsd:remaining-input.estimatedManagedCostUsd};
+}
+export function isPlanPeriodActive(period:{periodStart:Date;periodEnd:Date;status:string},now=new Date()){return period.status==="active"&&period.periodStart<=now&&period.periodEnd>now;}
 
 /** Creates a Stripe checkout only when an admin-configured Price ID exists. */
 export async function createPlanCheckout(

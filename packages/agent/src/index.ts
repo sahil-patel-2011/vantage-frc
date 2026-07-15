@@ -61,7 +61,7 @@ export function routeModel(models: ModelConfig[], request: RouteRequest) {
 }
 
 export type ContextItem = {
-  type: "private_memory" | "team_memory" | "module_data";
+  type: "private_memory" | "team_memory" | "module_data" | "module_fact" | "artifact" | "task";
   id: string;
   content: string;
   importance: number;
@@ -105,3 +105,6 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
 
 export { AgentRepository } from "./repository";
 export * from "./providers";
+export * from "./orchestrator";
+export * from "./tools";
+export * from "./coding-assistant";
