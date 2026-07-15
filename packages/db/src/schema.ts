@@ -43,7 +43,7 @@ export const billingTier = pgEnum("billing_tier", [
   "team",
   "enterprise",
 ]);
-export const keySource = pgEnum("key_source", ["platform", "byo", "local"]);
+export const keySource = pgEnum("key_source", ["platform", "byo", "local", "local_cli"]);
 export const scoutSchemaType = pgEnum("scout_schema_type", ["match", "pit"]);
 export const scoutConfidence = pgEnum("scout_confidence", [
   "high",
