@@ -390,7 +390,7 @@ export async function loadDashboardSnapshot(
       links: [
         { href: "/scouting", label: "Scout", detail: "Open assigned form" },
         { href: "/strategy", label: "Strategize", detail: "Run match what-if" },
-        { href: "/display", label: "Display", detail: "Prepare pit board" },
+        { href: "/messages", label: "Messages", detail: "Team chat & DMs" },
         { href: "/code", label: "Code", detail: "Review robot checks" },
       ],
     });

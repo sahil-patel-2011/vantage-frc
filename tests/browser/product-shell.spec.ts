@@ -15,7 +15,7 @@ test.beforeEach(async ({ context }) => {
 test("dashboard home is decluttered and exposes customize controls", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Customize" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit Home Screen" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Show secondary metrics" })).toBeVisible();
   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
   await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible();
@@ -32,7 +32,8 @@ test("dashboard editor can enter edit mode and show widget catalog", async ({ pa
   await expect(page.locator(".dash-editor-bar")).toBeVisible();
   await expect(page.getByRole("button", { name: /Add · Next match|On board · Next match/ })).toBeVisible();
   await expect(page.getByTestId("dash-preview")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Reset default" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Reset" })).toBeVisible();
+  await expect(page.getByTestId("dash-open-library")).toBeVisible();
   await page.getByTestId("dash-preview").evaluate((node) => (node as HTMLButtonElement).click());
   await expect(page.getByTestId("dash-customize")).toBeVisible();
 });

@@ -135,7 +135,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "quick_actions",
     label: "Quick actions",
-    description: "Shortcuts into scout, strategy, display, and code",
+    description: "Shortcuts into scout, strategy, messages, and code",
     defaultW: 4,
     defaultH: 3,
     minW: 3,

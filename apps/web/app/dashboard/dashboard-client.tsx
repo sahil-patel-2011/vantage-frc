@@ -12,6 +12,7 @@ import {
   type DashboardWidgetType,
 } from "../../lib/dashboard/catalog";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
+import { Icon } from "../../components/app-shell";
 import { countdownLabel, DashboardWidgetView } from "./widgets";
 import "react-grid-layout/css/styles.css";
 
@@ -34,6 +35,21 @@ type BoardState = {
 
 const POLL_MS = 30_000;
 
+const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" | "bolt" | "bell" | "grid" | "stats" | "target" | "clipboard" | "gear" | "display" | "chat">> = {
+  next_match: "swords",
+  robot_readiness: "cube",
+  prediction_summary: "bolt",
+  alerts: "bell",
+  quick_actions: "grid",
+  recent_result: "stats",
+  competition_snapshot: "target",
+  scouting_coverage: "clipboard",
+  sync_status: "gear",
+  pit_youtube: "display",
+  notifications: "bell",
+  ai_usage: "bolt",
+};
+
 function greeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -49,6 +65,7 @@ export default function DashboardClient() {
   const [widgets, setWidgets] = useState<Record<string, WidgetPayload>>({});
   const [context, setContext] = useState<Record<string, unknown>>({});
   const [editing, setEditing] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [scope, setScope] = useState<"personal" | "org">("personal");
   const [canShareOrg, setCanShareOrg] = useState(false);
   const [role, setRole] = useState<string | null>(null);
@@ -58,6 +75,7 @@ export default function DashboardClient() {
   const [saving, setSaving] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [meLoaded, setMeLoaded] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const orgId = me.orgId ?? "";
 
@@ -134,6 +152,11 @@ export default function DashboardClient() {
     return () => window.clearInterval(timer);
   }, [orgId, loadBoard, loadSnapshot]);
 
+  useEffect(() => {
+    document.body.classList.toggle("dash-editing", editing);
+    return () => document.body.classList.remove("dash-editing");
+  }, [editing]);
+
   const availableCatalog = useMemo(
     () => WIDGET_CATALOG.filter((entry) => canAccessWidget(entry.type, role)),
     [role],
@@ -145,6 +168,11 @@ export default function DashboardClient() {
         (type) => canAccessWidget(type, role) && !layout.some((item) => item.type === type),
       ),
     [layout, role],
+  );
+
+  const addableCatalog = useMemo(
+    () => availableCatalog.filter((entry) => !layout.some((item) => item.type === entry.type)),
+    [availableCatalog, layout],
   );
 
   function onLayoutChange(next: Layout) {
@@ -160,6 +188,7 @@ export default function DashboardClient() {
 
   function addWidget(type: DashboardWidgetType) {
     if (layout.some((item) => item.type === type)) {
+      setMessageKind("error");
       setMessage("That widget is already on the board.");
       return;
     }
@@ -180,6 +209,7 @@ export default function DashboardClient() {
       },
     ]);
     setMessage("");
+    setLibraryOpen(false);
   }
 
   function removeWidget(id: string) {
@@ -228,8 +258,9 @@ export default function DashboardClient() {
       setScope(data.scope);
       setLayout(data.layout);
       setEditing(false);
+      setLibraryOpen(false);
       setMessageKind("success");
-      setMessage(data.scope === "org" ? "Saved as team dashboard." : "Personal dashboard saved.");
+      setMessage(data.scope === "org" ? "Saved as team Home Screen." : "Personal Home Screen saved.");
     } finally {
       setSaving(false);
     }
@@ -238,6 +269,13 @@ export default function DashboardClient() {
   function cancelEditing() {
     setLayout(board?.layout ?? DEFAULT_DASHBOARD_LAYOUT);
     setEditing(false);
+    setLibraryOpen(false);
+    setMessage("");
+  }
+
+  function enterEditMode() {
+    setEditing(true);
+    setLibraryOpen(false);
     setMessage("");
   }
 
@@ -245,6 +283,7 @@ export default function DashboardClient() {
     if (!orgId) {
       setLayout(DEFAULT_DASHBOARD_LAYOUT);
       setEditing(false);
+      setLibraryOpen(false);
       setMessageKind("success");
       setMessage("Restored default home layout.");
       return;
@@ -270,6 +309,7 @@ export default function DashboardClient() {
       setMessageKind("success");
       setMessage("Reset to default home widgets.");
       setEditing(false);
+      setLibraryOpen(false);
     } finally {
       setSaving(false);
     }
@@ -299,11 +339,16 @@ export default function DashboardClient() {
   }));
 
   return (
-    <main className="dash-home">
+    <main className={`dash-home${editing ? " is-editing" : ""}`}>
       <header className="dash-home-header">
         <div>
           <span className="breadcrumbs">
             {me.orgName ?? "Workspace"} {me.teamNumber ? `· ${me.teamNumber}` : ""}
+            {board && !board.isDefault ? (
+              <span className="dash-scope-pill" data-scope={scope}>
+                {scope === "org" ? "Team layout" : "Personal layout"}
+              </span>
+            ) : null}
           </span>
           <h1>
             {greeting()}, {firstName}
@@ -318,8 +363,8 @@ export default function DashboardClient() {
                   : setupRequired
                     ? "Select an active event (and team number) to load live competition data."
                     : context.eventName
-                      ? `${String(context.eventName)} command center`
-                      : "Next match, readiness, and alerts — customize when you need more."}
+                      ? `${String(context.eventName)} — rearrange widgets like a Home Screen.`
+                      : "Next match, readiness, and alerts — Edit Home Screen to rearrange or add widgets."}
           </p>
         </div>
         <div className="dash-home-actions">
@@ -332,7 +377,9 @@ export default function DashboardClient() {
               <b>{countdownLabel(nextMatchData.scheduledTime as string | undefined)}</b>
             </a>
           ) : null}
-          {updatedAt && orgId ? <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small> : null}
+          {updatedAt && orgId && !editing ? (
+            <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small>
+          ) : null}
           {!orgId ? (
             <a className="app-button secondary" href="/workspace">
               Select workspace
@@ -347,37 +394,14 @@ export default function DashboardClient() {
           ) : null}
           {!editing ? (
             <button
-              className="app-button secondary"
+              className="app-button dash-edit-trigger"
               type="button"
               data-testid="dash-customize"
-              onClick={() => {
-                setEditing(true);
-                setMessage("");
-              }}
+              onClick={enterEditMode}
             >
-              Customize
+              Edit Home Screen
             </button>
-          ) : (
-            <>
-              <button className="app-button secondary" type="button" disabled={saving} onClick={() => void resetDefault()}>
-                Reset default
-              </button>
-              <button className="app-button secondary" type="button" disabled={saving} onClick={cancelEditing}>
-                Cancel
-              </button>
-              <button className="app-button secondary" type="button" data-testid="dash-preview" onClick={() => setEditing(false)}>
-                Preview
-              </button>
-              <button className="app-button" type="button" disabled={saving} onClick={() => void save("personal")}>
-                Save
-              </button>
-              {canShareOrg ? (
-                <button className="app-button secondary" type="button" disabled={saving} onClick={() => void save("org")}>
-                  Save for team
-                </button>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -403,7 +427,7 @@ export default function DashboardClient() {
               times, or readiness percentages.
             </p>
             <p className="dash-setup-note">
-              You can rearrange the board with Customize anytime — saving layouts requires a workspace.
+              You can rearrange the board anytime — saving layouts requires a workspace.
             </p>
           </div>
           <ol className="dash-setup-steps">
@@ -450,19 +474,20 @@ export default function DashboardClient() {
       ) : null}
 
       {editing ? (
-        <section
-          className="dash-editor-bar"
-          role="region"
-          aria-label="Widget catalog"
-        >
+        <section className="dash-editor-bar" role="region" aria-label="Widget catalog">
           <div className="dash-editor-copy">
             <strong>Edit mode</strong>
             <span>
-              Drag the handle to rearrange, resize from the corner, add or remove widgets, then save
-              {orgId ? (canShareOrg ? " personally or for the team." : " as your personal layout.") : ". Select a workspace to persist."}
+              Widgets jiggle like a Home Screen — drag to rearrange, pinch-resize from the corner, tap − to remove, then
+              Done to save
+              {orgId
+                ? canShareOrg
+                  ? " personally or for the team."
+                  : " as your personal layout."
+                : ". Select a workspace to persist."}
             </span>
           </div>
-          <div className="dash-catalog">
+          <div className="dash-catalog" data-testid="dash-catalog-inline">
             {availableCatalog.map((entry) => {
               const present = layout.some((item) => item.type === entry.type);
               return (
@@ -483,46 +508,69 @@ export default function DashboardClient() {
 
       <section
         ref={containerRef}
-        className={`dash-grid-wrap${editing ? " editing" : ""}`}
+        className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}`}
         aria-label="Dashboard widgets"
       >
         {mounted ? (
-          <GridLayout
-            className="dash-grid"
-            width={width}
-            layout={gridLayout}
-            gridConfig={{
-              cols: isNarrow ? 1 : 12,
-              rowHeight: 56,
-              margin: [14, 14],
-              containerPadding: [0, 0],
-            }}
-            dragConfig={{ enabled: editing, handle: ".dash-drag-handle" }}
-            resizeConfig={{ enabled: editing }}
-            compactor={verticalCompactor}
-            onLayoutChange={onLayoutChange}
-          >
-            {layout.map((item) => (
-              <div key={item.i} className="dash-grid-item">
-                {editing ? (
-                  <div className="dash-item-tools">
-                    <button type="button" className="dash-drag-handle" aria-label={`Move ${catalogEntry(item.type)?.label ?? item.type}`}>
-                      ⠿
-                    </button>
-                    <button type="button" aria-label={`Remove ${catalogEntry(item.type)?.label ?? item.type}`} onClick={() => removeWidget(item.i)}>
-                      ×
-                    </button>
+          layout.length === 0 && editing ? (
+            <button type="button" className="dash-empty-board" onClick={() => setLibraryOpen(true)}>
+              <span className="dash-empty-board-plus">+</span>
+              <strong>Add widgets</strong>
+              <span>Pick from the library to build your Home Screen</span>
+            </button>
+          ) : (
+            <GridLayout
+              className="dash-grid"
+              width={width}
+              layout={gridLayout}
+              gridConfig={{
+                cols: isNarrow ? 1 : 12,
+                rowHeight: 56,
+                margin: [12, 12],
+                containerPadding: [0, 0],
+              }}
+              dragConfig={{ enabled: editing, handle: ".dash-drag-surface" }}
+              resizeConfig={{ enabled: editing }}
+              compactor={verticalCompactor}
+              onLayoutChange={onLayoutChange}
+              onDragStart={() => setDragging(true)}
+              onDragStop={() => setDragging(false)}
+              onResizeStart={() => setDragging(true)}
+              onResizeStop={() => setDragging(false)}
+            >
+              {layout.map((item) => (
+                <div key={item.i} className={`dash-grid-item${editing ? " jiggling" : ""}`}>
+                  {editing ? (
+                    <div className="dash-item-tools">
+                      <button
+                        type="button"
+                        className="dash-remove-btn"
+                        aria-label={`Remove ${catalogEntry(item.type)?.label ?? item.type}`}
+                        onClick={() => removeWidget(item.i)}
+                      >
+                        −
+                      </button>
+                      <button
+                        type="button"
+                        className="dash-drag-handle dash-drag-surface"
+                        aria-label={`Move ${catalogEntry(item.type)?.label ?? item.type}`}
+                      >
+                        <span className="dash-drag-dots" aria-hidden="true" />
+                      </button>
+                    </div>
+                  ) : null}
+                  <div className={editing ? "dash-drag-surface dash-widget-hit" : "dash-widget-hit"}>
+                    <DashboardWidgetView
+                      type={item.type}
+                      payload={widgets[item.type]}
+                      orgId={orgId}
+                      tbaConfigured={tbaConfigured}
+                    />
                   </div>
-                ) : null}
-                <DashboardWidgetView
-                  type={item.type}
-                  payload={widgets[item.type]}
-                  orgId={orgId}
-                  tbaConfigured={tbaConfigured}
-                />
-              </div>
-            ))}
-          </GridLayout>
+                </div>
+              ))}
+            </GridLayout>
+          )
         ) : (
           <div className="dash-more-grid">
             {layout.slice(0, 5).map((item) => (
@@ -562,6 +610,95 @@ export default function DashboardClient() {
             </div>
           ) : null}
         </section>
+      ) : null}
+
+      {editing ? (
+        <div className="dash-edit-dock" role="toolbar" aria-label="Home Screen edit actions">
+          <button className="dash-dock-ghost" type="button" disabled={saving} onClick={cancelEditing}>
+            Cancel
+          </button>
+          <button className="dash-dock-ghost" type="button" disabled={saving} onClick={() => void resetDefault()}>
+            Reset
+          </button>
+          <button
+            className="dash-dock-add"
+            type="button"
+            data-testid="dash-open-library"
+            aria-pressed={libraryOpen}
+            onClick={() => setLibraryOpen((open) => !open)}
+          >
+            <span aria-hidden="true">+</span>
+            Widgets
+          </button>
+          <button
+            className="dash-dock-ghost"
+            type="button"
+            data-testid="dash-preview"
+            onClick={() => {
+              setEditing(false);
+              setLibraryOpen(false);
+            }}
+          >
+            Preview
+          </button>
+          <button className="dash-dock-done" type="button" disabled={saving} onClick={() => void save("personal")}>
+            {saving ? "Saving…" : "Done"}
+          </button>
+          {canShareOrg ? (
+            <button className="dash-dock-team" type="button" disabled={saving} onClick={() => void save("org")}>
+              Save for team
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {editing && libraryOpen ? (
+        <>
+          <button className="dash-library-scrim" type="button" aria-label="Close widget library" onClick={() => setLibraryOpen(false)} />
+          <aside className="dash-library-sheet" role="dialog" aria-modal="true" aria-labelledby="dash-library-title">
+            <header>
+              <div>
+                <h2 id="dash-library-title">Widget library</h2>
+                <p>Add one of each type. Drag widgets on the grid after placing them.</p>
+              </div>
+              <button type="button" className="soft-icon-btn" aria-label="Close" onClick={() => setLibraryOpen(false)}>
+                <Icon name="x" />
+              </button>
+            </header>
+            {addableCatalog.length === 0 ? (
+              <p className="dash-library-empty">Every available widget is already on your Home Screen.</p>
+            ) : (
+              <ul className="dash-library-grid">
+                {addableCatalog.map((entry) => {
+                  const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
+                  return (
+                    <li key={entry.type}>
+                      <button type="button" onClick={() => addWidget(entry.type)} title={entry.description}>
+                        <i>
+                          <Icon name={icon} />
+                        </i>
+                        <strong>{entry.label}</strong>
+                        <span>{entry.description}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <div className="dash-library-onboard">
+              <p>Already on board</p>
+              <div className="dash-catalog">
+                {availableCatalog
+                  .filter((entry) => layout.some((item) => item.type === entry.type))
+                  .map((entry) => (
+                    <button key={entry.type} type="button" disabled>
+                      On board · {entry.label}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          </aside>
+        </>
       ) : null}
     </main>
   );

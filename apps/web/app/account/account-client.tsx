@@ -48,6 +48,19 @@ export default function AccountClient() {
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get("tab");
+    if (
+      requested === "profile" ||
+      requested === "appearance" ||
+      requested === "notifications" ||
+      requested === "integrations"
+    ) {
+      setTab(requested);
+    }
+  }, []);
   const [orgId, setOrgId] = useState<string | null>(null);
 
   async function load() {

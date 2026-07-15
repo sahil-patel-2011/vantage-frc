@@ -128,6 +128,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   const [me, setMe] = useState<Me>({});
   const [unreadCount, setUnreadCount] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -158,6 +159,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
       if (event.key === "Escape") {
         setCommandOpen(false);
         setOpen(false);
+        setAccountMenuOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -215,20 +217,62 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
           <button className="soft-icon-btn" type="button" aria-label="Search" onClick={() => setCommandOpen(true)}>
             <Icon name="search" />
           </button>
-          <button
+          <a
             className="soft-icon-btn soft-notif"
-            type="button"
+            href="/account?tab=notifications"
             aria-label={unreadCount >= 1 ? `Notifications, ${unreadCount} unread` : "Notifications"}
           >
             <Icon name="bell" />
-            {unreadCount >= 1 ? <b>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
-          </button>
-          <a className="soft-avatar" href="/account" aria-label="Account">
-            {initial}
+            {unreadCount >= 1 ? <b data-count={unreadCount}>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
           </a>
+          <div className="soft-account-menu">
+            <button
+              className="soft-avatar soft-avatar-btn"
+              type="button"
+              aria-label="Account menu"
+              aria-expanded={accountMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => setAccountMenuOpen((value) => !value)}
+            >
+              {initial}
+            </button>
+            {accountMenuOpen ? (
+              <div className="soft-account-pop" role="menu" aria-label="Account">
+                <div className="soft-account-pop-head">
+                  <strong>{me.name ?? "Signed-in user"}</strong>
+                  <span>{me.email ?? "Account"}</span>
+                </div>
+                <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
+                  Account settings
+                </a>
+                <a role="menuitem" href="/account?tab=notifications" onClick={() => setAccountMenuOpen(false)}>
+                  Notifications
+                  {unreadCount >= 1 ? <b>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
+                </a>
+                <a role="menuitem" href={withOrg("/messages", orgId)} onClick={() => setAccountMenuOpen(false)}>
+                  Team messages
+                </a>
+                <a role="menuitem" href="/security" onClick={() => setAccountMenuOpen(false)}>
+                  Security
+                </a>
+                <button
+                  role="menuitem"
+                  type="button"
+                  className="soft-account-signout"
+                  disabled={signingOut}
+                  onClick={() => void handleSignOut()}
+                >
+                  {signingOut ? "Signing out…" : "Sign out"}
+                </button>
+              </div>
+            ) : null}
+          </div>
           <span className="soft-theme-slot">{themeControl}</span>
         </div>
       </header>
+      {accountMenuOpen ? (
+        <button className="soft-account-scrim" type="button" aria-label="Close account menu" onClick={() => setAccountMenuOpen(false)} />
+      ) : null}
 
       {open && <button className="soft-scrim" aria-label="Close navigation" onClick={() => setOpen(false)} />}
       <aside className={`soft-drawer ${open ? "open" : ""}`} aria-label="Product navigation">
