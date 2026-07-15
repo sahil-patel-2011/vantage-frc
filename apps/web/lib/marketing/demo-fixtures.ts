@@ -13,6 +13,24 @@ export const codeFixture = reviewFrcCode({
   content: codeSample,
 });
 
+/** Marketing teaching demo — flag → explain why → safer pattern. */
+export const codeLesson = {
+  flagged: "Timer.delay(0.02) inside periodic()",
+  why: "Blocks the robot thread, starving command scheduling, sensors, and safety checks for the full delay.",
+  betterApproach: "Track elapsed time with a timestamp or a stateful command—never sleep on the main loop.",
+  betterSample: `double now = Timer.getFPGATimestamp();
+if (now - lastStepSec >= 0.02) {
+  lastStepSec = now;
+  // advance stateful work
+}`,
+  capabilities: [
+    { id: "Review", detail: "Flag WPILib / vendor risks" },
+    { id: "Explain", detail: "Teach why a pattern fails" },
+    { id: "Suggest", detail: "Show safer habits" },
+    { id: "Assist", detail: "Build & debug with approval" },
+  ],
+};
+
 export const cadFixture = {
   title: "Serviceable intake guard",
   brief:
