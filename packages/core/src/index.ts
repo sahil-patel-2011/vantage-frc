@@ -15,6 +15,8 @@ import {
   getAuthCapabilities,
   isEmailProviderConfigured,
   isGoogleAuthConfigured,
+  resolveAuthBaseURL,
+  resolveAuthTrustedOrigins,
 } from "./access-policy";
 import {
   WAITLIST_ONLY_MESSAGE,
@@ -22,13 +24,27 @@ import {
 } from "./auth-access";
 
 const emailProvider = createEmailProvider();
-const googleConfigured = isGoogleAuthConfigured();
 const emailOtpEnabled = isEmailProviderConfigured();
-const authBaseURL = envOrFallback(process.env.BETTER_AUTH_URL, "http://localhost:3001");
+const authBaseURL = resolveAuthBaseURL();
+const authTrustedOrigins = resolveAuthTrustedOrigins(authBaseURL);
 const authSecret = envOrFallback(
-  process.env.BETTER_AUTH_SECRET,
+  process.env["BETTER_AUTH_SECRET"],
   "local-development-secret-change-me",
 );
+
+function googleSocialProvider() {
+  if (!isGoogleAuthConfigured()) return {};
+  return {
+    google: {
+      clientId: process.env["GOOGLE_CLIENT_ID"]!,
+      clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
+      // New Google users are gated by databaseHooks.user.create.before
+      // (platform owner / existing / pending invite only).
+      disableSignUp: false,
+      disableImplicitSignUp: false,
+    },
+  } as const;
+}
 
 export const OTP_POLICY = {
   expiresInSeconds: 300,
@@ -71,6 +87,7 @@ export const auth = betterAuth({
   session: {
     additionalFields: {
       authMethod: { type: "string", required: false, input: false, defaultValue: "unknown" },
+      email2faVerifiedAt: { type: "date", required: false, input: false },
     },
   },
   account: {
@@ -103,23 +120,17 @@ export const auth = betterAuth({
               : path.includes("callback/google")
                 ? "google"
                 : "unknown";
-          return { data: { ...session, authMethod } };
+          // Email-OTP as first factor already proved mailbox control; otherwise leave pending
+          // unless Resend is missing / emergency bypass disables enforcement.
+          const { isEmail2faEnforced } = await import("./email-2fa");
+          const email2faVerifiedAt =
+            authMethod === "email_otp" || !isEmail2faEnforced() ? new Date() : undefined;
+          return { data: { ...session, authMethod, ...(email2faVerifiedAt ? { email2faVerifiedAt } : {}) } };
         },
       },
     },
   },
-  socialProviders: googleConfigured
-    ? {
-        google: {
-          clientId: process.env.GOOGLE_CLIENT_ID!,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-          // New Google users are gated by databaseHooks.user.create.before
-          // (platform owner / existing / pending invite only).
-          disableSignUp: false,
-          disableImplicitSignUp: false,
-        },
-      }
-    : {},
+  socialProviders: googleSocialProvider(),
   plugins: [
     emailOTP({
       expiresIn: OTP_POLICY.expiresInSeconds,
@@ -162,6 +173,7 @@ export const auth = betterAuth({
   advanced: { database: { generateId: "uuid" } },
   secret: authSecret,
   baseURL: authBaseURL,
+  trustedOrigins: authTrustedOrigins,
 });
 
 export * from "./email";
@@ -169,6 +181,8 @@ export * from "./mfa";
 export * from "./access-policy";
 export * from "./auth-access";
 export * from "./bootstrap-owner";
+export * from "./onboarding";
+export * from "./email-2fa";
 export { getAuthCapabilities };
 
 export type OrgRole = "owner" | "admin" | "scout" | "viewer";

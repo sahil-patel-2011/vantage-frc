@@ -47,6 +47,12 @@ test("mobile product shell keeps Dynamic Island and hamburger", async ({ page })
   await expect(page.locator(".soft-profile-actions button")).toHaveText("Sign out");
 });
 
+test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {
+  // E2E fixture bypasses onboarding incomplete redirects and lands on dashboard.
+  await page.goto("/dashboard");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});
+
 test("account route renders settings tabs and notification badge stays empty at zero", async ({ page }) => {
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Account", exact: true }).first()).toBeVisible();

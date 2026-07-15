@@ -11,6 +11,8 @@ type AuthStatus = {
   publicSignup: false;
   databaseConfigured: boolean;
   emailOtpAvailable: boolean;
+  email2faEnforced: boolean;
+  email2faBypassEnabled: boolean;
   passwordSignInAvailable: boolean;
   googleSignInAvailable: boolean;
   emailOtpReason: string | null;
@@ -50,6 +52,8 @@ export default function SignInClient({
   const [showReset, setShowReset] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [code, setCode] = useState("");
+  const [verifyStep, setVerifyStep] = useState(false);
+  const [emailHint, setEmailHint] = useState("");
 
   useEffect(() => {
     void fetch("/api/auth/status")
@@ -64,7 +68,62 @@ export default function SignInClient({
     const params = new URLSearchParams(window.location.search);
     const error = params.get("error");
     if (error) setMessage(oauthErrorMessage(error));
-  }, []);
+    if (params.get("verify") === "1") {
+      setVerifyStep(true);
+      void fetch("/api/auth/email-2fa")
+        .then(async (response) => (response.ok ? await response.json() : null))
+        .then((data) => {
+          if (!data) return;
+          if (!data.requiresVerification) {
+            window.location.assign(nextPath);
+            return;
+          }
+          setEmailHint(data.emailHint ?? "");
+          void fetch("/api/auth/email-2fa", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "request" }),
+          }).then(async (response) => {
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) setMessage(payload.error ?? "Could not send verification email.");
+            else setMessage("Enter the code we emailed you to finish signing in.");
+          });
+        })
+        .catch(() => undefined);
+    }
+  }, [nextPath]);
+
+  async function continueAfterFirstFactor() {
+    const elev = await fetch("/api/auth/email-2fa");
+    if (!elev.ok) {
+      window.location.assign(nextPath);
+      return;
+    }
+    const data = await elev.json();
+    if (data.requiresVerification) {
+      setVerifyStep(true);
+      setEmailHint(data.emailHint ?? "");
+      const sent = await fetch("/api/auth/email-2fa", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "request" }),
+      });
+      const payload = await sent.json().catch(() => ({}));
+      if (!sent.ok) {
+        setMessage(payload.error ?? status.emailOtpReason ?? "Could not send verification email.");
+        return;
+      }
+      setMessage("Enter the code we emailed you to finish signing in.");
+      return;
+    }
+    const onboarding = await fetch("/api/onboarding");
+    if (onboarding.ok) {
+      const state = await onboarding.json();
+      window.location.assign(state.complete ? nextPath : "/onboarding");
+      return;
+    }
+    window.location.assign(nextPath);
+  }
 
   async function passwordSignIn(event: React.FormEvent) {
     event.preventDefault();
@@ -81,7 +140,7 @@ export default function SignInClient({
         body: JSON.stringify({ email, password }),
       });
       if (response.ok) {
-        window.location.assign(nextPath);
+        await continueAfterFirstFactor();
         return;
       }
       setMessage(WAITLIST_ONLY_MESSAGE);
@@ -95,12 +154,15 @@ export default function SignInClient({
     setBusy(true);
     setMessage("");
     try {
+      const callbackURL = status.email2faEnforced
+        ? `/signin?verify=1&next=${encodeURIComponent(nextPath)}`
+        : nextPath;
       const response = await fetch("/api/auth/sign-in/social", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           provider: "google",
-          callbackURL: nextPath,
+          callbackURL,
           errorCallbackURL: `/signin?next=${encodeURIComponent(nextPath)}`,
         }),
       });
@@ -110,6 +172,49 @@ export default function SignInClient({
         return;
       }
       setMessage(oauthErrorMessage(data.error ?? data.message ?? "signup_disabled") || WAITLIST_ONLY_MESSAGE);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyEmail2fa(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/auth/email-2fa", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "verify", code }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error ?? "That code is incorrect or expired.");
+        return;
+      }
+      const onboarding = await fetch("/api/onboarding");
+      if (onboarding.ok) {
+        const state = await onboarding.json();
+        window.location.assign(state.complete ? nextPath : "/onboarding");
+        return;
+      }
+      window.location.assign(nextPath);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendCode() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/auth/email-2fa", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "request" }),
+      });
+      const data = await response.json();
+      setMessage(response.ok ? "A new code is on the way." : data.error ?? "Could not resend code.");
     } finally {
       setBusy(false);
     }
@@ -154,6 +259,72 @@ export default function SignInClient({
 
   const googleReady = status.googleSignInAvailable || googleEnabled;
 
+  if (verifyStep) {
+    return (
+      <main className="signin-page">
+        <section className="signin-card" aria-labelledby="signin-title">
+          <div className="signin-brand">
+            <VantageLogo />
+          </div>
+          <h1 id="signin-title">Check your email</h1>
+          <p className="signin-sub">
+            Default 2FA: enter the one-time code we sent{emailHint ? ` to ${emailHint}` : ""}. Password or Google was
+            only the first step.
+          </p>
+          {!status.emailOtpAvailable ? (
+            <p className="signin-status" role="status">
+              {status.emailOtpReason ??
+                "Email 2FA requires RESEND_API_KEY and AUTH_EMAIL_FROM on the Vercel project."}
+            </p>
+          ) : (
+            <form className="signin-form" onSubmit={(event) => void verifyEmail2fa(event)}>
+              <label>
+                Verification code
+                <span className="signin-field">
+                  <LockIcon />
+                  <input
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    required
+                    autoComplete="one-time-code"
+                    autoFocus
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  />
+                </span>
+              </label>
+              <button className="signin-submit" disabled={busy}>
+                {busy ? "Verifying…" : "Verify and continue"}
+              </button>
+            </form>
+          )}
+          {message ? (
+            <p className="signin-status" role="status">
+              {message}
+            </p>
+          ) : null}
+          <div className="signin-footer">
+            <button type="button" className="signin-link" disabled={busy || !status.emailOtpAvailable} onClick={() => void resendCode()}>
+              Resend code
+            </button>
+            <button
+              type="button"
+              className="signin-link"
+              onClick={() => {
+                setVerifyStep(false);
+                setCode("");
+                setMessage("");
+              }}
+            >
+              Back to sign in
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="signin-page">
       <section className="signin-card" aria-labelledby="signin-title">
@@ -161,7 +332,11 @@ export default function SignInClient({
           <VantageLogo />
         </div>
         <h1 id="signin-title">Welcome to Vantage</h1>
-        <p className="signin-sub">Sign in to continue</p>
+        <p className="signin-sub">
+          {status.email2faEnforced
+            ? "Sign in with password or Google, then confirm the email code we send."
+            : "Sign in to continue"}
+        </p>
 
         {googleReady ? (
           <button className="signin-google" type="button" onClick={google} disabled={busy}>
@@ -263,6 +438,16 @@ export default function SignInClient({
         {!status.passwordSignInAvailable && (
           <p className="signin-status" role="status">
             {status.passwordReason}
+          </p>
+        )}
+        {status.email2faEnforced === false && status.emailOtpReason && (
+          <p className="signin-status" role="status">
+            Email 2FA not enforced yet: {status.emailOtpReason}
+          </p>
+        )}
+        {showReset && !status.emailOtpAvailable && (
+          <p className="signin-status" role="status">
+            {status.emailOtpReason}
           </p>
         )}
         {message && (
