@@ -1,20 +1,44 @@
 import { createHash,randomBytes } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { AIOrchestrator,type ChatAdapter,type ContextSource } from "@vantage/agent";
+import { VERIFY_CAD_OPERATIONS } from "./agent-policy";
+import type { CadExecutionResult } from "./fusion-relay";
 export * from "./fusion-relay";
+export {
+  CAD_AGENT_SYSTEM_PROMPT,
+  DESTRUCTIVE_CAD_OPERATIONS,
+  VERIFY_CAD_OPERATIONS,
+  sanitizeUntrustedCadText,
+  isAllowlistedCadOperation,
+  requiresDestructiveConfirmation,
+  canAutoRunWithinAllowlist,
+  buildDefaultCadPlan,
+  describeCadBrainMode,
+  cadenceAgentPlanningPrompt,
+} from "./agent-policy";
+export type { CadBrainMode, CadSetupTarget, EngineeringBriefLite } from "./agent-policy";
+export * from "./mock-fusion-plugin";
 
 export type EngineeringBrief={summary:string;requirements:string[];constraints:string[];scoringTasks:string[];assumptions:Array<{name:string;value:string;needsConfirmation:boolean}>;risks:string[];acceptanceCriteria:string[];sourceRefs:Array<{type:string;id:string;classification:string}>;disclaimer:string};
 export const CAD_OPERATIONS=["create_sketch","create_extrude","create_fillet","create_chamfer","create_shell","create_pattern","set_variable","create_assembly","feature_script","verify_topology","render_views","create_checkpoint","rollback_checkpoint","export_step","export_stl","export_gltf"] as const;
 export type CadOperation=typeof CAD_OPERATIONS[number];
 export type CadAction={operation:CadOperation;parameters:Record<string,unknown>;requiresApproval:boolean;reason:string};
-export type CadExecutionResult={externalFeatureId?:string;output:Record<string,unknown>;topology:{fingerprint:string;summary:Record<string,unknown>};render:{mimeType:string;content:string};checkpointRef:string};
+export type { CadExecutionResult };
 export interface CadAdapter{readonly platform:"onshape"|"fusion360"|"mock";readonly executionMode:"hosted"|"local";execute(action:CadAction,context:{jobId:string;idempotencyKey:string;documentRef?:Record<string,unknown>}):Promise<CadExecutionResult>;rollback(checkpointRef:string):Promise<void>;}
 export interface OnshapeTransport{mutate(input:{operation:CadOperation;parameters:Record<string,unknown>;idempotencyKey:string}):Promise<{featureId?:string}>;describe():Promise<{fingerprint:string;summary:Record<string,unknown>;render:string;checkpointRef:string}>;rollback(checkpointRef:string):Promise<void>;}
 export class OnshapeHostedCadAdapter implements CadAdapter{readonly platform="onshape";readonly executionMode="hosted";constructor(private readonly transport:OnshapeTransport){}async execute(action:CadAction,context:{idempotencyKey:string}){const mutation=await this.transport.mutate({operation:action.operation,parameters:action.parameters,idempotencyKey:context.idempotencyKey}),verified=await this.transport.describe();return{externalFeatureId:mutation.featureId,output:{operation:action.operation},topology:{fingerprint:verified.fingerprint,summary:verified.summary},render:{mimeType:"image/svg+xml",content:verified.render},checkpointRef:verified.checkpointRef};}rollback(checkpointRef:string){return this.transport.rollback(checkpointRef);}}
 export class DeterministicMockCadAdapter implements CadAdapter{readonly platform="mock";readonly executionMode="hosted";private version=0;async execute(action:CadAction,context:{jobId:string;idempotencyKey:string}){this.version++;const fingerprint=createHash("sha256").update(`${context.jobId}:${this.version}:${action.operation}:${JSON.stringify(action.parameters)}`).digest("hex");return{externalFeatureId:`mock-feature-${this.version}`,output:{operation:action.operation,deterministic:true},topology:{fingerprint,summary:{bodies:1,features:this.version,validation:"mock-pass"}},render:{mimeType:"image/svg+xml",content:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450"><rect width="800" height="450" fill="#0b1115"/><path d="M180 320 L400 90 L620 320 Z" fill="none" stroke="#16d9e8" stroke-width="12"/><text x="30" y="420" fill="#dce5e8">Checkpoint ${this.version} · ${action.operation}</text></svg>`},checkpointRef:`mock-checkpoint-${this.version}`};}async rollback(){this.version=Math.max(0,this.version-1);}}
 class BriefAdapter implements ChatAdapter{readonly provider="local";readonly model="vantage-cad-brief-v1";constructor(private readonly brief:EngineeringBrief){}async complete(){const text=JSON.stringify(this.brief);return{text,promptTokens:Math.ceil(text.length/4),completionTokens:Math.ceil(text.length/4),costUsd:0};}}
 function briefFrom(input:{request:string;sources:ContextSource[]}):EngineeringBrief{return{summary:input.request.trim(),requirements:["Translate the confirmed scoring objective into a serviceable mechanism","Preserve access for inspection and repair"],constraints:["Use only dimensions and weight values confirmed by the user","Stay within configured manufacturing and API complexity limits"],scoringTasks:["User-selected game task from the strategy context"],assumptions:[{name:"Envelope dimensions",value:"Not yet confirmed",needsConfirmation:true},{name:"Weight budget",value:"Not yet confirmed",needsConfirmation:true},{name:"Manufacturing process",value:"Not yet confirmed",needsConfirmation:true}],risks:["Clearance and collision require geometry verification","Loads, fasteners, wire routing, and unsupported cantilevers require human engineering review"],acceptanceCriteria:["User confirms requirements and assumptions before mutation","Every mutation produces topology and render verification","Design review checklist is reviewed by a human"],sourceRefs:input.sources.map(source=>({type:source.type,id:source.id,classification:source.classification})),disclaimer:"AI-generated design review suggestions are not engineering or safety certification."};}
-export function validateCadPlan(actions:CadAction[]){if(actions.length>50)throw new Error("CAD action plan exceeds the 50-step complexity limit");for(const action of actions){if(!CAD_OPERATIONS.includes(action.operation))throw new Error(`CAD operation is not allowlisted: ${action.operation}`);if(action.operation==="feature_script"&&String(action.parameters.source??"").length>20_000)throw new Error("FeatureScript exceeds the complexity limit");if(action.operation.startsWith("export_"))continue;if(!action.requiresApproval)throw new Error(`Geometry mutation requires approval: ${action.operation}`);}}
+export function validateCadPlan(actions:CadAction[]){
+  if(actions.length>50)throw new Error("CAD action plan exceeds the 50-step complexity limit");
+  for(const action of actions){
+    if(!CAD_OPERATIONS.includes(action.operation))throw new Error(`CAD operation is not allowlisted: ${action.operation}`);
+    if(action.operation==="feature_script"&&String(action.parameters.source??"").length>20_000)throw new Error("FeatureScript exceeds the complexity limit");
+    if(action.operation.startsWith("export_")||VERIFY_CAD_OPERATIONS.has(action.operation))continue;
+    if(!action.requiresApproval)throw new Error(`Geometry mutation requires approval: ${action.operation}`);
+  }
+}
 export class CadRepository{
  constructor(private readonly client:PoolClient){}
  async createBriefJob(input:{orgId:string;userId:string;threadId?:string;requestId:string;title:string;request:string;sources:ContextSource[];platform?:"onshape"|"fusion360"|"mock";executionMode?:"hosted"|"local"}){
