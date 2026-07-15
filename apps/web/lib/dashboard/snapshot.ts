@@ -42,6 +42,7 @@ export async function loadDashboardSnapshot(
 
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const eventKey = row.eventKey;
+  const tbaConfigured = Boolean(process.env.TBA_AUTH_KEY?.trim());
   const context = {
     orgName: row.name,
     teamNumber: row.teamNumber,
@@ -49,6 +50,7 @@ export async function loadDashboardSnapshot(
     eventName: row.eventName,
     role: input.role,
     setupRequired: !eventKey || !teamKey,
+    tbaConfigured,
   };
 
   const widgets: Record<string, WidgetPayload> = {};
@@ -235,6 +237,15 @@ export async function loadDashboardSnapshot(
   }
 
   async function syncStatus() {
+    if (!tbaConfigured) {
+      widgets.sync_status = stamp(
+        "setup_required",
+        "sync_status",
+        undefined,
+        "TBA not configured. Set TBA_AUTH_KEY (or save a platform TBA credential) before live match/rank sync.",
+      );
+      return;
+    }
     const health = await client.query<{
       source: string;
       status: string;

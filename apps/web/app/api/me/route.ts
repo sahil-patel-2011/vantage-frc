@@ -27,10 +27,16 @@ export async function GET() {
         `SELECT created_at::text AS "createdAt" FROM users WHERE id=$1`,
         [session.user.id],
       );
+      const unread = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM notifications
+         WHERE user_id=$1 AND read_at IS NULL`,
+        [session.user.id],
+      );
       return {
         platformAdmin: Boolean(platform.rowCount),
         membership: membership.rows[0] ?? null,
         memberSince: created.rows[0]?.createdAt ?? null,
+        unreadNotificationCount: Number(unread.rows[0]?.count ?? 0),
       };
     });
 
@@ -45,6 +51,8 @@ export async function GET() {
       role: profile.membership?.role ?? null,
       platformAdmin: profile.platformAdmin,
       memberSince: profile.memberSince,
+      unreadNotificationCount: profile.unreadNotificationCount,
+      tbaConfigured: Boolean(process.env.TBA_AUTH_KEY?.trim()),
     });
   } catch {
     return Response.json({ authenticated: false }, { status: 401 });

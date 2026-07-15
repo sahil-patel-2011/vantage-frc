@@ -21,6 +21,7 @@ type Me = {
   orgName?: string | null;
   teamNumber?: number | null;
   role?: string | null;
+  tbaConfigured?: boolean;
 };
 
 type BoardState = {
@@ -101,8 +102,12 @@ export default function DashboardClient() {
           orgName: data.orgName,
           teamNumber: data.teamNumber,
           role: data.role,
+          tbaConfigured: data.tbaConfigured,
         });
         setRole(data.role ?? null);
+        if (typeof data.tbaConfigured === "boolean") {
+          setContext((current) => ({ ...current, tbaConfigured: data.tbaConfigured }));
+        }
       })
       .catch(() => undefined);
   }, []);
@@ -254,6 +259,8 @@ export default function DashboardClient() {
   }
 
   const firstName = (me.name ?? "coach").split(" ")[0] || "coach";
+  const tbaConfigured = context.tbaConfigured ?? me.tbaConfigured;
+  const setupRequired = Boolean(context.setupRequired);
   const gridLayout: Layout = layout.map((item) => ({
     i: item.i,
     x: item.x,
@@ -276,20 +283,35 @@ export default function DashboardClient() {
             {greeting()}, {firstName}
           </h1>
           <p>
-            {context.eventName
-              ? `${String(context.eventName)} command center`
-              : "Next match, readiness, and alerts — customize when you need more."}
+            {!orgId
+              ? "Select a team workspace to load live command-center data. No fabricated ranks, EPA, or match times are shown."
+              : tbaConfigured === false
+                ? "TBA not configured — connect The Blue Alliance before expecting live match/rank sync."
+                : setupRequired
+                  ? "Select an active event (and team number) to load live competition data."
+                  : context.eventName
+                    ? `${String(context.eventName)} command center`
+                    : "Next match, readiness, and alerts — customize when you need more."}
           </p>
         </div>
         <div className="dash-home-actions">
-          {updatedAt ? <small className="dash-updated">Live · {new Date(updatedAt).toLocaleTimeString()}</small> : null}
+          {updatedAt && orgId ? <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small> : null}
           {!orgId ? (
             <a className="app-button secondary" href="/workspace">
               Select workspace
             </a>
+          ) : setupRequired || tbaConfigured === false ? (
+            <a className="app-button secondary" href={tbaConfigured === false ? "/admin/connectors" : "/workspace"}>
+              {tbaConfigured === false ? "Connect TBA" : "Select event"}
+            </a>
           ) : null}
           {!editing ? (
-            <button className="app-button secondary" type="button" onClick={() => setEditing(true)}>
+            <button
+              className="app-button secondary"
+              type="button"
+              data-testid="dash-customize"
+              onClick={() => setEditing(true)}
+            >
               Customize
             </button>
           ) : (
@@ -297,7 +319,7 @@ export default function DashboardClient() {
               <button className="app-button secondary" type="button" disabled={saving} onClick={() => void resetDefault()}>
                 Reset default
               </button>
-              <button className="app-button secondary" type="button" onClick={() => setEditing(false)}>
+              <button className="app-button secondary" type="button" data-testid="dash-preview" onClick={() => setEditing(false)}>
                 Preview
               </button>
               <button className="app-button" type="button" disabled={saving} onClick={() => void save("personal")}>
@@ -319,8 +341,63 @@ export default function DashboardClient() {
         </p>
       ) : null}
 
+      {!orgId || setupRequired || tbaConfigured === false ? (
+        <section className="dash-setup-banner" aria-label="First-run setup">
+          <div>
+            <span className="app-badge setup">Setup required</span>
+            <h2>
+              {!orgId
+                ? "Connect your team workspace"
+                : tbaConfigured === false
+                  ? "Connect TBA for live data"
+                  : "Select an active event"}
+            </h2>
+            <p>
+              Live widgets stay empty on purpose until this path is complete. Vantage will not invent ranks, EPA, match
+              times, or readiness percentages.
+            </p>
+          </div>
+          <ol className="dash-setup-steps">
+            <li className={orgId ? "done" : "current"}>
+              <b>1</b>
+              <div>
+                <strong>Select workspace</strong>
+                <span>Choose your team organization</span>
+              </div>
+              {!orgId ? <a href="/workspace">Open</a> : <em>Done</em>}
+            </li>
+            <li className={!orgId ? undefined : setupRequired ? "current" : "done"}>
+              <b>2</b>
+              <div>
+                <strong>Select event / location</strong>
+                <span>Set the active competition context</span>
+              </div>
+              {orgId && setupRequired ? <a href="/workspace">Open</a> : orgId && !setupRequired ? <em>Done</em> : <span />}
+            </li>
+            <li className={tbaConfigured === false ? "current" : tbaConfigured ? "done" : undefined}>
+              <b>3</b>
+              <div>
+                <strong>Sync TBA</strong>
+                <span>Platform TBA key powers match and rank ingest</span>
+              </div>
+              {tbaConfigured === false ? (
+                <a href="/admin/connectors">Connect</a>
+              ) : tbaConfigured ? (
+                <em>Ready</em>
+              ) : (
+                <span />
+              )}
+            </li>
+          </ol>
+        </section>
+      ) : null}
+
       {editing ? (
-        <section className="dash-editor-bar" aria-label="Widget catalog">
+        <section
+          className="dash-editor-bar"
+          role="region"
+          aria-label="Widget catalog"
+        >
           <div className="dash-editor-copy">
             <strong>Edit mode</strong>
             <span>Drag to rearrange, resize from the corner, add or remove widgets, then save.</span>
@@ -377,14 +454,25 @@ export default function DashboardClient() {
                     </button>
                   </div>
                 ) : null}
-                <DashboardWidgetView type={item.type} payload={widgets[item.type]} orgId={orgId} />
+                <DashboardWidgetView
+                  type={item.type}
+                  payload={widgets[item.type]}
+                  orgId={orgId}
+                  tbaConfigured={tbaConfigured}
+                />
               </div>
             ))}
           </GridLayout>
         ) : (
           <div className="dash-more-grid">
             {layout.slice(0, 5).map((item) => (
-              <DashboardWidgetView key={item.i} type={item.type} payload={widgets[item.type]} orgId={orgId} />
+              <DashboardWidgetView
+                key={item.i}
+                type={item.type}
+                payload={widgets[item.type]}
+                orgId={orgId}
+                tbaConfigured={tbaConfigured}
+              />
             ))}
           </div>
         )}
@@ -403,7 +491,13 @@ export default function DashboardClient() {
           {moreOpen ? (
             <div className="dash-more-grid">
               {secondaryTypes.map((type) => (
-                <DashboardWidgetView key={type} type={type} payload={widgets[type]} orgId={orgId} />
+                <DashboardWidgetView
+                  key={type}
+                  type={type}
+                  payload={widgets[type]}
+                  orgId={orgId}
+                  tbaConfigured={tbaConfigured}
+                />
               ))}
             </div>
           ) : null}

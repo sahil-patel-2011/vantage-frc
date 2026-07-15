@@ -18,17 +18,23 @@ test("dashboard home is decluttered and exposes customize controls", async ({ pa
   await expect(page.getByRole("button", { name: "Customize" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Show secondary metrics" })).toBeVisible();
   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible();
+  await expect(page.getByText("No upcoming match yet")).toBeVisible();
+  await expect(page.getByText("No checklist data yet")).toBeVisible();
+  await expect(page.locator(".dash-widget").filter({ hasText: "Next match" }).locator(".dash-empty")).toBeVisible();
 });
 
 test("dashboard editor can enter edit mode and show widget catalog", async ({ page }) => {
   await page.goto("/dashboard");
-  await page.getByRole("button", { name: "Customize" }).click();
-  await expect(page.getByRole("region", { name: "Widget catalog" })).toBeVisible();
+  // Fixed soft-topbar can intercept pointer clicks after scroll-into-view; call the DOM handler directly.
+  await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
+  await expect(page.getByText("Edit mode")).toBeVisible();
+  await expect(page.locator(".dash-editor-bar")).toBeVisible();
   await expect(page.getByRole("button", { name: /Add · Next match|On board · Next match/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Preview" })).toBeVisible();
+  await expect(page.getByTestId("dash-preview")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reset default" })).toBeVisible();
-  await page.getByRole("button", { name: "Preview" }).click();
-  await expect(page.getByRole("button", { name: "Customize" })).toBeVisible();
+  await page.getByTestId("dash-preview").evaluate((node) => (node as HTMLButtonElement).click());
+  await expect(page.getByTestId("dash-customize")).toBeVisible();
 });
 
 test("mobile product shell keeps Dynamic Island and hamburger", async ({ page }) => {
@@ -37,6 +43,15 @@ test("mobile product shell keeps Dynamic Island and hamburger", async ({ page })
   await expect(page.getByRole("navigation", { name: "Primary tabs" })).toBeVisible();
   await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(page.getByRole("complementary", { name: "Product navigation" })).toBeVisible();
+});
+
+test("account route renders settings tabs and notification badge stays empty at zero", async ({ page }) => {
+  await page.goto("/account");
+  await expect(page.getByRole("heading", { name: "Account", exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Account sections" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Appearance" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Integrations" })).toBeVisible();
+  await expect(page.locator(".soft-notif b")).toHaveCount(0);
 });
 
 test("real strategy and code routes render deterministic implemented engines", async ({ page }) => {
