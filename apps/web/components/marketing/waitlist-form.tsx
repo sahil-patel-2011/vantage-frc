@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { track } from "./analytics";
+import { type FormEvent, useState } from "react";
+import { track } from "../../lib/marketing/analytics";
 
 export function WaitlistForm() {
   const [state, setState] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -11,20 +11,19 @@ export function WaitlistForm() {
     event.preventDefault();
     setState("sending");
     const form = new FormData(event.currentTarget);
-    const body = {
-      email: form.get("email"),
-      teamNumber: form.get("teamNumber"),
-      phone: form.get("phone"),
-      smsConsent: form.get("smsConsent") === "on",
-      website: form.get("website")
-    };
     try {
       const response = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: JSON.stringify({
+          email: form.get("email"),
+          teamNumber: form.get("teamNumber"),
+          phone: form.get("phone"),
+          smsConsent: form.get("smsConsent") === "on",
+          website: form.get("website"),
+        }),
       });
-      const result = await response.json() as { ok: boolean; message?: string };
+      const result = (await response.json()) as { ok: boolean; message?: string };
       if (!response.ok || !result.ok) throw new Error(result.message ?? "Submission failed");
       setState("success");
       track("waitlist_success");

@@ -8,6 +8,7 @@ const buckets = new Map<string, { count: number; resetAt: number }>();
 
 export class MemoryRateLimiter implements RateLimiter {
   constructor(private readonly limit = 5, private readonly windowMs = 60_000) {}
+
   async allow(identifier: string) {
     const now = Date.now();
     const bucket = buckets.get(identifier);
@@ -26,7 +27,7 @@ export class RedisRateLimiter implements RateLimiter {
     private readonly url: string,
     private readonly token: string,
     private readonly limit = 5,
-    private readonly windowSeconds = 60
+    private readonly windowSeconds = 60,
   ) {}
 
   async allow(identifier: string) {
@@ -36,11 +37,11 @@ export class RedisRateLimiter implements RateLimiter {
       headers: { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" },
       body: JSON.stringify([
         ["INCR", key],
-        ["EXPIRE", key, String(this.windowSeconds), "NX"]
-      ])
+        ["EXPIRE", key, String(this.windowSeconds), "NX"],
+      ]),
     });
     if (!response.ok) throw new Error("Rate limiter unavailable");
-    const values = await response.json() as Array<{ result: number }>;
+    const values = (await response.json()) as Array<{ result: number }>;
     return Number(values[0]?.result ?? this.limit + 1) <= this.limit;
   }
 }

@@ -1,5 +1,10 @@
-import SignInClient from "./sign-in-client";
+import { redirect } from "next/navigation";
 
-export default function SignInPage() {
-  return <SignInClient googleEnabled={Boolean(process.env.GOOGLE_CLIENT_ID)} />;
+export default async function LegacySignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  redirect(next ? `/signin?next=${encodeURIComponent(next)}` : "/signin");
 }
