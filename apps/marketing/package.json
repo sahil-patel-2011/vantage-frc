@@ -1,0 +1,22 @@
+{
+  "name": "@vantage/marketing",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "dev:test": "next dev --port 3310",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest"
+  }
+}

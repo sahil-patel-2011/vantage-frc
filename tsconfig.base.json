@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "types": ["node"],
+    "paths": {
+      "@vantage/db": ["packages/db/src/index.ts"],
+      "@vantage/db/billing": ["packages/db/src/billing.ts"],
+      "@vantage/core": ["packages/core/src/index.ts"],
+      "@vantage/billing": ["packages/billing/src/index.ts"],
+      "@vantage/reference": ["packages/reference/src/index.ts"],
+      "@vantage/reference/worker": ["packages/reference/src/worker.ts"],
+      "@vantage/reference/admin-store": [
+        "packages/reference/src/admin-store.ts"
+      ],
+      "@vantage/reference/production-worker": [
+        "packages/reference/src/production-worker.ts"
+      ],
+      "@vantage/scouting": ["packages/scouting/src/index.ts"],
+      "@vantage/scouting/repository": ["packages/scouting/src/repository.ts"],
+      "@vantage/intel-research": ["packages/intel-research/src/index.ts"],
+      "@vantage/intel-research/repository": ["packages/intel-research/src/repository.ts"],
+      "@vantage/intel-research/worker": ["packages/intel-research/src/worker.ts"],
+      "@vantage/intel-research/production-worker": [
+        "packages/intel-research/src/production-worker.ts"
+      ],
+      "@vantage/agent": ["packages/agent/src/index.ts"],
+      "@vantage/agent/repository": ["packages/agent/src/repository.ts"]
+    }
+  }
+}

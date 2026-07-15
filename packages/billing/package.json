@@ -1,0 +1,12 @@
+{
+  "name": "@vantage/billing",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@aws-sdk/client-kms": "latest",
+    "@neondatabase/serverless": "latest",
+    "stripe": "latest"
+  }
+}

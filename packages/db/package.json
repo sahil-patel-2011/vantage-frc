@@ -1,0 +1,22 @@
+{
+  "name": "@vantage/db",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin": "./src/admin.ts",
+    "./auth": "./src/auth.ts",
+    "./billing": "./src/billing.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "latest",
+    "drizzle-orm": "latest"
+  },
+  "devDependencies": {
+    "@types/pg": "latest"
+  }
+}
