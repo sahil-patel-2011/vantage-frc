@@ -339,7 +339,7 @@ export function DashboardPreview() {
           </article>
         </div>
         <footer className="product-demo-footer">
-          <span>Customize rearranges widgets</span>
+          <span>Edit Home Screen · drag widgets</span>
           <b>Empty ≠ fake stats</b>
         </footer>
       </div>
