@@ -38,7 +38,24 @@ OTP uses Better Auth’s database-backed hashed verification records (five-minut
 attempt limits, and request/verify rate limits). Production delivery uses Resend via `RESEND_API_KEY` and
 `AUTH_EMAIL_FROM`. Development uses a deterministic in-memory mailbox and never needs email credentials.
 There is no public organization creation or team-number join path: a platform admin provisions each team and
-seeds a verified owner, then owners/admins invite exact email addresses.
+seeds a verified owner, then owners/admins invite exact email addresses. Waitlist-only policy still applies
+to Google: only the platform owner, existing users, or emails with a pending invite may authenticate;
+everyone else is pointed at the waitlist.
+
+### Google Cloud Console (production)
+
+1. Create an OAuth client (Web application) in Google Cloud Console.
+2. Authorized JavaScript origins:
+   - `https://vantage-frc-web.vercel.app`
+3. Authorized redirect URIs (exact):
+   - `https://vantage-frc-web.vercel.app/api/auth/callback/google`
+4. Paste the Client ID and Client Secret into Vercel production env as `GOOGLE_CLIENT_ID` and
+   `GOOGLE_CLIENT_SECRET`, then redeploy. Until those are set, `/signin` shows **Continue with Google** as
+   Coming soon.
+
+Local development: also add `http://localhost:3001` as an origin and
+`http://localhost:3001/api/auth/callback/google` as a redirect URI. Keep `BETTER_AUTH_URL` matching the app
+origin.
 
 ## Deployment
 

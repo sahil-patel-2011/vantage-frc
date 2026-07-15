@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { VantageLogo } from "../../components/brand";
 
+const WAITLIST_ONLY_MESSAGE =
+  "Vantage is waitlist-only right now. Join the waitlist for access, or sign in with an authorized account.";
+
 type AuthStatus = {
   waitlistOnly: true;
   publicSignup: false;
@@ -14,6 +17,21 @@ type AuthStatus = {
   passwordReason: string | null;
   ownerEmailHint: string;
 };
+
+function oauthErrorMessage(code: string | null) {
+  if (!code) return "";
+  const normalized = code.toLowerCase();
+  if (
+    normalized.includes("signup") ||
+    normalized.includes("unable_to_create") ||
+    normalized.includes("user_not_found") ||
+    normalized.includes("access_denied") ||
+    normalized.includes("waitlist")
+  ) {
+    return WAITLIST_ONLY_MESSAGE;
+  }
+  return "Google sign-in could not be completed. If you already have access, try again or use email and password.";
+}
 
 export default function SignInClient({
   googleEnabled,
@@ -42,6 +60,12 @@ export default function SignInClient({
       .catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    if (error) setMessage(oauthErrorMessage(error));
+  }, []);
+
   async function passwordSignIn(event: React.FormEvent) {
     event.preventDefault();
     if (!status.passwordSignInAvailable) {
@@ -60,7 +84,7 @@ export default function SignInClient({
         window.location.assign(nextPath);
         return;
       }
-      setMessage("Unable to sign in with those credentials. Public registration is closed — join the waitlist for access.");
+      setMessage(WAITLIST_ONLY_MESSAGE);
     } finally {
       setBusy(false);
     }
@@ -69,15 +93,23 @@ export default function SignInClient({
   async function google() {
     if (!status.googleSignInAvailable && !googleEnabled) return;
     setBusy(true);
+    setMessage("");
     try {
       const response = await fetch("/api/auth/sign-in/social", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ provider: "google", callbackURL: nextPath }),
+        body: JSON.stringify({
+          provider: "google",
+          callbackURL: nextPath,
+          errorCallbackURL: `/signin?next=${encodeURIComponent(nextPath)}`,
+        }),
       });
-      const data = (await response.json()) as { url?: string };
-      if (data.url) window.location.assign(data.url);
-      else setMessage("Google sign-in is only available for existing authorized users.");
+      const data = (await response.json()) as { url?: string; message?: string; error?: string };
+      if (data.url) {
+        window.location.assign(data.url);
+        return;
+      }
+      setMessage(oauthErrorMessage(data.error ?? data.message ?? "signup_disabled") || WAITLIST_ONLY_MESSAGE);
     } finally {
       setBusy(false);
     }
