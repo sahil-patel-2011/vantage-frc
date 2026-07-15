@@ -37,7 +37,7 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   },
   prediction_summary: {
     title: "No prediction yet",
-    body: "Choose an event and upcoming match first — predictions need real schedule context.",
+    body: "Need match schedule + team metrics from TBA/Statbotics/scouting before a win/loss prediction can run.",
     ctaHref: "/strategy",
     ctaLabel: "Open strategy",
   },

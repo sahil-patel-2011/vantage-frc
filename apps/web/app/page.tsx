@@ -127,8 +127,8 @@ export default function Home() {
           <span className="section-id">SIGNATURE CAPABILITIES</span>
           <h2>Three implemented engines. Same provenance model.</h2>
           <p>
-            Each preview is rendered from the same deterministic fixtures that power the in-app Strategy and
-            Code modules. Status labels stay honest: Available, Setup required, or Planned.
+            Each preview is labeled demo data from deterministic fixtures. The signed-in Strategy page stays empty
+            until workspace, event, and TBA/Statbotics metrics exist — it does not invent win probability. Status labels stay honest: Available, Setup required, or Planned.
           </p>
         </section>
 
