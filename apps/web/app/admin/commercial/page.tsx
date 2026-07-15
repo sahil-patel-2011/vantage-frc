@@ -1,2 +1,5 @@
 import CommercialClient from "./commercial-client";
-export default function CommercialPage() { return <CommercialClient />; }
+
+export default function CommercialPage() {
+  return <CommercialClient />;
+}

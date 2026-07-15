@@ -12,7 +12,7 @@ import {
   type DashboardWidgetType,
 } from "../../lib/dashboard/catalog";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
-import { DashboardWidgetView } from "./widgets";
+import { countdownLabel, DashboardWidgetView } from "./widgets";
 import "react-grid-layout/css/styles.css";
 
 type Me = {
@@ -283,6 +283,9 @@ export default function DashboardClient() {
         ? me.tbaConfigured
         : undefined;
   const setupRequired = Boolean(context.setupRequired);
+  const nextMatchPayload = widgets.next_match;
+  const nextMatchData =
+    nextMatchPayload?.status === "live" ? (nextMatchPayload.data as Record<string, unknown> | undefined) : undefined;
   const isNarrow = mounted && width < 640;
   const gridLayout: Layout = layout.map((item, index) => ({
     i: item.i,
@@ -320,13 +323,25 @@ export default function DashboardClient() {
           </p>
         </div>
         <div className="dash-home-actions">
+          {nextMatchData && !editing ? (
+            <a className="dash-next-glance" href={`/intel${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`}>
+              <span>Next</span>
+              <strong>
+                {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
+              </strong>
+              <b>{countdownLabel(nextMatchData.scheduledTime as string | undefined)}</b>
+            </a>
+          ) : null}
           {updatedAt && orgId ? <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small> : null}
           {!orgId ? (
             <a className="app-button secondary" href="/workspace">
               Select workspace
             </a>
           ) : setupRequired || tbaConfigured === false ? (
-            <a className="app-button secondary" href={tbaConfigured === false ? "/admin/connectors" : "/workspace"}>
+            <a
+              className="app-button secondary"
+              href={tbaConfigured === false ? `/team/data?orgId=${encodeURIComponent(orgId)}` : "/workspace"}
+            >
               {tbaConfigured === false ? "Connect TBA" : "Select event"}
             </a>
           ) : null}
@@ -414,8 +429,8 @@ export default function DashboardClient() {
                 <strong>Sync TBA</strong>
                 <span>Platform TBA key powers match and rank ingest</span>
               </div>
-              {tbaConfigured === false ? (
-                <a href="/admin/connectors">Connect</a>
+              {tbaConfigured === false && orgId ? (
+                <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Connect</a>
               ) : tbaConfigured ? (
                 <em>Ready</em>
               ) : (

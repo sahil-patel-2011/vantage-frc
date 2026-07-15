@@ -1,21 +1,28 @@
 import { createKms, decryptSecret, encryptSecret } from "@vantage/billing";
-import { assertPlatformPrivilegeMfa,auth } from "@vantage/core";
+import { assertPlatformAdmin, assertPlatformPrivilegeMfa, auth, platformAdminDeniedResponse, PlatformAdminRequiredError } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { HttpBase44BridgeTransport } from "@vantage/agent";
 import { headers } from "next/headers";
 
-async function adminWork<T>(work: Parameters<typeof withRls<T>>[1],requireMfa=false) {
+async function adminWork<T>(work: Parameters<typeof withRls<T>>[1], requireMfa = false) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("Authentication required");
   return withRls({ userId: session.user.id }, async (client) => {
-    const result = await client.query("SELECT is_platform_admin() AS value");
-    if (!result.rows[0]?.value) throw new Error("Platform administrator access required");
-    if(requireMfa)await assertPlatformPrivilegeMfa(client,{userId:session.user.id,sessionId:session.session.id});
+    await assertPlatformAdmin(client);
+    if (requireMfa) await assertPlatformPrivilegeMfa(client, { userId: session.user.id, sessionId: session.session.id });
     return work(client);
   });
 }
-const errorResponse = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Request failed" }, { status: 403 });
+
+const errorResponse = (error: unknown) => {
+  if (
+    error instanceof PlatformAdminRequiredError ||
+    (error instanceof Error && /authentication required|platform administrator/i.test(error.message))
+  ) {
+    return platformAdminDeniedResponse(error);
+  }
+  return Response.json({ error: error instanceof Error ? error.message : "Request failed" }, { status: 400 });
+};
 
 export async function GET() {
   try {

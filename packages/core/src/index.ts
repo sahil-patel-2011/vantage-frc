@@ -272,3 +272,4 @@ export async function emitNotification(
 }
 
 export * from "./membership";
+export * from "./platform-admin";

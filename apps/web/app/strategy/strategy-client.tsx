@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { runWhatIf } from "@vantage/prediction-strategy";
 import { strategyFixture } from "../../lib/marketing/strategy-demo";
 import type { StrategyView } from "../../lib/strategy/types";
@@ -113,7 +113,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
     ]);
   }, [view.prediction, whatIfOn]);
 
-  const sourceLabel = Array.from(new Set(view.sources.map((item) => item.source))).join(" · ") || "reference";
+  const sourceLabel = Array.from(new Set(view.sources.map((item) => item.source))).join(" · ") || "no linked source";
   const title =
     view.compLevel === "qm"
       ? `Qualification ${view.matchNumber}`
@@ -226,21 +226,28 @@ export default function StrategyClient() {
   const [view, setView] = useState<StrategyView | null>(null);
   const [demo, setDemo] = useState(false);
   const [error, setError] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
 
-  useEffect(() => {
+  const loadStrategy = useCallback(() => {
+    setFetchFailed(false);
+    setError("");
     const orgId = new URLSearchParams(window.location.search).get("orgId");
     void fetch(`/api/strategy${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`)
       .then(async (response) => {
         const data = (await response.json()) as StrategyView | { error?: string };
         if (!response.ok || !("status" in data)) {
-          setError(("error" in data && data.error) || "Could not load strategy.");
+          const message = "error" in data ? data.error : undefined;
+          if (!message) {
+            setFetchFailed(true);
+            return;
+          }
+          setError(message);
           setView({
             status: "setup_required",
             message: "Select a team workspace before running win/loss strategy.",
             steps: [
-              { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-              { id: "event", label: "Select event / location", detail: "Set the active competition context", href: "/workspace" },
-              { id: "tba", label: "Sync TBA", detail: "Match schedule and team metrics from TBA/Statbotics", href: "/admin/connectors" },
+              { id: "workspace", label: "Select workspace and event", detail: "Choose your team organization and active event", href: "/workspace" },
+              { id: "tba", label: "Sync TBA", detail: "Match schedule and team metrics from TBA/Statbotics", href: "/team/data" },
             ],
             orgId: null,
             eventKey: null,
@@ -253,23 +260,13 @@ export default function StrategyClient() {
         setView(data);
       })
       .catch(() => {
-        setError("Could not load strategy.");
-        setView({
-          status: "setup_required",
-          message: "Select a team workspace before running win/loss strategy.",
-          steps: [
-            { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-            { id: "event", label: "Select event / location", detail: "Set the active competition context", href: "/workspace" },
-            { id: "tba", label: "Sync TBA", detail: "Match schedule and team metrics from TBA/Statbotics", href: "/admin/connectors" },
-          ],
-          orgId: null,
-          eventKey: null,
-          eventName: null,
-          teamNumber: null,
-          tbaConfigured: false,
-        });
+        setFetchFailed(true);
       });
   }, []);
+
+  useEffect(() => {
+    loadStrategy();
+  }, [loadStrategy]);
 
   return (
     <main className="module-page">
@@ -282,11 +279,15 @@ export default function StrategyClient() {
             EPA, ranks, or confidence.
           </p>
         </div>
-        {view?.status === "live" ? (
-          <span className="app-badge good">Live inputs</span>
-        ) : (
+        {demo ? (
+          <span className="app-badge demo">Demo mode</span>
+        ) : view?.status === "empty" ? (
+          <span className="app-badge setup">No prediction yet</span>
+        ) : view?.status === "setup_required" ? (
           <span className="app-badge setup">Setup required</span>
-        )}
+        ) : view?.status === "live" ? (
+          <span className="app-badge good">Live inputs</span>
+        ) : null}
       </header>
 
       {error ? (
@@ -297,6 +298,14 @@ export default function StrategyClient() {
 
       {demo ? (
         <DemoPanel onHide={() => setDemo(false)} />
+      ) : fetchFailed ? (
+        <section className="app-card strategy-empty-panel">
+          <h2>Could not load strategy — try again</h2>
+          <p className="app-muted">A network or server issue prevented loading your strategy context.</p>
+          <button type="button" className="app-button secondary" onClick={loadStrategy}>
+            Retry
+          </button>
+        </section>
       ) : view == null ? (
         <section className="app-card strategy-empty-panel">
           <h2>Loading strategy context…</h2>

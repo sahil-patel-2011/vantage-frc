@@ -71,7 +71,7 @@ export async function GET(request: Request) {
           id: "tba",
           label: "Sync TBA",
           detail: "Match schedule and team metrics from TBA/Statbotics",
-          href: "/admin/connectors",
+          href: row?.orgId ? `/team/data?orgId=${encodeURIComponent(row.orgId)}` : "/team/data",
           done: tbaConfigured,
         },
       ];
@@ -312,7 +312,7 @@ export async function GET(request: Request) {
         steps: [
           { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
           { id: "event", label: "Select event / location", detail: "Set the active competition context", href: "/workspace" },
-          { id: "tba", label: "Sync TBA", detail: "Match schedule and team metrics", href: "/admin/connectors" },
+          { id: "tba", label: "Sync TBA", detail: "Match schedule and team metrics", href: "/team/data" },
         ],
         orgId: null,
         eventKey: null,

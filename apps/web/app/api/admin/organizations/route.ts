@@ -1,4 +1,4 @@
-import { assertPlatformPrivilegeMfa,auth, createOrganizationAsPlatformAdmin } from "@vantage/core";
+import { assertPlatformAdmin, assertPlatformPrivilegeMfa, auth, createOrganizationAsPlatformAdmin, platformAdminDeniedResponse } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
@@ -12,8 +12,7 @@ export async function GET() {
   try {
     const current = await session();
     const organizations = await withRls({ userId: current.user.id }, async (client) => {
-      const allowed = await client.query("SELECT is_platform_admin() AS value");
-      if (!allowed.rows[0]?.value) throw new Error("Platform administrator access required");
+      await assertPlatformAdmin(client);
       return (
         await client.query(
           `SELECT o.id,o.name,o.slug,o.team_number AS "teamNumber",o.created_at AS "createdAt",
@@ -25,7 +24,7 @@ export async function GET() {
     });
     return Response.json({ organizations });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Request failed" }, { status: 403 });
+    return platformAdminDeniedResponse(error);
   }
 }
 
@@ -40,16 +39,18 @@ export async function POST(request: Request) {
     };
     if (!body.name || !body.slug || !body.ownerEmail)
       return Response.json({ error: "All organization fields are required" }, { status: 400 });
-    const id = await withRls({ userId: current.user.id }, async (client) =>{
-      await assertPlatformPrivilegeMfa(client,{userId:current.user.id,sessionId:current.session.id});
+    const id = await withRls({ userId: current.user.id }, async (client) => {
+      await assertPlatformAdmin(client);
+      await assertPlatformPrivilegeMfa(client, { userId: current.user.id, sessionId: current.session.id });
       return createOrganizationAsPlatformAdmin(client, current.user.id, {
         name: body.name!,
         slug: body.slug!,
         teamNumber: Number(body.teamNumber),
         ownerEmail: body.ownerEmail!,
-      });});
+      });
+    });
     return Response.json({ id }, { status: 201 });
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Request failed" }, { status: 403 });
+    return platformAdminDeniedResponse(error);
   }
 }

@@ -164,7 +164,13 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   }, []);
 
   const initial = (me.name?.trim()?.[0] ?? me.email?.trim()?.[0] ?? "V").toUpperCase();
-  const flat = useMemo(() => groups.flatMap((group) => group.items), []);
+  const flat = useMemo(() => {
+    const items = groups.flatMap((group) => group.items);
+    if (me.platformAdmin) {
+      items.push({ href: "/admin", label: "Global Team Manager", icon: "grid" });
+    }
+    return items;
+  }, [me.platformAdmin]);
   const showBack = pathname.startsWith("/account") || pathname.startsWith("/team") || pathname.startsWith("/admin") || pathname.startsWith("/security");
   const title = pathname.startsWith("/account")
     ? "Account"

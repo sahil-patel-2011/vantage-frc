@@ -1,25 +1,23 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
 import AdminClient from "./admin-client";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/");
-  const allowed = await withRls({ userId: session.user.id }, async (client) => {
-    const result = await client.query<{ allowed: boolean }>("SELECT is_platform_admin() AS allowed");
-    return result.rows[0]?.allowed === true;
-  });
-  if (!allowed) redirect("/");
-
+export default function AdminPage() {
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">VANTAGE / ADMIN</div>
-        <nav><a className="active" href="/admin">Overview</a><a href="/admin">Organizations</a><a href="/admin">Usage</a><a href="/admin">Audit log</a></nav>
+        <nav>
+          <a className="active" href="/admin">
+            Overview
+          </a>
+          <span style={{ display: "block", padding: 10, color: "#5c6a70", cursor: "default" }}>Organizations (soon)</span>
+          <span style={{ display: "block", padding: 10, color: "#5c6a70", cursor: "default" }}>Usage (soon)</span>
+          <span style={{ display: "block", padding: 10, color: "#5c6a70", cursor: "default" }}>Audit log (soon)</span>
+          <a href="/admin/commercial">Commercial</a>
+          <a href="/admin/connectors">Connectors</a>
+          <a href="/admin/models">Models</a>
+        </nav>
       </aside>
       <AdminClient />
     </div>
