@@ -1,0 +1,58 @@
+import {
+  auth,
+  isEmail2faEnforced,
+  requestEmail2faCode,
+  sessionHasEmail2fa,
+  verifyEmail2faCode,
+} from "@vantage/core";
+import { headers } from "next/headers";
+
+async function currentSession() {
+  return auth.api.getSession({ headers: await headers() });
+}
+
+export async function GET() {
+  const session = await currentSession();
+  if (!session) return Response.json({ authenticated: false }, { status: 401 });
+  const enforced = isEmail2faEnforced();
+  const verified = sessionHasEmail2fa(session.session as { email2faVerifiedAt?: Date | string | null });
+  return Response.json({
+    authenticated: true,
+    email2faEnforced: enforced,
+    email2faVerified: verified || !enforced,
+    requiresVerification: enforced && !verified,
+    emailHint: session.user.email.replace(/(^.).*(@.*$)/, "$1***$2"),
+  });
+}
+
+export async function POST(request: Request) {
+  const session = await currentSession();
+  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = (await request.json().catch(() => ({}))) as { action?: string; code?: string };
+  try {
+    if (body.action === "request") {
+      const result = await requestEmail2faCode({
+        sessionId: session.session.id,
+        userId: session.user.id,
+        email: session.user.email,
+      });
+      return Response.json(result);
+    }
+    if (body.action === "verify") {
+      const result = await verifyEmail2faCode({
+        sessionId: session.session.id,
+        userId: session.user.id,
+        email: session.user.email,
+        code: String(body.code ?? ""),
+      });
+      return Response.json(result);
+    }
+    return Response.json({ error: "Invalid action." }, { status: 400 });
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Email verification failed." },
+      { status: 400 },
+    );
+  }
+}

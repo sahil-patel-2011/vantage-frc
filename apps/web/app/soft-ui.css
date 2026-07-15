@@ -380,6 +380,31 @@ html[data-theme="dark"] .soft-callout{background:#1a2740;color:#bfdbfe}
   display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 10px;border-radius:999px;
   background:var(--soft-card);border:1px solid var(--soft-line);color:var(--soft-muted);font:600 11px var(--font-source-sans),ui-sans-serif;
 }
+
+/* First-login onboarding */
+.onboarding-page{min-height:100vh;display:grid;place-items:center;padding:28px 16px;background:var(--soft-bg,#f3f4f7);color:var(--soft-ink,#1c2430);font-family:var(--font-source-sans),ui-sans-serif,system-ui,sans-serif}
+.onboarding-card{width:min(100%,520px);padding:28px 26px 24px;border-radius:20px;background:var(--soft-card,#fff);border:1px solid var(--soft-line,#e5e7eb);box-shadow:0 18px 50px rgba(21,32,51,.08)}
+.onboarding-brand{display:flex;justify-content:center;margin-bottom:14px}
+.onboarding-card h1{margin:0;text-align:center;font-size:26px;letter-spacing:-.03em}
+.onboarding-sub{margin:8px 0 18px;text-align:center;color:var(--soft-muted,#6b7280);font-size:14px;line-height:1.45}
+.onboarding-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 18px;padding:0;list-style:none}
+.onboarding-steps li{display:grid;justify-items:center;gap:4px;color:#9aa3b2;font-size:11px;font-weight:600}
+.onboarding-steps li.active{color:var(--soft-accent,#2563eb)}
+.onboarding-steps b{display:grid;place-items:center;width:26px;height:26px;border-radius:999px;background:#eef2f7;font-size:12px}
+.onboarding-steps li.active b{background:var(--soft-accent-soft,#dbeafe);color:var(--soft-accent,#2563eb)}
+.onboarding-form{display:grid;gap:12px}
+.onboarding-form label{display:grid;gap:6px;font:600 13px var(--font-source-sans),ui-sans-serif}
+.onboarding-form input,.onboarding-form select{min-height:44px;padding:0 12px;border:1px solid var(--soft-line,#e5e7eb);border-radius:12px;font:500 14px var(--font-source-sans),ui-sans-serif;background:#fff;color:inherit}
+.onboarding-form small{color:var(--soft-muted,#6b7280);font-weight:500;font-size:12px;line-height:1.4}
+.onboarding-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.onboarding-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.onboarding-theme{margin:0;padding:12px;border:1px solid var(--soft-line,#e5e7eb);border-radius:12px;display:flex;gap:16px}
+.onboarding-theme legend{padding:0 4px;font:600 13px var(--font-source-sans),ui-sans-serif}
+.onboarding-done{text-align:center;padding:18px 0;color:var(--soft-muted,#6b7280)}
+@media(max-width:560px){
+  .onboarding-row{grid-template-columns:1fr}
+  .onboarding-steps span{display:none}
+}
 html[data-theme="dark"] .dash-setup-banner{
   background:
     radial-gradient(120% 80% at 0% 0%,color-mix(in srgb,#fbbf24 10%,transparent),transparent 55%),

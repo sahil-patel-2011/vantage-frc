@@ -100,7 +100,7 @@ export default function DashboardClient() {
       .then((data) => {
         if (!data) return;
         setMe({
-          name: data.name,
+          name: data.firstName || data.name,
           orgId: data.orgId,
           orgName: data.orgName,
           teamNumber: data.teamNumber,

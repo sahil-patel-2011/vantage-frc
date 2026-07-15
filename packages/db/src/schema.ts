@@ -105,6 +105,7 @@ export const sessions = pgTable(
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     authMethod: text("auth_method").notNull().default("unknown"),
+    email2faVerifiedAt: timestamp("email_2fa_verified_at", { withTimezone: true }),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -163,6 +164,13 @@ export const profiles = pgTable("profiles", {
   displayName: text("display_name"),
   notificationPrefs: jsonb("notification_prefs").notNull().default({}),
   themePreference: text("theme_preference").notNull().default("light"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  dateOfBirth: date("date_of_birth", { mode: "date" }),
+  gender: text("gender"),
+  preferredTeamNumber: integer("preferred_team_number"),
+  teamRole: text("team_role"),
+  onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
 });
 
 export const platformAdmins = pgTable("platform_admins", {

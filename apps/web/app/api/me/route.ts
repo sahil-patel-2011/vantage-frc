@@ -32,26 +32,47 @@ export async function GET() {
          WHERE user_id=$1 AND read_at IS NULL`,
         [session.user.id],
       );
+      const profileRow = await client.query<{
+        firstName: string | null;
+        displayName: string | null;
+        preferredTeamNumber: number | null;
+        onboardingCompletedAt: string | null;
+      }>(
+        `SELECT first_name AS "firstName",
+                display_name AS "displayName",
+                preferred_team_number AS "preferredTeamNumber",
+                onboarding_completed_at::text AS "onboardingCompletedAt"
+         FROM profiles WHERE user_id=$1`,
+        [session.user.id],
+      );
       return {
         platformAdmin: Boolean(platform.rowCount),
         membership: membership.rows[0] ?? null,
         memberSince: created.rows[0]?.createdAt ?? null,
         unreadNotificationCount: Number(unread.rows[0]?.count ?? 0),
+        profile: profileRow.rows[0] ?? null,
       };
     });
+
+    const displayFirst =
+      profile.profile?.firstName?.trim() ||
+      (session.user.name ?? "").split(" ")[0] ||
+      null;
 
     return Response.json({
       authenticated: true,
       name: session.user.name,
+      firstName: displayFirst,
       email: session.user.email,
       image: session.user.image,
       orgId: profile.membership?.orgId ?? null,
-      teamNumber: profile.membership?.teamNumber ?? null,
+      teamNumber: profile.membership?.teamNumber ?? profile.profile?.preferredTeamNumber ?? null,
       orgName: profile.membership?.orgName ?? null,
       role: profile.membership?.role ?? null,
       platformAdmin: profile.platformAdmin,
       memberSince: profile.memberSince,
       unreadNotificationCount: profile.unreadNotificationCount,
+      onboardingComplete: Boolean(profile.profile?.onboardingCompletedAt),
       tbaConfigured: Boolean(process.env.TBA_AUTH_KEY?.trim()),
     });
   } catch {

@@ -44,22 +44,34 @@ everyone else is pointed at the waitlist.
 
 **Database:** Auth and product data use **Neon Postgres** (`DATABASE_AUTH_URL` / `DATABASE_URL`). Do not migrate
 identity or RLS data to Supabase for this stack — Neon is the linked production database. Resend is only the
-email transport for OTP / forgot-password; it does not replace Google OAuth or Neon.
+email transport for OTP / forgot-password / default email 2FA; it does not replace Google OAuth or Neon.
 
-### Resend (email OTP / password reset)
+**TBA shared cache:** Platform-global TBA/Statbotics reference tables in Neon are the shared cache. One ingest
+worker uses `TBA_AUTH_KEY` (or an encrypted platform credential) with ETag/`If-None-Match`, in-flight dedupe,
+and polite backoff. Org dashboards and widgets read Neon first — never open parallel unrestricted TBA polls.
+Org/admin BYO TBA keys under Admin → Data connectors / Team → Live data are controlled fallbacks only; they
+do not start a second high-rate poller. Steps to create a key: https://www.thebluealliance.com/account → Read
+API v3 key → paste once → Test connection (full key never shown again).
 
-Google OAuth does **not** need Resend. Email OTP and forgot-password stay unavailable in production until both
-env vars are set on the Vercel project (`vantage-frc-web`), then redeploy:
+**First-login onboarding:** After password/Google (and email 2FA when enforced), incomplete profiles are gated
+to `/onboarding` until `onboarding_completed_at` is set. DOB/gender are private (self + platform admin).
+
+### Resend (email OTP / default email 2FA / password reset)
+
+Google OAuth does **not** need Resend. After password or Google, Vantage defaults to **email OTP as second
+factor** when Resend is configured. Email OTP and forgot-password stay unavailable until both env vars are set
+on the Vercel project (`vantage-frc-web`), then redeploy:
 
 1. Create a Resend account and API key at [resend.com](https://resend.com).
 2. Verify a sending domain (or use Resend’s onboarding sender for testing).
 3. In Vercel → Project → Settings → Environment Variables (Production):
    - `RESEND_API_KEY` = your Resend API key (`re_…`)
    - `AUTH_EMAIL_FROM` = a verified From address, e.g. `Vantage <access@yourdomain.com>`
-4. Redeploy. Confirm `/api/auth/status` reports `"emailOtpAvailable": true`.
+   - Optional emergency only: `ENABLE_EMAIL_2FA_BYPASS=true` (default unset/off)
+4. Redeploy. Confirm `/api/auth/status` reports `"emailOtpAvailable": true` and `"email2faEnforced": true`.
 
-Until those are set, `/signin` should show email OTP as unavailable with the honest reason from auth status —
-use Google or password for authorized accounts instead.
+Until those are set, email 2FA is honestly not enforced; Google/password still work. Sign-in shows why.
+
 
 ### Google Cloud Console (production)
 

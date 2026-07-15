@@ -1,8 +1,21 @@
-import { auth } from "@vantage/core";
+import { auth, isEmail2faEnforced, isOnboardingComplete, sessionHasEmail2fa } from "@vantage/core";
+import { withRls } from "@vantage/db";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PAGES = new Set(["/", "/features", "/features/cad", "/features/strategy", "/features/code", "/workflow", "/pricing", "/privacy", "/terms", "/signin", "/sign-in"]);
+const PUBLIC_PAGES = new Set([
+  "/",
+  "/features",
+  "/features/cad",
+  "/features/strategy",
+  "/features/code",
+  "/workflow",
+  "/pricing",
+  "/privacy",
+  "/terms",
+  "/signin",
+  "/sign-in",
+]);
 const PUBLIC_PREFIXES = [
   "/api/auth",
   "/api/waitlist",
@@ -15,9 +28,11 @@ const PUBLIC_PREFIXES = [
 const PUBLIC_FILE = /\.(?:avif|css|gif|ico|jpe?g|js|json|map|png|svg|txt|webmanifest|webp|woff2?|xml)$/i;
 
 function isPublic(pathname: string) {
-  return PUBLIC_PAGES.has(pathname)
-    || PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
-    || PUBLIC_FILE.test(pathname);
+  return (
+    PUBLIC_PAGES.has(pathname) ||
+    PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
+    PUBLIC_FILE.test(pathname)
+  );
 }
 
 function signInRedirect(request: NextRequest) {
@@ -28,28 +43,77 @@ function signInRedirect(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const fixtureSession = process.env.NODE_ENV !== "production"
-    && process.env.E2E_AUTH_FIXTURE === "1"
-    && request.cookies.get("vantage-e2e-session")?.value === "authenticated";
+  const fixtureSession =
+    process.env.NODE_ENV !== "production" &&
+    process.env.E2E_AUTH_FIXTURE === "1" &&
+    request.cookies.get("vantage-e2e-session")?.value === "authenticated";
 
-  if (isPublic(pathname) && pathname !== "/signin") {
+  if (isPublic(pathname) && pathname !== "/signin" && pathname !== "/sign-in") {
     return NextResponse.next();
   }
 
+  let session: Awaited<ReturnType<typeof auth.api.getSession>> = null;
   let authenticated = Boolean(fixtureSession);
   if (!authenticated && getSessionCookie(request)) {
     try {
-      authenticated = Boolean(await auth.api.getSession({ headers: request.headers }));
+      session = await auth.api.getSession({ headers: request.headers });
+      authenticated = Boolean(session);
     } catch {
       authenticated = false;
     }
   }
 
-  if (pathname === "/signin") {
-    return authenticated ? NextResponse.redirect(new URL("/dashboard", request.url)) : NextResponse.next();
+  if (fixtureSession) {
+    if (pathname === "/signin" || pathname === "/sign-in" || pathname === "/onboarding") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    return NextResponse.next();
   }
 
-  return authenticated ? NextResponse.next() : signInRedirect(request);
+  if (!authenticated || !session) {
+    if (pathname === "/signin" || pathname === "/sign-in") return NextResponse.next();
+    return signInRedirect(request);
+  }
+
+  const enforced = isEmail2faEnforced();
+  const email2faOk = !enforced || sessionHasEmail2fa(session.session as { email2faVerifiedAt?: Date | string | null });
+
+  if (!email2faOk) {
+    if (pathname === "/signin" || pathname === "/sign-in" || pathname.startsWith("/api/auth")) {
+      return NextResponse.next();
+    }
+    const verify = new URL("/signin", request.url);
+    verify.searchParams.set("verify", "1");
+    verify.searchParams.set("next", pathname.startsWith("/") ? pathname : "/dashboard");
+    return NextResponse.redirect(verify);
+  }
+
+  let onboardingDone = true;
+  try {
+    onboardingDone = await withRls({ userId: session.user.id }, (client) =>
+      isOnboardingComplete(client, session.user.id),
+    );
+  } catch {
+    onboardingDone = false;
+  }
+
+  if (!onboardingDone) {
+    if (
+      pathname === "/onboarding" ||
+      pathname.startsWith("/api/onboarding") ||
+      pathname.startsWith("/api/auth") ||
+      pathname.startsWith("/api/theme")
+    ) {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(new URL("/onboarding", request.url));
+  }
+
+  if (pathname === "/signin" || pathname === "/sign-in" || pathname === "/onboarding") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

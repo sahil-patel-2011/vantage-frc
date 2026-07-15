@@ -67,6 +67,7 @@ describe("waitlist-only auth access policy", () => {
     expect(report.publicSignup).toBe(false);
     expect(report.waitlistOnly).toBe(true);
     expect(report.emailOtpAvailable).toBe(false);
+    expect(report.email2faEnforced).toBe(false);
     expect(report.emailOtpReason).toMatch(/RESEND_API_KEY/);
     expect(report.passwordSignInAvailable).toBe(true);
     process.env.NODE_ENV = previous.nodeEnv;
@@ -112,6 +113,38 @@ describe("waitlist-only auth access policy", () => {
     expect(envOrFallback("https://vantage-frc-web.vercel.app", "fallback")).toBe(
       "https://vantage-frc-web.vercel.app",
     );
+  });
+
+  it("resolves auth base URL and always trusts the production origin", async () => {
+    const previous = {
+      betterAuth: process.env.BETTER_AUTH_URL,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL,
+      productionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+      vercelUrl: process.env.VERCEL_URL,
+      googleId: process.env.GOOGLE_CLIENT_ID,
+      googleSecret: process.env.GOOGLE_CLIENT_SECRET,
+    };
+    delete process.env.BETTER_AUTH_URL;
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    delete process.env.VERCEL_URL;
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "vantage-frc-web.vercel.app";
+    const { resolveAuthBaseURL, resolveAuthTrustedOrigins, isGoogleAuthConfigured } = await import(
+      "./access-policy"
+    );
+    expect(resolveAuthBaseURL()).toBe("https://vantage-frc-web.vercel.app");
+    expect(resolveAuthTrustedOrigins(resolveAuthBaseURL())).toContain(
+      "https://vantage-frc-web.vercel.app",
+    );
+    process.env.GOOGLE_CLIENT_ID = "  ";
+    process.env.GOOGLE_CLIENT_SECRET = "GOCSPX-example";
+    expect(isGoogleAuthConfigured()).toBe(false);
+
+    process.env.BETTER_AUTH_URL = previous.betterAuth;
+    process.env.NEXT_PUBLIC_APP_URL = previous.appUrl;
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = previous.productionUrl;
+    process.env.VERCEL_URL = previous.vercelUrl;
+    process.env.GOOGLE_CLIENT_ID = previous.googleId;
+    process.env.GOOGLE_CLIENT_SECRET = previous.googleSecret;
   });
 });
 

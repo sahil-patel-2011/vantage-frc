@@ -57,8 +57,8 @@ export class ResendEmailProvider implements EmailProvider {
       body: JSON.stringify({
         from: this.from,
         to: [message.email],
-        subject: "Your Vantage sign-in code",
-        text: `Your Vantage code is ${message.otp}. It expires in 5 minutes.`,
+        subject: "Your Vantage verification code",
+        text: `Your Vantage verification code is ${message.otp}. It expires in 5 minutes. If you did not request this, you can ignore this email.`,
       }),
     });
     if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
