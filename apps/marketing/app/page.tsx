@@ -84,7 +84,7 @@ export default function Home() {
           <div><span className="section-id">AI / CONTROLLED</span><h2>Useful intelligence. Visible limits.</h2></div>
           <div className="control-grid">
             <article><b>FREE</b><h3>Bring your own key</h3><p>Encrypted with envelope encryption. Your provider key is never stored in plaintext.</p></article>
-            <article><b>PAID TIERS</b><h3>Managed usage</h3><p>Team caps, per-member visibility, and a ledger behind every AI action. Plan prices are not announced yet.</p></article>
+            <article><b>VANTAGE PRO + MAX</b><h3>Managed usage</h3><p>Published monthly plans with configurable included allowances, team caps, per-member visibility, and a ledger behind every AI action.</p></article>
             <article><b>ADMIN</b><h3>No surprise spend</h3><p>Hard limits are checked before provider calls, with kill switches and audited grants.</p></article>
           </div>
         </section>
