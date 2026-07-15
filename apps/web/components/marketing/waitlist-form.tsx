@@ -3,7 +3,7 @@
 import { type FormEvent, useState } from "react";
 import { track } from "../../lib/marketing/analytics";
 
-export function WaitlistForm() {
+export function WaitlistForm({ idPrefix = "waitlist", compact = false }: { idPrefix?: string; compact?: boolean }) {
   const [state, setState] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -44,22 +44,22 @@ export function WaitlistForm() {
   }
 
   return (
-    <form className="waitlist-form" onSubmit={submit} aria-label="Join the Vantage waitlist">
+    <form className={`waitlist-form ${compact ? "compact-form" : ""}`} onSubmit={submit} aria-label="Join the Vantage waitlist">
       <div className="field">
-        <label htmlFor="email">Email</label>
-        <input id="email" name="email" type="email" autoComplete="email" required />
+        <label htmlFor={`${idPrefix}-email`}>Email</label>
+        <input id={`${idPrefix}-email`} name="email" type="email" autoComplete="email" required />
       </div>
       <div className="field">
-        <label htmlFor="teamNumber">FRC team number</label>
-        <input id="teamNumber" name="teamNumber" type="number" min="1" max="99999" inputMode="numeric" required />
+        <label htmlFor={`${idPrefix}-teamNumber`}>FRC team number</label>
+        <input id={`${idPrefix}-teamNumber`} name="teamNumber" type="number" min="1" max="99999" inputMode="numeric" required />
       </div>
       <div className="field">
-        <label htmlFor="phone">Phone <span>optional</span></label>
-        <input id="phone" name="phone" type="tel" autoComplete="tel" placeholder="+12025550123" />
+        <label htmlFor={`${idPrefix}-phone`}>Phone <span>optional</span></label>
+        <input id={`${idPrefix}-phone`} name="phone" type="tel" autoComplete="tel" placeholder="+12025550123" />
       </div>
       <div className="honeypot" aria-hidden="true">
-        <label htmlFor="website">Website</label>
-        <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+        <label htmlFor={`${idPrefix}-website`}>Website</label>
+        <input id={`${idPrefix}-website`} name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
       <label className="consent">
         <input name="smsConsent" type="checkbox" />

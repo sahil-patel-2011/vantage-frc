@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 128" role="img" aria-labelledby="title">
+  <title id="title">Vantage logo for dark surfaces</title>
+  <g transform="translate(8 8)">
+    <path d="M12 18l52 94 52-94H90L64 68 38 18z" fill="#edf3f5"/>
+    <path d="M53 18h22L64 44z" fill="#16d9e8"/>
+  </g>
+  <text x="148" y="86" fill="#edf3f5" font-family="Inter,Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2">Vantage</text>
+</svg>

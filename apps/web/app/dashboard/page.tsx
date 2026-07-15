@@ -1,3 +1,5 @@
+import { VantageLogo } from "../../components/brand";
+
 const modules = [
   ["01", "TEAM INTEL", "/intel", "Global lookup, hard metrics, qualitative findings, comparisons, trajectory, chemistry, and pick evidence."],
   ["02", "SCOUTING", "/scouting", "Versioned match and pit forms, confidence, disagreements, media hooks, and offline sync."],
@@ -9,7 +11,7 @@ export default function DashboardPage() {
   return (
     <main className="product-home">
       <header className="product-nav">
-        <a className="brand" href="/dashboard">VANTAGE</a>
+        <VantageLogo href="/dashboard" />
         <nav><a className="display-nav" href="/display" aria-label="Open TV Display Mode">▣ DISPLAY</a><a href="/security">Settings</a><a href="/">Public site</a></nav>
       </header>
       <section className="product-command">

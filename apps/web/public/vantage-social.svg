@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Vantage  competition operations for FRC teams</title>
+  <desc id="desc">Vantage geometric mark and wordmark on a warm white background.</desc>
+  <rect width="1200" height="630" fill="#f7f6f2"/>
+  <path d="M110 148l120 220 120-220h-60l-60 115-60-115z" fill="#182126"/>
+  <path d="M205 148h50l-25 60z" fill="#087f92"/>
+  <text x="405" y="290" fill="#182126" font-family="Inter,Arial,sans-serif" font-size="108" font-weight="700" letter-spacing="-4">Vantage</text>
+  <line x1="405" y1="334" x2="1060" y2="334" stroke="#cfd5d3" stroke-width="2"/>
+  <text x="405" y="402" fill="#516066" font-family="Inter,Arial,sans-serif" font-size="32">Competition operations software for FRC teams.</text>
+</svg>

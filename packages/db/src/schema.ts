@@ -162,6 +162,7 @@ export const profiles = pgTable("profiles", {
     .references(() => users.id, { onDelete: "cascade" }),
   displayName: text("display_name"),
   notificationPrefs: jsonb("notification_prefs").notNull().default({}),
+  themePreference: text("theme_preference").notNull().default("light"),
 });
 
 export const platformAdmins = pgTable("platform_admins", {

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 128" role="img" aria-labelledby="title">
+  <title id="title">Monochrome Vantage logo</title>
+  <g fill="#182126">
+    <path d="M20 26l52 94 52-94H98L72 76 46 26z"/>
+    <path d="M61 26h22L72 52z"/>
+    <text x="148" y="94" font-family="Inter,Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2">Vantage</text>
+  </g>
+</svg>

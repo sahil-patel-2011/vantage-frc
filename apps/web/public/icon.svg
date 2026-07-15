@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#0b1014"/>
-  <path d="M104 112h82l70 205 70-205h82L293 400h-74z" fill="#16d9e8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Vantage compact mark</title>
+  <rect width="512" height="512" rx="88" fill="#f7f6f2"/>
+  <path d="M110 126l146 268 146-268h-72l-74 141-74-141z" fill="#182126"/>
+  <path d="M226 126h60l-30 72z" fill="#087f92"/>
 </svg>
