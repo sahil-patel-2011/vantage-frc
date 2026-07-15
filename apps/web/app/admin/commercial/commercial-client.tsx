@@ -1,0 +1,18 @@
+"use client";
+import { useEffect, useState } from "react";
+type Org = { id:string;name:string;teamNumber:number;planCode:string|null;status:string|null;validUntil:string|null;creditBalance:string;modelCost:string };
+export default function CommercialClient() {
+  const [orgs,setOrgs]=useState<Org[]>([]); const [orgId,setOrgId]=useState(""); const [message,setMessage]=useState("");
+  const [gift,setGift]=useState({amountUsd:"",reason:""}); const [pack,setPack]=useState({code:"",name:"",creditAmountUsd:"",purchasePriceUsd:"",stripePriceId:"",active:false});
+  async function load(){const r=await fetch("/api/admin/commercial");const d=await r.json();setOrgs(d.organizations??[]);if(!r.ok)setMessage(d.error);}
+  useEffect(()=>{void load();},[]);
+  async function post(body:unknown){const r=await fetch("/api/admin/commercial",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});const d=await r.json();setMessage(r.ok?"Commercial ledger updated.":d.error);if(r.ok)await load();}
+  return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / COMMERCIAL CONTROL</span><h1>Entitlements + credits</h1></div><a href="/admin/models">Model routing →</a></header>
+    {message&&<p className="telemetry-status">{message}</p>}<section className="admin-grid"><section className="intel-panel"><span className="eyebrow">ORGANIZATIONS</span>{orgs.map((o)=><button className="similar-team" key={o.id} onClick={()=>setOrgId(o.id)}><b>#{o.teamNumber}</b><span>{o.name}<small>{o.planCode??"Free"} · {o.status??"no entitlement"}</small></span><em>${Number(o.creditBalance).toFixed(2)} credits</em></button>)}</section>
+      <section className="intel-panel"><span className="eyebrow">AUDITED ACTIONS</span><label>Selected organization<select value={orgId} onChange={(e)=>setOrgId(e.target.value)}><option value="">Choose team</option>{orgs.map((o)=><option key={o.id} value={o.id}>#{o.teamNumber} {o.name}</option>)}</select></label>
+        <div className="intel-actions"><button disabled={!orgId} onClick={()=>void post({action:"trial",orgId,planCode:"managed_20"})}>Grant 7-day Pro</button><button disabled={!orgId} onClick={()=>void post({action:"trial",orgId,planCode:"managed_50"})}>Grant 7-day Max</button><button disabled={!orgId} onClick={()=>confirm("Revoke the active trial now?")&&void post({action:"revoke-trial",orgId})}>Revoke trial</button></div>
+        <label>Gift amount USD<input type="number" min="0.01" step="0.01" value={gift.amountUsd} onChange={(e)=>setGift({...gift,amountUsd:e.target.value})}/></label><label>Required reason<input value={gift.reason} onChange={(e)=>setGift({...gift,reason:e.target.value})}/></label><button className="primary-action" disabled={!orgId} onClick={()=>void post({action:"gift",orgId,...gift})}>Gift credits + notify</button>
+      </section></section>
+    <section className="compare-panel"><span className="eyebrow">CREDIT PACK CONFIGURATION</span><div className="pick-controls"><input placeholder="Code" value={pack.code} onChange={(e)=>setPack({...pack,code:e.target.value})}/><input placeholder="Display name" value={pack.name} onChange={(e)=>setPack({...pack,name:e.target.value})}/><input placeholder="Credits USD" type="number" value={pack.creditAmountUsd} onChange={(e)=>setPack({...pack,creditAmountUsd:e.target.value})}/><input placeholder="Purchase USD" type="number" value={pack.purchasePriceUsd} onChange={(e)=>setPack({...pack,purchasePriceUsd:e.target.value})}/><input placeholder="Stripe Price ID" value={pack.stripePriceId} onChange={(e)=>setPack({...pack,stripePriceId:e.target.value})}/><button onClick={()=>void post({action:"credit-pack",...pack})}>Save disabled pack</button></div></section>
+  </main>;
+}

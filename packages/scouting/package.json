@@ -1,0 +1,13 @@
+{
+  "name": "@vantage/scouting",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./repository": "./src/repository.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "latest"
+  }
+}

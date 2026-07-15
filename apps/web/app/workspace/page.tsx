@@ -1,0 +1,39 @@
+import { auth } from "@vantage/core";
+import { withRls } from "@vantage/db";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import SyncIndicator from "./sync-indicator";
+import QuickActions from "./quick-actions";
+
+export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
+  const { orgId } = await searchParams;
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
+  if (!orgId) return <main className="content"><h1>Select your team workspace</h1><p>Access comes from a verified invitation.</p></main>;
+  const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
+    const membership = await client.query<{ role: string }>("SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2", [orgId, session.user.id]);
+    if (!membership.rows[0]) throw new Error("Organization access denied");
+    const context = await client.query<{ eventKey: string | null; eventName: string | null }>(
+      `SELECT c.active_event_key AS "eventKey",e.name AS "eventName" FROM org_active_context c
+       LEFT JOIN events_ref e ON e.event_key=c.active_event_key WHERE c.org_id=$1`, [orgId],
+    );
+    const next = context.rows[0]?.eventKey ? await client.query(
+      `SELECT match_key AS "matchKey",comp_level AS "compLevel",match_number AS "matchNumber",
+        event_time AS "eventTime" FROM matches_ref WHERE event_key=$1
+        AND COALESCE(actual_time,event_time,predicted_time)>now() ORDER BY COALESCE(actual_time,event_time,predicted_time) LIMIT 2`,
+      [context.rows[0].eventKey],
+    ) : { rows: [] };
+    return { role: membership.rows[0].role, context: context.rows[0] ?? { eventKey: null, eventName: null }, next: next.rows };
+  });
+  return <main className="workspace-page">
+    <header className="workspace-top"><a className="brand" href="/">VANTAGE</a><SyncIndicator /><span>{session.user.name} · {data.role.toUpperCase()}</span></header>
+    <section className={`active-event ${data.context.eventKey ? "" : "inactive"}`}>
+      <div><span className="eyebrow">ACTIVE EVENT</span><h1>{data.context.eventName ?? "No event selected"}</h1><p>{data.context.eventKey ?? "An owner or admin must deliberately set the event context."}</p></div>
+      {["owner","admin"].includes(data.role) && <a href={`/team?orgId=${orgId}`}>Team controls</a>}
+    </section>
+    <QuickActions orgId={orgId} />
+    <section className="now-next"><div><span className="eyebrow">NOW / NEXT</span><h2>Match queue</h2></div>
+      {data.next.length ? data.next.map((match: Record<string, unknown>, index) => <article key={String(match.matchKey)}><span>{index === 0 ? "NEXT" : "AFTER"}</span><strong>{String(match.compLevel).toUpperCase()} {String(match.matchNumber)}</strong><time>{match.eventTime ? new Date(String(match.eventTime)).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "Time pending"}</time></article>) : <p>No upcoming synced matches.</p>}
+    </section>
+  </main>;
+}

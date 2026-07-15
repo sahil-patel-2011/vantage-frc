@@ -1,0 +1,20 @@
+{
+  "name": "@vantage/reference",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./worker": "./src/worker.ts",
+    "./admin-store": "./src/admin-store.ts",
+    "./production-worker": "./src/production-worker.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vantage/db": "*",
+    "@neondatabase/serverless": "latest",
+    "drizzle-orm": "latest"
+  }
+}

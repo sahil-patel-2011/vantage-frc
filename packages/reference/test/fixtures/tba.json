@@ -1,0 +1,75 @@
+{
+  "events": [
+    {
+      "key": "2026miket",
+      "year": 2026,
+      "name": "Kettering University Event #1",
+      "short_name": "Kettering #1",
+      "start_date": "2026-03-05",
+      "end_date": "2026-03-07",
+      "event_type": 0,
+      "week": 1,
+      "district": { "key": "2026fim" },
+      "city": "Flint",
+      "state_prov": "MI",
+      "country": "USA",
+      "webcasts": []
+    }
+  ],
+  "teams": [
+    {
+      "key": "frc2337",
+      "team_number": 2337,
+      "nickname": "EngiNERDs",
+      "name": "General Motors / Kettering University",
+      "city": "Grand Blanc",
+      "state_prov": "MI",
+      "country": "USA",
+      "rookie_year": 2008
+    }
+  ],
+  "matches": [
+    {
+      "key": "2026miket_qm1",
+      "event_key": "2026miket",
+      "comp_level": "qm",
+      "set_number": 1,
+      "match_number": 1,
+      "alliances": {
+        "red": {
+          "score": 100,
+          "team_keys": ["frc2337"],
+          "surrogate_team_keys": [],
+          "dq_team_keys": []
+        },
+        "blue": {
+          "score": 90,
+          "team_keys": ["frc1"],
+          "surrogate_team_keys": [],
+          "dq_team_keys": []
+        }
+      },
+      "winning_alliance": "red",
+      "time": 1772726400,
+      "score_breakdown": {
+        "red": { "totalPoints": 100 },
+        "blue": { "totalPoints": 90 }
+      },
+      "videos": []
+    }
+  ],
+  "oprs": {
+    "oprs": { "frc2337": 38.4 },
+    "dprs": { "frc2337": 8.2 },
+    "ccwms": { "frc2337": 30.2 }
+  },
+  "rankings": {
+    "rankings": [
+      {
+        "rank": 2,
+        "team_key": "frc2337",
+        "record": { "wins": 8, "losses": 2, "ties": 0 }
+      }
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@vantage/web",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vantage/agent": "*",
+    "@vantage/billing": "*",
+    "@vantage/core": "*",
+    "@vantage/db": "*",
+    "@vantage/intel-research": "*",
+    "@vantage/scouting": "*",
+    "better-auth": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest"
+  }
+}

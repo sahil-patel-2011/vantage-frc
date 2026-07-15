@@ -1,0 +1,17 @@
+{
+  "name": "Vantage Event Scouting",
+  "short_name": "Vantage",
+  "description": "Offline-ready match and pit scouting",
+  "start_url": "/scouting",
+  "display": "standalone",
+  "background_color": "#0b1014",
+  "theme_color": "#16d9e8",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
