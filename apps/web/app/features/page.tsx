@@ -46,7 +46,10 @@ export default function FeaturesPage() {
           <div>
             <span className="app-badge good">Available</span>
             <h2>FRC Code Builder / Debugger</h2>
-            <p>Review robot-specific risk and prepare human-approved unified diff proposals without claiming autonomous deployment.</p>
+            <p>
+              Flag robot-specific risk, explain why it matters, teach safer WPILib habits, and prepare
+              human-approved unified diffs—without claiming autonomous deployment.
+            </p>
             <a className="text-link" href="/features/code">Open code detail →</a>
           </div>
           <CodePreview />

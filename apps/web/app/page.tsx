@@ -295,19 +295,20 @@ export default function Home() {
         <section className="signature-section code-signature">
           <div className="signature-copy">
             <span className="app-badge good">Available</span>
-            <small>03 / FRC CODE REVIEW</small>
-            <h2>Catch robot-code risk before it reaches hardware.</h2>
+            <small>03 / FRC CODE COACH</small>
+            <h2>Flag robot-code risk, explain why, teach the safer habit.</h2>
             <p>
-              Repository-aware reviews flag WPILib and vendor-pattern risks with file evidence, then package
-              proposals as human-approved unified diffs. No autonomous robot deployment.
+              Repository-aware reviews catch WPILib pattern risks with file evidence, then coach students through
+              the failure mode and a better approach. Proposals stay human-approved unified diffs—no autonomous
+              robot deploy.
             </p>
             <ul>
               <li>Blocking loops, CAN IDs, units, disabled-state checks</li>
-              <li>Simulation / code-freeze artifacts</li>
+              <li>Teach why a pattern fails under match pressure</li>
               <li>Proposal only—mentor or student must approve</li>
             </ul>
             <a className="text-link" href="/features/code">
-              Explore Code Review →
+              Explore Code Builder →
             </a>
           </div>
           <CodePreview />

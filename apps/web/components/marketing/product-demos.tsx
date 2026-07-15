@@ -1,4 +1,10 @@
-import { cadFixture, codeFixture, codeSample, strategyFixture } from "../../lib/marketing/demo-fixtures";
+import {
+  cadFixture,
+  codeFixture,
+  codeLesson,
+  codeSample,
+  strategyFixture,
+} from "../../lib/marketing/demo-fixtures";
 
 function DemoChrome({
   title,
@@ -164,15 +170,15 @@ export function CadPreview({ compact = false }: { compact?: boolean }) {
 
 export function CodePreview({ compact = false }: { compact?: boolean }) {
   const review = codeFixture;
-  const risks = review.risks.slice(0, compact ? 1 : 3);
+  const primary = review.risks[0];
 
   return (
     <div
       className={`product-demo code-product-demo ${compact ? "compact" : ""}`}
       aria-label="Demo data preview of the FRC Code Builder / Debugger"
     >
-      <DemoChrome title="FRC Code Builder / Debugger · DriveSubsystem.java" meta="Proposal only" />
-      <div className={`code-workbench marketing-demo-board ${compact ? "compact-board" : ""}`}>
+      <DemoChrome title="FRC Code Builder / Debugger · DriveSubsystem.java" meta="Learn · propose" />
+      <div className={`code-lesson-board marketing-demo-board ${compact ? "compact-board" : ""}`}>
         <article className="app-card code-source">
           <header>
             <div>
@@ -182,13 +188,8 @@ export function CodePreview({ compact = false }: { compact?: boolean }) {
             <span className="app-badge demo">Demo data</span>
           </header>
           <pre aria-label="Demo repository input">{codeSample}</pre>
-          {!compact && (
-            <footer>
-              <span>Read-only example input</span>
-              <b>{codeSample.split("\n").length} lines</b>
-            </footer>
-          )}
         </article>
+
         <article className="app-card code-findings">
           <header>
             <div>
@@ -199,33 +200,48 @@ export function CodePreview({ compact = false }: { compact?: boolean }) {
             </div>
             <strong>{review.risks.length}</strong>
           </header>
-          <ul>
-            {risks.map((risk) => (
-              <li key={risk.pattern}>
-                <div>
-                  <span className={`severity ${risk.severity}`}>{risk.severity}</span>
-                  <b>{risk.pattern.replaceAll("-", " ")}</b>
-                </div>
-                <p>{risk.message}</p>
-                {!compact && <code>{risk.evidence}</code>}
-              </li>
-            ))}
-          </ul>
+          {primary && (
+            <div className="code-finding-focus">
+              <div>
+                <span className={`severity ${primary.severity}`}>{primary.severity}</span>
+                <b>{primary.pattern.replaceAll("-", " ")}</b>
+              </div>
+              <p>{primary.message}</p>
+              <code>{primary.evidence}</code>
+            </div>
+          )}
+          {!compact && (
+            <p className="code-coach-note">
+              Mentors and students see the risk with file evidence—then keep reading for why and a safer habit.
+            </p>
+          )}
         </article>
+
         {!compact && (
-          <article className="app-card code-checks">
+          <article className="app-card code-teach">
             <header>
-              <h2>Required checks</h2>
-              <span className="app-badge good">Policy</span>
+              <h2>Learning coach</h2>
+              <span className="app-badge good">Teach</span>
             </header>
-            <ol>
-              {review.requiredChecks.map((check, index) => (
-                <li key={check}>
-                  <b>{index + 1}</b>
-                  <span>{check}</span>
-                </li>
-              ))}
-            </ol>
+            <dl className="code-teach-steps">
+              <div>
+                <dt>Flagged</dt>
+                <dd>
+                  <code>{codeLesson.flagged}</code>
+                </dd>
+              </div>
+              <div>
+                <dt>Why it matters</dt>
+                <dd>{codeLesson.why}</dd>
+              </div>
+              <div>
+                <dt>Better habit</dt>
+                <dd>{codeLesson.betterApproach}</dd>
+              </div>
+            </dl>
+            <pre className="code-better-sample" aria-label="Demo safer pattern">
+              {codeLesson.betterSample}
+            </pre>
             <div className="proposal-state">
               <span>OUTPUT STATE</span>
               <strong>Proposal only · human approval required</strong>
@@ -233,6 +249,16 @@ export function CodePreview({ compact = false }: { compact?: boolean }) {
           </article>
         )}
       </div>
+      {!compact && (
+        <ul className="code-capability-row" aria-label="Code Builder capabilities">
+          {codeLesson.capabilities.map((item) => (
+            <li key={item.id}>
+              <b>{item.id}</b>
+              <span>{item.detail}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -381,6 +407,28 @@ export function TeamOpsPreview() {
           <span>Waitlist + invite only</span>
           <b>Platform admin gated separately</b>
         </footer>
+      </div>
+    </div>
+  );
+}
+
+export function AssistantPreview({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      className={`product-demo assistant-product-demo ${compact ? "compact" : ""}`}
+      aria-label="Demo data preview of the FRC Assistant"
+    >
+      <DemoChrome title="FRC Assistant · Qual 42 context" meta="Event-scoped · source-labeled" />
+      <div className={`marketing-demo-board ${compact ? "compact-board" : ""}`}>
+        <article className="app-card">
+          <header>
+            <span className="app-badge demo">Demo data</span>
+            <h2>Grounded competition ask</h2>
+          </header>
+          <p className="app-muted">
+            Strategy, matchups, and scout-attributed notes in one event context—without inventing confidence.
+          </p>
+        </article>
       </div>
     </div>
   );
