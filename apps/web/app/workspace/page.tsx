@@ -4,6 +4,7 @@ import { cookies,headers } from "next/headers";
 import { redirect } from "next/navigation";
 import SyncIndicator from "./sync-indicator";
 import QuickActions from "./quick-actions";
+import { VantageLogo } from "../../components/brand";
 
 export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
   const { orgId } = await searchParams;
@@ -28,7 +29,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     return { role: membership.rows[0].role, context: context.rows[0] ?? { eventKey: null, eventName: null }, next: next.rows,freshness:freshness.rows[0]??{syncedAt:null,lastError:null} };
   });
   return <main className="workspace-page">
-    <header className="workspace-top"><a className="brand" href="/dashboard">VANTAGE</a><a className="display-nav" href={`/display?orgId=${orgId}`} aria-label="Open TV Display Mode setup">▣ <span>DISPLAY</span></a><SyncIndicator /><span>{session.user.name} · {data.role.toUpperCase()}</span></header>
+    <header className="workspace-top"><VantageLogo href="/dashboard" /><a className="display-nav" href={`/display?orgId=${orgId}`} aria-label="Open TV Display Mode setup">▣ <span>DISPLAY</span></a><SyncIndicator /><span>{session.user.name} · {data.role.toUpperCase()}</span></header>
     <section className={`active-event ${data.context.eventKey ? "" : "inactive"}`}>
       <div><span className="eyebrow">ACTIVE EVENT</span><h1>{data.context.eventName ?? "No event selected"}</h1><p>{data.context.eventKey ?? "An owner or admin must deliberately set the event context."}</p></div>
       {["owner","admin"].includes(data.role) && <a href={`/team?orgId=${orgId}`}>Team controls</a>}

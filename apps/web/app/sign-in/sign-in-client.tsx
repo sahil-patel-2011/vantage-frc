@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { VantageLogo } from "../../components/brand";
 
 export default function SignInClient({ googleEnabled, nextPath = "/dashboard" }: { googleEnabled: boolean; nextPath?: string }) {
   const [email, setEmail] = useState("");
@@ -47,7 +48,7 @@ export default function SignInClient({ googleEnabled, nextPath = "/dashboard" }:
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <a className="brand" href="/">VANTAGE</a>
+        <VantageLogo />
         <span className="eyebrow">VANTAGE / SECURE ACCESS</span>
         <h1>Sign in to your team workspace</h1>
         <p>Membership is invite-only. Signing in does not automatically join a team.</p>

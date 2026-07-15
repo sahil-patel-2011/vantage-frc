@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { VantageLogo } from "../../components/brand";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type Message = { id: string; role: string; content: string; explicitlyShared: boolean; provider?: string; model?: string };
@@ -38,7 +39,7 @@ export default function ChatClient({ orgId }: { orgId: string }) {
     await fetch(`/api/agent/memory?id=${id}`,{method:"DELETE"}); await load(thread?.id);
   }
   return <main className="chat-page">
-    <header className="workspace-top"><a className="brand" href={`/workspace?orgId=${orgId}`}>VANTAGE</a><strong>AGENT CONTEXT</strong><span>{thread?.scope === "team" ? "TEAM SHARED" : "PRIVATE"}</span></header>
+    <header className="workspace-top"><VantageLogo href={`/workspace?orgId=${orgId}`} /><strong>AGENT CONTEXT</strong><span>{thread?.scope === "team" ? "TEAM SHARED" : "PRIVATE"}</span></header>
     <aside className="chat-sidebar"><span className="eyebrow">CHANNELS</span><button onClick={() => newThread("private")}>+ Private chat</button><button onClick={() => newThread("team")}>+ Team-shared chat</button>
       {threads.map((item) => <button className={thread?.id === item.id ? "active" : ""} key={item.id} onClick={() => { setThread(item);void load(item.id); }}><span>{item.scope === "team" ? "SHARED" : "PRIVATE"}</span>{item.title}</button>)}
     </aside>

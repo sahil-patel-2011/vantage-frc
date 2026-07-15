@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 128" role="img" aria-labelledby="title desc">
+  <title id="title">Vantage</title>
+  <desc id="desc">A geometric V formed by converging data paths beside the Vantage wordmark.</desc>
+  <g transform="translate(8 8)">
+    <path d="M12 18l52 94 52-94H90L64 68 38 18z" fill="#182126"/>
+    <path d="M53 18h22L64 44z" fill="#087f92"/>
+  </g>
+  <text x="148" y="86" fill="#182126" font-family="Inter,Arial,sans-serif" font-size="66" font-weight="700" letter-spacing="-2">Vantage</text>
+</svg>
