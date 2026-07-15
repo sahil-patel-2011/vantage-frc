@@ -19,7 +19,8 @@ export default function FeaturesPage() {
           <span className="section-id">CURATED PRODUCT GALLERY</span>
           <h1>Three signature engines. One competition context.</h1>
           <p>
-            Previews use the same deterministic fixtures as the in-app Strategy and Code modules. Connector
+            Marketing previews use labeled deterministic fixtures. Authenticated Strategy stays empty until real
+            match/metrics inputs exist. Connector
             states stay explicit: Available, Setup required, or Planned.
           </p>
         </header>

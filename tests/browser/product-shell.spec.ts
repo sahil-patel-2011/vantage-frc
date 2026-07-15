@@ -54,10 +54,20 @@ test("account route renders settings tabs and notification badge stays empty at 
   await expect(page.locator(".soft-notif b")).toHaveCount(0);
 });
 
-test("real strategy and code routes render deterministic implemented engines", async ({ page }) => {
+test("strategy defaults to empty setup and hides fabricated probabilities", async ({ page }) => {
   await page.goto("/strategy");
   await expect(page.getByRole("heading", { name: "Win / Loss + Strategy" })).toBeVisible();
+  await expect(page.getByText("Deterministic demo")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Try demo scenario" })).toBeVisible();
+  await expect(page.getByText("65%")).toHaveCount(0);
+  await page.getByRole("button", { name: "Try demo scenario" }).click();
+  await expect(page.getByText("Illustrative only · not live data")).toBeVisible();
   await expect(page.getByText("weighted-current-v1")).toBeVisible();
+  await page.getByRole("button", { name: "Exit demo" }).click();
+  await expect(page.getByRole("button", { name: "Try demo scenario" })).toBeVisible();
+});
+
+test("code route still renders the implemented review engine against labeled sample input", async ({ page }) => {
   await page.goto("/code");
   await expect(page.getByRole("heading", { name: "FRC Code Builder / Debugger" })).toBeVisible();
   await expect(page.getByText("blocking robot loop")).toBeVisible();
