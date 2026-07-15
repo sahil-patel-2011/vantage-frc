@@ -7,6 +7,8 @@ const links = [
   ["/features", "Features"],
   ["/workflow", "Workflow"],
   ["/features/cad", "AI CAD"],
+  ["/features/code", "Code"],
+  ["/features/strategy", "Assistant"],
   ["/pricing", "Pricing"],
 ] as const;
 
@@ -18,7 +20,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const nav = (mobile = false) => links.map(([href, label]) => (
     <a
-      aria-current={pathname === href || (href === "/features" && pathname.startsWith("/features/") && pathname !== "/features/cad") ? "page" : undefined}
+      aria-current={pathname === href || (href === "/features" && pathname.startsWith("/features/") && !links.some(([otherHref]) => otherHref !== "/features" && otherHref === pathname)) ? "page" : undefined}
       href={href}
       key={href}
       onClick={mobile ? (event) => (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open") : undefined}
@@ -41,5 +43,5 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
-  return <footer className="marketing-footer"><BrandLink /><p>Competition operations software for FRC teams.</p><nav><a href="/pricing">Pricing</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="mailto:hello@vantagefrc.com">Contact</a></nav></footer>;
+  return <footer className="marketing-footer"><BrandLink /><p>Vantage FRC — competition operations software for FIRST Robotics Competition teams.</p><nav><a href="/pricing">Pricing</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="mailto:hello@vantagefrc.com">Contact</a></nav></footer>;
 }
