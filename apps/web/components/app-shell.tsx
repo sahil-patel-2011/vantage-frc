@@ -64,9 +64,10 @@ const groups: NavGroup[] = [
     icon: "gear",
     items: [
       { href: "/team", label: "Admin", icon: "gear" },
+      { href: "/messages", label: "Messages", icon: "chat" },
       { href: "/account", label: "Account", icon: "users" },
       { href: "/security", label: "Security", icon: "gear" },
-      { href: "/chat", label: "Vantage AI", icon: "chat" },
+      { href: "/chat", label: "Vantage AI", icon: "bolt" },
     ],
   },
 ];
