@@ -1,10 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
   <title id="title">Vantage  competition operations for FRC teams</title>
   <desc id="desc">Vantage geometric mark and wordmark on a warm white background.</desc>
-  <rect width="1200" height="630" fill="#f7f6f2"/>
-  <path d="M110 148l120 220 120-220h-60l-60 115-60-115z" fill="#182126"/>
-  <path d="M205 148h50l-25 60z" fill="#087f92"/>
-  <text x="405" y="290" fill="#182126" font-family="Inter,Arial,sans-serif" font-size="108" font-weight="700" letter-spacing="-4">Vantage</text>
+  <rect width="1200" height="630" fill="#faf9f6"/>
+  <g transform="translate(92 126) scale(2.2)">
+    <path d="M12 18h13l39 72 39-72h13L64 114z" fill="#14243a"/>
+    <path d="M12 45h13l39 45-7 13zM12 72h13l32 31-7 13z" fill="#1457d9"/>
+    <rect x="58" y="87" width="12" height="12" fill="#1457d9"/>
+  </g>
+  <text x="405" y="290" fill="#14243a" font-family="Arial,sans-serif" font-size="84" font-weight="700" letter-spacing="7">VANTAGE</text>
   <line x1="405" y1="334" x2="1060" y2="334" stroke="#cfd5d3" stroke-width="2"/>
-  <text x="405" y="402" fill="#516066" font-family="Inter,Arial,sans-serif" font-size="32">Competition operations software for FRC teams.</text>
+  <text x="405" y="402" fill="#536172" font-family="Arial,sans-serif" font-size="32">One shared context—from match data to robot decisions.</text>
 </svg>

@@ -18,6 +18,7 @@
     "@vantage/reference": "*",
     "@vantage/cad": "*",
     "@vantage/scouting": "*",
+    "@vantage/prediction-strategy": "*",
     "@neondatabase/serverless": "latest",
     "better-auth": "latest",
     "next": "latest",

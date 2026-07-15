@@ -3,9 +3,9 @@ import { expect, test } from "@playwright/test";
 test("public site uses a restrained light palette", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await expect(page.getByRole("heading", { name: "One reliable context for every competition decision." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "One shared context—from match data to robot decisions." })).toBeVisible();
   await expect(page.locator("#hero-waitlist").getByLabel("Email")).toBeVisible();
-  await expect(page.locator(".marketing-site")).toHaveCSS("background-color", "rgb(247, 246, 242)");
+  await expect(page.locator(".marketing-site")).toHaveCSS("background-color", "rgb(250, 249, 246)");
 });
 
 test("dashboard defaults light and persists an explicit dark choice", async ({ context, page }) => {

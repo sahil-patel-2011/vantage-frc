@@ -5,7 +5,7 @@ test("marketing navigation uses real routes and active tabs", async ({ page }) =
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Features" }).click();
   await expect(page).toHaveURL(/\/features$/);
   await expect(page.getByRole("link", { name: "Features", exact: true }).first()).toHaveAttribute("aria-current", "page");
-  await expect(page.getByText("Requires setup").first()).toBeVisible();
+  await expect(page.getByText("Setup required").first()).toBeVisible();
 
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Workflow" }).click();
   await expect(page).toHaveURL(/\/workflow$/);

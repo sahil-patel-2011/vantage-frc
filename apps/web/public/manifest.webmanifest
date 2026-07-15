@@ -1,7 +1,7 @@
 {
-  "name": "Vantage Event Scouting",
+  "name": "Vantage Competition Operations",
   "short_name": "Vantage",
-  "description": "Offline-ready match and pit scouting",
+  "description": "FRC scouting, strategy, engineering, and event operations",
   "id": "/dashboard",
   "start_url": "/dashboard",
   "scope": "/",

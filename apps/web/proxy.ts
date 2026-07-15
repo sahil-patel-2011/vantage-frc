@@ -2,7 +2,7 @@ import { auth } from "@vantage/core";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PAGES = new Set(["/", "/features", "/features/cad", "/workflow", "/pricing", "/privacy", "/terms", "/signin", "/sign-in"]);
+const PUBLIC_PAGES = new Set(["/", "/features", "/features/cad", "/features/strategy", "/features/code", "/workflow", "/pricing", "/privacy", "/terms", "/signin", "/sign-in"]);
 const PUBLIC_PREFIXES = [
   "/api/auth",
   "/api/waitlist",

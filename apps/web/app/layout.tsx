@@ -9,13 +9,13 @@ const canonicalUrl = "https://vantage-frc-web.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(canonicalUrl),
-  title: "Vantage — One source of truth for your FRC season",
-  description: "Scouting, intelligence, strategy, live operations, prediction, CAD, and coding context for FIRST Robotics Competition teams.",
+  title: "Vantage — One shared context for FRC decisions",
+  description: "Competition operations software connecting FRC scouting, prediction, strategy, CAD, and code around the same event evidence.",
   manifest: "/manifest.webmanifest",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Vantage — Competition telemetry for your whole season",
-    description: "Turn fragmented team data into one operational picture.",
+    title: "Vantage — From match data to robot decisions",
+    description: "One shared FRC context for scouting, prediction, strategy, CAD, and code.",
     url: canonicalUrl,
     type: "website",
     siteName: "Vantage",

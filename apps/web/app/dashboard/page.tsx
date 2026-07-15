@@ -1,26 +1,21 @@
-import { VantageLogo } from "../../components/brand";
-
-const modules = [
-  ["01", "TEAM INTEL", "/intel", "Global lookup, hard metrics, qualitative findings, comparisons, trajectory, chemistry, and pick evidence."],
-  ["02", "SCOUTING", "/scouting", "Versioned match and pit forms, confidence, disagreements, media hooks, and offline sync."],
-  ["03", "WORKSPACE", "/workspace", "Active-event context, match queue, quick actions, and team controls."],
-  ["04", "CAD", "/cad", "Controlled engineering briefs, reviewed mutations, and verified geometry checkpoints."],
-];
-
 export default function DashboardPage() {
-  return (
-    <main className="product-home">
-      <header className="product-nav">
-        <VantageLogo href="/dashboard" />
-        <nav><a className="display-nav" href="/display" aria-label="Open TV Display Mode">▣ DISPLAY</a><a href="/security">Settings</a><a href="/">Public site</a></nav>
-      </header>
-      <section className="product-command">
-        <div><span className="eyebrow">COMPETITION TELEMETRY / COMMAND CENTER</span><h1>Every decision starts from shared evidence.</h1><p>Global reference metrics, source-linked research, private scouting, and controlled AI in one Vantage workspace.</p><a className="home-cta" href="/workspace">Open workspace →</a></div>
-        <div className="command-board"><header><span>VANTAGE / SYSTEM STATUS</span><b>READY</b></header><div><article><small>REFERENCE</small><strong>TBA + Statbotics</strong><i /></article><article><small>SCOUTING</small><strong>Offline-capable</strong><i /></article><article><small>RESEARCH</small><strong>Source-aware</strong><i /></article></div><footer><span>Membership</span><strong>Invite only</strong></footer></div>
-      </section>
-      <section className="product-modules">
-        {modules.map(([number, title, href, copy]) => <article key={number}><span>{number}</span><h2><a href={href}>{title}</a></h2><p>{copy}</p></article>)}
-      </section>
-    </main>
-  );
+  return <main className="command-center">
+    <header className="app-page-header"><div><span className="breadcrumbs">Command Center / Active event</span><h1>Competition Command Center</h1><p>Next-match decisions, robot readiness, scouting coverage, and system state in one operational view.</p></div><div className="command-header-state"><span className="app-badge demo">Demo data</span><a className="app-button secondary" href="/workspace">Select live workspace</a></div></header>
+
+    <section className="event-context-bar"><div><span>ACTIVE EVENT</span><strong>2026 Regional · Demo fixture</strong><small>Connect a team workspace to replace deterministic demo data.</small></div><div><span>SYSTEM STATE</span><strong className="state-good">Offline-ready</strong><small>Last demo sync 2 minutes ago</small></div></section>
+
+    <section className="command-priority-grid">
+      <article className="next-match-card app-card"><header><span className="app-badge demo">Demo</span><small>NEXT MATCH</small></header><div className="match-number"><span>Qualification</span><strong>42</strong></div><div className="countdown-block"><span>STARTS IN</span><strong>18:24</strong><b>Leave stands in 6 min</b></div><footer><div><span>RED</span><b>254 · 1678 · 4414</b></div><div><span>BLUE</span><b>2056 · 1323 · 971</b></div></footer></article>
+
+      <article className="readiness-card app-card"><header><div><span className="app-badge demo">Demo</span><h2>Robot readiness</h2></div><strong>72%</strong></header><div className="readiness-track"><i style={{width:"72%"}}/></div><ul><li className="done"><span>Battery assigned</span><b>Ready</b></li><li className="done"><span>Code artifact reviewed</span><b>Ready</b></li><li><span>Intake inspection</span><b>Due now</b></li><li><span>Drive-team handoff</span><b>Pending</b></li></ul><a href="/code">Open robot checks →</a></article>
+
+      <article className="prediction-card app-card"><header><div><span className="app-badge demo">Demo</span><h2>Active prediction</h2></div><span className="app-badge good">Available</span></header><div className="prediction-value"><strong>64%</strong><span>our alliance</span><small>55–73% confidence</small></div><div className="mini-probability"><i style={{width:"64%"}}/></div><ol><li><b>+8.4</b><span>Weighted scoring</span></li><li><b>+3.1</b><span>Autonomous</span></li><li className="risk"><b>−1.2</b><span>Foul exposure</span></li></ol><a href="/strategy">Open strategy playbook →</a></article>
+
+      <article className="gaps-card app-card"><header><div><span className="app-badge demo">Demo</span><h2>Urgent scouting gaps</h2></div><strong>3</strong></header><ul><li><div><b>Team 971 · Q39</b><span>No confidence rating</span></div><a href="/scouting">Review</a></li><li><div><b>Team 1323 · pit</b><span>Drivebase photo pending</span></div><a href="/scouting">Assign</a></li><li><div><b>Q41 conflict</b><span>Two cycle counts disagree</span></div><a href="/scouting">Resolve</a></li></ul></article>
+    </section>
+
+    <section className="command-actions" aria-label="Command center quick actions"><a href="/scouting"><span>Scout</span><strong>Open assigned form</strong></a><a href="/strategy"><span>Strategize</span><strong>Run match what-if</strong></a><a href="/cad"><span>CAD</span><strong>Review engineering jobs</strong><small>Setup may be required</small></a><a href="/display"><span>Display</span><strong>Prepare pit board</strong></a></section>
+
+    <section className="command-secondary-grid"><article className="app-card"><header><h2>System connections</h2><a href="/team/data">Manage</a></header><ul className="connection-list"><li><span>TBA reference cache</span><b className="state-setup">Setup required</b></li><li><span>Statbotics signals</span><b className="state-setup">Setup required</b></li><li><span>Scouting local cache</span><b className="state-good">Available</b></li><li><span>CAD connectors</span><b className="state-setup">Setup required</b></li></ul></article><article className="app-card"><header><h2>Season operations</h2><span className="app-badge demo">Demo</span></header><div className="season-metrics"><div><strong>36</strong><span>matches cached</span></div><div><strong>92%</strong><span>forms complete</span></div><div><strong>4</strong><span>open conflicts</span></div></div><p className="app-muted">Live metrics appear after a team and active event are selected.</p></article></section>
+  </main>;
 }
