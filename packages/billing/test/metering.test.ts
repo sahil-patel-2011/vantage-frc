@@ -67,4 +67,42 @@ describe("serialized AI metering", () => {
     expect(queries[0]).toContain("FOR UPDATE");
     expect(queries.some((query) => query.includes("INSERT INTO ai_usage_events"))).toBe(true);
   });
+
+  it("records local_cli usage at cost 0 without locking billing credits", async () => {
+    const queries: string[] = [];
+    const params: unknown[][] = [];
+    const client = {
+      async query(sql: string, values?: unknown[]) {
+        queries.push(sql);
+        if (values) params.push(values);
+        return { rows: [], rowCount: 1 };
+      }
+    } as unknown as PoolClient;
+    const invoke = vi.fn(async (source: "platform" | "byo" | "local_cli") => ({
+      value: { ok: true },
+      promptTokens: 10,
+      completionTokens: 5,
+      costUsd: 99,
+      model: "claude-code-cli",
+      provider: "local_cli",
+      keySource: source
+    }));
+    const result = await meteredAI({
+      client,
+      orgId: "org",
+      userId: "user",
+      feature: "cad",
+      requestId: "local-cli-request",
+      estimatedCostUsd: 0,
+      keySource: "local_cli",
+      invoke
+    });
+    expect(result).toEqual({ ok: true });
+    expect(invoke).toHaveBeenCalledWith("local_cli");
+    expect(queries.some((query) => query.includes("FROM org_billing"))).toBe(false);
+    expect(queries.some((query) => query.includes("INSERT INTO ai_usage_events"))).toBe(true);
+    expect(queries.some((query) => query.includes("'local_cli'"))).toBe(true);
+    const insertParams = params.find((row) => row.includes("cad"));
+    expect(insertParams?.includes(0) || queries.some((q) => q.includes("cost_usd") && q.includes(",0,"))).toBe(true);
+  });
 });

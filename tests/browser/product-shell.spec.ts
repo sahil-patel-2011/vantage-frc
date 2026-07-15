@@ -59,7 +59,7 @@ test("account route renders settings tabs and notification badge stays empty at 
   await expect(page.getByRole("navigation", { name: "Account sections" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Appearance" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Integrations" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(page.locator(".soft-notif b")).toHaveCount(0);
 });
 
@@ -76,8 +76,10 @@ test("strategy defaults to empty setup and hides fabricated probabilities", asyn
   await expect(page.getByRole("button", { name: "Try demo scenario" })).toBeVisible();
 });
 
-test("code route still renders the implemented review engine against labeled sample input", async ({ page }) => {
+test("code route reviews fixtures via interactive workbench", async ({ page }) => {
   await page.goto("/code");
   await expect(page.getByRole("heading", { name: "FRC Code Builder / Debugger" })).toBeVisible();
+  await page.getByRole("button", { name: "Run risk review" }).click();
   await expect(page.getByText("blocking robot loop")).toBeVisible();
+  await expect(page.getByText("Review complete.")).toBeVisible();
 });

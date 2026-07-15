@@ -4,7 +4,7 @@ test("landing sign in reaches dashboard with local auth fixture", async ({ conte
   await page.goto("/");
   await page.getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/signin$/);
-  await expect(page.getByRole("heading", { name: "Sign in to your team workspace" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome to Vantage" })).toBeVisible();
 
   await context.addCookies([{
     name: "vantage-e2e-session",
@@ -15,7 +15,8 @@ test("landing sign in reaches dashboard with local auth fixture", async ({ conte
   }]);
   await page.goto("/signin");
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("heading", { name: "Competition Command Center" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Customize" })).toBeVisible();
 });
 
 test("protected routes preserve their requested destination", async ({ page }) => {

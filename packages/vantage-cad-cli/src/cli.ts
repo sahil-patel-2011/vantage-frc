@@ -19,7 +19,7 @@ async function status(){const credential=await loadDeviceCredential();if(!creden
 async function diagnose(){console.log(`Vantage URL: ${base}\nCLI version: ${VERSION}\nCredential storage: ${credentialStorageStatus()}`);const credential=await loadDeviceCredential();console.log(`Paired credential: ${credential?"present":"missing"}`);if(credential)await status();const fusion=await detectFusionPrerequisites();console.log(`Fusion platform supported: ${fusion.supported}\nFusion add-in paths found: ${fusion.existing.join(", ")||"none"}`);console.log("Consumer ChatGPT/Claude subscriptions are not tested as API credentials. Vantage never scrapes browser sessions or cookies.");}
 async function start(){const credential=await loadDeviceCredential();if(!credential)throw new Error("Not paired. Run `vantage-cad setup`.");if(credential.platform==="onshape"){console.log("Onshape jobs run on the Vantage server. This monitor may be closed at any time.");for(;;){await heartbeat(credential);await new Promise(resolve=>setTimeout(resolve,30_000));}}
  const useMock=process.env.VANTAGE_CAD_MOCK==="1";
- let plugin=validatePluginEndpoint(credential.pluginEndpoint??"http://127.0.0.1:32145");
+ const plugin=validatePluginEndpoint(credential.pluginEndpoint??"http://127.0.0.1:32145");
  if(useMock){
   const { startMockFusionPluginServer } = await import("@vantage/cad");
   await startMockFusionPluginServer(Number(plugin.port || 32145));

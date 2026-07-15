@@ -34,7 +34,11 @@ export type UsageReceipt<T> = {
   costUsd: number;
   model: string;
   provider: string;
+  keySource?: MeterKeySource;
 };
+
+/** Platform-billed, BYOK, or local CLI (subscription on the user machine — Vantage charge is always 0). */
+export type MeterKeySource = "platform" | "byo" | "local_cli";
 
 export type MeteredAIInput<T> = {
   client: PoolClient;
@@ -49,7 +53,9 @@ export type MeteredAIInput<T> = {
   model?: string;
   metadata?: Record<string, unknown>;
   billingOwner?: { type: "user" | "org"; id: string };
-  invoke: (keySource: "platform" | "byo") => Promise<UsageReceipt<T>>;
+  /** When `local_cli`, Vantage never charges and ledger cost is forced to 0. */
+  keySource?: MeterKeySource;
+  invoke: (keySource: MeterKeySource) => Promise<UsageReceipt<T>>;
 };
 type LockedCreditWallet={accountId:string;included:number;purchased:number;gifted:number;serviceMultiplier:number;entitlementSnapshot:Record<string,unknown>;planCode:string};
 async function lockCreditWallet<T>(input:MeteredAIInput<T>,keySource:"platform"|"byo"):Promise<LockedCreditWallet|null>{
@@ -287,9 +293,34 @@ export function findBudgetViolation(
 /**
  * Must be called inside the same transaction established by withRls().
  * The billing row lock serializes the cap check, provider call, and ledger append.
+ * `keySource: "local_cli"` skips credit caps and always records cost_usd = 0.
  */
 export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   if (input.estimatedCostUsd < 0) throw new Error("Estimated cost cannot be negative");
+
+  if (input.keySource === "local_cli") {
+    const receipt = await input.invoke("local_cli");
+    await input.client.query(
+      `INSERT INTO ai_usage_events
+        (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
+         completion_tokens, total_tokens, cost_usd, request_id, metadata)
+       VALUES ($1,$2,$3,$4,$5,'local_cli',$6,$7,$8,0,$9,$10::jsonb)`,
+      [
+        input.orgId,
+        input.userId,
+        input.feature,
+        receipt.model,
+        receipt.provider,
+        receipt.promptTokens,
+        receipt.completionTokens,
+        receipt.promptTokens + receipt.completionTokens,
+        input.requestId,
+        JSON.stringify({ ...(input.metadata ?? {}), vantageChargeUsd: 0, path: "local_cli" }),
+      ],
+    );
+    return receipt.value;
+  }
+
   const billing = await input.client.query<{
     tier: "free" | "starter" | "team" | "enterprise";
     credit_cap_usd: string;
@@ -305,7 +336,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   if (!account) throw new Error("Billing account is not configured");
   if (account.kill_switch) throw new BillingDisabledError();
 
-  const keySource = account.tier === "free" ? "byo" : "platform";
+  const keySource: MeterKeySource = account.tier === "free" ? "byo" : "platform";
   if (keySource === "byo") {
     const key = await input.client.query(
       "SELECT 1 FROM org_llm_keys WHERE org_id = $1 LIMIT 1",
@@ -575,10 +606,10 @@ export function evaluateFreeManagedUsage(input:FreeManagedPolicy&{estimatedCostU
   if(input.activeRequests>=input.concurrencyLimit)return{allowed:false as const,reason:"low_priority_capacity_busy" as const,...fallback};
   return{allowed:true as const,bucket:"sponsored" as const,priority:"low" as const,remainingAllowanceUsd:input.monthlyAllowanceUsd-input.monthlyUsedUsd-input.estimatedCostUsd};
 }
-export function evaluateEntitlement(input:{entitlement:PlanEntitlement;feature:string;managedProviderCostUsedUsd:number;estimatedManagedCostUsd:number;keySource:"platform"|"byo"|"local"|"sponsored"}){
+export function evaluateEntitlement(input:{entitlement:PlanEntitlement;feature:string;managedProviderCostUsedUsd:number;estimatedManagedCostUsd:number;keySource:"platform"|"byo"|"local"|"local_cli"|"sponsored"}){
   if(!input.entitlement.featureFlags[input.feature])return{allowed:false as const,reason:"feature_not_in_plan" as const,remainingAllowanceUsd:Math.max(0,input.entitlement.managedAllowanceUsd-input.managedProviderCostUsedUsd)};
   const remaining=Math.max(0,input.entitlement.managedAllowanceUsd-input.managedProviderCostUsedUsd);
-  if(input.keySource==="byo"||input.keySource==="local")return{allowed:true as const,bucket:"external_provider" as const,remainingAllowanceUsd:remaining};
+  if(input.keySource==="byo"||input.keySource==="local"||input.keySource==="local_cli")return{allowed:true as const,bucket:"external_provider" as const,remainingAllowanceUsd:remaining};
   if(input.keySource==="sponsored")return input.estimatedManagedCostUsd<=remaining
     ?{allowed:true as const,bucket:"sponsored" as const,remainingAllowanceUsd:remaining-input.estimatedManagedCostUsd}
     :{allowed:false as const,reason:"managed_allowance_exhausted" as const,remainingAllowanceUsd:remaining};

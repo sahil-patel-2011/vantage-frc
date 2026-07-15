@@ -193,7 +193,7 @@ export default function AccountClient() {
               <input value={account?.email ?? ""} readOnly disabled />
             </label>
             <div className="account-actions">
-              <button className="primary-action" type="submit" disabled={busy}>
+              <button className="primary-action" type="submit" disabled={busy || !account}>
                 Save profile
               </button>
               <button className="danger-action" type="button" disabled={busy} onClick={() => void signOut()}>

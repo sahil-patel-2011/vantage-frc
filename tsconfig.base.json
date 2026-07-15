@@ -41,6 +41,7 @@
       ],
       "@vantage/agent": ["packages/agent/src/index.ts"],
       "@vantage/agent/repository": ["packages/agent/src/repository.ts"],
+      "@vantage/agent/coding-assistant": ["packages/agent/src/coding-assistant.ts"],
       "@vantage/cad": ["packages/cad/src/index.ts"],
       "@vantage/cad/fusion-relay": ["packages/cad/src/fusion-relay.ts"],
       "@vantage/export-center": ["packages/export-center/src/index.ts"],
