@@ -81,6 +81,52 @@ describe("model router", () => {
       }),
     ).toThrow("No configured model");
   });
+
+  it("prevents free accounts from incurring unmanaged provider cost", () => {
+    const freeRequest = {
+      capability: "strategy",
+      plan: "free",
+      accountTier: "free" as const,
+      paygEnabled: false,
+      estimatedInputTokens: 100,
+      estimatedOutputTokens: 100,
+    };
+    const paid = { ...models[0]!, eligiblePlans: ["free"], fundingMode: "managed_paid" as const };
+    expect(() => routeModel([paid], freeRequest)).toThrow("No configured model");
+    const unapprovedSponsored = {
+      ...paid,
+      fundingMode: "sponsored" as const,
+      sponsoredEnabled: true,
+      commercialUseApproved: false,
+    };
+    expect(() => routeModel([unapprovedSponsored], freeRequest)).toThrow("No configured model");
+    expect(
+      routeModel(
+        [{
+          ...unapprovedSponsored,
+          commercialUseApproved: true,
+          commercialApprovalSource: "Provider contract 2026-07",
+        }],
+        freeRequest,
+      ).billingBucket,
+    ).toBe("sponsored");
+  });
+
+  it("keeps Base44 out of generic customer routing", () => {
+    expect(() =>
+      routeModel(
+        [{ ...models[0]!, provider: "base44", eligiblePlans: ["free"], fundingMode: "sponsored" }],
+        {
+          capability: "strategy",
+          plan: "free",
+          accountTier: "free",
+          paygEnabled: false,
+          estimatedInputTokens: 1,
+          estimatedOutputTokens: 1,
+        },
+      ),
+    ).toThrow("No configured model");
+  });
 });
 
 describe("personal local CLI provider policy",()=>{

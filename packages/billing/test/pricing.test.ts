@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expireTrials, evaluateEntitlement, evaluateManagedUsage,isPlanPeriodActive, processStripeEvent } from "../src";
+import { expireTrials, evaluateEntitlement, evaluateFreeManagedUsage, evaluateManagedUsage,isPlanPeriodActive, processStripeEvent } from "../src";
 import type { PoolClient } from "@neondatabase/serverless";
 import type Stripe from "stripe";
 
@@ -42,6 +42,59 @@ describe("table-driven entitlement boundaries",()=>{
   expect(isPlanPeriodActive({periodStart:new Date("2026-07-01"),periodEnd:new Date("2026-08-01"),status:"active"},new Date("2026-07-15"))).toBe(true);
   expect(isPlanPeriodActive({periodStart:new Date("2026-07-01"),periodEnd:new Date("2026-08-01"),status:"active"},new Date("2026-08-01"))).toBe(false);
  });
+});
+
+describe("free sponsored AI guardrails", () => {
+  const approved = {
+    enabled: true,
+    providerCommercialUseApproved: true,
+    approvalSource: "provider-commercial-terms-v1",
+    monthlyAllowanceUsd: 1,
+    monthlyUsedUsd: 0,
+    orgDailyRequests: 0,
+    orgDailyLimit: 20,
+    userDailyRequests: 0,
+    userDailyLimit: 5,
+    ipDailyRequests: 0,
+    ipDailyLimit: 8,
+    activeRequests: 0,
+    concurrencyLimit: 1,
+    estimatedCostUsd: 0.01,
+    verifiedEmail: true,
+    closedTeamMember: true,
+  };
+  it("defaults unavailable and always offers cost-safe alternatives", () => {
+    expect(evaluateFreeManagedUsage({ ...approved, enabled: false })).toEqual({
+      allowed: false,
+      reason: "sponsored_ai_unavailable",
+      offers: ["byok", "local", "upgrade"],
+    });
+  });
+  it("requires commercial approval and explicit hard caps", () => {
+    expect(evaluateFreeManagedUsage({ ...approved, providerCommercialUseApproved: false })).toMatchObject({
+      allowed: false,
+      reason: "commercial_approval_required",
+    });
+    expect(evaluateFreeManagedUsage({ ...approved, monthlyUsedUsd: 1 })).toMatchObject({
+      allowed: false,
+      reason: "sponsored_allowance_exhausted",
+    });
+    expect(evaluateFreeManagedUsage({ ...approved, activeRequests: 1 })).toMatchObject({
+      allowed: false,
+      reason: "low_priority_capacity_busy",
+    });
+  });
+  it("allows only verified invited members at low priority", () => {
+    expect(evaluateFreeManagedUsage(approved)).toMatchObject({
+      allowed: true,
+      bucket: "sponsored",
+      priority: "low",
+    });
+    expect(evaluateFreeManagedUsage({ ...approved, verifiedEmail: false })).toMatchObject({
+      allowed: false,
+      reason: "verified_invited_member_required",
+    });
+  });
 });
 
 describe("Stripe and trial ledgers", () => {

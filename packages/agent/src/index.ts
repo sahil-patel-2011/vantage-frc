@@ -11,6 +11,10 @@ export type ModelConfig = {
   enabled: boolean;
   routingWeight: number;
   contextWindowTokens: number | null;
+  fundingMode?: "managed_paid" | "byok" | "local" | "sponsored";
+  commercialUseApproved?: boolean;
+  commercialApprovalSource?: string | null;
+  sponsoredEnabled?: boolean;
 };
 
 export type RouteRequest = {
@@ -20,6 +24,7 @@ export type RouteRequest = {
   preferredDisplayName?: string;
   estimatedInputTokens: number;
   estimatedOutputTokens: number;
+  accountTier?: "free" | "paid";
 };
 
 export function routeModel(models: ModelConfig[], request: RouteRequest) {
@@ -29,7 +34,15 @@ export function routeModel(models: ModelConfig[], request: RouteRequest) {
       Boolean(model.providerModelId) &&
       model.capabilities.includes(request.capability) &&
       model.eligiblePlans.includes(request.plan) &&
-      (!model.paygOnly || request.paygEnabled),
+      (!model.paygOnly || request.paygEnabled) &&
+      model.provider.toLowerCase() !== "base44" &&
+      (request.accountTier !== "free" ||
+        model.fundingMode === "byok" ||
+        model.fundingMode === "local" ||
+        (model.fundingMode === "sponsored" &&
+          model.sponsoredEnabled === true &&
+          model.commercialUseApproved === true &&
+          Boolean(model.commercialApprovalSource))),
   );
   const preferred = request.preferredDisplayName
     ? candidates.find((model) => model.displayName === request.preferredDisplayName)
@@ -52,7 +65,14 @@ export function routeModel(models: ModelConfig[], request: RouteRequest) {
   if (!chosen) throw new Error("No configured model is eligible for this task and plan");
   return {
     ...chosen,
-    billingBucket: chosen.paygOnly ? ("payg" as const) : ("included" as const),
+    billingBucket:
+      chosen.fundingMode === "byok" || chosen.fundingMode === "local"
+        ? ("external_provider" as const)
+        : chosen.fundingMode === "sponsored"
+          ? ("sponsored" as const)
+          : chosen.paygOnly
+            ? ("payg" as const)
+            : ("included" as const),
     estimatedCostUsd:
       (chosen.inputPricePerMillionUsd * request.estimatedInputTokens +
         chosen.outputPricePerMillionUsd * request.estimatedOutputTokens) /
