@@ -1,4 +1,4 @@
-import {
+﻿import {
   boolean,
   date,
   doublePrecision,
@@ -910,7 +910,7 @@ export const planEntitlementVersions = pgTable("plan_entitlement_versions", {
   managedAllowanceUsd: numeric("managed_allowance_usd", { precision: 12, scale: 6 }).notNull(),
   billingOwnerType: text("billing_owner_type").$type<"user"|"org">().notNull().default("org"),
   includedCredits: numeric("included_credits", { precision: 12, scale: 6 }).notNull().default("0"),
-  serviceMultiplier: numeric("service_multiplier", { precision: 8, scale: 4 }).notNull().default("1.25"),
+  serviceMultiplier: numeric("service_multiplier", { precision: 8, scale: 4 }).notNull().default("1.0"),
   fairUse: jsonb("fair_use").$type<Record<string, unknown>>().notNull().default({}),
   contextTokenLimit: integer("context_token_limit").notNull(),
   agentStepLimit: integer("agent_step_limit").notNull(),
@@ -943,7 +943,7 @@ export const platformMarginConfig = pgTable("platform_margin_config", {
   stripeFixedFeeUsd: numeric("stripe_fixed_fee_usd", { precision: 8, scale: 4 }).notNull().default("0.30"),
   infrastructureAllocationUsd: numeric("infrastructure_allocation_usd", { precision: 10, scale: 2 }).notNull().default("2"),
   supportReservePercent: numeric("support_reserve_percent", { precision: 6, scale: 2 }).notNull().default("5"),
-  serviceMultiplier: numeric("service_multiplier", { precision: 8, scale: 4 }).notNull().default("1.25"),
+  serviceMultiplier: numeric("service_multiplier", { precision: 8, scale: 4 }).notNull().default("1.0"),
   grossMarginWarningPercent: numeric("gross_margin_warning_percent", { precision: 6, scale: 2 }).notNull().default("10"),
   updatedBy: uuid("updated_by").references(() => users.id),
   updatedAt: timestamps.updatedAt,
@@ -988,7 +988,7 @@ export const creditLedger = pgTable("credit_ledger", {
   kind: text("kind").notNull(),
   credits: numeric("credits", { precision: 12, scale: 6 }).notNull(),
   providerCostUsd: numeric("provider_cost_usd", { precision: 12, scale: 6 }).notNull().default("0"),
-  serviceMultiplier: numeric("service_multiplier", { precision: 8, scale: 4 }).notNull().default("1.25"),
+  serviceMultiplier: numeric("service_multiplier", { precision: 8, scale: 4 }).notNull().default("1.0"),
   bucket: text("bucket").notNull(),
   referenceId: text("reference_id"),
   metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
