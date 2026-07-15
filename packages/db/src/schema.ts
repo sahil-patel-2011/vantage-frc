@@ -2012,3 +2012,38 @@ export const waitlistSignups = pgTable("waitlist_signups", {
   convertedAt: timestamp("converted_at", { withTimezone: true }),
   ...timestamps,
 });
+
+export type DashboardWidgetLayout = {
+  i: string;
+  type: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  minH?: number;
+  config?: Record<string, unknown>;
+};
+
+export const dashboards = pgTable(
+  "dashboards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    ownerUserId: uuid("owner_user_id").references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    scope: text("scope").$type<"personal" | "org">().notNull(),
+    isActive: boolean("is_active").notNull().default(false),
+    layout: jsonb("layout").$type<DashboardWidgetLayout[]>().notNull().default([]),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [
+    index("dashboards_org_owner_idx").on(table.orgId, table.ownerUserId),
+    index("dashboards_org_scope_idx").on(table.orgId, table.scope),
+  ],
+);

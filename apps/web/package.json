@@ -9,25 +9,27 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@neondatabase/serverless": "latest",
     "@vantage/agent": "*",
     "@vantage/billing": "*",
+    "@vantage/cad": "*",
     "@vantage/core": "*",
     "@vantage/db": "*",
-    "@vantage/intel-research": "*",
     "@vantage/export-center": "*",
-    "@vantage/reference": "*",
-    "@vantage/cad": "*",
-    "@vantage/scouting": "*",
+    "@vantage/intel-research": "*",
     "@vantage/prediction-strategy": "*",
-    "@neondatabase/serverless": "latest",
+    "@vantage/reference": "*",
+    "@vantage/scouting": "*",
     "better-auth": "latest",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "react-grid-layout": "^2.2.3",
     "zod": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "@types/react-dom": "latest",
+    "@types/react-grid-layout": "^1.3.6"
   }
 }
