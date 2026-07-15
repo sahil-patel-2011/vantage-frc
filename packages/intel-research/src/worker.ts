@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { AIOrchestrator,type ChatAdapter } from "@vantage/agent";
 import type { WebSearchProvider } from "./types";
 
 export type CrawlBudget = {
@@ -156,15 +156,7 @@ export async function runMeteredOnDemandResearch(input: {
   provider: WebSearchProvider;
   budget?: CrawlBudget;
 }) {
-  return meteredAI({
-    client: input.client,
-    orgId: input.orgId,
-    userId: input.userId,
-    feature: "research",
-    requestId: input.requestId,
-    estimatedCostUsd: 0.01,
-    metadata: { jobId: input.jobId, searchProvider: input.provider.name },
-    invoke: async () => {
+  const adapter:ChatAdapter={provider:input.provider.name,model:input.provider.name,complete:async()=>{
       const value = await runResearchJob(
         input.client,
         input.jobId,
@@ -172,13 +164,12 @@ export async function runMeteredOnDemandResearch(input: {
         input.budget,
       );
       return {
-        value,
+        text:JSON.stringify(value),
         promptTokens: value.queries * 30,
         completionTokens: value.resultCount * 20,
         costUsd: 0,
-        model: input.provider.name,
-        provider: input.provider.name,
       };
-    },
-  });
+  }};
+  const result=await new AIOrchestrator(input.client).run({orgId:input.orgId,userId:input.userId,requestId:input.requestId,capability:"research",privacyScope:"team",message:"Run the authorized on-demand research job and persist source-cited qualitative findings.",adapter,contextSources:[{type:"task",id:input.jobId,content:JSON.stringify({jobId:input.jobId,budget:input.budget??DEFAULT_CRAWL_BUDGET}),importance:1,classification:"model_inference"}]});
+  return JSON.parse(result.text) as {queries:number;resultCount:number};
 }

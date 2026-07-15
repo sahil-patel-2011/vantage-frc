@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expireTrials, evaluateManagedUsage, processStripeEvent } from "../src";
+import { expireTrials, evaluateEntitlement, evaluateManagedUsage,isPlanPeriodActive, processStripeEvent } from "../src";
 import type { PoolClient } from "@neondatabase/serverless";
 import type Stripe from "stripe";
 
@@ -28,6 +28,20 @@ describe("managed allowance and opt-in PAYG", () => {
     expect(evaluateManagedUsage({ ...base, killSwitch: true })).toMatchObject({ allowed: false, reason: "kill_switch" });
     expect(evaluateManagedUsage({ ...base, includedRemainingUsd: 0, paygEnabled: true, prepaidBalanceUsd: 0 })).toMatchObject({ reason: "insufficient_prepaid_balance" });
   });
+});
+
+describe("table-driven entitlement boundaries",()=>{
+ const free={planCode:"free" as const,managedAllowanceUsd:0,contextTokenLimit:4000,agentStepLimit:6,cadIterationLimit:3,cadConcurrentJobs:1,codeAnalysisMb:5,jobPriority:0,featureFlags:{advanced_strategy:false,core:true}};
+ it("keeps feature entitlement separate from BYOK provider cost",()=>{
+  expect(evaluateEntitlement({entitlement:free,feature:"core",managedProviderCostUsedUsd:0,estimatedManagedCostUsd:99,keySource:"byo"})).toMatchObject({allowed:true,bucket:"external_provider"});
+  expect(evaluateEntitlement({entitlement:free,feature:"advanced_strategy",managedProviderCostUsedUsd:0,estimatedManagedCostUsd:0,keySource:"local"})).toMatchObject({allowed:false,reason:"feature_not_in_plan"});
+ });
+ it("stops managed usage at the snapshotted period allowance",()=>{
+  const pro={...free,planCode:"managed_20" as const,managedAllowanceUsd:18,featureFlags:{core:true}};
+  expect(evaluateEntitlement({entitlement:pro,feature:"core",managedProviderCostUsedUsd:17.9,estimatedManagedCostUsd:.2,keySource:"platform"})).toMatchObject({allowed:false,reason:"managed_allowance_exhausted"});
+  expect(isPlanPeriodActive({periodStart:new Date("2026-07-01"),periodEnd:new Date("2026-08-01"),status:"active"},new Date("2026-07-15"))).toBe(true);
+  expect(isPlanPeriodActive({periodStart:new Date("2026-07-01"),periodEnd:new Date("2026-08-01"),status:"active"},new Date("2026-08-01"))).toBe(false);
+ });
 });
 
 describe("Stripe and trial ledgers", () => {

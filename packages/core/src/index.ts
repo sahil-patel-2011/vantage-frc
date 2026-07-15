@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, haveIBeenPwned } from "better-auth/plugins";
 import { authDb } from "@vantage/db/auth";
 import { accounts, sessions, users, verifications } from "@vantage/db/schema";
 import {
@@ -32,7 +32,22 @@ export const auth = betterAuth({
       verification: verifications
     }
   }),
-  emailAndPassword: { enabled: false },
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: true,
+    revokeSessionsOnPasswordReset: true,
+    minPasswordLength: 12,
+    onPasswordReset: async ({user}) => {
+      await auditAuthEvent({action:"password.reset",email:user.email,userId:user.id,success:true});
+      await emailProvider.sendSecurityNotice({email:user.email,subject:"Your Vantage password was reset",message:"Your Vantage password was reset and existing sessions were revoked. If this was not you, contact your team administrator."});
+    },
+  },
+  session:{additionalFields:{authMethod:{type:"string",required:false,input:false,defaultValue:"unknown"}}},
+  databaseHooks:{session:{create:{before:async(session,context)=>{
+    const path=context?.path??"";
+    const authMethod=path.includes("email-otp")?"email_otp":path==="/sign-in/email"||path==="/sign-up/email"?"password":path.includes("callback/google")?"google":"unknown";
+    return{data:{...session,authMethod}};
+  }}}},
   socialProviders: googleConfigured
     ? {
         google: {
@@ -52,6 +67,7 @@ export const auth = betterAuth({
         window: OTP_POLICY.requestWindowSeconds,
         max: OTP_POLICY.requestLimit,
       },
+      sendVerificationOnSignUp: true,
       generateOTP:
         process.env.NODE_ENV === "production"
           ? undefined
@@ -66,6 +82,9 @@ export const auth = betterAuth({
         });
       },
     }),
+    haveIBeenPwned({
+      customPasswordCompromisedMessage:"Choose a password that has not appeared in known breaches.",
+    }),
   ],
   rateLimit: {
     enabled: true,
@@ -78,6 +97,7 @@ export const auth = betterAuth({
 });
 
 export * from "./email";
+export * from "./mfa";
 
 export type OrgRole = "owner" | "admin" | "scout" | "viewer";
 

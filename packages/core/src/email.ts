@@ -13,11 +13,13 @@ export type InviteEmail = {
   token: string;
   expiresAt: Date;
 };
+export type SecurityNotice = { email:string; subject:string; message:string };
 
 export interface EmailProvider {
   readonly name: string;
   sendOtp(message: OtpEmail): Promise<void>;
   sendInvite(message: InviteEmail): Promise<void>;
+  sendSecurityNotice(message: SecurityNotice): Promise<void>;
 }
 
 export const localMailbox = new Map<string, OtpEmail[]>();
@@ -36,6 +38,7 @@ export class LocalMailboxProvider implements EmailProvider {
       { ...message, email },
     ]);
   }
+  async sendSecurityNotice() {}
 }
 
 export class ResendEmailProvider implements EmailProvider {
@@ -77,6 +80,10 @@ export class ResendEmailProvider implements EmailProvider {
     });
     if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
   }
+  async sendSecurityNotice(message: SecurityNotice) {
+    const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{authorization:`Bearer ${this.apiKey}`,"content-type":"application/json"},body:JSON.stringify({from:this.from,to:[message.email],subject:message.subject,text:message.message})});
+    if(!response.ok)throw new Error(`Email provider returned ${response.status}`);
+  }
 }
 
 class UnconfiguredProductionEmailProvider implements EmailProvider {
@@ -87,6 +94,7 @@ class UnconfiguredProductionEmailProvider implements EmailProvider {
   async sendInvite() {
     throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required for production email");
   }
+  async sendSecurityNotice(){throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required for production email");}
 }
 
 export function createEmailProvider(): EmailProvider {

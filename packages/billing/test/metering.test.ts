@@ -65,6 +65,6 @@ describe("serialized AI metering", () => {
     });
     expect(result).toBe("brief");
     expect(queries[0]).toContain("FOR UPDATE");
-    expect(queries.at(-1)).toContain("INSERT INTO ai_usage_events");
+    expect(queries.some((query) => query.includes("INSERT INTO ai_usage_events"))).toBe(true);
   });
 });

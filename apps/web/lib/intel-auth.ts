@@ -1,6 +1,6 @@
-import { auth } from "@vantage/core";
+import { assertOrgAuthentication,auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { headers } from "next/headers";
+import { cookies,headers } from "next/headers";
 
 export class IntelHttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -21,6 +21,7 @@ export async function withIntelRequest<T>(
       [orgId, session.user.id],
     );
     if (!membership.rowCount) throw new IntelHttpError(403, "Organization access denied");
+    try{await assertOrgAuthentication(client,{userId:session.user.id,orgId,sessionId:session.session.id,authMethod:String((session.session as typeof session.session&{authMethod?:string}).authMethod??"unknown"),rememberedDeviceToken:(await cookies()).get("vantage_mfa_device")?.value});}catch(error){throw new IntelHttpError(403,error instanceof Error?error.message:"Organization authentication policy denied access");}
     return work(client);
   });
 }

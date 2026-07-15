@@ -15,6 +15,7 @@
   "dependencies": {
     "@neondatabase/serverless": "latest",
     "@vantage/billing": "*",
+    "@vantage/agent": "*",
     "@vantage/db": "*"
   }
 }

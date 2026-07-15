@@ -7,6 +7,9 @@
     "./admin": "./src/admin.ts",
     "./auth": "./src/auth.ts",
     "./billing": "./src/billing.ts",
+    "./display": "./src/display.ts",
+    "./cad-relay": "./src/cad-relay.ts",
+    "./showcase": "./src/showcase.ts",
     "./schema": "./src/schema.ts"
   },
   "scripts": {

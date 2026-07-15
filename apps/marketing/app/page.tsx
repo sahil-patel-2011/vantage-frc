@@ -39,15 +39,25 @@ export default function Home() {
             <div className="board-head"><span>VANTAGE / MATCH BRIEF</span><b>QUAL 42</b><em>LIVE CONTEXT</em></div>
             <div className="sources">
               <article><small>SCOUT INPUT</small><strong>High-note cycle</strong><span>Confidence: high</span></article>
-              <article><small>EVENT METRICS</small><strong>EPA +18.7</strong><span>Trend: +2.4 / match</span></article>
-              <article><small>RESEARCH</small><strong>Intake revision</strong><span>Verified at event</span></article>
+              <article><small>EVENT METRICS</small><strong>Official cache</strong><span>Freshness visible</span></article>
+              <article><small>RESEARCH</small><strong>Source-linked claim</strong><span>Confidence visible</span></article>
             </div>
             <div className="flow-line"><i /><i /><i /><b>V</b></div>
             <div className="brief">
               <span>ALLIANCE PLAN / REV 03</span>
-              <h2>Protect the center lane. Shift cycle priority at 0:45.</h2>
-              <div><b>68%</b> projected win chance <mark>± 9%</mark></div>
+              <h2>Recommendations stay linked to evidence and revision history.</h2>
+              <div><b>MODEL STATUS</b> awaiting current inputs <mark>no invented result</mark></div>
             </div>
+          </div>
+        </section>
+
+        <section className="cad-signature">
+          <div><span className="section-id">SIGNATURE WORKFLOW / AI CAD</span><h2>Strategy becomes a confirmed engineering brief—then verified geometry.</h2></div>
+          <p>Bring authorized match, scouting, research, and mechanism context into one versioned CAD conversation. Confirm requirements and assumptions before any mutation, approve risky actions one at a time, and inspect a topology/render checkpoint after every change.</p>
+          <div className="control-grid">
+            <article><b>ONSHAPE HOSTED</b><h3>OAuth + server worker</h3><p>Select a document/workspace/element, preview the allowlisted plan, then checkpoint and verify supported features or reviewed FeatureScript.</p></article>
+            <article><b>FUSION 360 LOCAL</b><h3>Signed desktop jobs</h3><p>A paired relay drives Fusion only in your Autodesk desktop session. Vercel never pretends to run local CAD.</p></article>
+            <article><b>ENGINEERING CONTROL</b><h3>Human confirmation first</h3><p>Compare versions, detect human edits, connect BOM/tasks, and treat review flags as suggestions—not safety certification.</p></article>
           </div>
         </section>
 
@@ -91,16 +101,16 @@ export default function Home() {
 
         <section className="specific">
           <span className="section-id">FRC-LITERATE BY DESIGN</span>
-          <h2>The details aren’t edge cases here.</h2>
+          <h2>Provenance and resilience are the product.</h2>
           <ul>
-            <li>TBA and Statbotics reference data</li><li>Offline-first venue workflows</li>
-            <li>Fusion execution on your desktop</li><li>Onshape execution in the cloud</li>
+            <li>Shared TBA cache with visible freshness</li><li>Offline-first venue workflows and transparent sync</li>
+            <li>Evidence taxonomy across observations, metrics, predictions, and recommendations</li><li>Onshape hosted and Fusion desktop execution paths</li>
           </ul>
         </section>
 
         <section className="waitlist" id="waitlist">
           <div><span className="section-id">EARLY ACCESS</span><h2>Get the launch signal.</h2>
-            <p>Join the prelaunch list. At launch, you’ll still explicitly create and verify your account, accept the current terms, and create or join an organization.</p>
+            <p>Join the prelaunch list. At launch, you’ll explicitly verify your account and accept current terms; team access remains administrator-created and invite-only.</p>
           </div>
           <WaitlistForm />
         </section>

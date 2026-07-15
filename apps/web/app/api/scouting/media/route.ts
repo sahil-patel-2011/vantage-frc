@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     };
     if (
       !body.clientId ||
+      !body.orgId ||
       !body.eventKey ||
       !body.teamKey ||
       !body.kind ||
@@ -31,14 +32,11 @@ export async function POST(request: Request) {
     ) {
       return Response.json({ error: "Invalid media metadata" }, { status: 400 });
     }
-    const upload = await new LocalMediaStorage().createUpload({
-      orgId: body.orgId!,
-      clientId: body.clientId,
-      contentType: body.contentType,
-      byteSize: body.byteSize,
-    });
-    await withScoutingRequest(body.orgId ?? null, (client) =>
-      client.query(
+    const upload=await withScoutingRequest(body.orgId, async (client) => {
+      const member=await client.query("SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2",[body.orgId,session.user.id]);
+      if(!member.rowCount)throw new Error("Organization access denied");
+      const prepared=await new LocalMediaStorage().createUpload({orgId:body.orgId!,clientId:body.clientId!,contentType:body.contentType!,byteSize:body.byteSize!});
+      await client.query(
         `INSERT INTO scout_media
           (org_id,event_key,team_key,entry_id,client_id,kind,storage_key,
            content_type,byte_size,tags,captured_by)
@@ -46,11 +44,12 @@ export async function POST(request: Request) {
          ON CONFLICT (org_id,client_id) DO UPDATE SET updated_at=now()`,
         [
           body.orgId, body.eventKey, body.teamKey, body.entryId ?? null,
-          body.clientId, body.kind, upload.storageKey, body.contentType,
+          body.clientId, body.kind, prepared.storageKey, body.contentType,
           body.byteSize, body.tags ?? [], session.user.id,
         ],
-      ),
-    );
+      );
+      return prepared;
+    });
     return Response.json(upload);
   } catch (error) {
     return scoutingErrorResponse(error);

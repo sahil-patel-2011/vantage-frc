@@ -1,0 +1,1 @@
+{"name":"@vantage/cad-cli","private":true,"version":"0.1.0","type":"module","bin":{"vantage-cad":"./dist/cli.js"},"scripts":{"build":"tsc -p tsconfig.json","typecheck":"tsc --noEmit","test":"vitest run","dev":"tsx src/cli.ts"},"dependencies":{}}

@@ -1,0 +1,1 @@
+{"name":"@vantage/cad","private":true,"type":"module","exports":{".":"./src/index.ts","./fusion-relay":"./src/fusion-relay.ts"},"scripts":{"typecheck":"tsc --noEmit","test":"vitest run"},"dependencies":{"@neondatabase/serverless":"latest","@vantage/agent":"*"}}
