@@ -11,7 +11,7 @@ const PUBLIC_PREFIXES = [
   "/showcase/present",
   "/display/kiosk",
 ];
-const PUBLIC_FILE = /\.(?:avif|css|gif|ico|jpe?g|js|json|map|png|svg|txt|webmanifest|webp|woff2?)$/i;
+const PUBLIC_FILE = /\.(?:avif|css|gif|ico|jpe?g|js|json|map|png|svg|txt|webmanifest|webp|woff2?|xml)$/i;
 
 function isPublic(pathname: string) {
   return PUBLIC_PAGES.has(pathname)
