@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "../theme-provider";
+import { signOutAndRedirect } from "../../lib/sign-out";
 
 type NotificationPrefs = {
   matchAlerts: boolean;
@@ -45,18 +46,26 @@ export default function AccountClient() {
     productUpdates: false,
   });
   const [message, setMessage] = useState("");
+  const [messageOk, setMessageOk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(null);
 
   async function load() {
     const response = await fetch("/api/account");
     if (!response.ok) {
       setMessage("Could not load account settings.");
+      setMessageOk(false);
       return;
     }
     const data = (await response.json()) as AccountView;
     setAccount(data);
     setDisplayName(data.displayName ?? data.name ?? "");
     if (data.notificationPrefs) setPrefs(data.notificationPrefs);
+    const meResponse = await fetch("/api/me");
+    if (meResponse.ok) {
+      const me = await meResponse.json();
+      setOrgId(me.orgId ?? null);
+    }
   }
 
   useEffect(() => {
@@ -67,6 +76,7 @@ export default function AccountClient() {
     event.preventDefault();
     setBusy(true);
     setMessage("");
+    setMessageOk(false);
     try {
       const response = await fetch("/api/account", {
         method: "PUT",
@@ -79,6 +89,7 @@ export default function AccountClient() {
         return;
       }
       setMessage("Profile saved.");
+      setMessageOk(true);
       await load();
     } finally {
       setBusy(false);
@@ -88,6 +99,7 @@ export default function AccountClient() {
   async function savePrefs() {
     setBusy(true);
     setMessage("");
+    setMessageOk(false);
     try {
       const response = await fetch("/api/account", {
         method: "PUT",
@@ -100,6 +112,7 @@ export default function AccountClient() {
         return;
       }
       setMessage("Notification preferences saved.");
+      setMessageOk(true);
     } finally {
       setBusy(false);
     }
@@ -107,12 +120,7 @@ export default function AccountClient() {
 
   async function signOut() {
     setBusy(true);
-    try {
-      await fetch("/api/auth/sign-out", { method: "POST" });
-      window.location.assign("/signin");
-    } finally {
-      setBusy(false);
-    }
+    await signOutAndRedirect("/");
   }
 
   const initial = (displayName.trim()?.[0] ?? account?.email?.trim()?.[0] ?? "V").toUpperCase();
@@ -150,7 +158,7 @@ export default function AccountClient() {
       </nav>
 
       {message ? (
-        <p className="telemetry-status" role="status">
+        <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
           {message}
         </p>
       ) : null}
@@ -246,7 +254,7 @@ export default function AccountClient() {
               {account?.integrations?.tba.status === "available" ? "Configured" : "Not configured"}
             </span>
             <p>{account?.integrations?.tba.detail ?? "Checking TBA configuration…"}</p>
-            <a href="/admin/connectors">Open TBA connectors</a>
+            {orgId ? <a href={`/team/data?orgId=${orgId}`}>Open TBA connectors</a> : null}
           </article>
           <article className="intel-panel">
             <h2>Security</h2>

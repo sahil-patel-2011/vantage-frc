@@ -53,9 +53,11 @@ export default function DashboardClient() {
   const [canShareOrg, setCanShareOrg] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [messageKind, setMessageKind] = useState<"success" | "error">("error");
   const [moreOpen, setMoreOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [meLoaded, setMeLoaded] = useState(false);
 
   const orgId = me.orgId ?? "";
 
@@ -63,6 +65,7 @@ export default function DashboardClient() {
     const response = await fetch(`/api/dashboards?orgId=${encodeURIComponent(id)}`);
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
+      setMessageKind("error");
       setMessage(err.error ?? "Could not load dashboard");
       setLayout(DEFAULT_DASHBOARD_LAYOUT);
       setBoard({
@@ -109,7 +112,8 @@ export default function DashboardClient() {
           setContext((current) => ({ ...current, tbaConfigured: data.tbaConfigured }));
         }
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => setMeLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -184,10 +188,12 @@ export default function DashboardClient() {
 
   async function save(activateScope: "personal" | "org" = scope) {
     if (!orgId) {
+      setMessageKind("error");
       setMessage("Select a team workspace to save a custom layout.");
       return;
     }
     if (activateScope === "org" && !canShareOrg) {
+      setMessageKind("error");
       setMessage("Owner/admin access required for org-shared dashboards.");
       return;
     }
@@ -209,6 +215,7 @@ export default function DashboardClient() {
       });
       const data = await response.json();
       if (!response.ok) {
+        setMessageKind("error");
         setMessage(data.error ?? "Save failed");
         return;
       }
@@ -221,16 +228,24 @@ export default function DashboardClient() {
       setScope(data.scope);
       setLayout(data.layout);
       setEditing(false);
+      setMessageKind("success");
       setMessage(data.scope === "org" ? "Saved as team dashboard." : "Personal dashboard saved.");
     } finally {
       setSaving(false);
     }
   }
 
+  function cancelEditing() {
+    setLayout(board?.layout ?? DEFAULT_DASHBOARD_LAYOUT);
+    setEditing(false);
+    setMessage("");
+  }
+
   async function resetDefault() {
     if (!orgId) {
       setLayout(DEFAULT_DASHBOARD_LAYOUT);
       setEditing(false);
+      setMessageKind("success");
       setMessage("Restored default home layout.");
       return;
     }
@@ -247,10 +262,12 @@ export default function DashboardClient() {
       });
       const data = await response.json();
       if (!response.ok) {
+        setMessageKind("error");
         setMessage(data.error ?? "Reset failed");
         return;
       }
       setLayout(data.layout ?? DEFAULT_DASHBOARD_LAYOUT);
+      setMessageKind("success");
       setMessage("Reset to default home widgets.");
       setEditing(false);
     } finally {
@@ -266,19 +283,20 @@ export default function DashboardClient() {
         ? me.tbaConfigured
         : undefined;
   const setupRequired = Boolean(context.setupRequired);
-  const gridLayout: Layout = layout.map((item) => ({
+  const isNarrow = mounted && width < 640;
+  const gridLayout: Layout = layout.map((item, index) => ({
     i: item.i,
-    x: item.x,
-    y: item.y,
-    w: item.w,
+    x: isNarrow ? 0 : item.x,
+    y: isNarrow ? index : item.y,
+    w: isNarrow ? 1 : item.w,
     h: item.h,
-    minW: item.minW ?? 2,
+    minW: isNarrow ? 1 : (item.minW ?? 2),
     minH: item.minH ?? 2,
     static: !editing,
   }));
 
   return (
-    <main className="dash-home command-center">
+    <main className="dash-home">
       <header className="dash-home-header">
         <div>
           <span className="breadcrumbs">
@@ -288,15 +306,17 @@ export default function DashboardClient() {
             {greeting()}, {firstName}
           </h1>
           <p>
-            {!orgId
-              ? "Select a team workspace to load live command-center data. No fabricated ranks, EPA, or match times are shown."
-              : tbaConfigured === false
-                ? "TBA not configured — connect The Blue Alliance before expecting live match/rank sync."
-                : setupRequired
-                  ? "Select an active event (and team number) to load live competition data."
-                  : context.eventName
-                    ? `${String(context.eventName)} command center`
-                    : "Next match, readiness, and alerts — customize when you need more."}
+            {!meLoaded
+              ? "Loading your workspace…"
+              : !orgId
+                ? "Select a team workspace to load live command-center data. No fabricated ranks, EPA, or match times are shown."
+                : tbaConfigured === false
+                  ? "TBA not configured — connect The Blue Alliance before expecting live match/rank sync."
+                  : setupRequired
+                    ? "Select an active event (and team number) to load live competition data."
+                    : context.eventName
+                      ? `${String(context.eventName)} command center`
+                      : "Next match, readiness, and alerts — customize when you need more."}
           </p>
         </div>
         <div className="dash-home-actions">
@@ -315,7 +335,10 @@ export default function DashboardClient() {
               className="app-button secondary"
               type="button"
               data-testid="dash-customize"
-              onClick={() => setEditing(true)}
+              onClick={() => {
+                setEditing(true);
+                setMessage("");
+              }}
             >
               Customize
             </button>
@@ -323,6 +346,9 @@ export default function DashboardClient() {
             <>
               <button className="app-button secondary" type="button" disabled={saving} onClick={() => void resetDefault()}>
                 Reset default
+              </button>
+              <button className="app-button secondary" type="button" disabled={saving} onClick={cancelEditing}>
+                Cancel
               </button>
               <button className="app-button secondary" type="button" data-testid="dash-preview" onClick={() => setEditing(false)}>
                 Preview
@@ -341,12 +367,12 @@ export default function DashboardClient() {
       </header>
 
       {message ? (
-        <p className="telemetry-status" role="status">
+        <p className={`telemetry-status${messageKind === "success" ? " success" : ""}`} role="status">
           {message}
         </p>
       ) : null}
 
-      {!orgId || setupRequired || tbaConfigured === false ? (
+      {meLoaded && (!orgId || setupRequired || tbaConfigured === false) ? (
         <section className="dash-setup-banner" aria-label="First-run setup">
           <div>
             <span className="app-badge setup">Setup required</span>
@@ -360,6 +386,9 @@ export default function DashboardClient() {
             <p>
               Live widgets stay empty on purpose until this path is complete. Vantage will not invent ranks, EPA, match
               times, or readiness percentages.
+            </p>
+            <p className="dash-setup-note">
+              You can rearrange the board with Customize anytime — saving layouts requires a workspace.
             </p>
           </div>
           <ol className="dash-setup-steps">
@@ -397,6 +426,14 @@ export default function DashboardClient() {
         </section>
       ) : null}
 
+      {meLoaded && (!orgId || setupRequired) && !editing ? (
+        <ul className="dash-waiting-strip" aria-label="Widget status">
+          <li>Next match · waiting</li>
+          <li>Robot readiness · waiting</li>
+          <li>No fabricated stats</li>
+        </ul>
+      ) : null}
+
       {editing ? (
         <section
           className="dash-editor-bar"
@@ -405,7 +442,10 @@ export default function DashboardClient() {
         >
           <div className="dash-editor-copy">
             <strong>Edit mode</strong>
-            <span>Drag to rearrange, resize from the corner, add or remove widgets, then save.</span>
+            <span>
+              Drag the handle to rearrange, resize from the corner, add or remove widgets, then save
+              {orgId ? (canShareOrg ? " personally or for the team." : " as your personal layout.") : ". Select a workspace to persist."}
+            </span>
           </div>
           <div className="dash-catalog">
             {availableCatalog.map((entry) => {
@@ -437,7 +477,7 @@ export default function DashboardClient() {
             width={width}
             layout={gridLayout}
             gridConfig={{
-              cols: 12,
+              cols: isNarrow ? 1 : 12,
               rowHeight: 56,
               margin: [14, 14],
               containerPadding: [0, 0],
@@ -451,10 +491,10 @@ export default function DashboardClient() {
               <div key={item.i} className="dash-grid-item">
                 {editing ? (
                   <div className="dash-item-tools">
-                    <button type="button" className="dash-drag-handle" aria-label={`Move ${item.type}`}>
+                    <button type="button" className="dash-drag-handle" aria-label={`Move ${catalogEntry(item.type)?.label ?? item.type}`}>
                       ⠿
                     </button>
-                    <button type="button" aria-label={`Remove ${item.type}`} onClick={() => removeWidget(item.i)}>
+                    <button type="button" aria-label={`Remove ${catalogEntry(item.type)?.label ?? item.type}`} onClick={() => removeWidget(item.i)}>
                       ×
                     </button>
                   </div>

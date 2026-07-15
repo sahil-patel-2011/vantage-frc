@@ -43,6 +43,8 @@ test("mobile product shell keeps Dynamic Island and hamburger", async ({ page })
   await expect(page.getByRole("navigation", { name: "Primary tabs" })).toBeVisible();
   await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(page.getByRole("complementary", { name: "Product navigation" })).toBeVisible();
+  await expect(page.locator(".soft-profile-actions a")).toHaveText("Account");
+  await expect(page.locator(".soft-profile-actions button")).toHaveText("Sign out");
 });
 
 test("account route renders settings tabs and notification badge stays empty at zero", async ({ page }) => {
@@ -51,6 +53,7 @@ test("account route renders settings tabs and notification badge stays empty at 
   await expect(page.getByRole("navigation", { name: "Account sections" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Appearance" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Integrations" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(page.locator(".soft-notif b")).toHaveCount(0);
 });
 

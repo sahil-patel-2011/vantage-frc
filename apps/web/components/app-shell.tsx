@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { signOutAndRedirect } from "../lib/sign-out";
 
 type Me = {
   name?: string | null;
@@ -96,7 +97,11 @@ function Icon({ name }: { name: IconName }) {
     pin: <><path d="M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" /></>,
     back: <><path d="M15 6 9 12l6 6" /></>,
   };
-  return <svg aria-hidden="true" viewBox="0 0 24 24" {...p}>{paths[name]}</svg>;
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={18} height={18} {...p}>
+      {paths[name]}
+    </svg>
+  );
 }
 
 function withOrg(href: string, orgId: string) {
@@ -121,6 +126,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   const [commandOpen, setCommandOpen] = useState(false);
   const [me, setMe] = useState<Me>({});
   const [unreadCount, setUnreadCount] = useState(0);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -170,6 +176,13 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
           ? "Security"
           : null;
 
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    setOpen(false);
+    await signOutAndRedirect("/");
+  }
+
   return (
     <>
       <header className="soft-topbar">
@@ -181,7 +194,13 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             <h1>{title}</h1>
           </div>
         ) : (
-          <button className="soft-icon-btn" type="button" aria-label="Open navigation" aria-expanded={open} onClick={() => setOpen(true)}>
+          <button
+            className="soft-icon-btn soft-menu-btn"
+            type="button"
+            aria-label="Open navigation"
+            aria-expanded={open}
+            onClick={() => setOpen(true)}
+          >
             <Icon name="menu" />
           </button>
         )}
@@ -218,14 +237,26 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             <Icon name="x" />
           </button>
         </div>
-        <a className="soft-profile-link" href="/account" onClick={() => setOpen(false)}>
-          <span className="soft-avatar">{initial}</span>
-          <div>
-            <strong>{me.name ?? "Signed-in user"}</strong>
-            <span>{me.email ?? "Open account settings"}</span>
+        <div className="soft-profile-block">
+          <a className="soft-profile-link" href="/account" onClick={() => setOpen(false)}>
+            <span className="soft-avatar">{initial}</span>
+            <div>
+              <strong>{me.name ?? "Signed-in user"}</strong>
+              <span>{me.email ?? "Account settings"}</span>
+            </div>
+            <span className="soft-profile-chev" aria-hidden="true">
+              <Icon name="chevron" />
+            </span>
+          </a>
+          <div className="soft-profile-actions">
+            <a href="/account" onClick={() => setOpen(false)}>
+              Account
+            </a>
+            <button type="button" disabled={signingOut} onClick={() => void handleSignOut()}>
+              {signingOut ? "Signing out…" : "Sign out"}
+            </button>
           </div>
-          <Icon name="chevron" />
-        </a>
+        </div>
         <p className="soft-drawer-hint">Only the main places you use most.</p>
         {groups.map((group) => (
           <section className="soft-nav-group" key={group.label} style={{ ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg }}>
