@@ -2055,3 +2055,63 @@ export const dashboards = pgTable(
     index("dashboards_org_scope_idx").on(table.orgId, table.scope),
   ],
 );
+
+/** Human team channel or DM ΓÇö not Vantage AI agent threads. */
+export const orgConversations = pgTable(
+  "org_conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<"team" | "dm">().notNull(),
+    title: text("title"),
+    dmKey: text("dm_key"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [index("org_conversations_org_kind_idx").on(table.orgId, table.kind, table.updatedAt)],
+);
+
+export const orgConversationParticipants = pgTable(
+  "org_conversation_participants",
+  {
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => orgConversations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.conversationId, table.userId] }),
+    index("org_conversation_participants_user_idx").on(table.userId, table.conversationId),
+  ],
+);
+
+export const orgMessages = pgTable(
+  "org_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => orgConversations.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    authorUserId: uuid("author_user_id")
+      .notNull()
+      .references(() => users.id),
+    body: text("body").notNull(),
+    createdAt: timestamps.createdAt,
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("org_messages_conversation_created_idx").on(table.conversationId, table.createdAt),
+    index("org_messages_org_created_idx").on(table.orgId, table.createdAt),
+  ],
+);
