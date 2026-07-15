@@ -42,6 +42,25 @@ seeds a verified owner, then owners/admins invite exact email addresses. Waitlis
 to Google: only the platform owner, existing users, or emails with a pending invite may authenticate;
 everyone else is pointed at the waitlist.
 
+**Database:** Auth and product data use **Neon Postgres** (`DATABASE_AUTH_URL` / `DATABASE_URL`). Do not migrate
+identity or RLS data to Supabase for this stack — Neon is the linked production database. Resend is only the
+email transport for OTP / forgot-password; it does not replace Google OAuth or Neon.
+
+### Resend (email OTP / password reset)
+
+Google OAuth does **not** need Resend. Email OTP and forgot-password stay unavailable in production until both
+env vars are set on the Vercel project (`vantage-frc-web`), then redeploy:
+
+1. Create a Resend account and API key at [resend.com](https://resend.com).
+2. Verify a sending domain (or use Resend’s onboarding sender for testing).
+3. In Vercel → Project → Settings → Environment Variables (Production):
+   - `RESEND_API_KEY` = your Resend API key (`re_…`)
+   - `AUTH_EMAIL_FROM` = a verified From address, e.g. `Vantage <access@yourdomain.com>`
+4. Redeploy. Confirm `/api/auth/status` reports `"emailOtpAvailable": true`.
+
+Until those are set, `/signin` should show email OTP as unavailable with the honest reason from auth status —
+use Google or password for authorized accounts instead.
+
 ### Google Cloud Console (production)
 
 1. Create an OAuth client (Web application) in Google Cloud Console.
