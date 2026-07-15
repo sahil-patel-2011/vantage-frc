@@ -1,3 +1,9 @@
+-- Defined here because AI RLS policies need org context before 0014_tenant_storage_hardening.sql.
+CREATE OR REPLACE FUNCTION current_app_org_id() RETURNS uuid
+LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('app.org_id',true),'')::uuid $$;
+REVOKE ALL ON FUNCTION current_app_org_id() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION current_app_org_id() TO vantage_app, vantage_worker;
+
 UPDATE agent_threads t SET org_id=(SELECT m.org_id FROM memberships m WHERE m.user_id=t.created_by ORDER BY m.created_at LIMIT 1) WHERE t.org_id IS NULL;
 DO $$ BEGIN IF EXISTS(SELECT 1 FROM agent_threads WHERE org_id IS NULL) THEN RAISE EXCEPTION 'Cannot migrate unscoped AI threads: assign an organization first';END IF;END $$;
 ALTER TABLE agent_threads ALTER COLUMN org_id SET NOT NULL;

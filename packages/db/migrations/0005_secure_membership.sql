@@ -64,10 +64,10 @@ CREATE OR REPLACE FUNCTION accept_org_invite(raw_token text) RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE
   candidate invites%ROWTYPE;
-  current_user users%ROWTYPE;
+  app_user users%ROWTYPE;
 BEGIN
-  SELECT * INTO current_user FROM users WHERE id=current_app_user_id();
-  IF current_user.id IS NULL OR NOT current_user.email_verified THEN
+  SELECT * INTO app_user FROM users WHERE id=current_app_user_id();
+  IF app_user.id IS NULL OR NOT app_user.email_verified THEN
     RAISE EXCEPTION 'A verified email is required';
   END IF;
   SELECT * INTO candidate FROM invites
@@ -80,13 +80,13 @@ BEGIN
     UPDATE invites SET status='expired' WHERE id=candidate.id;
     RAISE EXCEPTION 'Invite has expired';
   END IF;
-  IF lower(candidate.email) <> lower(current_user.email) THEN
+  IF lower(candidate.email) <> lower(app_user.email) THEN
     RAISE EXCEPTION 'Invite email does not match the signed-in account';
   END IF;
   INSERT INTO memberships(org_id,user_id,role)
-    VALUES(candidate.org_id,current_user.id,candidate.role)
+    VALUES(candidate.org_id,app_user.id,candidate.role)
     ON CONFLICT(org_id,user_id) DO NOTHING;
-  UPDATE invites SET status='accepted',accepted_by=current_user.id,accepted_at=now()
+  UPDATE invites SET status='accepted',accepted_by=app_user.id,accepted_at=now()
     WHERE id=candidate.id;
   RETURN candidate.org_id;
 END $$;

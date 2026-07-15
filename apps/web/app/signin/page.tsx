@@ -1,3 +1,4 @@
+import { getAuthCapabilities } from "@vantage/core";
 import SignInClient from "../sign-in/sign-in-client";
 
 function safeDestination(value: string | undefined) {
@@ -10,10 +11,12 @@ export default async function SignInPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
+  const status = getAuthCapabilities();
   return (
     <SignInClient
-      googleEnabled={Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)}
+      googleEnabled={status.googleSignInAvailable}
       nextPath={safeDestination(next)}
+      initialStatus={status}
     />
   );
 }

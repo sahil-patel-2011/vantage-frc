@@ -6,6 +6,7 @@ const PUBLIC_PAGES = new Set(["/", "/features", "/features/cad", "/features/stra
 const PUBLIC_PREFIXES = [
   "/api/auth",
   "/api/waitlist",
+  "/api/admin/bootstrap-owner",
   "/api/showcase/public",
   "/api/display/snapshot",
   "/showcase/present",
