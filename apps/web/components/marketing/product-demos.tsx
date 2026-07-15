@@ -237,6 +237,155 @@ export function CodePreview({ compact = false }: { compact?: boolean }) {
   );
 }
 
+export function ScoutPreview() {
+  return (
+    <div className="product-demo compact ops-demo" aria-label="Demo offline scouting sync preview">
+      <DemoChrome title="Scouting · Qual 18 · Team 254" meta="Offline → sync" />
+      <div className="ops-demo-body scout-ops">
+        <div className="ops-demo-stat-row">
+          <div>
+            <span>Queue</span>
+            <strong>3</strong>
+            <small>pending sync</small>
+          </div>
+          <div>
+            <span>Last save</span>
+            <strong>Local</strong>
+            <small>venue Wi-Fi down</small>
+          </div>
+          <div>
+            <span>Attribution</span>
+            <strong>Maya R.</strong>
+            <small>match form</small>
+          </div>
+        </div>
+        <ul>
+          <li>
+            <b>Auto</b>
+            <span>4 coral L4 · 2 algae</span>
+            <small>Observed</small>
+          </li>
+          <li>
+            <b>Tele</b>
+            <span>Cycle 18s · climb L3</span>
+            <small>Observed</small>
+          </li>
+          <li>
+            <b>Voice</b>
+            <span>“Defended hard mid-field”</span>
+            <small>Note</small>
+          </li>
+        </ul>
+        <footer className="product-demo-footer">
+          <span>Forms keep working offline</span>
+          <b>Sync when online</b>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+export function DashboardPreview() {
+  return (
+    <div className="product-demo compact ops-demo" aria-label="Demo customizable dashboard preview">
+      <DemoChrome title="Home · Customizable dashboard" meta="Widget board" />
+      <div className="ops-demo-body dash-ops">
+        <div className="dash-ops-grid">
+          <article>
+            <span>Next match</span>
+            <strong>Q42</strong>
+            <small>Waiting on event</small>
+          </article>
+          <article>
+            <span>Readiness</span>
+            <strong>—</strong>
+            <small>No fabricated %</small>
+          </article>
+          <article>
+            <span>Alerts</span>
+            <strong>0</strong>
+            <small>Empty until linked</small>
+          </article>
+          <article>
+            <span>Scouting</span>
+            <strong>—</strong>
+            <small>Coverage after sync</small>
+          </article>
+        </div>
+        <footer className="product-demo-footer">
+          <span>Customize rearranges widgets</span>
+          <b>Empty ≠ fake stats</b>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+export function DisplayPreview() {
+  return (
+    <div className="product-demo compact ops-demo" aria-label="Demo pit TV display preview">
+      <DemoChrome title="Pit / TV · Next match board" meta="Kiosk" />
+      <div className="ops-demo-body tv-ops">
+        <div className="tv-ops-hero">
+          <span>ON DECK</span>
+          <strong>Q42</strong>
+          <b>Red · Field 2</b>
+        </div>
+        <div className="ops-demo-stat-row">
+          <div>
+            <span>Leave pit</span>
+            <strong>6:40</strong>
+          </div>
+          <div>
+            <span>Alliance</span>
+            <strong>254 · 1678 · 118</strong>
+          </div>
+        </div>
+        <footer className="product-demo-footer">
+          <span>Offline-aware kiosk</span>
+          <b>Pit &amp; stands</b>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+export function TeamOpsPreview() {
+  return (
+    <div className="product-demo compact ops-demo" aria-label="Demo team invites and usage controls">
+      <DemoChrome title="Team · Invites &amp; usage" meta="Org-scoped" />
+      <div className="ops-demo-body team-ops">
+        <ul>
+          <li>
+            <b>Invite</b>
+            <span>mentor@team.frc · pending</span>
+            <small>Email</small>
+          </li>
+          <li>
+            <b>Role</b>
+            <span>Student scout · org member</span>
+            <small>Scoped</small>
+          </li>
+          <li>
+            <b>AI budget</b>
+            <span>Used 42 / 200 credits</span>
+            <small>Hard cap</small>
+          </li>
+          <li>
+            <b>Privacy</b>
+            <span>Row-level org boundaries</span>
+            <small>Enforced</small>
+          </li>
+        </ul>
+        <footer className="product-demo-footer">
+          <span>Waitlist + invite only</span>
+          <b>Platform admin gated separately</b>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export function WorkflowStrip() {
   return (
     <ol className="unified-flow" aria-label="Unified Vantage workflow">
