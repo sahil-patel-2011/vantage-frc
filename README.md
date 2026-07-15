@@ -42,6 +42,11 @@ seeds a verified owner, then owners/admins invite exact email addresses. Waitlis
 to Google: only the platform owner, existing users, or emails with a pending invite may authenticate;
 everyone else is pointed at the waitlist.
 
+**Platform admins:** Only emails/users with a `platform_admins` row may open Global Team Manager (`/admin`),
+platform connectors/models/commercial settings, or cross-org admin APIs. Access is not self-serve — add a DB
+row (or re-run bootstrap for `PLATFORM_OWNER_EMAIL`) using the admin database role. Org Team Admin under
+`/team` is separate and stays limited to that org's owner/admin. See `SECURITY_OPERATIONS.md`.
+
 **Database:** Auth and product data use **Neon Postgres** (`DATABASE_AUTH_URL` / `DATABASE_URL`). Do not migrate
 identity or RLS data to Supabase for this stack — Neon is the linked production database. Resend is only the
 email transport for OTP / forgot-password / default email 2FA; it does not replace Google OAuth or Neon.

@@ -2,12 +2,28 @@
 
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { parseYouTubeEmbed } from "../../lib/youtube";
+import { Icon, type IconName } from "../../components/app-shell";
 
 type EmptyHint = {
   title: string;
   body: string;
   ctaHref?: string;
   ctaLabel?: string;
+};
+
+const WIDGET_ICON: Record<string, { icon: IconName; tone: string; toneBg: string }> = {
+  next_match: { icon: "swords", tone: "#2563eb", toneBg: "#dbeafe" },
+  recent_result: { icon: "stats", tone: "#2563eb", toneBg: "#dbeafe" },
+  competition_snapshot: { icon: "target", tone: "#2563eb", toneBg: "#dbeafe" },
+  scouting_coverage: { icon: "clipboard", tone: "#16a34a", toneBg: "#dcfce7" },
+  prediction_summary: { icon: "bolt", tone: "#16a34a", toneBg: "#dcfce7" },
+  robot_readiness: { icon: "cube", tone: "#7c3aed", toneBg: "#ede9fe" },
+  pit_youtube: { icon: "display", tone: "#7c3aed", toneBg: "#ede9fe" },
+  sync_status: { icon: "gear", tone: "#0f766e", toneBg: "#ccfbf1" },
+  ai_usage: { icon: "bolt", tone: "#0f766e", toneBg: "#ccfbf1" },
+  quick_actions: { icon: "grid", tone: "#0f766e", toneBg: "#ccfbf1" },
+  notifications: { icon: "bell", tone: "#0f766e", toneBg: "#ccfbf1" },
+  alerts: { icon: "bell", tone: "#b91c1c", toneBg: "#fee2e2" },
 };
 
 const EMPTY_COPY: Record<string, EmptyHint> = {
@@ -44,7 +60,7 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   sync_status: {
     title: "Sync not ready",
     body: "Connect TBA (platform key or admin connector) before live rank/match sync.",
-    ctaHref: "/admin/connectors",
+    ctaHref: "/team/data",
     ctaLabel: "Connect TBA",
   },
   pit_youtube: {
@@ -123,6 +139,7 @@ function EmptyState({
 }
 
 function Shell({
+  type,
   title,
   payload,
   children,
@@ -131,6 +148,7 @@ function Shell({
   orgId,
   preferChildren,
 }: {
+  type: string;
   title: string;
   payload?: WidgetPayload;
   children: React.ReactNode;
@@ -142,15 +160,27 @@ function Shell({
   const status = payload?.status ?? "setup_required";
   const showLive = status === "live";
   const useChildren = preferChildren || (showLive && children != null && children !== false);
+  const iconMeta = WIDGET_ICON[type];
+  const isHero = type === "next_match" && showLive;
 
   return (
-    <article className="dash-widget app-card">
+    <article
+      className={`dash-widget app-card${isHero ? " hero" : ""}`}
+      style={iconMeta ? ({ ["--tone" as string]: iconMeta.tone, ["--tone-bg" as string]: iconMeta.toneBg }) : undefined}
+    >
       <header>
-        <div>
-          <h2>{title}</h2>
-          {showLive && payload?.updatedAt ? (
-            <small className="dash-updated">Updated {new Date(payload.updatedAt).toLocaleTimeString()}</small>
+        <div className="dash-widget-title">
+          {iconMeta ? (
+            <i className="dash-widget-icon">
+              <Icon name={iconMeta.icon} />
+            </i>
           ) : null}
+          <div>
+            <h2>{title}</h2>
+            {showLive && payload?.updatedAt ? (
+              <small className="dash-updated">Updated {new Date(payload.updatedAt).toLocaleTimeString()}</small>
+            ) : null}
+          </div>
         </div>
         <StatusBadge status={payload ? (preferChildren && status !== "live" ? "waiting" : payload.status) : "waiting"} />
       </header>
@@ -174,7 +204,7 @@ function allianceTeams(alliance: unknown) {
   return keys.map((key) => key.replace(/^frc/, "")).join(" · ") || "—";
 }
 
-function countdownLabel(iso: string | null | undefined) {
+export function countdownLabel(iso: string | null | undefined) {
   if (!iso) return "—";
   const ms = new Date(iso).getTime() - Date.now();
   if (Number.isNaN(ms)) return "—";
@@ -195,12 +225,9 @@ function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
     links.push({ href: "/workspace", label: "Event", detail: "Select event / location" });
   }
   if (tbaConfigured === false) {
-    links.push({ href: "/admin/connectors", label: "TBA", detail: "Connect TBA" });
+    links.push({ href: "/team/data", label: "TBA", detail: "Connect TBA" });
   }
-  links.push(
-    { href: "/team", label: "Invite", detail: "Invite members" },
-    { href: "/dashboard", label: "Layout", detail: "Customize dashboard" },
-  );
+  links.push({ href: "/team", label: "Invite", detail: "Invite members" });
   return links;
 }
 
@@ -223,7 +250,7 @@ export function DashboardWidgetView({
     case "next_match": {
       const scheduled = data.scheduledTime as string | undefined;
       return (
-        <Shell title="Next match" payload={payload} href={withOrg("/intel")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Next match" payload={payload} href={withOrg("/intel")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <div className="dash-next-match">
               <div>
@@ -255,6 +282,7 @@ export function DashboardWidgetView({
       if (payload?.status === "live" && !hasSignals && Number(data.percent ?? 0) === 0) {
         return (
           <Shell
+            type={type}
             title="Robot readiness"
             payload={{ ...payload, status: "empty", message: hint.body }}
             href={withOrg("/code")}
@@ -266,7 +294,7 @@ export function DashboardWidgetView({
         );
       }
       return (
-        <Shell title="Robot readiness" payload={payload} href={withOrg("/code")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Robot readiness" payload={payload} href={withOrg("/code")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <>
               <div className="dash-stat-row">
@@ -291,7 +319,7 @@ export function DashboardWidgetView({
     }
     case "recent_result":
       return (
-        <Shell title="Recent result" payload={payload} href={withOrg("/intel")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Recent result" payload={payload} href={withOrg("/intel")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <div className="dash-result">
               <span className={`wl ${String(data.result).toLowerCase()}`}>{String(data.result)}</span>
@@ -312,7 +340,7 @@ export function DashboardWidgetView({
       const pRed = Number(data.pRed ?? 0);
       const factors = (data.keyFactors as Array<{ name?: string; impact?: string }> | undefined)?.slice(0, 3) ?? [];
       return (
-        <Shell title="Prediction" payload={payload} href={withOrg("/strategy")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Prediction" payload={payload} href={withOrg("/strategy")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <>
               <div className="dash-stat-row">
@@ -341,6 +369,7 @@ export function DashboardWidgetView({
       if (payload?.status === "live" && items.length === 0 && openDisagreements === 0) {
         return (
           <Shell
+            type={type}
             title="Alerts"
             payload={payload}
             href={withOrg("/scouting")}
@@ -356,7 +385,7 @@ export function DashboardWidgetView({
         );
       }
       return (
-        <Shell title="Alerts" payload={payload} href={withOrg("/scouting")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Alerts" payload={payload} href={withOrg("/scouting")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <ul className="dash-checklist">
               <li>
@@ -379,7 +408,7 @@ export function DashboardWidgetView({
     }
     case "scouting_coverage":
       return (
-        <Shell title="Scouting coverage" payload={payload} href={withOrg("/scouting")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Scouting coverage" payload={payload} href={withOrg("/scouting")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <div className="dash-metric-grid">
               <div>
@@ -400,7 +429,7 @@ export function DashboardWidgetView({
       );
     case "competition_snapshot":
       return (
-        <Shell title="Competition snapshot" payload={payload} href={withOrg("/intel")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Competition snapshot" payload={payload} href={withOrg("/intel")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <div className="dash-metric-grid">
               <div>
@@ -426,7 +455,7 @@ export function DashboardWidgetView({
     case "sync_status": {
       const sources = (data.sources as Array<{ source: string; status: string; lastSuccessAt: string | null }> | undefined) ?? [];
       return (
-        <Shell title="Sync status" payload={payload} href={withOrg("/admin/connectors")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Sync status" payload={payload} href={withOrg("/team/data")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <ul className="dash-checklist">
               {sources.map((source) => (
@@ -447,7 +476,7 @@ export function DashboardWidgetView({
       const url = String(data.url ?? "");
       const embed = url ? parseYouTubeEmbed(url)?.embedUrl : null;
       return (
-        <Shell title={String(data.title ?? "Pit stream")} payload={payload} href={withOrg("/display")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title={String(data.title ?? "Pit stream")} payload={payload} href={withOrg("/display")} emptyHint={hint} orgId={orgId}>
           {embed ? (
             <div className="dash-pit-frame">
               <iframe
@@ -467,7 +496,7 @@ export function DashboardWidgetView({
       const unread = Number(data.unread ?? 0);
       if (payload?.status === "live" && items.length === 0) {
         return (
-          <Shell title="Notifications" payload={payload} emptyHint={emptyHintFor("notifications")} orgId={orgId} preferChildren>
+          <Shell type={type} title="Notifications" payload={payload} emptyHint={emptyHintFor("notifications")} orgId={orgId} preferChildren>
             <div className="dash-empty calm">
               <strong>Inbox clear</strong>
               <p>No notifications yet. Unread count stays at zero until something is sent.</p>
@@ -476,7 +505,7 @@ export function DashboardWidgetView({
         );
       }
       return (
-        <Shell title="Notifications" payload={payload} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Notifications" payload={payload} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <ul className="dash-checklist">
               {unread >= 1 ? (
@@ -498,7 +527,7 @@ export function DashboardWidgetView({
     }
     case "ai_usage":
       return (
-        <Shell title="AI usage" payload={payload} href={withOrg("/team")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="AI usage" payload={payload} href={withOrg("/team")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <div className="dash-metric-grid">
               <div>
@@ -523,6 +552,7 @@ export function DashboardWidgetView({
       const links = needsSetup || fromPayload.length === 0 ? setupQuickActions(orgId, tbaConfigured) : fromPayload;
       return (
         <Shell
+          type={type}
           title="Quick actions"
           payload={payload}
           emptyHint={hint}
@@ -542,7 +572,7 @@ export function DashboardWidgetView({
     }
     default:
       return (
-        <Shell title={type.replaceAll("_", " ")} payload={payload} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title={type.replaceAll("_", " ")} payload={payload} emptyHint={hint} orgId={orgId}>
           <p className="app-muted">Unknown widget.</p>
         </Shell>
       );

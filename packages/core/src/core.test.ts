@@ -162,4 +162,60 @@ describe("closed organization provisioning", () => {
       }),
     ).rejects.toThrow("Platform administrator");
   });
+
+  it("allows organization creation only when is_platform_admin is true", async () => {
+    const calls: string[] = [];
+    const client = {
+      query: async (sql: string, params?: unknown[]) => {
+        calls.push(sql);
+        if (sql.includes("is_platform_admin")) return { rows: [{ allowed: true }], rowCount: 1 };
+        if (sql.includes("FROM users")) return { rows: [{ id: "owner-1" }], rowCount: 1 };
+        if (sql.includes("INSERT INTO organizations")) return { rows: [{ id: "org-1" }], rowCount: 1 };
+        if (sql.includes("INSERT INTO memberships")) return { rows: [], rowCount: 1 };
+        if (sql.includes("INSERT INTO org_billing")) return { rows: [], rowCount: 1 };
+        if (sql.includes("membership_audit_events")) return { rows: [], rowCount: 1 };
+        return { rows: [], rowCount: 0, params };
+      },
+    } as unknown as PoolClient;
+    await expect(
+      createOrganizationAsPlatformAdmin(client, "admin-user", {
+        name: "Alpha",
+        slug: "alpha",
+        teamNumber: 254,
+        ownerEmail: "owner@example.com",
+      }),
+    ).resolves.toBe("org-1");
+    expect(calls.some((sql) => sql.includes("is_platform_admin"))).toBe(true);
+  });
+});
+
+describe("platform admin privilege helper", () => {
+  it("maps missing platform_admins row to 404 without leaking privilege wording", async () => {
+    const { assertPlatformAdmin, isPlatformAdmin, PlatformAdminRequiredError, platformAdminDeniedResponse } =
+      await import("./platform-admin");
+    const denied = {
+      query: async () => ({ rows: [{ allowed: false }], rowCount: 1 }),
+    } as unknown as PoolClient;
+    const allowed = {
+      query: async () => ({ rows: [{ allowed: true }], rowCount: 1 }),
+    } as unknown as PoolClient;
+
+    expect(await isPlatformAdmin(denied)).toBe(false);
+    expect(await isPlatformAdmin(allowed)).toBe(true);
+    await expect(assertPlatformAdmin(denied)).rejects.toBeInstanceOf(PlatformAdminRequiredError);
+
+    const response = platformAdminDeniedResponse(new PlatformAdminRequiredError());
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "Not found" });
+
+    const orgEscalation = platformAdminDeniedResponse(new Error("Platform administrator access required"));
+    expect(orgEscalation.status).toBe(404);
+    await expect(orgEscalation.json()).resolves.toEqual({ error: "Not found" });
+  });
+
+  it("does not treat org-admin wording as platform privilege", async () => {
+    const { platformAdminDeniedResponse } = await import("./platform-admin");
+    const response = platformAdminDeniedResponse(new Error("Organization administrator access required"));
+    expect(response.status).toBe(403);
+  });
 });
