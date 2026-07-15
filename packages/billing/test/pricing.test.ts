@@ -34,6 +34,7 @@ describe("table-driven entitlement boundaries",()=>{
  const free={planCode:"free" as const,managedAllowanceUsd:0,contextTokenLimit:4000,agentStepLimit:6,cadIterationLimit:3,cadConcurrentJobs:1,codeAnalysisMb:5,jobPriority:0,featureFlags:{advanced_strategy:false,core:true}};
  it("keeps feature entitlement separate from BYOK provider cost",()=>{
   expect(evaluateEntitlement({entitlement:free,feature:"core",managedProviderCostUsedUsd:0,estimatedManagedCostUsd:99,keySource:"byo"})).toMatchObject({allowed:true,bucket:"external_provider"});
+  expect(evaluateEntitlement({entitlement:free,feature:"core",managedProviderCostUsedUsd:0,estimatedManagedCostUsd:99,keySource:"local_cli"})).toMatchObject({allowed:true,bucket:"external_provider"});
   expect(evaluateEntitlement({entitlement:free,feature:"advanced_strategy",managedProviderCostUsedUsd:0,estimatedManagedCostUsd:0,keySource:"local"})).toMatchObject({allowed:false,reason:"feature_not_in_plan"});
  });
  it("stops managed usage at the snapshotted period allowance",()=>{

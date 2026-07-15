@@ -5,10 +5,13 @@ import {
   buildDefaultCadPlan,
   CadRepository,
   DeterministicMockCadAdapter,
+  resolveCadMetering,
   type CadAction,
+  type CadBrainMode,
   type EngineeringBrief,
 } from "@vantage/cad";
 import type { ContextSource } from "@vantage/agent";
+import { meteredAI } from "@vantage/billing";
 import { headers } from "next/headers";
 
 async function current() {
@@ -193,8 +196,33 @@ export async function POST(request: Request) {
           session.user.id,
           new DeterministicMockCadAdapter(),
         );
-        const brainMode = String(body.brainMode ?? "managed_api");
-        const keySource = brainMode === "terminal_cli" ? "local_cli" : brainMode === "team_byok" ? "byo" : "platform";
+        const brainMode = String(body.brainMode ?? "managed_api") as CadBrainMode;
+        const metering = resolveCadMetering(
+          brainMode === "terminal_cli" || brainMode === "team_byok" || brainMode === "mock" || brainMode === "managed_api"
+            ? brainMode
+            : "managed_api",
+        );
+        if (metering.keySource === "local_cli") {
+          await meteredAI({
+            client,
+            orgId,
+            userId: session.user.id,
+            feature: "cad",
+            requestId: randomUUID(),
+            estimatedCostUsd: 0,
+            keySource: "local_cli",
+            metadata: { brainMode, note: "Terminal CLI path — no Vantage model charge", stub: true },
+            invoke: async () => ({
+              value: executed,
+              promptTokens: 0,
+              completionTokens: 0,
+              costUsd: 0,
+              model: "cad-api-stub-v1",
+              provider: "vantage-cad",
+            }),
+          });
+          return { ...executed, keySource: "local_cli" as const, costUsd: 0 };
+        }
         await client.query(
           `INSERT INTO ai_usage_events
             (org_id, user_id, feature, model, provider, key_source, prompt_tokens, completion_tokens, total_tokens, cost_usd, request_id, metadata)
@@ -204,18 +232,15 @@ export async function POST(request: Request) {
             session.user.id,
             "cad-api-stub-v1",
             "vantage-cad",
-            keySource,
+            metering.keySource === "byo" ? "byo" : metering.keySource === "local" ? "local" : "platform",
             randomUUID(),
             JSON.stringify({
               brainMode,
-              note:
-                keySource === "local_cli"
-                  ? "Terminal CLI path — no Vantage model charge"
-                  : "API path stub until live CAD model routing is enabled",
+              note: "API path stub until live CAD model routing is enabled",
             }),
           ],
         );
-        return { ...executed, keySource, costUsd: 0 };
+        return { ...executed, keySource: metering.keySource, costUsd: 0 };
       }
       if (action === "cancel") {
         await client.query(

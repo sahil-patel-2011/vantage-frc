@@ -2,7 +2,11 @@
   "name": "@vantage/agent",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./repository": "./src/repository.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./repository": "./src/repository.ts",
+    "./coding-assistant": "./src/coding-assistant.ts"
+  },
   "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
   "dependencies": { "@neondatabase/serverless": "latest", "@vantage/billing": "*" }
 }
