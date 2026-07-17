@@ -48,6 +48,7 @@ export default function AccountClient() {
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -61,7 +62,6 @@ export default function AccountClient() {
       setTab(requested);
     }
   }, []);
-  const [orgId, setOrgId] = useState<string | null>(null);
 
   async function load() {
     const response = await fetch("/api/account");
@@ -142,11 +142,10 @@ export default function AccountClient() {
     <main className="intel-app account-page">
       <header className="intel-header">
         <div>
-          <span className="eyebrow">USER / ACCOUNT</span>
-          <h1>Account</h1>
-          <p>Profile, appearance, notifications, and integration status for your signed-in session.</p>
+          <span className="eyebrow">Account</span>
+          <h1>Your settings</h1>
+          <p>Profile, appearance, notifications, and integration status for this signed-in session.</p>
         </div>
-        <a href="/dashboard">← Dashboard</a>
       </header>
 
       <nav className="account-tabs" aria-label="Account sections">
@@ -154,8 +153,8 @@ export default function AccountClient() {
           [
             ["profile", "Profile"],
             ["appearance", "Appearance"],
-            ["notifications", "Notifications"],
-            ["integrations", "Integrations"],
+            ["notifications", "Alerts"],
+            ["integrations", "Links"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -176,10 +175,18 @@ export default function AccountClient() {
         </p>
       ) : null}
 
-      {tab === "profile" ? (
+      {!account && !message ? (
+        <section className="soft-empty" aria-busy="true">
+          <span className="app-badge setup">Loading</span>
+          <h2>Loading account</h2>
+          <p>Pulling your profile and preferences…</p>
+        </section>
+      ) : null}
+
+      {tab === "profile" && account ? (
         <section className="intel-panel account-panel">
           <div className="account-identity">
-            {account?.image ? (
+            {account.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img className="soft-avatar lg" src={account.image} alt="" />
             ) : (
@@ -187,7 +194,7 @@ export default function AccountClient() {
             )}
             <div>
               <strong>{displayName || "Signed-in user"}</strong>
-              <span>{account?.email ?? "Loading…"}</span>
+              <span>{account.email ?? "—"}</span>
             </div>
           </div>
           <form className="account-form" onSubmit={(event) => void saveProfile(event)}>
@@ -203,10 +210,10 @@ export default function AccountClient() {
             </label>
             <label>
               Email
-              <input value={account?.email ?? ""} readOnly disabled />
+              <input value={account.email ?? ""} readOnly disabled />
             </label>
             <div className="account-actions">
-              <button className="primary-action" type="submit" disabled={busy || !account}>
+              <button className="primary-action" type="submit" disabled={busy}>
                 Save profile
               </button>
               <button className="danger-action" type="button" disabled={busy} onClick={() => void signOut()}>
@@ -226,7 +233,7 @@ export default function AccountClient() {
       {tab === "notifications" ? (
         <section className="intel-panel account-panel">
           <h2>Notification preferences</h2>
-          <p>These control what Vantage may notify you about. They do not invent live competition data.</p>
+          <p className="app-muted">Controls what Vantage may notify you about. It does not invent live competition data.</p>
           <ul className="account-prefs">
             {PREF_LABELS.map((item) => (
               <li key={item.key}>
