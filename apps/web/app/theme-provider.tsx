@@ -90,7 +90,8 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const productRoute = !["/", "/features", "/features/cad", "/features/strategy", "/features/code", "/workflow", "/pricing", "/privacy", "/terms", "/signin", "/sign-in"].includes(pathname)
     && !pathname.startsWith("/display/kiosk")
-    && !pathname.startsWith("/showcase/present");
+    && !pathname.startsWith("/showcase/present")
+    && !pathname.startsWith("/support");
 
   useEffect(() => {
     if (!productRoute) return;

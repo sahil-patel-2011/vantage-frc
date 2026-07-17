@@ -1,7 +1,9 @@
-import SponsorsClient from "./sponsors-client";
+import { redirect } from "next/navigation";
 
+/** Legacy sponsors CRM — unified under Business Portal. */
 export default async function SponsorsPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
   const { orgId } = await searchParams;
-  if (!orgId) return <main className="content"><h1>Select an organization</h1></main>;
-  return <SponsorsClient orgId={orgId} />;
+  const query = new URLSearchParams({ tab: "sponsors" });
+  if (orgId) query.set("orgId", orgId);
+  redirect(`/business?${query.toString()}`);
 }
