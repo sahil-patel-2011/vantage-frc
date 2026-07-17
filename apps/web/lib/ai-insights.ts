@@ -660,7 +660,7 @@ export function buildModelAccuracyInsight(outcomes: PredictionOutcome[], pending
         `Biggest miss: ${worst.matchKey} — model gave red ${Math.round(worst.pRed * 100)}% and ${worst.winner} won. Debrief what the model could not see.`,
       );
     }
-    if (pending > 0) lines.push(`${pending} prediction${pending === 1 ? "" : "s"} await results.`);
+    if (pending > 0) lines.push(pending === 1 ? "1 prediction awaits results." : `${pending} predictions await results.`);
   }
 
   return {
