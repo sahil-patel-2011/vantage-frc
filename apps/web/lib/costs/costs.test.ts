@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { budgetInsights, costCategoryLabel, summarizeCosts, usd } from "./costs";
-import type { SeasonBudget, SeasonCost } from "./types";
+import {
+  annualizedSubscription,
+  budgetInsights,
+  combineAllCosts,
+  costCategoryLabel,
+  summarizeCosts,
+  summarizeSubscriptions,
+  usd,
+} from "./costs";
+import type { SeasonBudget, SeasonCost, SeasonSubscription } from "./types";
 
 let seq = 0;
 function cost(overrides: Partial<SeasonCost> = {}): SeasonCost {
@@ -20,6 +28,21 @@ function cost(overrides: Partial<SeasonCost> = {}): SeasonCost {
 
 function budget(overrides: Partial<SeasonBudget> = {}): SeasonBudget {
   return { seasonYear: 2026, totalBudgetUsd: 10000, aiAssistEnabled: true, notes: null, ...overrides };
+}
+
+let subSeq = 0;
+function sub(overrides: Partial<SeasonSubscription> = {}): SeasonSubscription {
+  subSeq += 1;
+  return {
+    id: `s-${subSeq}`,
+    name: `Sub ${subSeq}`,
+    provider: null,
+    amountUsd: 10,
+    cadence: "monthly",
+    active: true,
+    notes: null,
+    ...overrides,
+  };
 }
 
 describe("summarizeCosts", () => {
@@ -134,6 +157,44 @@ describe("budgetInsights", () => {
     const summary = summarizeCosts([cost({ category: "parts", amountUsd: 100 })], 10000);
     const insight = budgetInsights(summary, budget({ totalBudgetUsd: 10000 }));
     expect(insight.recommendations.join(" ")).toMatch(/registration/i);
+  });
+});
+
+describe("subscriptions", () => {
+  it("annualizes by cadence", () => {
+    expect(annualizedSubscription(sub({ amountUsd: 10, cadence: "monthly" }))).toBe(120);
+    expect(annualizedSubscription(sub({ amountUsd: 300, cadence: "annual" }))).toBe(300);
+    expect(annualizedSubscription(sub({ amountUsd: 500, cadence: "one_time" }))).toBe(500);
+  });
+
+  it("totals only active subscriptions and sorts by annual cost", () => {
+    const s = summarizeSubscriptions([
+      sub({ name: "Small", amountUsd: 5, cadence: "monthly" }), // 60/yr
+      sub({ name: "Big", amountUsd: 100, cadence: "monthly" }), // 1200/yr
+      sub({ name: "Off", amountUsd: 999, cadence: "annual", active: false }), // excluded
+    ]);
+    expect(s.count).toBe(3);
+    expect(s.activeCount).toBe(2);
+    expect(s.totalAnnual).toBe(1260); // 60 + 1200
+    expect(s.items[0]?.name).toBe("Big"); // highest annual first
+    expect(s.items.find((i) => i.name === "Off")?.annualUsd).toBe(999);
+  });
+});
+
+describe("combineAllCosts", () => {
+  it("sums every source into a grand total with breakdown percentages", () => {
+    const all = combineAllCosts({ seasonCommitted: 6000, subscriptionsAnnual: 1200, apiUsageUsd: 800 });
+    expect(all.grandTotal).toBe(8000);
+    const season = all.breakdown.find((b) => b.key === "season");
+    expect(season?.pct).toBe(0.75);
+    expect(all.breakdown.find((b) => b.key === "api")?.amount).toBe(800);
+    expect(all.breakdown.reduce((sum, b) => sum + b.amount, 0)).toBe(8000);
+  });
+
+  it("handles an empty total without dividing by zero", () => {
+    const all = combineAllCosts({ seasonCommitted: 0, subscriptionsAnnual: 0, apiUsageUsd: 0 });
+    expect(all.grandTotal).toBe(0);
+    expect(all.breakdown.every((b) => b.pct === 0)).toBe(true);
   });
 });
 
