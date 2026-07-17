@@ -10,6 +10,8 @@
 
 Linux teams use **Onshape** for real CAD, or `VANTAGE_CAD_MOCK=1` to exercise the signed Fusion relay protocol without Autodesk.
 
+Public compatibility matrix (no auth): `GET /api/cad/compatibility?cliVersion=0.1.0&protocol=2026-07-1&platform=windows`. CI/release notes: [`docs/cad-release.md`](docs/cad-release.md). Workflow examples: `scripts/cad/ci/*.yml.example`.
+
 ## Install (cross-platform)
 
 ```text

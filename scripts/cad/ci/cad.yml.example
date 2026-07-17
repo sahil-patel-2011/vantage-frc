@@ -1,0 +1,75 @@
+name: CAD
+
+# CAD-scoped only — does not run the full monorepo test suite.
+# Install: copy to .github/workflows/cad.yml when a PAT has workflow scope.
+on:
+  push:
+    paths:
+      - "packages/cad/**"
+      - "packages/vantage-cad-cli/**"
+      - "packages/fusion360-official-connector/**"
+      - "scripts/cad/**"
+      - "apps/web/app/api/cad/**"
+      - "apps/web/proxy.ts"
+      - "CAD_RELAY.md"
+      - "docs/cad-release.md"
+      - "scripts/cad/ci/cad.yml.example"
+      - "package.json"
+      - "package-lock.json"
+  pull_request:
+    paths:
+      - "packages/cad/**"
+      - "packages/vantage-cad-cli/**"
+      - "packages/fusion360-official-connector/**"
+      - "scripts/cad/**"
+      - "apps/web/app/api/cad/**"
+      - "apps/web/proxy.ts"
+      - "CAD_RELAY.md"
+      - "docs/cad-release.md"
+      - "scripts/cad/ci/cad.yml.example"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+
+concurrency:
+  group: cad-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: CAD tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Typecheck CAD packages
+        run: |
+          npm run typecheck --workspace=@vantage/cad
+          npm run typecheck --workspace=@vantage/cad-cli
+      - name: Unit + integration tests
+        run: |
+          npm test --workspace=@vantage/cad
+          npm test --workspace=@vantage/cad-cli
+      - name: Package unsigned relay artifacts
+        run: |
+          npm run build --workspace=@vantage/cad-cli
+          npm run cad:package
+      - name: Upload CAD artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cad-relay-unsigned
+          path: |
+            dist/cad-relay/
+            dist/cad-archives/
+          if-no-files-found: warn
+          retention-days: 14

@@ -30,6 +30,7 @@ const PUBLIC_PREFIXES = [
   "/api/cad/pair/start",
   "/api/cad/pair/poll",
   "/api/cad/relay",
+  "/api/cad/compatibility",
   // Generated social/SEO images must be crawlable without auth.
   "/opengraph-image",
   "/twitter-image",
