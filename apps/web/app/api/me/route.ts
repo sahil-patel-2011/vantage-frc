@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
 
 export async function GET() {
   try {
@@ -45,12 +46,14 @@ export async function GET() {
          FROM profiles WHERE user_id=$1`,
         [session.user.id],
       );
+      const tba = await resolveTbaConfigured(client, membership.rows[0]?.orgId ?? null);
       return {
         platformAdmin: Boolean(platform.rowCount),
         membership: membership.rows[0] ?? null,
         memberSince: created.rows[0]?.createdAt ?? null,
         unreadNotificationCount: Number(unread.rows[0]?.count ?? 0),
         profile: profileRow.rows[0] ?? null,
+        tbaConfigured: tba.tbaConfigured,
       };
     });
 
@@ -73,7 +76,7 @@ export async function GET() {
       memberSince: profile.memberSince,
       unreadNotificationCount: profile.unreadNotificationCount,
       onboardingComplete: Boolean(profile.profile?.onboardingCompletedAt),
-      tbaConfigured: Boolean(process.env.TBA_AUTH_KEY?.trim()),
+      tbaConfigured: profile.tbaConfigured,
     });
   } catch {
     return Response.json({ authenticated: false }, { status: 401 });

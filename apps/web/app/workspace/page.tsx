@@ -10,7 +10,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
   const { orgId } = await searchParams;
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/signin?next=%2Fworkspace");
-  if (!orgId) return <main className="content"><h1>Select your team workspace</h1><p>Access comes from a verified invitation.</p></main>;
+  if (!orgId) return <main className="content"><h1>Select your team workspace</h1><p>Access comes from a verified invitation.</p><a className="text-button" href="/dashboard">Back to dashboard</a></main>;
   const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
     const membership = await client.query<{ role: string }>("SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2", [orgId, session.user.id]);
     if (!membership.rows[0]) throw new Error("Organization access denied");
@@ -25,8 +25,16 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         AND COALESCE(actual_time,event_time,predicted_time)>now() ORDER BY COALESCE(actual_time,event_time,predicted_time) LIMIT 2`,
       [context.rows[0].eventKey],
     ) : { rows: [] };
-    const freshness=await client.query<{syncedAt:string|null;lastError:string|null}>(`SELECT max(synced_at)::text AS "syncedAt",(array_agg(last_error ORDER BY updated_at DESC) FILTER(WHERE last_error IS NOT NULL))[1] AS "lastError" FROM sync_cursors WHERE source='tba'`);
-    return { role: membership.rows[0].role, context: context.rows[0] ?? { eventKey: null, eventName: null }, next: next.rows,freshness:freshness.rows[0]??{syncedAt:null,lastError:null} };
+    const eventKey = context.rows[0]?.eventKey ?? null;
+    const freshness = await client.query<{ syncedAt: string | null; lastError: string | null }>(
+      eventKey
+        ? `SELECT max(m.synced_at)::text AS "syncedAt",
+                  (SELECT details->>'error' FROM data_source_health WHERE source='tba' LIMIT 1) AS "lastError"
+           FROM matches_ref m WHERE m.event_key=$1`
+        : `SELECT synced_at::text AS "syncedAt", last_error AS "lastError" FROM tba_cache_freshness LIMIT 1`,
+      eventKey ? [eventKey] : [],
+    );
+    return { role: membership.rows[0].role, context: context.rows[0] ?? { eventKey: null, eventName: null }, next: next.rows, freshness: freshness.rows[0] ?? { syncedAt: null, lastError: null } };
   });
   return <main className="workspace-page">
     <header className="workspace-top"><VantageLogo href="/dashboard" /><a className="display-nav" href={`/display?orgId=${orgId}`} aria-label="Open TV Display Mode setup">▣ <span>DISPLAY</span></a><SyncIndicator /><span>{session.user.name} · {data.role.toUpperCase()}</span></header>
