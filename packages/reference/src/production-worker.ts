@@ -32,15 +32,16 @@ class CoordinatedTbaGetter implements TbaGetter {
   }
 }
 
-export function createProductionReferenceJobs() {
+export function createProductionReferenceJobs(config: { preferOrgIds?: string[] } = {}) {
   const credentials = new NeonTbaCredentialStore();
   const coordinator = new GlobalTbaCoordinator(credentials, {
     baseUrl: process.env.TBA_API_BASE_URL,
   });
-  const tba: TbaGetter = new CoordinatedTbaGetter(
-    coordinator,
-    listLiveFallbackOrgIds,
-  );
+  const preferOrgIds = config.preferOrgIds ?? [];
+  const tba: TbaGetter = new CoordinatedTbaGetter(coordinator, async () => {
+    const fallback = await listLiveFallbackOrgIds();
+    return [...new Set([...preferOrgIds, ...fallback])];
+  });
 
   // Fail fast when neither env nor encrypted platform/org credentials can exist later.
   // Actual key resolution happens per-request inside the coordinator.
@@ -49,7 +50,7 @@ export function createProductionReferenceJobs() {
     // Defer hard failure to the first TBA call so sync routes can return a clear error.
   }
 
-  const options: GlobalReferenceWorkerOptions = {
+  const workerOptions: GlobalReferenceWorkerOptions = {
     store: globalReferenceAdminStore,
     tba,
     statbotics: new StatboticsClient({
@@ -60,13 +61,13 @@ export function createProductionReferenceJobs() {
     }),
   };
 
-  const jobs = createGlobalReferenceJobs(options);
+  const jobs = createGlobalReferenceJobs(workerOptions);
 
   return {
     syncSeason: {
       id: jobs.syncSeason.id,
       async run(input: { year: number }): Promise<SyncSummary> {
-        await assertTbaConfigured(credentials);
+        await assertTbaConfigured(credentials, preferOrgIds);
         const summary = await jobs.syncSeason.run(input);
         await recordIngestSummary({
           job: "reference.sync-season",
@@ -79,7 +80,7 @@ export function createProductionReferenceJobs() {
     syncEventDay: {
       id: jobs.syncEventDay.id,
       async run(input: EventDaySyncInput = {}): Promise<SyncSummary> {
-        await assertTbaConfigured(credentials);
+        await assertTbaConfigured(credentials, preferOrgIds);
         const summary = await jobs.syncEventDay.run(input);
         await recordIngestSummary({
           job: "reference.sync-event-day",
@@ -92,11 +93,19 @@ export function createProductionReferenceJobs() {
   };
 }
 
-async function assertTbaConfigured(credentials: NeonTbaCredentialStore) {
+async function assertTbaConfigured(
+  credentials: NeonTbaCredentialStore,
+  preferOrgIds: string[] = [],
+) {
   const platform = await credentials.platform();
   if (platform) return;
+  const orgIds = [...new Set(preferOrgIds.filter(Boolean))];
+  if (orgIds.length) {
+    const fallbacks = await credentials.fallbackForOrgs(orgIds);
+    if (fallbacks.length) return;
+  }
   throw new Error(
-    "TBA Read API key is not configured. Set TBA_AUTH_KEY (or TBA_API_KEY) or save an encrypted platform credential in Admin → Live Data.",
+    "TBA Read API key is not configured. Set TBA_AUTH_KEY (or TBA_API_KEY), save a platform credential in Admin → Live Data, or add a team fallback key.",
   );
 }
 

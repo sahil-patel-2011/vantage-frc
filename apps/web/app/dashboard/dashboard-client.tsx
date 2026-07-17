@@ -35,7 +35,7 @@ type BoardState = {
 
 const POLL_MS = 30_000;
 
-const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" | "bolt" | "bell" | "grid" | "stats" | "target" | "clipboard" | "gear" | "display" | "chat">> = {
+const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" | "bolt" | "bell" | "grid" | "stats" | "target" | "clipboard" | "gear" | "display" | "chat" | "pin">> = {
   next_match: "swords",
   robot_readiness: "cube",
   prediction_summary: "bolt",
@@ -48,6 +48,7 @@ const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" 
   pit_youtube: "display",
   notifications: "bell",
   ai_usage: "bolt",
+  onboarding_checklist: "pin",
 };
 
 function greeting() {
@@ -323,6 +324,8 @@ export default function DashboardClient() {
         ? me.tbaConfigured
         : undefined;
   const setupRequired = Boolean(context.setupRequired);
+  const hasScoutingSchemas = Boolean(context.hasScoutingSchemas);
+  const hasAiProvider = Boolean(context.hasAiProvider);
   const nextMatchPayload = widgets.next_match;
   const nextMatchData =
     nextMatchPayload?.status === "live" ? (nextMatchPayload.data as Record<string, unknown> | undefined) : undefined;
@@ -387,7 +390,11 @@ export default function DashboardClient() {
           ) : setupRequired || tbaConfigured === false ? (
             <a
               className="app-button secondary"
-              href={tbaConfigured === false ? `/team/data?orgId=${encodeURIComponent(orgId)}` : "/workspace"}
+              href={
+                tbaConfigured === false
+                  ? `/team/data?orgId=${encodeURIComponent(orgId)}`
+                  : `/command?orgId=${encodeURIComponent(orgId)}`
+              }
             >
               {tbaConfigured === false ? "Connect TBA" : "Select event"}
             </a>
@@ -411,16 +418,22 @@ export default function DashboardClient() {
         </p>
       ) : null}
 
-      {meLoaded && (!orgId || setupRequired || tbaConfigured === false) ? (
+      {meLoaded && (!orgId || setupRequired || tbaConfigured === false || !hasScoutingSchemas || !hasAiProvider) ? (
         <section className="dash-setup-banner" aria-label="First-run setup">
           <div>
             <span className="app-badge setup">Setup required</span>
             <h2>
               {!orgId
-                ? "Connect your team workspace"
-                : tbaConfigured === false
-                  ? "Connect TBA for live data"
-                  : "Select an active event"}
+                ? "Join your team workspace"
+                : setupRequired
+                  ? "Select an active event"
+                  : tbaConfigured === false
+                    ? "Connect TBA for live data"
+                    : !hasScoutingSchemas
+                      ? "Create scouting forms"
+                      : !hasAiProvider
+                        ? "Configure metered AI"
+                        : "Finish setup"}
             </h2>
             <p>
               Live widgets stay empty on purpose until this path is complete. Vantage will not invent ranks, EPA, match
@@ -434,28 +447,62 @@ export default function DashboardClient() {
             <li className={orgId ? "done" : "current"}>
               <b>1</b>
               <div>
-                <strong>Select workspace</strong>
-                <span>Choose your team organization</span>
+                <strong>Join workspace</strong>
+                <span>Accept a team invite or select your org</span>
               </div>
-              {!orgId ? <a href="/workspace">Open</a> : <em>Done</em>}
+              {!orgId ? <a href="/invite">Invite</a> : <em>Done</em>}
             </li>
             <li className={!orgId ? undefined : setupRequired ? "current" : "done"}>
               <b>2</b>
               <div>
-                <strong>Select event / location</strong>
+                <strong>Select event</strong>
                 <span>Set the active competition context</span>
               </div>
-              {orgId && setupRequired ? <a href="/workspace">Open</a> : orgId && !setupRequired ? <em>Done</em> : <span />}
+              {orgId && setupRequired ? (
+                <a href={`/command?orgId=${encodeURIComponent(orgId)}`}>Open</a>
+              ) : orgId && !setupRequired ? (
+                <em>Done</em>
+              ) : (
+                <span />
+              )}
             </li>
-            <li className={tbaConfigured === false ? "current" : tbaConfigured ? "done" : undefined}>
+            <li className={!orgId ? undefined : tbaConfigured === false ? "current" : tbaConfigured ? "done" : undefined}>
               <b>3</b>
               <div>
                 <strong>Sync TBA</strong>
-                <span>Platform TBA key powers match and rank ingest</span>
+                <span>Match and rank data from The Blue Alliance</span>
               </div>
               {tbaConfigured === false && orgId ? (
                 <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Connect</a>
               ) : tbaConfigured ? (
+                <em>Ready</em>
+              ) : (
+                <span />
+              )}
+            </li>
+            <li className={!orgId || setupRequired ? undefined : !hasScoutingSchemas ? "current" : "done"}>
+              <b>4</b>
+              <div>
+                <strong>Scout</strong>
+                <span>Starter match and pit forms for the season</span>
+              </div>
+              {orgId && !setupRequired && !hasScoutingSchemas ? (
+                <a href={`/scouting?orgId=${encodeURIComponent(orgId)}`}>Open</a>
+              ) : orgId && hasScoutingSchemas ? (
+                <em>Ready</em>
+              ) : (
+                <span />
+              )}
+            </li>
+            <li className={!orgId ? undefined : !hasAiProvider ? "current" : "done"}>
+              <b>5</b>
+              <div>
+                <strong>Metered AI</strong>
+                <span>BYO provider key for free-tier AI features</span>
+              </div>
+              {orgId && !hasAiProvider ? (
+                <a href={`/team?orgId=${encodeURIComponent(orgId)}#custom-providers`}>Configure</a>
+              ) : orgId && hasAiProvider ? (
                 <em>Ready</em>
               ) : (
                 <span />

@@ -2,6 +2,7 @@
 
 import type { SchemaDefinition, ScoutSchema, SyncEntry } from "@vantage/scouting";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   cacheEvent,
   getCachedEvent,
@@ -16,13 +17,20 @@ import {
 type Bootstrap = {
   eventKey: string | null;
   schemas: ScoutSchema[];
+  canManageSchemas?: boolean;
   assignments: Array<{
     matchKey: string;
     teamKey: string;
     compLevel: string;
     matchNumber: number;
   }>;
-  matches: Array<{ matchKey: string; matchNumber: number }>;
+  matches: Array<{
+    matchKey: string;
+    matchNumber: number;
+    compLevel?: string;
+    redAlliance?: { teamKeys?: string[] };
+    blueAlliance?: { teamKeys?: string[] };
+  }>;
   recentEntries: Array<{
     id: string;
     type: string;
@@ -44,6 +52,7 @@ type SpeechRecognitionLike = {
 };
 
 export default function ScoutingClient({ orgId }: { orgId: string }) {
+  const searchParams = useSearchParams();
   const [data, setData] = useState<Bootstrap | null>(null);
   const [type, setType] = useState<"match" | "pit">("match");
   const [matchKey, setMatchKey] = useState("");
@@ -104,12 +113,46 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   }, [orgId, refreshCounts, sync]);
 
   useEffect(() => {
+    const deepMatch = searchParams.get("matchKey");
+    const deepTeam = searchParams.get("teamKey");
+    if (deepMatch) setMatchKey(deepMatch);
+    if (deepTeam) setTeamKey(deepTeam);
+  }, [searchParams]);
+
+  useEffect(() => {
     const assignment = data?.assignments[0];
-    if (assignment && !matchKey) {
+    if (assignment && !matchKey && !searchParams.get("matchKey")) {
       setMatchKey(assignment.matchKey);
       setTeamKey(assignment.teamKey);
     }
-  }, [data, matchKey]);
+  }, [data, matchKey, searchParams]);
+
+  const matchOptions = useMemo(() => {
+    if (!data) return [];
+    if (data.assignments.length) {
+      return data.assignments.map((assignment) => ({
+        matchKey: assignment.matchKey,
+        teamKey: assignment.teamKey,
+        label: `${assignment.compLevel.toUpperCase()} ${assignment.matchNumber} · ${assignment.teamKey}`,
+      }));
+    }
+    const options: Array<{ matchKey: string; teamKey: string; label: string }> = [];
+    for (const match of data.matches) {
+      const teams = [
+        ...(match.redAlliance?.teamKeys ?? []),
+        ...(match.blueAlliance?.teamKeys ?? []),
+      ];
+      const comp = match.compLevel?.toUpperCase() ?? "MATCH";
+      for (const teamKey of teams) {
+        options.push({
+          matchKey: match.matchKey,
+          teamKey,
+          label: `${comp} ${match.matchNumber} · ${teamKey}`,
+        });
+      }
+    }
+    return options;
+  }, [data]);
 
   const schema = useMemo(
     () => data?.schemas.find((candidate) => candidate.type === type),
@@ -224,6 +267,23 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
     setMessage(response.ok ? "Coach value formula saved" : "Coach role is required to save formulas");
   }
 
+  async function createStarterForms() {
+    setMessage("");
+    const response = await fetch("/api/scouting/schemas", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orgId, action: "ensure_defaults" }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as Bootstrap & { error?: string };
+    if (!response.ok) {
+      setMessage(payload.error ?? "Could not create starter forms.");
+      return;
+    }
+    setData(payload);
+    await cacheEvent(orgId, payload);
+    setMessage("Starter match and pit forms are ready.");
+  }
+
   async function reviewConflict(id: string, status: "resolved" | "dismissed") {
     const response = await fetch("/api/scouting/disagreements", {
       method: "PATCH",
@@ -250,10 +310,26 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
         <section className="app-empty" style={{ marginBottom: 16 }}>
           <span className="app-badge setup">Setup required</span>
           <h2>No active event</h2>
-          <p>Select an event in Workspace so assignments and forms can load. Offline queue still works once an event is cached.</p>
-          <a className="app-button secondary" href={`/workspace?orgId=${encodeURIComponent(orgId)}`}>
-            Open workspace
+          <p>Select an event in Command before assignments and forms can load. Offline queue still works once an event is cached.</p>
+          <a className="app-button secondary" href={`/command?orgId=${encodeURIComponent(orgId)}`}>
+            Select event
           </a>
+        </section>
+      ) : null}
+      {data?.eventKey && !schema ? (
+        <section className="app-empty" style={{ marginBottom: 16 }}>
+          <span className="app-badge setup">Forms required</span>
+          <h2>No {type} scouting form yet</h2>
+          <p>
+            {data.canManageSchemas
+              ? "Create starter match and pit forms for this season, or publish a custom schema from Team settings."
+              : "Ask an owner or admin to publish scouting forms for this event."}
+          </p>
+          {data.canManageSchemas ? (
+            <button className="app-button secondary" type="button" onClick={() => void createStarterForms()}>
+              Create starter forms
+            </button>
+          ) : null}
         </section>
       ) : null}
       <section className="event-strip">
@@ -293,12 +369,15 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
                 setTeamKey(team ?? "");
               }}>
                 <option value="|">Select match and team</option>
-                {data?.assignments.map((assignment) => (
-                  <option key={`${assignment.matchKey}-${assignment.teamKey}`} value={`${assignment.matchKey}|${assignment.teamKey}`}>
-                    {assignment.compLevel.toUpperCase()} {assignment.matchNumber} · {assignment.teamKey}
+                {matchOptions.map((option) => (
+                  <option key={`${option.matchKey}-${option.teamKey}`} value={`${option.matchKey}|${option.teamKey}`}>
+                    {option.label}
                   </option>
                 ))}
               </select>
+              {!matchOptions.length ? (
+                <small>No assignments or synced matches yet — sync TBA after the schedule is published.</small>
+              ) : null}
             </label>
           )}
           {type === "pit" && <label>Team key<input value={teamKey} onChange={(event) => setTeamKey(event.target.value)} placeholder="frc254" /></label>}

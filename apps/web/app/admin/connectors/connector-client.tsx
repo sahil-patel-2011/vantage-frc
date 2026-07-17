@@ -133,6 +133,23 @@ export default function DataConnectorClient({ orgId }: { orgId?: string }) {
           </div>
         </section>
       )}
+      {orgId ? (
+        <section className="intel-panel" style={{ marginBottom: 16 }}>
+          <h2>Sync active event</h2>
+          <p>
+            Refreshes match and team data for the event selected in Command. Uses the platform key with your team
+            fallback credential when configured.
+          </p>
+          <button
+            className="primary-action"
+            type="button"
+            disabled={syncing}
+            onClick={() => void act("sync", undefined, "event-day")}
+          >
+            {syncing ? "Syncing…" : "Sync active event"}
+          </button>
+        </section>
+      ) : null}
       <section className="admin-grid">
         <form
           className="intel-panel"

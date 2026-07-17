@@ -2,8 +2,11 @@ import { createHash } from "node:crypto";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import {
+  DEFAULT_MATCH_SCHEMA,
+  DEFAULT_PIT_SCHEMA,
   detectDisagreements,
   validatePayload,
+  type EntryType,
   type ScoutSchema,
   type SyncEntry,
 } from "./index";
@@ -18,6 +21,13 @@ export class ScoutingRepository {
   constructor(private readonly client: PoolClient) {}
 
   async bootstrap(orgId: string, userId: string) {
+    const membership = await this.client.query<{ role: string }>(
+      `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
+      [orgId, userId],
+    );
+    const role = membership.rows[0]?.role ?? "viewer";
+    const canManageSchemas = role === "owner" || role === "admin";
+
     const context = await this.client.query<{ activeEventKey: string | null }>(
       `SELECT active_event_key AS "activeEventKey"
        FROM org_active_context WHERE org_id = $1`,
@@ -25,8 +35,20 @@ export class ScoutingRepository {
     );
     const eventKey = context.rows[0]?.activeEventKey ?? null;
     if (!eventKey) {
-      return { eventKey: null, schemas: [], assignments: [], matches: [], recentEntries: [] };
+      return {
+        eventKey: null,
+        schemas: [],
+        assignments: [],
+        matches: [],
+        recentEntries: [],
+        canManageSchemas,
+      };
     }
+
+    if (canManageSchemas) {
+      await this.ensureDefaultSchemas(orgId, userId, eventKey);
+    }
+
     const [schemas, assignments, matches, recentEntries] = await Promise.all([
       this.client.query(
         `SELECT DISTINCT ON (type) id, org_id AS "orgId", year, type, version,
@@ -72,7 +94,33 @@ export class ScoutingRepository {
       assignments: assignments.rows,
       matches: matches.rows,
       recentEntries: recentEntries.rows,
+      canManageSchemas,
     };
+  }
+
+  async ensureDefaultSchemas(orgId: string, userId: string, eventKey: string) {
+    const yearRow = await this.client.query<{ year: number }>(
+      `SELECT year FROM events_ref WHERE event_key = $1`,
+      [eventKey],
+    );
+    const year = yearRow.rows[0]?.year;
+    if (!year) return;
+
+    for (const entry of [
+      { type: "match" as EntryType, definition: DEFAULT_MATCH_SCHEMA },
+      { type: "pit" as EntryType, definition: DEFAULT_PIT_SCHEMA },
+    ]) {
+      const existing = await this.client.query(
+        `SELECT 1 FROM scout_schemas WHERE org_id = $1 AND year = $2 AND type = $3 LIMIT 1`,
+        [orgId, year, entry.type],
+      );
+      if (existing.rowCount) continue;
+      await this.client.query(
+        `INSERT INTO scout_schemas (org_id, year, type, version, schema, created_by)
+         VALUES ($1, $2, $3, 1, $4::jsonb, $5)`,
+        [orgId, year, entry.type, JSON.stringify(entry.definition), userId],
+      );
+    }
   }
 
   async getSchema(orgId: string, schemaId: string): Promise<ScoutSchema> {
