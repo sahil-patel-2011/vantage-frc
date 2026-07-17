@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import PartnerPlacement from "../../components/partner-placement";
 import {
   GRANT_STATUSES,
   SPONSOR_STATUSES,
@@ -11,16 +12,36 @@ import {
   type PurchaseRequest,
   type Sponsor,
 } from "../../lib/business-portal";
+import { PartnerPlacementsPanel } from "./partner-placements-panel";
 
-type Tab = "overview" | "budget" | "sponsors" | "grants" | "evidence";
+type Tab = "overview" | "budget" | "sponsors" | "placements" | "grants" | "evidence";
 
 const TABS: Array<{ id: Tab; label: string; eyebrow: string }> = [
   { id: "overview", label: "Command center", eyebrow: "Today" },
   { id: "budget", label: "Budget & orders", eyebrow: "Money out" },
   { id: "sponsors", label: "Sponsor CRM", eyebrow: "Relationships" },
+  { id: "placements", label: "Partner placements", eyebrow: "Recognition" },
   { id: "grants", label: "Grants & writer", eyebrow: "Funding" },
   { id: "evidence", label: "Awards & evidence", eyebrow: "Proof" },
 ];
+
+function isTab(value: string | null): value is Tab {
+  return TABS.some((tab) => tab.id === value);
+}
+
+function readTabFromUrl(): Tab {
+  if (typeof window === "undefined") return "overview";
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  return isTab(tab) ? tab : "overview";
+}
+
+function writeTabToUrl(tab: Tab) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (tab === "overview") url.searchParams.delete("tab");
+  else url.searchParams.set("tab", tab);
+  window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+}
 
 function money(cents: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100);
@@ -64,6 +85,11 @@ export default function BusinessClient() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  const selectTab = useCallback((next: Tab) => {
+    setTab(next);
+    writeTabToUrl(next);
+  }, []);
+
   const load = useCallback(async (seasonOverride?: number) => {
     setError("");
     const params = new URLSearchParams(window.location.search);
@@ -80,7 +106,10 @@ export default function BusinessClient() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    setTab(readTabFromUrl());
+    void load();
+  }, [load]);
 
   const live = view?.status === "live" ? view : null;
 
@@ -151,8 +180,13 @@ export default function BusinessClient() {
     <main className="module-page business-page">
       <header className="biz-hero">
         <div>
-          <span className="breadcrumbs">Team / Business Portal</span>
-          <p className="biz-kicker">Run the team like it will exist ten years from now</p>
+          <span className="breadcrumbs">
+            <a href={live ? `/dashboard?orgId=${encodeURIComponent(live.orgId)}` : "/dashboard"}>Home</a>
+            {" / "}
+            <a href={live ? `/team?orgId=${encodeURIComponent(live.orgId)}` : "/team"}>Team</a>
+            {" / Business"}
+          </span>
+          <p className="biz-kicker">Same workspace · same org · shared Soft-UI shell</p>
           <h1>Funding, purchasing, and partner relationships—one source of truth.</h1>
           <p>Every request has an owner. Every dollar has a destination. Every sponsor has a next step. Every claim in a grant draft points back to recorded evidence.</p>
         </div>
@@ -185,17 +219,31 @@ export default function BusinessClient() {
 
       {live ? (
         <>
+          <nav className="biz-cross-nav" aria-label="Jump to competition ops">
+            <a href={`/dashboard?orgId=${encodeURIComponent(live.orgId)}`}>Home</a>
+            <a href={`/command?orgId=${encodeURIComponent(live.orgId)}`}>Event Day</a>
+            <a href={`/scouting?orgId=${encodeURIComponent(live.orgId)}`}>Scouting</a>
+            <a href={`/strategy?orgId=${encodeURIComponent(live.orgId)}`}>Strategy</a>
+            <a href={`/pit?orgId=${encodeURIComponent(live.orgId)}`}>Pit Command</a>
+            <a href={`/impact?orgId=${encodeURIComponent(live.orgId)}&season=${live.seasonYear}`}>Community Impact</a>
+            <a href={`/costs?orgId=${encodeURIComponent(live.orgId)}`}>Season Costs</a>
+            <a href={`/team?orgId=${encodeURIComponent(live.orgId)}`}>Team Admin</a>
+          </nav>
+
           <nav className="biz-tabs" aria-label="Business portal sections">
             {TABS.map((item) => (
-              <button key={item.id} type="button" className={tab === item.id ? "active" : ""} onClick={() => setTab(item.id)}>
+              <button key={item.id} type="button" className={tab === item.id ? "active" : ""} onClick={() => selectTab(item.id)}>
                 <small>{item.eyebrow}</small><span>{item.label}</span>
               </button>
             ))}
           </nav>
 
-          {tab === "overview" ? <Overview view={live} setTab={setTab} /> : null}
+          {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
           {tab === "budget" ? <Budget view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
           {tab === "sponsors" ? <Sponsors view={live} busy={busy} submit={submit} mutate={mutate} research={research} /> : null}
+          {tab === "placements" ? (
+            <PartnerPlacementsPanel orgId={live.orgId} seasonYear={live.seasonYear} canManage={live.canManageFinance} />
+          ) : null}
           {tab === "grants" ? <Grants view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
           {tab === "evidence" ? <Evidence view={live} busy={busy} submit={submit} /> : null}
         </>
@@ -252,6 +300,23 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
         <article className="app-card"><span className="biz-overline">Relationship memory</span><h2>Built to survive graduation</h2><div className="biz-big-stat">{view.interactions.length}</div><p className="app-muted">Sponsor interactions logged with owners, dates, next steps, and follow-ups.</p><button className="biz-text-button" type="button" onClick={() => setTab("sponsors")}>Open partner history →</button></article>
         <article className="app-card"><span className="biz-overline">Evidence locker</span><h2>Never write from memory again</h2><div className="biz-evidence-stats"><b>{view.awards.length}<small>awards</small></b><b>{view.impact.hours}<small>impact hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><button className="biz-text-button" type="button" onClick={() => setTab("evidence")}>Strengthen the record →</button></article>
       </section>
+
+      <section className="biz-grid two">
+        <article className="app-card">
+          <span className="biz-overline">Partner recognition</span>
+          <h2>Sell placements without leaving Vantage.</h2>
+          <p className="app-muted">Storefront packages, creative approval, and live recognition strips share this org—dashboard, pit, and this portal.</p>
+          <button className="biz-text-button" type="button" onClick={() => setTab("placements")}>Open partner placements →</button>
+        </article>
+        <article className="app-card">
+          <span className="biz-overline">Season spend tracker</span>
+          <h2>Separate from operating budget when you need it.</h2>
+          <p className="app-muted">Season Costs tracks real-world event spend alongside this portal’s finance guardrails—same login, same org.</p>
+          <a className="biz-text-button" href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Open Season Costs →</a>
+        </article>
+      </section>
+
+      <PartnerPlacement orgId={view.orgId} surface="business_wall" title="Partners powering this team" />
     </div>
   );
 }
@@ -274,7 +339,7 @@ function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
   return <div className="biz-stack">
     <section className="biz-grid two">
       <article className="app-card">
-        <header className="biz-card-head"><div><span className="biz-overline">Season guardrails</span><h2>Set the budget once. Compare every decision to it.</h2></div>{view.canManageFinance ? <ToneBadge tone="blue">Lead controls</ToneBadge> : <ToneBadge>Read only</ToneBadge>}</header>
+        <header className="biz-card-head"><div><span className="biz-overline">Season guardrails</span><h2>Set the budget once. Compare every decision to it.</h2><p className="app-muted" style={{ margin: "8px 0 0", fontSize: 12 }}>For event-by-event spend tracking, use <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season Costs</a>.</p></div>{view.canManageFinance ? <ToneBadge tone="blue">Lead controls</ToneBadge> : <ToneBadge>Read only</ToneBadge>}</header>
         <form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-budget", ["totalBudget", "fundraisingGoal"])}>
           <Field label="Operating budget"><input name="totalBudgetDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.totalBudgetCents)} disabled={!view.canManageFinance} /></Field>
           <Field label="Fundraising goal"><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} disabled={!view.canManageFinance} /></Field>

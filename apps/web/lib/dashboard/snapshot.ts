@@ -435,6 +435,7 @@ export async function loadDashboardSnapshot(
         { href: `/scouting${orgQuery}`, label: "Scout", detail: "Open assigned form" },
         { href: `/pit${orgQuery}`, label: "Pit Command", detail: "Release gate & battery" },
         { href: `/strategy${orgQuery}`, label: "Strategize", detail: "Run match what-if" },
+        { href: `/business${orgQuery}`, label: "Business", detail: "Budget, sponsors & grants" },
         { href: `/messages${orgQuery}`, label: "Messages", detail: "Team chat & DMs" },
       ],
     });
