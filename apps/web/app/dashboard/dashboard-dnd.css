@@ -1,0 +1,135 @@
+/* Drag-from-palette + multi-board switcher for the customizable Home Screen.
+   Scoped to .dash-* additions; base dashboard styles live in soft-ui.css. */
+
+/* ---- Multi-board switcher (Apple page-style) ---- */
+.dash-board-bar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 16px;
+}
+.dash-board-switcher{
+  display:inline-flex;align-items:center;gap:2px;min-height:40px;padding:3px;
+  border-radius:14px;background:color-mix(in srgb,var(--soft-card) 88%,var(--soft-bg));
+  border:1px solid var(--soft-line);box-shadow:0 1px 0 rgba(255,255,255,.4) inset;
+}
+.dash-board-switcher button{
+  appearance:none;border:0;background:transparent;color:var(--soft-muted);
+  min-height:34px;padding:0 12px;border-radius:11px;cursor:pointer;
+  font:650 12px/1.1 var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em;
+  transition:background .15s ease,color .15s ease,box-shadow .15s ease;
+}
+.dash-board-switcher button[aria-pressed="true"]{
+  background:var(--soft-card);color:var(--soft-ink);
+  box-shadow:0 2px 8px rgba(19,32,51,.1),0 0 0 1px color-mix(in srgb,var(--soft-line) 70%,transparent);
+}
+.dash-board-switcher button:hover:not([aria-pressed="true"]){color:var(--soft-ink);background:color-mix(in srgb,var(--soft-bg) 70%,transparent)}
+.dash-board-switcher .dash-board-add{
+  min-width:34px;padding:0;font-size:18px;font-weight:700;color:var(--soft-accent);
+}
+.dash-board-manage{
+  min-height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--soft-line);
+  background:var(--soft-card);color:var(--soft-ink);font:650 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+.dash-board-manage:hover{border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line))}
+.dash-board-dots{display:inline-flex;align-items:center;gap:6px;margin-left:4px}
+.dash-board-dots button{
+  width:7px;height:7px;padding:0;border:0;border-radius:999px;cursor:pointer;
+  background:color-mix(in srgb,var(--soft-muted) 45%,transparent);
+  transition:transform .15s ease,background .15s ease;
+}
+.dash-board-dots button[aria-current="true"]{background:var(--soft-accent);transform:scale(1.25)}
+.dash-board-current{
+  display:inline-flex;align-items:center;gap:8px;min-height:28px;color:var(--soft-muted);font-size:12px;
+}
+.dash-board-current strong{color:var(--soft-ink);font-size:13px;letter-spacing:-.01em}
+
+.dash-boards-sheet{
+  position:fixed;z-index:96;left:50%;bottom:0;transform:translateX(-50%);
+  width:min(520px,100vw);max-height:min(78vh,640px);padding:18px 18px calc(20px + var(--soft-safe-bottom));
+  border-radius:22px 22px 0 0;background:var(--soft-card);border:1px solid var(--soft-line);border-bottom:0;
+  box-shadow:0 -16px 48px rgba(12,17,24,.22);overflow:auto;animation:dash-sheet-up .28s ease;
+}
+.dash-boards-sheet header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.dash-boards-sheet h2{margin:0;font-size:20px;letter-spacing:-.02em}
+.dash-boards-sheet header p{margin:4px 0 0;color:var(--soft-muted);font-size:13px}
+.dash-boards-group{margin:0 0 16px}
+.dash-boards-group>p{
+  margin:0 0 8px;color:var(--soft-muted);font:700 11px/1 ui-sans-serif;letter-spacing:.06em;text-transform:uppercase;
+}
+.dash-boards-list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.dash-boards-list li{
+  display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
+  padding:10px 12px;border-radius:14px;border:1px solid var(--soft-line);background:var(--soft-bg);
+}
+.dash-boards-list li[data-active="true"]{
+  border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--soft-accent) 16%,transparent);
+  background:color-mix(in srgb,var(--soft-accent-soft) 55%,var(--soft-bg));
+}
+.dash-boards-list button.dash-board-pick{
+  display:grid;gap:2px;justify-items:start;border:0;background:transparent;padding:0;text-align:left;cursor:pointer;color:inherit;
+}
+.dash-boards-list button.dash-board-pick strong{font-size:14px;letter-spacing:-.01em}
+.dash-boards-list button.dash-board-pick span{color:var(--soft-muted);font-size:11px}
+.dash-boards-actions{display:inline-flex;gap:6px}
+.dash-boards-actions button{
+  min-height:32px;padding:0 10px;border-radius:10px;border:1px solid var(--soft-line);
+  background:var(--soft-card);color:var(--soft-ink);font:650 11px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+.dash-boards-actions button.danger{color:#b91c1c;border-color:color-mix(in srgb,#ef4444 35%,var(--soft-line))}
+.dash-boards-list input{
+  width:100%;min-height:36px;padding:0 10px;border-radius:10px;border:1px solid color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));
+  font:600 13px var(--font-source-sans),ui-sans-serif;background:var(--soft-card);color:inherit;
+}
+.dash-boards-create{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;
+}
+.dash-boards-create button{
+  min-height:40px;padding:0 14px;border-radius:12px;border:1px dashed color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line));
+  background:color-mix(in srgb,var(--soft-accent-soft) 40%,transparent);color:var(--soft-accent);
+  font:700 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+
+/* ---- Palette + snap HUD (edit mode) ---- */
+.dash-palette-heading{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 0 4px}
+.dash-palette-heading span{color:var(--soft-muted);font:700 10px/1 ui-sans-serif;letter-spacing:.07em;text-transform:uppercase}
+.dash-palette-heading small{color:var(--soft-muted);font-size:11px}
+.dash-widget-palette{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.dash-widget-palette>p{grid-column:1/-1;margin:0;color:var(--soft-muted);font-size:13px}
+.dash-widget-palette button{
+  display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;width:100%;
+  padding:10px;border-radius:14px;border:1px solid var(--soft-line);background:var(--soft-card);
+  color:inherit;text-align:left;cursor:grab;user-select:none;touch-action:none;
+  transition:border-color .15s ease,transform .12s ease,box-shadow .15s ease;
+}
+.dash-widget-palette button:hover{border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));transform:translateY(-1px);box-shadow:0 8px 18px rgba(19,32,51,.08)}
+.dash-widget-palette button.dragging{opacity:.7;cursor:grabbing;border-color:var(--soft-accent)}
+.dash-widget-palette i{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--soft-accent-soft);color:var(--soft-accent)}
+.dash-widget-palette span{display:grid;gap:2px;min-width:0}
+.dash-widget-palette strong{font-size:13px;letter-spacing:-.01em}
+.dash-widget-palette small{color:var(--soft-muted);font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dash-widget-palette em{font-style:normal;color:var(--soft-muted);font:700 10px ui-sans-serif;white-space:nowrap}
+
+.dash-grid-guide{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px;padding:0 2px;
+  color:var(--soft-muted);font-size:11px;
+}
+.dash-grid-guide span{font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.dash-snap-hud,.dash-drop-coach{
+  position:absolute;z-index:4;top:12px;left:50%;transform:translateX(-50%);
+  display:inline-flex;align-items:center;gap:10px;min-height:32px;padding:6px 12px;border-radius:999px;
+  background:rgba(15,23,42,.88);color:#fff;font-size:11px;pointer-events:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
+}
+.dash-snap-hud strong,.dash-drop-coach strong{font-size:11px}
+.dash-snap-hud b{font:700 11px ui-monospace,monospace;color:#93c5fd}
+.dash-grid-wrap.receiving-widget{outline:2px dashed color-mix(in srgb,var(--soft-accent) 55%,transparent);outline-offset:4px}
+.dash-size-btn{
+  min-height:28px;padding:0 8px;border:0;border-radius:10px;cursor:pointer;
+  background:color-mix(in srgb,var(--soft-card) 88%,transparent);color:var(--soft-muted);
+  font:700 10px ui-monospace,monospace;backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(19,32,51,.12);
+}
+.dash-dock-tidy span{margin-right:4px;opacity:.8}
+
+@media (max-width:640px){
+  .dash-board-switcher{max-width:100%;overflow-x:auto}
+  .dash-widget-palette{grid-template-columns:1fr}
+}

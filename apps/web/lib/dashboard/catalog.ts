@@ -42,6 +42,46 @@ export type WidgetCatalogEntry = {
   roles?: OrgRole[];
 };
 
+export const DASHBOARD_COLUMNS = 12;
+
+type DashboardRect = Pick<DashboardWidgetLayout, "x" | "y" | "w" | "h">;
+
+export function dashboardRectsOverlap(a: DashboardRect, b: DashboardRect): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+/** Finds the first top-to-bottom grid slot that does not overlap an existing widget. */
+export function findDashboardSlot(
+  layout: DashboardRect[],
+  width: number,
+  height: number,
+  columns = DASHBOARD_COLUMNS,
+): { x: number; y: number } {
+  const w = Math.max(1, Math.min(columns, Math.floor(width)));
+  const h = Math.max(1, Math.floor(height));
+  const searchRows = layout.reduce((max, item) => Math.max(max, item.y + item.h), 0) + h + 1;
+  for (let y = 0; y <= searchRows; y += 1) {
+    for (let x = 0; x <= columns - w; x += 1) {
+      const candidate = { x, y, w, h };
+      if (!layout.some((item) => dashboardRectsOverlap(candidate, item))) return { x, y };
+    }
+  }
+  return { x: 0, y: searchRows };
+}
+
+/** Packs widgets upward and leftward while preserving their relative visual order. */
+export function packDashboardLayout(layout: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
+  const placed: DashboardWidgetLayout[] = [];
+  const ordered = [...layout].sort((a, b) => a.y - b.y || a.x - b.x);
+  for (const item of ordered) {
+    const w = Math.max(1, Math.min(DASHBOARD_COLUMNS, Math.floor(item.w)));
+    const h = Math.max(1, Math.floor(item.h));
+    const position = findDashboardSlot(placed, w, h);
+    placed.push({ ...item, ...position, w, h });
+  }
+  return placed;
+}
+
 export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   {
     type: "onboarding_checklist",
@@ -232,7 +272,7 @@ export function validateDashboardLayout(
     if (![x, y, rawW, rawH].every((n) => Number.isFinite(n) && n >= 0)) {
       return { ok: false, error: "Widget grid coordinates must be numbers" };
     }
-    const w = Math.min(12, Math.max(entry.minW, Math.floor(rawW)));
+    const w = Math.min(DASHBOARD_COLUMNS, Math.max(entry.minW, Math.floor(rawW)));
     const h = Math.min(12, Math.max(entry.minH, Math.floor(rawH)));
     if (w < entry.minW || h < entry.minH) {
       return { ok: false, error: `Invalid size for ${item.type}` };
@@ -241,7 +281,7 @@ export function validateDashboardLayout(
     normalized.push({
       i: id.slice(0, 64),
       type: item.type,
-      x: Math.floor(x),
+      x: Math.min(DASHBOARD_COLUMNS - w, Math.floor(x)),
       y: Math.floor(y),
       w,
       h,
