@@ -8,7 +8,7 @@ import {
 } from "../../components/marketing/product-demos";
 
 export const metadata: Metadata = {
-  title: "Product gallery — Vantage",
+  title: "Showcase — Vantage",
   description:
     "Curated Vantage workflows: FRC Assistant, strategy, CAD, FRC code review, integrated scouting, intelligence, displays, and team operations.",
   alternates: { canonical: "/features" },
@@ -39,11 +39,14 @@ const support = [
 
 export default function FeaturesPage() {
   return (
-    <div className="marketing-site marketing-v2">
+    <div className="marketing-site marketing-v2 marketing-dense">
       <SiteHeader />
       <main className="route-page">
         <header className="route-hero">
-          <span className="section-id">CURATED PRODUCT GALLERY</span>
+          <div className="showcase-kicker">
+            <span className="brand-chip">Vantage</span>
+            <span className="section-id">PRODUCT SHOWCASE</span>
+          </div>
           <h1>Assistant and engines. One competition context.</h1>
           <p>
             Marketing previews use labeled deterministic fixtures. Authenticated Strategy and the FRC Assistant stay
@@ -93,7 +96,7 @@ export default function FeaturesPage() {
         <section className="gallery-feature reverse">
           <div>
             <span className="app-badge good">Available</span>
-            <h2>FRC Code Builder / Debugger</h2>
+            <h2>FRC Code Coach</h2>
             <p>
               Flag robot-specific risk, explain why it matters, teach safer WPILib habits, and prepare human-approved
               unified diffs—without claiming autonomous deployment.
@@ -104,7 +107,7 @@ export default function FeaturesPage() {
           </div>
           <CodePreview />
         </section>
-        <section className="supporting-gallery">
+        <section className="supporting-gallery" id="supporting-ops">
           <header>
             <span className="section-id">SUPPORTING OPERATIONS</span>
             <h2>Scouting is the feed—not a sideshow.</h2>

@@ -43,11 +43,14 @@ const stages = [
 
 export default function WorkflowPage() {
   return (
-    <div className="marketing-site marketing-v2">
+    <div className="marketing-site marketing-v2 marketing-dense">
       <SiteHeader />
       <main className="route-page">
         <header className="route-hero">
-          <span className="section-id">SYSTEM WORKFLOW</span>
+          <div className="showcase-kicker">
+            <span className="brand-chip">Vantage</span>
+            <span className="section-id">SYSTEM WORKFLOW</span>
+          </div>
           <h1>Shared context is the handoff layer.</h1>
           <p>
             Vantage keeps global reference data separate from private team observations, then joins them only inside an

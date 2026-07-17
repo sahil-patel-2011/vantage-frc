@@ -76,6 +76,40 @@ const capIcons: Record<string, ReactNode> = {
       <path d="M3 19a6 6 0 0 1 12 0M16 8a3 3 0 1 1 0 6m2 5a5 5 0 0 0-3-4.5" />
     </>
   ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v4l3 2" />
+    </>
+  ),
+  inspect: (
+    <>
+      <rect x="6" y="4" width="12" height="17" rx="2" />
+      <path d="M9.5 4h5v2.5h-5z" />
+      <path d="m9 13 2 2 4-4" />
+    </>
+  ),
+  stopwatch: (
+    <>
+      <circle cx="12" cy="13" r="7" />
+      <path d="M12 13V9.5" />
+      <path d="M9.5 3h5" />
+      <path d="m18.2 6.8 1.3-1.3" />
+    </>
+  ),
+  checklist: (
+    <>
+      <path d="M9 5.5h9M9 12h9M9 18.5h9" />
+      <path d="m3.5 5 1 1 1.6-2M3.5 11.5l1 1 1.6-2M3.5 18l1 1 1.6-2" />
+    </>
+  ),
+  briefcase: (
+    <>
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M3 13h18" />
+    </>
+  ),
 };
 
 function CapIcon({ name }: { name: string }) {
@@ -151,19 +185,54 @@ const capabilities = [
   },
 ];
 
+const seasonHighlights = [
+  {
+    icon: "clock",
+    title: "Build hours",
+    copy: "Shop clock-in, leaderboard, and season-goal progress.",
+  },
+  {
+    icon: "inspect",
+    title: "Inspection & weigh-in",
+    copy: "Year-agnostic checklist plus overweight flags.",
+  },
+  {
+    icon: "stopwatch",
+    title: "Driver practice",
+    copy: "Timed cycles with success rate and best times.",
+  },
+  {
+    icon: "checklist",
+    title: "Event readiness",
+    copy: "Owned checklists with ready / watch / blocked risk.",
+  },
+];
+
 export default function Home() {
   return (
     <div className="marketing-site marketing-v2 marketing-dense">
       <SiteHeader />
       <main>
-        <section className="v2-hero thesis-rule">
-          <div className="v2-hero-copy">
-            <span className="section-id">COMPETITION OPS FOR FRC TEAMS</span>
-            <h1>Scout, ask, decide, build, and present from one shared event.</h1>
+        <section className="brand-hero" aria-labelledby="brand-hero-title">
+          <div className="brand-hero-plane" aria-hidden="true">
+            <div className="brand-hero-grid" />
+            <div className="brand-hero-field">
+              <span />
+              <span />
+              <span />
+            </div>
+            <svg className="brand-hero-mark" viewBox="0 0 120 120" fill="none">
+              <path d="M18 22h14l36 68 36-68h14L68 108z" fill="currentColor" opacity=".18" />
+              <path d="M18 46h14l36 42-8 14zM18 70h14l28 28-8 14z" fill="currentColor" />
+              <rect x="60" y="88" width="12" height="12" fill="currentColor" />
+            </svg>
+          </div>
+          <div className="brand-hero-copy">
+            <p className="brand-hero-wordmark">Vantage</p>
+            <h1 id="brand-hero-title">One shared event for scout, ask, decide, and build.</h1>
             <p>
-              Vantage is the operations layer for one FRC team: offline scouting that syncs into shared facts, an FRC
-              Assistant for strategy and competitor intel, TBA/Statbotics-backed predictions, approval-gated AI CAD,
-              robot-code review, live TV boards, and a customizable home dashboard—each number labeled with its source.
+              Competition ops for FRC teams—offline scouting, grounded Assistant answers, and human-gated CAD and code
+              inside one invite-only workspace.
             </p>
             <div className="actions">
               <a className="button primary" href="#hero-email">
@@ -173,19 +242,6 @@ export default function Home() {
                 See what it does
               </a>
             </div>
-            <div className="hero-spec" aria-label="How Vantage works">
-              <b>Offline-first</b>
-              <span>//</span>
-              <b>Source-attributed</b>
-              <span>//</span>
-              <b>Invite-only</b>
-              <span>//</span>
-              <b>Human-gated AI</b>
-            </div>
-            <p className="hero-note">Previews use labeled demo fixtures. Live product pages stay empty until your workspace and event are set up.</p>
-          </div>
-          <div className="hero-demo-frame">
-            <StrategyPreview compact />
           </div>
         </section>
 
@@ -194,8 +250,8 @@ export default function Home() {
             <span className="section-id">WHAT YOU ACTUALLY GET</span>
             <h2 id="capabilities-title">Concrete workflows from pit to playoffs.</h2>
             <p>
-              Not a feature laundry list—each module exists so scouting, the FRC Assistant, strategy, CAD, code, and pit
-              displays share one organization-scoped event context.
+              Each module exists so scouting, the FRC Assistant, strategy, CAD, code, and pit displays share one
+              organization-scoped event context—not a feature laundry list.
             </p>
             <div className="status-legend">
               <span className="app-badge good">Available</span>
@@ -259,15 +315,6 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="hero-waitlist" id="hero-waitlist" aria-labelledby="hero-waitlist-title">
-          <div>
-            <span className="section-id">EARLY ACCESS</span>
-            <h2 id="hero-waitlist-title">Bring one team context to the next event.</h2>
-            <p>Joining the list does not create an account. Verification and administrator-created team access remain separate launch steps.</p>
-          </div>
-          <WaitlistForm idPrefix="hero" compact />
-        </section>
-
         <section className="signature-intro">
           <span className="section-id">CORE ENGINES</span>
           <h2>Assistant, strategy, CAD, and code—with the same provenance rules.</h2>
@@ -306,8 +353,7 @@ export default function Home() {
             <h2>Probability you can inspect, then a playbook the drive team can use.</h2>
             <p>
               Combine live TBA/Statbotics metrics with scouted observations. Confidence bands, key factors, and
-              caveats stay visible. What-if changes are stored as assumptions—not as fake observations. Scout data is
-              an input to the model and pick lists, not a separate spreadsheet nobody opens.
+              caveats stay visible. What-if changes are stored as assumptions—not as fake observations.
             </p>
             <ul>
               <li>Weighted-current model with confidence interval</li>
@@ -362,6 +408,44 @@ export default function Home() {
             </a>
           </div>
           <CodePreview />
+        </section>
+
+        <section className="signature-section business-signature" id="business">
+          <div className="signature-copy">
+            <span className="app-badge good">Available</span>
+            <small>04 / BUSINESS &amp; SPONSORS</small>
+            <h2>Budget, sponsors, grants, and awards in the same workspace.</h2>
+            <p>
+              Competition day is the spike. The rest of the season is purchase orders, sponsor follow-ups, grant
+              pipelines, and awards evidence—usually scattered across a dozen spreadsheets. Vantage keeps them
+              org-scoped next to scouting and strategy.
+            </p>
+            <ul>
+              <li>Budget and purchase orders with clear ownership</li>
+              <li>Sponsor CRM with follow-ups and health scoring</li>
+              <li>Grant pipeline and awards evidence in one place</li>
+            </ul>
+            <a className="text-link" href="/features#supporting-ops">
+              See supporting operations →
+            </a>
+          </div>
+          <div className="season-highlight-panel" aria-label="Season operations highlights">
+            <header>
+              <span className="section-id">ALSO IN THE WORKSPACE</span>
+              <strong>Build season ops without another spreadsheet</strong>
+            </header>
+            <ul>
+              {seasonHighlights.map((item) => (
+                <li key={item.title}>
+                  <CapIcon name={item.icon} />
+                  <div>
+                    <b>{item.title}</b>
+                    <span>{item.copy}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
 
         <section className="workflow-band">
@@ -423,7 +507,7 @@ export default function Home() {
               remain separate launch steps.
             </p>
           </div>
-          <WaitlistForm idPrefix="final" />
+          <WaitlistForm idPrefix="hero" />
         </section>
       </main>
       <SiteFooter />
