@@ -2,6 +2,13 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { VantageLogo } from "../../components/brand";
+import {
+  LONG_POLL_MAX_MS,
+  mergeMessages,
+  nextWatermark,
+  pollBackoffMs,
+  totalUnread,
+} from "../../lib/messages/sync";
 
 type Conversation = {
   id: string;
@@ -19,9 +26,12 @@ type Message = {
   id: string;
   body: string;
   createdAt: string;
+  updatedAt?: string | null;
   authorUserId: string;
   authorName: string;
   deletedAt: string | null;
+  pinnedAt?: string | null;
+  pinnedBy?: string | null;
   mine: boolean;
 };
 
@@ -32,7 +42,7 @@ function labelFor(conversation: Conversation) {
   return conversation.peerName ?? "Private chat";
 }
 
-function formatTime(value: string | null) {
+function formatTime(value: string | null | undefined) {
   if (!value) return "";
   try {
     return new Date(value).toLocaleString([], {
@@ -46,23 +56,81 @@ function formatTime(value: string | null) {
   }
 }
 
-export default function MessagesClient({ orgId }: { orgId: string }) {
+function waitUntilVisible(signal: AbortSignal) {
+  if (!document.hidden) return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    const onVisibility = () => {
+      if (!document.hidden) {
+        document.removeEventListener("visibilitychange", onVisibility);
+        signal.removeEventListener("abort", onAbort);
+        resolve();
+      }
+    };
+    const onAbort = () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      resolve();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function sleep(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      window.clearTimeout(timer);
+      resolve();
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+export default function MessagesClient({
+  orgId,
+  initialConversationId = null,
+}: {
+  orgId: string;
+  initialConversationId?: string | null;
+}) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(initialConversationId);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [pinned, setPinned] = useState<Message[]>([]);
+  const [pinsSupported, setPinsSupported] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [text, setText] = useState("");
   const [status, setStatus] = useState("");
   const [sending, setSending] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [live, setLive] = useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const sinceRef = useRef<string | null>(null);
+  const activeIdRef = useRef<string | null>(activeId);
+  const stickToBottomRef = useRef(true);
 
   const active = conversations.find((item) => item.id === activeId) ?? null;
+  const inboxUnread = totalUnread(conversations);
+
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   const scrollToBottom = useCallback(() => {
+    if (!stickToBottomRef.current) return;
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, []);
+
+  const applyInbox = useCallback((list: Conversation[]) => {
+    setConversations(list);
   }, []);
 
   const loadInbox = useCallback(async () => {
@@ -72,37 +140,57 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
       setStatus(data.error || "Could not load conversations.");
       return null;
     }
-    setConversations(data.conversations ?? []);
+    applyInbox(data.conversations ?? []);
+    if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
     return data.conversations as Conversation[];
-  }, [orgId]);
+  }, [applyInbox, orgId]);
 
   const loadThread = useCallback(
-    async (conversationId: string, opts?: { quiet?: boolean; since?: string | null }) => {
+    async (
+      conversationId: string,
+      opts?: { quiet?: boolean; since?: string | null; wait?: number },
+    ) => {
       const params = new URLSearchParams({ orgId, conversationId });
       if (opts?.since) params.set("since", opts.since);
-      const response = await fetch(`/api/messages?${params}`);
+      if (opts?.wait && opts.wait > 0) params.set("wait", String(opts.wait));
+      const response = await fetch(`/api/messages?${params}`, {
+        signal: AbortSignal.timeout((opts?.wait ?? 0) + 12000),
+      });
       const data = await response.json();
       if (!response.ok) {
         if (!opts?.quiet) setStatus(data.error || "Could not load messages.");
-        return;
+        throw new Error(data.error || "Could not load messages.");
       }
-      setConversations(data.conversations ?? []);
+      applyInbox(data.conversations ?? []);
+      if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
+
+      const incoming = (data.messages ?? []) as Message[];
       if (opts?.since) {
-        const incoming = (data.messages ?? []) as Message[];
         if (incoming.length) {
           setMessages((prev) => {
-            const seen = new Set(prev.map((m) => m.id));
-            return [...prev, ...incoming.filter((m) => !seen.has(m.id))];
+            const next = mergeMessages(prev, incoming);
+            sinceRef.current = nextWatermark(incoming, sinceRef.current);
+            return next;
+          });
+          setPinned((prev) => {
+            const byId = new Map(prev.map((item) => [item.id, item]));
+            for (const item of incoming) {
+              if (item.deletedAt || !item.pinnedAt) byId.delete(item.id);
+              else byId.set(item.id, item);
+            }
+            return [...byId.values()].sort((a, b) =>
+              String(b.pinnedAt ?? "").localeCompare(String(a.pinnedAt ?? "")),
+            );
           });
         }
       } else {
-        setMessages(data.messages ?? []);
+        setMessages(incoming);
+        setPinned((data.pinned ?? []) as Message[]);
+        sinceRef.current = nextWatermark(incoming, null);
       }
-      const last = ((data.messages ?? []) as Message[]).at(-1);
-      if (last) sinceRef.current = last.createdAt;
-      else if (!opts?.since) sinceRef.current = null;
+      return incoming.length > 0;
     },
-    [orgId],
+    [applyInbox, orgId],
   );
 
   useEffect(() => {
@@ -111,27 +199,58 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
       setLoading(true);
       const list = await loadInbox();
       if (cancelled) return;
-      const team = list?.find((item) => item.kind === "team");
-      const first = team ?? list?.[0] ?? null;
-      if (first) {
-        setActiveId(first.id);
-        await loadThread(first.id);
+      const preferred =
+        (initialConversationId && list?.find((item) => item.id === initialConversationId)) ||
+        list?.find((item) => item.kind === "team") ||
+        list?.[0] ||
+        null;
+      if (preferred) {
+        setActiveId(preferred.id);
+        await loadThread(preferred.id);
       }
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [loadInbox, loadThread]);
+  }, [initialConversationId, loadInbox, loadThread]);
 
   useEffect(() => {
     if (!activeId) return;
-    const timer = window.setInterval(() => {
-      void loadThread(activeId, { quiet: true, since: sinceRef.current });
-      void loadInbox();
-    }, 4000);
-    return () => window.clearInterval(timer);
-  }, [activeId, loadInbox, loadThread]);
+    const controller = new AbortController();
+    let failures = 0;
+
+    (async () => {
+      while (!controller.signal.aborted) {
+        if (document.hidden) {
+          setLive(false);
+          await waitUntilVisible(controller.signal);
+          if (controller.signal.aborted) break;
+          setLive(true);
+        }
+
+        try {
+          const changed = await loadThread(activeId, {
+            quiet: true,
+            since: sinceRef.current,
+            wait: LONG_POLL_MAX_MS,
+          });
+          failures = 0;
+          setLive(true);
+          if (!changed && activeIdRef.current === activeId) {
+            // Empty long-poll finished; loop immediately while the tab is visible.
+            continue;
+          }
+        } catch {
+          failures += 1;
+          setLive(false);
+          await sleep(pollBackoffMs(failures), controller.signal);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [activeId, loadThread]);
 
   useEffect(() => {
     scrollToBottom();
@@ -142,6 +261,10 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
     setPickerOpen(false);
     setStatus("");
     sinceRef.current = null;
+    stickToBottomRef.current = true;
+    const url = new URL(window.location.href);
+    url.searchParams.set("conversationId", id);
+    window.history.replaceState({}, "", url.toString());
     await loadThread(id);
   }
 
@@ -194,6 +317,8 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
         return;
       }
       setText("");
+      stickToBottomRef.current = true;
+      sinceRef.current = null;
       await loadThread(activeId);
     } finally {
       setSending(false);
@@ -212,7 +337,33 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
       setStatus(data.error || "Could not delete message.");
       return;
     }
-    if (activeId) await loadThread(activeId);
+    setMessages((prev) =>
+      prev.map((item) =>
+        item.id === messageId
+          ? { ...item, body: "", deletedAt: new Date().toISOString(), pinnedAt: null }
+          : item,
+      ),
+    );
+    setPinned((prev) => prev.filter((item) => item.id !== messageId));
+  }
+
+  async function togglePin(message: Message) {
+    if (!pinsSupported || !active || active.kind !== "team") return;
+    const action = message.pinnedAt ? "unpin" : "pin";
+    const response = await fetch("/api/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action, orgId, messageId: message.id }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setStatus(data.error || `Could not ${action} message.`);
+      return;
+    }
+    if (activeId) {
+      sinceRef.current = null;
+      await loadThread(activeId);
+    }
   }
 
   return (
@@ -220,12 +371,16 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
       <header className="workspace-top">
         <VantageLogo href={`/workspace?orgId=${orgId}`} />
         <strong>TEAM MESSAGES</strong>
-        <span>{active?.kind === "dm" ? "PRIVATE" : "ORG CHANNEL"}</span>
+        <span className={`messages-live ${live ? "on" : "off"}`}>
+          <i aria-hidden="true" />
+          {live ? "LIVE" : "PAUSED"}
+          {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
+        </span>
       </header>
 
       <aside className="chat-sidebar">
         <span className="eyebrow">INBOX</span>
-        <button type="button" onClick={() => void openMemberPicker()} disabled={sending}>
+        <button type="button" className="messages-new-dm" onClick={() => void openMemberPicker()} disabled={sending}>
           + Private message
         </button>
         {conversations.map((item) => (
@@ -238,7 +393,11 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
           >
             <span>
               {item.kind === "team" ? "TEAM" : "PRIVATE"}
-              {item.unreadCount > 0 ? ` · ${item.unreadCount}` : ""}
+              {item.unreadCount > 0 ? (
+                <b className="messages-unread" aria-label={`${item.unreadCount} unread`}>
+                  {item.unreadCount > 99 ? "99+" : item.unreadCount}
+                </b>
+              ) : null}
             </span>
             {labelFor(item)}
             {item.lastBody ? <small className="messages-preview">{item.lastBody}</small> : null}
@@ -270,13 +429,40 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
               ) : null}
             </header>
 
-            <div className="messages">
+            {active.kind === "team" && pinned.length > 0 ? (
+              <div className="messages-pins" aria-label="Pinned match-day notes">
+                <span className="eyebrow">PINNED NOTES</span>
+                {pinned.map((item) => (
+                  <article key={item.id}>
+                    <p>{item.body}</p>
+                    <footer>
+                      <small>
+                        {item.authorName} · {formatTime(item.pinnedAt ?? item.createdAt)}
+                      </small>
+                      {pinsSupported ? (
+                        <button type="button" onClick={() => void togglePin(item)}>
+                          Unpin
+                        </button>
+                      ) : null}
+                    </footer>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+
+            <div
+              className="messages"
+              onScroll={(event) => {
+                const node = event.currentTarget;
+                stickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 80;
+              }}
+            >
               {messages.length === 0 ? (
                 <div className="empty-chat">
                   <h1>No messages yet.</h1>
                   <p>
                     {active.kind === "team"
-                      ? "Say something the whole team should see—pit schedule, travel notes, or a quick heads-up."
+                      ? "Say something the whole team should see—pit schedule, travel notes, or a quick heads-up. Pin important match-day notes so they stay at the top."
                       : "Start a private thread with this teammate. Only the two of you can read it."}
                   </p>
                 </div>
@@ -290,16 +476,24 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
                       </p>
                     </article>
                   ) : (
-                    <article className={item.mine ? "user" : "member"} key={item.id}>
+                    <article className={`${item.mine ? "user" : "member"}${item.pinnedAt ? " pinned" : ""}`} key={item.id}>
                       <span>
                         {item.mine ? "You" : item.authorName} · {formatTime(item.createdAt)}
+                        {item.pinnedAt ? " · pinned" : ""}
                       </span>
                       <p>{item.body}</p>
-                      {item.mine ? (
-                        <button type="button" className="message-delete" onClick={() => void softDelete(item.id)}>
-                          Delete
-                        </button>
-                      ) : null}
+                      <div className="message-actions">
+                        {pinsSupported && active.kind === "team" ? (
+                          <button type="button" className="message-pin" onClick={() => void togglePin(item)}>
+                            {item.pinnedAt ? "Unpin" : "Pin note"}
+                          </button>
+                        ) : null}
+                        {item.mine ? (
+                          <button type="button" className="message-delete" onClick={() => void softDelete(item.id)}>
+                            Delete
+                          </button>
+                        ) : null}
+                      </div>
                     </article>
                   ),
                 )
@@ -313,7 +507,11 @@ export default function MessagesClient({ orgId }: { orgId: string }) {
                 aria-label="Message"
                 value={text}
                 onChange={(event) => setText(event.target.value)}
-                placeholder={active.kind === "team" ? "Message the team…" : "Private message…"}
+                placeholder={
+                  active.kind === "team"
+                    ? "Message the team… pin match-day notes when they matter"
+                    : "Private message…"
+                }
                 maxLength={8000}
               />
               <button type="submit" disabled={!text.trim() || sending}>
