@@ -9,7 +9,16 @@ export type CadExecutionResult = {
   checkpointRef: string;
 };
 
+/** Current signed-job envelope protocol. Bump when wire format or verify rules change. */
 export const FUSION_RELAY_PROTOCOL_VERSION = "2026-07-1";
+
+/**
+ * Protocols the server will accept on claim/verify.
+ * Keep historical ids only while dual-running a migration window.
+ */
+export const FUSION_RELAY_SUPPORTED_PROTOCOLS = [FUSION_RELAY_PROTOCOL_VERSION] as const;
+
+export type FusionRelayProtocolVersion = (typeof FUSION_RELAY_SUPPORTED_PROTOCOLS)[number];
 
 export type FusionRelayEnvelope = {
   version: string;
@@ -54,7 +63,7 @@ export function verifyFusionRelayJob(
     a.length === b.length &&
     timingSafeEqual(a, b) &&
     Date.parse(envelope.expiresAt) > now &&
-    envelope.version === FUSION_RELAY_PROTOCOL_VERSION
+    (FUSION_RELAY_SUPPORTED_PROTOCOLS as readonly string[]).includes(envelope.version)
   );
 }
 
