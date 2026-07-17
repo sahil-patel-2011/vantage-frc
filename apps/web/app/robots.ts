@@ -1,13 +1,37 @@
 import type { MetadataRoute } from "next";
-
-const canonicalUrl = "https://vantage-frc-web.vercel.app";
+import { SITE_URL as canonicalUrl } from "../lib/site";
 
 export default function robots(): MetadataRoute.Robots {
   return {
+    // Public marketing/legal pages are crawlable (including AI crawlers, which we
+    // intentionally allow for GEO); authenticated product + auth routes are excluded.
     rules: {
       userAgent: "*",
-      allow: ["/", "/pricing", "/privacy", "/terms"],
-      disallow: ["/api/", "/dashboard", "/scouting", "/intel", "/cad", "/settings"],
+      allow: "/",
+      disallow: [
+        "/api/",
+        "/dashboard",
+        "/workspace",
+        "/scouting",
+        "/intel",
+        "/dossier",
+        "/strategy",
+        "/cad",
+        "/code",
+        "/chat",
+        "/messages",
+        "/exports",
+        "/showcase",
+        "/display",
+        "/security",
+        "/team",
+        "/admin",
+        "/invite",
+        "/account",
+        "/settings",
+        "/sign-in",
+        "/signin",
+      ],
     },
     sitemap: `${canonicalUrl}/sitemap.xml`,
   };
