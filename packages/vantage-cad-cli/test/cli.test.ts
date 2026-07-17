@@ -11,6 +11,7 @@ describe("desktop CAD onboarding safety",()=>{
   expect(()=>validatePluginEndpoint("https://evil.example")).toThrow("loopback");
   expect(()=>validatePluginEndpoint("http://192.168.1.2:32145")).toThrow("loopback");
   expect(fusionAddinPaths("darwin","/Users/test")[0]).toContain("Autodesk Fusion 360");
+  expect(fusionAddinPaths("linux","/home/test")).toEqual([]);
  });
  it("distinguishes provider billing and restricts Claude Code",()=>{
   expect(providerPolicy("managed",{platformAdmin:false,matchingDevice:false,privateSession:false,interactive:false,explicitOptIn:false}).billingSource).toContain("Vantage");

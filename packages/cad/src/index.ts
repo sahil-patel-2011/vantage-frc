@@ -19,6 +19,7 @@ export {
 export type { CadBrainMode, CadSetupTarget, EngineeringBriefLite } from "./agent-policy";
 export * from "./mock-fusion-plugin";
 export * from "./agent-loop";
+export * from "./onshape";
 
 export type EngineeringBrief={summary:string;requirements:string[];constraints:string[];scoringTasks:string[];assumptions:Array<{name:string;value:string;needsConfirmation:boolean}>;risks:string[];acceptanceCriteria:string[];sourceRefs:Array<{type:string;id:string;classification:string}>;disclaimer:string};
 export const CAD_OPERATIONS=["create_sketch","create_extrude","create_fillet","create_chamfer","create_shell","create_pattern","set_variable","create_assembly","feature_script","verify_topology","render_views","create_checkpoint","rollback_checkpoint","export_step","export_stl","export_gltf"] as const;

@@ -1,0 +1,6 @@
+{
+  "name": "VantageCadRelay",
+  "version": "0.1.1",
+  "protocol": "2026-07-1",
+  "minCliVersion": "0.1.0"
+}
