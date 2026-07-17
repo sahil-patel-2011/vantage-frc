@@ -273,3 +273,5 @@ export async function emitNotification(
 
 export * from "./membership";
 export * from "./platform-admin";
+export * from "./capabilities";
+export * from "./capabilities";
