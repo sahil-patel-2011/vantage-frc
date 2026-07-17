@@ -49,6 +49,8 @@ export default function IntelClient({ orgId }: { orgId: string }) {
   const [pickEvent, setPickEvent] = useState("");
   const [pickName, setPickName] = useState("Primary pick list");
   const [status, setStatus] = useState("");
+  const [messageKind, setMessageKind] = useState<"success" | "error">("error");
+  const [submitting, setSubmitting] = useState(false);
 
   async function search(event: React.FormEvent) {
     event.preventDefault();
@@ -57,6 +59,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     const data = await response.json();
     setResults(data.teams ?? []);
     setStatus(response.ok ? "" : data.error);
+    setMessageKind(response.ok ? "success" : "error");
   }
 
   async function select(teamNumber: number) {
@@ -66,7 +69,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     setIntel(data.team ?? null);
     setSimilar(data.similarTeams ?? []);
     setSummary("");
+    setComparison(null);
     setStatus(response.ok ? "" : data.error);
+    setMessageKind(response.ok ? "success" : "error");
   }
 
   async function action(path: string, label: string) {
@@ -80,6 +85,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     const data = await response.json();
     if (path.includes("summary") && data.summary) setSummary(data.summary);
     setStatus(response.ok ? (path.includes("research") ? "Research sweep completed." : "") : data.error);
+    setMessageKind(response.ok ? "success" : "error");
     if (response.ok && path.includes("research")) await select(intel.team.teamNumber);
   }
 
@@ -87,6 +93,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     event.preventDefault();
     const numbers = compare.split(/[,\s]+/).map(Number).filter(Number.isInteger);
     if (intel && !numbers.includes(intel.team.teamNumber)) numbers.unshift(intel.team.teamNumber);
+    setSubmitting(true);
     const response = await fetch("/api/intel/compare", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -95,10 +102,14 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     const data = await response.json();
     setComparison(response.ok ? data : null);
     setStatus(response.ok ? "" : data.error);
+    setMessageKind(response.ok ? "success" : "error");
+    setSubmitting(false);
   }
 
   async function savePick() {
-    if (!intel || !pickEvent) return;
+    if (!intel) return;
+    if (!pickEvent) { setStatus("Enter an event key first"); setMessageKind("error"); return; }
+    setSubmitting(true);
     const response = await fetch("/api/intel/pick-lists", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -111,6 +122,8 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     });
     const data = await response.json();
     setStatus(response.ok ? `Saved ${intel.team.teamNumber} to ${pickName}.` : data.error);
+    setMessageKind(response.ok ? "success" : "error");
+    setSubmitting(false);
   }
 
   const metric = intel?.metrics[0];
@@ -125,7 +138,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
         <div><input id="team-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Team number, nickname, or name" /><button>Search</button></div>
         <small>Teams at your active event appear first.</small>
       </form>
-      {status && <div className="telemetry-status" role="status">{status}</div>}
+      {status && <div className={`telemetry-status${messageKind === "success" ? " success" : ""}`} role="status">{status}</div>}
       {results.length > 0 && (
         <section className="team-results" aria-label="Team search results">
           {results.map((team) => (
@@ -144,6 +157,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
               <p>{[intel.team.city, intel.team.stateProv, intel.team.country].filter(Boolean).join(" · ")}</p>
             </div>
             <div className="intel-actions">
+              <a className="app-button secondary" href={`/dossier?orgId=${encodeURIComponent(orgId)}&team=${intel.team.teamNumber}`}>
+                Season dossier
+              </a>
               <button onClick={() => action("/api/intel/summary", "Generating metered brief…")}>Generate plain-English brief</button>
               <button onClick={() => action("/api/research", "Running metered research…")}>Research this team</button>
             </div>
@@ -173,11 +189,11 @@ export default function IntelClient({ orgId }: { orgId: string }) {
             {intel.findings.length ? intel.findings.map((finding) => <article key={finding.id}><div><span>{finding.sourceType.replace("_", " ")}</span><strong>{Math.round(finding.confidence * 100)}% confidence</strong></div><p>{finding.summary}</p><a href={finding.sourceUrl} target="_blank" rel="noreferrer">{finding.sourceTitle ?? new URL(finding.sourceUrl).hostname} ↗</a><small>{new Date(finding.publishedAt ?? finding.foundAt).toLocaleDateString()}</small></article>) : <p>No research findings yet.</p>}
           </section>
           <section className="compare-panel"><div><span className="eyebrow">HEAD-TO-HEAD + CHEMISTRY</span><h3>Compare an alliance</h3></div>
-            <form onSubmit={runComparison}><input value={compare} onChange={(e) => setCompare(e.target.value)} placeholder="Add 1–2 team numbers" /><button>Compare</button></form>
+            <form onSubmit={runComparison}><input value={compare} onChange={(e) => setCompare(e.target.value)} placeholder="Add 1–2 team numbers" aria-label="Team numbers to compare" /><button disabled={submitting}>Compare</button></form>
             {comparison && <pre>{JSON.stringify(comparison, null, 2)}</pre>}
           </section>
           <section className="compare-panel"><div><span className="eyebrow">PICK LISTS / DURABLE</span><h3>Start an event pick list</h3></div>
-            <div className="pick-controls"><input value={pickEvent} onChange={(e) => setPickEvent(e.target.value)} placeholder="Event key" /><input value={pickName} onChange={(e) => setPickName(e.target.value)} aria-label="Pick list name" /><button onClick={savePick}>Save current team as #1</button></div>
+            <div className="pick-controls"><input value={pickEvent} onChange={(e) => setPickEvent(e.target.value)} placeholder="Event key" aria-label="Event key" /><input value={pickName} onChange={(e) => setPickName(e.target.value)} aria-label="Pick list name" /><button onClick={savePick} disabled={submitting}>Save current team as #1</button></div>
           </section>
         </>
       )}
