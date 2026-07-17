@@ -2163,3 +2163,454 @@ export const orgMessages = pgTable(
     index("org_messages_org_created_idx").on(table.orgId, table.createdAt),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Team finance: season budgets, student purchase requests, transaction ledger
+// ---------------------------------------------------------------------------
+
+export const financeTxnType = pgEnum("finance_txn_type", ["income", "expense"]);
+export const financeTxnSource = pgEnum("finance_txn_source", [
+  "purchase_request",
+  "sponsor_contribution",
+  "manual",
+  "fundraiser",
+  "other",
+]);
+export const purchaseRequestStatus = pgEnum("purchase_request_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "ordered",
+  "received",
+  "reimbursed",
+]);
+
+export const financeCategories = pgTable(
+  "finance_categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    seasonYear: integer("season_year").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    uniqueIndex("finance_categories_org_season_name_uq").on(table.orgId, table.seasonYear, table.name),
+  ],
+);
+
+export const financeBudgetPlans = pgTable(
+  "finance_budget_plans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => financeCategories.id, { onDelete: "cascade" }),
+    monthlyLimitUsd: numeric("monthly_limit_usd", { precision: 12, scale: 2 }),
+    totalLimitUsd: numeric("total_limit_usd", { precision: 12, scale: 2 }),
+    notes: text("notes"),
+    setBy: uuid("set_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [uniqueIndex("finance_budget_plans_category_uq").on(table.categoryId)],
+);
+
+export const sponsorTier = pgEnum("sponsor_tier", [
+  "in_kind",
+  "bronze",
+  "silver",
+  "gold",
+  "platinum",
+  "custom",
+]);
+export const sponsorStatus = pgEnum("sponsor_status", ["prospect", "active", "lapsed", "declined"]);
+export const sponsorContributionType = pgEnum("sponsor_contribution_type", ["cash", "in_kind", "discount"]);
+export const sponsorInteractionType = pgEnum("sponsor_interaction_type", [
+  "email",
+  "call",
+  "meeting",
+  "event_invite",
+  "thank_you",
+  "other",
+]);
+export const sponsorProspectStatus = pgEnum("sponsor_prospect_status", [
+  "suggested",
+  "reviewing",
+  "contacted",
+  "dismissed",
+]);
+
+export const sponsors = pgTable(
+  "sponsors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    website: text("website"),
+    tier: sponsorTier("tier").notNull().default("custom"),
+    status: sponsorStatus("status").notNull().default("prospect"),
+    industry: text("industry"),
+    city: text("city"),
+    stateProv: text("state_prov"),
+    notes: text("notes"),
+    firstSponsoredSeason: integer("first_sponsored_season"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [
+    index("sponsors_org_status_idx").on(table.orgId, table.status),
+    uniqueIndex("sponsors_org_name_uq").on(table.orgId, table.name),
+  ],
+);
+
+export const sponsorContacts = pgTable(
+  "sponsor_contacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsors.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    title: text("title"),
+    email: text("email"),
+    phone: text("phone"),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (table) => [index("sponsor_contacts_sponsor_idx").on(table.sponsorId)],
+);
+
+export const sponsorContributions = pgTable(
+  "sponsor_contributions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsors.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    seasonYear: integer("season_year").notNull(),
+    type: sponsorContributionType("type").notNull(),
+    amountUsd: numeric("amount_usd", { precision: 12, scale: 2 }),
+    estimatedValueUsd: numeric("estimated_value_usd", { precision: 12, scale: 2 }),
+    description: text("description"),
+    receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow().notNull(),
+    thankYouSentAt: timestamp("thank_you_sent_at", { withTimezone: true }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    index("sponsor_contributions_sponsor_season_idx").on(table.sponsorId, table.seasonYear),
+    index("sponsor_contributions_org_season_idx").on(table.orgId, table.seasonYear),
+  ],
+);
+
+export const sponsorInteractions = pgTable(
+  "sponsor_interactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsors.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    type: sponsorInteractionType("type").notNull(),
+    subject: text("subject"),
+    notes: text("notes"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+    loggedBy: uuid("logged_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("sponsor_interactions_sponsor_occurred_idx").on(table.sponsorId, table.occurredAt)],
+);
+
+export const sponsorProspects = pgTable(
+  "sponsor_prospects",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    companyName: text("company_name").notNull(),
+    website: text("website"),
+    rationale: text("rationale"),
+    sourceUrls: jsonb("source_urls").$type<string[]>().notNull().default([]),
+    status: sponsorProspectStatus("status").notNull().default("suggested"),
+    relatedSponsorId: uuid("related_sponsor_id").references(() => sponsors.id, { onDelete: "set null" }),
+    convertedSponsorId: uuid("converted_sponsor_id").references(() => sponsors.id, { onDelete: "set null" }),
+    suggestedBy: text("suggested_by").notNull().default("heuristic_agent"),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("sponsor_prospects_org_status_idx").on(table.orgId, table.status)],
+);
+
+export const purchaseRequests = pgTable(
+  "purchase_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    seasonYear: integer("season_year").notNull(),
+    categoryId: uuid("category_id").references(() => financeCategories.id, { onDelete: "set null" }),
+    requestedBy: uuid("requested_by")
+      .notNull()
+      .references(() => users.id),
+    title: text("title").notNull(),
+    vendor: text("vendor").notNull().default("amazon"),
+    itemUrl: text("item_url"),
+    quantity: integer("quantity").notNull().default(1),
+    unitCostUsd: numeric("unit_cost_usd", { precision: 12, scale: 2 }).notNull(),
+    totalCostUsd: numeric("total_cost_usd", { precision: 12, scale: 2 }).notNull(),
+    justification: text("justification"),
+    status: purchaseRequestStatus("status").notNull().default("pending"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewNotes: text("review_notes"),
+    orderedAt: timestamp("ordered_at", { withTimezone: true }),
+    receivedAt: timestamp("received_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("purchase_requests_org_status_idx").on(table.orgId, table.status),
+    index("purchase_requests_org_season_idx").on(table.orgId, table.seasonYear),
+  ],
+);
+
+export const financeTransactions = pgTable(
+  "finance_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    seasonYear: integer("season_year").notNull(),
+    type: financeTxnType("type").notNull(),
+    source: financeTxnSource("source").notNull(),
+    amountUsd: numeric("amount_usd", { precision: 12, scale: 2 }).notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+    categoryId: uuid("category_id").references(() => financeCategories.id, { onDelete: "set null" }),
+    purchaseRequestId: uuid("purchase_request_id").references(() => purchaseRequests.id, { onDelete: "set null" }),
+    sponsorContributionId: uuid("sponsor_contribution_id").references(() => sponsorContributions.id, {
+      onDelete: "set null",
+    }),
+    description: text("description"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    index("finance_transactions_org_occurred_idx").on(table.orgId, table.occurredAt),
+    index("finance_transactions_org_season_idx").on(table.orgId, table.seasonYear),
+  ],
+);
+
+export const financeAuditLog = pgTable(
+  "finance_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    action: text("action").notNull(),
+    before: jsonb("before").$type<Record<string, unknown> | null>(),
+    after: jsonb("after").$type<Record<string, unknown> | null>(),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("finance_audit_log_org_created_idx").on(table.orgId, table.createdAt)],
+);
+
+// ---------------------------------------------------------------------------
+// Grants and FIRST awards tracking
+// ---------------------------------------------------------------------------
+
+export const grantStatus = pgEnum("grant_status", [
+  "identified",
+  "drafting",
+  "in_review",
+  "submitted",
+  "awarded",
+  "declined",
+]);
+export const grantItemKind = pgEnum("grant_item_kind", ["question", "essay", "attachment"]);
+export const awardStatus = pgEnum("award_status", [
+  "planned",
+  "drafting",
+  "in_review",
+  "submitted",
+  "finalist",
+  "won",
+  "not_selected",
+]);
+export const awardItemKind = pgEnum("award_item_kind", ["essay", "task", "question"]);
+export const outreachKind = pgEnum("outreach_kind", [
+  "thank_you",
+  "renewal_ask",
+  "new_prospect_intro",
+  "grant_followup",
+  "custom",
+]);
+export const outreachStatus = pgEnum("outreach_status", ["draft", "sent"]);
+
+export const grantOpportunities = pgTable(
+  "grant_opportunities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    funder: text("funder"),
+    description: text("description"),
+    amountMinUsd: numeric("amount_min_usd", { precision: 12, scale: 2 }),
+    amountMaxUsd: numeric("amount_max_usd", { precision: 12, scale: 2 }),
+    deadline: date("deadline"),
+    eligibilityNotes: text("eligibility_notes"),
+    applicationUrl: text("application_url"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [index("grant_opportunities_org_deadline_idx").on(table.orgId, table.deadline)],
+);
+
+export const grantApplications = pgTable(
+  "grant_applications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    grantOpportunityId: uuid("grant_opportunity_id").references(() => grantOpportunities.id, {
+      onDelete: "set null",
+    }),
+    seasonYear: integer("season_year").notNull(),
+    status: grantStatus("status").notNull().default("identified"),
+    amountRequestedUsd: numeric("amount_requested_usd", { precision: 12, scale: 2 }),
+    amountAwardedUsd: numeric("amount_awarded_usd", { precision: 12, scale: 2 }),
+    ownerUserId: uuid("owner_user_id").references(() => users.id),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    decisionAt: timestamp("decision_at", { withTimezone: true }),
+    summary: text("summary"),
+    ...timestamps,
+  },
+  (table) => [index("grant_applications_org_season_status_idx").on(table.orgId, table.seasonYear, table.status)],
+);
+
+export const grantApplicationItems = pgTable(
+  "grant_application_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => grantApplications.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    kind: grantItemKind("kind").notNull(),
+    prompt: text("prompt"),
+    content: text("content"),
+    charLimit: integer("char_limit"),
+    done: boolean("done").notNull().default(false),
+    assigneeUserId: uuid("assignee_user_id").references(() => users.id),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (table) => [index("grant_application_items_application_idx").on(table.applicationId, table.sortOrder)],
+);
+
+export const awardSubmissions = pgTable(
+  "award_submissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    seasonYear: integer("season_year").notNull(),
+    eventKey: text("event_key"),
+    awardType: text("award_type").notNull(),
+    title: text("title"),
+    status: awardStatus("status").notNull().default("planned"),
+    priority: text("priority").notNull().default("normal"),
+    deadline: date("deadline"),
+    ownerUserId: uuid("owner_user_id").references(() => users.id),
+    summary: text("summary"),
+    ...timestamps,
+  },
+  (table) => [index("award_submissions_org_season_idx").on(table.orgId, table.seasonYear)],
+);
+
+export const awardItems = pgTable(
+  "award_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    submissionId: uuid("submission_id")
+      .notNull()
+      .references(() => awardSubmissions.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    kind: awardItemKind("kind").notNull(),
+    prompt: text("prompt"),
+    content: text("content"),
+    charLimit: integer("char_limit"),
+    done: boolean("done").notNull().default(false),
+    assigneeUserId: uuid("assignee_user_id").references(() => users.id),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (table) => [index("award_items_submission_idx").on(table.submissionId, table.sortOrder)],
+);
+
+export const outreachMessages = pgTable(
+  "outreach_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    sponsorId: uuid("sponsor_id").references(() => sponsors.id, { onDelete: "cascade" }),
+    grantApplicationId: uuid("grant_application_id").references(() => grantApplications.id, {
+      onDelete: "cascade",
+    }),
+    kind: outreachKind("kind").notNull(),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    status: outreachStatus("status").notNull().default("draft"),
+    generatedBy: text("generated_by").notNull().default("template"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [index("outreach_messages_org_sponsor_idx").on(table.orgId, table.sponsorId)],
+);
