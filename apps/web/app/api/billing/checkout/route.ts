@@ -4,7 +4,7 @@ import {
   createPaygEnrollment,
   createPlanCheckout,
 } from "@vantage/billing";
-import { auth } from "@vantage/core";
+import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
@@ -19,11 +19,7 @@ export async function POST(request: Request) {
     if (!body.orgId || !body.action) return Response.json({ error: "Organization and billing action are required" }, { status: 400 });
     const origin = new URL(request.url).origin;
     const checkout = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
-      const allowed = await client.query(
-        `SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2 AND role IN ('owner','admin')`,
-        [body.orgId, session.user.id],
-      );
-      if (!allowed.rowCount) throw new Error("Organization administrator access required");
+      await assertOrgCapability(client, body.orgId!, "manage_billing");
       const urls = {
         orgId: body.orgId!,
         successUrl: `${origin}/workspace?orgId=${body.orgId}`,

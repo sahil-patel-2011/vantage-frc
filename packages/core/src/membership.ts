@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { createEmailProvider, hashEmail, type EmailProvider } from "./email";
 import { createInviteToken, type OrgRole } from "./index";
+import { assertOrgCapability } from "./capabilities";
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
@@ -77,14 +78,15 @@ export async function createOrganizationInvite(
   provider: EmailProvider = createEmailProvider(),
 ) {
   const email = normalizeEmail(input.email);
-  const actor = await client.query<{ role: OrgRole }>(
-    `SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2`,
-    [input.orgId, actorUserId],
-  );
-  if (!actor.rows[0] || !["owner", "admin"].includes(actor.rows[0].role))
-    throw new Error("Organization administrator access required");
-  if (input.role === "owner" && actor.rows[0].role !== "owner")
-    throw new Error("Only an owner may invite another owner");
+  await assertOrgCapability(client, input.orgId, "manage_members");
+  if (input.role === "owner") {
+    const actor = await client.query<{ role: OrgRole }>(
+      `SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2`,
+      [input.orgId, actorUserId],
+    );
+    if (actor.rows[0]?.role !== "owner")
+      throw new Error("Only an owner may invite another owner");
+  }
   const existing = await client.query(
     `SELECT 1 FROM memberships m JOIN users u ON u.id=m.user_id
      WHERE m.org_id=$1 AND lower(u.email)=lower($2)`,
@@ -137,7 +139,7 @@ export async function resendOrganizationInvite(
     `UPDATE invites i SET token_hash=$1,expires_at=now()+interval '72 hours',
        last_sent_at=now()
      FROM organizations o WHERE i.id=$2 AND i.org_id=$3 AND i.org_id=o.id
-       AND i.status='pending' AND has_org_role(i.org_id,ARRAY['owner','admin']::org_role[])
+       AND i.status='pending' AND has_org_capability(i.org_id,'manage_members'::org_capability)
      RETURNING i.email,i.role,o.name AS organization,i.expires_at AS "expiresAt"`,
     [tokenHash, inviteId, orgId],
   );
@@ -162,7 +164,7 @@ export async function revokeOrganizationInvite(
   const result = await client.query<{ email: string }>(
     `UPDATE invites SET status='revoked'
      WHERE id=$1 AND org_id=$2 AND status='pending'
-       AND has_org_role(org_id,ARRAY['owner','admin']::org_role[])
+       AND has_org_capability(org_id,'manage_members'::org_capability)
      RETURNING email`,
     [inviteId, orgId],
   );

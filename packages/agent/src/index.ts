@@ -105,15 +105,31 @@ export interface ChatAdapter {
   complete(input: {
     message: string;
     context: ContextItem[];
-  }): Promise<{ text: string; promptTokens: number; completionTokens: number; costUsd: number }>;
+    promptCachingEnabled?: boolean;
+  }): Promise<{
+    text: string;
+    promptTokens: number;
+    completionTokens: number;
+    costUsd: number;
+    cacheReadInputTokens?: number;
+    cacheWriteInputTokens?: number;
+    uncachedInputTokens?: number;
+    cacheCostBasis?: string;
+  }>;
 }
 
 export class LocalDeterministicChatAdapter implements ChatAdapter {
   readonly provider = "local";
   readonly model = "vantage-local-chat-v1";
-  async complete(input: { message: string; context: ContextItem[] }) {
+  async complete(input: {
+    message: string;
+    context: ContextItem[];
+    promptCachingEnabled?: boolean;
+  }) {
     const { formatGroundedReply } = await import("./auto-tools");
+    const { simulateLocalCacheUsage } = await import("./prompt-caching");
     const toolFacts = input.context.filter((item) => item.type === "module_fact");
+    let text: string;
     if (toolFacts.length) {
       const annotated = toolFacts.map((item) => {
         try {
@@ -142,21 +158,26 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
           };
         }
       });
-      const text = formatGroundedReply(input.message, annotated);
-      return {
-        text,
-        promptTokens: Math.ceil((input.message.length + input.context.reduce((n, i) => n + i.content.length, 0)) / 4),
-        completionTokens: Math.ceil(text.length / 4),
-        costUsd: 0,
-      };
+      text = formatGroundedReply(input.message, annotated);
+    } else {
+      const sources = input.context.map((item) => `${item.type}:${item.id}`).join(", ");
+      text = `Vantage response: ${input.message.trim()}${sources ? ` Context used: ${sources}.` : ""}`;
     }
-    const sources = input.context.map((item) => `${item.type}:${item.id}`).join(", ");
-    const text = `Vantage response: ${input.message.trim()}${sources ? ` Context used: ${sources}.` : ""}`;
+    const usage = simulateLocalCacheUsage({
+      message: input.message,
+      contextChars: input.context.reduce((n, item) => n + item.content.length, 0),
+      completionChars: text.length,
+      enabled: Boolean(input.promptCachingEnabled),
+    });
     return {
       text,
-      promptTokens: Math.ceil((input.message.length + input.context.reduce((n, i) => n + i.content.length, 0)) / 4),
-      completionTokens: Math.ceil(text.length / 4),
-      costUsd: 0,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
+      costUsd: usage.costUsd,
+      cacheReadInputTokens: usage.cacheReadInputTokens,
+      cacheWriteInputTokens: usage.cacheWriteInputTokens,
+      uncachedInputTokens: usage.uncachedInputTokens,
+      cacheCostBasis: usage.cacheCostBasis,
     };
   }
 }
@@ -166,4 +187,6 @@ export * from "./providers";
 export * from "./orchestrator";
 export * from "./tools";
 export * from "./auto-tools";
+export * from "./prompt-caching";
+export * from "./http-chat-adapter";
 export * from "./coding-assistant";
