@@ -16,6 +16,8 @@ const PUBLIC_PAGES = new Set([
   "/signin",
   "/sign-in",
 ]);
+// Session cookie auth for product routes; Better Auth enforces CSRF/Origin on /api/auth.
+// Only intentionally public prefixes below — bootstrap-owner is token-gated + rate-limited.
 const PUBLIC_PREFIXES = [
   "/api/auth",
   "/api/waitlist",
@@ -27,6 +29,10 @@ const PUBLIC_PREFIXES = [
   "/api/partner-assets",
   "/api/support",
   "/support",
+  // Personal meeting calendar subscription feed (.ics), authorized by a per-member token.
+  "/api/calendar",
+  "/api/parts-relay",
+  "/parts-relay",
   "/showcase/present",
   "/strategy/board",
   "/display/kiosk",
@@ -121,14 +127,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(verify);
   }
 
-  let onboardingDone = true;
-  try {
-    onboardingDone = await withRls({ userId: session.user.id }, (client) =>
-      isOnboardingComplete(client, session.user.id),
-    );
-  } catch {
-    onboardingDone = false;
-  }
+  const onboardingDone = await withRls({ userId: session.user.id }, (client) =>
+    isOnboardingComplete(client, session.user.id),
+  ).catch(() => false);
 
   if (!onboardingDone) {
     if (

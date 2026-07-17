@@ -6,6 +6,15 @@ import {
   verifyEmail2faCode,
 } from "@vantage/core";
 import { headers } from "next/headers";
+import {
+  anonymizeIp,
+  clientIp,
+  createRateLimiter,
+  rateLimitedResponse,
+} from "../../../../lib/rate-limit";
+
+const requestLimiter = createRateLimiter({ limit: 8, windowMs: 60_000, namespace: "email-2fa-request" });
+const verifyLimiter = createRateLimiter({ limit: 20, windowMs: 60_000, namespace: "email-2fa-verify" });
 
 async function currentSession() {
   return auth.api.getSession({ headers: await headers() });
@@ -30,8 +39,12 @@ export async function POST(request: Request) {
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await request.json().catch(() => ({}))) as { action?: string; code?: string };
+  const ipPart = anonymizeIp(clientIp(request));
   try {
     if (body.action === "request") {
+      if (!(await requestLimiter.allow(`${session.user.id}:${ipPart}`))) {
+        return rateLimitedResponse("Too many verification emails. Wait a minute and try again.");
+      }
       const result = await requestEmail2faCode({
         sessionId: session.session.id,
         userId: session.user.id,
@@ -40,6 +53,9 @@ export async function POST(request: Request) {
       return Response.json(result);
     }
     if (body.action === "verify") {
+      if (!(await verifyLimiter.allow(`${session.user.id}:${ipPart}`))) {
+        return rateLimitedResponse("Too many verification attempts. Wait a minute and try again.");
+      }
       const result = await verifyEmail2faCode({
         sessionId: session.session.id,
         userId: session.user.id,

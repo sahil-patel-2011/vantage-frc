@@ -1,10 +1,13 @@
-import { auth, emitNotification } from "@vantage/core";
+﻿import { auth, emitNotification } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
 import { clampWaitMs, LONG_POLL_TICK_MS } from "../../../lib/messages/sync";
+import { createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
 
 export const maxDuration = 10;
+
+const postLimiter = createRateLimiter({ limit: 60, windowMs: 60_000, namespace: "messages-post" });
 
 const TEAM_CHANNEL_TITLE = "Team";
 const MAX_BODY = 8000;
@@ -578,6 +581,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
+    if (!(await postLimiter.allow(session.user.id))) {
+      return rateLimitedResponse("Message rate limit reached. Wait a moment and try again.");
+    }
     const body = (await request.json()) as {
       orgId?: string;
       action?: "open_dm" | "send" | "soft_delete" | "ensure_team" | "pin" | "unpin";

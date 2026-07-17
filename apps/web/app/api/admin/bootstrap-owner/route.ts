@@ -1,5 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import { bootstrapPlatformOwner, getAuthCapabilities } from "@vantage/core";
+import {
+  anonymizeIp,
+  clientIp,
+  createRateLimiter,
+  rateLimitedResponse,
+} from "../../../../lib/rate-limit";
 
 function tokensEqual(a: string, b: string) {
   const left = Buffer.from(a);
@@ -8,12 +14,19 @@ function tokensEqual(a: string, b: string) {
   return timingSafeEqual(left, right);
 }
 
+const limiter = createRateLimiter({ limit: 10, windowMs: 60 * 60_000, namespace: "bootstrap-owner" });
+
 /**
  * One-time bootstrap for the platform owner.
  * Requires BOOTSTRAP_TOKEN + PLATFORM_OWNER_PASSWORD in environment.
  * Never returns or logs the password.
  */
 export async function POST(request: Request) {
+  const ipKey = anonymizeIp(clientIp(request), "bootstrap");
+  if (!(await limiter.allow(ipKey))) {
+    return rateLimitedResponse("Too many bootstrap attempts. Try again later.");
+  }
+
   const bootstrapToken = process.env.BOOTSTRAP_TOKEN;
   if (!bootstrapToken) {
     return Response.json({ error: "Bootstrap is not armed. Set BOOTSTRAP_TOKEN to enable." }, { status: 404 });
