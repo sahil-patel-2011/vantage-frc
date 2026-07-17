@@ -14,16 +14,20 @@ export type InviteEmail = {
   expiresAt: Date;
 };
 export type SecurityNotice = { email:string; subject:string; message:string };
+export type FreeformEmail = { to: string; subject: string; text: string };
 
 export interface EmailProvider {
   readonly name: string;
   sendOtp(message: OtpEmail): Promise<void>;
   sendInvite(message: InviteEmail): Promise<void>;
   sendSecurityNotice(message: SecurityNotice): Promise<void>;
+  /** Freeform send for team-authored content (sponsor/grant outreach) — no fixed template. */
+  sendFreeform(message: FreeformEmail): Promise<void>;
 }
 
 export const localMailbox = new Map<string, OtpEmail[]>();
 export const localInviteMailbox = new Map<string, InviteEmail[]>();
+export const localFreeformMailbox = new Map<string, FreeformEmail[]>();
 
 export class LocalMailboxProvider implements EmailProvider {
   readonly name = "local-mailbox";
@@ -39,6 +43,10 @@ export class LocalMailboxProvider implements EmailProvider {
     ]);
   }
   async sendSecurityNotice() {}
+  async sendFreeform(message: FreeformEmail) {
+    const to = message.to.trim().toLowerCase();
+    localFreeformMailbox.set(to, [...(localFreeformMailbox.get(to) ?? []), { ...message, to }]);
+  }
 }
 
 export class ResendEmailProvider implements EmailProvider {
@@ -84,6 +92,14 @@ export class ResendEmailProvider implements EmailProvider {
     const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{authorization:`Bearer ${this.apiKey}`,"content-type":"application/json"},body:JSON.stringify({from:this.from,to:[message.email],subject:message.subject,text:message.message})});
     if(!response.ok)throw new Error(`Email provider returned ${response.status}`);
   }
+  async sendFreeform(message: FreeformEmail) {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { authorization: `Bearer ${this.apiKey}`, "content-type": "application/json" },
+      body: JSON.stringify({ from: this.from, to: [message.to], subject: message.subject, text: message.text }),
+    });
+    if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
+  }
 }
 
 class UnconfiguredProductionEmailProvider implements EmailProvider {
@@ -95,6 +111,7 @@ class UnconfiguredProductionEmailProvider implements EmailProvider {
     throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required for production email");
   }
   async sendSecurityNotice(){throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required for production email");}
+  async sendFreeform(){throw new Error("RESEND_API_KEY and AUTH_EMAIL_FROM are required for production email");}
 }
 
 export function createEmailProvider(): EmailProvider {
