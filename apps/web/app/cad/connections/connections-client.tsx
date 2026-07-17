@@ -8,7 +8,8 @@ npm install -g ./packages/vantage-cad-cli
 vantage-cad setup
 
 # Or use install scripts:
-# Windows: powershell -File .\\scripts\\cad\\install-cli.ps1
+# Windows one-shot: powershell -ExecutionPolicy Bypass -File .\\scripts\\cad\\install-windows.ps1
+# Windows CLI only: powershell -File .\\scripts\\cad\\install-cli.ps1
 # macOS/Linux: bash scripts/cad/install-cli.sh`;
 
 type Device = {
@@ -91,16 +92,20 @@ export default function CadConnections({ orgId }: { orgId: string }) {
   const onshapeConnected = onshapeConnections.some((c) => c.status === "connected");
 
   return (
-    <main className="intel-app">
-      <header className="intel-header">
+    <main className="module-page cad-connections-page">
+      <header className="app-page-header">
         <div>
-          <span className="eyebrow">CAD / CONNECTIONS</span>
+          <p className="breadcrumbs">CAD / Connections</p>
           <h1>Connect engineering tools safely</h1>
-          <p>Pair in the browser. Never type your Vantage password in a terminal.</p>
+          <p>Pair in the browser. Never type your Vantage password in a terminal. Fusion stays local — never hosted on Vercel.</p>
         </div>
-        <nav className="intel-actions">
-          <a href={`/cad?orgId=${orgId}`}>← CAD Builder</a>
-          <a href={`/cad/setup?orgId=${orgId}`}>Setup wizard</a>
+        <nav className="cad-header-actions">
+          <a className="app-button secondary" href={`/cad?orgId=${orgId}`}>
+            ← CAD Builder
+          </a>
+          <a className="app-button secondary" href={`/cad/setup?orgId=${orgId}`}>
+            Setup wizard
+          </a>
         </nav>
       </header>
       {message ? (
@@ -109,20 +114,25 @@ export default function CadConnections({ orgId }: { orgId: string }) {
         </p>
       ) : null}
 
-      <section className="connection-paths">
-        <article className="intel-panel">
-          <span className="path-number">01</span>
-          <h2>Onshape hosted</h2>
-          <p>
-            Authorize least-privilege Onshape OAuth in the browser, then select a document, workspace, and element. The
-            Vantage server runs approved jobs. No always-running desktop relay is required.
-          </p>
+      <section className="cad-connection-strip">
+        <article className="app-card cad-connection-tile">
+          <div>
+            <span className="path-number">01</span>
+            <span className={`app-badge ${onshapeConnected ? "good" : onshapeConfigured ? "setup" : "setup"}`}>
+              {onshapeConnected ? "Connected" : onshapeConfigured ? "OAuth ready" : "Admin setup"}
+            </span>
+            <h2>Onshape hosted</h2>
+            <p className="app-muted">
+              Authorize least-privilege Onshape OAuth in the browser, then select a document, workspace, and element. The
+              Vantage server runs approved jobs. No always-running desktop relay is required.
+            </p>
+          </div>
           {onshapeConfigured ? (
             <>
-              <button type="button" disabled={busy} onClick={() => void connectOnshape()}>
+              <button type="button" className="primary-action" disabled={busy} onClick={() => void connectOnshape()}>
                 {onshapeConnected ? "Reconnect Onshape OAuth" : "Connect Onshape OAuth"}
               </button>
-              <small>
+              <small className="app-muted">
                 {onshapeConnected
                   ? `Connected (${onshapeConnections[0]?.label ?? "Onshape"}). Pick document refs in CAD Builder.`
                   : "OAuth client configured — click to authorize."}
@@ -130,39 +140,47 @@ export default function CadConnections({ orgId }: { orgId: string }) {
             </>
           ) : (
             <>
-              <button type="button" disabled title="Configure Onshape OAuth environment credentials first">
+              <button type="button" className="primary-action" disabled title="Configure Onshape OAuth environment credentials first">
                 Connect Onshape OAuth
               </button>
-              <small>
+              <small className="app-muted">
                 Setup required — admin must set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET on Vercel, then
                 redeploy.
               </small>
             </>
           )}
         </article>
-        <article className="intel-panel">
-          <span className="path-number">02</span>
-          <h2>Fusion 360 local</h2>
-          <p>
-            Fusion runs in your Autodesk desktop session (Windows/macOS only). The paired relay claims signed jobs;
-            Vercel never runs Fusion.
-          </p>
-          <ol>
-            <li>Install Autodesk Fusion 360 and sign in.</li>
-            <li>
-              Run <code>scripts/cad/install-fusion-addin.ps1</code> (Windows) or{" "}
-              <code>scripts/cad/install-fusion-addin.sh</code> (macOS).
-            </li>
-            <li>In Fusion: Utilities → Add-Ins → run VantageCadRelay.</li>
-            <li>
-              <code>vantage-cad setup</code> then <code>vantage-cad start</code>.
-            </li>
-          </ol>
-          <small>Linux: Fusion is unavailable — use Onshape or VANTAGE_CAD_MOCK=1 for protocol tests.</small>
+        <article className="app-card cad-connection-tile">
+          <div>
+            <span className="path-number">02</span>
+            <span className={`app-badge ${devices.some((d) => !d.revokedAt && d.lastSeenAt) ? "good" : "setup"}`}>
+              Local relay
+            </span>
+            <h2>Fusion 360 local</h2>
+            <p className="app-muted">
+              Fusion runs in your Autodesk desktop session (Windows/macOS only). The paired relay claims signed jobs;
+              Vercel never runs Fusion.
+            </p>
+            <ol>
+              <li>Install Autodesk Fusion 360 and sign in.</li>
+              <li>
+              Windows: <code>scripts/cad/install-windows.ps1</code> (CLI + add-in). macOS:{" "}
+              <code>scripts/cad/install-fusion-addin.sh</code>.
+              </li>
+              <li>In Fusion: Utilities → Add-Ins → run VantageCadRelay.</li>
+              <li>
+                <code>vantage-cad setup</code> then <code>vantage-cad start</code>.
+              </li>
+            </ol>
+            <small className="app-muted">Linux: Fusion is unavailable — use Onshape or VANTAGE_CAD_MOCK=1 for protocol tests.</small>
+          </div>
+          <a className="app-button secondary" href={`/cad/pair?orgId=${orgId}`}>
+            Pair desktop
+          </a>
         </article>
       </section>
 
-      <section className="intel-panel">
+      <section className="app-card">
         <h2>OS support matrix</h2>
         <table className="data-table">
           <thead>
@@ -188,7 +206,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
         </table>
       </section>
 
-      <section className="intel-panel">
+      <section className="app-card">
         <div className="panel-heading">
           <div>
             <span className="eyebrow">LOCAL PACKAGE · NOT PUBLISHED TO NPM</span>
@@ -196,6 +214,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           </div>
           <button
             type="button"
+            className="app-button secondary"
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(install);
@@ -211,10 +230,10 @@ export default function CadConnections({ orgId }: { orgId: string }) {
         <pre className="install-command">{install}</pre>
       </section>
 
-      <section className="compare-panel">
+      <section className="app-card">
         <h2>Paired desktops</h2>
         {devices.length === 0 ? (
-          <p>No desktop is paired.</p>
+          <p className="app-muted">No desktop is paired.</p>
         ) : (
           devices.map((device) => (
             <article className="saved-board" key={device.id}>
@@ -227,7 +246,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
                 </small>
               </div>
               {!device.revokedAt && (
-                <button type="button" onClick={() => void revoke(device.id)}>
+                <button type="button" className="app-button secondary" onClick={() => void revoke(device.id)}>
                   Revoke
                 </button>
               )}
@@ -236,7 +255,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
         )}
       </section>
 
-      <section className="intel-panel">
+      <section className="app-card">
         <h2>AI provider truth</h2>
         <ul>
           <li>Vantage managed API: billed through plan / credits.</li>
@@ -248,3 +267,4 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     </main>
   );
 }
+

@@ -91,7 +91,39 @@ body.has-app-shell{padding:64px 0 0 248px;background:var(--app-bg);overflow-x:hi
 .strategy-demo-banner p{margin:0;color:#67531c;line-height:1.45}
 .strategy-provenance{margin:0 0 12px;font-size:12px}
 .strategy-empty-block{display:grid;gap:12px}
+.strategy-kind{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.04em;margin-right:6px}
+.strategy-kind.model{color:#6b5a1e}
+.strategy-kind.fact{color:#1f5c3a}
+.strategy-contrib-note{display:flex;align-items:center;gap:8px;margin:8px 0 12px;font-size:12px}
+.strategy-contrib-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0 0 18px}
+.strategy-contrib-col h4{margin:0 0 8px;font-size:13px}
+.strategy-contrib-col ul{margin:0;padding:0;list-style:none}
+.strategy-contrib-col li{padding:10px 0;border-top:1px solid var(--app-line)}
+.strategy-contrib-head{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+.strategy-contrib-bar{height:6px;margin:6px 0;background:var(--app-soft);border:1px solid var(--app-line);border-radius:3px;overflow:hidden}
+.strategy-contrib-bar i{display:block;height:100%;background:var(--app-accent)}
+.strategy-contrib-col small{color:var(--app-muted);font-size:11px}
+.strategy-citations{margin:8px 0 16px;padding:0;list-style:none}
+.strategy-citations li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--app-line);font-size:12px;line-height:1.45}
+@media(max-width:650px){.strategy-contrib-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.strategy-setup{grid-template-columns:1fr}}
+.dossier-search{display:grid;gap:8px;margin:0 0 22px;max-width:520px}
+.dossier-search>label{font:11px monospace;letter-spacing:.12em;color:var(--app-muted)}
+.dossier-search>div{display:grid;grid-template-columns:1fr auto;gap:8px}
+.dossier-search input{min-width:0;padding:12px 14px;color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.dossier-search button{padding:12px 16px;color:#fff;background:var(--app-accent);border:0;border-radius:8px;font-weight:800;cursor:pointer}
+.dossier-search small a{color:var(--app-accent);font-weight:700;text-decoration:none}
+.dossier-hero{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:0 0 22px;padding-bottom:16px;border-bottom:1px solid var(--app-line)}
+.dossier-hero h2{margin:6px 0 4px;font-size:clamp(26px,3vw,36px);letter-spacing:-.03em}
+.dossier-group{margin:0 0 28px}
+.dossier-group h3{margin:0 0 12px;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--app-muted)}
+.dossier-fact-grid{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.dossier-fact-card{display:grid;gap:6px;padding:16px;border:1px solid var(--app-line);border-radius:var(--app-radius);background:var(--app-surface)}
+.dossier-fact-card strong{font-size:15px}
+.dossier-fact-card p{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1.3}
+.dossier-fact-card small{color:var(--app-muted);line-height:1.4}
+.strategy-reference-hints{display:grid;gap:8px;margin:0 0 14px}
+@media(max-width:700px){.dossier-hero{flex-direction:column;align-items:flex-start}.dossier-search>div{grid-template-columns:1fr}}
 html[data-theme="light"] .auth-page .primary-action,html[data-theme="light"] .auth-page .text-button{background:#1457d9;color:#fff}html[data-theme="light"] .auth-page .eyebrow{color:#1457d9}.has-app-shell .cad-visual{min-height:520px;grid-template-rows:minmax(280px,52vh) auto}.has-app-shell .cad-timeline{min-height:110px}
 @media(max-width:700px){.has-app-shell .cad-visual{min-height:420px;grid-template-rows:300px auto}}
 
@@ -129,3 +161,89 @@ html[data-theme="light"] .auth-page .primary-action,html[data-theme="light"] .au
 .messages-page .messages-member-panel .memory-panel-close{display:inline-flex}
 @media(max-width:950px){.messages-page{grid-template-columns:190px 1fr}}
 @media(max-width:620px){.messages-page{display:flex;flex-direction:column}}
+
+/* CAD Builder soft-UI workbench (dashboard-aligned). */
+.cad-module{display:grid;gap:16px}
+.cad-header-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
+.cad-connection-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cad-connection-tile{display:flex;flex-direction:column;justify-content:space-between;gap:14px;min-height:168px}
+.cad-connection-tile h2{margin:10px 0 6px;font-size:18px}
+.cad-connection-tile p{margin:0;line-height:1.5;font-size:13px}
+.cad-ready-dot{font-size:12px;font-weight:700}
+.cad-ready-dot.on{color:var(--app-positive)}
+.cad-ready-dot.off{color:var(--app-warning)}
+.cad-empty-setup{gap:12px;margin-bottom:4px}
+.cad-empty-setup h2{margin:0;font-size:22px}
+.cad-empty-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.cad-workbench{display:grid;grid-template-columns:260px minmax(0,1.1fr) minmax(320px,.95fr);gap:14px;align-items:start}
+.cad-workbench.with-explain{grid-template-columns:240px minmax(0,1fr) minmax(340px,1.05fr)}
+.cad-queue{display:grid;gap:12px;padding:18px}
+.cad-queue-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cad-queue-head h2{margin:4px 0 0;font-size:18px}
+.cad-job-list{margin:0;padding:0;list-style:none;display:grid;gap:8px;max-height:52vh;overflow:auto}
+.cad-job-list button{display:grid;gap:4px;width:100%;padding:12px;color:var(--app-ink);background:var(--app-soft);border:1px solid transparent;border-radius:8px;text-align:left;cursor:pointer}
+.cad-job-list button.active{border-color:var(--app-accent);background:color-mix(in srgb,var(--app-accent) 8%,var(--app-surface))}
+.cad-job-list strong{font-size:13px}
+.cad-job-list small{color:var(--app-muted);font-size:11px}
+.cad-job-list .app-badge{justify-self:start}
+.cad-job-actions{display:flex;gap:6px;margin-top:6px}
+.cad-job-actions button{min-height:36px;padding:6px 10px;color:var(--app-ink);background:var(--app-surface);border:1px solid var(--app-line);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer}
+.cad-usage-ledger{display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--app-line)}
+.cad-usage-ledger article{display:grid;gap:2px}
+.cad-usage-ledger strong{font-size:12px}
+.cad-usage-ledger small{color:var(--app-muted);font-size:10px}
+.cad-main-pane{display:grid;gap:14px}
+.cad-brief-form{display:grid;gap:14px}
+.cad-brief-form label{display:grid;gap:7px;color:var(--app-muted);font-size:12px;font-weight:700}
+.cad-brief-form input,.cad-brief-form select,.cad-brief-form textarea,.cad-document-ref input,.brief-editor input,.brief-editor textarea{min-height:44px;padding:12px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.cad-mode-picker{display:grid;gap:8px;margin:0;padding:0;border:0}
+.cad-mode-picker legend{margin-bottom:6px;color:var(--app-muted);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.cad-mode-picker label{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;padding:12px;border:1px solid var(--app-line);border-radius:8px;background:var(--app-soft);cursor:pointer}
+.cad-mode-picker label.active{border-color:var(--app-accent);box-shadow:inset 0 0 0 1px var(--app-accent)}
+.cad-mode-picker span{display:grid;gap:3px}
+.cad-mode-picker strong{color:var(--app-ink);font-size:13px}
+.cad-mode-picker small{color:var(--app-muted);font-weight:500;line-height:1.4}
+.cad-job-banner{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cad-job-banner h2{margin:8px 0 0;font-size:22px}
+.cad-job-banner .app-badge{margin-right:6px}
+.cad-document-ref{display:grid;gap:10px;padding:16px;border:1px dashed var(--app-line);border-radius:var(--app-radius);background:var(--app-soft)}
+.cad-document-ref label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--app-muted)}
+.cad-right-column{display:grid;gap:14px}
+.cad-visual-card{padding:0;overflow:hidden}
+.cad-module .cad-render{position:relative;display:grid;place-items:center;min-height:280px;background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--app-accent) 12%,var(--app-soft)),var(--app-soft) 70%)}
+.cad-module .cad-render>span{position:absolute;top:14px;left:16px;z-index:1;color:var(--app-accent);font:10px ui-monospace,monospace}
+.cad-module .cad-render iframe{width:100%;height:280px;border:0;background:transparent}
+.cad-module .render-empty{display:grid;gap:8px;padding:24px;color:var(--app-muted);text-align:center}
+.cad-module .cad-timeline{padding:16px 18px;max-height:340px;overflow:auto}
+.cad-module .cad-timeline article{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--app-line)}
+.cad-module .cad-timeline article.focused{background:color-mix(in srgb,var(--app-accent) 6%,transparent);margin:0 -8px;padding-inline:8px;border-radius:8px}
+.cad-module .cad-timeline i{width:10px;height:10px;border-radius:50%;background:var(--app-line);flex:0 0 auto}
+.cad-module .cad-timeline i.completed{background:var(--app-positive)}
+.cad-module .cad-timeline i.failed,.cad-module .cad-timeline i.cancelled{background:var(--app-critical)}
+.cad-module .cad-timeline i.running{background:var(--app-accent)}
+.cad-step-select{display:grid;gap:3px;flex:1;min-width:0;padding:0;color:inherit;background:transparent;border:0;text-align:left;cursor:pointer}
+.cad-step-select small{color:var(--app-muted)}
+.cad-step-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cad-step-actions button{min-height:36px;padding:6px 10px;border-radius:7px;border:1px solid var(--app-line);background:var(--app-surface);color:var(--app-ink);font-size:11px;font-weight:700;cursor:pointer}
+.cad-explain-panel{display:grid;gap:8px;align-content:start}
+.cad-explain-panel h2{margin:0;font-size:20px}
+.cad-explain-panel h3{margin:10px 0 0;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--app-muted)}
+.cad-explain-panel p{margin:0;line-height:1.55}
+.cad-explain-op{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cad-explain-tips ul{margin:6px 0 0;padding-left:18px;color:var(--app-muted);line-height:1.5}
+.cad-explain-tips li{margin-bottom:6px}
+.cad-module .brief-editor{display:grid;gap:12px}
+.cad-module .brief-editor label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--app-muted)}
+.cad-module .brief-editor pre{max-height:220px;overflow:auto;padding:12px;border-radius:8px;background:var(--app-soft);border:1px solid var(--app-line);white-space:pre-wrap;font-size:12px}
+.has-app-shell .cad-module{padding:clamp(18px,2.5vw,36px)}
+.has-app-shell .cad-module .app-card{box-shadow:var(--app-shadow)}
+@media(max-width:1100px){
+  .cad-connection-strip{grid-template-columns:1fr}
+  .cad-workbench,.cad-workbench.with-explain{grid-template-columns:1fr}
+  .cad-queue{order:0}
+  .cad-job-list{max-height:220px}
+}
+@media(max-width:700px){
+  .cad-header-actions{justify-content:flex-start}
+  .cad-module .cad-render iframe{height:220px}
+}

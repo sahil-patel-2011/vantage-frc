@@ -8,6 +8,7 @@ export type EventMetricRow = {
   source?: string;
   epaTotal: number | null;
   epaAuto?: number | null;
+  epaTeleop?: number | null;
   epaEndgame?: number | null;
   wins?: number | null;
   losses?: number | null;
@@ -15,6 +16,21 @@ export type EventMetricRow = {
   rank?: number | null;
   /** Match count hint from payload or qual schedule; defaults applied when missing. */
   matches?: number | null;
+  syncedAt?: string | null;
+};
+
+/** Season-long Statbotics (or TBA) year EPA rows from Neon `team_year_metrics`. */
+export type YearMetricRow = {
+  teamKey: string;
+  year: number;
+  source?: string;
+  epaTotal: number | null;
+  epaAuto?: number | null;
+  epaTeleop?: number | null;
+  epaEndgame?: number | null;
+  /** Sample size hint; defaults to a modest season weight when absent. */
+  matches?: number | null;
+  syncedAt?: string | null;
 };
 
 export type AllianceTeamBrief = {
@@ -28,6 +44,13 @@ export type AllianceTeamBrief = {
   scoutSample: number;
   reliability: number | null;
   foulRate: number | null;
+  qualityWeight: number | null;
+  autoCapability: number | null;
+  teleopCapability: number | null;
+  endgameCapability: number | null;
+  defenseLikely: boolean;
+  pitNotes: string[];
+  scoutEntryIds: string[];
 };
 
 export type AllianceMatchup = {
@@ -42,6 +65,8 @@ export type OpponentTendency = {
   teamKey: string;
   labels: string[];
   evidence: string[];
+  /** Scout entry ids that influenced labels/evidence for this opponent. */
+  scoutEntryIds?: string[];
 };
 
 /**
@@ -69,6 +94,73 @@ export function signalsFromEventMetrics(rows: EventMetricRow[]): TeamSeasonSigna
   return signals;
 }
 
+/**
+ * Map season-long year EPA into signals. Skips null EPA — never fabricates values.
+ */
+export function signalsFromYearMetrics(rows: YearMetricRow[]): TeamSeasonSignal[] {
+  const signals: TeamSeasonSignal[] = [];
+  for (const row of rows) {
+    if (row.epaTotal == null || !Number.isFinite(row.epaTotal)) continue;
+    const matches =
+      row.matches != null && row.matches > 0 ? row.matches : 18;
+    signals.push({
+      teamKey: row.teamKey,
+      year: row.year,
+      matches,
+      epa: row.epaTotal,
+      autoEpa: row.epaAuto ?? undefined,
+      endgameEpa: row.epaEndgame ?? undefined,
+      source: row.source,
+    });
+  }
+  return signals;
+}
+
+function sourceRank(source?: string) {
+  if (source === "statbotics") return 0;
+  if (source === "tba") return 1;
+  return 2;
+}
+
+/**
+ * Fuse event + year metrics for weighted-current prediction.
+ * Prefer event-level EPA over year-level for the same team+year; prefer Statbotics over TBA.
+ * Never invents missing EPA rows.
+ */
+export function fuseSeasonSignals(input: {
+  eventMetrics: EventMetricRow[];
+  yearMetrics?: YearMetricRow[];
+}): TeamSeasonSignal[] {
+  const byTeamYear = new Map<string, TeamSeasonSignal>();
+  const consider = (signal: TeamSeasonSignal, preferEvent: boolean) => {
+    const key = `${signal.teamKey}:${signal.year}`;
+    const existing = byTeamYear.get(key);
+    if (!existing) {
+      byTeamYear.set(key, signal);
+      return;
+    }
+    const existingIsEvent = Boolean(existing.eventKey);
+    const nextIsEvent = Boolean(signal.eventKey);
+    if (preferEvent && nextIsEvent && !existingIsEvent) {
+      byTeamYear.set(key, signal);
+      return;
+    }
+    if (preferEvent && existingIsEvent && !nextIsEvent) return;
+    if (sourceRank(signal.source) < sourceRank(existing.source)) {
+      byTeamYear.set(key, signal);
+    }
+  };
+  for (const signal of signalsFromEventMetrics(input.eventMetrics)) {
+    consider(signal, true);
+  }
+  for (const signal of signalsFromYearMetrics(input.yearMetrics ?? [])) {
+    consider(signal, true);
+  }
+  return [...byTeamYear.values()].sort(
+    (a, b) => b.year - a.year || a.teamKey.localeCompare(b.teamKey),
+  );
+}
+
 export function allianceTeamBrief(
   teamKey: string,
   metrics: EventMetricRow[],
@@ -91,6 +183,13 @@ export function allianceTeamBrief(
     scoutSample: op?.scoutSample ?? 0,
     reliability: op?.reliability ?? null,
     foulRate: op?.foulRate ?? null,
+    qualityWeight: op?.qualityWeight ?? null,
+    autoCapability: op?.autoCapability ?? null,
+    teleopCapability: op?.teleopCapability ?? null,
+    endgameCapability: op?.endgameCapability ?? null,
+    defenseLikely: Boolean(op?.defenseLikely),
+    pitNotes: op?.pitNotes ?? [],
+    scoutEntryIds: op?.scoutEntryIds ?? [],
   };
 }
 
@@ -138,6 +237,54 @@ export function buildAllianceMatchup(input: {
       `Elevated foul rate in scout notes: ${foulHeavy.map((t) => `${t.teamKey} (~${round1(t.foulRate!)}/match)`).join(", ")}.`,
     );
   }
+  const autoCapable = [...red, ...blue].filter((team) => (team.autoCapability ?? 0) >= 0.45);
+  if (autoCapable.length) {
+    considerations.push(
+      `Scout auto capability strong for ${autoCapable
+        .map((t) => `${t.teamKey} (~${Math.round((t.autoCapability ?? 0) * 100)}%)`)
+        .join(", ")}.`,
+    );
+  }
+  const teleopCapable = [...red, ...blue].filter((team) => (team.teleopCapability ?? 0) >= 0.45);
+  if (teleopCapable.length) {
+    considerations.push(
+      `Scout teleop/cycles noted for ${teleopCapable
+        .map((t) => `${t.teamKey} (~${Math.round((t.teleopCapability ?? 0) * 100)}%)`)
+        .join(", ")}.`,
+    );
+  }
+  const defense = [...red, ...blue].filter((team) => team.defenseLikely);
+  if (defense.length) {
+    considerations.push(
+      `Defense noted in scout payloads: ${defense.map((t) => t.teamKey).join(", ")}.`,
+    );
+  }
+  const pitNoted = [...red, ...blue].filter((team) => team.pitNotes.length > 0);
+  if (pitNoted.length) {
+    considerations.push(
+      `Pit/match notes on ${pitNoted.map((t) => t.teamKey).join(", ")}: ${pitNoted
+        .flatMap((t) => t.pitNotes.slice(0, 1).map((note) => `${t.teamKey} “${note.slice(0, 80)}”`))
+        .join("; ")}.`,
+    );
+  }
+  const qualityWarned = [...red, ...blue].filter(
+    (team) => team.qualityWeight != null && team.qualityWeight < 0.85 && team.scoutSample > 0,
+  );
+  if (qualityWarned.length) {
+    considerations.push(
+      `Scout quality downweights applied: ${qualityWarned
+        .map((t) => `${t.teamKey} (mean ${Math.round((t.qualityWeight ?? 1) * 100)}%)`)
+        .join(", ")}.`,
+    );
+  }
+  const withIds = [...red, ...blue].flatMap((team) => team.scoutEntryIds).slice(0, 12);
+  if (withIds.length) {
+    considerations.push(
+      `Scout provenance entry ids: ${withIds.map((id) => id.slice(0, 8)).join(", ")}${
+        withIds.length >= 12 ? "…" : ""
+      }.`,
+    );
+  }
   return { red, blue, redTotalEpa, blueTotalEpa, considerations };
 }
 
@@ -173,6 +320,7 @@ export function opponentTendencies(input: {
         `${teamKey} event record ${metric.wins}-${metric.losses}-${metric.ties ?? 0}${metric.rank != null ? ` · rank ${metric.rank}` : ""}.`,
       );
     }
+    const scoutEntryIds = op?.scoutEntryIds ?? [];
     if (op && op.scoutSample > 0) {
       if (op.reliability != null && op.reliability < 70) {
         labels.push("reliability-risk");
@@ -187,11 +335,52 @@ export function opponentTendencies(input: {
         labels.push("contact-aware");
         evidence.push(`Moderate scout foul rate ~${round1(op.foulRate!)} per match.`);
       }
+      if ((op.autoCapability ?? 0) >= 0.45) {
+        labels.push("scout-auto-capable");
+        evidence.push(
+          `Scout auto capability ~${Math.round((op.autoCapability ?? 0) * 100)}% (entries ${scoutEntryIds
+            .slice(0, 3)
+            .map((id) => id.slice(0, 8))
+            .join(", ") || "n/a"}).`,
+        );
+      }
+      if ((op.teleopCapability ?? 0) >= 0.45) {
+        labels.push("scout-teleop-capable");
+        evidence.push(`Scout teleop capability ~${Math.round((op.teleopCapability ?? 0) * 100)}%.`);
+      }
+      if ((op.endgameCapability ?? 0) >= 0.45) {
+        labels.push("scout-endgame-capable");
+        evidence.push(`Scout endgame capability ~${Math.round((op.endgameCapability ?? 0) * 100)}%.`);
+      }
+      if (op.defenseLikely) {
+        labels.push("defense-capable");
+        evidence.push("Defense mentioned in org scout payloads.");
+      }
+      if (op.pitNotes?.length) {
+        labels.push("pit-noted");
+        evidence.push(`Pit/match notes: ${op.pitNotes.slice(0, 2).join(" · ")}`);
+      }
+      if (op.qualityWeight != null && op.qualityWeight < 0.85) {
+        labels.push("scout-quality-adjusted");
+        evidence.push(
+          `Scout quality mean weight ${Math.round(op.qualityWeight * 100)}%${
+            op.qualityNotes?.[0] ? ` — ${op.qualityNotes[0]}` : ""
+          }.`,
+        );
+      }
+      if (scoutEntryIds.length) {
+        evidence.push(
+          `Influenced by scout entries: ${scoutEntryIds
+            .slice(0, 6)
+            .map((id) => id.slice(0, 8))
+            .join(", ")}.`,
+        );
+      }
     }
     if (!labels.length && !evidence.length) {
       evidence.push(`No event metrics or scout notes yet for ${teamKey}.`);
     }
-    return { teamKey, labels, evidence };
+    return { teamKey, labels, evidence, scoutEntryIds: scoutEntryIds.length ? scoutEntryIds : undefined };
   });
 }
 
@@ -202,6 +391,77 @@ export type PickListHint = {
   tier: string | null;
   notes: string | null;
 };
+
+export type PickTier = "first" | "second" | "third" | "watch";
+
+export type PickCandidate = {
+  teamKey: string;
+  teamNumber: number | null;
+  nickname: string | null;
+  epa: number | null;
+  autoEpa: number | null;
+  endgameEpa: number | null;
+  source: string | null;
+  record: string | null;
+  rank: number | null;
+  scoutSample: number;
+  reliability: number | null;
+  foulRate: number | null;
+  suggestedTier: PickTier | null;
+};
+
+const TIER_ORDER: Record<PickTier, number> = {
+  first: 0,
+  second: 1,
+  third: 2,
+  watch: 3,
+};
+
+/**
+ * Rank event teams for pick-list desks using only real EPA/rank/scout signals.
+ * Suggested tiers are relative percentiles of known EPA at the event — teams without
+ * EPA stay unsorted with suggestedTier null (never invent metrics).
+ */
+export function rankPickCandidates(
+  candidates: Array<Omit<PickCandidate, "suggestedTier">>,
+): PickCandidate[] {
+  const withEpa = candidates
+    .map((candidate) => candidate.epa)
+    .filter((epa): epa is number => epa != null && Number.isFinite(epa))
+    .sort((a, b) => b - a);
+  const percentileTier = (epa: number): PickTier => {
+    if (!withEpa.length) return "watch";
+    const better = withEpa.filter((value) => value > epa).length;
+    const pct = better / withEpa.length;
+    if (pct <= 0.2) return "first";
+    if (pct <= 0.45) return "second";
+    if (pct <= 0.7) return "third";
+    return "watch";
+  };
+  const scored = candidates.map((candidate) => {
+    const hasEpa = candidate.epa != null && Number.isFinite(candidate.epa);
+    let suggestedTier: PickTier | null = null;
+    if (hasEpa) {
+      suggestedTier = percentileTier(candidate.epa as number);
+      if ((candidate.reliability ?? 100) < 65 && suggestedTier === "first") {
+        suggestedTier = "second";
+      }
+    }
+    return { ...candidate, suggestedTier };
+  });
+  return scored.sort((a, b) => {
+    const tierA = a.suggestedTier ? TIER_ORDER[a.suggestedTier] : 99;
+    const tierB = b.suggestedTier ? TIER_ORDER[b.suggestedTier] : 99;
+    if (tierA !== tierB) return tierA - tierB;
+    const epaA = a.epa ?? -Infinity;
+    const epaB = b.epa ?? -Infinity;
+    if (epaA !== epaB) return epaB - epaA;
+    const rankA = a.rank ?? 9999;
+    const rankB = b.rank ?? 9999;
+    if (rankA !== rankB) return rankA - rankB;
+    return a.teamKey.localeCompare(b.teamKey);
+  });
+}
 
 export function pickListHintsForAlliance(
   allianceKeys: string[],

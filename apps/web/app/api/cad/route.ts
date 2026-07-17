@@ -14,6 +14,10 @@ import {
   cadOsSupportMatrix,
   refreshOnshapeToken,
   resolveCadMetering,
+  listOnshapeDocuments,
+  listOnshapeElements,
+  listOnshapeFeatures,
+  explainFeatureTreeForStudents,
   type CadAction,
   type CadBrainMode,
   type EngineeringBrief,
@@ -101,10 +105,16 @@ export async function GET(request: Request) {
         `SELECT id,machine_name AS "machineName",platform,status,cli_version AS "cliVersion",last_seen_at AS "lastSeenAt",revoked_at AS "revokedAt" FROM cad_relay_devices WHERE org_id=$1 ORDER BY created_at DESC`,
         [orgId],
       );
+      const usage = await client.query(
+        `SELECT id,feature,model,key_source AS "keySource",cost_usd::text AS "costUsd",metadata,created_at AS "createdAt"
+         FROM ai_usage_events WHERE org_id=$1 AND feature='cad' ORDER BY created_at DESC LIMIT 12`,
+        [orgId],
+      );
       return {
         jobs: jobs.rows,
         detail,
         devices: devices.rows,
+        usage: usage.rows,
         mechanisms: (
           await client.query(
             `SELECT id,name,category,description,version,updated_at AS "updatedAt" FROM cad_mechanisms WHERE org_id=$1 ORDER BY category,name`,
@@ -215,13 +225,23 @@ export async function POST(request: Request) {
         return repository.savePlan(orgId, String(body.jobId), session.user.id, body.actions as CadAction[]);
       if (action === "plan-default") {
         const job = (
-          await client.query<{ brief: EngineeringBrief }>(
-            `SELECT brief FROM cad_jobs WHERE id=$1 AND org_id=$2 AND brief_confirmed_at IS NOT NULL`,
+          await client.query<{ brief: EngineeringBrief; platform: string }>(
+            `SELECT brief,platform FROM cad_jobs WHERE id=$1 AND org_id=$2 AND brief_confirmed_at IS NOT NULL`,
             [body.jobId, orgId],
           )
         ).rows[0];
         if (!job) throw new Error("Confirm the engineering brief before planning");
-        const plan = buildDefaultCadPlan(job.brief, { autoRunVerify: Boolean(body.autoRunVerify) });
+        const includeExportRaw = String(body.includeExport ?? "");
+        const includeExport =
+          includeExportRaw === "step" || includeExportRaw === "stl" || includeExportRaw === "gltf"
+            ? includeExportRaw
+            : job.platform === "onshape" && body.includeExport !== false
+              ? ("step" as const)
+              : false;
+        const plan = buildDefaultCadPlan(job.brief, {
+          autoRunVerify: Boolean(body.autoRunVerify),
+          includeExport,
+        });
         await repository.savePlan(orgId, String(body.jobId), session.user.id, plan);
         return { actions: plan };
       }
@@ -264,7 +284,14 @@ export async function POST(request: Request) {
             requestId: randomUUID(),
             estimatedCostUsd: 0,
             keySource: "local_cli",
-            metadata: { brainMode, note: "Terminal CLI path — no Vantage model charge", stub: true },
+            metadata: {
+              brainMode,
+              ledgerTag: `cad:terminal_cli:${String(body.jobId ?? "job").slice(0, 8)}`,
+              jobId: body.jobId,
+              stepId: body.stepId,
+              note: "Terminal CLI path — no Vantage model charge",
+              stub: true,
+            },
             invoke: async () => ({
               value: executed,
               promptTokens: 0,
@@ -289,6 +316,9 @@ export async function POST(request: Request) {
             randomUUID(),
             JSON.stringify({
               brainMode,
+              ledgerTag: `cad:${brainMode}:${String(body.jobId ?? "job").slice(0, 8)}`,
+              jobId: body.jobId,
+              stepId: body.stepId,
               note: "API path stub until live CAD model routing is enabled",
             }),
           ],
@@ -327,14 +357,132 @@ export async function POST(request: Request) {
             document: job.document_ref,
           }),
         );
-        return repository.executeStep(orgId, String(body.jobId), String(body.stepId), session.user.id, adapter);
+        const executed = await repository.executeStep(
+          orgId,
+          String(body.jobId),
+          String(body.stepId),
+          session.user.id,
+          adapter,
+        );
+        await client.query(
+          `INSERT INTO ai_usage_events
+            (org_id, user_id, feature, model, provider, key_source, prompt_tokens, completion_tokens, total_tokens, cost_usd, request_id, metadata)
+           VALUES ($1,$2,'cad','onshape-hosted','onshape','platform',0,0,0,0,$3,$4::jsonb)`,
+          [
+            orgId,
+            session.user.id,
+            randomUUID(),
+            JSON.stringify({
+              ledgerTag: `cad:onshape:${String(body.jobId).slice(0, 8)}`,
+              action: "execute-onshape",
+              jobId: body.jobId,
+              stepId: body.stepId,
+            }),
+          ],
+        );
+        return executed;
+      }
+      if (action === "list-onshape-documents") {
+        if (!isOnshapeOAuthConfigured()) {
+          return { ...onshapeSetupStatus(), documents: [], error: "Setup required" };
+        }
+        const { tokens } = await loadOnshapeTokens(client, orgId, session.user.id);
+        const documents = await listOnshapeDocuments(createOnshapeHttp(tokens.accessToken));
+        return { documents, ...onshapeSetupStatus() };
+      }
+      if (action === "list-onshape-elements") {
+        if (!isOnshapeOAuthConfigured()) throw new Error("Onshape OAuth is not configured (setup required)");
+        const documentId = String(body.documentId ?? "");
+        const workspaceId = String(body.workspaceId ?? "");
+        if (!documentId || !workspaceId) throw new Error("documentId and workspaceId are required");
+        const { tokens } = await loadOnshapeTokens(client, orgId, session.user.id);
+        const elements = await listOnshapeElements(createOnshapeHttp(tokens.accessToken), documentId, workspaceId);
+        return { elements };
+      }
+      if (action === "explain-onshape-features") {
+        if (!isOnshapeOAuthConfigured()) throw new Error("Onshape OAuth is not configured (setup required)");
+        const documentRef = body.documentRef as OnshapeDocumentRef | undefined;
+        const jobId = body.jobId ? String(body.jobId) : "";
+        let ref = documentRef;
+        if (!ref?.documentId && jobId) {
+          const job = (
+            await client.query<{ document_ref: OnshapeDocumentRef | null }>(
+              `SELECT document_ref FROM cad_jobs WHERE id=$1 AND org_id=$2 AND created_by=$3`,
+              [jobId, orgId, session.user.id],
+            )
+          ).rows[0];
+          ref = job?.document_ref ?? undefined;
+        }
+        if (!ref?.documentId || !ref.workspaceId || !ref.elementId) {
+          throw new Error("Bind an Onshape document/workspace/element first");
+        }
+        const { tokens } = await loadOnshapeTokens(client, orgId, session.user.id);
+        const features = await listOnshapeFeatures(createOnshapeHttp(tokens.accessToken), ref);
+        return { features, explain: explainFeatureTreeForStudents(features), documentRef: ref };
       }
       if (action === "cancel") {
         await client.query(
           `UPDATE cad_jobs SET cancel_requested_at=now(),status='cancelled',updated_at=now() WHERE id=$1 AND org_id=$2 AND created_by=$3`,
           [body.jobId, orgId, session.user.id],
         );
+        await client.query(
+          `UPDATE cad_job_steps SET status='cancelled',error=COALESCE(error,'Cancelled by user')
+           WHERE job_id=$1 AND org_id=$2 AND status IN ('planned','running')`,
+          [body.jobId, orgId],
+        );
+        await client.query(
+          `INSERT INTO ai_usage_events
+            (org_id, user_id, feature, model, provider, key_source, prompt_tokens, completion_tokens, total_tokens, cost_usd, request_id, metadata)
+           VALUES ($1,$2,'cad','cad-control','vantage-cad','platform',0,0,0,0,$3,$4::jsonb)`,
+          [
+            orgId,
+            session.user.id,
+            randomUUID(),
+            JSON.stringify({
+              ledgerTag: `cad:cancel:${String(body.jobId).slice(0, 8)}`,
+              action: "cancel",
+              jobId: body.jobId,
+            }),
+          ],
+        );
         return { success: true };
+      }
+      if (action === "retry") {
+        const stepId = String(body.stepId ?? "");
+        if (!stepId) throw new Error("stepId is required to retry");
+        const updated = await client.query(
+          `UPDATE cad_job_steps
+           SET status='planned',progress=0,error=NULL,output=NULL,started_at=NULL,completed_at=NULL,
+               approval_status=CASE WHEN requires_approval THEN 'pending' ELSE 'approved' END,
+               approved_by=NULL,approved_at=NULL
+           WHERE id=$1 AND job_id=$2 AND org_id=$3 AND status IN ('failed','cancelled')
+           RETURNING id,operation`,
+          [stepId, body.jobId, orgId],
+        );
+        if (!updated.rowCount) throw new Error("Only failed or cancelled steps can be retried");
+        await client.query(
+          `UPDATE cad_jobs SET status='awaiting_action_approval',cancel_requested_at=NULL,updated_at=now()
+           WHERE id=$1 AND org_id=$2 AND created_by=$3`,
+          [body.jobId, orgId, session.user.id],
+        );
+        await client.query(
+          `INSERT INTO ai_usage_events
+            (org_id, user_id, feature, model, provider, key_source, prompt_tokens, completion_tokens, total_tokens, cost_usd, request_id, metadata)
+           VALUES ($1,$2,'cad','cad-control','vantage-cad','platform',0,0,0,0,$3,$4::jsonb)`,
+          [
+            orgId,
+            session.user.id,
+            randomUUID(),
+            JSON.stringify({
+              ledgerTag: `cad:retry:${String(body.jobId).slice(0, 8)}`,
+              action: "retry",
+              jobId: body.jobId,
+              stepId,
+              operation: updated.rows[0]?.operation,
+            }),
+          ],
+        );
+        return { success: true, stepId };
       }
       if (action === "revoke-device") {
         await client.query(
