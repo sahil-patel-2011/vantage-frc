@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import PartnerPlacement from "../../components/partner-placement";
 import GridLayout, { useContainerWidth, verticalCompactor, type Layout } from "react-grid-layout";
 import {
   DEFAULT_DASHBOARD_LAYOUT,
@@ -698,6 +699,8 @@ export default function DashboardClient() {
           ) : null}
         </div>
       ) : null}
+
+      {!editing && orgId ? <PartnerPlacement orgId={orgId} surface="dashboard_footer" title="Partners powering this season" /> : null}
 
       {editing && libraryOpen ? (
         <>

@@ -25,6 +25,7 @@
     "react": "latest",
     "react-dom": "latest",
     "react-grid-layout": "^2.2.3",
+    "sharp": "^0.34.5",
     "zod": "latest"
   },
   "devDependencies": {
