@@ -2,13 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const install = `npm install
+const install = `# Windows (recommended one-shot):
+# powershell -ExecutionPolicy Bypass -File .\\scripts\\cad\\install-windows.ps1
+
+# Or manual (all OS):
+npm install
 npm run build --workspace=@vantage/cad-cli
 npm install -g ./packages/vantage-cad-cli
 vantage-cad setup
 # Optional CI/demo without Fusion:
 # set VANTAGE_CAD_MOCK=1
-vantage-cad start`;
+vantage-cad start
+# Update later: vantage-cad update`;
 
 type Device = {
   id: string;
