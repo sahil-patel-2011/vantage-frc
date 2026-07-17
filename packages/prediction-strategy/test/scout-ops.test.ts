@@ -127,6 +127,18 @@ describe("scout ops bridge", () => {
         payload: { totalPoints: 42, fouls: 1 },
       }),
       matchEntry({
+        id: "55555555-5555-5555-5555-555555555555",
+        teamKey: "frc1",
+        scoutUserId: "consistent-b",
+        payload: { totalPoints: 41, fouls: 0 },
+      }),
+      matchEntry({
+        id: "66666666-6666-6666-6666-666666666666",
+        teamKey: "frc1",
+        scoutUserId: "consistent-b",
+        payload: { totalPoints: 43, fouls: 0 },
+      }),
+      matchEntry({
         id: "33333333-3333-3333-3333-333333333333",
         teamKey: "frc1",
         scoutUserId: "outlier",
