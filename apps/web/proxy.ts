@@ -22,7 +22,9 @@ const PUBLIC_PREFIXES = [
   "/api/admin/bootstrap-owner",
   "/api/showcase/public",
   "/api/display/snapshot",
+  "/api/strategy/draft/public",
   "/showcase/present",
+  "/strategy/board",
   "/display/kiosk",
   // CAD desktop CLI: pairing codes + device-token relay (no session cookie).
   "/api/cad/pair/start",
