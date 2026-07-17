@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { AllianceBoardState } from "../../lib/strategy/pick-desk";
+import type { AllianceBoardState } from "../../../lib/strategy/pick-desk";
 
 type Snapshot = {
   boardId: string;
