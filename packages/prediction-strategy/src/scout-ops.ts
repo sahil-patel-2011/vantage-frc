@@ -229,12 +229,6 @@ export function computeScoutQuality(entries: ScoutEntryRecord[]): ScoutQualityRe
     .map((row) => (teamMedian != null ? Math.abs(row.score - teamMedian) : 0))
     .filter((value) => value > 0);
   const mad = median(deviations) ?? 0;
-  // Prefer a stable scale so clear outliers (e.g. 2× team median) always downweight.
-  const scale = Math.max(
-    mad > 0 ? mad : 0,
-    teamMedian != null && Math.abs(teamMedian) > 0 ? Math.abs(teamMedian) * 0.2 : 1,
-    1,
-  );
 
   const byScout = new Map<string, { scores: number[]; entryIds: string[] }>();
   for (const row of scored) {
@@ -245,25 +239,57 @@ export function computeScoutQuality(entries: ScoutEntryRecord[]): ScoutQualityRe
     byScout.set(scoutId, bucket);
   }
 
+  const scoutMeans = [...byScout.entries()].map(([scoutUserId, bucket]) => ({
+    scoutUserId,
+    mean: bucket.scores.reduce((a, b) => a + b, 0) / bucket.scores.length,
+  }));
+
+  // Majority cluster: prefer the scoring island with the most agreeing scouts.
+  let consensusMean = teamMedian;
+  let bestCluster = 0;
+  for (const candidate of scoutMeans) {
+    const cluster = scoutMeans.filter((other) => {
+      const denom = Math.max(Math.abs(candidate.mean), 1);
+      return Math.abs(other.mean - candidate.mean) / denom <= 0.3;
+    }).length;
+    if (cluster > bestCluster) {
+      bestCluster = cluster;
+      consensusMean = candidate.mean;
+    }
+  }
+
+  const scale = Math.max(
+    mad > 0 ? mad : 0,
+    consensusMean != null && Math.abs(consensusMean) > 0 ? Math.abs(consensusMean) * 0.2 : 1,
+    1,
+  );
+
   const scoutReports: ScoutQualityScoutReport[] = [];
   const scoutWeightById = new Map<string, number>();
   for (const [scoutUserId, bucket] of byScout) {
     const meanScore = bucket.scores.reduce((a, b) => a + b, 0) / bucket.scores.length;
-    const deviationFromTeam = teamMedian != null ? meanScore - teamMedian : null;
+    const baseline = consensusMean ?? teamMedian;
+    const deviationFromTeam = baseline != null ? meanScore - baseline : null;
     const z = deviationFromTeam != null ? Math.abs(deviationFromTeam) / scale : 0;
     const relative =
-      teamMedian != null && Math.abs(teamMedian) > 0
-        ? Math.abs(meanScore / teamMedian - 1)
-        : 0;
-    // Downweight when the scout's mean is far from the team (absolute or relative).
-    const enoughSample = bucket.scores.length >= 2 || z >= 2 || relative >= 0.5;
-    const anomalyWeight = enoughSample
-      ? clamp(1 - Math.max(0.2 * z, relative * 0.7), 0.35, 1)
-      : 1;
+      baseline != null && Math.abs(baseline) > 0 ? Math.abs(meanScore / baseline - 1) : 0;
+    const isMinority =
+      bestCluster >= 2 &&
+      scoutMeans.filter((other) => {
+        const denom = Math.max(Math.abs(meanScore), 1);
+        return Math.abs(other.mean - meanScore) / denom <= 0.3;
+      }).length < bestCluster;
+    const enoughSample = bucket.scores.length >= 2 || z >= 2 || relative >= 0.45;
+    const anomalyWeight =
+      isMinority && enoughSample
+        ? clamp(1 - Math.max(0.22 * z, relative * 0.75), 0.35, 1)
+        : enoughSample && relative >= 0.75
+          ? clamp(1 - relative * 0.5, 0.45, 1)
+          : 1;
     const reason =
       anomalyWeight < 0.95 && deviationFromTeam != null
-        ? `Scoring mean ${round1(meanScore)} vs team median ${round1(teamMedian!)} (Δ ${round1(deviationFromTeam)}); weight ${round2(anomalyWeight)}.`
-        : `Consistent with team median; weight ${round2(anomalyWeight)}.`;
+        ? `Scoring mean ${round1(meanScore)} vs consensus ${round1(baseline!)} (Δ ${round1(deviationFromTeam)}); weight ${round2(anomalyWeight)}.`
+        : `Consistent with scout consensus; weight ${round2(anomalyWeight)}.`;
     scoutReports.push({
       scoutUserId,
       entryCount: bucket.scores.length,
