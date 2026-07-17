@@ -34,8 +34,11 @@ const groups: NavGroup[] = [
       { href: "/dashboard", label: "Home", icon: "home" },
       { href: "/command", label: "Event Day", icon: "target" },
       { href: "/pit", label: "Pit Command", icon: "cube" },
+      { href: "/batteries", label: "Batteries", icon: "bolt" },
+      { href: "/repairs", label: "Repair Log", icon: "gear" },
       { href: "/intel", label: "Matches", icon: "swords" },
       { href: "/workspace", label: "Schedule", icon: "calendar" },
+      { href: "/meetings", label: "Meetings", icon: "calendar" },
     ],
   },
   {
@@ -45,6 +48,7 @@ const groups: NavGroup[] = [
     icon: "scout",
     items: [
       { href: "/scouting", label: "Scouting Hub", icon: "clipboard" },
+      { href: "/scouting/lineup", label: "Lineup & Coverage", icon: "target" },
       { href: "/intel", label: "Teams", icon: "users" },
       { href: "/strategy", label: "Strategy & AI", icon: "bolt" },
       { href: "/chemistry", label: "Alliance Chemistry", icon: "users" },
@@ -59,6 +63,10 @@ const groups: NavGroup[] = [
       { href: "/cad", label: "AI CAD", icon: "cube", state: "setup" },
       { href: "/code", label: "Code", icon: "code" },
       { href: "/display", label: "Displays", icon: "display" },
+      { href: "/inventory", label: "Inventory & BOM", icon: "grid" },
+      { href: "/parts-relay", label: "FRC Parts Relay", icon: "bolt" },
+      { href: "/config", label: "Robot Configuration", icon: "gear" },
+      { href: "/changes", label: "Engineering Changes", icon: "clipboard" },
     ],
   },
   {
@@ -69,8 +77,20 @@ const groups: NavGroup[] = [
     items: [
       { href: "/business", label: "Business", icon: "clipboard" },
       { href: "/costs", label: "Season Costs", icon: "stats" },
+      { href: "/attendance", label: "Attendance", icon: "users" },
+      { href: "/hours", label: "Build Hours", icon: "calendar" },
+      { href: "/training", label: "Training Matrix", icon: "users" },
+      { href: "/season-rollover", label: "Season Rollover", icon: "calendar" },
+      { href: "/leadership", label: "Leadership Continuity", icon: "users" },
+      { href: "/retro", label: "Team Retrospective", icon: "chat" },
+      { href: "/knowledge", label: "Team Knowledge Base", icon: "clipboard" },
+      { href: "/mock-judging", label: "Mock Judging", icon: "chat" },
       { href: "/impact", label: "Community Impact", icon: "target" },
+      { href: "/travel", label: "Event Travel", icon: "pin" },
       { href: "/team", label: "Admin", icon: "gear" },
+      { href: "/team/data", label: "Data analytics", icon: "stats" },
+      { href: "/exports", label: "Exports", icon: "clipboard" },
+      { href: "/team/usage", label: "AI usage", icon: "stats" },
       { href: "/messages", label: "Messages", icon: "chat" },
       { href: "/account", label: "Account", icon: "users" },
       { href: "/security", label: "Security", icon: "gear" },
@@ -144,6 +164,11 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
     document.body.classList.add("has-app-shell");
     return () => document.body.classList.remove("has-app-shell");
   }, [pathname]);
+
+  useEffect(() => {
+    document.body.classList.toggle("soft-nav-open", open || commandOpen);
+    return () => document.body.classList.remove("soft-nav-open");
+  }, [open, commandOpen]);
 
   useEffect(() => {
     void fetch("/api/me")
@@ -385,9 +410,19 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             key={tab.href}
           >
             <Icon name={tab.icon} />
-            {tab.label}
+            <span>{tab.label}</span>
           </a>
         ))}
+        <button
+          type="button"
+          className="soft-island-more"
+          aria-label="Open full navigation"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+        >
+          <Icon name="grid" />
+          <span>More</span>
+        </button>
       </nav>
 
       <a className="soft-fab" href={withOrg("/chat", orgId)} aria-label="Open Vantage AI chat">
