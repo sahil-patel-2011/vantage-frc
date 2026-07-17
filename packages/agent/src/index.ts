@@ -189,4 +189,5 @@ export * from "./tools";
 export * from "./auto-tools";
 export * from "./prompt-caching";
 export * from "./http-chat-adapter";
+export * from "./resolve-chat-adapter";
 export * from "./coding-assistant";

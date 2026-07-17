@@ -1,4 +1,4 @@
-import { getOrgPromptCachingEnabled, LocalDeterministicChatAdapter } from "@vantage/agent";
+import { getOrgPromptCachingEnabled, resolveOrgChatAdapter } from "@vantage/agent";
 import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
@@ -61,13 +61,14 @@ export async function POST(request: Request) {
       }
       if (!body.threadId || !body.message?.trim() || !body.scope) throw new Error("Thread, scope, and message are required");
       const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
+      const adapter = await resolveOrgChatAdapter(client, { orgId, promptCachingEnabled });
       return repository.sendMessage({
         userId: session.user.id,
         orgId: body.orgId!,
         threadId: body.threadId,
         message: body.message,
         scope: body.scope,
-        adapter: new LocalDeterministicChatAdapter(),
+        adapter,
         requestId: crypto.randomUUID(),
         selected: body.selected,
         promptCachingEnabled,

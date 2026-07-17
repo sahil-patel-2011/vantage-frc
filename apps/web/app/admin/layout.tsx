@@ -1,4 +1,5 @@
 import { requirePlatformAdminPage } from "../../lib/platform-admin";
+import { AdminSubnav } from "./admin-subnav";
 
 export const dynamic = "force-dynamic";
 
@@ -8,5 +9,10 @@ export const dynamic = "force-dynamic";
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requirePlatformAdminPage();
-  return children;
+  return (
+    <div className="admin-shell">
+      <AdminSubnav />
+      {children}
+    </div>
+  );
 }
