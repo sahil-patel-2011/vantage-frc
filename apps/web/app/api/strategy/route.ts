@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { platformTbaEnvConfigured } from "@vantage/reference";
 import { computeStrategyView } from "../../../lib/strategy/compute-strategy";
 import type { StrategyView } from "../../../lib/strategy/types";
 
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const requestedOrg = url.searchParams.get("orgId");
   const matchKey = url.searchParams.get("matchKey");
-  const tbaConfigured = Boolean(process.env.TBA_AUTH_KEY?.trim());
+  const tbaConfigured = platformTbaEnvConfigured();
 
   try {
     const view = await withRls({ userId: session.user.id }, async (client) =>
@@ -46,8 +47,8 @@ export async function GET(request: Request) {
             id: "tba",
             label: "Sync TBA",
             detail: tbaConfigured
-              ? "Platform TBA_AUTH_KEY is set — open Team → Data if sync is stale"
-              : "Set TBA_AUTH_KEY or save a TBA credential under Team → Data",
+              ? "Platform TBA key is set — open Admin → Live Data to sync if stale"
+              : "Set TBA_AUTH_KEY (or TBA_API_KEY) or save a TBA credential under Team → Data",
             href: "/team/data",
           },
         ],

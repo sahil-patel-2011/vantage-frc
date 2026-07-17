@@ -2,6 +2,7 @@ import { StatboticsClient } from "./statbotics-client";
 import { TbaClient, type TbaResponse } from "./tba-client";
 import type {
   AllianceRecord,
+  EventDaySyncInput,
   EventRecord,
   GlobalReferenceStore,
   JobDefinition,
@@ -17,9 +18,17 @@ import type {
 
 type JsonObject = Record<string, unknown>;
 
+/** Minimal TBA surface used by the worker (TbaClient or GlobalTbaCoordinator). */
+export type TbaGetter = {
+  get<T>(
+    resource: string,
+    options?: { etag?: string | null; lastModified?: string | null },
+  ): Promise<TbaResponse<T>>;
+};
+
 export type GlobalReferenceWorkerOptions = {
   store: GlobalReferenceStore;
-  tba: TbaClient;
+  tba: TbaGetter;
   statbotics: StatboticsClient;
   now?: () => Date;
 };
@@ -28,11 +37,18 @@ export type GlobalReferenceJobInput = { year: number };
 
 export function createGlobalReferenceJobs(
   options: GlobalReferenceWorkerOptions,
-): { syncSeason: JobDefinition<GlobalReferenceJobInput, SyncSummary> } {
+): {
+  syncSeason: JobDefinition<GlobalReferenceJobInput, SyncSummary>;
+  syncEventDay: JobDefinition<EventDaySyncInput, SyncSummary>;
+} {
   return {
     syncSeason: {
       id: "reference.sync-season",
       run: ({ year }) => syncGlobalReferenceSeason(options, year),
+    },
+    syncEventDay: {
+      id: "reference.sync-event-day",
+      run: (input) => syncActiveEventDay(options, input),
     },
   };
 }
@@ -46,15 +62,7 @@ export async function syncGlobalReferenceSeason(
   }
 
   const now = options.now ?? (() => new Date());
-  const summary: SyncSummary = {
-    year,
-    events: 0,
-    teams: 0,
-    matches: 0,
-    teamEventMetrics: 0,
-    teamYearMetrics: 0,
-    notModified: 0,
-  };
+  const summary = emptySummary(year, "season");
 
   await options.store.upsertSeasonWindows([seasonWindow(year, now())]);
   const eventResource = `events/${year}`;
@@ -75,57 +83,25 @@ export async function syncGlobalReferenceSeason(
     summary.events += events.length;
     eventKeys = events.map((event) => event.eventKey);
   }
-  await options.store.saveCursor(eventsResult.cursor);
+  // Progress cursor: last completed event key for mid-run resume visibility.
+  await options.store.saveCursor({
+    ...eventsResult.cursor,
+    cursor: null,
+  });
 
   for (const eventKey of eventKeys) {
-    const encodedKey = encodeURIComponent(eventKey);
-    const [teams, matches, oprs, rankings] = await Promise.all([
-      conditionalTba<JsonObject[]>(options, `event/${encodedKey}/teams`, now),
-      conditionalTba<JsonObject[]>(options, `event/${encodedKey}/matches`, now),
-      conditionalTba<JsonObject>(options, `event/${encodedKey}/oprs`, now),
-      conditionalTba<JsonObject>(options, `event/${encodedKey}/rankings`, now),
-    ]);
-
-    if (teams.data === null) summary.notModified += 1;
-    else {
-      const records = requireArray(teams.data, `TBA teams for ${eventKey}`).map(
-        (value) => mapTeam(value, now()),
-      );
-      await options.store.upsertTeams(records);
-      summary.teams += records.length;
-    }
-    await options.store.saveCursor(teams.cursor);
-
-    if (matches.data === null) summary.notModified += 1;
-    else {
-      const records = requireArray(
-        matches.data,
-        `TBA matches for ${eventKey}`,
-      ).map((value) => mapMatch(value, now()));
-      await options.store.upsertMatches(records);
-      summary.matches += records.length;
-    }
-    await options.store.saveCursor(matches.cursor);
-
-    if (oprs.data === null) summary.notModified += 1;
-    if (rankings.data === null) summary.notModified += 1;
-    if (oprs.data !== null || rankings.data !== null) {
-      const records = mapTbaMetrics(eventKey, oprs.data, rankings.data, now());
-      await options.store.upsertTeamEventMetrics(records);
-      summary.teamEventMetrics += records.length;
-    }
-    await Promise.all([
-      options.store.saveCursor(oprs.cursor),
-      options.store.saveCursor(rankings.cursor),
-    ]);
-
-    const statResource = `team_events?event=${encodeURIComponent(eventKey)}`;
-    const statEventRows = requireArray(
-      await trackedStatbotics<JsonObject[]>(options, statResource, now),
-      `Statbotics team events for ${eventKey}`,
-    ).map((value) => mapStatboticsEventMetric(value, eventKey, now()));
-    await options.store.upsertTeamEventMetrics(statEventRows);
-    summary.teamEventMetrics += statEventRows.length;
+    await syncEventBundle(options, eventKey, summary, now);
+    await options.store.saveCursor({
+      source: "tba",
+      resource: eventResource,
+      etag: eventsResult.cursor.etag,
+      lastModified: eventsResult.cursor.lastModified,
+      cursor: eventKey,
+      lastStatus: eventsResult.cursor.lastStatus,
+      lastError: null,
+      syncedAt: now(),
+      updatedAt: now(),
+    });
   }
 
   const yearResource = `team_years?year=${year}`;
@@ -135,7 +111,146 @@ export async function syncGlobalReferenceSeason(
   ).map((value) => mapStatboticsYearMetric(value, year, now()));
   await options.store.upsertTeamYearMetrics(yearRows);
   summary.teamYearMetrics = yearRows.length;
+  summary.eventKeys = eventKeys;
+
+  // Clear progress token after a full successful season pass.
+  await options.store.saveCursor({
+    ...eventsResult.cursor,
+    cursor: null,
+    syncedAt: now(),
+    updatedAt: now(),
+  });
+
   return summary;
+}
+
+export async function syncActiveEventDay(
+  options: GlobalReferenceWorkerOptions,
+  input: EventDaySyncInput = {},
+): Promise<SyncSummary> {
+  const now = options.now ?? (() => new Date());
+  const at = now();
+  const year =
+    input.year ??
+    (at.getUTCMonth() >= 9 ? at.getUTCFullYear() + 1 : at.getUTCFullYear());
+  const withinDays =
+    input.withinDays === undefined ? 1 : Math.max(0, input.withinDays);
+
+  const summary = emptySummary(year, "event-day");
+  await options.store.upsertSeasonWindows([seasonWindow(year, at)]);
+
+  let eventKeys =
+    input.eventKeys && input.eventKeys.length > 0
+      ? [...new Set(input.eventKeys)]
+      : await options.store.listActiveEventKeys({ at, withinDays, year });
+
+  // If the cache has no dated events yet, refresh the season event list once.
+  if (eventKeys.length === 0 && (!input.eventKeys || input.eventKeys.length === 0)) {
+    const eventResource = `events/${year}`;
+    const eventsResult = await conditionalTba<JsonObject[]>(
+      options,
+      eventResource,
+      now,
+    );
+    if (eventsResult.data !== null) {
+      const events = requireArray(eventsResult.data, "TBA events").map((value) =>
+        mapEvent(value, now()),
+      );
+      await options.store.upsertEvents(events);
+      summary.events += events.length;
+    } else {
+      summary.notModified += 1;
+    }
+    await options.store.saveCursor(eventsResult.cursor);
+    eventKeys = await options.store.listActiveEventKeys({
+      at,
+      withinDays,
+      year,
+    });
+  }
+
+  for (const eventKey of eventKeys) {
+    await syncEventBundle(options, eventKey, summary, now, {
+      includeStatbotics: true,
+    });
+  }
+
+  summary.eventKeys = eventKeys;
+  return summary;
+}
+
+async function syncEventBundle(
+  options: GlobalReferenceWorkerOptions,
+  eventKey: string,
+  summary: SyncSummary,
+  now: () => Date,
+  opts: { includeStatbotics?: boolean } = {},
+): Promise<void> {
+  const includeStatbotics = opts.includeStatbotics !== false;
+  const encodedKey = encodeURIComponent(eventKey);
+  const [teams, matches, oprs, rankings] = await Promise.all([
+    conditionalTba<JsonObject[]>(options, `event/${encodedKey}/teams`, now),
+    conditionalTba<JsonObject[]>(options, `event/${encodedKey}/matches`, now),
+    conditionalTba<JsonObject>(options, `event/${encodedKey}/oprs`, now),
+    conditionalTba<JsonObject>(options, `event/${encodedKey}/rankings`, now),
+  ]);
+
+  if (teams.data === null) summary.notModified += 1;
+  else {
+    const records = requireArray(teams.data, `TBA teams for ${eventKey}`).map(
+      (value) => mapTeam(value, now()),
+    );
+    await options.store.upsertTeams(records);
+    summary.teams += records.length;
+  }
+  await options.store.saveCursor(teams.cursor);
+
+  if (matches.data === null) summary.notModified += 1;
+  else {
+    const records = requireArray(
+      matches.data,
+      `TBA matches for ${eventKey}`,
+    ).map((value) => mapMatch(value, now()));
+    await options.store.upsertMatches(records);
+    summary.matches += records.length;
+  }
+  await options.store.saveCursor(matches.cursor);
+
+  if (oprs.data === null) summary.notModified += 1;
+  if (rankings.data === null) summary.notModified += 1;
+  if (oprs.data !== null || rankings.data !== null) {
+    const records = mapTbaMetrics(eventKey, oprs.data, rankings.data, now());
+    await options.store.upsertTeamEventMetrics(records);
+    summary.teamEventMetrics += records.length;
+  }
+  await Promise.all([
+    options.store.saveCursor(oprs.cursor),
+    options.store.saveCursor(rankings.cursor),
+  ]);
+
+  if (!includeStatbotics) return;
+
+  const statResource = `team_events?event=${encodeURIComponent(eventKey)}`;
+  const statEventRows = requireArray(
+    await trackedStatbotics<JsonObject[]>(options, statResource, now),
+    `Statbotics team events for ${eventKey}`,
+  ).map((value) => mapStatboticsEventMetric(value, eventKey, now()));
+  await options.store.upsertTeamEventMetrics(statEventRows);
+  summary.teamEventMetrics += statEventRows.length;
+}
+
+function emptySummary(year: number, mode: SyncSummary["mode"]): SyncSummary {
+  return {
+    year,
+    mode,
+    eventKeys: [],
+    events: 0,
+    teams: 0,
+    matches: 0,
+    teamEventMetrics: 0,
+    teamYearMetrics: 0,
+    notModified: 0,
+  };
 }
 
 async function conditionalTba<T>(
@@ -511,3 +626,6 @@ function numberAt(input: JsonObject, path: string[]): number | null {
   }
   return numberOrNull(current);
 }
+
+// Keep TbaClient import used by unit tests that construct workers with TbaClient.
+export type { TbaClient };

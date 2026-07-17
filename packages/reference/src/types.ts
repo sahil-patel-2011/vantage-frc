@@ -115,6 +115,11 @@ export interface GlobalReferenceStore {
   getCursor(source: SyncSource, resource: string): Promise<SyncCursor | null>;
   saveCursor(cursor: SyncCursor): Promise<void>;
   listEventKeys(year: number): Promise<string[]>;
+  listActiveEventKeys(input: {
+    at: Date;
+    withinDays: number;
+    year?: number;
+  }): Promise<string[]>;
   upsertTeams(records: TeamRecord[]): Promise<void>;
   upsertEvents(records: EventRecord[]): Promise<void>;
   upsertMatches(records: MatchRecord[]): Promise<void>;
@@ -128,12 +133,23 @@ export type JobDefinition<Input, Output> = {
   run(input: Input): Promise<Output>;
 };
 
+export type SyncMode = "season" | "event-day";
+
 export type SyncSummary = {
   year: number;
+  mode: SyncMode;
+  eventKeys: string[];
   events: number;
   teams: number;
   matches: number;
   teamEventMetrics: number;
   teamYearMetrics: number;
   notModified: number;
+};
+
+export type EventDaySyncInput = {
+  year?: number;
+  eventKeys?: string[];
+  /** Include events within ±N days of today (default 1). */
+  withinDays?: number;
 };

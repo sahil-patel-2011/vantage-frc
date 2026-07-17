@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@vantage/billing": "*",
     "@vantage/db": "*",
     "@neondatabase/serverless": "latest",
     "drizzle-orm": "latest"

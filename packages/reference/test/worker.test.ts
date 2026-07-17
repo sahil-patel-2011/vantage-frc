@@ -36,6 +36,26 @@ class MemoryStore implements GlobalReferenceStore {
       .filter((event) => event.year === year)
       .map((event) => event.eventKey);
   }
+  async listActiveEventKeys(input: {
+    at: Date;
+    withinDays: number;
+    year?: number;
+  }) {
+    const dayMs = 24 * 60 * 60 * 1000;
+    const start = new Date(input.at.getTime() - input.withinDays * dayMs)
+      .toISOString()
+      .slice(0, 10);
+    const end = new Date(input.at.getTime() + input.withinDays * dayMs)
+      .toISOString()
+      .slice(0, 10);
+    return [...this.events.values()]
+      .filter((event) => {
+        if (input.year !== undefined && event.year !== input.year) return false;
+        if (!event.startDate || !event.endDate) return false;
+        return event.startDate <= end && event.endDate >= start;
+      })
+      .map((event) => event.eventKey);
+  }
   async upsertTeams(records: TeamRecord[]) {
     records.forEach((record) => this.teams.set(record.teamKey, record));
   }
@@ -114,6 +134,7 @@ describe("global reference worker", () => {
 
     const first = await syncGlobalReferenceSeason(options, 2026);
     expect(first).toMatchObject({
+      mode: "season",
       events: 1,
       teams: 1,
       matches: 1,
@@ -121,6 +142,7 @@ describe("global reference worker", () => {
       teamYearMetrics: 1,
       notModified: 0,
     });
+    expect(first.eventKeys).toEqual(["2026miket"]);
     expect(store.teams.get("frc2337")?.nickname).toBe("EngiNERDs");
     expect(store.events.get("2026miket")?.districtKey).toBe("2026fim");
     expect(
@@ -136,5 +158,94 @@ describe("global reference worker", () => {
     expect(store.matches).toHaveLength(1);
     expect(store.eventMetrics).toHaveLength(2);
     expect(store.yearMetrics).toHaveLength(1);
+  });
+
+  it("runs incremental event-day sync for active windows only", async () => {
+    const store = new MemoryStore();
+    await store.upsertEvents([
+      {
+        eventKey: "2026miket",
+        year: 2026,
+        name: "Kettering",
+        shortName: "Kettering",
+        startDate: "2026-03-05",
+        endDate: "2026-03-07",
+        eventType: 1,
+        week: 1,
+        districtKey: "2026fim",
+        city: null,
+        stateProv: null,
+        country: null,
+        address: null,
+        postalCode: null,
+        timezone: null,
+        website: null,
+        parentEventKey: null,
+        webcasts: [],
+        syncedAt: new Date("2026-03-01T00:00:00.000Z"),
+      },
+      {
+        eventKey: "2026faraway",
+        year: 2026,
+        name: "Far Away",
+        shortName: null,
+        startDate: "2026-04-01",
+        endDate: "2026-04-03",
+        eventType: 1,
+        week: 5,
+        districtKey: null,
+        city: null,
+        stateProv: null,
+        country: null,
+        address: null,
+        postalCode: null,
+        timezone: null,
+        website: null,
+        parentEventKey: null,
+        webcasts: [],
+        syncedAt: new Date("2026-03-01T00:00:00.000Z"),
+      },
+    ]);
+
+    const tbaFetch: typeof fetch = async (request) => {
+      const path = new URL(String(request)).pathname.replace("/api/v3/", "");
+      const payloads: Record<string, unknown> = {
+        "event/2026miket/teams": tbaFixture.teams,
+        "event/2026miket/matches": tbaFixture.matches,
+        "event/2026miket/oprs": tbaFixture.oprs,
+        "event/2026miket/rankings": tbaFixture.rankings,
+      };
+      if (!(path in payloads)) {
+        throw new Error(`unexpected TBA path ${path}`);
+      }
+      return new Response(JSON.stringify(payloads[path]), {
+        status: 200,
+        headers: { "content-type": "application/json", etag: `"${path}"` },
+      });
+    };
+    const statFetch: typeof fetch = async () =>
+      new Response(JSON.stringify(statboticsFixture.teamEvents), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+
+    const { syncActiveEventDay } = await import("../src/worker");
+    const summary = await syncActiveEventDay(
+      {
+        store,
+        tba: new TbaClient({ authKey: "fixture", fetch: tbaFetch }),
+        statbotics: new StatboticsClient({
+          fetch: statFetch,
+          minimumIntervalMs: 0,
+        }),
+        now: () => new Date("2026-03-06T12:00:00.000Z"),
+      },
+      { year: 2026, withinDays: 1 },
+    );
+
+    expect(summary.mode).toBe("event-day");
+    expect(summary.eventKeys).toEqual(["2026miket"]);
+    expect(summary.matches).toBe(1);
+    expect(store.matches.has("2026miket_qm1")).toBe(true);
   });
 });

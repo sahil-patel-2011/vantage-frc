@@ -110,17 +110,22 @@ secret and webhook signing secret. Plausible and Redis rate limiting are optiona
 
 ## Global reference ingest
 
-The `reference.sync-season` job is queue-provider neutral: call
-`createProductionReferenceJobs().syncSeason.run({ year })` from the existing scheduled-job adapter. It sends
-TBA `If-None-Match`/`If-Modified-Since` validators persisted in `sync_cursors`, spaces Statbotics requests,
-retries only rate-limit/transient failures, and idempotently upserts through the worker-only `dbAdmin` role.
-Schedule the active season regularly and historical seasons less often.
+Jobs (queue-provider neutral via `createProductionReferenceJobs()`):
 
-Production ingest requires `TBA_AUTH_KEY` and `DATABASE_ADMIN_URL`. Statbotics has no key; its default
-350 ms minimum interval and four-attempt exponential backoff can be tuned with the documented environment
-variables. Request code reads reference rows through `ReferenceReadRepository` using the `PoolClient` passed
-by `withRls()`. It cannot import the privileged writer or production worker. Unit tests use local API fixtures
-and injected fetch/sleep functions, so neither a database nor live upstream credentials are needed.
+- `reference.sync-season` — full year events → teams/matches/OPRs/rankings + Statbotics
+- `reference.sync-event-day` — incremental refresh for events in the ±1 day window and org-subscribed active events
+
+HTTP entry points (require `CRON_SECRET` Bearer / `x-cron-secret`):
+
+- `GET|POST /api/cron/tba-sync?mode=event-day` — webhook-style / Vercel cron (every minute)
+- `GET|POST /api/cron/tba-sync?mode=season` — full season (every 6 hours)
+- `POST /api/cron/tba-sync` with `{ "eventKey": "2026miket" }` — force one event
+
+Platform admins can also press **Sync now** on Admin → Live Data (`/api/admin/data-connectors` action `sync`).
+
+Validators: TBA `If-None-Match` / `If-Modified-Since` persisted in `sync_cursors` (including a progress `cursor` per season pass). Keys resolve as encrypted platform credential → `TBA_AUTH_KEY` / `TBA_API_KEY` env → org BYO fallbacks via `GlobalTbaCoordinator`. Health lands in `data_source_health`. Apps read freshness from `tba_cache_freshness` / `matches_ref`, not raw cursors.
+
+Production ingest requires a TBA key (env or encrypted) and `DATABASE_ADMIN_URL`. Statbotics has no key; its default 350 ms minimum interval and four-attempt exponential backoff can be tuned with the documented environment variables.
 
 ## Intel, research, models, and memory
 
