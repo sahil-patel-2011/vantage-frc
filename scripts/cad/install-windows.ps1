@@ -1,5 +1,5 @@
 # One-shot Windows installer: vantage-cad CLI + Fusion 360 VantageCadRelay add-in.
-# Fusion is local-only — this never deploys CAD to Vercel.
+# Fusion is local-only - this never deploys CAD to Vercel.
 #
 # Usage (from repo root):
 #   powershell -ExecutionPolicy Bypass -File .\scripts\cad\install-windows.ps1
@@ -16,7 +16,7 @@ $Root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Set-Location $Root
 
 Write-Host "========================================"
-Write-Host " Vantage CAD relay — Windows install"
+Write-Host " Vantage CAD relay - Windows install"
 Write-Host "========================================"
 Write-Host "Repo: $Root"
 Write-Host ""
@@ -28,7 +28,7 @@ if (-not $SkipCli) {
   & powershell @cliArgs
   if ($LASTEXITCODE -ne 0) { throw "CLI install failed with exit $LASTEXITCODE" }
 } else {
-  Write-Host "==> Skipping CLI install (-SkipCli)"
+  Write-Host '==> Skipping CLI install (SkipCli)'
 }
 
 if (-not $SkipAddin) {
@@ -39,7 +39,7 @@ if (-not $SkipAddin) {
   & powershell @addinArgs
   if ($LASTEXITCODE -ne 0) { throw "Fusion add-in install failed with exit $LASTEXITCODE" }
 } else {
-  Write-Host "==> Skipping Fusion add-in (-SkipAddin)"
+  Write-Host '==> Skipping Fusion add-in (SkipAddin)'
 }
 
 Write-Host ""
@@ -50,7 +50,7 @@ Write-Host '  $env:VANTAGE_URL="https://vantage-frc-web.vercel.app"'
 Write-Host "  vantage-cad setup"
 Write-Host "  # In Fusion: run VantageCadRelay add-in"
 Write-Host "  vantage-cad start"
-Write-Host "  vantage-cad diagnose"
+Write-Host "  vantage-cad doctor"
 Write-Host ""
 Write-Host "Update later: vantage-cad update   (or re-run this script)"
 Write-Host "Package unsigned tree: npm run cad:package"

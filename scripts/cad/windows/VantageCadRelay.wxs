@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WiX stub for a future Authenticode-signed MSI.
+  NOT built in CI yet — requires WiX Toolset + signing cert.
+
+  Intended payload:
+    - vantage-cad CLI (or a standalone node-bundled binary)
+    - VantageCadRelay add-in → %AppData%\Autodesk\Autodesk Fusion 360\API\AddIns\
+
+  Build sketch (when unblocked):
+    candle VantageCadRelay.wxs
+    light VantageCadRelay.wixobj -o VantageCadRelay.msi
+    signtool sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 VantageCadRelay.msi
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product
+    Id="*"
+    Name="Vantage CAD Relay"
+    Language="1033"
+    Version="0.1.1"
+    Manufacturer="Vantage"
+    UpgradeCode="A3F8C1E9-4B7D-426E-8F05-C2AD9B1E6740">
+    <Package
+      InstallerVersion="500"
+      Compressed="yes"
+      InstallScope="perUser"
+      Description="Local Fusion 360 relay for Vantage (unsigned scaffold)" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Vantage CAD Relay is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Placeholder feature: real harvest of dist/cad-relay comes later. -->
+    <Feature Id="ProductFeature" Title="VantageCadRelay" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="LocalAppDataFolder">
+        <Directory Id="AutodeskDir" Name="Autodesk">
+          <Directory Id="FusionDir" Name="Autodesk Fusion 360">
+            <Directory Id="ApiDir" Name="API">
+              <Directory Id="AddInsDir" Name="AddIns">
+                <Directory Id="INSTALLDIR" Name="VantageCadRelay" />
+              </Directory>
+            </Directory>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLDIR">
+      <!-- Replace with harvested files from packages/fusion360-official-connector/VantageCadRelay -->
+      <Component Id="PlaceholderReadme" Guid="B1C2D3E4-F5A6-4789-8BCD-EF0123456789">
+        <File Id="ReadmePlaceholder" Source="README.md" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

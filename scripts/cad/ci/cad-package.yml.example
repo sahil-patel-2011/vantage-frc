@@ -1,0 +1,67 @@
+name: CAD package (unix)
+
+on:
+  push:
+    paths:
+      - "packages/vantage-cad-cli/**"
+      - "packages/cad/**"
+      - "packages/fusion360-official-connector/**"
+      - "scripts/cad/**"
+      - "CAD_RELAY.md"
+      - ".github/workflows/cad-package.yml"
+  pull_request:
+    paths:
+      - "packages/vantage-cad-cli/**"
+      - "packages/cad/**"
+      - "packages/fusion360-official-connector/**"
+      - "scripts/cad/**"
+      - "CAD_RELAY.md"
+      - ".github/workflows/cad-package.yml"
+  workflow_dispatch:
+
+jobs:
+  linux-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace=@vantage/cad-cli
+      - run: npm run test --workspace=@vantage/cad-cli
+      - run: npm run build --workspace=@vantage/cad-cli
+      - run: npm run cad:package
+      - name: Linux tarball / AppDir
+        run: bash scripts/cad/package-linux.sh
+      - name: Upload Linux CAD artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cad-linux
+          path: |
+            dist/cad-linux/**
+            dist/cad-relay/MANIFEST.json
+            dist/cad-archives/**
+
+  macos-package:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace=@vantage/cad-cli
+      - run: npm run cad:package
+      - name: macOS pkg scaffold
+        run: bash scripts/cad/package-macos.sh
+      - name: Upload macOS CAD artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cad-macos
+          path: |
+            dist/cad-macos/**
+            dist/cad-relay/MANIFEST.json
+            dist/cad-archives/**
