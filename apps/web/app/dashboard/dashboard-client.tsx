@@ -1,14 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type DragEvent as ReactDragEvent } from "react";
 import PartnerPlacement from "../../components/partner-placement";
-import GridLayout, { useContainerWidth, verticalCompactor, type Layout } from "react-grid-layout";
+import GridLayout, { useContainerWidth, verticalCompactor, type Layout, type LayoutItem } from "react-grid-layout";
 import {
+  DASHBOARD_COLUMNS,
   DEFAULT_DASHBOARD_LAYOUT,
   SECONDARY_WIDGET_TYPES,
   WIDGET_CATALOG,
   canAccessWidget,
   catalogEntry,
+  findDashboardSlot,
+  packDashboardLayout,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
 } from "../../lib/dashboard/catalog";
@@ -16,6 +19,8 @@ import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { Icon } from "../../components/app-shell";
 import { countdownLabel, DashboardWidgetView } from "./widgets";
 import "react-grid-layout/css/styles.css";
+import "./dashboard-editor.css";
+import "./dashboard-dnd.css";
 
 type Me = {
   name?: string;
@@ -26,12 +31,50 @@ type Me = {
   tbaConfigured?: boolean;
 };
 
+type BoardMeta = {
+  id: string;
+  name: string;
+  scope: "personal" | "org";
+  isActive: boolean;
+  updatedAt?: string | null;
+  ownerUserId?: string | null;
+};
+
 type BoardState = {
   id: string | null;
   name: string;
   scope: "personal" | "org";
   layout: DashboardWidgetLayout[];
   isDefault?: boolean;
+};
+
+function boardStorageKey(orgId: string) {
+  return `vantage.dashboard.board.${orgId}`;
+}
+
+function readStoredBoardId(orgId: string) {
+  try {
+    return window.localStorage.getItem(boardStorageKey(orgId));
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredBoardId(orgId: string, boardId: string | null) {
+  try {
+    if (!boardId) window.localStorage.removeItem(boardStorageKey(orgId));
+    else window.localStorage.setItem(boardStorageKey(orgId), boardId);
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+type SnapFeedback = {
+  mode: "Moving" | "Resizing";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 };
 
 const POLL_MS = 30_000;
@@ -78,16 +121,26 @@ export default function DashboardClient() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [meLoaded, setMeLoaded] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [externalWidget, setExternalWidget] = useState<DashboardWidgetType | null>(null);
+  const [snapFeedback, setSnapFeedback] = useState<SnapFeedback | null>(null);
+  const [boards, setBoards] = useState<BoardMeta[]>([]);
+  const [boardsOpen, setBoardsOpen] = useState(false);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
 
   const orgId = me.orgId ?? "";
 
-  const loadBoard = useCallback(async (id: string) => {
-    const response = await fetch(`/api/dashboards?orgId=${encodeURIComponent(id)}`);
+  const loadBoard = useCallback(async (id: string, preferredBoardId?: string | null) => {
+    const stored = preferredBoardId === undefined ? readStoredBoardId(id) : preferredBoardId;
+    const qs = new URLSearchParams({ orgId: id });
+    if (stored) qs.set("boardId", stored);
+    const response = await fetch(`/api/dashboards?${qs.toString()}`);
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
       setMessageKind("error");
       setMessage(err.error ?? "Could not load dashboard");
       setLayout(DEFAULT_DASHBOARD_LAYOUT);
+      setBoards([]);
       setBoard({
         id: null,
         name: "Default home",
@@ -100,9 +153,11 @@ export default function DashboardClient() {
     const data = await response.json();
     setRole(data.role ?? null);
     setCanShareOrg(Boolean(data.canShareOrg));
+    setBoards(Array.isArray(data.boards) ? data.boards : []);
     setBoard(data.active);
     setScope(data.active?.scope === "org" ? "org" : "personal");
     setLayout(data.active?.layout?.length ? data.active.layout : DEFAULT_DASHBOARD_LAYOUT);
+    if (data.active?.id) writeStoredBoardId(id, data.active.id);
   }, []);
 
   const loadSnapshot = useCallback(async (id: string) => {
@@ -177,6 +232,19 @@ export default function DashboardClient() {
     [availableCatalog, layout],
   );
 
+  const personalBoards = useMemo(() => boards.filter((item) => item.scope === "personal"), [boards]);
+  const orgBoards = useMemo(() => boards.filter((item) => item.scope === "org"), [boards]);
+  const switcherBoards = useMemo(() => {
+    const ordered = [...personalBoards, ...orgBoards];
+    if (board?.id && !ordered.some((item) => item.id === board.id) && !board.isDefault) {
+      return [
+        { id: board.id, name: board.name, scope: board.scope, isActive: true } satisfies BoardMeta,
+        ...ordered,
+      ];
+    }
+    return ordered;
+  }, [personalBoards, orgBoards, board]);
+
   function onLayoutChange(next: Layout) {
     if (!editing) return;
     setLayout((current) =>
@@ -188,7 +256,7 @@ export default function DashboardClient() {
     );
   }
 
-  function addWidget(type: DashboardWidgetType) {
+  function addWidget(type: DashboardWidgetType, drop?: Pick<LayoutItem, "x" | "y">) {
     if (layout.some((item) => item.type === type)) {
       setMessageKind("error");
       setMessage("That widget is already on the board.");
@@ -196,22 +264,77 @@ export default function DashboardClient() {
     }
     const entry = catalogEntry(type);
     if (!entry) return;
-    const y = layout.reduce((max, item) => Math.max(max, item.y + item.h), 0);
+    const position = drop ?? findDashboardSlot(layout, entry.defaultW, entry.defaultH);
     setLayout((current) => [
       ...current,
       {
         i: `w-${type}-${Date.now()}`,
         type,
-        x: 0,
-        y,
+        x: Math.max(0, Math.min(DASHBOARD_COLUMNS - entry.defaultW, position.x)),
+        y: Math.max(0, position.y),
         w: entry.defaultW,
         h: entry.defaultH,
         minW: entry.minW,
         minH: entry.minH,
       },
     ]);
-    setMessage("");
+    setMessageKind("success");
+    setMessage(`${entry.label} snapped onto the dashboard.`);
     setLibraryOpen(false);
+  }
+
+  function beginPaletteDrag(event: ReactDragEvent<HTMLButtonElement>, type: DashboardWidgetType) {
+    const entry = catalogEntry(type);
+    if (!entry) return;
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData("application/vnd.vantage.dashboard-widget", type);
+    event.dataTransfer.setData("text/plain", type);
+    setExternalWidget(type);
+    setMessage("");
+  }
+
+  function finishPaletteDrag() {
+    setExternalWidget(null);
+    setSnapFeedback(null);
+  }
+
+  function dropPaletteWidget(_next: Layout, item: LayoutItem | undefined, event: Event) {
+    const transferred =
+      event instanceof DragEvent
+        ? event.dataTransfer?.getData("application/vnd.vantage.dashboard-widget")
+        : "";
+    const type = externalWidget ?? (transferred as DashboardWidgetType | "");
+    if (type && availableCatalog.some((entry) => entry.type === type)) {
+      addWidget(type, item ? { x: item.x, y: item.y } : undefined);
+    }
+    finishPaletteDrag();
+  }
+
+  function updateSnap(mode: SnapFeedback["mode"], item: LayoutItem | null) {
+    if (!item) return;
+    setSnapFeedback({ mode, x: item.x, y: item.y, w: item.w, h: item.h });
+  }
+
+  function tidyLayout() {
+    setLayout((current) => packDashboardLayout(current));
+    setMessageKind("success");
+    setMessage("Widgets snapped upward into a clean, collision-free layout.");
+  }
+
+  function cycleWidgetSize(id: string) {
+    setLayout((current) => {
+      const resized = current.map((item) => {
+        if (item.i !== id) return item;
+        const entry = catalogEntry(item.type);
+        if (!entry) return item;
+        const atCompact = item.w === entry.minW && item.h === entry.minH;
+        const atDefault = item.w === entry.defaultW && item.h === entry.defaultH;
+        if (atCompact) return { ...item, w: entry.defaultW, h: entry.defaultH };
+        if (atDefault) return { ...item, w: DASHBOARD_COLUMNS, h: Math.max(entry.defaultH, entry.minH) };
+        return { ...item, w: entry.minW, h: entry.minH };
+      });
+      return packDashboardLayout(resized);
+    });
   }
 
   function removeWidget(id: string) {
@@ -232,13 +355,20 @@ export default function DashboardClient() {
     setSaving(true);
     setMessage("");
     try {
+      const keepId = board?.id && board.scope === activateScope ? board.id : null;
+      const name =
+        keepId && board?.name
+          ? board.name
+          : activateScope === "org"
+            ? "Team dashboard"
+            : "My dashboard";
       const response = await fetch("/api/dashboards", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           orgId,
-          id: board?.id && board.scope === activateScope ? board.id : null,
-          name: activateScope === "org" ? "Team dashboard" : "My dashboard",
+          id: keepId,
+          name,
           scope: activateScope,
           layout,
           activate: true,
@@ -251,6 +381,7 @@ export default function DashboardClient() {
         setMessage(data.error ?? "Save failed");
         return;
       }
+      writeStoredBoardId(orgId, data.id);
       setBoard({
         id: data.id,
         name: data.name,
@@ -263,6 +394,149 @@ export default function DashboardClient() {
       setLibraryOpen(false);
       setMessageKind("success");
       setMessage(data.scope === "org" ? "Saved as team Home Screen." : "Personal Home Screen saved.");
+      await loadBoard(orgId, data.id);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function switchBoard(targetId: string) {
+    if (!orgId || !targetId || targetId === board?.id || saving || editing) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/dashboards", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, id: targetId, action: "activate" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessageKind("error");
+        setMessage(data.error ?? "Could not switch boards");
+        return;
+      }
+      writeStoredBoardId(orgId, data.id);
+      setBoard({
+        id: data.id,
+        name: data.name,
+        scope: data.scope,
+        layout: data.layout,
+      });
+      setScope(data.scope);
+      setLayout(data.layout?.length ? data.layout : DEFAULT_DASHBOARD_LAYOUT);
+      setBoardsOpen(false);
+      setMessageKind("success");
+      setMessage(`Switched to ${data.name}`);
+      await loadBoard(orgId, data.id);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function createBoard(createScope: "personal" | "org") {
+    if (!orgId) return;
+    if (createScope === "org" && !canShareOrg) {
+      setMessageKind("error");
+      setMessage("Owner/admin access required for team boards.");
+      return;
+    }
+    const personalCount = boards.filter((item) => item.scope === "personal").length;
+    const orgCount = boards.filter((item) => item.scope === "org").length;
+    const label =
+      createScope === "org" ? `Team board ${orgCount + 1}` : `Board ${personalCount + 1}`;
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/dashboards", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          name: label,
+          scope: createScope,
+          layout: DEFAULT_DASHBOARD_LAYOUT,
+          activate: true,
+          action: "create",
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessageKind("error");
+        setMessage(data.error ?? "Could not create board");
+        return;
+      }
+      writeStoredBoardId(orgId, data.id);
+      setEditing(true);
+      setBoardsOpen(false);
+      setMessageKind("success");
+      setMessage(`Created ${data.name}. Arrange widgets, then Done.`);
+      await loadBoard(orgId, data.id);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function renameBoard(targetId: string, nextName: string) {
+    if (!orgId || !targetId) return;
+    const name = nextName.trim().slice(0, 80);
+    if (!name) {
+      setMessageKind("error");
+      setMessage("Board name cannot be empty.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const response = await fetch("/api/dashboards", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, id: targetId, name, action: "rename" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessageKind("error");
+        setMessage(data.error ?? "Rename failed");
+        return;
+      }
+      setRenameId(null);
+      setRenameDraft("");
+      if (board?.id === targetId) setBoard((current) => (current ? { ...current, name: data.name } : current));
+      setBoards((current) => current.map((item) => (item.id === targetId ? { ...item, name: data.name } : item)));
+      setMessageKind("success");
+      setMessage(`Renamed to ${data.name}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteBoard(targetId: string) {
+    if (!orgId || !targetId) return;
+    const target = boards.find((item) => item.id === targetId);
+    if (!target) return;
+    if (target.scope === "org" && !canShareOrg) {
+      setMessageKind("error");
+      setMessage("Owner/admin access required to delete team boards.");
+      return;
+    }
+    if (!window.confirm(`Delete “${target.name}”? This cannot be undone.`)) return;
+    setSaving(true);
+    try {
+      const response = await fetch("/api/dashboards", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, id: targetId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessageKind("error");
+        setMessage(data.error ?? "Delete failed");
+        return;
+      }
+      if (board?.id === targetId) writeStoredBoardId(orgId, data.activatedId ?? null);
+      setRenameId(null);
+      setMessageKind("success");
+      setMessage(`Deleted ${target.name}`);
+      await loadBoard(orgId, data.activatedId ?? null);
     } finally {
       setSaving(false);
     }
@@ -307,7 +581,9 @@ export default function DashboardClient() {
         setMessage(data.error ?? "Reset failed");
         return;
       }
-      setLayout(data.layout ?? DEFAULT_DASHBOARD_LAYOUT);
+      const nextLayout = data.layout ?? DEFAULT_DASHBOARD_LAYOUT;
+      setLayout(nextLayout);
+      setBoard((current) => (current ? { ...current, layout: nextLayout } : current));
       setMessageKind("success");
       setMessage("Reset to default home widgets.");
       setEditing(false);
@@ -341,6 +617,19 @@ export default function DashboardClient() {
     minH: item.minH ?? 2,
     static: !editing,
   }));
+  const externalCatalogEntry = externalWidget ? catalogEntry(externalWidget) : null;
+  const droppingItem: LayoutItem | undefined = externalCatalogEntry
+    ? {
+        i: "__vantage_widget_drop__",
+        x: 0,
+        y: 0,
+        w: isNarrow ? 1 : externalCatalogEntry.defaultW,
+        h: externalCatalogEntry.defaultH,
+        minW: isNarrow ? 1 : externalCatalogEntry.minW,
+        minH: externalCatalogEntry.minH,
+      }
+    : undefined;
+  const canvasWidth = editing ? Math.max(1, width - 20) : width;
 
   return (
     <main className={`dash-home${editing ? " is-editing" : ""}`}>
@@ -348,15 +637,21 @@ export default function DashboardClient() {
         <div>
           <span className="breadcrumbs">
             {me.orgName ?? "Workspace"} {me.teamNumber ? `· ${me.teamNumber}` : ""}
-            {board && !board.isDefault ? (
+            {board ? (
               <span className="dash-scope-pill" data-scope={scope}>
-                {scope === "org" ? "Team layout" : "Personal layout"}
+                {board.isDefault ? "Default" : scope === "org" ? "Team board" : "Personal board"}
               </span>
             ) : null}
           </span>
           <h1>
             {greeting()}, {firstName}
           </h1>
+          {orgId && board ? (
+            <p className="dash-board-current">
+              <strong>{board.name}</strong>
+              <span>{boards.length ? `${boards.length} board${boards.length === 1 ? "" : "s"}` : "Home Screen"}</span>
+            </p>
+          ) : null}
           <p>
             {!meLoaded
               ? "Loading your workspace…"
@@ -417,6 +712,67 @@ export default function DashboardClient() {
         <p className={`telemetry-status${messageKind === "success" ? " success" : ""}`} role="status">
           {message}
         </p>
+      ) : null}
+
+      {orgId && meLoaded ? (
+        <div className="dash-board-bar" role="navigation" aria-label="Dashboard boards">
+          <div className="dash-board-switcher" data-testid="dash-board-switcher">
+            {switcherBoards.length === 0 ? (
+              <button type="button" aria-pressed={true} disabled>
+                Default home
+              </button>
+            ) : (
+              switcherBoards.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={board?.id === item.id}
+                  disabled={saving || editing}
+                  onClick={() => void switchBoard(item.id)}
+                  title={item.scope === "org" ? "Team board" : "Personal board"}
+                >
+                  {item.name}
+                </button>
+              ))
+            )}
+            <button
+              type="button"
+              className="dash-board-add"
+              disabled={saving || editing}
+              aria-label="Create personal board"
+              title="New personal board"
+              onClick={() => void createBoard("personal")}
+            >
+              +
+            </button>
+          </div>
+          {switcherBoards.length > 1 ? (
+            <div className="dash-board-dots" aria-hidden="true">
+              {switcherBoards.map((item) => (
+                <button
+                  key={`dot-${item.id}`}
+                  type="button"
+                  aria-current={board?.id === item.id ? "true" : undefined}
+                  disabled={saving || editing}
+                  onClick={() => void switchBoard(item.id)}
+                />
+              ))}
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className="dash-board-manage"
+            data-testid="dash-manage-boards"
+            disabled={saving}
+            aria-expanded={boardsOpen}
+            onClick={() => {
+              setBoardsOpen(true);
+              setRenameId(null);
+            }}
+          >
+            Manage boards
+          </button>
+        </div>
       ) : null}
 
       {meLoaded && (!orgId || setupRequired || tbaConfigured === false || !hasScoutingSchemas || !hasAiProvider) ? (
@@ -524,10 +880,10 @@ export default function DashboardClient() {
       {editing ? (
         <section className="dash-editor-bar" role="region" aria-label="Widget catalog">
           <div className="dash-editor-copy">
-            <strong>Edit mode</strong>
+            <strong>Build your command center</strong>
             <span>
-              Widgets jiggle like a Home Screen — drag to rearrange, pinch-resize from the corner, tap − to remove, then
-              Done to save
+              Drag a widget below straight onto the canvas, move cards by their grip, or resize from either bottom corner.
+              Every move snaps to the 12-column grid
               {orgId
                 ? canShareOrg
                   ? " personally or for the team."
@@ -535,32 +891,55 @@ export default function DashboardClient() {
                 : ". Select a workspace to persist."}
             </span>
           </div>
-          <div className="dash-catalog" data-testid="dash-catalog-inline">
-            {availableCatalog.map((entry) => {
-              const present = layout.some((item) => item.type === entry.type);
+          <div className="dash-palette-heading">
+            <span>Drag to place</span>
+            <small>{layout.length} on canvas · {addableCatalog.length} available</small>
+          </div>
+          <div className="dash-widget-palette" data-testid="dash-catalog-inline">
+            {addableCatalog.map((entry) => {
+              const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
               return (
                 <button
+                  className={externalWidget === entry.type ? "dragging" : ""}
+                  draggable={!isNarrow}
                   key={entry.type}
                   type="button"
-                  disabled={present}
-                  title={entry.description}
+                  title={`${entry.description}. Drag onto the board or click to add.`}
                   onClick={() => addWidget(entry.type)}
+                  onDragStart={(event) => beginPaletteDrag(event, entry.type)}
+                  onDragEnd={finishPaletteDrag}
                 >
-                  {present ? "On board" : "Add"} · {entry.label}
+                  <i><Icon name={icon} /></i>
+                  <span><strong>{entry.label}</strong><small>{entry.description}</small></span>
+                  <em>{entry.defaultW} × {entry.defaultH}</em>
                 </button>
               );
             })}
+            {addableCatalog.length === 0 ? <p>Every available widget is already on the canvas.</p> : null}
           </div>
         </section>
       ) : null}
 
       <section
         ref={containerRef}
-        className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}`}
+        className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${externalWidget ? " receiving-widget" : ""}`}
         aria-label="Dashboard widgets"
       >
+        {editing ? <div className="dash-grid-guide"><span>12-column snap grid</span><small>Drag by grip · resize from corners</small></div> : null}
+        {snapFeedback ? (
+          <output className="dash-snap-hud" aria-live="polite">
+            <strong>{snapFeedback.mode}</strong>
+            <span>columns {snapFeedback.x + 1}–{snapFeedback.x + snapFeedback.w}</span>
+            <span>row {snapFeedback.y + 1}</span>
+            <b>{snapFeedback.w} × {snapFeedback.h}</b>
+          </output>
+        ) : externalCatalogEntry ? (
+          <div className="dash-drop-coach" aria-live="polite">
+            Release <strong>{externalCatalogEntry.label}</strong> on the highlighted snap cells
+          </div>
+        ) : null}
         {mounted ? (
-          layout.length === 0 && editing ? (
+          layout.length === 0 && editing && !externalWidget ? (
             <button type="button" className="dash-empty-board" onClick={() => setLibraryOpen(true)}>
               <span className="dash-empty-board-plus">+</span>
               <strong>Add widgets</strong>
@@ -569,22 +948,37 @@ export default function DashboardClient() {
           ) : (
             <GridLayout
               className="dash-grid"
-              width={width}
+              width={canvasWidth}
               layout={gridLayout}
               gridConfig={{
-                cols: isNarrow ? 1 : 12,
+                cols: isNarrow ? 1 : DASHBOARD_COLUMNS,
                 rowHeight: 56,
                 margin: [12, 12],
                 containerPadding: [0, 0],
               }}
-              dragConfig={{ enabled: editing, handle: ".dash-drag-surface" }}
-              resizeConfig={{ enabled: editing }}
+              dragConfig={{ enabled: editing, bounded: true, handle: ".dash-drag-handle", threshold: 4 }}
+              resizeConfig={{ enabled: editing, handles: ["se", "sw"] }}
+              dropConfig={{
+                enabled: editing,
+                defaultItem: {
+                  w: droppingItem?.w ?? (isNarrow ? 1 : 4),
+                  h: droppingItem?.h ?? 3,
+                },
+              }}
+              droppingItem={droppingItem}
               compactor={verticalCompactor}
               onLayoutChange={onLayoutChange}
-              onDragStart={() => setDragging(true)}
-              onDragStop={() => setDragging(false)}
-              onResizeStart={() => setDragging(true)}
-              onResizeStop={() => setDragging(false)}
+              onDropDragOver={() => externalCatalogEntry ? {
+                w: isNarrow ? 1 : externalCatalogEntry.defaultW,
+                h: externalCatalogEntry.defaultH,
+              } : false}
+              onDrop={dropPaletteWidget}
+              onDragStart={(_next, _old, item) => { setDragging(true); updateSnap("Moving", item); }}
+              onDrag={(_next, _old, item) => updateSnap("Moving", item)}
+              onDragStop={() => { setDragging(false); setSnapFeedback(null); }}
+              onResizeStart={(_next, _old, item) => { setDragging(true); updateSnap("Resizing", item); }}
+              onResize={(_next, _old, item) => updateSnap("Resizing", item)}
+              onResizeStop={() => { setDragging(false); setSnapFeedback(null); }}
             >
               {layout.map((item) => (
                 <div key={item.i} className={`dash-grid-item${editing ? " jiggling" : ""}`}>
@@ -600,6 +994,15 @@ export default function DashboardClient() {
                       </button>
                       <button
                         type="button"
+                        className="dash-size-btn"
+                        title="Cycle compact, default, and full-width sizes"
+                        aria-label={`Change size of ${catalogEntry(item.type)?.label ?? item.type}`}
+                        onClick={() => cycleWidgetSize(item.i)}
+                      >
+                        {item.w} × {item.h}
+                      </button>
+                      <button
+                        type="button"
                         className="dash-drag-handle dash-drag-surface"
                         aria-label={`Move ${catalogEntry(item.type)?.label ?? item.type}`}
                       >
@@ -607,7 +1010,7 @@ export default function DashboardClient() {
                       </button>
                     </div>
                   ) : null}
-                  <div className={editing ? "dash-drag-surface dash-widget-hit" : "dash-widget-hit"}>
+                  <div className="dash-widget-hit">
                     <DashboardWidgetView
                       type={item.type}
                       payload={widgets[item.type]}
@@ -667,6 +1070,9 @@ export default function DashboardClient() {
           </button>
           <button className="dash-dock-ghost" type="button" disabled={saving} onClick={() => void resetDefault()}>
             Reset
+          </button>
+          <button className="dash-dock-ghost dash-dock-tidy" type="button" disabled={saving} onClick={tidyLayout}>
+            <span aria-hidden="true">⌗</span> Snap &amp; tidy
           </button>
           <button
             className="dash-dock-add"
@@ -747,6 +1153,187 @@ export default function DashboardClient() {
                   ))}
               </div>
             </div>
+          </aside>
+        </>
+      ) : null}
+
+      {boardsOpen ? (
+        <>
+          <button
+            className="dash-library-scrim"
+            type="button"
+            aria-label="Close board manager"
+            onClick={() => {
+              setBoardsOpen(false);
+              setRenameId(null);
+            }}
+          />
+          <aside className="dash-boards-sheet" role="dialog" aria-modal="true" aria-labelledby="dash-boards-title">
+            <header>
+              <div>
+                <h2 id="dash-boards-title">Home Screens</h2>
+                <p>Personal boards are yours. Team boards are shared — owner/admin can create and edit them.</p>
+              </div>
+              <button
+                type="button"
+                className="soft-icon-btn"
+                aria-label="Close"
+                onClick={() => {
+                  setBoardsOpen(false);
+                  setRenameId(null);
+                }}
+              >
+                <Icon name="x" />
+              </button>
+            </header>
+
+            <section className="dash-boards-group">
+              <p>Personal</p>
+              {personalBoards.length === 0 ? (
+                <p className="dash-library-empty">No saved personal boards yet — create one to keep a custom layout.</p>
+              ) : (
+                <ul className="dash-boards-list">
+                  {personalBoards.map((item) => (
+                    <li key={item.id} data-active={board?.id === item.id ? "true" : "false"}>
+                      {renameId === item.id ? (
+                        <form
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void renameBoard(item.id, renameDraft);
+                          }}
+                        >
+                          <input
+                            value={renameDraft}
+                            onChange={(event) => setRenameDraft(event.target.value)}
+                            maxLength={80}
+                            autoFocus
+                            aria-label="Board name"
+                          />
+                        </form>
+                      ) : (
+                        <button type="button" className="dash-board-pick" disabled={saving || editing} onClick={() => void switchBoard(item.id)}>
+                          <strong>{item.name}</strong>
+                          <span>{board?.id === item.id ? "Current" : "Personal"} · tap to open</span>
+                        </button>
+                      )}
+                      <div className="dash-boards-actions">
+                        {renameId === item.id ? (
+                          <>
+                            <button type="button" disabled={saving} onClick={() => void renameBoard(item.id, renameDraft)}>
+                              Save
+                            </button>
+                            <button type="button" disabled={saving} onClick={() => setRenameId(null)}>
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              disabled={saving}
+                              onClick={() => {
+                                setRenameId(item.id);
+                                setRenameDraft(item.name);
+                              }}
+                            >
+                              Rename
+                            </button>
+                            <button type="button" className="danger" disabled={saving} onClick={() => void deleteBoard(item.id)}>
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="dash-boards-create">
+                <button type="button" disabled={saving || editing} onClick={() => void createBoard("personal")}>
+                  + New personal board
+                </button>
+              </div>
+            </section>
+
+            <section className="dash-boards-group">
+              <p>Team</p>
+              {orgBoards.length === 0 ? (
+                <p className="dash-library-empty">
+                  {canShareOrg
+                    ? "No team boards yet — create a shared Home Screen for the whole org."
+                    : "No team boards published yet."}
+                </p>
+              ) : (
+                <ul className="dash-boards-list">
+                  {orgBoards.map((item) => (
+                    <li key={item.id} data-active={board?.id === item.id ? "true" : "false"}>
+                      {renameId === item.id ? (
+                        <form
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            void renameBoard(item.id, renameDraft);
+                          }}
+                        >
+                          <input
+                            value={renameDraft}
+                            onChange={(event) => setRenameDraft(event.target.value)}
+                            maxLength={80}
+                            autoFocus
+                            aria-label="Board name"
+                          />
+                        </form>
+                      ) : (
+                        <button type="button" className="dash-board-pick" disabled={saving || editing} onClick={() => void switchBoard(item.id)}>
+                          <strong>{item.name}</strong>
+                          <span>{board?.id === item.id ? "Current" : "Shared"} · tap to open</span>
+                        </button>
+                      )}
+                      <div className="dash-boards-actions">
+                        {canShareOrg ? (
+                          renameId === item.id ? (
+                            <>
+                              <button type="button" disabled={saving} onClick={() => void renameBoard(item.id, renameDraft)}>
+                                Save
+                              </button>
+                              <button type="button" disabled={saving} onClick={() => setRenameId(null)}>
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() => {
+                                  setRenameId(item.id);
+                                  setRenameDraft(item.name);
+                                }}
+                              >
+                                Rename
+                              </button>
+                              <button type="button" className="danger" disabled={saving} onClick={() => void deleteBoard(item.id)}>
+                                Delete
+                              </button>
+                            </>
+                          )
+                        ) : (
+                          <button type="button" disabled={saving || editing} onClick={() => void switchBoard(item.id)}>
+                            Open
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {canShareOrg ? (
+                <div className="dash-boards-create">
+                  <button type="button" disabled={saving || editing} onClick={() => void createBoard("org")}>
+                    + New team board
+                  </button>
+                </div>
+              ) : null}
+            </section>
           </aside>
         </>
       ) : null}

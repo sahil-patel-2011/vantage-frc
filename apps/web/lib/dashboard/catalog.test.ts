@@ -3,14 +3,17 @@ import {
   DEFAULT_DASHBOARD_LAYOUT,
   canAccessWidget,
   canWriteOrgDashboard,
+  dashboardRectsOverlap,
+  findDashboardSlot,
   filterLayoutForRole,
+  packDashboardLayout,
   validateDashboardLayout,
 } from "./catalog";
 
 describe("dashboard catalog persistence helpers", () => {
-  it("ships a coherent default home with 3–5 high-value widgets", () => {
+  it("ships a coherent default home with 3–6 high-value widgets", () => {
     expect(DEFAULT_DASHBOARD_LAYOUT.length).toBeGreaterThanOrEqual(3);
-    expect(DEFAULT_DASHBOARD_LAYOUT.length).toBeLessThanOrEqual(5);
+    expect(DEFAULT_DASHBOARD_LAYOUT.length).toBeLessThanOrEqual(6);
     expect(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type)).toEqual(
       expect.arrayContaining(["next_match", "robot_readiness", "alerts"]),
     );
@@ -46,6 +49,44 @@ describe("dashboard catalog persistence helpers", () => {
     if (!validated.ok) return;
     expect(validated.layout[0]!.w).toBe(12);
     expect(validated.layout[1]!.i).toMatch(/^w-alerts-/);
+  });
+
+  it("clamps a persisted x coordinate so the widget stays on canvas", () => {
+    const validated = validateDashboardLayout(
+      [{ i: "edge", type: "quick_actions", x: 11, y: 0, w: 4, h: 3 }],
+      "owner",
+    );
+    expect(validated.ok).toBe(true);
+    if (!validated.ok) return;
+    expect(validated.layout[0]!.x).toBe(8);
+  });
+
+  it("finds the first open snap slot without collisions", () => {
+    const layout = [
+      { x: 0, y: 0, w: 6, h: 4 },
+      { x: 6, y: 0, w: 6, h: 4 },
+      { x: 0, y: 4, w: 4, h: 3 },
+    ];
+    expect(findDashboardSlot(layout, 4, 3)).toEqual({ x: 4, y: 4 });
+    expect(dashboardRectsOverlap(layout[0]!, layout[1]!)).toBe(false);
+  });
+
+  it("packs a scattered layout into deterministic non-overlapping slots", () => {
+    const packed = packDashboardLayout([
+      { i: "b", type: "alerts", x: 8, y: 20, w: 4, h: 3 },
+      { i: "a", type: "next_match", x: 0, y: 10, w: 6, h: 4 },
+      { i: "c", type: "quick_actions", x: 0, y: 30, w: 4, h: 3 },
+    ]);
+    expect(packed.map(({ x, y }) => ({ x, y }))).toEqual([
+      { x: 0, y: 0 },
+      { x: 6, y: 0 },
+      { x: 6, y: 3 },
+    ]);
+    for (let left = 0; left < packed.length; left += 1) {
+      for (let right = left + 1; right < packed.length; right += 1) {
+        expect(dashboardRectsOverlap(packed[left]!, packed[right]!)).toBe(false);
+      }
+    }
   });
 });
 
