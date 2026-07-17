@@ -16,7 +16,9 @@ const fail = (error: unknown) =>
   Response.json({ error: error instanceof Error ? error.message : "Purchase request failed" }, { status: 400 });
 
 const LIST_FIELDS = `pr.id, pr.season_year AS "seasonYear", pr.category_id AS "categoryId", c.name AS "categoryName",
-  pr.requested_by AS "requestedBy", u.name AS "requestedByName", pr.title, pr.vendor, pr.item_url AS "itemUrl",
+  pr.requested_by AS "requestedBy",
+  CASE WHEN pr.requested_by=current_app_user_id() THEN 'You' ELSE 'Team member' END AS "requestedByName",
+  pr.title, pr.vendor, pr.item_url AS "itemUrl",
   pr.quantity, pr.unit_cost_usd AS "unitCostUsd", pr.total_cost_usd AS "totalCostUsd", pr.justification,
   pr.status, pr.reviewed_by AS "reviewedBy", pr.reviewed_at AS "reviewedAt", pr.review_notes AS "reviewNotes",
   pr.ordered_at AS "orderedAt", pr.received_at AS "receivedAt", pr.created_at AS "createdAt"`;
@@ -40,7 +42,6 @@ export async function GET(request: Request) {
     const requests = await withRls({ userId: current.user.id, orgId }, async (client) => {
       const result = await client.query(
         `SELECT ${LIST_FIELDS} FROM purchase_requests pr
-         JOIN users u ON u.id = pr.requested_by
          LEFT JOIN finance_categories c ON c.id = pr.category_id
          WHERE ${conditions.join(" AND ")} ORDER BY pr.created_at DESC`,
         params,
