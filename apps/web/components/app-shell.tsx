@@ -31,6 +31,8 @@ const groups: NavGroup[] = [
     icon: "swords",
     items: [
       { href: "/dashboard", label: "Home", icon: "home" },
+      { href: "/command", label: "Event Day", icon: "target" },
+      { href: "/pit", label: "Pit Command", icon: "cube" },
       { href: "/intel", label: "Matches", icon: "swords" },
       { href: "/workspace", label: "Schedule", icon: "calendar" },
     ],
@@ -44,6 +46,7 @@ const groups: NavGroup[] = [
       { href: "/scouting", label: "Scouting Hub", icon: "clipboard" },
       { href: "/intel", label: "Teams", icon: "users" },
       { href: "/strategy", label: "Strategy & AI", icon: "bolt" },
+      { href: "/chemistry", label: "Alliance Chemistry", icon: "users" },
     ],
   },
   {
@@ -114,7 +117,7 @@ function withOrg(href: string, orgId: string) {
 
 const primaryTabs = [
   { href: "/dashboard", label: "Home", icon: "home" as const },
-  { href: "/intel", label: "Matches", icon: "swords" as const },
+  { href: "/command", label: "Event Day", icon: "target" as const },
   { href: "/scouting", label: "Scout", icon: "scout" as const },
   { href: "/strategy", label: "Stats", icon: "stats" as const },
 ];

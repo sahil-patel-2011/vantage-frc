@@ -6,6 +6,7 @@ import {
   headToHead,
   historicalTrajectory,
   robotArchetypes,
+  scoreAllianceChemistry,
 } from "../src/analytics";
 import { FixtureSearchProvider, LocalSummaryProvider } from "../src/providers";
 import { canonicalizeUrl } from "../src/worker";
@@ -20,6 +21,40 @@ describe("Intel analytics", () => {
     expect(robotArchetypes(metrics.slice().reverse(), [])).toContain("autonomous specialist");
     expect(headToHead(metrics[1], metrics[0])[0]).toMatchObject({ advantage: "a" });
     expect(allianceChemistry(metrics).totalEpa).toBe(24);
+    expect(allianceChemistry(metrics).modelVersion).toBe("alliance-chemistry-v1");
+  });
+
+  it("scores complementary roles higher than triple overlap", () => {
+    const complementary = scoreAllianceChemistry([
+      {
+        teamKey: "frc1",
+        metric: { year: 2026, epaTotal: 40, epaAuto: 16, epaTeleop: 16, epaEndgame: 8, source: "statbotics" },
+      },
+      {
+        teamKey: "frc2",
+        metric: { year: 2026, epaTotal: 38, epaAuto: 6, epaTeleop: 24, epaEndgame: 8, source: "statbotics" },
+      },
+      {
+        teamKey: "frc3",
+        metric: { year: 2026, epaTotal: 36, epaAuto: 5, epaTeleop: 14, epaEndgame: 17, source: "statbotics" },
+      },
+    ]);
+    const overlap = scoreAllianceChemistry([
+      {
+        teamKey: "frc1",
+        metric: { year: 2026, epaTotal: 40, epaAuto: 6, epaTeleop: 28, epaEndgame: 6, source: "statbotics" },
+      },
+      {
+        teamKey: "frc2",
+        metric: { year: 2026, epaTotal: 38, epaAuto: 5, epaTeleop: 27, epaEndgame: 6, source: "statbotics" },
+      },
+      {
+        teamKey: "frc3",
+        metric: { year: 2026, epaTotal: 36, epaAuto: 4, epaTeleop: 26, epaEndgame: 6, source: "statbotics" },
+      },
+    ]);
+    expect(complementary.score!).toBeGreaterThan(overlap.score!);
+    expect(complementary.caveats[0]).toMatch(/MODEL/i);
   });
 
   it("requires evidence before assigning foul risk", () => {
