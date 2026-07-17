@@ -1,0 +1,415 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { priorityLabel, statusLabel } from "../../lib/tasks";
+import {
+  SUBSYSTEM_SUGGESTIONS,
+  TASK_PRIORITIES,
+  TASK_STATUSES,
+  type TasksView,
+} from "../../lib/tasks/compute-tasks";
+import type { TaskPriority, TaskWithFlags } from "../../lib/tasks/types";
+
+type LiveView = Extract<TasksView, { status: "live" }>;
+type Mutate = (payload: Record<string, unknown>) => void;
+
+function priorityTone(priority: TaskPriority): string {
+  if (priority === "critical" || priority === "high") return "setup";
+  return "demo";
+}
+
+function pct(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function dueLabel(task: TaskWithFlags): { text: string; tone: string } | null {
+  if (!task.dueOn || task.flags.daysToDue == null) return null;
+  const d = task.flags.daysToDue;
+  if (task.flags.overdue) return { text: `Overdue ${Math.abs(d)}d`, tone: "#c02626" };
+  if (task.flags.dueSoon) return { text: d === 0 ? "Due today" : `Due ${d}d`, tone: "#b26a00" };
+  return { text: `Due ${task.dueOn}`, tone: "inherit" };
+}
+
+export default function TasksClient() {
+  const [view, setView] = useState<TasksView | null>(null);
+  const [error, setError] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [season, setSeason] = useState<number | null>(null);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+
+  const load = useCallback((seasonOverride?: number) => {
+    setFetchFailed(false);
+    setError("");
+    const params = new URLSearchParams(window.location.search);
+    const urlOrg = params.get("orgId");
+    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const query = new URLSearchParams();
+    if (urlOrg) query.set("orgId", urlOrg);
+    if (seasonQuery) query.set("season", String(seasonQuery));
+    void fetch(`/api/tasks${query.toString() ? `?${query.toString()}` : ""}`)
+      .then(async (response) => {
+        const data = (await response.json()) as TasksView | { error?: string };
+        if (!response.ok || !("status" in data)) {
+          setFetchFailed(true);
+          return;
+        }
+        setView(data);
+        setSeason(data.seasonYear);
+      })
+      .catch(() => setFetchFailed(true));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const mutate = useCallback<Mutate>(
+    (payload) => {
+      if (!orgId || busy) return;
+      setBusy(true);
+      setError("");
+      void fetch("/api/tasks", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+      })
+        .then(async (response) => {
+          const data = (await response.json()) as TasksView | { error?: string };
+          if (!response.ok || !("status" in data)) {
+            setError("error" in data && data.error ? data.error : "Something went wrong.");
+            return;
+          }
+          setView(data);
+          setSeason(data.seasonYear);
+        })
+        .catch(() => setError("Network error — please try again."))
+        .finally(() => setBusy(false));
+    },
+    [orgId, season, busy],
+  );
+
+  return (
+    <main className="module-page">
+      <header className="app-page-header">
+        <div>
+          <span className="breadcrumbs">Build / Task Board</span>
+          <h1>Build Task Board</h1>
+          <p>
+            Plan and track build-season work by subsystem — priorities, owners, due dates, and progress. A focused
+            &quot;do next&quot; list surfaces the highest-leverage open tasks.
+          </p>
+        </div>
+        {view?.status === "live" && view.seasons.length > 0 ? (
+          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            Season
+            <select
+              value={season ?? view.seasonYear}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setSeason(next);
+                load(next);
+              }}
+            >
+              {view.seasons.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </header>
+
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {fetchFailed ? (
+        <section className="app-card soft-panel">
+          <h2>Could not load the task board</h2>
+          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
+          <button type="button" className="app-button secondary" onClick={() => load()}>
+            Retry
+          </button>
+        </section>
+      ) : view == null ? (
+        <section className="app-card soft-panel">
+          <h2>Loading…</h2>
+          <p className="app-muted">Checking your workspace.</p>
+        </section>
+      ) : view.status === "setup_required" ? (
+        <section className="app-card soft-panel">
+          <span className="app-badge setup">Setup required</span>
+          <h2>{view.message}</h2>
+          <ol className="strategy-setup-steps">
+            {view.steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : (
+        <div style={{ display: "grid", gap: 16 }}>
+          <MetricsTiles view={view} />
+          {view.board.focus.length > 0 ? <FocusList view={view} /> : null}
+          <CreateTaskForm view={view} busy={busy} mutate={mutate} />
+          <Board view={view} busy={busy} mutate={mutate} />
+        </div>
+      )}
+    </main>
+  );
+}
+
+function MetricsTiles({ view }: { view: LiveView }) {
+  const m = view.board.metrics;
+  const tiles = [
+    { label: "Open", value: String(m.open) },
+    { label: "In progress", value: String(m.inProgress) },
+    { label: "Blocked", value: String(m.blocked) },
+    { label: "Overdue", value: String(m.overdue) },
+    { label: "Done", value: String(m.done) },
+    { label: "Complete", value: pct(m.completionPct) },
+    { label: "Open est. hrs", value: String(m.estimatedOpenHours) },
+  ];
+  return (
+    <section className="app-card soft-panel">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(96px, 1fr))", gap: 12 }}>
+        {tiles.map((tile) => (
+          <div key={tile.label}>
+            <strong style={{ fontSize: "1.5rem", display: "block" }}>{tile.value}</strong>
+            <span className="app-muted">{tile.label}</span>
+          </div>
+        ))}
+      </div>
+      {m.bySubsystem.length > 0 ? (
+        <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {m.bySubsystem.map((row) => (
+            <span key={row.subsystem} className="app-badge demo" title={`${row.done}/${row.total} done`}>
+              {row.subsystem}: {row.open} open
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function FocusList({ view }: { view: LiveView }) {
+  return (
+    <section className="app-card soft-panel">
+      <h2 style={{ marginTop: 0 }}>Do next</h2>
+      <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+        {view.board.focus.map((task) => {
+          const due = dueLabel(task);
+          return (
+            <li key={task.id}>
+              <strong>{task.title}</strong>{" "}
+              <span className="app-muted">
+                · {priorityLabel(task.priority)} · {task.subsystem}
+                {task.assignee ? ` · ${task.assignee}` : " · unassigned"}
+              </span>
+              {due ? (
+                <span style={{ color: due.tone, marginLeft: 6 }}>· {due.text}</span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+function CreateTaskForm({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
+  const empty = useMemo(
+    () => ({ title: "", subsystem: "", priority: "normal" as TaskPriority, assignee: "", estimateHours: "", dueOn: "" }),
+    [],
+  );
+  const [form, setForm] = useState(empty);
+  const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
+    setForm((prev) => ({ ...prev, [key]: event.target.value }));
+
+  return (
+    <form
+      className="app-card soft-panel"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!form.title.trim()) return;
+        mutate({
+          action: "create-task",
+          title: form.title,
+          subsystem: form.subsystem || undefined,
+          priority: form.priority,
+          assignee: form.assignee || undefined,
+          estimateHours: form.estimateHours || undefined,
+          dueOn: form.dueOn || undefined,
+        });
+        setForm(empty);
+      }}
+      style={{ display: "grid", gap: 10 }}
+    >
+      <h2 style={{ margin: 0 }}>Add task</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+        <label style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
+          <span className="app-muted">Title</span>
+          <input value={form.title} onChange={set("title")} placeholder="Mount the intake rollers" required />
+        </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          <span className="app-muted">Subsystem</span>
+          <input value={form.subsystem} onChange={set("subsystem")} list="subsystem-options" placeholder="general" />
+          <datalist id="subsystem-options">
+            {SUBSYSTEM_SUGGESTIONS.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          <span className="app-muted">Priority</span>
+          <select value={form.priority} onChange={set("priority")}>
+            {TASK_PRIORITIES.map((p) => (
+              <option key={p} value={p}>
+                {priorityLabel(p)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          <span className="app-muted">Owner</span>
+          <input value={form.assignee} onChange={set("assignee")} placeholder="Optional" />
+        </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          <span className="app-muted">Est. hours</span>
+          <input type="number" min={0} step="0.5" value={form.estimateHours} onChange={set("estimateHours")} />
+        </label>
+        <label style={{ display: "grid", gap: 4 }}>
+          <span className="app-muted">Due</span>
+          <input type="date" value={form.dueOn} onChange={set("dueOn")} />
+        </label>
+      </div>
+      <div>
+        <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
+          Add task
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function Board({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
+  if (view.board.metrics.total === 0) {
+    return (
+      <section className="app-card soft-panel">
+        <span className="app-badge setup">Empty board</span>
+        <h2>No tasks yet</h2>
+        <p className="app-muted">Add your first build task above to start the board.</p>
+      </section>
+    );
+  }
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, alignItems: "start" }}>
+      {view.board.columns.map((column) => (
+        <section key={column.status} className="app-card soft-panel" style={{ display: "grid", gap: 10 }}>
+          <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ margin: 0, fontSize: "1.05rem" }}>{column.label}</h2>
+            <span className="app-badge demo">{column.count}</span>
+          </header>
+          {column.tasks.length === 0 ? (
+            <p className="app-muted" style={{ margin: 0 }}>—</p>
+          ) : (
+            column.tasks.map((task) => <TaskCard key={task.id} task={task} busy={busy} mutate={mutate} />)
+          )}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function TaskCard({ task, busy, mutate }: { task: TaskWithFlags; busy: boolean; mutate: Mutate }) {
+  const due = dueLabel(task);
+  return (
+    <article
+      style={{
+        border: "1px solid var(--hairline, rgba(0,0,0,0.1))",
+        borderRadius: 10,
+        padding: 10,
+        display: "grid",
+        gap: 6,
+        background: "var(--surface, transparent)",
+      }}
+    >
+      <strong>{task.title}</strong>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <span className={`app-badge ${priorityTone(task.priority)}`}>{priorityLabel(task.priority)}</span>
+        <small className="app-muted">{task.subsystem}</small>
+        {task.estimateHours != null ? <small className="app-muted">· {task.estimateHours}h</small> : null}
+      </div>
+      {due ? <small style={{ color: due.tone }}>{due.text}</small> : null}
+      {task.status === "blocked" && task.blockedReason ? (
+        <small style={{ color: "#c02626" }}>Blocked: {task.blockedReason}</small>
+      ) : null}
+      <input
+        defaultValue={task.assignee ?? ""}
+        placeholder="Owner"
+        disabled={busy}
+        aria-label="Owner"
+        onKeyDown={(event) => {
+          if (event.key === "Enter") (event.target as HTMLInputElement).blur();
+        }}
+        onBlur={(event) => {
+          const next = event.target.value.trim();
+          if (next !== (task.assignee ?? "")) {
+            mutate({ action: "update-task", taskId: task.id, assignee: next });
+          }
+        }}
+        style={{ fontSize: "0.85rem", padding: "4px 6px" }}
+      />
+      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <select
+          value={task.status}
+          disabled={busy}
+          aria-label="Status"
+          onChange={(event) => mutate({ action: "set-status", taskId: task.id, status: event.target.value })}
+          style={{ fontSize: "0.8rem" }}
+        >
+          {TASK_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {statusLabel(status)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={task.priority}
+          disabled={busy}
+          aria-label="Priority"
+          onChange={(event) => mutate({ action: "update-task", taskId: task.id, priority: event.target.value })}
+          style={{ fontSize: "0.8rem" }}
+        >
+          {TASK_PRIORITIES.map((p) => (
+            <option key={p} value={p}>
+              {priorityLabel(p)}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="text-button"
+          disabled={busy}
+          onClick={() => {
+            if (window.confirm(`Delete "${task.title}"?`)) mutate({ action: "delete-task", taskId: task.id });
+          }}
+          style={{ marginLeft: "auto", fontSize: "0.8rem" }}
+        >
+          Delete
+        </button>
+      </div>
+    </article>
+  );
+}
