@@ -53,12 +53,15 @@ const scoutFeeds = [
 
 export default function StrategyFeaturePage() {
   return (
-    <div className="marketing-site marketing-v2">
+    <div className="marketing-site marketing-v2 marketing-dense">
       <SiteHeader />
       <main className="route-page">
         <header className="route-hero split-hero">
           <div>
-            <span className="section-id">FRC ASSISTANT · STRATEGY · AVAILABLE</span>
+            <div className="showcase-kicker">
+              <span className="brand-chip">Vantage</span>
+              <span className="section-id">FRC ASSISTANT · STRATEGY · AVAILABLE</span>
+            </div>
             <h1>Competition intel you can inspect—not a vanity dashboard.</h1>
             <p>
               Vantage’s FRC Assistant helps with strategy, matchups, opponent history, and robot capabilities inside your

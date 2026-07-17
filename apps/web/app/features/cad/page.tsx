@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 };
 
 export default function CadFeaturePage() {
-  return <div className="marketing-site marketing-v2"><SiteHeader /><main className="route-page">
-    <header className="route-hero split-hero"><div><span className="section-id">AI CAD BUILDER / SETUP REQUIRED</span><h1>Start with engineering intent, not an unreviewed mutation.</h1><p>The current product supports Onshape hosted jobs and a paired Fusion 360 desktop relay. Both require configured credentials or connections; Vantage does not claim to control a local CAD session from Vercel.</p><a className="button primary" href="/signin">Sign in to configure access</a></div>
+  return <div className="marketing-site marketing-v2 marketing-dense"><SiteHeader /><main className="route-page">
+    <header className="route-hero split-hero"><div><div className="showcase-kicker"><span className="brand-chip">Vantage</span><span className="section-id">AI CAD BUILDER / SETUP REQUIRED</span></div><h1>Start with engineering intent, not an unreviewed mutation.</h1><p>The current product supports Onshape hosted jobs and a paired Fusion 360 desktop relay. Both require configured credentials or connections; Vantage does not claim to control a local CAD session from Vercel.</p><a className="button primary" href="/signin">Sign in to configure access</a></div>
       <div className="cad-screen" aria-label="Demo data representation of the implemented CAD builder"><header><span>DEMO DATA</span><b>BRIEF CONFIRMED</b></header><section><small>ENGINEERING THREAD</small><h2>Intake roller guard</h2><p>Keep the frame perimeter clear. Use existing 10-32 mounting locations. Flag any interference before export.</p><ol><li><b>01</b> Sketch envelope <span>Completed</span></li><li><b>02</b> Extrude guard <span>Awaiting approval</span></li><li><b>03</b> Verify topology <span>Queued</span></li></ol></section></div>
     </header>
     <section className="cad-paths">

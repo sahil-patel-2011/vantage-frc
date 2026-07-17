@@ -34,12 +34,15 @@ const capabilities = [
 
 export default function CodeFeaturePage() {
   return (
-    <div className="marketing-site marketing-v2">
+    <div className="marketing-site marketing-v2 marketing-dense">
       <SiteHeader />
       <main className="route-page">
         <header className="route-hero split-hero code-route-hero">
           <div>
-            <span className="section-id">FRC CODE BUILDER / DEBUGGER · AVAILABLE</span>
+            <div className="showcase-kicker">
+              <span className="brand-chip">Vantage</span>
+              <span className="section-id">FRC CODE COACH · AVAILABLE</span>
+            </div>
             <h1>Flag risky robot-code patterns—then teach the safer habit.</h1>
             <p>
               Vantage is a learning coach for FRC software practice: it reviews repository input for robot-loop and
