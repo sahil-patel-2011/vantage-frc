@@ -10,6 +10,7 @@
     "./display": "./src/display.ts",
     "./cad-relay": "./src/cad-relay.ts",
     "./showcase": "./src/showcase.ts",
+    "./alliance-board": "./src/alliance-board.ts",
     "./schema": "./src/schema.ts"
   },
   "scripts": {

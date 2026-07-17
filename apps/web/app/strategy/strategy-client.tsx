@@ -127,6 +127,43 @@ function TeamChip({
   );
 }
 
+function ContributionColumn({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: Array<{
+    teamKey: string;
+    shareOfAlliance: number;
+    deltaPRed: number;
+    contributionPts: number;
+  }>;
+}) {
+  const sorted = [...rows].sort((a, b) => b.contributionPts - a.contributionPts);
+  return (
+    <div className="strategy-contrib-col">
+      <h4>{title}</h4>
+      <ul>
+        {sorted.map((row) => (
+          <li key={row.teamKey}>
+            <div className="strategy-contrib-head">
+              <strong>{row.teamKey.replace(/^frc/, "")}</strong>
+              <span>{Math.round(row.shareOfAlliance * 100)}% rating</span>
+            </div>
+            <div className="strategy-contrib-bar" aria-hidden="true">
+              <i style={{ width: `${Math.max(4, row.shareOfAlliance * 100)}%` }} />
+            </div>
+            <small>
+              Δp(red) {row.deltaPRed >= 0 ? "+" : ""}
+              {(row.deltaPRed * 100).toFixed(1)} pts · {row.contributionPts.toFixed(1)} rating
+            </small>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }) {
   const [whatIfOn, setWhatIfOn] = useState(false);
   const scenario = useMemo(() => {
@@ -193,13 +230,36 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         <h3>Key factors</h3>
         <ul className="factor-table">
           {view.prediction.keyFactors.map((factor) => (
-            <li key={factor.name}>
+            <li key={`${factor.kind}-${factor.name}`}>
               <b>{factor.impact}</b>
-              <span>{factor.name}</span>
+              <span>
+                <em className={`strategy-kind ${factor.kind}`}>{factor.kind.toUpperCase()}</em> {factor.name}
+              </span>
               <small>{factor.evidence}</small>
             </li>
           ))}
         </ul>
+        <h3>Alliance contribution (3v3)</h3>
+        <p className="app-muted strategy-contrib-note">
+          <span className="app-badge setup">MODEL</span> Leave-one-out Δp(red) and rating share — not TBA facts.
+        </p>
+        <div className="strategy-contrib-grid">
+          <ContributionColumn title="Red" rows={view.allianceBreakdown.red} />
+          <ContributionColumn title="Blue" rows={view.allianceBreakdown.blue} />
+        </div>
+        <h3>Cited match results</h3>
+        {view.allianceBreakdown.citations.length === 0 ? (
+          <p className="app-muted">No completed TBA match results for these alliances yet.</p>
+        ) : (
+          <ul className="strategy-citations">
+            {view.allianceBreakdown.citations.map((citation) => (
+              <li key={citation.matchKey}>
+                <span className="app-badge good">FACT</span>
+                <span>{citation.summary.replace(/^FACT\s*/, "")}</span>
+              </li>
+            ))}
+          </ul>
+        )}
         {view.prediction.caveats.map((item) => (
           <p className="app-muted" key={item}>
             {item}
@@ -241,7 +301,9 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         {view.pickListHints.length === 0 ? (
           <p className="app-muted">
             No pick-list ranks for these alliance teams yet. Build lists in the Pick lists tab or{" "}
-            <a href={`/intel?orgId=${encodeURIComponent(view.orgId)}`}>Intel</a>.
+            <a href={`/intel?orgId=${encodeURIComponent(view.orgId)}`}>Intel</a>
+            {" · "}
+            <a href={`/dossier?orgId=${encodeURIComponent(view.orgId)}`}>Season dossier</a>.
           </p>
         ) : (
           <ul className="strategy-pick-hints">
@@ -324,12 +386,24 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
 
 function TbaKeyHint({ view }: { view: StrategyView }) {
   const access = view.tbaAccess;
-  if (!access || access.tbaConfigured) return null;
+  const stat = view.referenceAccess?.statbotics;
+  if (access?.tbaConfigured && (stat?.cacheHasMetrics ?? true)) return null;
   return (
-    <p className="telemetry-status" role="status">
-      TBA key missing: set platform <code>TBA_AUTH_KEY</code> or save an org/platform credential under Team → Data.
-      Strategy will stay empty until the Neon TBA cache is synced.
-    </p>
+    <div className="strategy-reference-hints">
+      {access && !access.tbaConfigured ? (
+        <p className="telemetry-status" role="status">
+          TBA key missing: set platform <code>TBA_AUTH_KEY</code> or save an org/platform credential under Team → Data.
+          Strategy will stay empty until the Neon TBA cache is synced.
+        </p>
+      ) : null}
+      {stat && !stat.cacheHasMetrics ? (
+        <p className="telemetry-status" role="status">
+          Statbotics EPA cache is empty ({stat.eventMetricRows} event / {stat.yearMetricRows} year rows). Sync
+          reference data under Team → Data — Statbotics is public (no key); Vantage will not invent EPA while the
+          cache is empty.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
