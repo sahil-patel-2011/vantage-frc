@@ -7,6 +7,8 @@ const links = [
   { href: "/admin/commercial", label: "Commercial" },
   { href: "/admin/connectors", label: "Connectors" },
   { href: "/admin/models", label: "Models" },
+  { href: "/admin/sponsored", label: "Sponsored AI" },
+  { href: "/admin/audit", label: "Audit log" },
 ] as const;
 
 export function AdminSubnav() {
