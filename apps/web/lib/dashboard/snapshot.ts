@@ -42,7 +42,23 @@ export async function loadDashboardSnapshot(
 
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const eventKey = row.eventKey;
-  const tbaConfigured = Boolean(process.env.TBA_AUTH_KEY?.trim());
+  const platformEnvKey = Boolean(process.env.TBA_AUTH_KEY?.trim());
+  const tbaMeta = await client.query<{ credential: boolean; cache: boolean }>(
+    `SELECT
+       EXISTS(
+         SELECT 1 FROM data_source_credentials
+         WHERE source = 'tba' AND disabled_at IS NULL
+           AND (org_id IS NULL OR org_id = $1)
+       ) AS credential,
+       EXISTS(
+         SELECT 1 FROM matches_ref LIMIT 1
+       ) OR EXISTS(
+         SELECT 1 FROM team_event_metrics LIMIT 1
+       ) AS cache`,
+    [input.orgId],
+  );
+  const tbaConfigured =
+    platformEnvKey || Boolean(tbaMeta.rows[0]?.credential) || Boolean(tbaMeta.rows[0]?.cache);
   const context = {
     orgName: row.name,
     teamNumber: row.teamNumber,
@@ -242,7 +258,7 @@ export async function loadDashboardSnapshot(
         "setup_required",
         "sync_status",
         undefined,
-        "TBA not configured. Set TBA_AUTH_KEY (or save a platform TBA credential) before live match/rank sync.",
+        "TBA not configured. Set TBA_AUTH_KEY (or save a platform/org TBA credential) before live match/rank sync.",
       );
       return;
     }

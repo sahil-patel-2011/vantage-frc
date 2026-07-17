@@ -1,50 +1,21 @@
-export type Alliance = "red" | "blue";
+export type {
+  Alliance,
+  MatchPrediction,
+  MatchPredictionInput,
+  PredictionFactor,
+  TeamOperationalSignal,
+  TeamSeasonSignal,
+} from "./types";
+export * from "./signals";
 
-export type TeamSeasonSignal = {
-  teamKey: string;
-  year: number;
-  matches: number;
-  epa: number;
-  autoEpa?: number;
-  endgameEpa?: number;
-};
-
-export type TeamOperationalSignal = {
-  teamKey: string;
-  scoutSample: number;
-  reliability?: number;
-  foulRate?: number;
-  researchConfidence?: number;
-  researchAdjustment?: number;
-};
-
-export type MatchPredictionInput = {
-  matchKey: string;
-  currentYear: number;
-  red: string[];
-  blue: string[];
-  seasons: TeamSeasonSignal[];
-  operations?: TeamOperationalSignal[];
-};
-
-export type PredictionFactor = {
-  name: string;
-  alliance: Alliance | "neutral";
-  impact: number;
-  evidence: string;
-};
-
-export type MatchPrediction = {
-  matchKey: string;
-  modelVersion: "weighted-current-v1";
-  pRed: number;
-  pBlue: number;
-  confidenceLow: number;
-  confidenceHigh: number;
-  effectiveSampleSize: number;
-  keyFactors: PredictionFactor[];
-  caveats: string[];
-};
+import type {
+  Alliance,
+  MatchPrediction,
+  MatchPredictionInput,
+  PredictionFactor,
+  TeamOperationalSignal,
+  TeamSeasonSignal,
+} from "./types";
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const round = (value: number) => Math.round(value * 10_000) / 10_000;
@@ -91,6 +62,19 @@ function teamRating(
   };
 }
 
+function citeSources(seasons: TeamSeasonSignal[], teamKeys: string[]) {
+  const cited = seasons.filter((signal) => teamKeys.includes(signal.teamKey));
+  const sources = [...new Set(cited.map((signal) => signal.source).filter(Boolean))];
+  const eventKeys = [...new Set(cited.map((signal) => signal.eventKey).filter(Boolean))];
+  const matchTotal = cited.reduce((sum, signal) => sum + signal.matches, 0);
+  const parts = [
+    sources.length ? `sources ${sources.join("+")}` : "reference metrics",
+    eventKeys.length ? `event ${eventKeys.join(", ")}` : null,
+    matchTotal > 0 ? `${matchTotal} weighted team-matches` : null,
+  ].filter(Boolean);
+  return parts.join(", ");
+}
+
 export function predictMatch(input: MatchPredictionInput): MatchPrediction {
   const operations = new Map((input.operations ?? []).map((value) => [value.teamKey, value]));
   const red = input.red.map((team) =>
@@ -107,12 +91,15 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
   const pRed = clamp(1 / (1 + Math.exp(-margin / 12)), 0.02, 0.98);
   const sample = sum(red, "sample") + sum(blue, "sample");
   const interval = clamp(0.28 / Math.sqrt(Math.max(1, sample / 12)), 0.05, 0.28);
+  const eventBit = input.eventLabel ? ` at ${input.eventLabel}` : "";
+  const citation = citeSources(input.seasons, [...input.red, ...input.blue]);
+  const scoutSample = [...operations.values()].reduce((total, op) => total + (op.scoutSample ?? 0), 0);
   const factors: PredictionFactor[] = [
     {
       name: "weighted scoring",
       alliance: margin >= 0 ? "red" : "blue",
       impact: round(Math.abs(margin)),
-      evidence: `Current season is weighted 1.0; prior seasons 0.55 and 0.30. Alliance rating margin ${round(margin)}.`,
+      evidence: `Model weighted-current-v1${eventBit}: season weights 1.0 / 0.55 / 0.30. Alliance rating margin ${round(margin)} from ${citation}.`,
     },
   ];
   const autoMargin = sum(red, "auto") - sum(blue, "auto");
@@ -121,7 +108,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "autonomous",
       alliance: autoMargin > 0 ? "red" : "blue",
       impact: round(Math.abs(autoMargin)),
-      evidence: `Weighted autonomous EPA margin ${round(autoMargin)}.`,
+      evidence: `Weighted autonomous EPA margin ${round(autoMargin)} (${citation}).`,
     });
   const foulMargin = sum(red, "foulPenalty") - sum(blue, "foulPenalty");
   if (Math.abs(foulMargin) >= 0.25)
@@ -129,7 +116,14 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "foul exposure",
       alliance: foulMargin > 0 ? "blue" : "red",
       impact: round(Math.abs(foulMargin)),
-      evidence: "Penalty uses organization observations only and is capped per team.",
+      evidence: `Org scout foul penalty (capped) margin ${round(Math.abs(foulMargin))}; not a TBA fact.`,
+    });
+  if (scoutSample > 0)
+    factors.push({
+      name: "scout reliability",
+      alliance: "neutral",
+      impact: round(Math.min(5, scoutSample / 8)),
+      evidence: `${scoutSample} org scout observations blended into ratings (max 25% scout weight per team).`,
     });
   return {
     matchKey: input.matchKey,
@@ -141,7 +135,11 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
     effectiveSampleSize: round(sample),
     keyFactors: factors,
     caveats: [
+      "MODEL output — not an official TBA result.",
       ...(sample < 30 ? ["Sparse historical/scouting sample; interval widened."] : []),
+      scoutSample === 0
+        ? "No org scout sample on this matchup; ratings use TBA/Statbotics event metrics only."
+        : `Includes ${scoutSample} org scout observations as operational adjustments.`,
       "Prediction is decision support, not a guarantee.",
     ],
   };

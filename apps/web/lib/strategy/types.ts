@@ -1,4 +1,9 @@
-import type { MatchPrediction } from "@vantage/prediction-strategy";
+import type {
+  AllianceMatchup,
+  MatchPrediction,
+  OpponentTendency,
+  PickListHint,
+} from "@vantage/prediction-strategy";
 
 export type StrategySetupStep = {
   id: string;
@@ -19,6 +24,13 @@ export type StrategyPlaybookView = {
   provenance: string[];
 };
 
+export type TbaAccessInfo = {
+  tbaConfigured: boolean;
+  platformEnvKey: boolean;
+  credentialAvailable: boolean;
+  cacheHasSync: boolean;
+};
+
 export type StrategyView =
   | {
       status: "setup_required" | "empty";
@@ -29,6 +41,7 @@ export type StrategyView =
       eventName: string | null;
       teamNumber: number | null;
       tbaConfigured: boolean;
+      tbaAccess?: TbaAccessInfo;
     }
   | {
       status: "live";
@@ -37,11 +50,18 @@ export type StrategyView =
       eventName: string | null;
       teamNumber: number | null;
       tbaConfigured: boolean;
+      tbaAccess?: TbaAccessInfo;
       matchKey: string;
       compLevel: string;
       matchNumber: number;
+      ourAlliance: "red" | "blue";
+      red: string[];
+      blue: string[];
       prediction: MatchPrediction;
       playbook: StrategyPlaybookView;
+      matchup: AllianceMatchup;
+      tendencies: OpponentTendency[];
+      pickListHints: PickListHint[];
       sources: Array<{ source: string; syncedAt: string | null; teamKey: string }>;
       computedAt: string;
     };
