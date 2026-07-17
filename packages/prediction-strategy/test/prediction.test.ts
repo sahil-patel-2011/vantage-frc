@@ -240,7 +240,7 @@ describe("TBA-shaped signal builders", () => {
 
 describe("alliance 3v3 contribution breakdown", () => {
   it("attributes leave-one-out Δp and rating shares without inventing EPA", () => {
-    const breakdown = buildAllianceWinBreakdown({
+    const input = {
       matchKey: "2026miket_qm1",
       currentYear: 2026,
       red: ["frc2337", "frc2", "frc3"],
@@ -251,8 +251,10 @@ describe("alliance 3v3 contribution breakdown", () => {
         { teamKey: "frc2337", scoutSample: 4, reliability: 94, foulRate: 0.2 },
       ],
       matchResults: fixtureMatchResults,
-    });
-    expect(breakdown.pRed).toBe(prediction.pRed);
+    };
+    const live = predictMatch(input);
+    const breakdown = buildAllianceWinBreakdown(input);
+    expect(breakdown.pRed).toBe(live.pRed);
     expect(breakdown.red).toHaveLength(3);
     expect(breakdown.blue).toHaveLength(3);
     const redShares = breakdown.red.reduce((sum, row) => sum + row.shareOfAlliance, 0);

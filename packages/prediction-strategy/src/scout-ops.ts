@@ -229,7 +229,12 @@ export function computeScoutQuality(entries: ScoutEntryRecord[]): ScoutQualityRe
     .map((row) => (teamMedian != null ? Math.abs(row.score - teamMedian) : 0))
     .filter((value) => value > 0);
   const mad = median(deviations) ?? 0;
-  const scale = mad > 0 ? mad : teamMedian != null && teamMedian > 0 ? Math.abs(teamMedian) * 0.25 : 1;
+  // Prefer a stable scale so clear outliers (e.g. 2× team median) always downweight.
+  const scale = Math.max(
+    mad > 0 ? mad : 0,
+    teamMedian != null && Math.abs(teamMedian) > 0 ? Math.abs(teamMedian) * 0.2 : 1,
+    1,
+  );
 
   const byScout = new Map<string, { scores: number[]; entryIds: string[] }>();
   for (const row of scored) {
@@ -246,9 +251,15 @@ export function computeScoutQuality(entries: ScoutEntryRecord[]): ScoutQualityRe
     const meanScore = bucket.scores.reduce((a, b) => a + b, 0) / bucket.scores.length;
     const deviationFromTeam = teamMedian != null ? meanScore - teamMedian : null;
     const z = deviationFromTeam != null ? Math.abs(deviationFromTeam) / scale : 0;
-    // Need ≥2 entries from this scout (or clear outlier) before downweighting hard.
-    const enoughSample = bucket.scores.length >= 2 || z >= 2.5;
-    const anomalyWeight = enoughSample ? clamp(1 - 0.18 * z, 0.35, 1) : 1;
+    const relative =
+      teamMedian != null && Math.abs(teamMedian) > 0
+        ? Math.abs(meanScore / teamMedian - 1)
+        : 0;
+    // Downweight when the scout's mean is far from the team (absolute or relative).
+    const enoughSample = bucket.scores.length >= 2 || z >= 2 || relative >= 0.5;
+    const anomalyWeight = enoughSample
+      ? clamp(1 - Math.max(0.2 * z, relative * 0.7), 0.35, 1)
+      : 1;
     const reason =
       anomalyWeight < 0.95 && deviationFromTeam != null
         ? `Scoring mean ${round1(meanScore)} vs team median ${round1(teamMedian!)} (Δ ${round1(deviationFromTeam)}); weight ${round2(anomalyWeight)}.`
@@ -353,7 +364,7 @@ export function buildTeamOperationalSignal(
   const reliability = weightedReliability(usableMatch, quality.byEntryId);
   const foulRate = weightedRate(usableMatch, quality.byEntryId, FOUL_KEYS, 3);
   const capabilities = deriveScoutCapabilities(
-    usableMatch.map((entry) => ({
+    [...usableMatch, ...pitEntries.filter((entry) => entry.confidence !== "low")].map((entry) => ({
       payload: entry.payload,
       weight: quality.byEntryId[entry.id] ?? 1,
     })),
@@ -399,6 +410,10 @@ export function buildTeamOperationalSignal(
   }
   for (const entry of pitEntries) {
     if (extractNotes(entry.payload).length) pushProv(entry, "pit_note");
+    const text = JSON.stringify(entry.payload).toLowerCase();
+    if (/\bdefen[cs]e\b/.test(text) || entry.payload.defense === true) {
+      pushProv(entry, "defense");
+    }
   }
   for (const entry of excludedLow) {
     pushProv(entry, "excluded_low_confidence", quality.byEntryId[entry.id] ?? 0.35);

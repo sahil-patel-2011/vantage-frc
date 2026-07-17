@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { runWhatIf } from "@vantage/prediction-strategy";
 import { strategyFixture } from "../../lib/marketing/strategy-demo";
 import type { StrategyView } from "../../lib/strategy/types";
+import { PickListWorkbench } from "./pick-list-workbench";
 
 function DemoPanel({ onHide }: { onHide: () => void }) {
   const { prediction, scenario, playbook } = strategyFixture;
@@ -126,44 +127,6 @@ function TeamChip({
   );
 }
 
-function ContributionColumn({
-  title,
-  rows,
-}: {
-  title: string;
-  rows: Array<{
-    teamKey: string;
-    shareOfAlliance: number;
-    deltaPRed: number;
-    contributionPts: number;
-    evidence: string;
-  }>;
-}) {
-  const sorted = [...rows].sort((a, b) => b.contributionPts - a.contributionPts);
-  return (
-    <div className="strategy-contrib-col">
-      <h4>{title}</h4>
-      <ul>
-        {sorted.map((row) => (
-          <li key={row.teamKey}>
-            <div className="strategy-contrib-head">
-              <strong>{row.teamKey.replace(/^frc/, "")}</strong>
-              <span>{Math.round(row.shareOfAlliance * 100)}% rating</span>
-            </div>
-            <div className="strategy-contrib-bar" aria-hidden="true">
-              <i style={{ width: `${Math.max(4, row.shareOfAlliance * 100)}%` }} />
-            </div>
-            <small>
-              Δp(red) {row.deltaPRed >= 0 ? "+" : ""}
-              {(row.deltaPRed * 100).toFixed(1)} pts · {row.contributionPts.toFixed(1)} rating
-            </small>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }) {
   const [whatIfOn, setWhatIfOn] = useState(false);
   const scenario = useMemo(() => {
@@ -184,7 +147,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
 
   return (
     <section className="strategy-workbench strategy-live-grid">
-      <article className="app-card strategy-primary">
+      <article className="app-card strategy-primary soft-panel">
         <header>
           <div>
             <span className="app-badge good">Live inputs</span>
@@ -230,36 +193,13 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         <h3>Key factors</h3>
         <ul className="factor-table">
           {view.prediction.keyFactors.map((factor) => (
-            <li key={`${factor.kind}-${factor.name}`}>
+            <li key={factor.name}>
               <b>{factor.impact}</b>
-              <span>
-                <em className={`strategy-kind ${factor.kind}`}>{factor.kind.toUpperCase()}</em> {factor.name}
-              </span>
+              <span>{factor.name}</span>
               <small>{factor.evidence}</small>
             </li>
           ))}
         </ul>
-        <h3>Alliance contribution (3v3)</h3>
-        <p className="app-muted strategy-contrib-note">
-          <span className="app-badge setup">MODEL</span> Leave-one-out Δp(red) and rating share — not TBA facts.
-        </p>
-        <div className="strategy-contrib-grid">
-          <ContributionColumn title="Red" rows={view.allianceBreakdown.red} />
-          <ContributionColumn title="Blue" rows={view.allianceBreakdown.blue} />
-        </div>
-        <h3>Cited match results</h3>
-        {view.allianceBreakdown.citations.length === 0 ? (
-          <p className="app-muted">No completed TBA match results for these alliances yet.</p>
-        ) : (
-          <ul className="strategy-citations">
-            {view.allianceBreakdown.citations.map((citation) => (
-              <li key={citation.matchKey}>
-                <span className="app-badge good">FACT</span>
-                <span>{citation.summary.replace(/^FACT\s*/, "")}</span>
-              </li>
-            ))}
-          </ul>
-        )}
         {view.prediction.caveats.map((item) => (
           <p className="app-muted" key={item}>
             {item}
@@ -267,7 +207,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         ))}
       </article>
 
-      <article className="app-card strategy-matchup-card">
+      <article className="app-card strategy-matchup-card soft-panel">
         <header>
           <h2>Alliance considerations</h2>
           <span className="app-badge good">From metrics + scout</span>
@@ -300,7 +240,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         <h3>Pick-list inputs</h3>
         {view.pickListHints.length === 0 ? (
           <p className="app-muted">
-            No pick-list ranks for these alliance teams yet. Build lists in{" "}
+            No pick-list ranks for these alliance teams yet. Build lists in the Pick lists tab or{" "}
             <a href={`/intel?orgId=${encodeURIComponent(view.orgId)}`}>Intel</a>.
           </p>
         ) : (
@@ -319,7 +259,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         )}
       </article>
 
-      <article className="app-card what-if-card">
+      <article className="app-card what-if-card soft-panel">
         <header>
           <h2>What-if scenario</h2>
           <span className="app-badge setup">Assumptions</span>
@@ -358,7 +298,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         ) : null}
       </article>
 
-      <article className="app-card playbook-card">
+      <article className="app-card playbook-card soft-panel">
         <header>
           <h2>Alliance playbook</h2>
           <span className="app-badge good">From live prediction</span>
@@ -384,37 +324,31 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
 
 function TbaKeyHint({ view }: { view: StrategyView }) {
   const access = view.tbaAccess;
-  const stat = view.referenceAccess?.statbotics;
-  if (access?.tbaConfigured && (stat?.cacheHasMetrics ?? true)) return null;
+  if (!access || access.tbaConfigured) return null;
   return (
-    <div className="strategy-reference-hints">
-      {access && !access.tbaConfigured ? (
-        <p className="telemetry-status" role="status">
-          TBA key missing: set platform <code>TBA_AUTH_KEY</code> or save an org/platform credential under Team → Data.
-          Strategy will stay empty until the Neon TBA cache is synced.
-        </p>
-      ) : null}
-      {stat && !stat.cacheHasMetrics ? (
-        <p className="telemetry-status" role="status">
-          Statbotics EPA cache is empty ({stat.eventMetricRows} event / {stat.yearMetricRows} year rows). Sync
-          reference data under Team → Data — Statbotics is public (no key); Vantage will not invent EPA while the
-          cache is empty.
-        </p>
-      ) : null}
-    </div>
+    <p className="telemetry-status" role="status">
+      TBA key missing: set platform <code>TBA_AUTH_KEY</code> or save an org/platform credential under Team → Data.
+      Strategy will stay empty until the Neon TBA cache is synced.
+    </p>
   );
 }
+
+type StrategyTab = "matchup" | "picks";
 
 export default function StrategyClient() {
   const [view, setView] = useState<StrategyView | null>(null);
   const [demo, setDemo] = useState(false);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [tab, setTab] = useState<StrategyTab>("matchup");
 
   const loadStrategy = useCallback(() => {
     setFetchFailed(false);
     setError("");
-    const orgId = new URLSearchParams(window.location.search).get("orgId");
+    const params = new URLSearchParams(window.location.search);
+    const orgId = params.get("orgId");
+    const requestedTab = params.get("tab");
+    if (requestedTab === "picks") setTab("picks");
     void fetch(`/api/strategy${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`)
       .then(async (response) => {
         const data = (await response.json()) as StrategyView | { error?: string };
@@ -461,27 +395,55 @@ export default function StrategyClient() {
     loadStrategy();
   }, [loadStrategy]);
 
+  const orgId = view && "orgId" in view ? view.orgId : null;
+
   return (
-    <main className="module-page">
+    <main className="module-page strategy-page">
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Competition / Strategy</span>
           <h1>Win / Loss + Strategy</h1>
           <p>
-            Predictions run only when match schedule and team metrics exist. Vantage does not invent win probability,
-            EPA, ranks, or confidence. Model outputs are labeled separately from TBA facts.
+            Predictions and pick desks run only on synced TBA/Statbotics metrics and your scout notes. Vantage does not
+            invent win probability, EPA, ranks, or confidence.
           </p>
         </div>
-        {demo ? (
-          <span className="app-badge demo">Demo mode</span>
-        ) : view?.status === "empty" ? (
-          <span className="app-badge setup">No prediction yet</span>
-        ) : view?.status === "setup_required" ? (
-          <span className="app-badge setup">Setup required</span>
-        ) : view?.status === "live" ? (
-          <span className="app-badge good">Live inputs</span>
-        ) : null}
+        <div className="strategy-header-actions">
+          {orgId ? (
+            <a className="app-button secondary" href={`/strategy/draft?orgId=${encodeURIComponent(orgId)}`}>
+              Draft day board
+            </a>
+          ) : null}
+          {demo ? (
+            <span className="app-badge demo">Demo mode</span>
+          ) : view?.status === "empty" ? (
+            <span className="app-badge setup">No prediction yet</span>
+          ) : view?.status === "setup_required" ? (
+            <span className="app-badge setup">Setup required</span>
+          ) : view?.status === "live" ? (
+            <span className="app-badge good">Live inputs</span>
+          ) : null}
+        </div>
       </header>
+
+      <nav className="strategy-tabs" aria-label="Strategy sections">
+        <button
+          type="button"
+          className={tab === "matchup" ? "active" : undefined}
+          aria-selected={tab === "matchup"}
+          onClick={() => setTab("matchup")}
+        >
+          Matchup
+        </button>
+        <button
+          type="button"
+          className={tab === "picks" ? "active" : undefined}
+          aria-selected={tab === "picks"}
+          onClick={() => setTab("picks")}
+        >
+          Pick lists
+        </button>
+      </nav>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -491,10 +453,12 @@ export default function StrategyClient() {
 
       {view ? <TbaKeyHint view={view} /> : null}
 
-      {demo ? (
+      {tab === "picks" ? (
+        <PickListWorkbench orgId={orgId} embedded />
+      ) : demo ? (
         <DemoPanel onHide={() => setDemo(false)} />
       ) : fetchFailed ? (
-        <section className="app-card strategy-empty-panel">
+        <section className="app-card strategy-empty-panel soft-panel">
           <h2>Could not load strategy — try again</h2>
           <p className="app-muted">A network or server issue prevented loading your strategy context.</p>
           <button type="button" className="app-button secondary" onClick={loadStrategy}>
@@ -502,7 +466,7 @@ export default function StrategyClient() {
           </button>
         </section>
       ) : view == null ? (
-        <section className="app-card strategy-empty-panel">
+        <section className="app-card strategy-empty-panel soft-panel">
           <h2>Loading strategy context…</h2>
           <p className="app-muted">Checking workspace, event, and TBA/reference metrics.</p>
         </section>
@@ -510,12 +474,12 @@ export default function StrategyClient() {
         <LivePanel view={view} />
       ) : (
         <section className="strategy-setup" aria-label="Strategy setup">
-          <article className="app-card strategy-empty-panel">
+          <article className="app-card strategy-empty-panel soft-panel">
             <span className="app-badge setup">{view.status === "empty" ? "No prediction yet" : "Setup required"}</span>
             <h2>{view.message}</h2>
             <p className="app-muted">
               No fabricated win probability is shown until TBA/Statbotics (and optional scouting) inputs are available for
-              a real match.
+              a real match. You can still open Pick lists once an event is selected.
             </p>
             <ol className="strategy-setup-steps">
               {view.steps.map((step) => (
@@ -529,7 +493,7 @@ export default function StrategyClient() {
               ))}
             </ol>
           </article>
-          <aside className="app-card strategy-demo-optin">
+          <aside className="app-card strategy-demo-optin soft-panel">
             <h2>Try demo scenario</h2>
             <p>
               Optional illustrative fixture only. Labeled non-factual — never used as your default Stats/Strategy view.
