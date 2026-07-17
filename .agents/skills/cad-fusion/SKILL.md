@@ -26,18 +26,23 @@ description: >-
 ## Install
 
 ```bash
-# CLI (all OS)
-bash scripts/cad/install-cli.sh          # macOS/Linux
-# powershell -File .\scripts\cad\install-cli.ps1   # Windows
+# Windows one-shot (CLI + Fusion add-in)
+powershell -ExecutionPolicy Bypass -File .\scripts\cad\install-windows.ps1
 
-# Fusion add-in (Win/mac only)
+# CLI (macOS/Linux)
+bash scripts/cad/install-cli.sh
+
+# Fusion add-in (macOS; Windows covered by install-windows.ps1)
 bash scripts/cad/install-fusion-addin.sh
-# powershell -File .\scripts\cad\install-fusion-addin.ps1
 ```
 
-Add-in source: `packages/fusion360-official-connector/VantageCadRelay/`
+Add-in source: `packages/fusion360-official-connector/VantageCadRelay/` (see `VERSION.json`)
 
-Optional package (unsigned): `node scripts/cad/package-relay.mjs` → `dist/cad-relay/`
+Optional package (unsigned): `npm run cad:package` → `dist/cad-relay/`
+macOS pkg/dmg: `npm run cad:package:macos` → `dist/cad-macos/`
+Linux tarball/AppDir: `npm run cad:package:linux` → `dist/cad-linux/` (no Fusion add-in)
+
+Future signed MSI stub: `scripts/cad/windows/VantageCadRelay.wxs` (needs Authenticode cert)
 
 ## Pair + run
 
@@ -45,8 +50,9 @@ Optional package (unsigned): `node scripts/cad/package-relay.mjs` → `dist/cad-
 2. `vantage-cad setup` → approve code at `/cad/pair` for **Fusion 360**
 3. Open Fusion → run **VantageCadRelay** add-in
 4. `vantage-cad start` (keep running)
-5. In Vantage CAD Builder: create Fusion job → confirm brief → plan → approve steps
-6. Relay claims approved steps automatically
+5. `vantage-cad doctor` — Onshape env (local) + Fusion relay `/health`
+6. In Vantage CAD Builder: create Fusion job → confirm brief → plan → approve steps
+7. Relay claims approved steps automatically
 
 Mock without Autodesk: `VANTAGE_CAD_MOCK=1 vantage-cad start`
 

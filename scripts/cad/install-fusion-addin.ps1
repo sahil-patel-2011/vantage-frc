@@ -56,10 +56,9 @@ if (Test-Path $Dest) {
 }
 Copy-Item -Recurse -Force $Src $Dest
 
-# Verify critical files landed
 foreach ($name in @("VantageCadRelay.py", "VantageCadRelay.manifest", "VERSION.json")) {
   if (-not (Test-Path (Join-Path $Dest $name))) {
-    throw "Install incomplete — missing $name under $Dest"
+    throw "Install incomplete - missing $name under $Dest"
   }
 }
 
@@ -68,14 +67,15 @@ if ($fusionRunning) {
   Write-Warning "Fusion 360 appears to be running. Restart the VantageCadRelay add-in (or Fusion) to load the new files."
 }
 
-Write-Host "Installed Fusion add-in v$srcVersion$(if ($destVersion) { " (was $destVersion)" }) to:"
+$was = if ($destVersion) { " (was $destVersion)" } else { "" }
+Write-Host "Installed Fusion add-in v$srcVersion$was to:"
 Write-Host "  $Dest"
 Write-Host ""
 Write-Host "In Fusion 360:"
-Write-Host "  1. Utilities → Add-Ins → Scripts and Add-Ins"
+Write-Host "  1. Utilities -> Add-Ins -> Scripts and Add-Ins"
 Write-Host "  2. Add / select VantageCadRelay"
 Write-Host "  3. Run it (loopback http://127.0.0.1:32145)"
 Write-Host "  4. vantage-cad start"
 Write-Host ""
 Write-Host "Optional: set FUSION_RELAY_SIGNING_SECRET to match the Vantage server (process env for Fusion)."
-Write-Host "Unsigned script install — see scripts\cad\windows\ for future Authenticode/.msi scaffolding."
+Write-Host "Unsigned script install - see scripts\cad\windows\ for future Authenticode/.msi scaffolding."
