@@ -1,0 +1,66 @@
+/* Season Calendar — co-located so styling survives independently of the shared
+   global stylesheet. All selectors are .cal-* prefixed and theme-aware. */
+.cal-page input,.cal-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.cal-empty{display:grid;gap:12px;justify-items:start;padding:26px}
+.cal-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
+.cal-link.danger{color:var(--app-critical)}
+.cal-link:disabled{opacity:.5;cursor:default}
+
+/* Hero: next-milestone countdown + season progress. */
+.cal-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.cal-hero-next{display:grid;gap:6px;justify-items:start;min-width:0}
+.cal-hero-kicker{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--app-muted)}
+.cal-countdown{font-size:32px;font-weight:800;line-height:1.05;color:var(--app-accent)}
+.cal-hero-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cal-hero-title strong{font-size:16px}
+.cal-hero-progress{display:grid;gap:8px;align-content:start;min-width:220px;flex:1;max-width:320px;font-size:12px}
+.cal-track{height:8px;background:var(--app-soft);border-radius:999px;overflow:hidden}
+.cal-track i{display:block;height:100%;background:var(--app-accent)}
+.cal-track i.done{background:var(--app-positive)}
+
+/* Kind chips: pill + border, colored via currentColor so they stay theme-safe. */
+.cal-chip{display:inline-flex;align-items:center;padding:2px 9px;border:1px solid currentColor;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.cal-chip.kind-kickoff,.cal-chip.kind-design{color:var(--app-accent)}
+.cal-chip.kind-build{color:var(--app-ink)}
+.cal-chip.kind-practice{color:var(--app-positive)}
+.cal-chip.kind-event{color:var(--app-warning)}
+.cal-chip.kind-deadline{color:var(--app-critical)}
+.cal-chip.kind-meeting,.cal-chip.kind-outreach,.cal-chip.kind-other{color:var(--app-muted)}
+
+/* Seed panel (collapsible). */
+.cal-seed summary{font-size:13px;font-weight:700;color:var(--app-ink);cursor:pointer}
+.cal-seed-body{display:grid;gap:10px;padding-top:12px}
+.cal-seed-body p{margin:0;font-size:12px}
+.cal-seed-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* Month timeline. */
+.cal-month{display:grid;gap:8px}
+.cal-month h2{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
+.cal-month h2 span{font-variant-numeric:tabular-nums;font-size:11px}
+.cal-month ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.cal-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
+.cal-item.done,.cal-item.past{opacity:.62}
+.cal-item.done .cal-item-top strong{text-decoration:line-through}
+.cal-check{display:flex;align-items:center;padding-top:2px;cursor:pointer}
+.cal-check input{width:18px;height:18px;min-height:auto;flex:none;accent-color:var(--app-accent)}
+.cal-item-main{display:grid;gap:3px;min-width:0;flex:1}
+.cal-item-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cal-item-top strong{font-size:13px;min-width:0;overflow-wrap:anywhere}
+.cal-item-date{font-size:12px;color:var(--app-muted);font-variant-numeric:tabular-nums}
+.cal-item-notes{margin:0;font-size:12px;overflow-wrap:anywhere}
+
+/* Add-milestone form. */
+.cal-add{display:grid;gap:10px}
+.cal-add h2{margin:0;font-size:15px}
+.cal-add-grid{display:grid;grid-template-columns:minmax(200px,1fr) 140px 150px 150px;gap:8px}
+.cal-add button[type="submit"]{justify-self:start}
+
+@media(max-width:820px){
+  .cal-hero{flex-direction:column}
+  .cal-hero-progress{max-width:none;width:100%}
+  .cal-add-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:520px){
+  .cal-add-grid{grid-template-columns:1fr}
+  .cal-countdown{font-size:26px}
+}
