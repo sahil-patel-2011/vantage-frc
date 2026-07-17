@@ -15,7 +15,10 @@ export default function PricingPage() {
       <SiteHeader />
       <main className="pricing-page">
         <section className="pricing-hero">
-          <span className="section-id">PRICING / INDIVIDUAL OR TEAM</span>
+          <div className="showcase-kicker">
+            <span className="brand-chip">Vantage</span>
+            <span className="section-id">PRICING / INDIVIDUAL OR TEAM</span>
+          </div>
           <h1>Fund private work or the whole team—deliberately.</h1>
           <p>
             Free keeps the competition core useful with BYOK/local AI. Paid plans add Vantage managed routing, tools,
