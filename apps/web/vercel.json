@@ -3,11 +3,11 @@
   "crons": [
     {
       "path": "/api/cron/tba-sync?mode=event-day",
-      "schedule": "* * * * *"
+      "schedule": "0 14 * * *"
     },
     {
       "path": "/api/cron/tba-sync?mode=season",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }
