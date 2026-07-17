@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AllianceBoardState, AllianceSlot } from "../../lib/strategy/pick-desk";
+import type { AllianceBoardState, AllianceSlot } from "../../../lib/strategy/pick-desk";
 
 type DraftPayload = {
   orgId: string;
