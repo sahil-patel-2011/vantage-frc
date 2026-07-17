@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AiInsightPanel } from "../../components/ai-insight-panel";
 import {
   bomCoverage,
   categoryLabel,
@@ -715,6 +716,13 @@ export default function InventoryClient() {
 
       {tab === "locations" ? <LocationsPanel view={view} orgId={orgId} busyKey={busyKey} run={run} /> : null}
       {tab === "bom" ? <BomPanel view={view} orgId={orgId} busyKey={busyKey} run={run} /> : null}
+
+      <AiInsightPanel
+        orgId={orgId}
+        kind="stock_advisor"
+        title="Stock advisor"
+        description="Reorder brief from low-stock thresholds and BOM shortfalls — what to buy before build hours are lost."
+      />
     </main>
   );
 }
