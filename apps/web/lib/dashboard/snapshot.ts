@@ -60,6 +60,30 @@ export async function loadDashboardSnapshot(
   );
   const tbaConfigured =
     platformEnvKey || Boolean(tbaMeta.rows[0]?.credential) || Boolean(tbaMeta.rows[0]?.cache);
+
+  const [scoutingMeta, aiMeta] = await Promise.all([
+    eventKey
+      ? client.query<{ count: string }>(
+          `SELECT count(*)::text AS count FROM scout_schemas WHERE org_id = $1 AND year = (
+             SELECT year FROM events_ref WHERE event_key = $2
+           )`,
+          [input.orgId, eventKey],
+        )
+      : Promise.resolve({ rows: [{ count: "0" }] }),
+    client.query<{ hasKey: boolean }>(
+      `SELECT EXISTS(
+         SELECT 1 FROM org_llm_keys WHERE org_id = $1
+       ) OR EXISTS(
+         SELECT 1 FROM org_provider_configs
+         WHERE org_id = $1 AND enabled = true AND key_ciphertext IS NOT NULL
+       ) AS "hasKey"`,
+      [input.orgId],
+    ),
+  ]);
+
+  const hasScoutingSchemas = Number(scoutingMeta.rows[0]?.count ?? 0) > 0;
+  const hasAiProvider = Boolean(aiMeta.rows[0]?.hasKey);
+
   const context = {
     orgName: row.name,
     teamNumber: row.teamNumber,
@@ -68,6 +92,8 @@ export async function loadDashboardSnapshot(
     role: input.role,
     setupRequired: !eventKey || !teamKey,
     tbaConfigured,
+    hasScoutingSchemas,
+    hasAiProvider,
   };
 
   const widgets: Record<string, WidgetPayload> = {};
@@ -403,17 +429,67 @@ export async function loadDashboardSnapshot(
   }
 
   async function quickActions() {
+    const orgQuery = `?orgId=${encodeURIComponent(input.orgId)}`;
     widgets.quick_actions = stamp("live", "quick_actions", {
       links: [
-        { href: "/scouting", label: "Scout", detail: "Open assigned form" },
-        { href: "/pit", label: "Pit Command", detail: "Release gate & battery" },
-        { href: "/strategy", label: "Strategize", detail: "Run match what-if" },
-        { href: "/messages", label: "Messages", detail: "Team chat & DMs" },
+        { href: `/scouting${orgQuery}`, label: "Scout", detail: "Open assigned form" },
+        { href: `/pit${orgQuery}`, label: "Pit Command", detail: "Release gate & battery" },
+        { href: `/strategy${orgQuery}`, label: "Strategize", detail: "Run match what-if" },
+        { href: `/messages${orgQuery}`, label: "Messages", detail: "Team chat & DMs" },
       ],
     });
   }
 
+  async function onboardingChecklist() {
+    const orgQuery = `?orgId=${encodeURIComponent(input.orgId)}`;
+    const steps = [
+      {
+        key: "workspace",
+        label: "Join workspace",
+        detail: "Accept a team invite or select your org",
+        done: true,
+        href: "/invite",
+      },
+      {
+        key: "event",
+        label: "Select event",
+        detail: "Set the active competition context",
+        done: Boolean(eventKey && teamKey),
+        href: `/command${orgQuery}`,
+      },
+      {
+        key: "tba",
+        label: "Sync TBA",
+        detail: "Connect match and rank ingest",
+        done: tbaConfigured,
+        href: `/team/data${orgQuery}`,
+      },
+      {
+        key: "scouting",
+        label: "Scout",
+        detail: "Starter match and pit forms",
+        done: hasScoutingSchemas,
+        href: `/scouting${orgQuery}`,
+      },
+      {
+        key: "ai",
+        label: "Metered AI",
+        detail: "BYO provider for free-tier AI",
+        done: hasAiProvider,
+        href: `/team${orgQuery}#custom-providers`,
+      },
+    ];
+    const complete = steps.every((step) => step.done);
+    widgets.onboarding_checklist = stamp(
+      complete ? "live" : "setup_required",
+      "onboarding_checklist",
+      { steps, complete },
+      complete ? undefined : "Complete the first-run checklist to unlock live widgets.",
+    );
+  }
+
   await Promise.all([
+    onboardingChecklist(),
     nextMatch(),
     recentResult(),
     competitionSnapshot(),

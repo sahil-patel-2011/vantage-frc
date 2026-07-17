@@ -1,6 +1,6 @@
 import { validateHostedProviderUrl } from "@vantage/agent";
 import { createKms, decryptSecret, encryptSecret } from "@vantage/billing";
-import { auth } from "@vantage/core";
+import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
@@ -36,9 +36,8 @@ export async function POST(request: Request) {
     const baseUrl = body.localRelay ? null : await validateHostedProviderUrl(body.baseUrl ?? "");
     const encrypted = body.apiKey ? await encryptSecret(body.apiKey, createKms()) : null;
     const id = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const admin = await client.query(`SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2 AND role IN ('owner','admin')`, [orgId, session.user.id]);
-      if (!admin.rowCount) throw new Error("Organization administrator access required");
-      return (await client.query<{ id: string }>(
+      await assertOrgCapability(client, orgId, "manage_api_keys");
+      const inserted = (await client.query<{ id: string }>(
         `INSERT INTO org_provider_configs(org_id,kind,label,base_url,local_relay,key_ciphertext,
           key_nonce,key_auth_tag,encrypted_dek,kms_key_id,model_mappings,enabled,created_by)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,true,$12) RETURNING id`,
@@ -46,6 +45,26 @@ export async function POST(request: Request) {
           encrypted?.nonce ?? null, encrypted?.authTag ?? null, encrypted?.encryptedDek ?? null,
           encrypted?.kmsKeyId ?? null, JSON.stringify(body.modelMappings ?? {}), session.user.id],
       )).rows[0]!.id;
+      if (encrypted && body.apiKey?.trim()) {
+        await client.query(`DELETE FROM org_llm_keys WHERE org_id = $1 AND label = $2`, [orgId, body.label]);
+        await client.query(
+          `INSERT INTO org_llm_keys
+            (org_id, provider, label, key_ciphertext, key_nonce, key_auth_tag, encrypted_dek, kms_key_id, created_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            orgId,
+            body.kind,
+            body.label,
+            encrypted.ciphertext,
+            encrypted.nonce,
+            encrypted.authTag,
+            encrypted.encryptedDek,
+            encrypted.kmsKeyId,
+            session.user.id,
+          ],
+        );
+      }
+      return inserted;
     });
     return Response.json({ id }, { status: 201 });
   } catch (error) { return fail(error); }
@@ -57,6 +76,7 @@ export async function PATCH(request: Request) {
     const { session, orgId } = await context(body.orgId);
     if (!body.id || !body.action) throw new Error("Invalid provider action");
     const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
+      await assertOrgCapability(client, orgId, "manage_api_keys");
       if (body.action === "disable") {
         await client.query(`UPDATE org_provider_configs SET enabled=false,disabled_at=now(),updated_at=now()
           WHERE id=$1 AND org_id=$2`, [body.id, orgId]);

@@ -14,6 +14,37 @@ export type FieldDefinition = {
 
 export type SchemaDefinition = { title: string; fields: FieldDefinition[] };
 
+export const DEFAULT_MATCH_SCHEMA: SchemaDefinition = {
+  title: "Match scouting",
+  fields: [
+    { key: "auto_score", label: "Auto score", type: "number" },
+    { key: "teleop_score", label: "Teleop score", type: "number" },
+    {
+      key: "endgame",
+      label: "Endgame",
+      type: "select",
+      options: ["none", "partial", "full"],
+    },
+    { key: "disabled", label: "Disabled", type: "boolean" },
+    { key: "notes", label: "Notes", type: "text" },
+  ],
+};
+
+export const DEFAULT_PIT_SCHEMA: SchemaDefinition = {
+  title: "Pit scouting",
+  fields: [
+    {
+      key: "drivetrain",
+      label: "Drivetrain",
+      type: "select",
+      options: ["swerve", "tank", "mecanum", "other"],
+    },
+    { key: "cycle_time", label: "Cycle time (s)", type: "number" },
+    { key: "reliable", label: "Reliable", type: "boolean" },
+    { key: "notes", label: "Notes", type: "text" },
+  ],
+};
+
 export type ScoutSchema = {
   id: string;
   orgId: string;

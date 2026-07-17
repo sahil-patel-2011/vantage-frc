@@ -24,25 +24,26 @@ const WIDGET_ICON: Record<string, { icon: IconName; tone: string; toneBg: string
   quick_actions: { icon: "grid", tone: "#1f4fd6", toneBg: "#e4ecfc" },
   notifications: { icon: "bell", tone: "#1f4fd6", toneBg: "#e4ecfc" },
   alerts: { icon: "bell", tone: "#b91c1c", toneBg: "#fee2e2" },
+  onboarding_checklist: { icon: "pin", tone: "#1f4fd6", toneBg: "#e4ecfc" },
 };
 
 const EMPTY_COPY: Record<string, EmptyHint> = {
   next_match: {
     title: "No upcoming match yet",
     body: "Select a team workspace and active event to load the schedule from TBA.",
-    ctaHref: "/workspace",
-    ctaLabel: "Select workspace",
+    ctaHref: "/command",
+    ctaLabel: "Select event",
   },
   recent_result: {
     title: "No scored matches yet",
     body: "Once TBA syncs results for your event, the latest W/L shows here.",
-    ctaHref: "/workspace",
+    ctaHref: "/command",
     ctaLabel: "Select event",
   },
   competition_snapshot: {
     title: "No competition snapshot",
     body: "Rank, record, and EPA appear after an event is selected and TBA/Statbotics sync.",
-    ctaHref: "/workspace",
+    ctaHref: "/command",
     ctaLabel: "Select event",
   },
   scouting_coverage: {
@@ -92,6 +93,12 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   quick_actions: {
     title: "Get set up",
     body: "Use the actions below to connect workspace, event, and TBA before live widgets fill in.",
+  },
+  onboarding_checklist: {
+    title: "Finish setup",
+    body: "Complete workspace, event, TBA, scouting, and AI steps to unlock live widgets.",
+    ctaHref: "/command",
+    ctaLabel: "Select event",
   },
 };
 
@@ -218,16 +225,17 @@ export function countdownLabel(iso: string | null | undefined) {
 }
 
 function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
+  const orgQuery = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
   const links: Array<{ href: string; label: string; detail: string }> = [];
   if (!orgId) {
-    links.push({ href: "/workspace", label: "Workspace", detail: "Select workspace" });
+    links.push({ href: "/invite", label: "Workspace", detail: "Accept invite" });
   } else {
-    links.push({ href: "/workspace", label: "Event", detail: "Select event / location" });
+    links.push({ href: `/command${orgQuery}`, label: "Event", detail: "Select event" });
   }
   if (tbaConfigured === false) {
-    links.push({ href: "/team/data", label: "TBA", detail: "Connect TBA" });
+    links.push({ href: `/team/data${orgQuery}`, label: "TBA", detail: "Connect TBA" });
   }
-  links.push({ href: "/team", label: "Invite", detail: "Invite members" });
+  links.push({ href: `/team${orgQuery}`, label: "Invite", detail: "Invite members" });
   return links;
 }
 
@@ -607,6 +615,39 @@ export function DashboardWidgetView({
               </a>
             ))}
           </div>
+        </Shell>
+      );
+    }
+    case "onboarding_checklist": {
+      const steps =
+        (data.steps as Array<{
+          key: string;
+          label: string;
+          detail: string;
+          done: boolean;
+          href: string;
+        }> | undefined) ?? [];
+      return (
+        <Shell
+          type={type}
+          title="Setup checklist"
+          payload={payload}
+          emptyHint={emptyHintFor("onboarding_checklist")}
+          orgId={orgId}
+          preferChildren
+        >
+          <ol className="dash-setup-steps compact">
+            {steps.map((step, index) => (
+              <li key={step.key} className={step.done ? "done" : index === steps.findIndex((item) => !item.done) ? "current" : undefined}>
+                <b>{index + 1}</b>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                {!step.done ? <a href={withOrg(step.href)}>Open</a> : <em>Done</em>}
+              </li>
+            ))}
+          </ol>
         </Shell>
       );
     }
