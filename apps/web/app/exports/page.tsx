@@ -14,19 +14,11 @@ export default async function ExportsPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="module-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Team / Export Center</span>
-            <h1>Select an organization</h1>
-            <p>Choose a workspace to export scouting, strategy, and ops data.</p>
-          </div>
-        </header>
-        <section className="app-card soft-panel">
-          <a className="app-button" href="/workspace">
-            Choose workspace
-          </a>
-        </section>
+      <main className="soft-gate content">
+        <span className="eyebrow">Export</span>
+        <h1>Select a workspace</h1>
+        <p>Open Export Center from a team workspace so archives stay scoped to the right organization.</p>
+        <a href="/dashboard">Go to Home</a>
       </main>
     );
   }
