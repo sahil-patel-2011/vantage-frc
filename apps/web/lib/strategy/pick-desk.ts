@@ -120,7 +120,7 @@ export async function loadPickDesk(
         `SELECT team_key AS "teamKey", payload, confidence
          FROM match_scout_entries
          WHERE org_id = $1 AND event_key = $2 AND team_key = ANY($3::text[])
-         ORDER BY submitted_at DESC
+         ORDER BY updated_at DESC
          LIMIT 800`,
         [row.orgId, row.eventKey, teamKeys],
       )

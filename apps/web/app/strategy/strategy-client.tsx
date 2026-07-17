@@ -109,12 +109,35 @@ function TeamChip({
   epa,
   record,
   source,
+  scoutSample,
+  reliability,
+  autoCapability,
+  teleopCapability,
+  qualityWeight,
 }: {
   teamKey: string;
   epa: number | null;
   record: string | null;
   source: string | null;
+  scoutSample?: number;
+  reliability?: number | null;
+  autoCapability?: number | null;
+  teleopCapability?: number | null;
+  qualityWeight?: number | null;
 }) {
+  const scoutBits = [
+    scoutSample && scoutSample > 0 ? `scout n=${scoutSample}` : null,
+    reliability != null ? `rel ${Math.round(reliability)}%` : null,
+    autoCapability != null && autoCapability >= 0.35
+      ? `auto ${Math.round(autoCapability * 100)}%`
+      : null,
+    teleopCapability != null && teleopCapability >= 0.35
+      ? `tele ${Math.round(teleopCapability * 100)}%`
+      : null,
+    qualityWeight != null && qualityWeight < 0.95
+      ? `q ${Math.round(qualityWeight * 100)}%`
+      : null,
+  ].filter(Boolean);
   return (
     <li>
       <strong>{teamKey.replace(/^frc/, "")}</strong>
@@ -122,6 +145,7 @@ function TeamChip({
       <small>
         {record ?? "no record"}
         {source ? ` · ${source}` : ""}
+        {scoutBits.length ? ` · ${scoutBits.join(" · ")}` : ""}
       </small>
     </li>
   );
@@ -235,7 +259,15 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
               <span>
                 <em className={`strategy-kind ${factor.kind}`}>{factor.kind.toUpperCase()}</em> {factor.name}
               </span>
-              <small>{factor.evidence}</small>
+              <small>
+                {factor.evidence}
+                {factor.scoutEntryIds?.length
+                  ? ` · entries ${factor.scoutEntryIds
+                      .slice(0, 4)
+                      .map((id) => id.slice(0, 8))
+                      .join(", ")}`
+                  : ""}
+              </small>
             </li>
           ))}
         </ul>
@@ -318,6 +350,63 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
               </li>
             ))}
           </ul>
+        )}
+        <h3>Scout provenance</h3>
+        {view.scoutProvenance.length === 0 ? (
+          <p className="app-muted">No org scout entries influenced this prediction yet.</p>
+        ) : (
+          <>
+            <ul className="strategy-scout-provenance">
+              {view.scoutProvenance.slice(0, 24).map((ref) => (
+                <li key={`${ref.entryId}-${ref.influence}`}>
+                  <strong>{ref.teamKey.replace(/^frc/, "")}</strong>
+                  <span>
+                    {ref.entryType} · {ref.influence}
+                    {ref.weight < 0.95 ? ` · weight ${Math.round(ref.weight * 100)}%` : ""}
+                  </span>
+                  <small>
+                    entry {ref.entryId.slice(0, 8)}
+                    {ref.matchKey ? ` · ${ref.matchKey}` : ""}
+                    {ref.scoutUserId ? ` · scout ${ref.scoutUserId.slice(0, 8)}` : ""}
+                  </small>
+                </li>
+              ))}
+            </ul>
+            {view.operations.some((op) => (op.qualityNotes?.length ?? 0) > 0) ? (
+              <div className="strategy-quality-notes">
+                <h4>Scout quality</h4>
+                <ul>
+                  {view.operations
+                    .flatMap((op) =>
+                      (op.qualityNotes ?? []).map((note) => ({ teamKey: op.teamKey, note })),
+                    )
+                    .slice(0, 8)
+                    .map(({ teamKey, note }) => (
+                      <li key={`${teamKey}-${note}`}>
+                        <small>
+                          {teamKey.replace(/^frc/, "")}: {note}
+                        </small>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ) : null}
+            {view.operations.some((op) => (op.pitNotes?.length ?? 0) > 0) ? (
+              <div className="strategy-pit-notes">
+                <h4>Pit / match notes</h4>
+                <ul>
+                  {view.operations
+                    .filter((op) => (op.pitNotes?.length ?? 0) > 0)
+                    .map((op) => (
+                      <li key={op.teamKey}>
+                        <strong>{op.teamKey.replace(/^frc/, "")}</strong>
+                        <small>{op.pitNotes!.slice(0, 2).join(" · ")}</small>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ) : null}
+          </>
         )}
       </article>
 
