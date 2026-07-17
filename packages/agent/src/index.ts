@@ -112,6 +112,44 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
   readonly provider = "local";
   readonly model = "vantage-local-chat-v1";
   async complete(input: { message: string; context: ContextItem[] }) {
+    const { formatGroundedReply } = await import("./auto-tools");
+    const toolFacts = input.context.filter((item) => item.type === "module_fact");
+    if (toolFacts.length) {
+      const annotated = toolFacts.map((item) => {
+        try {
+          const parsed = JSON.parse(item.content) as {
+            tool?: string;
+            status?: "ok" | "empty" | "setup_required";
+            classification?: "hard_metric" | "scout_observation" | "researched_claim" | "model_inference";
+            summary?: string;
+            input?: unknown;
+          };
+          return {
+            name: parsed.tool ?? item.id,
+            status: parsed.status ?? ("ok" as const),
+            classification: parsed.classification ?? ("hard_metric" as const),
+            summary: parsed.summary ?? "Tool result",
+            output: parsed,
+            input: parsed.input,
+          };
+        } catch {
+          return {
+            name: item.id,
+            status: "ok" as const,
+            classification: "hard_metric" as const,
+            summary: item.content.slice(0, 120),
+            output: item.content,
+          };
+        }
+      });
+      const text = formatGroundedReply(input.message, annotated);
+      return {
+        text,
+        promptTokens: Math.ceil((input.message.length + input.context.reduce((n, i) => n + i.content.length, 0)) / 4),
+        completionTokens: Math.ceil(text.length / 4),
+        costUsd: 0,
+      };
+    }
     const sources = input.context.map((item) => `${item.type}:${item.id}`).join(", ");
     const text = `Vantage response: ${input.message.trim()}${sources ? ` Context used: ${sources}.` : ""}`;
     return {
@@ -127,4 +165,5 @@ export { AgentRepository } from "./repository";
 export * from "./providers";
 export * from "./orchestrator";
 export * from "./tools";
+export * from "./auto-tools";
 export * from "./coding-assistant";
