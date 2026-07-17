@@ -1,7 +1,7 @@
 // Season Costs & Budget domain types. Pure data shapes — no I/O, no framework imports.
-// This tracks a team's REAL-WORLD season spend (FRC registration + event fees + everything
-// bought), not the app's own AI/usage costs. Goal: keep the team under budget, with an
-// opt-in automated finance assistant that turns the numbers into guidance.
+// This tracks a team's TOTAL cost of a season: real-world spend (FRC registration + event
+// fees + everything bought), recurring subscriptions, AND the app's own AI/API usage — so the
+// team sees the complete picture and can keep it under budget.
 
 export type CostCategory =
   | "registration"
@@ -38,6 +38,28 @@ export type SeasonBudget = {
   notes: string | null;
 };
 
+export type SubscriptionCadence = "monthly" | "annual" | "one_time";
+
+export type SeasonSubscription = {
+  id: string;
+  name: string;
+  provider: string | null;
+  amountUsd: number;
+  cadence: SubscriptionCadence;
+  active: boolean;
+  notes: string | null;
+};
+
+export type SubscriptionWithAnnual = SeasonSubscription & { annualUsd: number };
+
+export type SubscriptionsSummary = {
+  count: number;
+  activeCount: number;
+  /** Annualized total of ACTIVE subscriptions (monthly ×12, annual ×1, one-time ×1). */
+  totalAnnual: number;
+  items: SubscriptionWithAnnual[];
+};
+
 export type CategoryBreakdown = {
   category: CostCategory;
   committed: number;
@@ -62,6 +84,20 @@ export type CostSummary = {
   /** committed / budget (0..∞), or null when no budget is set. */
   pctUsed: number | null;
   overBudget: boolean;
+};
+
+export type AllCostsSource = "season" | "subscriptions" | "api";
+
+export type AllCostsSummary = {
+  /** Real-world season purchases + fees (committed). */
+  seasonCommitted: number;
+  /** Annualized recurring subscriptions. */
+  subscriptionsAnnual: number;
+  /** The app's own AI/API usage cost for the season (from the usage ledger). */
+  apiUsageUsd: number;
+  /** Everything, added up. */
+  grandTotal: number;
+  breakdown: Array<{ key: AllCostsSource; label: string; amount: number; pct: number }>;
 };
 
 export type BudgetStatus = "unset" | "healthy" | "watch" | "over";

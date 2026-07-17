@@ -1,2 +1,11 @@
 export * from "./types";
-export { budgetInsights, costCategoryLabel, summarizeCosts, usd } from "./costs";
+export {
+  annualizedSubscription,
+  budgetInsights,
+  combineAllCosts,
+  costCategoryLabel,
+  subscriptionCadenceLabel,
+  summarizeCosts,
+  summarizeSubscriptions,
+  usd,
+} from "./costs";
