@@ -1,16 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { costCategoryLabel, usd } from "../../lib/costs";
+import { costCategoryLabel, subscriptionCadenceLabel, usd } from "../../lib/costs";
 import {
   COST_CATEGORIES,
   COST_STATUSES,
+  SUBSCRIPTION_CADENCES,
   type CostsView,
 } from "../../lib/costs/compute-costs";
-import type { BudgetStatus, CostCategory, CostStatus, SeasonCost } from "../../lib/costs/types";
+import type {
+  BudgetStatus,
+  CostCategory,
+  CostStatus,
+  SeasonCost,
+  SubscriptionCadence,
+  SubscriptionWithAnnual,
+} from "../../lib/costs/types";
 
 type LiveView = Extract<CostsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+const SOURCE_COLOR: Record<string, string> = {
+  season: "#1f4fd6",
+  subscriptions: "#7a4fd6",
+  api: "#1f7a3d",
+};
 
 function statusTone(status: BudgetStatus): string {
   if (status === "over") return "#c02626";
@@ -86,8 +100,8 @@ export default function CostsClient() {
           <span className="breadcrumbs">Team / Season Costs</span>
           <h1>Season Costs &amp; Budget</h1>
           <p>
-            Track your team&apos;s real-world season spend — registration, event fees, and everything you buy — against
-            one budget, so nothing sneaks up on you. This is separate from the app&apos;s own usage costs.
+            The full cost of your season in one place — real-world spend (registration, event fees, purchases), recurring
+            subscriptions, and the app&apos;s own AI/API usage — tracked against one budget.
           </p>
         </div>
         {view?.status === "live" && view.seasons.length > 0 ? (
@@ -148,14 +162,57 @@ export default function CostsClient() {
         </section>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
+          <AllInPanel view={view} />
           <BudgetPanel view={view} busy={busy} mutate={mutate} />
           {view.insight ? <AssistantPanel view={view} /> : null}
+          <SubscriptionsSection view={view} busy={busy} mutate={mutate} />
           <AddCostForm busy={busy} mutate={mutate} />
           {view.summary.byCategory.length > 0 ? <CategoryBreakdown view={view} /> : null}
           <CostLog view={view} busy={busy} mutate={mutate} />
         </div>
       )}
     </main>
+  );
+}
+
+function AllInPanel({ view }: { view: LiveView }) {
+  const all = view.allCosts;
+  const max = Math.max(all.grandTotal, 1);
+  return (
+    <section className="app-card soft-panel" aria-label="Total season cost" style={{ display: "grid", gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <span className="app-muted">All-in season cost ({view.seasonYear})</span>
+          <strong style={{ fontSize: "2.2rem", display: "block" }}>{usd(all.grandTotal)}</strong>
+        </div>
+        <small className="app-muted" style={{ maxWidth: 280 }}>
+          Everything: purchases &amp; fees + annualized subscriptions + the app&apos;s live AI/API usage.
+        </small>
+      </div>
+      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
+        {all.breakdown.map((row) => (
+          <li key={row.key} style={{ display: "grid", gridTemplateColumns: "180px 1fr auto", gap: 8, alignItems: "center" }}>
+            <span>
+              <span
+                aria-hidden="true"
+                style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: SOURCE_COLOR[row.key], marginRight: 6 }}
+              />
+              {row.label}
+            </span>
+            <span className="mini-probability" aria-hidden="true">
+              <i style={{ width: `${Math.max(1, (row.amount / max) * 100)}%`, background: SOURCE_COLOR[row.key] }} />
+            </span>
+            <small className="app-muted" style={{ textAlign: "right" }}>
+              {usd(row.amount)} · {Math.round(row.pct * 100)}%
+            </small>
+          </li>
+        ))}
+      </ul>
+      <small className="app-muted">
+        App AI/API usage ({usd(view.apiUsageUsd)}) is read live from your usage ledger for this season — separate from the
+        real-world budget below.
+      </small>
+    </section>
   );
 }
 
@@ -190,7 +247,7 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
         </div>
         <div>
           <strong style={{ fontSize: "1.6rem", display: "block" }}>{usd(summary.totalCommitted)}</strong>
-          <span className="app-muted">Committed</span>
+          <span className="app-muted">Committed (real-world)</span>
         </div>
         <div>
           <strong style={{ fontSize: "1.6rem", display: "block", color: summary.overBudget ? "#c02626" : "inherit" }}>
@@ -297,6 +354,122 @@ function AssistantPanel({ view }: { view: LiveView }) {
         Automated analysis of your own budget data — rule-based, kept within your team.
       </small>
     </section>
+  );
+}
+
+function SubscriptionsSection({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
+  const subs = view.subscriptions;
+  return (
+    <section className="app-card soft-panel" style={{ display: "grid", gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+        <h2 style={{ margin: 0 }}>Subscriptions</h2>
+        <span className="app-muted">
+          {subs.activeCount} active · <strong>{usd(subs.totalAnnual)}</strong>/yr
+        </span>
+      </div>
+
+      {subs.items.length > 0 ? (
+        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
+          {subs.items.map((sub: SubscriptionWithAnnual) => (
+            <li
+              key={sub.id}
+              style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", opacity: sub.active ? 1 : 0.55 }}
+            >
+              <div>
+                <strong>{sub.name}</strong>
+                {sub.provider ? <small className="app-muted"> · {sub.provider}</small> : null}
+                <small className="app-muted" style={{ display: "block" }}>
+                  {usd(sub.amountUsd)} {subscriptionCadenceLabel(sub.cadence).toLowerCase()} · {usd(sub.annualUsd)}/yr
+                </small>
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <button
+                  type="button"
+                  className={`app-badge ${sub.active ? "good" : "demo"}`}
+                  disabled={busy}
+                  title="Toggle active"
+                  onClick={() => mutate({ action: "update-subscription", subscriptionId: sub.id, active: !sub.active })}
+                  style={{ cursor: "pointer", border: "none" }}
+                >
+                  {sub.active ? "Active" : "Inactive"}
+                </button>
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => {
+                    if (window.confirm(`Delete "${sub.name}"?`)) mutate({ action: "delete-subscription", subscriptionId: sub.id });
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="app-muted" style={{ margin: 0 }}>
+          Add recurring costs — your Vantage plan, CAD licenses, hosting, software — to see the true all-in season total.
+        </p>
+      )}
+
+      <AddSubscriptionForm busy={busy} mutate={mutate} />
+    </section>
+  );
+}
+
+function AddSubscriptionForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
+  const empty = useMemo(
+    () => ({ name: "", provider: "", amountUsd: "", cadence: "monthly" as SubscriptionCadence }),
+    [],
+  );
+  const [form, setForm] = useState(empty);
+  const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
+    setForm((prev) => ({ ...prev, [key]: event.target.value }));
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!form.name.trim()) return;
+        mutate({
+          action: "add-subscription",
+          name: form.name,
+          provider: form.provider || undefined,
+          amountUsd: form.amountUsd || 0,
+          cadence: form.cadence,
+          active: true,
+        });
+        setForm(empty);
+      }}
+      style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", borderTop: "1px solid rgba(128,128,128,0.2)", paddingTop: 12 }}
+    >
+      <label style={{ display: "grid", gap: 4, flex: "2 1 160px" }}>
+        <span className="app-muted">Subscription</span>
+        <input value={form.name} onChange={set("name")} placeholder="Onshape, Fusion, hosting…" required />
+      </label>
+      <label style={{ display: "grid", gap: 4 }}>
+        <span className="app-muted">Provider (optional)</span>
+        <input value={form.provider} onChange={set("provider")} />
+      </label>
+      <label style={{ display: "grid", gap: 4, width: 110 }}>
+        <span className="app-muted">Amount ($)</span>
+        <input type="number" min={0} step="0.01" value={form.amountUsd} onChange={set("amountUsd")} required />
+      </label>
+      <label style={{ display: "grid", gap: 4 }}>
+        <span className="app-muted">Cadence</span>
+        <select value={form.cadence} onChange={set("cadence")}>
+          {SUBSCRIPTION_CADENCES.map((cadence) => (
+            <option key={cadence} value={cadence}>
+              {subscriptionCadenceLabel(cadence)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="submit" className="app-button secondary" disabled={busy || !form.name.trim()}>
+        Add subscription
+      </button>
+    </form>
   );
 }
 

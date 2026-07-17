@@ -4,12 +4,17 @@
 // float drift, then surfaced as rounded dollars.
 
 import type {
+  AllCostsSummary,
   BudgetInsight,
   CategoryBreakdown,
   CostCategory,
   CostSummary,
   SeasonBudget,
   SeasonCost,
+  SeasonSubscription,
+  SubscriptionCadence,
+  SubscriptionsSummary,
+  SubscriptionWithAnnual,
 } from "./types";
 
 const CATEGORY_ORDER: CostCategory[] = [
@@ -29,6 +34,7 @@ const FEE_CATEGORIES: ReadonlySet<CostCategory> = new Set<CostCategory>(["regist
 
 const cents = (usd: number) => Math.round((Number.isFinite(usd) ? usd : 0) * 100);
 const dollars = (c: number) => Math.round(c) / 100;
+const round2 = (usd: number) => Math.round((Number.isFinite(usd) ? usd : 0) * 100) / 100;
 
 export function costCategoryLabel(category: CostCategory): string {
   const labels: Record<CostCategory, string> = {
@@ -44,6 +50,15 @@ export function costCategoryLabel(category: CostCategory): string {
     other: "Other",
   };
   return labels[category];
+}
+
+export function subscriptionCadenceLabel(cadence: SubscriptionCadence): string {
+  const labels: Record<SubscriptionCadence, string> = {
+    monthly: "Monthly",
+    annual: "Annual",
+    one_time: "One-time",
+  };
+  return labels[cadence];
 }
 
 export function usd(amount: number): string {
@@ -112,6 +127,55 @@ export function summarizeCosts(costs: SeasonCost[], budgetUsd: number | null): C
     remaining: budgetCents == null ? null : dollars(budgetCents - totalCommitted),
     pctUsed: budgetCents == null || budgetCents === 0 ? null : Math.round((totalCommitted / budgetCents) * 1000) / 1000,
     overBudget: budgetCents != null && totalCommitted > budgetCents,
+  };
+}
+
+/** Annualized cost of a subscription: monthly ×12, annual ×1, one-time ×1. */
+export function annualizedSubscription(sub: SeasonSubscription): number {
+  const amount = Math.max(0, sub.amountUsd);
+  return sub.cadence === "monthly" ? round2(amount * 12) : round2(amount);
+}
+
+export function summarizeSubscriptions(subscriptions: SeasonSubscription[]): SubscriptionsSummary {
+  const items: SubscriptionWithAnnual[] = subscriptions
+    .map((sub) => ({ ...sub, annualUsd: annualizedSubscription(sub) }))
+    .sort((a, b) => b.annualUsd - a.annualUsd || a.name.localeCompare(b.name));
+  const active = items.filter((sub) => sub.active);
+  return {
+    count: items.length,
+    activeCount: active.length,
+    totalAnnual: round2(active.reduce((sum, sub) => sum + sub.annualUsd, 0)),
+    items,
+  };
+}
+
+/**
+ * Combine every source of cost into one all-in season total: real-world purchases + fees,
+ * annualized subscriptions, and the app's own AI/API usage.
+ */
+export function combineAllCosts(input: {
+  seasonCommitted: number;
+  subscriptionsAnnual: number;
+  apiUsageUsd: number;
+}): AllCostsSummary {
+  const season = round2(input.seasonCommitted);
+  const subscriptions = round2(input.subscriptionsAnnual);
+  const api = round2(input.apiUsageUsd);
+  const grandTotal = round2(season + subscriptions + api);
+  const parts: Array<{ key: AllCostsSummary["breakdown"][number]["key"]; label: string; amount: number }> = [
+    { key: "season", label: "Season purchases & fees", amount: season },
+    { key: "subscriptions", label: "Subscriptions (annualized)", amount: subscriptions },
+    { key: "api", label: "App AI / API usage", amount: api },
+  ];
+  return {
+    seasonCommitted: season,
+    subscriptionsAnnual: subscriptions,
+    apiUsageUsd: api,
+    grandTotal,
+    breakdown: parts.map((part) => ({
+      ...part,
+      pct: grandTotal > 0 ? Math.round((part.amount / grandTotal) * 1000) / 1000 : 0,
+    })),
   };
 }
 

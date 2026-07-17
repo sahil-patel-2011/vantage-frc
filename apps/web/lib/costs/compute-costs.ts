@@ -1,12 +1,16 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { budgetInsights, summarizeCosts } from ".";
+import { budgetInsights, combineAllCosts, summarizeCosts, summarizeSubscriptions } from ".";
 import type {
+  AllCostsSummary,
   BudgetInsight,
   CostCategory,
   CostStatus,
   CostSummary,
   SeasonBudget,
   SeasonCost,
+  SeasonSubscription,
+  SubscriptionCadence,
+  SubscriptionsSummary,
 } from "./types";
 
 export const COST_CATEGORIES: CostCategory[] = [
@@ -22,6 +26,7 @@ export const COST_CATEGORIES: CostCategory[] = [
   "other",
 ];
 export const COST_STATUSES: CostStatus[] = ["planned", "paid"];
+export const SUBSCRIPTION_CADENCES: SubscriptionCadence[] = ["monthly", "annual", "one_time"];
 
 export type CostsSetupStep = { id: string; label: string; detail: string; href: string };
 
@@ -42,6 +47,11 @@ export type CostsView =
       budget: SeasonBudget;
       costs: SeasonCost[];
       summary: CostSummary;
+      subscriptions: SubscriptionsSummary;
+      /** The app's own AI/API usage cost for the season (from the usage ledger). */
+      apiUsageUsd: number;
+      /** Everything added up: season purchases + subscriptions + API usage. */
+      allCosts: AllCostsSummary;
       /** Automated finance-assistant output, or null when the org has not opted in. */
       insight: BudgetInsight | null;
       computedAt: string;
@@ -51,12 +61,7 @@ export function currentSeasonYear(now: Date = new Date()): number {
   return now.getUTCFullYear();
 }
 
-type BudgetRow = {
-  totalBudgetUsd: string | number | null;
-  aiAssistEnabled: boolean;
-  notes: string | null;
-};
-
+type BudgetRow = { totalBudgetUsd: string | number | null; aiAssistEnabled: boolean; notes: string | null };
 type CostRow = {
   id: string;
   label: string;
@@ -65,6 +70,15 @@ type CostRow = {
   vendor: string | null;
   incurredOn: string;
   status: CostStatus;
+  notes: string | null;
+};
+type SubscriptionRow = {
+  id: string;
+  name: string;
+  provider: string | null;
+  amountUsd: string | number | null;
+  cadence: SubscriptionCadence;
+  active: boolean;
   notes: string | null;
 };
 
@@ -83,6 +97,18 @@ function mapCost(row: CostRow): SeasonCost {
     vendor: row.vendor,
     incurredOn: row.incurredOn,
     status: row.status,
+    notes: row.notes,
+  };
+}
+
+function mapSubscription(row: SubscriptionRow): SeasonSubscription {
+  return {
+    id: row.id,
+    name: row.name,
+    provider: row.provider,
+    amountUsd: num(row.amountUsd),
+    cadence: row.cadence,
+    active: Boolean(row.active),
     notes: row.notes,
   };
 }
@@ -124,7 +150,7 @@ export async function computeCostsView(
     };
   }
 
-  const [budgetResult, costResult, seasonResult] = await Promise.all([
+  const [budgetResult, costResult, subscriptionResult, apiUsageResult, seasonResult] = await Promise.all([
     client.query<BudgetRow>(
       `SELECT total_budget_usd AS "totalBudgetUsd", ai_assist_enabled AS "aiAssistEnabled", notes
        FROM season_budgets WHERE org_id = $1 AND season_year = $2`,
@@ -138,10 +164,27 @@ export async function computeCostsView(
        ORDER BY incurred_on DESC, created_at DESC`,
       [org.orgId, seasonYear],
     ),
+    client.query<SubscriptionRow>(
+      `SELECT id, name, provider, amount_usd AS "amountUsd", cadence, active, notes
+       FROM season_subscriptions
+       WHERE org_id = $1 AND season_year = $2
+       ORDER BY active DESC, name`,
+      [org.orgId, seasonYear],
+    ),
+    // The app's own AI/API usage cost for the season, from the shared usage ledger.
+    client.query<{ usd: string }>(
+      `SELECT COALESCE(sum(cost_usd), 0)::text AS usd
+       FROM ai_usage_events
+       WHERE org_id = $1
+         AND created_at >= make_date($2::int, 1, 1)
+         AND created_at < make_date($2::int + 1, 1, 1)`,
+      [org.orgId, seasonYear],
+    ),
     client.query<{ seasonYear: number }>(
       `SELECT DISTINCT season_year AS "seasonYear" FROM (
          SELECT season_year FROM season_budgets WHERE org_id = $1
          UNION SELECT season_year FROM season_costs WHERE org_id = $1
+         UNION SELECT season_year FROM season_subscriptions WHERE org_id = $1
        ) s ORDER BY season_year DESC`,
       [org.orgId],
     ),
@@ -157,6 +200,13 @@ export async function computeCostsView(
 
   const costs = costResult.rows.map(mapCost);
   const summary = summarizeCosts(costs, budget.totalBudgetUsd);
+  const subscriptions = summarizeSubscriptions(subscriptionResult.rows.map(mapSubscription));
+  const apiUsageUsd = Math.round(num(apiUsageResult.rows[0]?.usd ?? 0) * 100) / 100;
+  const allCosts = combineAllCosts({
+    seasonCommitted: summary.totalCommitted,
+    subscriptionsAnnual: subscriptions.totalAnnual,
+    apiUsageUsd,
+  });
   const insight = budget.aiAssistEnabled ? budgetInsights(summary, budget) : null;
 
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
@@ -171,6 +221,9 @@ export async function computeCostsView(
     budget,
     costs,
     summary,
+    subscriptions,
+    apiUsageUsd,
+    allCosts,
     insight,
     computedAt: new Date().toISOString(),
   };
@@ -280,4 +333,83 @@ export async function deleteCost(
   input: { orgId: string; costId: string },
 ): Promise<void> {
   await client.query(`DELETE FROM season_costs WHERE id = $1 AND org_id = $2`, [input.costId, input.orgId]);
+}
+
+export async function addSubscription(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    seasonYear: number;
+    name: string;
+    provider: string | null;
+    amountUsd: number;
+    cadence: SubscriptionCadence;
+    active: boolean;
+    notes: string | null;
+  },
+): Promise<void> {
+  await client.query(
+    `INSERT INTO season_subscriptions (org_id, season_year, name, provider, amount_usd, cadence, active, notes, created_by)
+     VALUES ($1,$2,$3,$4,$5::numeric,$6,$7,$8,$9)`,
+    [
+      input.orgId,
+      input.seasonYear,
+      input.name,
+      input.provider,
+      Math.max(0, input.amountUsd),
+      input.cadence,
+      input.active,
+      input.notes,
+      input.userId,
+    ],
+  );
+}
+
+export async function updateSubscription(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    subscriptionId: string;
+    name?: string;
+    provider?: string | null;
+    amountUsd?: number;
+    cadence?: SubscriptionCadence;
+    active?: boolean;
+    notes?: string | null;
+  },
+): Promise<void> {
+  await client.query(
+    `UPDATE season_subscriptions SET
+       name = COALESCE($3, name),
+       provider = CASE WHEN $4::boolean THEN $5 ELSE provider END,
+       amount_usd = COALESCE($6::numeric, amount_usd),
+       cadence = COALESCE($7, cadence),
+       active = COALESCE($8, active),
+       notes = CASE WHEN $9::boolean THEN $10 ELSE notes END,
+       updated_at = now()
+     WHERE id = $1 AND org_id = $2`,
+    [
+      input.subscriptionId,
+      input.orgId,
+      input.name ?? null,
+      input.provider !== undefined,
+      input.provider ?? null,
+      input.amountUsd ?? null,
+      input.cadence ?? null,
+      input.active ?? null,
+      input.notes !== undefined,
+      input.notes ?? null,
+    ],
+  );
+}
+
+export async function deleteSubscription(
+  client: PoolClient,
+  input: { orgId: string; subscriptionId: string },
+): Promise<void> {
+  await client.query(`DELETE FROM season_subscriptions WHERE id = $1 AND org_id = $2`, [
+    input.subscriptionId,
+    input.orgId,
+  ]);
 }

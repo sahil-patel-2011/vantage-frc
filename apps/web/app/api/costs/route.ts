@@ -4,15 +4,19 @@ import { headers } from "next/headers";
 import {
   COST_CATEGORIES,
   COST_STATUSES,
+  SUBSCRIPTION_CADENCES,
   addCost,
+  addSubscription,
   computeCostsView,
   currentSeasonYear,
   deleteCost,
+  deleteSubscription,
   setBudget,
   updateCost,
+  updateSubscription,
   type CostsView,
 } from "../../../lib/costs/compute-costs";
-import type { CostCategory, CostStatus } from "../../../lib/costs/types";
+import type { CostCategory, CostStatus, SubscriptionCadence } from "../../../lib/costs/types";
 
 export type { CostsView };
 
@@ -152,6 +156,45 @@ export async function POST(request: Request) {
           const costId = trimmedOrNull(body.costId, 64);
           if (!costId) throw new Error("costId is required");
           await deleteCost(client, { orgId, costId });
+          break;
+        }
+        case "add-subscription": {
+          const name = trimmedOrNull(body.name, 200);
+          if (!name) throw new Error("name is required");
+          await addSubscription(client, {
+            orgId,
+            userId,
+            seasonYear,
+            name,
+            provider: trimmedOrNull(body.provider, 200),
+            amountUsd: moneyOrNull(body.amountUsd) ?? 0,
+            cadence: oneOf<SubscriptionCadence>(SUBSCRIPTION_CADENCES, body.cadence) ?? "monthly",
+            active: body.active !== false,
+            notes: trimmedOrNull(body.notes),
+          });
+          break;
+        }
+        case "update-subscription": {
+          const subscriptionId = trimmedOrNull(body.subscriptionId, 64);
+          if (!subscriptionId) throw new Error("subscriptionId is required");
+          const cadence = body.cadence === undefined ? undefined : oneOf<SubscriptionCadence>(SUBSCRIPTION_CADENCES, body.cadence);
+          if (body.cadence !== undefined && !cadence) throw new Error("Invalid cadence");
+          await updateSubscription(client, {
+            orgId,
+            subscriptionId,
+            name: body.name === undefined ? undefined : (trimmedOrNull(body.name, 200) ?? undefined),
+            provider: body.provider === undefined ? undefined : trimmedOrNull(body.provider, 200),
+            amountUsd: body.amountUsd === undefined ? undefined : (moneyOrNull(body.amountUsd) ?? undefined),
+            cadence: cadence ?? undefined,
+            active: body.active === undefined ? undefined : body.active === true,
+            notes: body.notes === undefined ? undefined : trimmedOrNull(body.notes),
+          });
+          break;
+        }
+        case "delete-subscription": {
+          const subscriptionId = trimmedOrNull(body.subscriptionId, 64);
+          if (!subscriptionId) throw new Error("subscriptionId is required");
+          await deleteSubscription(client, { orgId, subscriptionId });
           break;
         }
         default:
