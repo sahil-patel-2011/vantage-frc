@@ -9,6 +9,7 @@ import {
   fuseSeasonSignals,
   opponentTendencies,
   pickListHintsForAlliance,
+  rankPickCandidates,
   predictMatch,
   predictionAccuracy,
   runWhatIf,
@@ -228,6 +229,56 @@ describe("TBA-shaped signal builders", () => {
     );
     expect(hints).toHaveLength(2);
     expect(hints[0]?.teamKey).toBe("frc2337");
+  });
+
+  it("ranks pick candidates from real EPA percentiles without inventing missing metrics", () => {
+    const ranked = rankPickCandidates([
+      {
+        teamKey: "frc2337",
+        teamNumber: 2337,
+        nickname: "A",
+        epa: 60,
+        autoEpa: 10,
+        endgameEpa: 12,
+        source: "statbotics",
+        record: "8-2-0",
+        rank: 1,
+        scoutSample: 4,
+        reliability: 90,
+        foulRate: 0.2,
+      },
+      {
+        teamKey: "frc1",
+        teamNumber: 1,
+        nickname: "B",
+        epa: 30,
+        autoEpa: 4,
+        endgameEpa: 5,
+        source: "tba",
+        record: "4-6-0",
+        rank: 20,
+        scoutSample: 0,
+        reliability: null,
+        foulRate: null,
+      },
+      {
+        teamKey: "frc99",
+        teamNumber: 99,
+        nickname: null,
+        epa: null,
+        autoEpa: null,
+        endgameEpa: null,
+        source: null,
+        record: null,
+        rank: null,
+        scoutSample: 0,
+        reliability: null,
+        foulRate: null,
+      },
+    ]);
+    expect(ranked[0]?.teamKey).toBe("frc2337");
+    expect(ranked[0]?.suggestedTier).toBe("first");
+    expect(ranked.find((row) => row.teamKey === "frc99")?.suggestedTier).toBeNull();
   });
 
   it("citeMatchResults skips unscored rows and labels FACT", () => {
