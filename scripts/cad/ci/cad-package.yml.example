@@ -29,7 +29,9 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - run: npm run typecheck --workspace=@vantage/cad
       - run: npm run typecheck --workspace=@vantage/cad-cli
+      - run: npm test --workspace=@vantage/cad
       - run: npm run test --workspace=@vantage/cad-cli
       - run: npm run build --workspace=@vantage/cad-cli
       - run: npm run cad:package
