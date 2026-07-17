@@ -285,7 +285,7 @@ export function DashboardWidgetView({
             type={type}
             title="Robot readiness"
             payload={{ ...payload, status: "empty", message: hint.body }}
-            href={withOrg("/code")}
+            href={withOrg("/pit")}
             emptyHint={hint}
             orgId={orgId}
           >
@@ -294,7 +294,7 @@ export function DashboardWidgetView({
         );
       }
       return (
-        <Shell type={type} title="Robot readiness" payload={payload} href={withOrg("/code")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Robot readiness" payload={payload} href={withOrg("/pit")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <>
               <div className="dash-stat-row">
