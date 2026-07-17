@@ -130,7 +130,11 @@ export default function IntelClient({ orgId }: { orgId: string }) {
   return (
     <main className="intel-app">
       <header className="intel-header">
-        <div><span className="eyebrow">VANTAGE / TEAM INTEL</span><h1>Competition intelligence</h1></div>
+        <div>
+          <span className="eyebrow">VANTAGE / TEAM INTEL</span>
+          <h1>Competition intelligence</h1>
+          <p className="app-muted">Search the global team index. Metrics stay blank until TBA/Statbotics data exists — never fabricated.</p>
+        </div>
         <a href={`/scouting?orgId=${orgId}`}>Open scouting →</a>
       </header>
       <form className="intel-search" onSubmit={search}>
