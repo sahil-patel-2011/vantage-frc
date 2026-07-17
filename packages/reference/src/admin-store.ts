@@ -1,14 +1,15 @@
 import { dbAdmin } from "@vantage/db/admin";
 import {
   eventsRef,
-  matchesRef,
+  orgActiveContext,
   seasonWindows,
   syncCursors,
   teamEventMetrics,
   teamsRef,
   teamYearMetrics,
+  matchesRef,
 } from "@vantage/db/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
 import type {
   EventRecord,
   GlobalReferenceStore,
@@ -69,6 +70,50 @@ export class AdminGlobalReferenceStore implements GlobalReferenceStore {
       .from(eventsRef)
       .where(eq(eventsRef.year, year));
     return rows.map((row) => row.eventKey);
+  }
+
+  async listActiveEventKeys(input: {
+    at: Date;
+    withinDays: number;
+    year?: number;
+  }): Promise<string[]> {
+    const dayMs = 24 * 60 * 60 * 1000;
+    const windowStart = new Date(input.at.getTime() - input.withinDays * dayMs)
+      .toISOString()
+      .slice(0, 10);
+    const windowEnd = new Date(input.at.getTime() + input.withinDays * dayMs)
+      .toISOString()
+      .slice(0, 10);
+
+    const dateFilter = and(
+      isNotNull(eventsRef.startDate),
+      isNotNull(eventsRef.endDate),
+      lte(eventsRef.startDate, windowEnd),
+      gte(eventsRef.endDate, windowStart),
+    );
+    const yearFilter =
+      input.year !== undefined
+        ? and(eq(eventsRef.year, input.year), dateFilter)
+        : dateFilter;
+
+    const dated = await dbAdmin
+      .select({ eventKey: eventsRef.eventKey })
+      .from(eventsRef)
+      .where(yearFilter);
+
+    const subscribed = await dbAdmin
+      .select({ eventKey: orgActiveContext.activeEventKey })
+      .from(orgActiveContext)
+      .where(isNotNull(orgActiveContext.activeEventKey));
+
+    return [
+      ...new Set([
+        ...dated.map((row) => row.eventKey),
+        ...subscribed
+          .map((row) => row.eventKey)
+          .filter((key): key is string => Boolean(key)),
+      ]),
+    ];
   }
 
   async upsertTeams(records: TeamRecord[]): Promise<void> {

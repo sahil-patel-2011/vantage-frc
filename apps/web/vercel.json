@@ -1,3 +1,13 @@
 {
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/tba-sync?mode=event-day",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/tba-sync?mode=season",
+      "schedule": "0 */6 * * *"
+    }
+  ]
 }

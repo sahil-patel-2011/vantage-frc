@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
 
 const prefsSchema = z.object({
   matchAlerts: z.boolean().optional(),
@@ -60,12 +61,15 @@ export async function GET() {
          WHERE user_id=$1 AND read_at IS NULL`,
         [session.user.id],
       );
+      const tba = await resolveTbaConfigured(client, null);
       return {
         row: result.rows[0] ?? null,
         unreadCount: Number(unread.rows[0]?.count ?? 0),
+        tba,
       };
     });
 
+    const tbaReady = profile.tba.platformEnvKey || profile.tba.credentialAvailable;
     return Response.json({
       name: session.user.name,
       email: session.user.email,
@@ -75,19 +79,21 @@ export async function GET() {
       notificationPrefs: mergePrefs(profile.row?.notificationPrefs),
       unreadNotificationCount: profile.unreadCount,
       googleConnected: false,
-      tbaConfigured: Boolean(process.env.TBA_AUTH_KEY?.trim()),
+      tbaConfigured: profile.tba.tbaConfigured,
       integrations: {
         google: {
-          status: process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? "available" : "setup_required",
-          detail: process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+          status: process.env["GOOGLE_CLIENT_ID"]?.trim() && process.env["GOOGLE_CLIENT_SECRET"]?.trim() ? "available" : "setup_required",
+          detail: process.env["GOOGLE_CLIENT_ID"]?.trim() && process.env["GOOGLE_CLIENT_SECRET"]?.trim()
             ? "Google sign-in is configured for this deployment."
             : "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set on this deployment.",
         },
         tba: {
-          status: process.env.TBA_AUTH_KEY?.trim() ? "available" : "setup_required",
-          detail: process.env.TBA_AUTH_KEY?.trim()
-            ? "Platform TBA Read API key is configured for reference ingest."
-            : "TBA_AUTH_KEY is not configured. Connect TBA in Admin → Data connectors or set the platform env key.",
+          status: tbaReady || profile.tba.cacheHasSync ? "available" : "setup_required",
+          detail: tbaReady
+            ? "Platform TBA Read API key (env or encrypted credential) is configured for reference ingest."
+            : profile.tba.cacheHasSync
+              ? "Neon TBA cache has prior sync data; configure TBA_AUTH_KEY or a connector to refresh."
+              : "Set TBA_AUTH_KEY (or TBA_API_KEY) or save a TBA credential in Admin → Live Data.",
         },
       },
     });

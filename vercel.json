@@ -3,5 +3,15 @@
   "framework": "nextjs",
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "npm run build --workspace=@vantage/web",
-  "outputDirectory": "apps/web/.next"
+  "outputDirectory": "apps/web/.next",
+  "crons": [
+    {
+      "path": "/api/cron/tba-sync?mode=event-day",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/tba-sync?mode=season",
+      "schedule": "0 */6 * * *"
+    }
+  ]
 }

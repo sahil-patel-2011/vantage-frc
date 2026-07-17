@@ -4,6 +4,10 @@ import { createKms, decryptSecret, encryptSecret, type EncryptedSecret } from "@
 import { withRls } from "@vantage/db";
 import { TbaClient } from "@vantage/reference";
 import { headers } from "next/headers";
+import {
+  runTbaEventDaySync,
+  runTbaSeasonSync,
+} from "../../../../lib/reference/run-ingest";
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -76,11 +80,39 @@ export async function POST(request: Request) {
     const session = await current();
     const body = (await request.json()) as {
       orgId?: string;
-      action: "save" | "test" | "disable";
+      action: "save" | "test" | "disable" | "sync";
       credentialId?: string;
       apiKey?: string;
+      syncMode?: "event-day" | "season";
+      year?: number;
+      eventKey?: string;
     };
     const orgId = body.orgId ?? null;
+
+    if (body.action === "sync") {
+      if (orgId) {
+        return Response.json(
+          { error: "Platform administrators run global TBA sync from Admin → Live Data." },
+          { status: 403 },
+        );
+      }
+      await withRls({ userId: session.user.id }, async (client) => {
+        await authorize(client, session.user.id, null);
+        await assertPlatformPrivilegeMfa(client, {
+          userId: session.user.id,
+          sessionId: session.session.id,
+        });
+      });
+      const summary =
+        body.syncMode === "season"
+          ? await runTbaSeasonSync(body.year)
+          : await runTbaEventDaySync({
+              year: body.year,
+              eventKeys: body.eventKey ? [body.eventKey] : undefined,
+            });
+      return Response.json({ success: true, summary });
+    }
+
     const result = await withRls({ userId: session.user.id, orgId: orgId ?? undefined }, async (client) => {
       await authorize(client, session.user.id, orgId);
       if (!orgId) {

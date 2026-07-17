@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { platformTbaEnvConfigured } from "@vantage/reference";
 import { canAccessWidget, type DashboardWidgetType } from "./catalog";
 
 export type WidgetDataStatus = "live" | "empty" | "setup_required";
@@ -42,7 +43,7 @@ export async function loadDashboardSnapshot(
 
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const eventKey = row.eventKey;
-  const platformEnvKey = Boolean(process.env.TBA_AUTH_KEY?.trim());
+  const platformEnvKey = platformTbaEnvConfigured();
   const tbaMeta = await client.query<{ credential: boolean; cache: boolean }>(
     `SELECT
        EXISTS(
@@ -405,9 +406,9 @@ export async function loadDashboardSnapshot(
     widgets.quick_actions = stamp("live", "quick_actions", {
       links: [
         { href: "/scouting", label: "Scout", detail: "Open assigned form" },
+        { href: "/pit", label: "Pit Command", detail: "Release gate & battery" },
         { href: "/strategy", label: "Strategize", detail: "Run match what-if" },
         { href: "/messages", label: "Messages", detail: "Team chat & DMs" },
-        { href: "/code", label: "Code", detail: "Review robot checks" },
       ],
     });
   }

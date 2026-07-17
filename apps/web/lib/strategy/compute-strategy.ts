@@ -17,6 +17,7 @@ import {
   type TeamOperationalSignal,
   type YearMetricRow,
 } from "@vantage/prediction-strategy";
+import { platformTbaEnvConfigured } from "@vantage/reference";
 import type { ReferenceAccessInfo, StrategyView, TbaAccessInfo } from "./types";
 
 function allianceKeys(alliance: unknown): string[] {
@@ -50,7 +51,7 @@ export async function resolveReferenceAccess(
   client: PoolClient,
   orgId: string | null,
 ): Promise<ReferenceAccessInfo> {
-  const platformEnvKey = Boolean(process.env.TBA_AUTH_KEY?.trim());
+  const platformEnvKey = platformTbaEnvConfigured();
   let credentialAvailable = false;
   try {
     const credentials = await client.query<{ ok: boolean }>(
