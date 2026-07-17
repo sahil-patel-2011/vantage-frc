@@ -23,22 +23,30 @@ export async function GET(request: Request) {
       return {
         threads: await repository.listThreads(),
         memories: await repository.listUserMemories(session.user.id),
+        memorySettings: await repository.getMemorySettings(session.user.id, orgId),
         messages: threadId ? await repository.getMessages(threadId) : [],
       };
     });
     return Response.json(data);
-  } catch (error) { return fail(error); }
+  } catch (error) {
+    return fail(error);
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const session = await current();
     const body = (await request.json()) as {
-      action?: "thread" | "message"; orgId?: string; threadId?: string;
-      scope?: "private" | "team"; title?: string; message?: string;
+      action?: "thread" | "message";
+      orgId?: string;
+      threadId?: string;
+      scope?: "private" | "team";
+      title?: string;
+      message?: string;
+      selected?: { teamKey?: string; matchKey?: string };
     };
     if (!body.orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
-    const orgId=body.orgId;
+    const orgId = body.orgId;
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const repository = new AgentRepository(client);
       const membership = await client.query("SELECT 1 FROM memberships WHERE org_id=$1", [body.orgId]);
@@ -49,11 +57,18 @@ export async function POST(request: Request) {
       }
       if (!body.threadId || !body.message?.trim() || !body.scope) throw new Error("Thread, scope, and message are required");
       return repository.sendMessage({
-        userId: session.user.id, orgId: body.orgId!, threadId: body.threadId,
-        message: body.message, scope: body.scope, adapter: new LocalDeterministicChatAdapter(),
+        userId: session.user.id,
+        orgId: body.orgId!,
+        threadId: body.threadId,
+        message: body.message,
+        scope: body.scope,
+        adapter: new LocalDeterministicChatAdapter(),
         requestId: crypto.randomUUID(),
+        selected: body.selected,
       });
     });
     return Response.json(data, { status: 201 });
-  } catch (error) { return fail(error); }
+  } catch (error) {
+    return fail(error);
+  }
 }
