@@ -1,4 +1,4 @@
-import { auth } from "@vantage/core";
+import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
           monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
           monthly_token_limit AS "monthlyTokenLimit",warning_thresholds AS "warningThresholds",
           enforce_byo_token_limits AS "enforceByoTokenLimits",model_allowlist_enabled AS "modelAllowlistEnabled",
-          provider_allowlist_enabled AS "providerAllowlistEnabled",kill_switch AS "killSwitch"
+          provider_allowlist_enabled AS "providerAllowlistEnabled",kill_switch AS "killSwitch",prompt_caching_enabled AS "promptCachingEnabled"
           FROM org_api_budget_policies WHERE org_id=$1`, [orgId]),
         client.query(`SELECT l.user_id AS "userId",u.name,u.email,l.daily_spend_limit_usd AS "dailySpendLimitUsd",
           l.monthly_spend_limit_usd AS "monthlySpendLimitUsd",l.daily_token_limit AS "dailyTokenLimit",
@@ -68,25 +68,22 @@ export async function POST(request: Request) {
     if (thresholds.some((value) => !Number.isInteger(value) || value < 1 || value > 99))
       throw new Error("Warning thresholds must be whole percentages from 1 to 99");
     await withRls({ userId: current.user.id, orgId }, async (client) => {
-      const admin = await client.query(
-        `SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2 AND role IN ('owner','admin')`,
-        [orgId, current.user.id],
-      );
-      if (!admin.rowCount) throw new Error("Organization administrator access required");
+      await assertOrgCapability(client, orgId, "manage_api_keys");
       let before: unknown;
       if (body.scope === "org") {
         before = (await client.query("SELECT * FROM org_api_budget_policies WHERE org_id=$1", [orgId])).rows[0] ?? null;
         await client.query(`INSERT INTO org_api_budget_policies(org_id,daily_spend_limit_usd,
           monthly_spend_limit_usd,daily_token_limit,monthly_token_limit,warning_thresholds,
-          enforce_byo_token_limits,model_allowlist_enabled,provider_allowlist_enabled,kill_switch,updated_by)
-          VALUES($1,$2,$3,$4,$5,$6::integer[],$7,$8,$9,$10,$11) ON CONFLICT(org_id) DO UPDATE SET
+          enforce_byo_token_limits,model_allowlist_enabled,provider_allowlist_enabled,kill_switch,prompt_caching_enabled,updated_by)
+          VALUES($1,$2,$3,$4,$5,$6::integer[],$7,$8,$9,$10,$11,$12) ON CONFLICT(org_id) DO UPDATE SET
           daily_spend_limit_usd=excluded.daily_spend_limit_usd,monthly_spend_limit_usd=excluded.monthly_spend_limit_usd,
           daily_token_limit=excluded.daily_token_limit,monthly_token_limit=excluded.monthly_token_limit,
           warning_thresholds=excluded.warning_thresholds,enforce_byo_token_limits=excluded.enforce_byo_token_limits,
           model_allowlist_enabled=excluded.model_allowlist_enabled,provider_allowlist_enabled=excluded.provider_allowlist_enabled,
-          kill_switch=excluded.kill_switch,updated_by=excluded.updated_by,updated_at=now()`,
+          kill_switch=excluded.kill_switch,prompt_caching_enabled=excluded.prompt_caching_enabled,
+          updated_by=excluded.updated_by,updated_at=now()`,
           [orgId,...limits(body),thresholds,body.enforceByoTokenLimits !== false,Boolean(body.modelAllowlistEnabled),
-            Boolean(body.providerAllowlistEnabled),Boolean(body.killSwitch),current.user.id]);
+            Boolean(body.providerAllowlistEnabled),Boolean(body.killSwitch),Boolean(body.promptCachingEnabled),current.user.id]);
       } else {
         const tables = { member: ["org_api_member_limits","user_id"], feature: ["org_api_feature_limits","feature"], model: ["org_api_model_limits","provider,model"] } as const;
         const config = tables[body.scope as keyof typeof tables];

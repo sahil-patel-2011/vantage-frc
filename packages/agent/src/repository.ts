@@ -219,6 +219,7 @@ export class AgentRepository {
     adapter: ChatAdapter;
     requestId: string;
     selected?: { teamKey?: string; matchKey?: string };
+    promptCachingEnabled?: boolean;
   }) {
     const message = await this.client.query<{ id: string }>(
       `INSERT INTO agent_messages(thread_id,org_id,author_user_id,role,content,explicitly_shared)
@@ -245,6 +246,7 @@ export class AgentRepository {
           }) as ContextSource,
       ),
       tokenBudget: context.estimatedTokens + 1000,
+      promptCachingEnabled: input.promptCachingEnabled,
     });
     const text = orchestrated.text;
     const assistant = await this.client.query<{ id: string }>(

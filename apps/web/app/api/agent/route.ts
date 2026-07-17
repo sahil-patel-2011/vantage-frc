@@ -1,4 +1,4 @@
-import { LocalDeterministicChatAdapter } from "@vantage/agent";
+import { getOrgPromptCachingEnabled, LocalDeterministicChatAdapter } from "@vantage/agent";
 import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
@@ -20,11 +20,15 @@ export async function GET(request: Request) {
     const threadId = url.searchParams.get("threadId");
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const repository = new AgentRepository(client);
+      const promptCachingEnabled = orgId
+          ? await getOrgPromptCachingEnabled(client, orgId)
+          : false;
       return {
         threads: await repository.listThreads(),
         memories: await repository.listUserMemories(session.user.id),
         memorySettings: await repository.getMemorySettings(session.user.id, orgId),
         messages: threadId ? await repository.getMessages(threadId) : [],
+        promptCachingEnabled,
       };
     });
     return Response.json(data);
@@ -56,6 +60,7 @@ export async function POST(request: Request) {
         return { threadId: await repository.createThread(session.user.id, { orgId, scope: body.scope, title: body.title }) };
       }
       if (!body.threadId || !body.message?.trim() || !body.scope) throw new Error("Thread, scope, and message are required");
+      const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
       return repository.sendMessage({
         userId: session.user.id,
         orgId: body.orgId!,
@@ -65,6 +70,7 @@ export async function POST(request: Request) {
         adapter: new LocalDeterministicChatAdapter(),
         requestId: crypto.randomUUID(),
         selected: body.selected,
+        promptCachingEnabled,
       });
     });
     return Response.json(data, { status: 201 });

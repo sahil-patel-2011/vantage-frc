@@ -1,4 +1,4 @@
-import { auth } from "@vantage/core";
+import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
@@ -8,8 +8,7 @@ export async function GET(request: Request) {
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!session || !orgId) return Response.json({ error: "Authentication and organization are required" }, { status: 401 });
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const admin = await client.query(`SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2 AND role IN ('owner','admin')`, [orgId, session.user.id]);
-      if (!admin.rowCount) throw new Error("Organization administrator access required");
+      await assertOrgCapability(client, orgId, "manage_billing");
       const [members, models, entitlement, wallet, policy] = await Promise.all([
         client.query(`SELECT u.id,u.name,u.email,COALESCE(sum(a.total_tokens),0) AS tokens,
           COALESCE(sum(a.cost_usd),0) AS cost FROM memberships m JOIN users u ON u.id=m.user_id

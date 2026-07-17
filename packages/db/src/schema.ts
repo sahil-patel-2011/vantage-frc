@@ -679,6 +679,9 @@ export const aiUsageEvents = pgTable(
     promptTokens: integer("prompt_tokens").notNull(),
     completionTokens: integer("completion_tokens").notNull(),
     totalTokens: integer("total_tokens").notNull(),
+    cacheReadInputTokens: integer("cache_read_input_tokens").notNull().default(0),
+    cacheWriteInputTokens: integer("cache_write_input_tokens").notNull().default(0),
+    uncachedInputTokens: integer("uncached_input_tokens").notNull().default(0),
     costUsd: numeric("cost_usd", { precision: 12, scale: 6 }).notNull(),
     requestId: text("request_id").notNull().unique(),
     metadata: jsonb("metadata").notNull().default({}),
@@ -1112,6 +1115,14 @@ export const modelCatalog = pgTable("model_catalog", {
     precision: 12,
     scale: 6,
   }).notNull().default("0"),
+  cacheReadPricePerMillionUsd: numeric("cache_read_price_per_million_usd", {
+    precision: 12,
+    scale: 6,
+  }),
+  cacheWritePricePerMillionUsd: numeric("cache_write_price_per_million_usd", {
+    precision: 12,
+    scale: 6,
+  }),
   contextWindowTokens: integer("context_window_tokens"),
   capabilities: text("capabilities").array().notNull().default([]),
   eligiblePlans: text("eligible_plans").array().notNull().default([]),
@@ -1657,6 +1668,7 @@ export const orgApiBudgetPolicies = pgTable("org_api_budget_policies", {
   modelAllowlistEnabled: boolean("model_allowlist_enabled").notNull().default(false),
   providerAllowlistEnabled: boolean("provider_allowlist_enabled").notNull().default(false),
   killSwitch: boolean("kill_switch").notNull().default(false),
+  promptCachingEnabled: boolean("prompt_caching_enabled").notNull().default(false),
   updatedBy: uuid("updated_by").notNull().references(() => users.id),
   ...timestamps,
 });
@@ -2025,6 +2037,9 @@ export const scoutAssignments = pgTable(
     matchKey: text("match_key").notNull(),
     teamKey: text("team_key").notNull(),
     role: text("role").notNull().default("primary"),
+    station: text("station"),
+    status: text("status").notNull().default("assigned"),
+    generated: boolean("generated").notNull().default(false),
     startsAt: timestamp("starts_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),
   },
@@ -2035,6 +2050,38 @@ export const scoutAssignments = pgTable(
       table.matchKey,
       table.teamKey,
     ),
+    index("scout_assignments_event_match_idx").on(
+      table.orgId,
+      table.eventKey,
+      table.matchKey,
+    ),
+  ],
+);
+
+export const scoutShiftRoster = pgTable(
+  "scout_shift_roster",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    eventKey: text("event_key").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    available: boolean("available").notNull().default(true),
+    note: text("note"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("scout_shift_roster_org_event_user_uq").on(
+      table.orgId,
+      table.eventKey,
+      table.userId,
+    ),
+    index("scout_shift_roster_event_idx").on(table.orgId, table.eventKey),
   ],
 );
 
