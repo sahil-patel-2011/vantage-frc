@@ -1,68 +1,41 @@
 export type {
   Alliance,
+  AllianceWinBreakdown,
+  EvidenceKind,
+  MatchCitation,
   MatchPrediction,
   MatchPredictionInput,
+  MatchResultFact,
   PredictionFactor,
+  TeamContribution,
   TeamOperationalSignal,
   TeamSeasonSignal,
 } from "./types";
 export * from "./signals";
+export * from "./scout-ops";
+export * from "./dossier";
+export { seasonWeight } from "./season-weight";
+export {
+  buildAllianceWinBreakdown,
+  citeMatchResults,
+  rateTeam,
+} from "./alliance-outcome";
 
 import type {
   Alliance,
   MatchPrediction,
   MatchPredictionInput,
   PredictionFactor,
-  TeamOperationalSignal,
-  TeamSeasonSignal,
 } from "./types";
+import { buildAllianceWinBreakdown, rateTeam } from "./alliance-outcome";
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
 const round = (value: number) => Math.round(value * 10_000) / 10_000;
 
-export function seasonWeight(currentYear: number, year: number) {
-  const age = currentYear - year;
-  if (age < 0 || age > 2) return 0;
-  return age === 0 ? 1 : age === 1 ? 0.55 : 0.3;
-}
-
-function teamRating(
-  teamKey: string,
-  currentYear: number,
-  seasons: TeamSeasonSignal[],
-  operational?: TeamOperationalSignal,
+function citeSources(
+  seasons: MatchPredictionInput["seasons"],
+  teamKeys: string[],
 ) {
-  const eligible = seasons.filter((signal) => signal.teamKey === teamKey);
-  let weightedEpa = 0;
-  let weightedMatches = 0;
-  let auto = 0;
-  let endgame = 0;
-  for (const signal of eligible) {
-    const weight = seasonWeight(currentYear, signal.year);
-    weightedEpa += signal.epa * signal.matches * weight;
-    weightedMatches += signal.matches * weight;
-    auto += (signal.autoEpa ?? 0) * signal.matches * weight;
-    endgame += (signal.endgameEpa ?? 0) * signal.matches * weight;
-  }
-  const base = weightedMatches ? weightedEpa / weightedMatches : 0;
-  const reliability = operational?.reliability == null ? 0.85 : clamp(operational.reliability / 100);
-  const scoutWeight = Math.min(0.25, (operational?.scoutSample ?? 0) / 40);
-  const research =
-    (operational?.researchAdjustment ?? 0) *
-    clamp(operational?.researchConfidence ?? 0) *
-    0.15;
-  const foulPenalty = Math.min(4, operational?.foulRate ?? 0);
-  return {
-    rating: base * (1 - scoutWeight + scoutWeight * reliability) + research - foulPenalty,
-    sample: weightedMatches + (operational?.scoutSample ?? 0) * 0.5,
-    auto: weightedMatches ? auto / weightedMatches : 0,
-    endgame: weightedMatches ? endgame / weightedMatches : 0,
-    reliability,
-    foulPenalty,
-  };
-}
-
-function citeSources(seasons: TeamSeasonSignal[], teamKeys: string[]) {
   const cited = seasons.filter((signal) => teamKeys.includes(signal.teamKey));
   const sources = [...new Set(cited.map((signal) => signal.source).filter(Boolean))];
   const eventKeys = [...new Set(cited.map((signal) => signal.eventKey).filter(Boolean))];
@@ -75,31 +48,58 @@ function citeSources(seasons: TeamSeasonSignal[], teamKeys: string[]) {
   return parts.join(", ");
 }
 
+/**
+ * Win/loss match-outcome engine (weighted-current-v1).
+ * Grounded in TBA/Statbotics season signals + optional scout ops.
+ * Labels MODEL vs FACT; cites completed matches when `matchResults` provided.
+ */
 export function predictMatch(input: MatchPredictionInput): MatchPrediction {
+  const breakdown = buildAllianceWinBreakdown(input);
   const operations = new Map((input.operations ?? []).map((value) => [value.teamKey, value]));
   const red = input.red.map((team) =>
-    teamRating(team, input.currentYear, input.seasons, operations.get(team)),
+    rateTeam(team, input.currentYear, input.seasons, operations.get(team)),
   );
   const blue = input.blue.map((team) =>
-    teamRating(team, input.currentYear, input.seasons, operations.get(team)),
+    rateTeam(team, input.currentYear, input.seasons, operations.get(team)),
   );
   const sum = (values: typeof red, key: keyof (typeof red)[number]) =>
     values.reduce((total, value) => total + Number(value[key]), 0);
-  const redRating = sum(red, "rating");
-  const blueRating = sum(blue, "rating");
-  const margin = redRating - blueRating;
-  const pRed = clamp(1 / (1 + Math.exp(-margin / 12)), 0.02, 0.98);
-  const sample = sum(red, "sample") + sum(blue, "sample");
-  const interval = clamp(0.28 / Math.sqrt(Math.max(1, sample / 12)), 0.05, 0.28);
+  const margin = sum(red, "rating") - sum(blue, "rating");
   const eventBit = input.eventLabel ? ` at ${input.eventLabel}` : "";
   const citation = citeSources(input.seasons, [...input.red, ...input.blue]);
   const scoutSample = [...operations.values()].reduce((total, op) => total + (op.scoutSample ?? 0), 0);
+  const allScoutEntryIds = [...operations.values()].flatMap((op) => op.scoutEntryIds ?? []);
+  const foulEntryIds = [...operations.values()]
+    .filter((op) => (op.foulRate ?? 0) >= 0.5)
+    .flatMap((op) => op.scoutEntryIds ?? []);
+  const capabilityEntryIds = [...operations.values()]
+    .filter(
+      (op) =>
+        (op.autoCapability ?? 0) >= 0.35 ||
+        (op.teleopCapability ?? 0) >= 0.35 ||
+        (op.endgameCapability ?? 0) >= 0.35,
+    )
+    .flatMap((op) => op.scoutEntryIds ?? []);
+  const autoCapTeams = [...operations.values()]
+    .filter((op) => (op.autoCapability ?? 0) >= 0.45)
+    .map((op) => op.teamKey);
+  const teleopCapTeams = [...operations.values()]
+    .filter((op) => (op.teleopCapability ?? 0) >= 0.45)
+    .map((op) => op.teamKey);
+  const scoutProvenanceBit = allScoutEntryIds.length
+    ? ` Scout entries: ${allScoutEntryIds
+        .slice(0, 8)
+        .map((id) => id.slice(0, 8))
+        .join(", ")}.`
+    : "";
+
   const factors: PredictionFactor[] = [
     {
       name: "weighted scoring",
       alliance: margin >= 0 ? "red" : "blue",
       impact: round(Math.abs(margin)),
-      evidence: `Model weighted-current-v1${eventBit}: season weights 1.0 / 0.55 / 0.30. Alliance rating margin ${round(margin)} from ${citation}.`,
+      evidence: `MODEL weighted-current-v1${eventBit}: season weights 1.0 / 0.55 / 0.30. Alliance rating margin ${round(margin)} from ${citation}.`,
+      kind: "model",
     },
   ];
   const autoMargin = sum(red, "auto") - sum(blue, "auto");
@@ -108,7 +108,11 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "autonomous",
       alliance: autoMargin > 0 ? "red" : "blue",
       impact: round(Math.abs(autoMargin)),
-      evidence: `Weighted autonomous EPA margin ${round(autoMargin)} (${citation}).`,
+      evidence: `MODEL: Weighted autonomous EPA margin ${round(autoMargin)} (${citation}).${
+        autoCapTeams.length ? ` Scout auto-capable: ${autoCapTeams.join(", ")}.` : ""
+      }`,
+      kind: "model",
+      scoutEntryIds: capabilityEntryIds.length ? capabilityEntryIds.slice(0, 12) : undefined,
     });
   const foulMargin = sum(red, "foulPenalty") - sum(blue, "foulPenalty");
   if (Math.abs(foulMargin) >= 0.25)
@@ -116,32 +120,67 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
       name: "foul exposure",
       alliance: foulMargin > 0 ? "blue" : "red",
       impact: round(Math.abs(foulMargin)),
-      evidence: `Org scout foul penalty (capped) margin ${round(Math.abs(foulMargin))}; not a TBA fact.`,
+      evidence: `MODEL: Org scout foul penalty (capped) margin ${round(Math.abs(foulMargin))}; not a TBA fact.${scoutProvenanceBit}`,
+      kind: "model",
+      scoutEntryIds: foulEntryIds.length ? foulEntryIds : undefined,
     });
   if (scoutSample > 0)
     factors.push({
       name: "scout reliability",
       alliance: "neutral",
       impact: round(Math.min(5, scoutSample / 8)),
-      evidence: `${scoutSample} org scout observations blended into ratings (max 25% scout weight per team).`,
+      evidence: `MODEL: ${scoutSample} org scout observations blended into ratings (max 25% scout weight per team; quality-weighted).${scoutProvenanceBit}`,
+      kind: "model",
+      scoutEntryIds: allScoutEntryIds.length ? allScoutEntryIds.slice(0, 24) : undefined,
     });
+  if (capabilityEntryIds.length || autoCapTeams.length) {
+    factors.push({
+      name: "scout auto/teleop",
+      alliance: "neutral",
+      impact: round(Math.min(4, autoCapTeams.length + teleopCapTeams.length)),
+      evidence: `MODEL: Scout-derived capabilities — auto ${autoCapTeams.join(", ") || "none"}; teleop ${teleopCapTeams.join(", ") || "none"}.${scoutProvenanceBit}`,
+      kind: "model",
+      scoutEntryIds: capabilityEntryIds.length ? capabilityEntryIds : undefined,
+    });
+  }
+
+  for (const fact of breakdown.citations.slice(0, 4)) {
+    factors.push({
+      name: `match ${fact.matchKey}`,
+      alliance: fact.winningAlliance ?? "neutral",
+      impact: 1,
+      evidence: fact.summary,
+      kind: "fact",
+    });
+  }
+
   return {
-    matchKey: input.matchKey,
-    modelVersion: "weighted-current-v1",
-    pRed: round(pRed),
-    pBlue: round(1 - pRed),
-    confidenceLow: round(clamp(pRed - interval)),
-    confidenceHigh: round(clamp(pRed + interval)),
-    effectiveSampleSize: round(sample),
+    matchKey: breakdown.matchKey,
+    modelVersion: breakdown.modelVersion,
+    pRed: breakdown.pRed,
+    pBlue: breakdown.pBlue,
+    confidenceLow: breakdown.confidenceLow,
+    confidenceHigh: breakdown.confidenceHigh,
+    effectiveSampleSize: breakdown.effectiveSampleSize,
     keyFactors: factors,
     caveats: [
       "MODEL output — not an official TBA result.",
-      ...(sample < 30 ? ["Sparse historical/scouting sample; interval widened."] : []),
+      ...(breakdown.effectiveSampleSize < 30
+        ? ["Sparse historical/scouting sample; interval widened."]
+        : []),
       scoutSample === 0
         ? "No org scout sample on this matchup; ratings use TBA/Statbotics event metrics only."
         : `Includes ${scoutSample} org scout observations as operational adjustments.`,
+      breakdown.citations.length
+        ? `${breakdown.citations.length} FACT TBA match result(s) cited for alliance context.`
+        : "No completed TBA match results cited for these alliances yet.",
       "Prediction is decision support, not a guarantee.",
     ],
+    citations: breakdown.citations,
+    contributions: {
+      red: breakdown.red,
+      blue: breakdown.blue,
+    },
   };
 }
 
@@ -174,6 +213,14 @@ export function buildStrategyPlaybook(input: {
   const opponent = input.ourAlliance === "red" ? "blue" : "red";
   const favorable = input.prediction.keyFactors.filter((factor) => factor.alliance === input.ourAlliance);
   const adverse = input.prediction.keyFactors.filter((factor) => factor.alliance === opponent);
+  const topContribution = (
+    input.ourAlliance === "red"
+      ? input.prediction.contributions?.red
+      : input.prediction.contributions?.blue
+  )
+    ?.slice()
+    .sort((a, b) => b.contributionPts - a.contributionPts)[0];
+
   return {
     title: `${input.prediction.matchKey} ${input.ourAlliance.toUpperCase()} playbook`,
     winProbability,
@@ -187,6 +234,11 @@ export function buildStrategyPlaybook(input: {
       input.opponentFoulRisk === "high"
         ? "Avoid baiting contact; preserve driver-station video and let referees call unsafe or protected-zone contact."
         : "Set explicit protected-zone and contact limits in the driver briefing.",
+      ...(topContribution
+        ? [
+            `Protect ${topContribution.teamKey.replace(/^frc/i, "")}'s modeled contribution (${Math.round(topContribution.shareOfAlliance * 100)}% of alliance rating).`,
+          ]
+        : []),
     ],
     strengthsToProtect: favorable.map((factor) => factor.name),
     risksToMitigate: adverse.map((factor) => factor.name),
