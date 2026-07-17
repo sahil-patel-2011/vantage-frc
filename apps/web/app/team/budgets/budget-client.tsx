@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 const blank = { dailySpendLimitUsd:"",monthlySpendLimitUsd:"",dailyTokenLimit:"",monthlyTokenLimit:"" };
 export default function BudgetClient({ orgId }: { orgId: string }) {
-  const [policy,setPolicy]=useState({ ...blank,warningThresholds:"50,75,90",enforceByoTokenLimits:true,modelAllowlistEnabled:false,providerAllowlistEnabled:false,killSwitch:false });
+  const [policy,setPolicy]=useState({ ...blank,warningThresholds:"50,75,90",enforceByoTokenLimits:true,modelAllowlistEnabled:false,providerAllowlistEnabled:false,killSwitch:false,promptCachingEnabled:false });
   const [usage,setUsage]=useState<Record<string,string>>({}); const [projected,setProjected]=useState<number|null>(null);
   const [layer,setLayer]=useState({scope:"feature",identifier:"research",provider:"",model:"",allowed:true,...blank});
   const [members,setMembers]=useState<Array<{userId:string;name:string;email:string}>>([]); const [message,setMessage]=useState("");
@@ -18,6 +18,8 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
       <label className="check-field"><input type="checkbox" checked={policy.enforceByoTokenLimits} onChange={(e)=>setPolicy({...policy,enforceByoTokenLimits:e.target.checked})}/> Apply token limits to BYOK/local</label>
       <label className="check-field"><input type="checkbox" checked={policy.modelAllowlistEnabled} onChange={(e)=>setPolicy({...policy,modelAllowlistEnabled:e.target.checked})}/> Enforce model allowlist</label>
       <label className="check-field"><input type="checkbox" checked={policy.providerAllowlistEnabled} onChange={(e)=>setPolicy({...policy,providerAllowlistEnabled:e.target.checked})}/> Enforce provider allowlist</label>
+      <label className="check-field"><input id="prompt-caching" type="checkbox" checked={policy.promptCachingEnabled} onChange={(e)=>setPolicy({...policy,promptCachingEnabled:e.target.checked})}/> Prompt caching</label>
+      <p className="field-help">Reuse stable system and context blocks to lower input cost. Turn off when you need the freshest team context on every call.</p>
       <label className="check-field danger"><input type="checkbox" checked={policy.killSwitch} onChange={(e)=>setPolicy({...policy,killSwitch:e.target.checked})}/> Hard kill switch</label><button className="primary-action">Save org limits</button></form>
       <form className="intel-panel" onSubmit={(e)=>{e.preventDefault();const identity=layer.scope==="member"?{userId:layer.identifier}:layer.scope==="feature"?{feature:layer.identifier}:{provider:layer.provider,model:layer.model,allowed:layer.allowed};void save({...layer,...identity})}}><span className="eyebrow">LAYERED LIMIT</span>
         <label>Scope<select value={layer.scope} onChange={(e)=>setLayer({...layer,scope:e.target.value})}><option value="feature">Feature</option><option value="member">Member</option><option value="model">Provider + model</option></select></label>

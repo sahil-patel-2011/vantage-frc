@@ -35,6 +35,9 @@ export type UsageReceipt<T> = {
   model: string;
   provider: string;
   keySource?: MeterKeySource;
+  cacheReadInputTokens?: number;
+  cacheWriteInputTokens?: number;
+  uncachedInputTokens?: number;
 };
 
 /** Platform-billed, BYOK, or local CLI (subscription on the user machine — Vantage charge is always 0). */
@@ -303,8 +306,9 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     await input.client.query(
       `INSERT INTO ai_usage_events
         (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
-         completion_tokens, total_tokens, cost_usd, request_id, metadata)
-       VALUES ($1,$2,$3,$4,$5,'local_cli',$6,$7,$8,0,$9,$10::jsonb)`,
+         completion_tokens, total_tokens, cost_usd, request_id, metadata,
+         cache_read_input_tokens, cache_write_input_tokens, uncached_input_tokens)
+       VALUES ($1,$2,$3,$4,$5,'local_cli',$6,$7,$8,0,$9,$10::jsonb,$11,$12,$13)`,
       [
         input.orgId,
         input.userId,
@@ -316,6 +320,9 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
         receipt.promptTokens + receipt.completionTokens,
         input.requestId,
         JSON.stringify({ ...(input.metadata ?? {}), vantageChargeUsd: 0, path: "local_cli" }),
+        receipt.cacheReadInputTokens ?? 0,
+        receipt.cacheWriteInputTokens ?? 0,
+        receipt.uncachedInputTokens ?? receipt.promptTokens,
       ],
     );
     return receipt.value;
@@ -370,8 +377,9 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   await input.client.query(
     `INSERT INTO ai_usage_events
       (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
-       completion_tokens, total_tokens, cost_usd, request_id, metadata)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)`,
+       completion_tokens, total_tokens, cost_usd, request_id, metadata,
+       cache_read_input_tokens, cache_write_input_tokens, uncached_input_tokens)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14,$15)`,
     [
       input.orgId,
       input.userId,
@@ -384,7 +392,10 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       receipt.promptTokens + receipt.completionTokens,
       receipt.costUsd,
       input.requestId,
-      JSON.stringify(input.metadata ?? {})
+      JSON.stringify(input.metadata ?? {}),
+      receipt.cacheReadInputTokens ?? 0,
+      receipt.cacheWriteInputTokens ?? 0,
+      receipt.uncachedInputTokens ?? receipt.promptTokens,
     ]
   );
   if(creditWallet&&keySource==="platform"){

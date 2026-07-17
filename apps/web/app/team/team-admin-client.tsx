@@ -111,13 +111,17 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </div>
         <nav className="intel-actions" aria-label="Team admin links">
           <a href={`/business?orgId=${orgId}`}>Business</a>
-          <a href={`/team/security?orgId=${orgId}`}>Security</a>
+          <a href={`/business?orgId=${orgId}&tab=budget`}>Budget & orders</a>
+          <a href={`/business?orgId=${orgId}&tab=sponsors`}>Sponsors</a>
+          <a href={`/business?orgId=${orgId}&tab=placements`}>Partner placements</a>
+          <a href={`/costs?orgId=${orgId}`}>Season costs</a>
+          <a href={`/team/grants?orgId=${orgId}`}>Grants workbench</a>
+          <a href={`/team/awards?orgId=${orgId}`}>Awards workbench</a>
+          <a href={`/team/security?orgId=${orgId}`}>Security &amp; delegation</a>
+          <a href={`/team/budgets?orgId=${orgId}#prompt-caching`}>Prompt caching</a>
           <a href={`/team/data?orgId=${orgId}`}>Live data</a>
-          <a href={`/team/finance?orgId=${orgId}`}>Finance</a>
-          <a href={`/team/sponsors?orgId=${orgId}`}>Sponsors</a>
-          <a href={`/team/grants?orgId=${orgId}`}>Grants</a>
-          <a href={`/team/awards?orgId=${orgId}`}>Awards</a>
           <a href={`/team/budgets?orgId=${orgId}`}>API budgets</a>
+          <a href={`/team/usage?orgId=${orgId}`}>AI usage</a>
           <a href={`/team?orgId=${orgId}#custom-providers`}>Custom AI providers</a>
           <a href={`/exports?orgId=${orgId}`}>Export</a>
           <a href={`/showcase?orgId=${orgId}`}>Showcase</a>
