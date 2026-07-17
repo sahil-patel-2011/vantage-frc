@@ -155,6 +155,10 @@ body.has-app-shell .app-topbar{display:none}
 .soft-nav-group a svg,.soft-nav-group span.planned svg{width:17px;height:17px;flex:none;color:var(--soft-muted)}
 .soft-nav-group a small,.soft-nav-group span.planned small{margin-left:auto;color:var(--soft-muted);font-size:10px;font-weight:600;text-transform:uppercase}
 .soft-nav-group a .chev{display:none}
+.soft-nav-group a .soft-nav-badge{
+  margin-left:auto;min-width:18px;height:18px;padding:0 5px;border-radius:999px;
+  background:#ef4444;color:#fff;font:700 10px/18px var(--font-source-sans),ui-sans-serif;text-align:center;
+}
 .soft-nav-group a[aria-current="page"]{background:var(--soft-accent-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--soft-accent) 35%,transparent)}
 .soft-nav-group span.planned{opacity:.55}
 
@@ -800,4 +804,345 @@ html[data-theme="dark"] .edc-caveat{background:#2a2416;border-color:#5c4d24;colo
 }
 @media(max-width:650px){
   .chem-split{grid-template-columns:1fr}
+}
+
+/* -- Legacy product modules ? cooler blue soft-UI (dashboard parity) -- */
+body.has-app-shell{
+  --app-bg:var(--soft-bg);
+  --app-surface:var(--soft-card);
+  --app-soft:color-mix(in srgb,var(--soft-bg) 82%,var(--soft-line));
+  --app-ink:var(--soft-ink);
+  --app-muted:var(--soft-muted);
+  --app-line:var(--soft-line);
+  --app-accent:var(--soft-accent);
+  --app-accent-ink:#fff;
+  --app-accent-hover:color-mix(in srgb,var(--soft-accent) 82%,#000);
+  --app-radius:var(--soft-radius-sm);
+  --app-shadow:var(--soft-shadow);
+  --app-navy:var(--soft-ink);
+}
+body.has-app-shell :focus-visible{outline-color:color-mix(in srgb,var(--soft-accent) 55%,transparent)}
+
+/* Shared module chrome */
+body.has-app-shell .module-page,
+body.has-app-shell .scout-app,
+body.has-app-shell .intel-app,
+body.has-app-shell .command-center,
+body.has-app-shell .workspace-page{
+  color:var(--soft-ink);
+  font-family:var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
+}
+body.has-app-shell .module-page{padding:clamp(18px,3vw,36px) clamp(14px,3vw,28px) 28px}
+body.has-app-shell .app-page-header h1,
+body.has-app-shell .scout-header h1,
+body.has-app-shell .intel-header h1{letter-spacing:-.03em;font-weight:700}
+body.has-app-shell .app-page-header p,
+body.has-app-shell .breadcrumbs{color:var(--soft-muted)}
+body.has-app-shell .app-card,
+body.has-app-shell .scout-form,
+body.has-app-shell .activity-panel,
+body.has-app-shell .conflict-panel,
+body.has-app-shell .intel-panel,
+body.has-app-shell .intel-hero,
+body.has-app-shell .intel-brief,
+body.has-app-shell .research-panel,
+body.has-app-shell .compare-panel,
+body.has-app-shell .research-panel article,
+body.has-app-shell .metric-grid article,
+body.has-app-shell .admin-grid .intel-panel{
+  color:var(--soft-ink);
+  background:var(--soft-card);
+  border:1px solid color-mix(in srgb,var(--soft-line) 85%,transparent);
+  border-radius:var(--soft-radius);
+  box-shadow:var(--soft-shadow);
+}
+body.has-app-shell .app-empty{
+  background:var(--soft-card);
+  border:1px dashed var(--soft-line);
+  border-radius:var(--soft-radius);
+  box-shadow:none;
+  color:var(--soft-ink);
+}
+body.has-app-shell .app-empty p{color:var(--soft-muted)}
+body.has-app-shell .app-badge{
+  border-radius:999px;border-color:transparent;background:var(--soft-accent-soft);color:var(--soft-accent);
+}
+body.has-app-shell .app-badge.setup{color:#7a5520;background:#fff1df}
+body.has-app-shell .app-badge.good{color:#166534;background:#dcfce7}
+body.has-app-shell .app-badge.demo{color:#7a5b16;background:#fff6d8}
+body.has-app-shell .app-button,
+body.has-app-shell .primary-action,
+body.has-app-shell .home-cta,
+body.has-app-shell .quick.primary,
+body.has-app-shell .intel-search button,
+body.has-app-shell .compare-panel button,
+body.has-app-shell .intel-actions button,
+body.has-app-shell .scout-tabs button.active,
+body.has-app-shell .event-strip button,
+body.has-app-shell .voice-box button,
+body.has-app-shell .formula-builder button,
+body.has-app-shell .conflict-panel button{
+  border-radius:12px!important;
+  min-height:44px;
+}
+body.has-app-shell .primary-action,
+body.has-app-shell .home-cta,
+body.has-app-shell .quick.primary,
+body.has-app-shell .intel-search button,
+body.has-app-shell .compare-panel button,
+body.has-app-shell .intel-actions>button{
+  color:#fff!important;
+  background:var(--soft-accent)!important;
+  border:0!important;
+  font-weight:700;
+  box-shadow:0 8px 20px color-mix(in srgb,var(--soft-accent) 22%,transparent);
+}
+body.has-app-shell .app-button.secondary{
+  color:var(--soft-ink);background:var(--soft-card);border:1px solid var(--soft-line);box-shadow:none;
+}
+body.has-app-shell .eyebrow,
+body.has-app-shell .brand,
+body.has-app-shell .intel-header a,
+body.has-app-shell .scout-header a,
+body.has-app-shell .text-button,
+body.has-app-shell .display-nav,
+body.has-app-shell .memory-open-btn{
+  color:var(--soft-accent)!important;
+}
+body.has-app-shell input,
+body.has-app-shell select,
+body.has-app-shell textarea,
+body.has-app-shell .intel-search input,
+body.has-app-shell .compare-panel input,
+body.has-app-shell .admin-grid input,
+body.has-app-shell .admin-grid select,
+body.has-app-shell .scout-form input,
+body.has-app-shell .scout-form select,
+body.has-app-shell .scout-form textarea,
+body.has-app-shell .formula-builder input{
+  color:var(--soft-ink)!important;
+  background:var(--soft-bg)!important;
+  border:1px solid var(--soft-line)!important;
+  border-radius:12px!important;
+}
+
+/* Scouting */
+body.has-app-shell .scout-app{max-width:1180px;padding:clamp(18px,3vw,36px) 16px 28px}
+body.has-app-shell .scout-header{align-items:flex-start;gap:16px;margin-bottom:8px}
+body.has-app-shell .network{border-radius:999px;padding:8px 12px;font:700 11px var(--font-source-sans),ui-sans-serif}
+body.has-app-shell .network.online{color:var(--soft-accent);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line));background:var(--soft-accent-soft)}
+body.has-app-shell .network.offline{color:#a16207;border-color:#f1dfb0;background:#fff8e8}
+body.has-app-shell .event-strip{
+  color:var(--soft-ink);background:var(--soft-card);border:1px solid var(--soft-line);border-radius:var(--soft-radius);
+  box-shadow:var(--soft-shadow);padding:14px 16px;
+}
+body.has-app-shell .event-strip span{color:var(--soft-muted)}
+body.has-app-shell .scout-tabs{gap:6px;padding:4px;background:var(--soft-bg);border:1px solid var(--soft-line);border-radius:14px;width:max-content;max-width:100%}
+body.has-app-shell .scout-tabs button{
+  color:var(--soft-muted);background:transparent;border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;
+}
+body.has-app-shell .scout-tabs button.active{color:#fff;background:var(--soft-accent);border-color:var(--soft-accent)}
+body.has-app-shell .activity-panel article,
+body.has-app-shell .conflict-panel article{
+  padding:12px 0;border-top:1px solid var(--soft-line);
+}
+body.has-app-shell .formula-builder{border-top-color:var(--soft-line)}
+body.has-app-shell .formula-builder label{color:var(--soft-muted)}
+body.has-app-shell .voice-box{
+  display:grid;gap:10px;padding:14px;margin:12px 0;border:1px solid var(--soft-line);border-radius:14px;background:var(--soft-bg);
+}
+body.has-app-shell .voice-box button,
+body.has-app-shell .formula-builder button,
+body.has-app-shell .conflict-panel button{
+  color:var(--soft-accent)!important;background:var(--soft-accent-soft)!important;border:1px solid color-mix(in srgb,var(--soft-accent) 30%,var(--soft-line))!important;
+}
+
+/* Intel / team admin / display setup */
+body.has-app-shell .intel-app{max-width:1180px;padding:clamp(18px,3vw,36px) 16px 28px}
+body.has-app-shell .intel-header{
+  align-items:flex-end;padding-bottom:18px;border-bottom:1px solid var(--soft-line);margin-bottom:8px;
+}
+body.has-app-shell .intel-header a{font:700 13px var(--font-source-sans),ui-sans-serif;text-decoration:none}
+body.has-app-shell .intel-actions{display:flex;flex-wrap:wrap;gap:8px}
+body.has-app-shell .intel-actions a{
+  display:inline-flex;align-items:center;min-height:40px;padding:0 12px;border-radius:12px;
+  color:var(--soft-ink)!important;background:var(--soft-card);border:1px solid var(--soft-line);
+  text-decoration:none;font:700 12px var(--font-source-sans),ui-sans-serif;
+}
+body.has-app-shell .intel-search>label{color:var(--soft-muted);font:700 11px var(--font-source-sans),ui-sans-serif;letter-spacing:.06em;text-transform:uppercase}
+body.has-app-shell .intel-search small{color:var(--soft-muted)}
+body.has-app-shell .intel-search>div{gap:8px}
+body.has-app-shell .team-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:16px 0}
+body.has-app-shell .team-results button{
+  display:grid;gap:4px;padding:14px;text-align:left;cursor:pointer;
+  color:var(--soft-ink);background:var(--soft-card);border:1px solid var(--soft-line);border-radius:14px;box-shadow:var(--soft-shadow);
+}
+body.has-app-shell .team-results button:hover{border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));background:var(--soft-accent-soft)}
+body.has-app-shell .team-results em{color:var(--soft-accent);font:700 9px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.06em}
+body.has-app-shell .team-results small{color:var(--soft-muted)}
+body.has-app-shell .metric-grid{gap:10px;background:transparent!important;border:0!important}
+body.has-app-shell .metric-grid article{padding:16px;text-align:center}
+body.has-app-shell .metric-grid span{color:var(--soft-muted);font-size:11px}
+body.has-app-shell .metric-grid strong{font-size:24px;letter-spacing:-.03em}
+body.has-app-shell .telemetry-status{
+  color:#7a5b16;background:#fff8e8;border:1px solid #f1dfb0;border-left-width:3px;border-radius:14px;
+}
+body.has-app-shell .telemetry-status.success{color:#166534;background:#dcfce7;border-color:#86efac}
+body.has-app-shell .invite-list article{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px 0;border-top:1px solid var(--soft-line);
+}
+body.has-app-shell .invite-list small,body.has-app-shell .invite-list time{color:var(--soft-muted)}
+body.has-app-shell .invite-list button{
+  min-height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--soft-line);
+  background:var(--soft-bg);color:var(--soft-ink);font-weight:700;cursor:pointer;
+}
+
+/* Display setup */
+body.has-app-shell .display-setup .preset-picker{gap:10px}
+body.has-app-shell .preset-picker button{
+  color:var(--soft-ink);background:var(--soft-card);border:1px solid var(--soft-line);border-radius:16px;
+  box-shadow:var(--soft-shadow);min-height:110px;
+}
+body.has-app-shell .preset-picker button.active{
+  color:#fff;background:var(--soft-accent);border-color:var(--soft-accent);
+  box-shadow:0 10px 24px color-mix(in srgb,var(--soft-accent) 28%,transparent);
+}
+body.has-app-shell .display-preview{
+  color:var(--soft-ink);background:var(--soft-bg);border:1px solid var(--soft-line);border-radius:16px;
+}
+body.has-app-shell .display-preview>span{color:var(--soft-accent)}
+body.has-app-shell .display-preview article{background:var(--soft-card);border:1px solid var(--soft-line);border-radius:12px}
+body.has-app-shell .display-preview small{color:var(--soft-muted)}
+body.has-app-shell .saved-board{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 0;border-top:1px solid var(--soft-line);
+}
+body.has-app-shell .saved-board a,body.has-app-shell .saved-board button{
+  min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--soft-line);
+  background:var(--soft-card);color:var(--soft-ink);font:700 12px var(--font-source-sans),ui-sans-serif;
+  text-decoration:none;cursor:pointer;
+}
+body.has-app-shell .display-nav{
+  border-color:var(--soft-accent)!important;border-radius:12px!important;color:var(--soft-accent)!important;
+}
+
+/* Strategy / CAD module pages already token-based — soft radius + shadow */
+body.has-app-shell .strategy-page .app-card,
+body.has-app-shell .strategy-draft-page .app-card,
+body.has-app-shell .strategy-board-public .app-card,
+body.has-app-shell .cad-module .app-card{
+  border-radius:var(--soft-radius);box-shadow:var(--soft-shadow);
+}
+body.has-app-shell .strategy-tabs{
+  background:var(--soft-bg);border-radius:14px;border-color:var(--soft-line);
+}
+body.has-app-shell .strategy-tabs button.active{
+  background:var(--soft-card);box-shadow:0 4px 14px rgba(28,36,48,.08);
+}
+body.has-app-shell .cad-job-list button{border-radius:12px}
+body.has-app-shell .cad-job-list button.active{
+  background:var(--soft-accent-soft);border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));
+}
+body.has-app-shell .cad-mode-picker label{border-radius:12px}
+body.has-app-shell .cad-mode-picker label.active{
+  border-color:var(--soft-accent);box-shadow:inset 0 0 0 1px var(--soft-accent);background:var(--soft-accent-soft);
+}
+
+/* Messages — soft without touching realtime logic */
+body.has-app-shell .messages-page,
+body.has-app-shell .chat-page{
+  color:var(--soft-ink);background:transparent;
+}
+body.has-app-shell .messages-page .workspace-top,
+body.has-app-shell .chat-page .workspace-top{
+  color:var(--soft-ink);background:transparent;border:0;min-height:48px;
+}
+body.has-app-shell .messages-page .chat-sidebar,
+body.has-app-shell .chat-page .chat-sidebar{
+  color:var(--soft-ink);background:var(--soft-card);border:1px solid var(--soft-line);border-radius:var(--soft-radius);
+  box-shadow:var(--soft-shadow);
+}
+body.has-app-shell .messages-page .chat-sidebar button,
+body.has-app-shell .chat-page .chat-sidebar button{
+  color:var(--soft-ink);background:var(--soft-bg);border:1px solid transparent;border-radius:12px;
+}
+body.has-app-shell .messages-page .chat-sidebar button.active,
+body.has-app-shell .messages-page .chat-sidebar button[aria-current="true"],
+body.has-app-shell .chat-page .chat-sidebar button.active{
+  background:var(--soft-accent-soft);border-color:color-mix(in srgb,var(--soft-accent) 30%,transparent);color:var(--soft-accent);
+}
+body.has-app-shell .messages-page .messages-preview{color:var(--soft-muted)!important}
+body.has-app-shell .messages-page .messages-sidebar-empty{color:var(--soft-muted)!important}
+body.has-app-shell .messages-page .messages article,
+body.has-app-shell .chat-page .messages article{
+  color:var(--soft-ink);background:var(--soft-card);border:1px solid var(--soft-line);border-radius:14px;
+}
+body.has-app-shell .messages-page .chat-composer,
+body.has-app-shell .chat-page .chat-composer{
+  background:var(--soft-card);border:1px solid var(--soft-line);border-radius:16px;box-shadow:var(--soft-shadow);
+}
+body.has-app-shell .messages-page .chat-composer textarea,
+body.has-app-shell .chat-page .chat-composer textarea{
+  color:var(--soft-ink)!important;background:var(--soft-bg)!important;border-color:var(--soft-line)!important;
+}
+body.has-app-shell .messages-page .chat-composer button,
+body.has-app-shell .chat-page .chat-composer button{
+  color:#fff!important;background:var(--soft-accent)!important;border:0!important;border-radius:12px!important;
+}
+
+/* Workspace strip (schedule) */
+body.has-app-shell .active-event{
+  color:#fff;background:var(--soft-accent);border-radius:0 0 18px 18px;
+}
+body.has-app-shell .active-event.inactive{
+  color:var(--soft-ink);background:var(--soft-card);border-bottom:3px solid #f59e0b;
+}
+body.has-app-shell .sync-indicator.online{color:var(--soft-accent)}
+body.has-app-shell .sync-indicator.online i{background:var(--soft-accent)}
+
+/* Empty org gate used by scouting/intel/team */
+body.has-app-shell .content.soft-gate,
+.soft-gate{
+  max-width:640px;margin:48px auto;padding:28px 24px;border-radius:var(--soft-radius);
+  background:var(--soft-card);border:1px solid var(--soft-line);box-shadow:var(--soft-shadow);color:var(--soft-ink);
+}
+.soft-gate .eyebrow{color:var(--soft-accent);font:700 11px var(--font-source-sans),ui-sans-serif;letter-spacing:.08em}
+.soft-gate h1{margin:10px 0 8px;font-size:28px;letter-spacing:-.03em}
+.soft-gate p{margin:0 0 16px;color:var(--soft-muted);line-height:1.5}
+.soft-gate a{
+  display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;
+  color:#fff;background:var(--soft-accent);text-decoration:none;font-weight:700;
+}
+
+/* Notification inbox */
+.notif-page{max-width:720px;margin:0 auto;padding:clamp(18px,3vw,32px) 16px 28px}
+.notif-page .app-page-header{margin-bottom:16px}
+.notif-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.notif-list{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.notif-list li{
+  display:grid;gap:8px;padding:16px 18px;border-radius:var(--soft-radius);background:var(--soft-card);
+  border:1px solid color-mix(in srgb,var(--soft-line) 85%,transparent);box-shadow:var(--soft-shadow);
+}
+.notif-list li.unread{border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line));background:color-mix(in srgb,var(--soft-accent-soft) 55%,var(--soft-card))}
+.notif-list header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.notif-list strong{display:block;font-size:15px;letter-spacing:-.01em}
+.notif-list small{display:block;margin-top:3px;color:var(--soft-muted);font-size:12px}
+.notif-list p{margin:0;color:var(--soft-muted);font-size:13px;line-height:1.45}
+.notif-list footer{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.notif-list footer button,.notif-toolbar button,.notif-toolbar a{
+  min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--soft-line);
+  background:var(--soft-bg);color:var(--soft-ink);font:700 12px var(--font-source-sans),ui-sans-serif;
+  text-decoration:none;cursor:pointer;
+}
+.notif-list footer button.primary,.notif-toolbar button.primary{
+  color:#fff;background:var(--soft-accent);border-color:var(--soft-accent);
+}
+.notif-empty{display:grid;gap:8px;place-items:center;min-height:220px;padding:32px;text-align:center;
+  border:1px dashed var(--soft-line);border-radius:var(--soft-radius);background:var(--soft-card);color:var(--soft-ink)}
+.notif-empty p{margin:0;max-width:42ch;color:var(--soft-muted);line-height:1.45}
+@media(max-width:650px){
+  body.has-app-shell .scout-tabs{width:100%}
+  body.has-app-shell .scout-tabs button{flex:1}
+  body.has-app-shell .intel-header{align-items:flex-start;flex-direction:column}
+  body.has-app-shell .metric-grid{grid-template-columns:repeat(2,1fr)!important}
 }

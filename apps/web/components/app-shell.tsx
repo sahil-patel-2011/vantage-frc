@@ -13,6 +13,7 @@ type Me = {
   role?: string | null;
   platformAdmin?: boolean;
   unreadNotificationCount?: number;
+  unreadMessageCount?: number;
 };
 
 type NavItem = { href: string; label: string; icon: IconName; state?: "setup" | "planned" };
@@ -132,6 +133,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   const [commandOpen, setCommandOpen] = useState(false);
   const [me, setMe] = useState<Me>({});
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
@@ -150,6 +152,8 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
         setMe(data);
         const count = Number(data.unreadNotificationCount ?? 0);
         setUnreadCount(Number.isFinite(count) && count > 0 ? Math.floor(count) : 0);
+        const messages = Number(data.unreadMessageCount ?? 0);
+        setUnreadMessages(Number.isFinite(messages) && messages > 0 ? Math.floor(messages) : 0);
         if (!orgId && data.orgId) setOrgId(data.orgId);
       })
       .catch(() => undefined);
@@ -224,7 +228,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
           </button>
           <a
             className="soft-icon-btn soft-notif"
-            href="/account?tab=notifications"
+            href="/notifications"
             aria-label={unreadCount >= 1 ? `Notifications, ${unreadCount} unread` : "Notifications"}
           >
             <Icon name="bell" />
@@ -250,12 +254,13 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                 <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
                   Account settings
                 </a>
-                <a role="menuitem" href="/account?tab=notifications" onClick={() => setAccountMenuOpen(false)}>
+                <a role="menuitem" href="/notifications" onClick={() => setAccountMenuOpen(false)}>
                   Notifications
                   {unreadCount >= 1 ? <b>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
                 </a>
                 <a role="menuitem" href={withOrg("/messages", orgId)} onClick={() => setAccountMenuOpen(false)}>
                   Team messages
+                  {unreadMessages >= 1 ? <b>{unreadMessages > 99 ? "99+" : unreadMessages}</b> : null}
                 </a>
                 <a role="menuitem" href="/security" onClick={() => setAccountMenuOpen(false)}>
                   Security
@@ -338,7 +343,15 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                 >
                   <Icon name={item.icon} />
                   {item.label}
-                  {item.state === "setup" ? <small>Setup</small> : <span className="chev"><Icon name="chevron" /></span>}
+                  {item.href === "/messages" && unreadMessages >= 1 ? (
+                    <b className="soft-nav-badge">{unreadMessages > 99 ? "99+" : unreadMessages}</b>
+                  ) : item.state === "setup" ? (
+                    <small>Setup</small>
+                  ) : (
+                    <span className="chev">
+                      <Icon name="chevron" />
+                    </span>
+                  )}
                 </a>
               ),
             )}

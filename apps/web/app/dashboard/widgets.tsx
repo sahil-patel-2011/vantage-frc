@@ -496,7 +496,15 @@ export function DashboardWidgetView({
       const unread = Number(data.unread ?? 0);
       if (payload?.status === "live" && items.length === 0) {
         return (
-          <Shell type={type} title="Notifications" payload={payload} emptyHint={emptyHintFor("notifications")} orgId={orgId} preferChildren>
+          <Shell
+            type={type}
+            title="Notifications"
+            payload={payload}
+            href="/notifications"
+            emptyHint={emptyHintFor("notifications")}
+            orgId={orgId}
+            preferChildren
+          >
             <div className="dash-empty calm">
               <strong>Inbox clear</strong>
               <p>No notifications yet. Unread count stays at zero until something is sent.</p>
@@ -505,7 +513,7 @@ export function DashboardWidgetView({
         );
       }
       return (
-        <Shell type={type} title="Notifications" payload={payload} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Notifications" payload={payload} href="/notifications" emptyHint={hint} orgId={orgId} preferChildren>
           {payload?.status === "live" ? (
             <ul className="dash-checklist">
               {unread >= 1 ? (
@@ -514,12 +522,44 @@ export function DashboardWidgetView({
                   <b>{String(unread)}</b>
                 </li>
               ) : null}
-              {items.slice(0, 4).map((item) => (
-                <li key={item.id} className={item.readAt ? "done" : undefined}>
-                  <span>{item.type.replaceAll("_", " ")}</span>
-                  <b>{item.readAt ? "Read" : "New"}</b>
-                </li>
-              ))}
+              {items.slice(0, 4).map((item) => {
+                const conversationId =
+                  item.type === "direct_message" && typeof item.payload?.conversationId === "string"
+                    ? item.payload.conversationId
+                    : null;
+                const fromName =
+                  item.type === "direct_message" && typeof item.payload?.fromName === "string"
+                    ? item.payload.fromName
+                    : null;
+                const preview =
+                  item.type === "direct_message" && typeof item.payload?.preview === "string"
+                    ? item.payload.preview
+                    : null;
+                const label =
+                  item.type === "direct_message"
+                    ? fromName
+                      ? `DM from ${fromName}`
+                      : "Direct message"
+                    : item.type.replaceAll("_", " ");
+                const href = conversationId
+                  ? withOrg(`/messages?conversationId=${encodeURIComponent(conversationId)}`)
+                  : item.type === "direct_message"
+                    ? withOrg("/messages")
+                    : null;
+                return (
+                  <li key={item.id} className={item.readAt ? "done" : undefined}>
+                    {href ? (
+                      <a href={href}>
+                        <span>{label}</span>
+                        {preview ? <small className="dash-notif-preview">{preview}</small> : null}
+                      </a>
+                    ) : (
+                      <span>{label}</span>
+                    )}
+                    <b>{item.readAt ? "Read" : "New"}</b>
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
         </Shell>

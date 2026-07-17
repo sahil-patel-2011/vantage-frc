@@ -3,9 +3,9 @@ import MessagesClient from "./messages-client";
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ orgId?: string }>;
+  searchParams: Promise<{ orgId?: string; conversationId?: string }>;
 }) {
-  const { orgId } = await searchParams;
+  const { orgId, conversationId } = await searchParams;
   if (!orgId) {
     return (
       <main className="content">
@@ -14,5 +14,5 @@ export default async function MessagesPage({
       </main>
     );
   }
-  return <MessagesClient orgId={orgId} />;
+  return <MessagesClient orgId={orgId} initialConversationId={conversationId ?? null} />;
 }
