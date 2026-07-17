@@ -23,6 +23,10 @@ const PUBLIC_PREFIXES = [
   "/api/showcase/public",
   "/api/display/snapshot",
   "/api/strategy/draft/public",
+  "/api/partner-placements",
+  "/api/partner-assets",
+  "/api/support",
+  "/support",
   "/showcase/present",
   "/strategy/board",
   "/display/kiosk",
@@ -49,6 +53,25 @@ function signInRedirect(request: NextRequest) {
   const signIn = new URL("/signin", request.url);
   signIn.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
   return NextResponse.redirect(signIn);
+}
+
+function safeRelativePath(value: string | null | undefined, fallback = "/dashboard") {
+  if (!value?.startsWith("/") || value.startsWith("//")) return fallback;
+  return value;
+}
+
+function onboardingRedirect(request: NextRequest) {
+  const onboarding = new URL("/onboarding", request.url);
+  const path = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  if (path !== "/dashboard" && path !== "/") {
+    onboarding.searchParams.set("next", path);
+  }
+  return NextResponse.redirect(onboarding);
+}
+
+function postOnboardingRedirect(request: NextRequest) {
+  const next = request.nextUrl.searchParams.get("next");
+  return NextResponse.redirect(new URL(safeRelativePath(next), request.url));
 }
 
 export async function proxy(request: NextRequest) {
@@ -110,17 +133,19 @@ export async function proxy(request: NextRequest) {
   if (!onboardingDone) {
     if (
       pathname === "/onboarding" ||
+      pathname === "/invite" ||
       pathname.startsWith("/api/onboarding") ||
+      pathname.startsWith("/api/invites") ||
       pathname.startsWith("/api/auth") ||
       pathname.startsWith("/api/theme")
     ) {
       return NextResponse.next();
     }
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    return onboardingRedirect(request);
   }
 
   if (pathname === "/signin" || pathname === "/sign-in" || pathname === "/onboarding") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return postOnboardingRedirect(request);
   }
 
   return NextResponse.next();

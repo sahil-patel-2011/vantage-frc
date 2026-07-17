@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { VantageLogo } from "../../components/brand";
+import { PENDING_INVITE_KEY } from "../invite/invite-client";
 
 type OnboardingState = {
   complete: boolean;
@@ -37,7 +39,24 @@ const ROLES = [
 
 type Step = "about" | "team" | "preferences" | "done";
 
+function safeRelativePath(value: string | null | undefined, fallback = "/dashboard") {
+  if (!value?.startsWith("/") || value.startsWith("//")) return fallback;
+  return value;
+}
+
+function resolvePostOnboardingDestination(nextParam: string | null) {
+  if (nextParam) return safeRelativePath(nextParam);
+  try {
+    const pending = sessionStorage.getItem(PENDING_INVITE_KEY);
+    if (pending) return `/invite?token=${encodeURIComponent(pending)}`;
+  } catch {
+    // ignore
+  }
+  return "/dashboard";
+}
+
 export default function OnboardingClient() {
+  const searchParams = useSearchParams();
   const [state, setState] = useState<OnboardingState | null>(null);
   const [step, setStep] = useState<Step>("about");
   const [firstName, setFirstName] = useState("");
@@ -57,7 +76,7 @@ export default function OnboardingClient() {
       .then((data) => {
         if (!data) return;
         if (data.complete) {
-          window.location.assign("/dashboard");
+          window.location.assign(resolvePostOnboardingDestination(searchParams.get("next")));
           return;
         }
         setState(data);
@@ -101,7 +120,10 @@ export default function OnboardingClient() {
         return;
       }
       setStep("done");
-      window.setTimeout(() => window.location.assign("/dashboard"), 900);
+      window.setTimeout(
+        () => window.location.assign(resolvePostOnboardingDestination(searchParams.get("next"))),
+        900,
+      );
     } finally {
       setBusy(false);
     }

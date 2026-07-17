@@ -1,4 +1,5 @@
 export const DASHBOARD_WIDGET_TYPES = [
+  "onboarding_checklist",
   "next_match",
   "recent_result",
   "competition_snapshot",
@@ -42,6 +43,15 @@ export type WidgetCatalogEntry = {
 };
 
 export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
+  {
+    type: "onboarding_checklist",
+    label: "Setup checklist",
+    description: "First-run steps: workspace, event, TBA, scouting, and AI",
+    defaultW: 12,
+    defaultH: 4,
+    minW: 6,
+    minH: 3,
+  },
   {
     type: "next_match",
     label: "Next match",
@@ -154,11 +164,12 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
 ];
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidgetLayout[] = [
-  { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 6, h: 4, minW: 3, minH: 3 },
-  { i: "w-robot_readiness", type: "robot_readiness", x: 6, y: 0, w: 6, h: 4, minW: 3, minH: 3 },
-  { i: "w-prediction_summary", type: "prediction_summary", x: 0, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-alerts", type: "alerts", x: 4, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
-  { i: "w-quick_actions", type: "quick_actions", x: 8, y: 4, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
+  { i: "w-next_match", type: "next_match", x: 0, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
+  { i: "w-robot_readiness", type: "robot_readiness", x: 6, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
+  { i: "w-prediction_summary", type: "prediction_summary", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-alerts", type: "alerts", x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-quick_actions", type: "quick_actions", x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
 ];
 
 export const SECONDARY_WIDGET_TYPES: DashboardWidgetType[] = [

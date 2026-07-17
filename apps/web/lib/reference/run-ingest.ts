@@ -1,20 +1,28 @@
 import { createProductionReferenceJobs } from "@vantage/reference/production-worker";
 import type { EventDaySyncInput, SyncSummary } from "@vantage/reference";
 
+export type ReferenceIngestOptions = {
+  preferOrgIds?: string[];
+};
+
 export function currentFrcSeasonYear(at = new Date()): number {
   // FRC season year rolls forward after kickoff planning in the fall.
   return at.getUTCMonth() >= 9 ? at.getUTCFullYear() + 1 : at.getUTCFullYear();
 }
 
-export async function runTbaSeasonSync(year?: number): Promise<SyncSummary> {
-  const jobs = createProductionReferenceJobs();
+export async function runTbaSeasonSync(
+  year?: number,
+  options: ReferenceIngestOptions = {},
+): Promise<SyncSummary> {
+  const jobs = createProductionReferenceJobs(options);
   return jobs.syncSeason.run({ year: year ?? currentFrcSeasonYear() });
 }
 
 export async function runTbaEventDaySync(
   input: EventDaySyncInput = {},
+  options: ReferenceIngestOptions = {},
 ): Promise<SyncSummary> {
-  const jobs = createProductionReferenceJobs();
+  const jobs = createProductionReferenceJobs(options);
   return jobs.syncEventDay.run({
     year: input.year ?? currentFrcSeasonYear(),
     ...input,

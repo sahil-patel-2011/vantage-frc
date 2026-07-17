@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   canWriteOrgDashboard,
+  catalogEntry,
   DEFAULT_DASHBOARD_LAYOUT,
   filterLayoutForRole,
   validateDashboardLayout,
@@ -27,6 +28,25 @@ async function membership(client: import("@neondatabase/serverless").PoolClient,
 
 function fail(error: unknown, status = 400) {
   return Response.json({ error: error instanceof Error ? error.message : "Dashboard request failed" }, { status });
+}
+
+function ensureOnboardingChecklist(layout: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
+  if (layout.some((item) => item.type === "onboarding_checklist")) return layout;
+  const entry = catalogEntry("onboarding_checklist");
+  const offset = entry?.defaultH ?? 4;
+  return [
+    {
+      i: "w-onboarding_checklist",
+      type: "onboarding_checklist",
+      x: 0,
+      y: 0,
+      w: entry?.defaultW ?? 12,
+      h: offset,
+      minW: entry?.minW ?? 6,
+      minH: entry?.minH ?? 3,
+    },
+    ...layout.map((item) => ({ ...item, y: item.y + offset })),
+  ];
 }
 
 export async function GET(request: Request) {
@@ -75,7 +95,10 @@ export async function GET(request: Request) {
         boards.rows.find((board) => board.scope === "org" && board.isActive) ??
         null;
 
-      const layout = filterLayoutForRole(active?.layout?.length ? active.layout : DEFAULT_DASHBOARD_LAYOUT, role);
+      const layout = filterLayoutForRole(
+        ensureOnboardingChecklist(active?.layout?.length ? active.layout : DEFAULT_DASHBOARD_LAYOUT),
+        role,
+      );
 
       return {
         role,

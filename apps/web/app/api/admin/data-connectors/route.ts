@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { assertPlatformAdmin, assertPlatformPrivilegeMfa, auth, PlatformAdminRequiredError } from "@vantage/core";
+import { assertOrgCapability, assertPlatformAdmin, assertPlatformPrivilegeMfa, auth, PlatformAdminRequiredError } from "@vantage/core";
 import { createKms, decryptSecret, encryptSecret, type EncryptedSecret } from "@vantage/billing";
 import { withRls } from "@vantage/db";
 import { TbaClient } from "@vantage/reference";
@@ -21,11 +21,7 @@ async function authorize(
   orgId: string | null,
 ) {
   if (orgId) {
-    const role = await client.query(
-      `SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2 AND role IN ('owner','admin')`,
-      [orgId, userId],
-    );
-    if (!role.rowCount) throw new Error("Organization administrator access required");
+    await assertOrgCapability(client, orgId, "manage_api_keys");
   } else {
     await assertPlatformAdmin(client);
   }
@@ -90,11 +86,41 @@ export async function POST(request: Request) {
     const orgId = body.orgId ?? null;
 
     if (body.action === "sync") {
-      if (orgId) {
+      if (orgId && body.syncMode === "season") {
         return Response.json(
-          { error: "Platform administrators run global TBA sync from Admin → Live Data." },
+          { error: "Team administrators can sync the active event only. Platform admins run full season sync." },
           { status: 403 },
         );
+      }
+      if (orgId) {
+        const summary = await withRls({ userId: session.user.id, orgId }, async (client) => {
+          await authorize(client, session.user.id, orgId);
+          const active = await client.query<{ eventKey: string | null; credentialId: string | null }>(
+            `SELECT c.active_event_key AS "eventKey",
+                    (SELECT id FROM data_source_credentials
+                     WHERE source = 'tba' AND org_id = $1 AND disabled_at IS NULL
+                     LIMIT 1) AS "credentialId"
+             FROM org_active_context c
+             WHERE c.org_id = $1`,
+            [orgId],
+          );
+          const eventKey = active.rows[0]?.eventKey;
+          if (!eventKey) {
+            throw new Error("Select an active event before syncing TBA data for this team.");
+          }
+          await client.query(
+            `INSERT INTO org_live_subscriptions(org_id, enabled, fallback_credential_id, updated_by)
+             VALUES ($1, true, $2, $3)
+             ON CONFLICT (org_id) DO UPDATE SET
+               enabled = true,
+               fallback_credential_id = COALESCE(excluded.fallback_credential_id, org_live_subscriptions.fallback_credential_id),
+               updated_by = excluded.updated_by,
+               updated_at = now()`,
+            [orgId, active.rows[0]?.credentialId ?? null, session.user.id],
+          );
+          return runTbaEventDaySync({ eventKeys: [eventKey] }, { preferOrgIds: [orgId] });
+        });
+        return Response.json({ success: true, summary });
       }
       await withRls({ userId: session.user.id }, async (client) => {
         await authorize(client, session.user.id, null);

@@ -339,8 +339,12 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   const keySource: MeterKeySource = account.tier === "free" ? "byo" : "platform";
   if (keySource === "byo") {
     const key = await input.client.query(
-      "SELECT 1 FROM org_llm_keys WHERE org_id = $1 LIMIT 1",
-      [input.orgId]
+      `SELECT 1 FROM org_llm_keys WHERE org_id = $1
+       UNION ALL
+       SELECT 1 FROM org_provider_configs
+       WHERE org_id = $1 AND enabled = true AND key_ciphertext IS NOT NULL
+       LIMIT 1`,
+      [input.orgId],
     );
     if (!key.rowCount) throw new Error("Free organizations must configure a BYO AI key");
   }
