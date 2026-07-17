@@ -77,7 +77,8 @@ export default function ExportAuditClient({ orgId }: { orgId: string }) {
         </div>
         <nav className="intel-actions" aria-label="Security links">
           <a href={`/team/security?orgId=${orgId}`}>Access policy</a>
-          <a href={`/team/security/audit?orgId=${orgId}`}>Audit log</a>
+          <a href={`/team/audit?orgId=${orgId}`}>Audit log</a>
+          <a href={`/team/posture?orgId=${orgId}`}>Posture</a>
           <a href={`/exports?orgId=${orgId}`}>Export center</a>
         </nav>
       </header>
