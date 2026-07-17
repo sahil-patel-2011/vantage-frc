@@ -47,6 +47,11 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
   const [brainMode, setBrainMode] = useState<"mock" | "managed_api" | "terminal_cli">("mock");
   const [autoRunVerify, setAutoRunVerify] = useState(false);
   const [message, setMessage] = useState("");
+  const [onshapeConfigured, setOnshapeConfigured] = useState(false);
+  const [onshapeConnected, setOnshapeConnected] = useState(false);
+  const [documentId, setDocumentId] = useState("");
+  const [workspaceId, setWorkspaceId] = useState("");
+  const [elementId, setElementId] = useState("");
 
   async function load(jobId = selected) {
     const response = await fetch(`/api/cad?orgId=${orgId}${jobId ? `&jobId=${jobId}` : ""}`);
@@ -55,6 +60,8 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
       setJobs(data.jobs ?? []);
       setDetail(data.detail);
       setDevices(data.devices ?? []);
+      setOnshapeConfigured(Boolean(data.onshapeConfigured));
+      setOnshapeConnected((data.onshapeConnections ?? []).some((c: { status: string }) => c.status === "connected"));
     } else setMessage(data.error);
   }
 
@@ -153,8 +160,12 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
                 CAD path
                 <select value={platform} onChange={(event) => setPlatform(event.target.value as typeof platform)}>
                   <option value="mock">Deterministic mock</option>
-                  <option value="onshape" disabled>
-                    Onshape hosted OAuth (admin setup required)
+                  <option value="onshape" disabled={!onshapeConfigured || !onshapeConnected}>
+                    {!onshapeConfigured
+                      ? "Onshape hosted (admin OAuth setup required)"
+                      : !onshapeConnected
+                        ? "Onshape hosted (connect OAuth in Connections)"
+                        : "Onshape hosted OAuth"}
                   </option>
                   <option value="fusion360">Fusion 360 local relay</option>
                 </select>
@@ -187,11 +198,48 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
               onPlan={() => act("plan-default", { jobId: job.id })}
             />
           )}
+          {job?.platform === "onshape" ? (
+            <form
+              className="cad-document-ref"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void act("set-document", {
+                  jobId: job.id,
+                  documentRef: { documentId, workspaceId, elementId, label: documentId },
+                });
+              }}
+            >
+              <span className="eyebrow">ONSHAPE DOCUMENT</span>
+              <label>
+                Document ID
+                <input value={documentId} onChange={(e) => setDocumentId(e.target.value)} required />
+              </label>
+              <label>
+                Workspace ID
+                <input value={workspaceId} onChange={(e) => setWorkspaceId(e.target.value)} required />
+              </label>
+              <label>
+                Element ID (Part Studio)
+                <input value={elementId} onChange={(e) => setElementId(e.target.value)} required />
+              </label>
+              <button type="submit" className="primary-action">
+                Bind document refs
+              </button>
+              <small>Use a disposable Onshape document for first live tests.</small>
+            </form>
+          ) : null}
           <p className="cad-disclaimer">Design review flags are suggestions, not engineering or safety certification.</p>
         </section>
         <section className="cad-visual">
           <div className="cad-render">
-            <span>LIVE VERIFIED CHECKPOINT</span>
+            <span>
+              {job?.platform === "mock" || !render
+                ? "CHECKPOINT RENDER"
+                : job?.platform === "onshape"
+                  ? "ONSHAPE CHECKPOINT"
+                  : "FUSION RELAY CHECKPOINT"}
+              {job?.platform === "mock" && render ? " · DEMO / MOCK" : ""}
+            </span>
             {render ? (
               <iframe sandbox="" title="Isolated CAD checkpoint render" srcDoc={String(render.content.content ?? "")} />
             ) : (
@@ -244,11 +292,15 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
                 {step.approvalStatus === "approved" &&
                   step.status === "planned" &&
                   (job?.platform === "fusion360" || job?.platform === "onshape") && (
-                    <small>
-                      {job.platform === "fusion360"
-                        ? "Waiting for vantage-cad relay claim…"
-                        : "Onshape hosted execute requires OAuth setup"}
-                    </small>
+                    <>
+                      {job.platform === "onshape" ? (
+                        <button onClick={() => void act("execute-onshape", { jobId: job!.id, stepId: step.id })}>
+                          Run Onshape
+                        </button>
+                      ) : (
+                        <small>Waiting for vantage-cad relay claim…</small>
+                      )}
+                    </>
                   )}
               </article>
             ))}

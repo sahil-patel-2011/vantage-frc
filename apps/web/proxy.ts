@@ -24,6 +24,13 @@ const PUBLIC_PREFIXES = [
   "/api/display/snapshot",
   "/showcase/present",
   "/display/kiosk",
+  // CAD desktop CLI: pairing codes + device-token relay (no session cookie).
+  "/api/cad/pair/start",
+  "/api/cad/pair/poll",
+  "/api/cad/relay",
+  // Generated social/SEO images must be crawlable without auth.
+  "/opengraph-image",
+  "/twitter-image",
 ];
 const PUBLIC_FILE = /\.(?:avif|css|gif|ico|jpe?g|js|json|map|png|svg|txt|webmanifest|webp|woff2?|xml)$/i;
 

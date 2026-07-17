@@ -1,0 +1,13 @@
+{
+  "autodeskProduct": "Fusion360",
+  "type": "addin",
+  "id": "com.vantage.frc.cad.relay",
+  "author": "Vantage",
+  "description": {
+    "": "Vantage CAD local relay — loopback HTTP bridge for signed Fusion jobs. Never accepts non-loopback clients."
+  },
+  "version": "0.1.1",
+  "runOnStartup": false,
+  "supportedOS": "windows|mac",
+  "editEnabled": true
+}

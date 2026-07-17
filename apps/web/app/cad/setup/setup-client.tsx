@@ -28,12 +28,15 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
   const [brain, setBrain] = useState<"mock" | "managed_api" | "terminal_cli" | "team_byok">("terminal_cli");
   const [devices, setDevices] = useState<Device[]>([]);
   const [message, setMessage] = useState("");
+  const [onshapeConfigured, setOnshapeConfigured] = useState(false);
 
   async function load() {
     const response = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`);
     const data = await response.json();
-    if (response.ok) setDevices(data.devices ?? []);
-    else setMessage(data.error);
+    if (response.ok) {
+      setDevices(data.devices ?? []);
+      setOnshapeConfigured(Boolean(data.onshapeConfigured));
+    } else setMessage(data.error);
   }
 
   useEffect(() => {
@@ -98,10 +101,20 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             </span>
           </label>
           <label className="state-control">
-            <input type="radio" name="cad" checked={cadTarget === "onshape"} onChange={() => setCadTarget("onshape")} disabled />
+            <input
+              type="radio"
+              name="cad"
+              checked={cadTarget === "onshape"}
+              onChange={() => setCadTarget("onshape")}
+              disabled={!onshapeConfigured}
+            />
             <span>
               <strong>Onshape hosted OAuth</strong>
-              <small>Setup required — OAuth client env not configured yet.</small>
+              <small>
+                {onshapeConfigured
+                  ? "Hosted cloud CAD via OAuth — connect in Connections, then select document refs."
+                  : "Setup required — OAuth client env not configured yet."}
+              </small>
             </span>
           </label>
           <button className="primary-action" type="button" onClick={() => setStep(2)}>
@@ -163,7 +176,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
           </p>
           <div className="panel-heading">
             <div>
-              <span className="eyebrow">WINDOWS / MACOS</span>
+              <span className="eyebrow">WINDOWS / MACOS / LINUX</span>
               <h3>vantage-cad CLI</h3>
             </div>
             <button
@@ -188,8 +201,10 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             <li>Approve the desktop for this organization and CAD platform.</li>
             <li>
               {cadTarget === "fusion360"
-                ? "Keep Fusion open with the official connector (or VANTAGE_CAD_MOCK=1 for the mock plugin)."
-                : "For mock path, keep using Deterministic mock in CAD Builder until you pair Fusion."}
+                ? "Windows/macOS: install Fusion add-in via scripts/cad/install-fusion-addin.* then keep Fusion + vantage-cad start running. Linux: Fusion unavailable — use mock or Onshape."
+                : cadTarget === "onshape"
+                  ? "Authorize Onshape in Connections, select document/workspace/element in CAD Builder. CLI monitor optional."
+                  : "For mock path, keep using Deterministic mock in CAD Builder until you pair Fusion."}
             </li>
           </ol>
           <div className="onboarding-actions">

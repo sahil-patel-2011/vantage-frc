@@ -1,13 +1,23 @@
 # Vantage CAD desktop relay
 
-The CLI is a local workspace package; it is not published to npm.
+## Install (cross-platform)
+
+| OS | CLI | Fusion add-in | Onshape hosted |
+|----|-----|---------------|----------------|
+| Windows | `scripts/cad/install-cli.ps1` | `scripts/cad/install-fusion-addin.ps1` | Browser OAuth |
+| macOS | `scripts/cad/install-cli.sh` | `scripts/cad/install-fusion-addin.sh` | Browser OAuth |
+| Linux | `scripts/cad/install-cli.sh` | **Unsupported** (no Autodesk Fusion) | Browser OAuth |
 
 ```text
+# From repo root
 npm install
 npm run build --workspace=@vantage/cad-cli
 npm install -g ./packages/vantage-cad-cli
+export VANTAGE_URL=https://vantage-frc-web.vercel.app   # or http://localhost:3001
 vantage-cad setup
 ```
+
+Unsigned artifact tree: `node scripts/cad/package-relay.mjs` → `dist/cad-relay/` (ready for future signed .msi/.pkg/.AppImage wrappers).
 
 `setup` opens a browser with a ten-minute one-time pairing code. The user signs in there, selects an existing authorized organization, and chooses Onshape or Fusion 360. No Vantage password is entered in the terminal. The resulting device token is revocable, bound to user/org/machine/scopes, and stored in OS credential storage when optional `keytar` is available; otherwise a `0600` local file is used.
 
@@ -19,29 +29,26 @@ Mock Fusion (CI / no Autodesk): `VANTAGE_CAD_MOCK=1 vantage-cad start` boots an 
 
 ## Onshape
 
-Hosted Onshape uses least-privilege OAuth and server workers. The browser selects document/workspace/element. The CLI can monitor health but does not need to remain running. Mutations use allowlisted operations (sketch, extrude, fillet, chamfer, shell, pattern, variable, assembly and reviewed FeatureScript), idempotency keys, explicit approval, and topology/render verification after every mutation. Real credentials must be tested only in a disposable document.
+Hosted Onshape uses least-privilege OAuth and server workers. Admin sets:
 
-**Status:** OAuth client wiring is setup-required (admin env). UI Connect button stays disabled until credentials exist.
+```text
+ONSHAPE_OAUTH_CLIENT_ID=
+ONSHAPE_OAUTH_CLIENT_SECRET=
+ONSHAPE_OAUTH_REDIRECT_URI=   # optional; defaults to $BETTER_AUTH_URL/api/cad/onshape/oauth/callback
+ONSHAPE_OAUTH_SCOPES=OAuth2Read OAuth2Write
+```
+
+Until those exist, Connect stays **Setup required**. When configured: Connections → Connect Onshape OAuth → bind document/workspace/element → approve steps → **Run Onshape**.
+
+Real credentials must be tested only in a disposable document. Agent skill: `.agents/skills/cad-onshape`.
 
 ## Fusion 360
 
-Fusion is local. Vantage/Vercel signs an approved, expiring job; the paired relay claims only jobs matching its device, user and org. The relay calls an HTTP loopback endpoint exposed by the repository's `fusion360-official` connector stub. Fusion must be running and signed in to the user's Autodesk account.
+Fusion is local (Windows/macOS). Vantage signs an approved, expiring job; the paired relay claims only matching jobs and calls `VantageCadRelay` on loopback. Install the add-in from `packages/fusion360-official-connector/VantageCadRelay` via the scripts above.
 
-Windows add-in location:
+**Linux:** Autodesk Fusion is not available. Use Onshape or the mock plugin.
 
-```text
-%APPDATA%\Autodesk\Autodesk Fusion 360\API\AddIns
-```
-
-macOS add-in location:
-
-```text
-~/Library/Application Support/Autodesk/Autodesk Fusion 360/API/AddIns
-```
-
-In Fusion choose Utilities → Add-Ins → Scripts and Add-Ins, add the connector folder, run it, then run `vantage-cad start`. Installation requires user action; Vantage does not silently modify Fusion.
-
-**Mock path:** use `VANTAGE_CAD_MOCK=1` so CI and onboarding can exercise signed jobs without Autodesk.
+Agent skill: `.agents/skills/cad-fusion`.
 
 ## AI provider billing
 
@@ -51,12 +58,10 @@ In Fusion choose Utilities → Add-Ins → Scripts and Add-Ins, add the connecto
 - **Local OpenAI-compatible:** paired relay + local model host.
 - **Claude Code:** optional platform-owner private/local sessions only on the matching paired device; never team/shared/scheduled traffic.
 
-ChatGPT and Claude consumer subscriptions are not API credentials. Vantage does not scrape cookies/sessions, pool personal subscriptions, reverse-proxy them as SaaS APIs, or claim Plus/Pro includes API usage.
+## Agent safety
 
-## Agent safety (prompt-injection defense)
-
-CAD agent policy uses strong system prompts, allowlisted tools, untrusted-text isolation (`<untrusted_user_or_context>`), destructive-geometry confirmations, and plan → verify loops. Prompt injection is defended against — not enabled. Never claims certified engineering.
+CAD agent policy uses strong system prompts, allowlisted tools, untrusted-text isolation, destructive-geometry confirmations, and plan → verify loops. Never claims certified engineering.
 
 ## Security
 
-Signed Fusion jobs (HMAC), device binding on relay claim, allowlisted operations, explicit approval for mutations, topology/render checkpoints after execute.
+Signed Fusion jobs (HMAC), device binding on relay claim, allowlisted operations, explicit approval for mutations, topology/render checkpoints after execute. Pair/poll/relay API routes are session-public but device-token authenticated.
