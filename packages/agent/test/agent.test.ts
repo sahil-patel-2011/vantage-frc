@@ -194,3 +194,34 @@ describe("unified AI orchestration boundaries",()=>{
     await expect(registry.invoke("direct.sql",{client:{} as never,orgId:"org-a",userId:"user-a",activeEventKey:null},{})).rejects.toThrow("not authorized");
   });
 });
+
+describe("chat auto-tool planning", () => {
+  it("auto-selects scouting.team and reference.team for scout questions", async () => {
+    const { planChatToolCalls, annotateToolOutput, formatGroundedReply } = await import("../src/auto-tools");
+    const calls = planChatToolCalls("What did scouting see on team 254 defense?");
+    expect(calls.some((call) => call.name === "scouting.team" && (call.input as { teamKey: string }).teamKey === "frc254")).toBe(true);
+    expect(calls.some((call) => call.name === "reference.team")).toBe(true);
+    const empty = annotateToolOutput("scouting.team", [], { teamKey: "frc254" });
+    expect(empty.status).toBe("empty");
+    expect(formatGroundedReply("scout 254", [empty])).toContain("nothing was invented");
+  });
+
+  it("auto-selects strategy.match for matchup questions with event context", async () => {
+    const { planChatToolCalls, annotateToolOutput } = await import("../src/auto-tools");
+    const calls = planChatToolCalls("Strategy for qual 42 matchup", { activeEventKey: "2026nysu" });
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "strategy.match", input: { matchKey: "2026nysu_qm42" } }),
+      ]),
+    );
+    const emptyStrategy = annotateToolOutput("strategy.match", { prediction: null, strategy: null }, {
+      matchKey: "2026nysu_qm42",
+    });
+    expect(emptyStrategy.status).toBe("empty");
+  });
+
+  it("does not invent tool calls for unrelated chat", async () => {
+    const { planChatToolCalls } = await import("../src/auto-tools");
+    expect(planChatToolCalls("Thanks — remind me how private memory works.")).toEqual([]);
+  });
+});
