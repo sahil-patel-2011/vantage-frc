@@ -123,11 +123,11 @@ export function canAutoRunWithinAllowlist(operation: CadOperation, autoRunEnable
 /** Deterministic starter plan used when no LLM planner is available (CI / mock path). */
 export function buildDefaultCadPlan(
   brief: EngineeringBriefLite,
-  options: { autoRunVerify?: boolean } = {},
+  options: { autoRunVerify?: boolean; includeExport?: "step" | "stl" | "gltf" | false } = {},
 ): CadAction[] {
   const envelope = brief.assumptions.find((item) => /envelope/i.test(item.name));
   const verifyNeedsApproval = !options.autoRunVerify;
-  return [
+  const plan: CadAction[] = [
     {
       operation: "create_sketch",
       parameters: {
@@ -152,11 +152,29 @@ export function buildDefaultCadPlan(
       parameters: {
         views: ["iso", "top", "front"],
         reason: "Verify topology and rendered views before further edits",
+        explainForStudents: true,
       },
       requiresApproval: verifyNeedsApproval,
       reason: "Verify topology and rendered views",
     },
   ];
+  if (options.includeExport) {
+    const op =
+      options.includeExport === "stl"
+        ? ("export_stl" as const)
+        : options.includeExport === "gltf"
+          ? ("export_gltf" as const)
+          : ("export_step" as const);
+    plan.push({
+      operation: op,
+      parameters: {
+        reason: `Export ${options.includeExport.toUpperCase()} into team CAD artifacts with Onshape provenance`,
+      },
+      requiresApproval: true,
+      reason: `Export ${options.includeExport.toUpperCase()} with provenance`,
+    });
+  }
+  return plan;
 }
 
 export function describeCadBrainMode(mode: CadBrainMode): { title: string; billing: string; detail: string } {

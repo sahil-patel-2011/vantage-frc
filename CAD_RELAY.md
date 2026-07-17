@@ -1,12 +1,16 @@
 # Vantage CAD desktop relay
 
-## Install (cross-platform)
+## OS matrix (honest)
 
-| OS | CLI | Fusion add-in | Onshape hosted |
-|----|-----|---------------|----------------|
-| Windows | `scripts/cad/install-cli.ps1` | `scripts/cad/install-fusion-addin.ps1` | Browser OAuth |
-| macOS | `scripts/cad/install-cli.sh` | `scripts/cad/install-fusion-addin.sh` | Browser OAuth |
-| Linux | `scripts/cad/install-cli.sh` | **Unsupported** (no Autodesk Fusion) | Browser OAuth |
+| OS | `vantage-cad` CLI | Fusion Autodesk app | VantageCadRelay add-in | Onshape hosted |
+|----|-------------------|---------------------|------------------------|----------------|
+| Windows | Yes — `install-cli.ps1` / `install-windows.ps1` | Yes | Yes | Browser OAuth |
+| macOS | Yes — `install-cli.sh` | Yes | Yes — `install-fusion-addin.sh` | Browser OAuth |
+| Linux | Yes — `install-cli.sh` / `install-linux-relay.sh` | **No** | **No** | Browser OAuth |
+
+Linux teams use **Onshape** for real CAD, or `VANTAGE_CAD_MOCK=1` to exercise the signed Fusion relay protocol without Autodesk.
+
+## Install (cross-platform)
 
 ```text
 # From repo root
@@ -15,15 +19,41 @@ npm run build --workspace=@vantage/cad-cli
 npm install -g ./packages/vantage-cad-cli
 export VANTAGE_URL=https://vantage-frc-web.vercel.app   # or http://localhost:3001
 vantage-cad setup
+vantage-cad doctor
 ```
 
-Unsigned artifact tree: `node scripts/cad/package-relay.mjs` → `dist/cad-relay/` (ready for future signed .msi/.pkg/.AppImage wrappers).
+| OS | One-shot helpers |
+|----|------------------|
+| Windows | `powershell -ExecutionPolicy Bypass -File .\scripts\cad\install-windows.ps1` |
+| macOS | `bash scripts/cad/install-cli.sh && bash scripts/cad/install-fusion-addin.sh` |
+| Linux | `bash scripts/cad/install-linux-relay.sh` |
+
+## Packaging artifacts (unsigned, CI-ready)
+
+| Command | Output | Notes |
+|---------|--------|-------|
+| `npm run cad:package` | `dist/cad-relay/` + archive under `dist/cad-archives/` | Cross-platform tree + `MANIFEST.json` |
+| `npm run cad:package:macos` | `dist/cad-macos/` | pkg/dmg scaffold; real `pkgbuild` on Darwin |
+| `npm run cad:package:linux` | `dist/cad-linux/` | tarball + AppDir; AppImage if `appimagetool` present |
+
+Signing / notarization / Authenticode remain **blocked until certs** — see `scripts/cad/macos/README.md`, `scripts/cad/linux/README.md`, `scripts/cad/windows/README.md`.
+
+GitHub Actions: `.github/workflows/cad-package.yml` builds Linux + macOS artifacts on path changes.
 
 `setup` opens a browser with a ten-minute one-time pairing code. The user signs in there, selects an existing authorized organization, and chooses Onshape or Fusion 360. No Vantage password is entered in the terminal. The resulting device token is revocable, bound to user/org/machine/scopes, and stored in OS credential storage when optional `keytar` is available; otherwise a `0600` local file is used.
 
 Browser setup wizard: `/cad/setup?orgId=…` (pick CAD → AI brain → copy commands → verify heartbeat).
 
-Commands: `setup`, `start`, `status`, `diagnose`, `update`, and `logout`.
+Commands: `setup`, `start`, `status`, `doctor` (alias `diagnose`), `update`, and `logout`.
+
+### Doctor
+
+```text
+vantage-cad doctor
+vantage-cad doctor --json
+```
+
+Checks Node ≥22, OS capability matrix, credential storage, pairing, Vantage URL reachability, relay heartbeat (when paired), local `ONSHAPE_OAUTH_*` (admin/dev machines), Fusion add-in presence (Win/Mac), and loopback `/health` on the Fusion/mock plugin.
 
 Mock Fusion (CI / no Autodesk): `VANTAGE_CAD_MOCK=1 vantage-cad start` boots an in-process loopback plugin that verifies signed job envelopes.
 
