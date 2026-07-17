@@ -103,6 +103,29 @@ function DemoPanel({ onHide }: { onHide: () => void }) {
   );
 }
 
+function TeamChip({
+  teamKey,
+  epa,
+  record,
+  source,
+}: {
+  teamKey: string;
+  epa: number | null;
+  record: string | null;
+  source: string | null;
+}) {
+  return (
+    <li>
+      <strong>{teamKey.replace(/^frc/, "")}</strong>
+      <span>{epa != null ? `EPA ${epa.toFixed(1)}` : "EPA —"}</span>
+      <small>
+        {record ?? "no record"}
+        {source ? ` · ${source}` : ""}
+      </small>
+    </li>
+  );
+}
+
 function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }) {
   const [whatIfOn, setWhatIfOn] = useState(false);
   const scenario = useMemo(() => {
@@ -118,9 +141,11 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
     view.compLevel === "qm"
       ? `Qualification ${view.matchNumber}`
       : `${view.compLevel.toUpperCase()} ${view.matchNumber}`;
+  const ourWin =
+    view.ourAlliance === "red" ? view.prediction.pRed : view.prediction.pBlue;
 
   return (
-    <section className="strategy-workbench">
+    <section className="strategy-workbench strategy-live-grid">
       <article className="app-card strategy-primary">
         <header>
           <div>
@@ -130,8 +155,10 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
           <small>{view.prediction.modelVersion}</small>
         </header>
         <p className="app-muted strategy-provenance">
-          Sources: {sourceLabel} · computed {new Date(view.computedAt).toLocaleString()} · match {view.matchKey}
-          {view.eventName ? ` · ${view.eventName}` : ""}
+          <span className="app-badge setup">MODEL</span> Sources: {sourceLabel} · computed{" "}
+          {new Date(view.computedAt).toLocaleString()} · match {view.matchKey}
+          {view.eventName ? ` · ${view.eventName}` : ""} · you are {view.ourAlliance.toUpperCase()} (
+          {Math.round(ourWin * 100)}% win)
         </p>
         <div className="strategy-probability">
           <strong>{Math.round(view.prediction.pRed * 100)}%</strong>
@@ -143,6 +170,24 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         </div>
         <div className="mini-probability">
           <i style={{ width: `${view.prediction.pRed * 100}%` }} />
+        </div>
+        <div className="strategy-alliance-row">
+          <div>
+            <h3>Red</h3>
+            <ul className="strategy-team-chips">
+              {view.matchup.red.map((team) => (
+                <TeamChip key={team.teamKey} {...team} />
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3>Blue</h3>
+            <ul className="strategy-team-chips">
+              {view.matchup.blue.map((team) => (
+                <TeamChip key={team.teamKey} {...team} />
+              ))}
+            </ul>
+          </div>
         </div>
         <h3>Key factors</h3>
         <ul className="factor-table">
@@ -160,6 +205,59 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
           </p>
         ))}
       </article>
+
+      <article className="app-card strategy-matchup-card">
+        <header>
+          <h2>Alliance considerations</h2>
+          <span className="app-badge good">From metrics + scout</span>
+        </header>
+        <ul className="strategy-considerations">
+          {view.matchup.considerations.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <h3>Opponent tendencies</h3>
+        {view.tendencies.length === 0 ? (
+          <p className="app-muted">No opponent history available yet.</p>
+        ) : (
+          <ul className="strategy-tendencies">
+            {view.tendencies.map((item) => (
+              <li key={item.teamKey}>
+                <strong>{item.teamKey.replace(/^frc/, "")}</strong>
+                {item.labels.length ? (
+                  <span className="strategy-labels">
+                    {item.labels.map((label) => (
+                      <em key={label}>{label}</em>
+                    ))}
+                  </span>
+                ) : null}
+                <small>{item.evidence.join(" ")}</small>
+              </li>
+            ))}
+          </ul>
+        )}
+        <h3>Pick-list inputs</h3>
+        {view.pickListHints.length === 0 ? (
+          <p className="app-muted">
+            No pick-list ranks for these alliance teams yet. Build lists in{" "}
+            <a href={`/intel?orgId=${encodeURIComponent(view.orgId)}`}>Intel</a>.
+          </p>
+        ) : (
+          <ul className="strategy-pick-hints">
+            {view.pickListHints.map((hint) => (
+              <li key={`${hint.listName}-${hint.teamKey}-${hint.rank}`}>
+                <b>#{hint.rank}</b>
+                <span>
+                  {hint.teamKey.replace(/^frc/, "")} · {hint.listName}
+                  {hint.tier ? ` · ${hint.tier}` : ""}
+                </span>
+                {hint.notes ? <small>{hint.notes}</small> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </article>
+
       <article className="app-card what-if-card">
         <header>
           <h2>What-if scenario</h2>
@@ -198,6 +296,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
           </>
         ) : null}
       </article>
+
       <article className="app-card playbook-card">
         <header>
           <h2>Alliance playbook</h2>
@@ -219,6 +318,17 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         </div>
       </article>
     </section>
+  );
+}
+
+function TbaKeyHint({ view }: { view: StrategyView }) {
+  const access = view.tbaAccess;
+  if (!access || access.tbaConfigured) return null;
+  return (
+    <p className="telemetry-status" role="status">
+      TBA key missing: set platform <code>TBA_AUTH_KEY</code> or save an org/platform credential under Team → Data.
+      Strategy will stay empty until the Neon TBA cache is synced.
+    </p>
   );
 }
 
@@ -246,8 +356,18 @@ export default function StrategyClient() {
             status: "setup_required",
             message: "Select a team workspace before running win/loss strategy.",
             steps: [
-              { id: "workspace", label: "Select workspace and event", detail: "Choose your team organization and active event", href: "/workspace" },
-              { id: "tba", label: "Sync TBA", detail: "Match schedule and team metrics from TBA/Statbotics", href: "/team/data" },
+              {
+                id: "workspace",
+                label: "Select workspace and event",
+                detail: "Choose your team organization and active event",
+                href: "/workspace",
+              },
+              {
+                id: "tba",
+                label: "Sync TBA",
+                detail: "Match schedule and team metrics from TBA/Statbotics",
+                href: "/team/data",
+              },
             ],
             orgId: null,
             eventKey: null,
@@ -276,7 +396,7 @@ export default function StrategyClient() {
           <h1>Win / Loss + Strategy</h1>
           <p>
             Predictions run only when match schedule and team metrics exist. Vantage does not invent win probability,
-            EPA, ranks, or confidence.
+            EPA, ranks, or confidence. Model outputs are labeled separately from TBA facts.
           </p>
         </div>
         {demo ? (
@@ -295,6 +415,8 @@ export default function StrategyClient() {
           {error}
         </p>
       ) : null}
+
+      {view ? <TbaKeyHint view={view} /> : null}
 
       {demo ? (
         <DemoPanel onHide={() => setDemo(false)} />
