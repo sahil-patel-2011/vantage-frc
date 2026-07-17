@@ -66,6 +66,8 @@ const groups: NavGroup[] = [
     toneBg: "#e8eefc",
     icon: "gear",
     items: [
+      { href: "/business", label: "Business Portal", icon: "clipboard" },
+      { href: "/impact", label: "Community Impact", icon: "target" },
       { href: "/team", label: "Admin", icon: "gear" },
       { href: "/messages", label: "Messages", icon: "chat" },
       { href: "/account", label: "Account", icon: "users" },

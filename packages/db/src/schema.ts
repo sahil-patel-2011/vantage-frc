@@ -2222,6 +2222,24 @@ export const financeBudgetPlans = pgTable(
   (table) => [uniqueIndex("finance_budget_plans_category_uq").on(table.categoryId)],
 );
 
+export const financeSeasonSettings = pgTable(
+  "finance_season_settings",
+  {
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    seasonYear: integer("season_year").notNull(),
+    operatingBudgetUsd: numeric("operating_budget_usd", { precision: 12, scale: 2 }).notNull().default("0"),
+    fundraisingGoalUsd: numeric("fundraising_goal_usd", { precision: 12, scale: 2 }).notNull().default("0"),
+    notes: text("notes"),
+    updatedBy: uuid("updated_by")
+      .notNull()
+      .references(() => users.id),
+    updatedAt: timestamps.updatedAt,
+  },
+  (table) => [primaryKey({ columns: [table.orgId, table.seasonYear] })],
+);
+
 export const sponsorTier = pgEnum("sponsor_tier", [
   "in_kind",
   "bronze",
@@ -2263,6 +2281,8 @@ export const sponsors = pgTable(
     stateProv: text("state_prov"),
     notes: text("notes"),
     firstSponsoredSeason: integer("first_sponsored_season"),
+    relationshipOwner: text("relationship_owner"),
+    nextFollowUpOn: date("next_follow_up_on"),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id),
@@ -2336,6 +2356,8 @@ export const sponsorInteractions = pgTable(
     type: sponsorInteractionType("type").notNull(),
     subject: text("subject"),
     notes: text("notes"),
+    nextStep: text("next_step"),
+    nextFollowUpOn: date("next_follow_up_on"),
     occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
     loggedBy: uuid("logged_by")
       .notNull()
@@ -2360,6 +2382,8 @@ export const sponsorProspects = pgTable(
     relatedSponsorId: uuid("related_sponsor_id").references(() => sponsors.id, { onDelete: "set null" }),
     convertedSponsorId: uuid("converted_sponsor_id").references(() => sponsors.id, { onDelete: "set null" }),
     suggestedBy: text("suggested_by").notNull().default("heuristic_agent"),
+    fitScore: integer("fit_score").notNull().default(0),
+    sourceQuery: text("source_query"),
     createdAt: timestamps.createdAt,
   },
   (table) => [index("sponsor_prospects_org_status_idx").on(table.orgId, table.status)],
@@ -2382,8 +2406,10 @@ export const purchaseRequests = pgTable(
     itemUrl: text("item_url"),
     quantity: integer("quantity").notNull().default(1),
     unitCostUsd: numeric("unit_cost_usd", { precision: 12, scale: 2 }).notNull(),
+    shippingCostUsd: numeric("shipping_cost_usd", { precision: 12, scale: 2 }).notNull().default("0"),
     totalCostUsd: numeric("total_cost_usd", { precision: 12, scale: 2 }).notNull(),
     justification: text("justification"),
+    neededBy: date("needed_by"),
     status: purchaseRequestStatus("status").notNull().default("pending"),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
@@ -2515,6 +2541,7 @@ export const grantApplications = pgTable(
     amountRequestedUsd: numeric("amount_requested_usd", { precision: 12, scale: 2 }),
     amountAwardedUsd: numeric("amount_awarded_usd", { precision: 12, scale: 2 }),
     ownerUserId: uuid("owner_user_id").references(() => users.id),
+    ownerName: text("owner_name"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     decisionAt: timestamp("decision_at", { withTimezone: true }),
     summary: text("summary"),
@@ -2562,6 +2589,9 @@ export const awardSubmissions = pgTable(
     deadline: date("deadline"),
     ownerUserId: uuid("owner_user_id").references(() => users.id),
     summary: text("summary"),
+    eventName: text("event_name"),
+    awardLevel: text("award_level"),
+    sourceUrl: text("source_url"),
     ...timestamps,
   },
   (table) => [index("award_submissions_org_season_idx").on(table.orgId, table.seasonYear)],
@@ -2606,6 +2636,13 @@ export const outreachMessages = pgTable(
     body: text("body").notNull(),
     status: outreachStatus("status").notNull().default("draft"),
     generatedBy: text("generated_by").notNull().default("template"),
+    documentType: text("document_type").$type<"sponsor_email" | "grant_narrative" | "thank_you" | "renewal">(),
+    audience: text("audience"),
+    goal: text("goal"),
+    evidence: jsonb("evidence")
+      .$type<Array<{ label: string; value: string; source: string }>>()
+      .notNull()
+      .default([]),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     createdBy: uuid("created_by")
       .notNull()
@@ -2613,4 +2650,23 @@ export const outreachMessages = pgTable(
     ...timestamps,
   },
   (table) => [index("outreach_messages_org_sponsor_idx").on(table.orgId, table.sponsorId)],
+);
+
+export const teamBusinessAuditEvents = pgTable(
+  "team_business_audit_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    action: text("action").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: uuid("entity_id"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("team_business_audit_org_date_idx").on(table.orgId, table.createdAt)],
 );
