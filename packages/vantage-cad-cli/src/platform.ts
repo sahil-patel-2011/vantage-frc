@@ -21,10 +21,14 @@ export async function openBrowser(url: string) {
   child.unref();
 }
 
-export function fusionAddinPaths(platform = osPlatform(), home = homedir()) {
+export function fusionAddinPaths(
+  platform = osPlatform(),
+  home = homedir(),
+  env: NodeJS.ProcessEnv = process.env,
+) {
   if (platform === "win32") {
     return [
-      join(process.env.APPDATA ?? join(home, "AppData", "Roaming"), "Autodesk", "Autodesk Fusion 360", "API", "AddIns"),
+      join(env.APPDATA ?? join(home, "AppData", "Roaming"), "Autodesk", "Autodesk Fusion 360", "API", "AddIns"),
     ];
   }
   if (platform === "darwin") {

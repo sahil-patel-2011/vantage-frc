@@ -1,16 +1,22 @@
 {
   "name": "@vantage/cad-cli",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "bin": {
-    "vantage-cad": "./dist/cli.js"
+    "vantage-cad": "./bin/vantage-cad.mjs"
   },
+  "files": [
+    "bin",
+    "dist",
+    "src"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node ../../scripts/cad/bundle-cli.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "dev": "tsx src/cli.ts"
+    "dev": "tsx src/cli.ts",
+    "doctor": "tsx src/cli.ts doctor"
   },
   "dependencies": {
     "@vantage/cad": "*"
