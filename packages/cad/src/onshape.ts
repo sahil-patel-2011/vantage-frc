@@ -1,21 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { CadOperation } from "./agent-policy";
 
-type OnshapeTransportLike = {
-  mutate(input: {
-    operation: CadOperation;
-    parameters: Record<string, unknown>;
-    idempotencyKey: string;
-  }): Promise<{ featureId?: string }>;
-  describe(): Promise<{
-    fingerprint: string;
-    summary: Record<string, unknown>;
-    render: string;
-    checkpointRef: string;
-  }>;
-  rollback(checkpointRef: string): Promise<void>;
-};
-
 export const ONSHAPE_OAUTH_AUTHORIZE = "https://oauth.onshape.com/oauth/authorize";
 export const ONSHAPE_OAUTH_TOKEN = "https://oauth.onshape.com/oauth/token";
 export const ONSHAPE_API_BASE = "https://cad.onshape.com/api/v6";
@@ -210,8 +195,264 @@ export async function listOnshapeElements(http: OnshapeHttp, documentId: string,
   }));
 }
 
+export type OnshapeFeatureSummary = {
+  id: string;
+  name: string;
+  featureType: string;
+  suppressed: boolean;
+  status?: string;
+};
+
+/** Fetch Part Studio feature tree (live OAuth). */
+export async function listOnshapeFeatures(http: OnshapeHttp, document: OnshapeDocumentRef): Promise<OnshapeFeatureSummary[]> {
+  const base = `/partstudios/d/${document.documentId}/w/${document.workspaceId}/e/${document.elementId}`;
+  const response = await http(`${base}/features`);
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to list Onshape features: ${err.slice(0, 300)}`);
+  }
+  const data = (await response.json()) as {
+    features?: Array<Record<string, unknown>>;
+  };
+  return (data.features ?? []).map((feature) => {
+    const message = feature.message as Record<string, unknown> | undefined;
+    return {
+      id: String(feature.featureId ?? feature.nodeId ?? feature.id ?? ""),
+      name: String(message?.name ?? feature.name ?? "Feature"),
+      featureType: String(message?.featureType ?? feature.featureType ?? feature.type ?? "unknown"),
+      suppressed: Boolean(message?.suppressed ?? feature.suppressed ?? false),
+      status: feature.status ? String(feature.status) : undefined,
+    };
+  });
+}
+
+const FEATURE_TYPE_PLAIN: Record<string, { plainEnglish: string; tip?: string }> = {
+  newSketch: {
+    plainEnglish: "A 2D drawing on a plane (Top/Front/Right or a face). Sketches define outlines before solids exist.",
+    tip: "Change sketch dimensions before extruding when you can — it is easier than fixing a solid later.",
+  },
+  extrude: {
+    plainEnglish: "Pushes a sketch into 3D: add material (NEW/ADD), cut (REMOVE), or intersect.",
+    tip: "For holes, extrude REMOVE into the material. Cutting the wrong way often removes nothing.",
+  },
+  fillet: {
+    plainEnglish: "Rounds sharp edges so parts are safer to handle and stress concentrates less.",
+  },
+  chamfer: {
+    plainEnglish: "Bevels an edge at an angle — common on mating faces and bolt clearance.",
+  },
+  shell: {
+    plainEnglish: "Hollows a solid to a wall thickness, optionally opening selected faces.",
+  },
+  revolve: {
+    plainEnglish: "Spins a sketch around an axis to make round parts (hubs, rollers, pulleys).",
+  },
+  boolean: {
+    plainEnglish: "Combines or subtracts existing solid bodies (union / subtract / intersect).",
+  },
+  transform: {
+    plainEnglish: "Moves or copies geometry without redesigning the underlying sketch.",
+  },
+  patternLinear: {
+    plainEnglish: "Repeats a feature or body along a line (bolt patterns, rib arrays).",
+  },
+  patternCircular: {
+    plainEnglish: "Repeats a feature around an axis (spoke holes, gear-like cuts).",
+  },
+  mirror: {
+    plainEnglish: "Reflects geometry across a plane — keep symmetric mechanisms maintainable.",
+  },
+  hole: {
+    plainEnglish: "Standard hole with optional countersink/counterbore — prefer over hand-cut circles when sizing fasteners.",
+  },
+};
+
 /**
- * Hosted Onshape transport: allowlisted mutations + describe/verify.
+ * Student-facing feature-tree walkthrough (not engineering certification).
+ * Safe to call with live or stub feature lists.
+ */
+export function explainFeatureTreeForStudents(features: OnshapeFeatureSummary[]) {
+  const active = features.filter((f) => !f.suppressed);
+  const steps = active.map((feature, index) => {
+    const key = Object.keys(FEATURE_TYPE_PLAIN).find((k) =>
+      feature.featureType.toLowerCase().includes(k.toLowerCase().replace(/^new/, "")),
+    );
+    const matched =
+      FEATURE_TYPE_PLAIN[feature.featureType] ??
+      (key ? FEATURE_TYPE_PLAIN[key] : undefined) ?? {
+        plainEnglish: `Onshape feature type “${feature.featureType}”. Open the feature params in Onshape to see exact dimensions.`,
+        tip: "Ask a mentor what this step achieves in the mechanism before changing it.",
+      };
+    return {
+      order: index + 1,
+      name: feature.name,
+      featureType: feature.featureType,
+      status: feature.status,
+      plainEnglish: matched.plainEnglish,
+      tip: matched.tip,
+    };
+  });
+  return {
+    overview:
+      active.length === 0
+        ? "This Part Studio has no active features yet — start with a sketch on Top, then extrude."
+        : `This Part Studio builds geometry in ${active.length} active step${active.length === 1 ? "" : "s"} (feature tree order). Read top → bottom: later features depend on earlier ones.`,
+    steps,
+    suppressedCount: features.length - active.length,
+    disclaimer:
+      "Educational explanation only — not stress analysis, manufacturing certification, or competition-legal advice.",
+  };
+}
+
+export type OnshapeExportFormat = "STEP" | "STL" | "GLTF";
+
+export type OnshapeExportProvenance = {
+  format: OnshapeExportFormat;
+  documentId: string;
+  workspaceId: string;
+  elementId: string;
+  translationId?: string;
+  requestState: string;
+  contentSha256?: string;
+  byteLength?: number;
+  resultExternalDataIds?: string[];
+  exportedAt: string;
+  source: "onshape-api";
+  storage: "metadata_only" | "inline_preview";
+  note: string;
+};
+
+function exportFormatForOperation(operation: CadOperation): OnshapeExportFormat | null {
+  if (operation === "export_step") return "STEP";
+  if (operation === "export_stl") return "STL";
+  if (operation === "export_gltf") return "GLTF";
+  return null;
+}
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Export Part Studio via Onshape translations (STEP/GLTF) or sync STL.
+ * Stores provenance metadata suitable for cad_artifacts — not giant binaries in Postgres.
+ */
+export async function exportOnshapePartStudio(
+  http: OnshapeHttp,
+  document: OnshapeDocumentRef,
+  format: OnshapeExportFormat,
+  options: { pollMs?: number; maxPolls?: number } = {},
+): Promise<{ provenance: OnshapeExportProvenance; previewText?: string }> {
+  const base = `/partstudios/d/${document.documentId}/w/${document.workspaceId}/e/${document.elementId}`;
+  const exportedAt = new Date().toISOString();
+
+  if (format === "STL") {
+    const response = await http(`${base}/stl?mode=text&grouping=true&scale=1&units=millimeter`);
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Onshape STL export failed: ${err.slice(0, 400)}`);
+    }
+    const text = await response.text();
+    const contentSha256 = createHash("sha256").update(text).digest("hex");
+    const previewText = text.length > 4_000 ? `${text.slice(0, 4_000)}\n…[truncated]` : text;
+    return {
+      provenance: {
+        format,
+        documentId: document.documentId,
+        workspaceId: document.workspaceId,
+        elementId: document.elementId,
+        requestState: "DONE",
+        contentSha256,
+        byteLength: Buffer.byteLength(text, "utf8"),
+        exportedAt,
+        source: "onshape-api",
+        storage: "inline_preview",
+        note: "STL text exported synchronously. Full file checksum recorded; preview may be truncated in team artifacts.",
+      },
+      previewText,
+    };
+  }
+
+  const response = await http(`${base}/translations`, {
+    method: "POST",
+    body: JSON.stringify({
+      formatName: format,
+      storeInDocument: false,
+      translate: true,
+      ...(format === "GLTF" ? { linkDocumentId: document.documentId } : {}),
+    }),
+  });
+  const started = (await response.json()) as Record<string, unknown>;
+  if (!response.ok) {
+    throw new Error(String(started.message ?? started.error ?? `Onshape ${format} translation failed`));
+  }
+  const translationId = String(started.id ?? started.translationId ?? "");
+  if (!translationId) throw new Error("Onshape translation response missing id");
+
+  const pollMs = options.pollMs ?? 1_500;
+  const maxPolls = options.maxPolls ?? 40;
+  let requestState = String(started.requestState ?? "ACTIVE");
+  let resultExternalDataIds: string[] | undefined;
+  for (let i = 0; i < maxPolls && requestState !== "DONE" && requestState !== "FAILED"; i++) {
+    await sleep(pollMs);
+    const poll = await http(`/translations/${translationId}`);
+    const body = (await poll.json()) as Record<string, unknown>;
+    if (!poll.ok) throw new Error(`Onshape translation poll failed: ${String(body.message ?? poll.status)}`);
+    requestState = String(body.requestState ?? "ACTIVE");
+    if (Array.isArray(body.resultExternalDataIds)) {
+      resultExternalDataIds = body.resultExternalDataIds.map(String);
+    }
+  }
+
+  if (requestState !== "DONE") {
+    throw new Error(`Onshape ${format} export did not finish (state=${requestState}). Retry in a disposable document.`);
+  }
+
+  return {
+    provenance: {
+      format,
+      documentId: document.documentId,
+      workspaceId: document.workspaceId,
+      elementId: document.elementId,
+      translationId,
+      requestState,
+      resultExternalDataIds,
+      exportedAt,
+      source: "onshape-api",
+      storage: "metadata_only",
+      note: `${format} translation completed in Onshape. Download via Onshape external data / UI using translationId; Vantage stores provenance + IDs, not the binary blob.`,
+    },
+  };
+}
+
+type OnshapeMutateResult = {
+  featureId?: string;
+  exportArtifact?: {
+    type: string;
+    title: string;
+    provenance: OnshapeExportProvenance;
+    previewText?: string;
+  };
+  explain?: ReturnType<typeof explainFeatureTreeForStudents>;
+};
+
+type OnshapeTransportLike = {
+  mutate(input: {
+    operation: CadOperation;
+    parameters: Record<string, unknown>;
+    idempotencyKey: string;
+  }): Promise<OnshapeMutateResult>;
+  describe(): Promise<{
+    fingerprint: string;
+    summary: Record<string, unknown>;
+    render: string;
+    checkpointRef: string;
+  }>;
+  rollback(checkpointRef: string): Promise<void>;
+};
+
+/**
+ * Hosted Onshape transport: allowlisted mutations + describe/verify + STEP/STL/GLTF export provenance.
  * Uses FeatureScript eval for custom scripts; sketch/extrude map to documented Part Studio feature APIs when possible.
  * Real credentials must be tested only in a disposable document.
  */
@@ -220,6 +461,8 @@ export function createOnshapeApiTransport(input: {
   document: OnshapeDocumentRef;
 }): OnshapeTransportLike {
   let version = 0;
+  let lastExport: OnshapeMutateResult["exportArtifact"];
+  let lastExplain: ReturnType<typeof explainFeatureTreeForStudents> | undefined;
   const { http, document } = input;
   const base = `/partstudios/d/${document.documentId}/w/${document.workspaceId}/e/${document.elementId}`;
 
@@ -227,6 +470,20 @@ export function createOnshapeApiTransport(input: {
     async mutate(args) {
       version += 1;
       const { operation, parameters, idempotencyKey } = args;
+      const exportFormat = exportFormatForOperation(operation);
+      if (exportFormat) {
+        const { provenance, previewText } = await exportOnshapePartStudio(http, document, exportFormat);
+        lastExport = {
+          type: `cad_export_${exportFormat.toLowerCase()}`,
+          title: `Onshape ${exportFormat} export`,
+          provenance,
+          previewText,
+        };
+        return {
+          featureId: `export-${exportFormat.toLowerCase()}-${createHash("sha256").update(idempotencyKey).digest("hex").slice(0, 12)}`,
+          exportArtifact: lastExport,
+        };
+      }
       if (operation === "feature_script") {
         const script = String(parameters.source ?? parameters.script ?? "");
         if (!script || script.length > 20_000) throw new Error("FeatureScript source missing or too large");
@@ -246,7 +503,13 @@ export function createOnshapeApiTransport(input: {
         return { featureId: `fs-${createHash("sha256").update(idempotencyKey).digest("hex").slice(0, 12)}` };
       }
       if (operation === "verify_topology" || operation === "render_views" || operation === "create_checkpoint") {
-        return { featureId: `verify-${version}` };
+        try {
+          const features = await listOnshapeFeatures(http, document);
+          lastExplain = explainFeatureTreeForStudents(features);
+        } catch {
+          lastExplain = undefined;
+        }
+        return { featureId: `verify-${version}`, explain: lastExplain };
       }
       if (operation === "create_sketch" || operation === "create_extrude") {
         // Geometry mutations go through a reviewed FeatureScript wrapper so we stay on one allowlisted path.
@@ -273,24 +536,36 @@ export function createOnshapeApiTransport(input: {
       );
     },
     async describe() {
+      let features: OnshapeFeatureSummary[] = [];
+      try {
+        features = await listOnshapeFeatures(http, document);
+        lastExplain = explainFeatureTreeForStudents(features);
+      } catch {
+        /* mass-only describe still useful when features endpoint is denied */
+      }
       const mass = await http(`${base}/massproperties`);
       let summary: Record<string, unknown> = {
         documentId: document.documentId,
         workspaceId: document.workspaceId,
         elementId: document.elementId,
         validation: "onshape-live",
+        featureCount: features.length,
+        featureTree: features.slice(0, 40),
+        studentExplain: lastExplain,
+        ...(lastExport ? { lastExport: lastExport.provenance } : {}),
       };
       if (mass.ok) {
         const body = (await mass.json()) as Record<string, unknown>;
         summary = { ...summary, mass: body };
       }
       const fingerprint = createHash("sha256")
-        .update(JSON.stringify({ summary, version }))
+        .update(JSON.stringify({ summary: { ...summary, studentExplain: undefined }, version }))
         .digest("hex");
+      const label = document.label ?? document.elementId;
       return {
         fingerprint,
         summary,
-        render: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450"><rect width="800" height="450" fill="#0b1115"/><text x="40" y="220" fill="#7dd3fc" font-size="28">Onshape · ${document.label ?? document.elementId}</text></svg>`,
+        render: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450"><rect width="800" height="450" fill="#0b1115"/><text x="40" y="200" fill="#7dd3fc" font-size="28">Onshape · ${label}</text><text x="40" y="250" fill="#94a3b8" font-size="18">${features.length} features · live describe</text></svg>`,
         checkpointRef: `onshape-cp-${fingerprint.slice(0, 16)}`,
       };
     },
