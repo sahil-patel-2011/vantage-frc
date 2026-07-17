@@ -150,20 +150,32 @@ export function CodeClient() {
             <strong>{review?.risks.length ?? 0}</strong>
           </header>
           {review ? (
-            <ul>
-              {review.risks.map((risk) => (
-                <li key={risk.pattern}>
-                  <div>
-                    <span className={`severity ${risk.severity}`}>{risk.severity}</span>
-                    <b>{risk.pattern.replaceAll("-", " ")}</b>
-                  </div>
-                  <p>{risk.message}</p>
-                  <code>{risk.evidence}</code>
-                </li>
-              ))}
-            </ul>
+            review.risks.length === 0 ? (
+              <div className="soft-empty">
+                <span className="app-badge good">Clear</span>
+                <h2>No risk patterns matched</h2>
+                <p>This pass found nothing in the local fixture rules. Still run simulation tests before enabling on a robot.</p>
+              </div>
+            ) : (
+              <ul>
+                {review.risks.map((risk) => (
+                  <li key={risk.pattern}>
+                    <div>
+                      <span className={`severity ${risk.severity}`}>{risk.severity}</span>
+                      <b>{risk.pattern.replaceAll("-", " ")}</b>
+                    </div>
+                    <p>{risk.message}</p>
+                    <code>{risk.evidence}</code>
+                  </li>
+                ))}
+              </ul>
+            )
           ) : (
-            <p className="empty-hint">Run a review against pasted robot code or the sample fixture.</p>
+            <div className="soft-empty">
+              <span className="app-badge setup">Idle</span>
+              <h2>No review yet</h2>
+              <p>Run a review against pasted robot code or the sample fixture. Vantage never deploys to a robot.</p>
+            </div>
           )}
         </article>
         <article className="app-card code-checks">
