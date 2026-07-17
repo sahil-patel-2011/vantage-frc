@@ -8,12 +8,16 @@ import {
 } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
+
+const mutateLimiter = createRateLimiter({ limit: 15, windowMs: 10 * 60_000, namespace: "org-invites" });
 
 async function userId() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("Authentication required");
   return session.user.id;
 }
+
 const failure = (error: unknown) =>
   Response.json({ error: error instanceof Error ? error.message : "Request failed" }, { status: 400 });
 
@@ -34,6 +38,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const actor = await userId();
+    if (!(await mutateLimiter.allow(actor))) {
+      return rateLimitedResponse("Too many invite changes. Wait a few minutes and try again.");
+    }
     const body = (await request.json()) as { orgId?: string; email?: string; role?: OrgRole };
     if (!body.orgId || !body.email || !body.role)
       return Response.json({ error: "orgId, email, and role are required" }, { status: 400 });
@@ -53,6 +60,9 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const actor = await userId();
+    if (!(await mutateLimiter.allow(actor))) {
+      return rateLimitedResponse("Too many invite changes. Wait a few minutes and try again.");
+    }
     const body = (await request.json()) as {
       orgId?: string;
       inviteId?: string;

@@ -2,6 +2,13 @@
 
 Organization identity is global, but organization access is policy-gated. Owners/admins may allow password, Google, and/or email OTP; at least one remains enabled. Membership stays invite-only. Required MFA causes a new step-up when entering a stricter organization.
 
+## Secrets and scanning hygiene
+
+- Copy `.env.example` → `.env.local` for local work. `.env*` is gitignored (`!.env.example` only). Never commit real credentials, Neon URLs with passwords, provider keys, or bootstrap tokens.
+- Docs and PRs should show **empty** env assignments or obviously fake placeholders (`change-this-local-only-key`). Do not paste production values, even into issues or screenshots.
+- Better Auth session cookies are HttpOnly + SameSite=Lax, Secure on HTTPS/production. CSRF/Origin checks stay on via Better Auth `trustedOrigins`.
+- Public/auth abuse surfaces (waitlist, email 2FA, invite accept/create, messages POST, bootstrap-owner) use fixed-window rate limits (`apps/web/lib/rate-limit.ts`, Redis when configured).
+
 TOTP secrets use authenticated encryption. Recovery codes are one-time and stored only as keyed hashes. Remembered-device tokens are random, HttpOnly, hashed in Postgres, expiring, and revocable. No SMS factor exists.
 
 Password reset uses Better Auth's hashed, short-lived, attempt-limited email OTP. Requests are generic for unknown addresses. Completion verifies the code, checks the password against Have I Been Pwned's k-anonymous range service, uses Better Auth password hashing, verifies the email, revokes all existing sessions, writes an audit event, and sends a security notice.

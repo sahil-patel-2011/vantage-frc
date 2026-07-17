@@ -23,8 +23,6 @@ import {
   resolveAuthEmailAccess,
 } from "./auth-access";
 
-const emailProvider = createEmailProvider();
-const emailOtpEnabled = isEmailProviderConfigured();
 const authBaseURL = resolveAuthBaseURL();
 const authTrustedOrigins = resolveAuthTrustedOrigins(authBaseURL);
 const authSecret = envOrFallback(
@@ -76,7 +74,7 @@ export const auth = betterAuth({
         userId: user.id,
         success: true,
       });
-      await emailProvider.sendSecurityNotice({
+      await createEmailProvider().sendSecurityNotice({
         email: user.email,
         subject: "Your Vantage password was reset",
         message:
@@ -149,9 +147,10 @@ export const auth = betterAuth({
           ? undefined
           : ({ email, type }) => deterministicLocalOtp(email, type),
       sendVerificationOTP: async (message) => {
-        if (!emailOtpEnabled) {
+        if (!isEmailProviderConfigured()) {
           throw new Error("Email sign-in is unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM are configured.");
         }
+        const emailProvider = createEmailProvider();
         await emailProvider.sendOtp(message);
         await auditAuthEvent({
           action: "otp.sent",
@@ -170,7 +169,17 @@ export const auth = betterAuth({
     window: 60,
     max: 20,
   },
-  advanced: { database: { generateId: "uuid" } },
+  // Cookie defaults: HttpOnly + SameSite=Lax; Secure when serving over HTTPS / production.
+  // CSRF / Origin checks stay enabled (Better Auth defaults); trustedOrigins is the allowlist.
+  advanced: {
+    database: { generateId: "uuid" },
+    defaultCookieAttributes: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: authBaseURL.startsWith("https://") || process.env.NODE_ENV === "production",
+      path: "/",
+    },
+  },
   secret: authSecret,
   baseURL: authBaseURL,
   trustedOrigins: authTrustedOrigins,
