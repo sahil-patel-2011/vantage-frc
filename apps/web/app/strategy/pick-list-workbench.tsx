@@ -1,0 +1,377 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
+import type { PickDeskEntry, PickDeskList, PickDeskView } from "../../lib/strategy/pick-desk";
+
+const TIERS: Array<{ id: PickTier; label: string; hint: string }> = [
+  { id: "first", label: "First picks", hint: "Alliance anchors / top partners" },
+  { id: "second", label: "Second picks", hint: "Complementary scorers & specialists" },
+  { id: "third", label: "Third picks", hint: "Depth, defense, climb insurance" },
+  { id: "watch", label: "Watch", hint: "Track if metrics improve" },
+];
+
+function teamLabel(entry: { teamKey: string; teamNumber?: number | null; nickname?: string | null }) {
+  const number = entry.teamNumber ?? entry.teamKey.replace(/^frc/, "");
+  return entry.nickname ? `${number} · ${entry.nickname}` : String(number);
+}
+
+function metricLine(candidate: PickCandidate | undefined) {
+  if (!candidate) return "No event metrics linked";
+  const parts = [
+    candidate.epa != null ? `EPA ${candidate.epa.toFixed(1)}` : null,
+    candidate.record,
+    candidate.rank != null ? `rank ${candidate.rank}` : null,
+    candidate.source,
+    candidate.scoutSample > 0
+      ? `scout n=${candidate.scoutSample}${candidate.reliability != null ? ` · rel ${Math.round(candidate.reliability)}%` : ""}`
+      : null,
+  ].filter(Boolean);
+  return parts.join(" · ") || "Metrics incomplete";
+}
+
+export function PickListWorkbench({
+  orgId,
+  embedded,
+}: {
+  orgId: string | null;
+  embedded?: boolean;
+}) {
+  const [desk, setDesk] = useState<PickDeskView | null>(null);
+  const [setupMessage, setSetupMessage] = useState("");
+  const [activeListId, setActiveListId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("Alliance picks");
+  const [entries, setEntries] = useState<PickDeskEntry[]>([]);
+  const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [filter, setFilter] = useState("");
+
+  const load = useCallback(() => {
+    const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+    void fetch(`/api/strategy/pick-desk${qs}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (data.status === "setup_required") {
+          setDesk(null);
+          setSetupMessage(data.message ?? "Setup required");
+          return;
+        }
+        const view = data as PickDeskView;
+        setDesk(view);
+        setSetupMessage("");
+        setActiveListId((currentId) => {
+          const preferred = view.pickLists.find((list) => list.id === currentId) ?? view.pickLists[0];
+          if (preferred) {
+            setDraftName(preferred.name);
+            setEntries(preferred.entries);
+            return preferred.id;
+          }
+          setEntries([]);
+          return null;
+        });
+      })
+      .catch(() => setSetupMessage("Could not load pick desk."));
+  }, [orgId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const byKey = useMemo(() => {
+    const map = new Map<string, PickCandidate>();
+    for (const candidate of desk?.candidates ?? []) map.set(candidate.teamKey, candidate);
+    return map;
+  }, [desk]);
+
+  const listed = useMemo(() => new Set(entries.map((entry) => entry.teamKey)), [entries]);
+
+  const pool = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    return (desk?.candidates ?? []).filter((candidate) => {
+      if (listed.has(candidate.teamKey)) return false;
+      if (!q) return true;
+      return (
+        candidate.teamKey.toLowerCase().includes(q) ||
+        String(candidate.teamNumber ?? "").includes(q) ||
+        (candidate.nickname ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [desk, listed, filter]);
+
+  function entriesForTier(tier: PickTier) {
+    return entries
+      .filter((entry) => (entry.tier ?? "watch") === tier)
+      .sort((a, b) => a.rank - b.rank);
+  }
+
+  function reindex(next: PickDeskEntry[]) {
+    const order = TIERS.flatMap((tier) => next.filter((entry) => (entry.tier ?? "watch") === tier.id));
+    return order.map((entry, index) => ({ ...entry, rank: index + 1 }));
+  }
+
+  function addToTier(candidate: PickCandidate, tier: PickTier) {
+    if (listed.has(candidate.teamKey)) return;
+    setEntries((current) =>
+      reindex([
+        ...current,
+        {
+          teamKey: candidate.teamKey,
+          teamNumber: candidate.teamNumber,
+          nickname: candidate.nickname,
+          rank: current.length + 1,
+          tier,
+          notes: null,
+        },
+      ]),
+    );
+  }
+
+  function moveEntry(teamKey: string, tier: PickTier) {
+    setEntries((current) =>
+      reindex(current.map((entry) => (entry.teamKey === teamKey ? { ...entry, tier } : entry))),
+    );
+  }
+
+  function removeEntry(teamKey: string) {
+    setEntries((current) => reindex(current.filter((entry) => entry.teamKey !== teamKey)));
+  }
+
+  function shiftRank(teamKey: string, direction: -1 | 1) {
+    setEntries((current) => {
+      const tier = (current.find((entry) => entry.teamKey === teamKey)?.tier ?? "watch") as PickTier;
+      const column = current
+        .filter((entry) => (entry.tier ?? "watch") === tier)
+        .sort((a, b) => a.rank - b.rank);
+      const index = column.findIndex((entry) => entry.teamKey === teamKey);
+      const swapWith = index + direction;
+      if (index < 0 || swapWith < 0 || swapWith >= column.length) return current;
+      const a = column[index]!;
+      const b = column[swapWith]!;
+      return reindex(
+        current.map((entry) => {
+          if (entry.teamKey === a.teamKey) return { ...entry, rank: b.rank };
+          if (entry.teamKey === b.teamKey) return { ...entry, rank: a.rank };
+          return entry;
+        }),
+      );
+    });
+  }
+
+  async function saveList() {
+    if (!desk) return;
+    if (!desk.canEdit) {
+      setStatus("Owner or admin role required to save pick lists.");
+      return;
+    }
+    setSaving(true);
+    setStatus("Saving pick list…");
+    const response = await fetch("/api/intel/pick-lists", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        orgId: desk.orgId,
+        id: activeListId ?? undefined,
+        eventKey: desk.eventKey,
+        name: draftName.trim() || "Alliance picks",
+        entries: entries.map((entry) => ({
+          teamKey: entry.teamKey,
+          rank: entry.rank,
+          tier: entry.tier ?? "watch",
+          notes: entry.notes ?? undefined,
+        })),
+      }),
+    });
+    const data = await response.json();
+    setStatus(response.ok ? "Pick list saved." : data.error ?? "Save failed");
+    setSaving(false);
+    if (response.ok) {
+      if (data.id) setActiveListId(data.id);
+      load();
+    }
+  }
+
+  function selectList(list: PickDeskList) {
+    setActiveListId(list.id);
+    setDraftName(list.name);
+    setEntries(list.entries);
+  }
+
+  if (setupMessage) {
+    return (
+      <section className={`app-card strategy-pick-desk${embedded ? " embedded" : ""}`}>
+        <header>
+          <div>
+            <span className="app-badge setup">Pick lists</span>
+            <h2>Event pick desk</h2>
+          </div>
+        </header>
+        <p className="app-muted">{setupMessage}</p>
+        <a className="app-button secondary" href="/workspace">
+          Open workspace
+        </a>
+      </section>
+    );
+  }
+
+  if (!desk) {
+    return (
+      <section className={`app-card strategy-pick-desk${embedded ? " embedded" : ""}`}>
+        <h2>Loading pick desk…</h2>
+        <p className="app-muted">Pulling TBA/Statbotics event metrics and durable pick lists.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className={`strategy-pick-desk${embedded ? " embedded" : ""}`} aria-label="Pick list workbench">
+      <header className="strategy-pick-header app-card">
+        <div>
+          <span className="app-badge good">Real event inputs</span>
+          <h2>First / second / third pick desk</h2>
+          <p className="app-muted">
+            {desk.eventName ?? desk.eventKey}
+            {desk.sources.length ? ` · ${desk.sources.join(" + ")}` : " · no metrics synced yet"}
+            {" · "}
+            {desk.candidates.length} teams with reference rows
+          </p>
+        </div>
+        <div className="strategy-pick-actions">
+          <a
+            className="app-button secondary"
+            href={`/strategy/draft${desk.orgId ? `?orgId=${encodeURIComponent(desk.orgId)}` : ""}`}
+          >
+            Open draft day
+          </a>
+          <button type="button" className="app-button secondary" onClick={saveList} disabled={saving}>
+            {saving ? "Saving…" : "Save pick list"}
+          </button>
+        </div>
+      </header>
+
+      <div className="strategy-pick-toolbar app-card">
+        <label>
+          List name
+          <input value={draftName} onChange={(event) => setDraftName(event.target.value)} />
+        </label>
+        <label>
+          Filter pool
+          <input
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
+            placeholder="Team # or nickname"
+          />
+        </label>
+        {desk.pickLists.length ? (
+          <div className="strategy-pick-list-switch" role="tablist" aria-label="Saved pick lists">
+            {desk.pickLists.map((list) => (
+              <button
+                key={list.id}
+                type="button"
+                role="tab"
+                aria-selected={list.id === activeListId}
+                className={list.id === activeListId ? "active" : undefined}
+                onClick={() => selectList(list)}
+              >
+                {list.name}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="app-muted">No saved lists yet — arrange tiers below, then save.</p>
+        )}
+        {!desk.canEdit ? (
+          <p className="telemetry-status" role="status">
+            Read-only for your role. Owners/admins can save durable pick lists.
+          </p>
+        ) : null}
+        {status ? (
+          <p className="telemetry-status success" role="status">
+            {status}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="strategy-pick-columns">
+        {TIERS.map((tier) => (
+          <article key={tier.id} className="app-card strategy-pick-column">
+            <header>
+              <h3>{tier.label}</h3>
+              <small>{tier.hint}</small>
+            </header>
+            <ul>
+              {entriesForTier(tier.id).map((entry) => {
+                const candidate = byKey.get(entry.teamKey);
+                return (
+                  <li key={entry.teamKey}>
+                    <div>
+                      <strong>
+                        #{entry.rank} {teamLabel(entry)}
+                      </strong>
+                      <small>{metricLine(candidate)}</small>
+                    </div>
+                    <div className="strategy-pick-row-actions">
+                      <button type="button" onClick={() => shiftRank(entry.teamKey, -1)} aria-label="Move up">
+                        ↑
+                      </button>
+                      <button type="button" onClick={() => shiftRank(entry.teamKey, 1)} aria-label="Move down">
+                        ↓
+                      </button>
+                      {TIERS.filter((item) => item.id !== tier.id).map((item) => (
+                        <button key={item.id} type="button" onClick={() => moveEntry(entry.teamKey, item.id)}>
+                          {item.id[0]!.toUpperCase()}
+                        </button>
+                      ))}
+                      <button type="button" onClick={() => removeEntry(entry.teamKey)}>
+                        Remove
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+              {!entriesForTier(tier.id).length ? (
+                <li className="strategy-pick-empty">Drop teams from the pool — empty tiers stay empty (no filler).</li>
+              ) : null}
+            </ul>
+          </article>
+        ))}
+      </div>
+
+      <article className="app-card strategy-pick-pool">
+        <header>
+          <h3>Event pool</h3>
+          <small>Only teams with synced TBA/Statbotics rows. Suggestions use event EPA percentiles + scout reliability.</small>
+        </header>
+        {!pool.length ? (
+          <p className="app-muted">
+            {desk.candidates.length
+              ? "All listed teams are already on this pick list, or the filter hid them."
+              : "No team_event_metrics for this event yet — sync TBA/Statbotics under Team → Data."}
+          </p>
+        ) : (
+          <ul>
+            {pool.map((candidate) => (
+              <li key={candidate.teamKey}>
+                <div>
+                  <strong>{teamLabel(candidate)}</strong>
+                  <small>{metricLine(candidate)}</small>
+                  {candidate.suggestedTier ? (
+                    <em className="strategy-suggest">Suggested {candidate.suggestedTier}</em>
+                  ) : (
+                    <em className="strategy-suggest muted">No EPA — no suggestion</em>
+                  )}
+                </div>
+                <div className="strategy-pick-row-actions">
+                  {TIERS.map((tier) => (
+                    <button key={tier.id} type="button" onClick={() => addToTier(candidate, tier.id)}>
+                      + {tier.label.replace(" picks", "").replace("Watch", "Watch")}
+                    </button>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </article>
+    </section>
+  );
+}
