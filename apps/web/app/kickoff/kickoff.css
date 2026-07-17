@@ -1,0 +1,53 @@
+/* Kickoff & Game Analysis — co-located so styling survives independently of the
+   shared global stylesheet. All selectors are .kick-* prefixed and theme-aware. */
+.kick-page input,.kick-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.kick-page textarea{min-height:52px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit;resize:vertical}
+.kick-year{display:flex;align-items:center;gap:8px;color:var(--app-muted);font-size:12px;font-weight:700}
+.kick-empty{display:grid;gap:12px;justify-items:start;padding:26px}
+.kick-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
+.kick-link.danger{color:var(--app-critical)}
+.kick-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.kick-tile{display:grid;gap:4px;align-content:start;padding:16px}
+.kick-tile-value{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kick-tile-best{font-size:15px;line-height:1.9}
+.kick-tile-label{color:var(--app-muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.kick-section{display:grid;gap:12px;margin-bottom:16px}
+.kick-section h2{margin:0;font-size:17px}
+.kick-section>p{margin:-6px 0 0;font-size:12px}
+.kick-table{display:grid;gap:6px}
+.kick-row{display:grid;grid-template-columns:minmax(0,1fr) 92px 84px 84px 64px 28px;gap:10px;align-items:center;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:9px}
+.kick-row-head{padding:0 10px;background:none;border:0;color:var(--app-muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.kick-label{display:grid;min-width:0;font-size:13px;font-weight:600}
+.kick-label small{font-weight:400;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kick-chip{justify-self:start;padding:2px 9px;background:var(--app-soft);border-radius:999px;color:var(--app-muted);font-size:11px;font-weight:700;text-transform:capitalize;white-space:nowrap}
+.kick-phase-auto{color:var(--app-accent)}
+.kick-phase-endgame{color:var(--app-warning)}
+.kick-rate{font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.kick-num{width:100%;min-height:34px;padding:6px 8px;font-variant-numeric:tabular-nums}
+.kick-num-add{width:96px}
+.kick-list{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.kick-priority{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(120px,auto) minmax(150px,auto) 28px;gap:10px;align-items:center;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:9px}
+.kick-priority-text{display:grid;min-width:0;font-size:13px}
+.kick-priority-text small{font-size:11px}
+.kick-priority select{min-height:34px;padding:6px 8px;font-size:12px}
+.kick-weight{display:flex;gap:4px}
+.kick-weight-btn{width:26px;height:26px;padding:0;color:var(--app-muted);background:var(--app-soft);border:1px solid var(--app-line);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer}
+.kick-weight-btn.active{color:var(--app-accent-ink);background:var(--app-accent);border-color:var(--app-accent)}
+.kick-rule{display:grid;gap:8px;padding:10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:9px}
+.kick-rule-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}
+.kick-rule-head strong{min-width:0;flex:1}
+.kick-rule-actions{display:flex;align-items:center;gap:12px;margin-left:auto}
+.kick-add{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
+.kick-add input:first-child{flex:1;min-width:220px}
+.kick-ref-input{width:140px}
+@media(max-width:900px){.kick-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+.kick-row{grid-template-columns:repeat(3,minmax(0,1fr)) 28px}
+.kick-row .kick-label{grid-column:1/-1}
+.kick-row-head{display:none}
+.kick-priority{grid-template-columns:minmax(0,1fr) 28px}
+.kick-priority .kick-priority-text{grid-column:1}
+.kick-priority .kick-weight{grid-column:1/-1}
+.kick-priority select{grid-column:1/-1}
+.kick-priority .kick-link{grid-row:1;grid-column:2;justify-self:end}
+}
