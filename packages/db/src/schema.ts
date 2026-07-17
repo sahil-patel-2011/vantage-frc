@@ -1,4 +1,4 @@
-﻿import {
+import {
   boolean,
   date,
   doublePrecision,
@@ -842,6 +842,54 @@ export const pickListEntries = pgTable(
     ),
   ],
 );
+
+export const allianceBoards = pgTable(
+  "alliance_boards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    eventKey: text("event_key")
+      .notNull()
+      .references(() => eventsRef.eventKey),
+    name: text("name").notNull(),
+    pickListId: uuid("pick_list_id").references(() => pickLists.id, {
+      onDelete: "set null",
+    }),
+    state: jsonb("state").$type<Record<string, unknown>>().notNull().default({}),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("alliance_boards_org_event_name_uq").on(
+      table.orgId,
+      table.eventKey,
+      table.name,
+    ),
+    index("alliance_boards_org_event_idx").on(table.orgId, table.eventKey),
+  ],
+);
+
+export const allianceBoardShareTokens = pgTable("alliance_board_share_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  boardId: uuid("board_id")
+    .notNull()
+    .references(() => allianceBoards.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  createdAt: timestamps.createdAt,
+});
 
 export const teamReliability = pgTable(
   "team_reliability",
