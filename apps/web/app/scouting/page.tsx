@@ -8,10 +8,11 @@ export default async function ScoutingPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="content">
+      <main className="content soft-gate">
         <span className="eyebrow">VANTAGE / SCOUT</span>
-        <h1>Select an organization</h1>
-        <p>Open scouting from your organization workspace to cache its active event.</p>
+        <h1>Select a workspace</h1>
+        <p>Open scouting from your team workspace so the active event can be cached for offline match and pit entry.</p>
+        <a href="/workspace">Select workspace</a>
       </main>
     );
   }

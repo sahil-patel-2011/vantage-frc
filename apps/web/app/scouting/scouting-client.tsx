@@ -237,11 +237,25 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   return (
     <main className="scout-app">
       <header className="scout-header">
-        <div><span className="eyebrow">VANTAGE / SCOUT</span><h1>Event scouting</h1></div>
+        <div>
+          <span className="eyebrow">VANTAGE / SCOUT</span>
+          <h1>Event scouting</h1>
+          <p className="app-muted">Match and pit forms cache on this device. Empty until an active event and schema are set — no fake coverage.</p>
+        </div>
         <div className={`network ${online ? "online" : "offline"}`}>
           {online ? "ONLINE" : "OFFLINE"} · {counts.entries} entries · {counts.media} media queued
         </div>
       </header>
+      {!data?.eventKey ? (
+        <section className="app-empty" style={{ marginBottom: 16 }}>
+          <span className="app-badge setup">Setup required</span>
+          <h2>No active event</h2>
+          <p>Select an event in Workspace so assignments and forms can load. Offline queue still works once an event is cached.</p>
+          <a className="app-button secondary" href={`/workspace?orgId=${encodeURIComponent(orgId)}`}>
+            Open workspace
+          </a>
+        </section>
+      ) : null}
       <section className="event-strip">
         <strong>{data?.eventKey ?? "No active event"}</strong>
         <span>Forms and assignments are cached on this device.</span>
