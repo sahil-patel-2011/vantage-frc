@@ -1,4 +1,3 @@
-import AuditLogClient from "./audit-client";
 import CapabilitiesClient from "./capabilities-client";
 import AuthPolicyClient from "./policy-client";
 
@@ -12,9 +11,8 @@ export default async function TeamSecurityPage({
   return (
     <>
       <AuthPolicyClient orgId={orgId} />
-      <main className="intel-app">
+      <main className="intel-app" style={{ paddingTop: 0 }}>
         <CapabilitiesClient orgId={orgId} />
-        <AuditLogClient orgId={orgId} />
       </main>
     </>
   );
