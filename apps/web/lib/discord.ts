@@ -21,7 +21,7 @@ export function isValidDiscordWebhook(url: string): boolean {
 // A Discord webhook accepts up to 2000 chars of content per message.
 export function clampDiscordContent(content: string): string {
   const trimmed = content.trim();
-  return trimmed.length > 2000 ? `${trimmed.slice(0, 1997)}…` : trimmed;
+  return trimmed.length > 2000 ? `${trimmed.slice(0, 1999)}…` : trimmed;
 }
 
 export type DiscordPostResult = { ok: boolean; status: number; error?: string };

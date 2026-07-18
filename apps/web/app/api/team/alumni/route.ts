@@ -55,7 +55,8 @@ export async function POST(request: Request) {
       note?: string;
     };
     if (!body.orgId) throw new Error("orgId is required");
-    if (!body.fullName?.trim()) throw new Error("Name is required");
+    const fullName = body.fullName?.trim();
+    if (!fullName) throw new Error("Name is required");
     const orgId = body.orgId;
     const gradYear = body.gradYear ? Number(body.gradYear) : null;
     if (gradYear !== null && (!Number.isInteger(gradYear) || gradYear < 1990 || gradYear > 2100)) {
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
         [
           orgId,
-          body.fullName.trim(),
+          fullName,
           gradYear,
           body.currentRole?.trim() || null,
           body.email?.trim() || null,
