@@ -1,0 +1,16 @@
+/* Soft-UI Opponent Counter-book — never DEMO opponent metrics. */
+.counter-book-page{display:grid;gap:16px}
+.counter-book-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.counter-book-related{display:flex;flex-wrap:wrap;gap:8px}
+.counter-book-next-actions{margin:0}
+.counter-book-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.counter-book-stats strong{font-size:1.5rem}
+.counter-book-layout{display:grid;gap:16px}
+.counter-book-panel{display:grid;gap:12px}
+.counter-book-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.counter-book-tip{margin:0}
+@media(max-width:900px){
+  .counter-book-header-actions{justify-content:flex-start}
+  .counter-book-next-actions li{flex-direction:column;align-items:stretch}
+  .counter-book-card-header{flex-direction:column}
+}
