@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EmptyState } from "../../../components/ui";
+import {
+  draftShellCopy,
+  isDraftShareTokenOrgIsolated,
+} from "../../../lib/strategy/draft-related";
 import type { AllianceBoardState } from "../../../lib/strategy/pick-desk";
+import "../draft/draft.css";
 
 type Snapshot = {
   boardId: string;
@@ -23,11 +29,13 @@ function teamNumber(teamKey: string | null) {
 export default function BoardClient() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
     if (!token) {
       setError("Missing share token.");
+      setLoading(false);
       return;
     }
     void fetch(`/api/strategy/draft/public?token=${encodeURIComponent(token)}`)
@@ -37,28 +45,45 @@ export default function BoardClient() {
           setError(data.error ?? "Board unavailable");
           return;
         }
-        setSnapshot(data as Snapshot);
+        const next = data as Snapshot;
+        // Share tokens resolve only the issuing org + board — never DEMO / cross-org boards.
+        if (!isDraftShareTokenOrgIsolated(next)) {
+          setError("Alliance board link is invalid or expired");
+          return;
+        }
+        setSnapshot(next);
       })
-      .catch(() => setError("Could not load shared alliance board."));
+      .catch(() => setError("Could not load shared alliance board."))
+      .finally(() => setLoading(false));
   }, []);
 
   if (error) {
+    const copy = draftShellCopy("error");
     return (
-      <main className="module-page strategy-board-public">
-        <section className="app-card">
-          <h1>Alliance board</h1>
-          <p className="app-muted">{error}</p>
-        </section>
+      <main className="module-page strategy-board-public draft-board-workbench soft-gate">
+        <EmptyState
+          soft
+          className="draft-empty"
+          badge="Unavailable"
+          badgeTone="setup"
+          title={copy.title}
+          description={`${error} Mentor links stay org-bound — never DEMO boards or cross-org snapshots.`}
+        />
       </main>
     );
   }
 
-  if (!snapshot) {
+  if (loading || !snapshot) {
+    const copy = draftShellCopy("loading");
     return (
-      <main className="module-page strategy-board-public">
-        <section className="app-card">
-          <h1>Loading mentor board…</h1>
-        </section>
+      <main className="module-page strategy-board-public draft-board-workbench soft-gate">
+        <EmptyState
+          soft
+          className="draft-empty"
+          title={copy.title}
+          description="Resolving the org-bound mentor token — never DEMO boards."
+          aria-busy
+        />
       </main>
     );
   }
@@ -66,8 +91,8 @@ export default function BoardClient() {
   const state = snapshot.state;
 
   return (
-    <main className="module-page strategy-board-public">
-      <header className="app-page-header">
+    <main className="module-page strategy-board-public draft-board-workbench">
+      <header className="app-page-header draft-board-heading">
         <div>
           <span className="breadcrumbs">Vantage · Read-only mentor view</span>
           <h1>{snapshot.name}</h1>
@@ -75,6 +100,10 @@ export default function BoardClient() {
             {snapshot.eventName ?? snapshot.eventKey} · updated{" "}
             {new Date(snapshot.updatedAt).toLocaleString()} · link expires{" "}
             {new Date(snapshot.expiresAt).toLocaleString()}
+          </p>
+          <p className="app-muted draft-share-note">
+            Org-bound share token — this snapshot belongs only to the issuing workspace. Never DEMO
+            boards.
           </p>
         </div>
         <span className="app-badge setup">Read only</span>
