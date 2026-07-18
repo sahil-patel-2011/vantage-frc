@@ -169,7 +169,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
     };
   }
 
-  const candidates: Array<{ percent: number; reason: CutoffReason; title: string; body: string }> = [];
+  const candidates: Array<{ percent: number | null; reason: CutoffReason; title: string; body: string }> = [];
   if (allowance != null && allowance >= floor) {
     candidates.push({
       percent: allowance,
@@ -327,4 +327,24 @@ export function isCutoffError(codeOrMessage: unknown): boolean {
     s.includes("creditcapexceeded") ||
     s.includes("budgetlimitexceeded")
   );
+}
+
+/** Extract a Soft-UI banner code from a metered AI / agent JSON error body. */
+export function resolveCutoffErrorCode(
+  status: number,
+  body: {
+    code?: unknown;
+    reason?: unknown;
+    error?: unknown;
+    hardCutoff?: unknown;
+  } | null | undefined,
+): string | null {
+  const code = body?.code != null ? String(body.code) : "";
+  const reason = body?.reason != null ? String(body.reason) : "";
+  const error = body?.error != null ? String(body.error) : "";
+  const hardCutoff = body?.hardCutoff === true;
+  if (status === 402 || hardCutoff || isCutoffError(code) || isCutoffError(reason) || isCutoffError(error)) {
+    return code || reason || error || "usage_hard_cutoff";
+  }
+  return null;
 }

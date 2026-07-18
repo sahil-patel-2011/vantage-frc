@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import {
+  buildUsageCutoffSnapshot,
   cutoffCtas,
   evaluateUsageCutoff,
+  isCutoffError,
   messageForCutoffError,
+  resolveCutoffErrorCode,
   type CutoffCta,
   type UsageCutoffAlert,
   type UsageCutoffSnapshot,
@@ -151,4 +154,10 @@ export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compa
   );
 }
 
-export { evaluateUsageCutoff, buildUsageCutoffSnapshot, messageForCutoffError, isCutoffError };
+export {
+  evaluateUsageCutoff,
+  buildUsageCutoffSnapshot,
+  messageForCutoffError,
+  isCutoffError,
+  resolveCutoffErrorCode,
+};
