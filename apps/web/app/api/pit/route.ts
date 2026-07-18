@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { assertOrgAuthentication, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies, headers } from "next/headers";
+import { ensureBatteryRetireFailure } from "../../../lib/battery-fmea";
 import { BATTERY_READY_RULE, pitStatusToPack } from "../../../lib/battery-reliability";
 import { loadBatteryFleet } from "../../../lib/load-battery-fleet";
 import { loadRepeatFailureAlerts } from "../../../lib/fmea/repeat-failures";
@@ -194,12 +195,12 @@ export async function POST(request: Request) {
             session.user.id,
           ],
         );
-        if (action.resistanceMilliohms != null && action.resistanceMilliohms >= 20) {
-          await ensureBatteryFailure(client, {
+        if (action.resistanceMilliohms != null) {
+          await ensureBatteryRetireFailure(client, {
             orgId: action.orgId,
             userId: session.user.id,
             label: action.assetTag,
-            resistance: action.resistanceMilliohms,
+            resistanceMohm: action.resistanceMilliohms,
           });
         }
         return { success: true, id: packId };
@@ -240,37 +241,4 @@ export async function POST(request: Request) {
   } catch (error) {
     return failure(error);
   }
-}
-
-async function ensureBatteryFailure(
-  client: PoolClient,
-  input: { orgId: string; userId: string; label: string; resistance: number },
-) {
-  const open = await client.query(
-    `SELECT 1 FROM robot_failures
-     WHERE org_id = $1 AND resolved_at IS NULL
-       AND lower(subsystem) = 'battery'
-       AND symptoms ILIKE $2
-     LIMIT 1`,
-    [input.orgId, `%${input.label}%`],
-  );
-  if (open.rowCount) return;
-  await client.query(
-    `INSERT INTO robot_failures(org_id,event_key,match_key,subsystem,severity,symptoms,occurred_at,recorded_by)
-     VALUES (
-       $1,
-       (SELECT active_event_key FROM org_active_context WHERE org_id = $1),
-       NULL,
-       'Battery',
-       'degraded',
-       $2,
-       now(),
-       $3
-     )`,
-    [
-      input.orgId,
-      `Pack ${input.label} internal resistance ${input.resistance} mΩ at/past retire threshold — quarantine or replace before match use.`,
-      input.userId,
-    ],
-  );
 }
