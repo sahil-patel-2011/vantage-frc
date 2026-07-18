@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+﻿import { neon } from "@neondatabase/serverless";
 import { z } from "zod";
 
 export const DISCLOSURE_VERSION = "waitlist-2026-07-14";
@@ -35,15 +35,63 @@ export const waitlistSchema = z.object({
 });
 
 export type WaitlistInput = z.infer<typeof waitlistSchema>;
-export interface WaitlistStore {
-  upsert(input: WaitlistInput): Promise<void>;
+
+export interface WaitlistEntry {
+  email: string;
+  teamNumber: number;
+  phoneE164: string | null;
+  launchInvitedAt: string | null;
+  convertedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-const localRows = new Map<string, WaitlistInput & { updatedAt: Date }>();
+export interface WaitlistStore {
+  upsert(input: WaitlistInput): Promise<void>;
+  list(options?: { q?: string; limit?: number }): Promise<WaitlistEntry[]>;
+  markLaunchInvited(email: string): Promise<WaitlistEntry | null>;
+  markConverted(email: string): Promise<WaitlistEntry | null>;
+}
+
+type MemoryRow = WaitlistInput & {
+  launchInvitedAt: Date | null;
+  convertedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+const localRows = new Map<string, MemoryRow>();
+
+function memoryToEntry(row: MemoryRow): WaitlistEntry {
+  return {
+    email: row.email,
+    teamNumber: row.teamNumber,
+    phoneE164: row.phone ? row.phone : null,
+    launchInvitedAt: row.launchInvitedAt?.toISOString() ?? null,
+    convertedAt: row.convertedAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function matchesQuery(entry: WaitlistEntry, q: string) {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return true;
+  return entry.email.includes(needle) || String(entry.teamNumber).includes(needle);
+}
 
 export class MemoryWaitlistStore implements WaitlistStore {
   async upsert(input: WaitlistInput) {
-    localRows.set(input.email, { ...input, updatedAt: new Date() });
+    const key = input.email.toLowerCase();
+    const existing = localRows.get(key);
+    const now = new Date();
+    localRows.set(key, {
+      ...input,
+      launchInvitedAt: existing?.launchInvitedAt ?? null,
+      convertedAt: existing?.convertedAt ?? null,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    });
   }
 
   get(emailAddress: string) {
@@ -53,7 +101,46 @@ export class MemoryWaitlistStore implements WaitlistStore {
   clear() {
     localRows.clear();
   }
+
+  async list(options?: { q?: string; limit?: number }) {
+    const limit = Math.min(Math.max(options?.limit ?? 200, 1), 500);
+    const rows = [...localRows.values()]
+      .map(memoryToEntry)
+      .filter((entry) => matchesQuery(entry, options?.q ?? ""))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return rows.slice(0, limit);
+  }
+
+  async markLaunchInvited(emailAddress: string) {
+    const key = emailAddress.trim().toLowerCase();
+    const row = localRows.get(key);
+    if (!row) return null;
+    const now = new Date();
+    row.launchInvitedAt = row.launchInvitedAt ?? now;
+    row.updatedAt = now;
+    return memoryToEntry(row);
+  }
+
+  async markConverted(emailAddress: string) {
+    const key = emailAddress.trim().toLowerCase();
+    const row = localRows.get(key);
+    if (!row) return null;
+    const now = new Date();
+    row.convertedAt = row.convertedAt ?? now;
+    row.updatedAt = now;
+    return memoryToEntry(row);
+  }
 }
+
+type NeonWaitlistRow = {
+  email: string;
+  teamNumber: number;
+  phoneE164: string | null;
+  launchInvitedAt: string | null;
+  convertedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export class NeonWaitlistStore implements WaitlistStore {
   private readonly sql;
@@ -80,6 +167,98 @@ export class NeonWaitlistStore implements WaitlistStore {
         source = EXCLUDED.source,
         updated_at = now()`;
   }
+
+  async list(options?: { q?: string; limit?: number }) {
+    const limit = Math.min(Math.max(options?.limit ?? 200, 1), 500);
+    const q = options?.q?.trim() ?? "";
+    const pattern = q ? `%${q.toLowerCase()}%` : null;
+    const rows = pattern
+      ? await this.sql`
+          SELECT email_normalized AS email,
+                 team_number AS "teamNumber",
+                 phone_e164 AS "phoneE164",
+                 launch_invited_at AS "launchInvitedAt",
+                 converted_at AS "convertedAt",
+                 created_at AS "createdAt",
+                 updated_at AS "updatedAt"
+          FROM waitlist_signups
+          WHERE lower(email_normalized) LIKE ${pattern}
+             OR team_number::text LIKE ${pattern}
+          ORDER BY updated_at DESC
+          LIMIT ${limit}`
+      : await this.sql`
+          SELECT email_normalized AS email,
+                 team_number AS "teamNumber",
+                 phone_e164 AS "phoneE164",
+                 launch_invited_at AS "launchInvitedAt",
+                 converted_at AS "convertedAt",
+                 created_at AS "createdAt",
+                 updated_at AS "updatedAt"
+          FROM waitlist_signups
+          ORDER BY updated_at DESC
+          LIMIT ${limit}`;
+    return rows.map((row) => ({
+      email: row.email,
+      teamNumber: row.teamNumber,
+      phoneE164: row.phoneE164,
+      launchInvitedAt: row.launchInvitedAt ? new Date(row.launchInvitedAt).toISOString() : null,
+      convertedAt: row.convertedAt ? new Date(row.convertedAt).toISOString() : null,
+      createdAt: new Date(row.createdAt).toISOString(),
+      updatedAt: new Date(row.updatedAt).toISOString(),
+    }));
+  }
+
+  async markLaunchInvited(emailAddress: string) {
+    const email = emailAddress.trim().toLowerCase();
+    const rows = await this.sql`
+      UPDATE waitlist_signups
+      SET launch_invited_at = COALESCE(launch_invited_at, now()), updated_at = now()
+      WHERE email_normalized = ${email}
+      RETURNING email_normalized AS email,
+                team_number AS "teamNumber",
+                phone_e164 AS "phoneE164",
+                launch_invited_at AS "launchInvitedAt",
+                converted_at AS "convertedAt",
+                created_at AS "createdAt",
+                updated_at AS "updatedAt"`;
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      email: row.email,
+      teamNumber: row.teamNumber,
+      phoneE164: row.phoneE164,
+      launchInvitedAt: row.launchInvitedAt ? new Date(row.launchInvitedAt).toISOString() : null,
+      convertedAt: row.convertedAt ? new Date(row.convertedAt).toISOString() : null,
+      createdAt: new Date(row.createdAt).toISOString(),
+      updatedAt: new Date(row.updatedAt).toISOString(),
+    };
+  }
+
+  async markConverted(emailAddress: string) {
+    const email = emailAddress.trim().toLowerCase();
+    const rows = await this.sql`
+      UPDATE waitlist_signups
+      SET converted_at = COALESCE(converted_at, now()), updated_at = now()
+      WHERE email_normalized = ${email}
+      RETURNING email_normalized AS email,
+                team_number AS "teamNumber",
+                phone_e164 AS "phoneE164",
+                launch_invited_at AS "launchInvitedAt",
+                converted_at AS "convertedAt",
+                created_at AS "createdAt",
+                updated_at AS "updatedAt"`;
+    const row = rows[0];
+    if (!row) return null;
+    return {
+      email: row.email,
+      teamNumber: row.teamNumber,
+      phoneE164: row.phoneE164,
+      launchInvitedAt: row.launchInvitedAt ? new Date(row.launchInvitedAt).toISOString() : null,
+      convertedAt: row.convertedAt ? new Date(row.convertedAt).toISOString() : null,
+      createdAt: new Date(row.createdAt).toISOString(),
+      updatedAt: new Date(row.updatedAt).toISOString(),
+    };
+  }
 }
 
 const globalStore = globalThis as typeof globalThis & { vantageWaitlist?: MemoryWaitlistStore };
@@ -94,3 +273,4 @@ export function createWaitlistStore(): WaitlistStore {
   }
   return (globalStore.vantageWaitlist ??= new MemoryWaitlistStore());
 }
+
