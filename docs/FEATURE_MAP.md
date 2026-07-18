@@ -14,6 +14,7 @@
 | Logistics Soft-UI | `/logistics` (also `/travel`) | Hotels, rooming, travel legs, checklist, on-duty mentors; empty/setup states; cross-links to Event Day / My Day / Team calendar; tripId/hotelId org-scoped — never DEMO lodging |
 | Business | `/business` | Overview · Budget · Orders · Sponsors · Sponsorship · Grants · … |
 | Business Soft-UI CRM | `/business?tab=sponsors` · `/business?tab=placements` | Soft-UI pipeline / packages / placements; empty/setup + next actions; cross-links to fundraisers, grants, orders, Finance-in-AI; packageId org-scoped — never DEMO sponsor metrics |
+| Business Soft-UI grants | `/business?tab=grants` · `/team/grants` | Pipeline + draft library + guided grant writing; empty/setup + next actions; metered AI hard-stop via UsageCutoffBanner; cross-links to sponsors / fundraisers / writer — never DEMO award $ |
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Prototypes · Batteries (+ More tools) |
 | AI | `/ai` | Chat · Budgets · Writer · Code assist · Memory · Governance · Finance (+ More tools) |
 
