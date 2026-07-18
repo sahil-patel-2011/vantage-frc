@@ -21,15 +21,19 @@ function fmtDate(iso: string): string {
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 }
+
 function fmtSeconds(value: number | null): string {
   return value == null ? "—" : `${value % 1 === 0 ? value : value.toFixed(2)}s`;
 }
+
 function driverLabel(session: DriverSession, membersById: Map<string, DriverPracticeMember>): string {
   return session.driverName ?? (session.driverUserId ? membersById.get(session.driverUserId)?.name ?? "Member" : "Unassigned");
 }
+
 function withOrg(href: string, orgId: string) {
   if (!orgId) return href;
-  return `${href}${href.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(orgId)}`;
+  const join = href.includes("?") ? "&" : "?";
+  return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
 }
 
 function Stopwatch({ onStop, disabled }: { onStop: (seconds: number) => void; disabled?: boolean }) {
@@ -37,13 +41,16 @@ function Stopwatch({ onStop, disabled }: { onStop: (seconds: number) => void; di
   const [elapsed, setElapsed] = useState(0);
   const startRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+
   useEffect(() => () => {
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
   }, []);
+
   const tick = useCallback(() => {
     setElapsed((Date.now() - startRef.current) / 1000);
     rafRef.current = requestAnimationFrame(tick);
   }, []);
+
   const start = () => {
     startRef.current = Date.now();
     setElapsed(0);
@@ -55,6 +62,7 @@ function Stopwatch({ onStop, disabled }: { onStop: (seconds: number) => void; di
     setRunning(false);
     onStop(Math.round(((Date.now() - startRef.current) / 1000) * 100) / 100);
   };
+
   return (
     <div className={running ? "practice-stopwatch running" : "practice-stopwatch"}>
       <b>{elapsed.toFixed(1)}s</b>
@@ -67,21 +75,29 @@ function Stopwatch({ onStop, disabled }: { onStop: (seconds: number) => void; di
   );
 }
 
-function CycleLogger({ sessionId, orgId, busy, run }: { sessionId: string; orgId: string; busy: boolean; run: (body: ActionBody, key: string) => Promise<void> }) {
+function CycleLogger({
+  sessionId, orgId, busy, run,
+}: {
+  sessionId: string; orgId: string; busy: boolean;
+  run: (body: ActionBody, key: string) => Promise<void>;
+}) {
   const [cycleAction, setCycleAction] = useState(SUGGESTED_ACTIONS[0] as string);
   const [seconds, setSeconds] = useState("");
   const [success, setSuccess] = useState(true);
   const [note, setNote] = useState("");
+
   return (
     <form
       className="practice-logger"
       onSubmit={(event) => {
         event.preventDefault();
         if (!cycleAction.trim()) return;
-        void run(
-          { action: "add_cycle", orgId, sessionId, cycleAction: cycleAction.trim(), seconds: seconds === "" ? null : Number(seconds), success, note: note.trim() },
-          `log:${sessionId}`,
-        ).then(() => {
+        void run({
+          action: "add_cycle", orgId, sessionId,
+          cycleAction: cycleAction.trim(),
+          seconds: seconds === "" ? null : Number(seconds),
+          success, note: note.trim(),
+        }, `log:${sessionId}`).then(() => {
           setSeconds("");
           setNote("");
           setSuccess(true);
@@ -101,8 +117,13 @@ function CycleLogger({ sessionId, orgId, busy, run }: { sessionId: string; orgId
   );
 }
 
-function CycleList({ cycles, orgId, busy, run }: { cycles: DriverCycle[]; orgId: string; busy: boolean; run: (body: ActionBody, key: string) => Promise<void> }) {
-  if (!cycles.length) return <p className="practice-muted">No reps yet — log the first cycle above.</p>;
+function CycleList({
+  cycles, orgId, busy, run,
+}: {
+  cycles: DriverCycle[]; orgId: string; busy: boolean;
+  run: (body: ActionBody, key: string) => Promise<void>;
+}) {
+  if (cycles.length === 0) return <p className="practice-muted">No reps yet — log the first cycle above.</p>;
   return (
     <ul className="practice-cycles">
       {[...cycles].reverse().map((cycle) => (
@@ -137,12 +158,16 @@ function SessionDetail({
   const stats = useMemo(() => sessionStats(session.cycles), [session.cycles]);
   const breakdown = useMemo(() => actionBreakdown(session.cycles), [session.cycles]);
   const busy = busyKey != null;
+
   return (
     <section className="practice-panel practice-detail">
       <header className="practice-detail-head">
         <div>
           <h2>{session.title}</h2>
-          <p>{fmtDate(session.sessionDate)} · Driver: {driverLabel(session, membersById)}{session.location ? ` · ${session.location}` : ""}</p>
+          <p>
+            {fmtDate(session.sessionDate)} · Driver: {driverLabel(session, membersById)}
+            {session.location ? ` · ${session.location}` : ""}
+          </p>
           {session.goal ? <p className="practice-goal">{session.goal}</p> : null}
         </div>
         <button
@@ -150,7 +175,9 @@ function SessionDetail({
           className="practice-text-btn danger"
           disabled={busy}
           onClick={() => {
-            if (confirm(`Delete "${session.title}" and all its reps?`)) void run({ action: "delete_session", orgId, id: session.id }, "delete");
+            if (confirm(`Delete "${session.title}" and all its reps?`)) {
+              void run({ action: "delete_session", orgId, id: session.id }, "delete");
+            }
           }}
         >
           Delete session
@@ -162,7 +189,11 @@ function SessionDetail({
           {attendanceEvents.length > 0 ? (
             <label className="practice-link-card">
               <span>Attendance roll</span>
-              <select value={session.attendanceEventId ?? ""} disabled={busy} onChange={(e) => void run({ action: "update_session", orgId, id: session.id, attendanceEventId: e.target.value || null }, `link:${session.id}`)}>
+              <select
+                value={session.attendanceEventId ?? ""}
+                disabled={busy}
+                onChange={(e) => void run({ action: "update_session", orgId, id: session.id, attendanceEventId: e.target.value || null }, `link:${session.id}`)}
+              >
                 <option value="">Not linked</option>
                 {attendanceEvents.map((event) => (
                   <option key={event.id} value={event.id}>{event.title} · {fmtDate(event.startsAt)}</option>
@@ -174,7 +205,11 @@ function SessionDetail({
           {buildTasks.length > 0 ? (
             <label className="practice-link-card">
               <span>Build task</span>
-              <select value={session.buildTaskId ?? ""} disabled={busy} onChange={(e) => void run({ action: "update_session", orgId, id: session.id, buildTaskId: e.target.value || null }, `link:${session.id}`)}>
+              <select
+                value={session.buildTaskId ?? ""}
+                disabled={busy}
+                onChange={(e) => void run({ action: "update_session", orgId, id: session.id, buildTaskId: e.target.value || null }, `link:${session.id}`)}
+              >
                 <option value="">Not linked</option>
                 {buildTasks.map((task) => (
                   <option key={task.id} value={task.id}>{task.title} · {task.subsystem}</option>
@@ -233,6 +268,7 @@ function NewSessionForm({
   const [goal, setGoal] = useState("");
   const [attendanceEventId, setAttendanceEventId] = useState("");
   const [buildTaskId, setBuildTaskId] = useState("");
+
   return (
     <form
       className="practice-panel practice-new"
@@ -240,14 +276,9 @@ function NewSessionForm({
         event.preventDefault();
         if (!title.trim()) return;
         onCreate({
-          action: "create_session",
-          orgId,
-          title: title.trim(),
-          driverUserId: driverUserId || null,
-          location: location.trim(),
-          goal: goal.trim(),
-          attendanceEventId: attendanceEventId || null,
-          buildTaskId: buildTaskId || null,
+          action: "create_session", orgId, title: title.trim(),
+          driverUserId: driverUserId || null, location: location.trim(), goal: goal.trim(),
+          attendanceEventId: attendanceEventId || null, buildTaskId: buildTaskId || null,
         });
       }}
     >
@@ -256,7 +287,10 @@ function NewSessionForm({
         <button type="button" className="practice-text-btn" onClick={onClose}>Cancel</button>
       </header>
       <div className="practice-new-grid">
-        <label className="practice-field grow"><span>Title</span><input value={title} disabled={busy} placeholder="e.g. Saturday field practice" onChange={(e) => setTitle(e.target.value)} /></label>
+        <label className="practice-field grow">
+          <span>Title</span>
+          <input value={title} disabled={busy} placeholder="e.g. Saturday field practice" onChange={(e) => setTitle(e.target.value)} />
+        </label>
         <label className="practice-field">
           <span>Driver</span>
           <select value={driverUserId} disabled={busy} onChange={(e) => setDriverUserId(e.target.value)}>
@@ -264,8 +298,14 @@ function NewSessionForm({
             {members.map((member) => <option key={member.userId} value={member.userId}>{member.name ?? "Member"}</option>)}
           </select>
         </label>
-        <label className="practice-field"><span>Location</span><input value={location} disabled={busy} placeholder="Shop / field" onChange={(e) => setLocation(e.target.value)} /></label>
-        <label className="practice-field grow"><span>Session goal</span><input value={goal} disabled={busy} placeholder="e.g. Sub-6s scoring cycles" onChange={(e) => setGoal(e.target.value)} /></label>
+        <label className="practice-field">
+          <span>Location</span>
+          <input value={location} disabled={busy} placeholder="Shop / field" onChange={(e) => setLocation(e.target.value)} />
+        </label>
+        <label className="practice-field grow">
+          <span>Session goal</span>
+          <input value={goal} disabled={busy} placeholder="e.g. Sub-6s scoring cycles" onChange={(e) => setGoal(e.target.value)} />
+        </label>
         {attendanceEvents.length > 0 ? (
           <label className="practice-field">
             <span>Link attendance</span>
@@ -316,37 +356,32 @@ export default function PracticeClient() {
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
-  const run = useCallback(
-    async (body: ActionBody, key: string) => {
-      setBusyKey(key);
-      setError("");
-      try {
-        const response = await fetch("/api/practice", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const data = (await response.json()) as { error?: string; id?: string };
-        if (!response.ok) {
-          setError(data.error ?? "Action failed.");
-          return;
-        }
-        if (body.action === "create_session" && data.id) setSelectedId(data.id);
-        if (body.action === "create_session") setShowNew(false);
-        if (body.action === "delete_session") setSelectedId(null);
-        await load();
-      } catch {
-        setError("Network error — changes were not saved.");
-      } finally {
-        setBusyKey(null);
+  const run = useCallback(async (body: ActionBody, key: string) => {
+    setBusyKey(key);
+    setError("");
+    try {
+      const response = await fetch("/api/practice", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = (await response.json()) as { error?: string; id?: string };
+      if (!response.ok) {
+        setError(data.error ?? "Action failed.");
+        return;
       }
-    },
-    [load],
-  );
+      if (body.action === "create_session" && data.id) setSelectedId(data.id);
+      if (body.action === "create_session") setShowNew(false);
+      if (body.action === "delete_session") setSelectedId(null);
+      await load();
+    } catch {
+      setError("Network error — changes were not saved.");
+    } finally {
+      setBusyKey(null);
+    }
+  }, [load]);
 
   if (fetchFailed || !view) {
     return (
@@ -410,8 +445,8 @@ export default function PracticeClient() {
             in the same loop for {context.orgName ?? "your team"}.
           </p>
           <div className="practice-hero-links">
-            <a href={withOrg("/hours", orgId)}>Build hours</a>
             <a href={withOrg("/tasks", orgId)}>Build tasks</a>
+            <a href={withOrg("/hours", orgId)}>Build hours</a>
             <a href={withOrg("/attendance", orgId)}>Attendance</a>
             <a href={withOrg("/meetings", orgId)}>Meetings</a>
           </div>
@@ -456,7 +491,12 @@ export default function PracticeClient() {
             {sessions.map((session) => {
               const stats = sessionStats(session.cycles);
               return (
-                <button key={session.id} type="button" className={session.id === selected?.id ? "practice-list-item active" : "practice-list-item"} onClick={() => setSelectedId(session.id)}>
+                <button
+                  key={session.id}
+                  type="button"
+                  className={session.id === selected?.id ? "practice-list-item active" : "practice-list-item"}
+                  onClick={() => setSelectedId(session.id)}
+                >
                   <div className="practice-list-top">
                     <strong>{session.title}</strong>
                     <span>{fmtDate(session.sessionDate)}</span>
