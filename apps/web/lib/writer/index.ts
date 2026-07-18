@@ -24,3 +24,13 @@ export {
   type WriterNextAction,
   type WriterNextActionContext,
 } from "./writer-next-actions";
+export {
+  classifyWriterShell,
+  writerRelatedLinks,
+  writerShellCopy,
+  WRITER_RELATED_INCLUDE,
+  type WriterRelatedId,
+  type WriterRelatedLink,
+  type WriterShellCopy,
+  type WriterShellKind,
+} from "./writer-related";

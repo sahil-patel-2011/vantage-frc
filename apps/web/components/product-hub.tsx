@@ -181,10 +181,20 @@ export function HubOrgGate({
       <section className="app-card soft-panel product-hub-setup">
         <span className="app-badge setup">Workspace</span>
         <h2>Select a workspace</h2>
-        <p className="app-muted">Open {label} from a team workspace so data stays org-scoped.</p>
-        <a className="app-button" href="/workspace">
-          Choose workspace
-        </a>
+        <p className="app-muted">
+          Open {label} from a team workspace so data stays org-scoped — empty shells stay empty; nothing is seeded with
+          DEMO metrics.
+        </p>
+        <div className="product-hub-setup-actions">
+          <a className="app-button" href="/workspace">
+            Choose workspace
+          </a>
+          {label === "AI" ? (
+            <a className="app-button secondary" href={withOrgHref("/account", null)}>
+              Account
+            </a>
+          ) : null}
+        </div>
       </section>
     );
   }

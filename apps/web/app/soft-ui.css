@@ -2118,6 +2118,7 @@ body.has-app-shell .writer-page .writer-cross-links a:hover{
   border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));
   background:color-mix(in srgb,var(--soft-accent-soft) 70%,var(--soft-card));
 }
+body.has-app-shell .writer-page .writer-ai-neighbors{margin-top:-4px}
 body.has-app-shell .writer-page .writer-next-actions{margin-bottom:0}
 body.has-app-shell .writer-page .writer-empty-hint,
 body.has-app-shell .writer-page .writer-template-empty,
@@ -2129,6 +2130,23 @@ body.has-app-shell .writer-page .writer-provider-setup{
 body.has-app-shell .writer-page .writer-template-empty h3{letter-spacing:-.02em}
 body.has-app-shell .writer-page .writer-template-empty a{color:var(--soft-accent);font-weight:700}
 body.has-app-shell .writer-page .writer-draft-preview textarea{min-height:220px}
+body.has-app-shell .writer-page .app-badge.muted{
+  background:color-mix(in srgb,var(--soft-bg) 70%,var(--soft-card));
+  color:var(--soft-muted);border:1px solid var(--soft-line);
+}
+
+/* Legacy /team/ai-hub Soft-UI launcher */
+body.has-app-shell .ai-hub-launcher .ai-hub-launcher-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;
+}
+body.has-app-shell .ai-hub-launcher .ai-hub-launcher-card{
+  display:block;text-decoration:none;color:inherit;padding:16px 18px;
+}
+body.has-app-shell .ai-hub-launcher .ai-hub-launcher-card-head{
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;
+}
+body.has-app-shell .ai-hub-launcher .ai-hub-launcher-card p{margin:0;line-height:1.5}
+body.has-app-shell .product-hub-setup-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 
 /* Event Focus Rail: next-match truth and handoffs follow users across modules. */
 body.has-app-shell.has-event-focus{padding-top:104px!important}

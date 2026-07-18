@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { hubHref } from "../../../lib/nav/hubs";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 
 type Signals = {
   members: number;
@@ -17,81 +19,95 @@ type Data = { role: string; isAdmin: boolean; teamNumber: number | null; signals
 
 type Card = { title: string; blurb: string; href: string; status: string; adminOnly?: boolean };
 
+type Shell = "loading" | "ready" | "empty" | "error";
+
 function cards(data: Data, orgId: string): Card[] {
   const s = data.signals;
-  const q = `?orgId=${orgId}`;
   return [
     {
       title: "Assistant",
       blurb: "Chat with your team-aware FRC AI. It reads your knowledge on every turn.",
-      href: `/chat${q}`,
+      href: hubHref("/ai", "chat", orgId),
       status: s.assistantRuns > 0 ? `${s.assistantRuns} runs` : "Try it",
+    },
+    {
+      title: "Writer",
+      blurb: "Grant answers and sponsor pitches from this org’s profile only — never DEMO essays.",
+      href: hubHref("/ai", "writer", orgId),
+      status: "Open",
     },
     {
       title: "Team Knowledge",
       blurb: "One shared doc the AI always knows — robot, strategy, conventions.",
-      href: `/team/knowledge${q}`,
+      href: hubHref("/team", "knowledge", orgId),
       status: s.knowledgeChars > 100 ? "Set up" : "Empty",
     },
     {
       title: "Prompt Library",
       blurb: "Reusable prompts your team saves so good asks aren't re-invented.",
-      href: `/team/prompts${q}`,
+      href: withOrgHref("/team/prompts", orgId),
       status: "Open",
     },
     {
       title: "Team Memory",
       blurb: "Shared memories promoted from chats, with retention limits.",
-      href: `/team/ai-memory${q}`,
+      href: hubHref("/ai", "memory", orgId),
       status: s.teamMemories > 0 ? `${s.teamMemories} saved` : "None yet",
     },
     {
       title: "AI Usage",
       blurb: "Every metered call, funding source, and blocked request.",
-      href: `/team/usage${q}`,
+      href: hubHref("/ai", "usage", orgId),
       status: "View",
       adminOnly: true,
     },
     {
       title: "AI Runs",
       blurb: "Full run history including failures and the sources behind each answer.",
-      href: `/team/ai-runs${q}`,
+      href: withOrgHref("/team/ai-runs", orgId),
       status: "View",
       adminOnly: true,
     },
     {
       title: "API Budgets",
       blurb: "Hard spend and token limits enforced before every call.",
-      href: `/team/budgets${q}`,
+      href: hubHref("/ai", "budgets", orgId),
       status: s.budgetsConfigured === true ? "Configured" : s.budgetsConfigured === false ? "Not set" : "—",
       adminOnly: true,
     },
     {
       title: "Prompt caching",
       blurb: "Reuse stable system and context blocks to lower input cost.",
-      href: `/team/budgets${q}#prompt-caching`,
+      href: `${hubHref("/ai", "budgets", orgId)}#prompt-caching`,
       status: "Manage",
       adminOnly: true,
     },
     {
       title: "Code Coach",
       blurb: "Local pattern review (free) — teach safer habits; AI chat/CAD stay metered.",
-      href: `/code${q}`,
+      href: hubHref("/ai", "code", orgId),
       status: "Local",
     },
     {
       title: "CAD Builder",
       blurb: "Cited briefs, allowlisted plans, human-approved geometry.",
-      href: `/cad${q}`,
+      href: withOrgHref("/cad", orgId),
       status: "Open",
     },
     {
       title: "Getting Started",
       blurb: "A checklist to finish setting up your workspace.",
-      href: `/team/getting-started${q}`,
+      href: withOrgHref("/team/getting-started", orgId),
       status: "Open",
     },
   ];
+}
+
+function classifyShell(input: { loading: boolean; error: string; hasData: boolean }): Shell {
+  if (input.loading) return "loading";
+  if (input.error.trim()) return "error";
+  if (!input.hasData) return "empty";
+  return "ready";
 }
 
 export default function AiHubClient({ orgId }: { orgId: string }) {
@@ -103,7 +119,7 @@ export default function AiHubClient({ orgId }: { orgId: string }) {
     let active = true;
     async function load() {
       setLoading(true);
-      const response = await fetch(`/api/team/getting-started?orgId=${orgId}`);
+      const response = await fetch(`/api/team/getting-started?orgId=${encodeURIComponent(orgId)}`);
       const body = await response.json();
       if (!active) return;
       if (!response.ok) setMessage(body.error ?? "Unable to load AI hub");
@@ -120,53 +136,63 @@ export default function AiHubClient({ orgId }: { orgId: string }) {
   }, [orgId]);
 
   const list = data ? cards(data, orgId).filter((c) => data.isAdmin || !c.adminOnly) : [];
+  const shell = classifyShell({ loading, error: message, hasData: Boolean(data) });
+  const aiHubHref = withOrgHref("/ai", orgId);
+  const chatHref = hubHref("/ai", "chat", orgId);
+  const writerHref = hubHref("/ai", "writer", orgId);
+  const budgetsHref = hubHref("/ai", "budgets", orgId);
 
   return (
-    <main className="intel-app">
-      <header className="intel-header">
+    <main className="module-page product-hub product-hub--ai ai-hub-launcher">
+      <header className="app-page-header">
         <div>
-          <span className="eyebrow">VANTAGE / AI HUB</span>
+          <span className="breadcrumbs">AI / Launcher</span>
           <h1>Your team&apos;s AI, all in one place</h1>
           <p className="app-muted">
-            Everything the assistant uses and everything you can steer — knowledge, prompts, memory, usage, and
-            limits. Start with the assistant; give it context and it does the rest.
+            Everything the assistant uses and everything you can steer — knowledge, prompts, memory, usage, and limits.
+            Statuses come from real Neon rows only — never DEMO run counts.
           </p>
         </div>
-        <nav className="intel-actions" aria-label="Team links">
-          <a href={`/chat?orgId=${orgId}`}>Assistant</a>
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+        <nav className="intel-actions" aria-label="AI hub links">
+          <a href={aiHubHref}>AI hub</a>
+          <a href={chatHref}>Chat</a>
+          <a href={writerHref}>Writer</a>
+          <a href={budgetsHref}>Budgets</a>
+          <a href={withOrgHref("/team", orgId)}>Team</a>
         </nav>
       </header>
 
-      {message && <p role="status" className="telemetry-status">{message}</p>}
-      {loading && <p className="app-muted">Loading…</p>}
+      {shell === "loading" ? (
+        <section className="app-card soft-panel product-hub-setup" aria-busy>
+          <h2>Loading AI hub…</h2>
+          <p className="app-muted">Checking org-scoped signals for this workspace.</p>
+        </section>
+      ) : null}
 
-      {!loading && data && (
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "14px",
-          }}
-        >
+      {shell === "error" ? (
+        <section className="app-card soft-panel product-hub-setup" role="status">
+          <span className="app-badge setup">Unavailable</span>
+          <h2>Could not load the AI launcher</h2>
+          <p className="app-muted">{message}</p>
+          <a className="app-button secondary" href={aiHubHref}>
+            Open AI hub
+          </a>
+        </section>
+      ) : null}
+
+      {shell === "ready" && data ? (
+        <section className="ai-hub-launcher-grid" aria-label="AI tools">
           {list.map((card) => (
-            <a
-              key={card.title}
-              href={card.href}
-              className="intel-panel"
-              style={{ display: "block", textDecoration: "none", color: "inherit" }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
-                <strong style={{ fontSize: "17px" }}>{card.title}</strong>
-                <span style={{ color: "#16d9e8", font: "11px monospace" }}>{card.status}</span>
+            <a key={card.title} href={card.href} className="app-card soft-panel ai-hub-launcher-card">
+              <div className="ai-hub-launcher-card-head">
+                <strong>{card.title}</strong>
+                <span className="app-muted">{card.status}</span>
               </div>
-              <p className="app-muted" style={{ marginTop: "6px", lineHeight: 1.5 }}>
-                {card.blurb}
-              </p>
+              <p className="app-muted">{card.blurb}</p>
             </a>
           ))}
         </section>
-      )}
+      ) : null}
     </main>
   );
 }

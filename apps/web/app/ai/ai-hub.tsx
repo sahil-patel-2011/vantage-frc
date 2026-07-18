@@ -22,7 +22,7 @@ export default function AiHub() {
           {(id) => {
             if (tab === "chat") return <ChatClient orgId={id} initialPrompt="" source="" contextId="" />;
             if (tab === "budgets") return <BudgetClient orgId={id} />;
-            if (tab === "writer") return <WriterClient />;
+            if (tab === "writer") return <WriterClient orgId={id} />;
             if (tab === "code") return <CodeClient orgId={id} related="ai" />;
             if (tab === "memory") return <AiMemoryClient orgId={id} />;
             if (tab === "governance") return <AiPolicyClient orgId={id} />;
