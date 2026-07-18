@@ -173,7 +173,6 @@ export class ScoutingRepository {
 
   async syncEntry(orgId: string, userId: string, input: SyncEntry): Promise<SyncAcknowledgement> {
     const locked: SyncEntry = { ...input, payload: lockScoutPayload(input.payload).payload };
-    const locked = lockScoutPayload(input, userId);
     const hash = createHash("sha256")
       .update(JSON.stringify(locked))
       .digest("hex");
