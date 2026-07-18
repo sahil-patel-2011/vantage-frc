@@ -1,0 +1,22 @@
+.offline-banner {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--soft-accent, #0f766e) 35%, var(--soft-line, #d5ddd9));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--soft-accent, #0f766e) 10%, var(--soft-card, #fff));
+  color: var(--soft-ink, #14201c);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.offline-banner strong {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.offline-banner span {
+  color: var(--soft-muted, #5b6b66);
+}
