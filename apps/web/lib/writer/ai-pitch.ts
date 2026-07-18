@@ -101,7 +101,7 @@ export function buildPitchContextSources(input: PitchDraftInput): ContextSource[
         seasonYear: business.seasonYear,
         impact: business.impact,
         communityHours: business.communityHours,
-        seasonGoals: business.seasonGoals.slice(0, 12),
+        seasonGoals: (business.seasonGoals ?? []).slice(0, 12),
         awards: business.awards.slice(0, 8),
         fundraisingGoalUsd: business.fundraisingGoalUsd,
         seasonSponsorIncomeUsd: business.seasonSponsorIncomeUsd,
@@ -158,7 +158,7 @@ function businessEvidenceParagraph(business: PitchBusinessFacts): string {
   } else if (business.communityHours != null && business.communityHours > 0) {
     parts.push(`Our students have logged ${business.communityHours} community service hours this season.`);
   }
-  const goals = business.seasonGoals.slice(0, 4);
+  const goals = (business.seasonGoals ?? []).slice(0, 4);
   if (goals.length) {
     parts.push(
       `Season goals we are tracking include ${goals
