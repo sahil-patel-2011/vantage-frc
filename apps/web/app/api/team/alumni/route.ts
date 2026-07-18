@@ -28,9 +28,10 @@ export async function GET(request: Request) {
       const alumni = await client.query(
         `SELECT id, full_name AS "fullName", grad_year AS "gradYear", current_role AS "currentRole",
                 email, discord_handle AS "discordHandle", linkedin_url AS "linkedinUrl", note,
+                is_mentor AS "isMentor", mentor_topic AS "mentorTopic",
                 added_by AS "addedBy", created_at AS "createdAt"
          FROM team_alumni WHERE org_id=$1
-         ORDER BY grad_year DESC NULLS LAST, full_name ASC`,
+         ORDER BY is_mentor DESC, grad_year DESC NULLS LAST, full_name ASC`,
         [orgId],
       );
       return { alumni: alumni.rows, viewerId: current.user.id };
@@ -53,6 +54,8 @@ export async function POST(request: Request) {
       discordHandle?: string;
       linkedinUrl?: string;
       note?: string;
+      isMentor?: boolean;
+      mentorTopic?: string;
     };
     if (!body.orgId) throw new Error("orgId is required");
     const fullName = body.fullName?.trim();
@@ -69,8 +72,8 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("Organization access denied");
       const result = await client.query<{ id: string }>(
-        `INSERT INTO team_alumni(org_id, full_name, grad_year, current_role, email, discord_handle, linkedin_url, note, added_by)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+        `INSERT INTO team_alumni(org_id, full_name, grad_year, current_role, email, discord_handle, linkedin_url, note, is_mentor, mentor_topic, added_by)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
         [
           orgId,
           fullName,
@@ -80,6 +83,8 @@ export async function POST(request: Request) {
           body.discordHandle?.trim() || null,
           body.linkedinUrl?.trim() || null,
           body.note?.trim() || null,
+          Boolean(body.isMentor),
+          body.mentorTopic?.trim() || null,
           current.user.id,
         ],
       );
