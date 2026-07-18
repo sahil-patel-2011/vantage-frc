@@ -11,12 +11,19 @@ import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../../compone
 import {
   ANSWER_KIND_OPTIONS,
   DRIVETRAIN_OPTIONS_TEXT,
+  addOption,
   definitionFromDraft,
   draftFromDefinition,
+  moveOption,
   moveQuestion,
+  needsOptionEditor,
   newDraftQuestion,
   parseOptions,
+  removeOption,
+  resolveDraftPublishStatus,
   SCOUT_IDENTITY_LOCK_COPY,
+  serializeOptions,
+  updateOptionAt,
   validateDraft,
   type AnswerKind,
   type DraftQuestion,
@@ -47,6 +54,86 @@ function defaultQuestions(type: EntryType): DraftQuestion[] {
     newDraftQuestion({ label: "Auto score", kind: "number" }),
     newDraftQuestion({ label: "Notes", kind: "free" }),
   ];
+}
+
+function OptionEditor({
+  optionsText,
+  disabled,
+  kind,
+  onChange,
+}: {
+  optionsText: string;
+  disabled: boolean;
+  kind: AnswerKind;
+  onChange: (optionsText: string) => void;
+}) {
+  const options = parseOptions(optionsText);
+  const rows = options.length ? options : ["", ""];
+
+  function commit(next: string[]) {
+    onChange(serializeOptions(next));
+  }
+
+  return (
+    <div className="sfb-option-editor">
+      <div className="sfb-option-editor-head">
+        <span>Options</span>
+        <small className="app-muted">
+          {ANSWER_KIND_OPTIONS.find((o) => o.kind === kind)?.hint ?? "Edit choices"}
+        </small>
+      </div>
+      <ul className="sfb-option-list">
+        {rows.map((option, index) => (
+          <li key={`opt-${index}`}>
+            <input
+              value={option}
+              disabled={disabled}
+              placeholder={`Option ${index + 1}`}
+              aria-label={`Option ${index + 1}`}
+              onChange={(event) => {
+                const base = options.length ? options : ["", ""];
+                commit(updateOptionAt(base, index, event.target.value));
+              }}
+            />
+            <div className="sfb-option-actions">
+              <button
+                type="button"
+                disabled={disabled || index === 0}
+                aria-label={`Move option ${index + 1} up`}
+                onClick={() => commit(moveOption(rows, index, index - 1))}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                disabled={disabled || index === rows.length - 1}
+                aria-label={`Move option ${index + 1} down`}
+                onClick={() => commit(moveOption(rows, index, index + 1))}
+              >
+                ↓
+              </button>
+              <button
+                type="button"
+                disabled={disabled || rows.length <= 2}
+                aria-label={`Remove option ${index + 1}`}
+                onClick={() => commit(removeOption(rows, index))}
+              >
+                ✕
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        className="app-button secondary"
+        disabled={disabled}
+        onClick={() => commit(addOption(options.length ? options : ["", ""], ""))}
+      >
+        Add option
+      </button>
+    </div>
+  );
 }
 
 function PreviewField({ question }: { question: DraftQuestion }) {
@@ -95,10 +182,17 @@ function PreviewField({ question }: { question: DraftQuestion }) {
   }
   if (question.kind === "robot_image") {
     return (
-      <FormRow label={label} hint="Upload or capture — stored per organization">
+      <FormRow label={label} hint="Camera or gallery — stored per organization">
         <div className="sfb-robot-image-preview">
-          <span className="app-muted">Camera / gallery picker appears on the live form</span>
-          <input type="file" accept="image/*" capture="environment" disabled multiple />
+          <div className="sfb-robot-image-actions">
+            <span className="app-button secondary" aria-disabled>
+              Camera
+            </span>
+            <span className="app-button secondary" aria-disabled>
+              Gallery
+            </span>
+          </div>
+          <span className="app-muted">Live entry lets scouts capture or pick photos offline.</span>
         </div>
       </FormRow>
     );
@@ -192,6 +286,10 @@ export default function FormsClient({ orgId }: { orgId: string }) {
         if (patch.kind === "drivetrain" && !next.optionsText.trim()) {
           next.optionsText = DRIVETRAIN_OPTIONS_TEXT;
         }
+        if (patch.kind === "mc" || patch.kind === "dropdown") {
+          const opts = parseOptions(next.optionsText);
+          if (opts.length < 2) next.optionsText = "Option A, Option B";
+        }
         return next;
       }),
     );
@@ -275,15 +373,20 @@ export default function FormsClient({ orgId }: { orgId: string }) {
   }
 
   const currentSchema = payload.schemas.find((schema) => schema.type === type);
-  const needsOptions = (kind: AnswerKind) =>
-    kind === "mc" || kind === "dropdown" || kind === "drivetrain";
+  const publishStatus = resolveDraftPublishStatus({
+    published: currentSchema
+      ? { version: currentSchema.version, definition: currentSchema.definition }
+      : null,
+    draftTitle: title,
+    draftQuestions: questions,
+  });
 
   return (
     <main className="module-page sfb-page">
       <PageHeader
         navPath="/scouting/forms"
         title="Scouting form builder"
-        description="Add drivetrain dropdowns and robot photo fields for match or pit forms, then publish a new schema version."
+        description="Configure required fields, MC/dropdown options, and publish versioned match or pit schemas for Soft-UI live entry."
       >
         <div className="sfb-toolbar">
           <a
@@ -346,6 +449,15 @@ export default function FormsClient({ orgId }: { orgId: string }) {
           { id: "pit", label: "Pit form" },
         ]}
       />
+
+      <div
+        className={`sfb-status sfb-status-${publishStatus.kind}`}
+        role="status"
+        aria-live="polite"
+      >
+        <span className="sfb-status-pill">{publishStatus.label}</span>
+        <small className="app-muted">{publishStatus.detail}</small>
+      </div>
 
       <div className="sfb-identity-lock" role="status">
         <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
@@ -433,8 +545,7 @@ export default function FormsClient({ orgId }: { orgId: string }) {
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    Use Drivetrain type and Robot images for pit (or match) forms. Reorder with Up /
-                    Down.
+                    Toggle required, edit MC/dropdown options, and reorder with Move up / Move down.
                   </p>
                 </div>
               </header>
@@ -444,22 +555,29 @@ export default function FormsClient({ orgId }: { orgId: string }) {
                     <div className="sfb-question-head">
                       <strong>
                         Q{index + 1}
-                        {question.required ? " · required" : ""}
+                        <span className="sfb-question-order"> · #{index + 1}</span>
+                        {question.required ? (
+                          <span className="sfb-required-badge">Required</span>
+                        ) : (
+                          <span className="sfb-optional-badge">Optional</span>
+                        )}
                       </strong>
                       <div className="sfb-question-actions">
                         <button
                           type="button"
                           disabled={!payload.canManageSchemas || index === 0}
+                          aria-label={`Move question ${index + 1} up`}
                           onClick={() => setQuestions((prev) => moveQuestion(prev, index, index - 1))}
                         >
-                          Up
+                          Move up
                         </button>
                         <button
                           type="button"
                           disabled={!payload.canManageSchemas || index === questions.length - 1}
+                          aria-label={`Move question ${index + 1} down`}
                           onClick={() => setQuestions((prev) => moveQuestion(prev, index, index + 1))}
                         >
-                          Down
+                          Move down
                         </button>
                         <button
                           type="button"
@@ -497,26 +615,19 @@ export default function FormsClient({ orgId }: { orgId: string }) {
                         </select>
                       </FormRow>
                     </div>
-                    {needsOptions(question.kind) ? (
-                      <FormRow
-                        label="Options"
-                        hint={ANSWER_KIND_OPTIONS.find((o) => o.kind === question.kind)?.hint}
-                      >
-                        <textarea
-                          value={question.optionsText}
-                          disabled={!payload.canManageSchemas}
-                          onChange={(event) =>
-                            updateQuestion(question.id, { optionsText: event.target.value })
-                          }
-                          placeholder="Comma or newline separated"
-                        />
-                      </FormRow>
+                    {needsOptionEditor(question.kind) ? (
+                      <OptionEditor
+                        optionsText={question.optionsText}
+                        disabled={!payload.canManageSchemas}
+                        kind={question.kind}
+                        onChange={(optionsText) => updateQuestion(question.id, { optionsText })}
+                      />
                     ) : (
                       <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
                         {ANSWER_KIND_OPTIONS.find((o) => o.kind === question.kind)?.hint}
                       </p>
                     )}
-                    <label className="sfb-check">
+                    <label className={`sfb-check sfb-required-toggle${question.required ? " is-on" : ""}`}>
                       <input
                         type="checkbox"
                         checked={question.required}
@@ -525,7 +636,14 @@ export default function FormsClient({ orgId }: { orgId: string }) {
                           updateQuestion(question.id, { required: event.target.checked })
                         }
                       />
-                      <span>Required</span>
+                      <span>
+                        <strong>Required</strong>
+                        <small className="app-muted">
+                          {question.required
+                            ? "Scouts must answer before save"
+                            : "Optional — scouts can skip"}
+                        </small>
+                      </span>
                     </label>
                   </article>
                 ))}
@@ -584,8 +702,12 @@ export default function FormsClient({ orgId }: { orgId: string }) {
 
         <aside className="sfb-side" style={{ display: "grid", gap: 12 }}>
           <Panel>
-            <h2>Published</h2>
-            <p className="app-muted" style={{ margin: "0 0 8px" }}>
+            <h2>Publish status</h2>
+            <p className={`sfb-status-inline sfb-status-${publishStatus.kind}`}>
+              <strong>{publishStatus.label}</strong>
+              <span className="app-muted">{publishStatus.detail}</span>
+            </p>
+            <p className="app-muted" style={{ margin: "8px 0" }}>
               Latest schema for this season. Publish creates a new version; entries stay pinned to the
               version they used.
             </p>

@@ -7,6 +7,15 @@
 .scout-mc-row{display:grid;gap:8px}
 .scout-mc-option{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--soft-line);background:var(--soft-bg);cursor:pointer}
 .scout-mc-option:has(input:checked){border-color:var(--soft-accent);background:var(--soft-accent-soft)}
+.scout-robot-image-actions{display:flex;flex-wrap:wrap;gap:8px}
+.scout-robot-image-actions .scout-media{margin:0;flex:1;min-width:120px}
+.scout-save-receipt{display:grid;gap:12px;margin:14px 0 0;padding:14px;border:1px solid color-mix(in srgb,var(--soft-accent) 28%,var(--soft-line));border-radius:16px;background:color-mix(in srgb,var(--soft-accent-soft) 65%,var(--soft-card))}
+.scout-save-receipt-head{display:grid;gap:4px}
+.scout-save-receipt-head .eyebrow{font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.05em;text-transform:uppercase;color:var(--soft-accent)}
+.scout-save-receipt-head strong{font-size:1.02rem;letter-spacing:-.01em;color:var(--soft-ink)}
+.scout-save-next{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.scout-save-next li{display:grid;gap:4px}
+.scout-save-next .app-button{justify-self:start}
 .scout-voice{display:grid;gap:10px;padding:14px;margin:12px 0;border:1px solid var(--soft-line);border-radius:14px;background:var(--soft-bg)}
 .scout-voice small{display:block;margin-top:2px}
 .scout-voice-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}

@@ -7,6 +7,7 @@ import {
 } from "@vantage/scouting/identity";
 import {
   DEFAULT_DRIVETRAIN_OPTIONS,
+  type EntryType,
   type FieldDefinition,
   type FieldType,
   type FieldWidget,
@@ -85,6 +86,42 @@ export function parseOptions(optionsText: string): string[] {
     .split(/[\n,]/)
     .map((part) => part.trim())
     .filter(Boolean);
+}
+
+/** Persist option editor rows back into draft `optionsText`. */
+export function serializeOptions(options: string[]): string {
+  return options.map((part) => part.trim()).filter(Boolean).join(", ");
+}
+
+export function moveOption(options: string[], from: number, to: number): string[] {
+  if (from < 0 || from >= options.length) return options;
+  if (to < 0 || to >= options.length) return options;
+  if (from === to) return options;
+  const next = options.slice();
+  const [item] = next.splice(from, 1);
+  if (item === undefined) return options;
+  next.splice(to, 0, item);
+  return next;
+}
+
+export function updateOptionAt(options: string[], index: number, value: string): string[] {
+  if (index < 0 || index >= options.length) return options;
+  const next = options.slice();
+  next[index] = value;
+  return next;
+}
+
+export function addOption(options: string[], value = ""): string[] {
+  return [...options, value];
+}
+
+export function removeOption(options: string[], index: number): string[] {
+  if (index < 0 || index >= options.length) return options;
+  return options.filter((_, i) => i !== index);
+}
+
+export function needsOptionEditor(kind: AnswerKind): boolean {
+  return kind === "mc" || kind === "dropdown" || kind === "drivetrain";
 }
 
 export function kindToFieldType(kind: AnswerKind): FieldType {
@@ -193,6 +230,105 @@ export function moveQuestion(questions: DraftQuestion[], from: number, to: numbe
   if (!item) return questions;
   next.splice(to, 0, item);
   return next;
+}
+
+export type DraftPublishKind = "unpublished" | "published" | "draft_changes";
+
+export type DraftPublishStatus = {
+  kind: DraftPublishKind;
+  label: string;
+  detail: string;
+  version?: number;
+};
+
+function stableDefinitionFingerprint(definition: SchemaDefinition): string {
+  return JSON.stringify({
+    title: definition.title.trim(),
+    fields: definition.fields.map((field) => ({
+      key: field.key,
+      label: field.label,
+      type: field.type,
+      required: Boolean(field.required),
+      options: field.options ?? [],
+      widget: field.widget ?? null,
+      helpText: field.helpText ?? null,
+    })),
+  });
+}
+
+/** Compare the in-progress draft to the latest published schema for Soft-UI status. */
+export function resolveDraftPublishStatus(args: {
+  published: { version: number; definition: SchemaDefinition } | null | undefined;
+  draftTitle: string;
+  draftQuestions: DraftQuestion[];
+}): DraftPublishStatus {
+  const { published, draftTitle, draftQuestions } = args;
+  if (!published) {
+    return {
+      kind: "unpublished",
+      label: "Draft — not published",
+      detail: "Scouts will not see this form until you publish a version for this season.",
+    };
+  }
+  const draftDef = definitionFromDraft(draftTitle, draftQuestions);
+  const dirty =
+    stableDefinitionFingerprint(draftDef) !==
+    stableDefinitionFingerprint(published.definition);
+  if (dirty) {
+    return {
+      kind: "draft_changes",
+      label: `Draft changes · published v${published.version}`,
+      detail: "Edits are local until you publish. Live scouting keeps using the published version.",
+      version: published.version,
+    };
+  }
+  return {
+    kind: "published",
+    label: `Published v${published.version}`,
+    detail: "This draft matches the live form scouts use after sync.",
+    version: published.version,
+  };
+}
+
+export type PostSaveNextStep = {
+  id: string;
+  href: string;
+  label: string;
+  detail: string;
+};
+
+/** After a successful local save, point scouts at real strategy / coverage surfaces (never DEMO). */
+export function scoutingPostSaveNextSteps(
+  orgId: string,
+  options?: { eventKey?: string | null; entryType?: EntryType },
+): PostSaveNextStep[] {
+  const q = new URLSearchParams({ orgId });
+  if (options?.eventKey) q.set("eventKey", options.eventKey);
+  const qs = q.toString();
+  const entryHint =
+    options?.entryType === "pit"
+      ? "Pit notes feed pick strategy once synced."
+      : "Match notes feed alliance strategy once synced.";
+  return [
+    {
+      id: "strategy",
+      href: `/competition?tab=strategy&${qs}`,
+      label: "Open strategy",
+      detail: entryHint,
+    },
+    {
+      id: "coverage",
+      href: `/scout-coverage-live?${qs}`,
+      label: "Coverage live",
+      detail: "See which matches and teams still need scouts.",
+    },
+    {
+      id: "lineup",
+      href: `/scouting/lineup?${qs}`,
+      label: "Lineup & coverage",
+      detail: "Assignments and gaps for this event.",
+    },
+  ];
 }
 
 export type FormBuilderValidation = {
