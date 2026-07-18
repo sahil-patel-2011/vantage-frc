@@ -1421,6 +1421,29 @@ export const cadJobs = pgTable("cad_jobs", {
   ...timestamps,
 }, (table) => [index("cad_jobs_org_updated_idx").on(table.orgId, table.updatedAt)]);
 
+export const cadTeamProfiles = pgTable("cad_team_profiles", {
+  orgId: uuid("org_id").primaryKey().references(() => organizations.id, { onDelete: "cascade" }),
+  defaultPlatform: text("default_platform").$type<"onshape"|"fusion360"|"mock">().notNull().default("onshape"),
+  preferredUnits: text("preferred_units").$type<"mm"|"in">().notNull().default("mm"),
+  manufacturingProcesses: text("manufacturing_processes").array().notNull().default(sql`'{}'::text[]`),
+  preferredMaterials: text("preferred_materials").array().notNull().default(sql`'{}'::text[]`),
+  standardComponents: text("standard_components").array().notNull().default(sql`'{}'::text[]`),
+  designRules: text("design_rules").array().notNull().default(sql`'{}'::text[]`),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  ...timestamps,
+});
+
+export const cadUserPreferences = pgTable("cad_user_preferences", {
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  responseStyle: text("response_style").$type<"concise"|"teaching"|"expert">().notNull().default("teaching"),
+  explanationDepth: text("explanation_depth").$type<"minimal"|"standard"|"deep">().notNull().default("standard"),
+  preferredUnits: text("preferred_units").$type<"team"|"mm"|"in">().notNull().default("team"),
+  preferredPlatform: text("preferred_platform").$type<"onshape"|"fusion360"|"mock"|null>(),
+  customInstructions: text("custom_instructions").notNull().default(""),
+  ...timestamps,
+}, (table) => [primaryKey({ columns: [table.orgId, table.userId] })]);
+
 export const cadJobSteps = pgTable("cad_job_steps", {
   id: uuid("id").primaryKey().defaultRandom(),
   orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
@@ -1458,6 +1481,30 @@ export const cadArtifacts = pgTable("cad_artifacts", {
   createdBy: uuid("created_by").notNull().references(() => users.id),
   createdAt: timestamps.createdAt,
 }, (table) => [index("cad_artifacts_org_job_idx").on(table.orgId, table.jobId)]);
+
+export const featureContextLinks = pgTable("feature_context_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  sourceKind: text("source_kind").notNull(),
+  sourceId: text("source_id").notNull(),
+  targetKind: text("target_kind").notNull(),
+  targetId: text("target_id").notNull(),
+  relation: text("relation").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+  createdBy: uuid("created_by").notNull().references(() => users.id),
+  createdAt: timestamps.createdAt,
+}, (table) => [
+  uniqueIndex("feature_context_links_unique").on(
+    table.orgId,
+    table.sourceKind,
+    table.sourceId,
+    table.targetKind,
+    table.targetId,
+    table.relation,
+  ),
+  index("feature_context_links_source_idx").on(table.orgId, table.sourceKind, table.sourceId, table.createdAt),
+  index("feature_context_links_target_idx").on(table.orgId, table.targetKind, table.targetId, table.createdAt),
+]);
 
 export const cadCheckpoints = pgTable("cad_checkpoints", {
   id: uuid("id").primaryKey().defaultRandom(),

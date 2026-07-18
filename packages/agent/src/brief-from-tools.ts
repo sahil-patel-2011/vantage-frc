@@ -1,3 +1,5 @@
+import { isSameSeasonYear } from "./season-year";
+
 export type ContextItemLite = {
   type: string;
   id: string;
@@ -298,12 +300,91 @@ function fromFmea(data: unknown, tool: string): { risks: string[]; constraints: 
   };
 }
 
+function fromInventory(data: unknown): { constraints: string[]; risks: string[] } {
+  const row = asRecord(data);
+  if (!row) return { constraints: [], risks: [] };
+  const items = Array.isArray(row.items) ? row.items : [];
+  const bom = Array.isArray(row.bom) ? row.bom : [];
+  const constraints = unique(
+    items.slice(0, 8).map((item) => {
+      const entry = asRecord(item);
+      if (!entry) return "";
+      const name = String(entry.name ?? "").trim();
+      const quantity = Number(entry.quantity ?? 0);
+      const unit = String(entry.unit ?? "each").trim();
+      const location = String(entry.locationName ?? "unlocated").trim();
+      return name && quantity > 0 ? `Inventory: ${quantity} ${unit} ${name} available at ${location}` : "";
+    }).filter(Boolean),
+    8,
+  );
+  const risks = unique(
+    bom.map((item) => {
+      const entry = asRecord(item);
+      if (!entry) return "";
+      const shortage = Number(entry.shortage ?? 0);
+      const name = String(entry.name ?? "part").trim();
+      return shortage > 0 ? `BOM shortage: ${shortage} ${name} must be sourced before build` : "";
+    }).filter(Boolean),
+    8,
+  );
+  if (!items.length) risks.push("No matching team inventory was found — confirm stock or create a purchase request");
+  return { constraints, risks };
+}
+
+/** Trusted scout only — TBA-conflicted fields must never become CAD requirements. */
+function fromScouting(data: unknown): { constraints: string[]; risks: string[] } {
+  if (!Array.isArray(data)) return { constraints: [], risks: [] };
+  const constraints: string[] = [];
+  const risks: string[] = [];
+  for (const row of data.slice(0, 12)) {
+    const entry = asRecord(row);
+    if (!entry) continue;
+    const teamKey = String(entry.teamKey ?? "").trim() || "team";
+    const conflictCount = Number(entry.conflictCount ?? 0);
+    const excluded = Array.isArray(entry.excludedFields)
+      ? entry.excludedFields.map((field) => String(field)).filter(Boolean)
+      : [];
+    if (conflictCount > 0) {
+      risks.push(
+        `Scout TBA conflict on ${teamKey}: do not trust ${excluded.join(", ") || "contradicted fields"}`,
+      );
+    }
+    const trusted = asRecord(entry.trustedPayload);
+    if (trusted) {
+      const keys = Object.keys(trusted).filter((key) => trusted[key] != null && trusted[key] !== "");
+      if (keys.length) {
+        constraints.push(
+          `Trusted scout (${teamKey}): ${keys.slice(0, 6).join(", ")}${keys.length > 6 ? "…" : ""}`,
+        );
+      }
+    }
+  }
+  return { constraints: unique(constraints, 8), risks: unique(risks, 8) };
+}
+
 export type BriefFromToolsInput = {
   request: string;
   context: ContextItemLite[];
   sourceRefs?: EngineeringBrief["sourceRefs"];
   knowledgeNotes?: string[];
+  /** When set, drop kickoff/rules/design tool facts from other seasons. */
+  activeSeasonYear?: number;
 };
+
+const SEASON_LOCKED_TOOLS = new Set([
+  "kickoff.intelligence",
+  "kickoff.rules",
+  "rules.compliance",
+  "strategy.design",
+]);
+
+function toolFactSeasonYear(fact: ToolFact): unknown {
+  const data = asRecord(fact.data);
+  if (data && "seasonYear" in data) return data.seasonYear;
+  const toolInput = asRecord(fact.input);
+  if (toolInput && "seasonYear" in toolInput) return toolInput.seasonYear;
+  return undefined;
+}
 
 /** Deterministic CAD brief from orchestrator tool outputs — empty tools leave placeholders. */
 export function buildEngineeringBriefFromTools(input: BriefFromToolsInput): EngineeringBrief {
@@ -318,10 +399,18 @@ export function buildEngineeringBriefFromTools(input: BriefFromToolsInput): Engi
   const risks: string[] = [];
   const assumptions = [...DEFAULT_ASSUMPTIONS];
   const sourceRefs: EngineeringBrief["sourceRefs"] = [...(input.sourceRefs ?? [])];
+  let sawSeasonRules = false;
 
   for (const [index, fact] of facts.entries()) {
     const tool = String(fact.tool ?? "");
     if (!tool) continue;
+    if (
+      input.activeSeasonYear != null &&
+      SEASON_LOCKED_TOOLS.has(tool) &&
+      !isSameSeasonYear(toolFactSeasonYear(fact), input.activeSeasonYear)
+    ) {
+      continue;
+    }
     sourceRefs.push({
       type: "tool",
       id: `${tool}:${index}`,
@@ -341,16 +430,19 @@ export function buildEngineeringBriefFromTools(input: BriefFromToolsInput): Engi
       risks.push(...mapped.risks);
       scoringTasks.push(...mapped.scoringTasks);
     } else if (tool === "strategy.design") {
+      sawSeasonRules = true;
       const mapped = fromStrategyDesign(fact.data);
       requirements.push(...mapped.requirements);
       scoringTasks.push(...mapped.scoringTasks);
     } else if (tool === "kickoff.intelligence") {
+      sawSeasonRules = true;
       const mapped = fromKickoffIntelligence(fact.data);
       requirements.push(...mapped.requirements);
       scoringTasks.push(...mapped.scoringTasks);
       constraints.push(...mapped.constraints);
       risks.push(...mapped.risks);
     } else if (tool === "kickoff.rules") {
+      sawSeasonRules = true;
       const mapped = fromKickoffRules(fact.data);
       constraints.push(...mapped.constraints);
       risks.push(...mapped.risks);
@@ -360,6 +452,7 @@ export function buildEngineeringBriefFromTools(input: BriefFromToolsInput): Engi
         }
       }
     } else if (tool === "rules.compliance") {
+      sawSeasonRules = true;
       const mapped = fromRulesCompliance(fact.data);
       constraints.push(...mapped.constraints);
       risks.push(...mapped.risks);
@@ -367,6 +460,14 @@ export function buildEngineeringBriefFromTools(input: BriefFromToolsInput): Engi
       const mapped = fromFmea(fact.data, tool);
       risks.push(...mapped.risks);
       constraints.push(...mapped.constraints);
+    } else if (tool === "inventory.availability") {
+      const mapped = fromInventory(fact.data);
+      constraints.push(...mapped.constraints);
+      risks.push(...mapped.risks);
+    } else if (tool === "scouting.team") {
+      const mapped = fromScouting(fact.data);
+      constraints.push(...mapped.constraints);
+      risks.push(...mapped.risks);
     }
   }
 
@@ -380,10 +481,19 @@ export function buildEngineeringBriefFromTools(input: BriefFromToolsInput): Engi
     if (dedupedRefs.length >= 40) break;
   }
 
+  const seasonConstraintNote =
+    input.activeSeasonYear != null && !sawSeasonRules
+      ? [
+          `No ${input.activeSeasonYear} kickoff rules or design priorities loaded yet — confirm game constraints on /kickoff before freezing geometry`,
+        ]
+      : [];
+
   return {
     summary: input.request.trim() || "CAD engineering brief from strategy and kickoff context",
     requirements: unique(requirements, 12).length ? unique(requirements, 12) : DEFAULT_REQUIREMENTS,
-    constraints: unique(constraints, 12).length ? unique(constraints, 12) : DEFAULT_CONSTRAINTS,
+    constraints: unique([...constraints, ...seasonConstraintNote], 12).length
+      ? unique([...constraints, ...seasonConstraintNote], 12)
+      : DEFAULT_CONSTRAINTS,
     scoringTasks: unique(scoringTasks, 12).length ? unique(scoringTasks, 12) : DEFAULT_SCORING,
     assumptions: assumptions.slice(0, 12),
     risks: unique(risks, 12).length ? unique(risks, 12) : DEFAULT_RISKS,

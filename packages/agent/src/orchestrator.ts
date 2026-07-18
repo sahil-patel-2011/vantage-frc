@@ -9,6 +9,7 @@ import {
   type AnnotatedToolOutput,
 } from "./auto-tools";
 import { loadToolDataSourceNote } from "./data-source-note";
+import { toolUsesOrgData } from "./feature-context";
 
 export type ClaimClassification="hard_metric"|"scout_observation"|"researched_claim"|"model_inference";
 export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact"|"github_file"|"vscode_selection";sourceUrl?:string;observedAt?:string;label?:string};
@@ -49,7 +50,10 @@ export type OrchestratorResult={
 export class AIOrchestrator{
   constructor(private readonly client:PoolClient,private readonly registry=new AIToolRegistry()){}
   async run(request:OrchestratorRequest):Promise<OrchestratorResult>{
-    const active=(await this.client.query<{active_event_key:string|null}>(`SELECT active_event_key FROM org_active_context WHERE org_id=$1`,[request.orgId])).rows[0]?.active_event_key??null;
+    const activeRow=(await this.client.query<{active_event_key:string|null;season_year:number|null}>(`SELECT c.active_event_key, e.year AS season_year FROM org_active_context c LEFT JOIN events_ref e ON e.event_key=c.active_event_key WHERE c.org_id=$1`,[request.orgId])).rows[0];
+    const active=activeRow?.active_event_key??null;
+    const {resolveActiveSeasonYear}=await import("./season-year");
+    const seasonYear=resolveActiveSeasonYear({seasonYear:activeRow?.season_year,activeEventKey:active,matchKey:request.selected?.matchKey});
     const autoToolSurfaces = new Set(["chat", "cad", "strategy"]);
     const plannedToolCalls =
       request.toolCalls ??
@@ -58,11 +62,12 @@ export class AIOrchestrator{
             selected: request.selected,
             activeEventKey: active,
             capability: request.capability,
+            seasonYear,
           })
         : []);
     let billingOwner=request.billingOwner;if(!billingOwner&&request.privacyScope==="private"){const personal=await this.client.query(`SELECT 1 FROM billing_accounts a JOIN billing_subscriptions s ON s.billing_account_id=a.id AND s.status IN ('active','trialing') WHERE a.owner_user_id=$1 AND s.current_period_start<=now() AND s.current_period_end>now()`,[request.userId]);if(personal.rowCount)billingOwner={type:"user",id:request.userId};}billingOwner??={type:"org",id:request.orgId};
-    const toolUsesOrgData=plannedToolCalls.some((call)=>["scouting.team","strategy.match","strategy.design","artifacts.related","kickoff.intelligence","kickoff.rules","rules.compliance","cad.briefs","knowledge.search","knowledge.get_page","finance.summary","finance.orders","finance.create_purchase_request","fmea.repeat"].includes(call.name));
-    const usesOrgData=request.usesOrgData??(toolUsesOrgData||request.contextSources.some(source=>["team_memory","hard_metric","scout_observation","researched_claim","artifact","github_file","vscode_selection"].includes(source.classification)));if(billingOwner.type==="user"&&usesOrgData){const allowed=await this.client.query(`SELECT 1 FROM org_member_funding_policies WHERE org_id=$1 AND user_id=$2 AND allow_individual_funding=true`,[request.orgId,request.userId]);if(!allowed.rowCount)throw new Error("Organization admin approval is required to fund an org-data run with an individual plan");}
+    const plannedUsesOrgData=plannedToolCalls.some((call)=>toolUsesOrgData(call.name));
+    const usesOrgData=request.usesOrgData??(plannedUsesOrgData||request.contextSources.some(source=>["team_memory","hard_metric","scout_observation","researched_claim","artifact","github_file","vscode_selection"].includes(source.classification)));if(billingOwner.type==="user"&&usesOrgData){const allowed=await this.client.query(`SELECT 1 FROM org_member_funding_policies WHERE org_id=$1 AND user_id=$2 AND allow_individual_funding=true`,[request.orgId,request.userId]);if(!allowed.rowCount)throw new Error("Organization admin approval is required to fund an org-data run with an individual plan");}
     if(request.privacyScope==="team"&&billingOwner.type!=="org")throw new Error("Team-shared AI must use the organization billing account");
     const usageFeature=request.capability;
     const aiPolicy=await loadOrgAiPolicy(this.client,request.orgId);
@@ -71,7 +76,7 @@ export class AIOrchestrator{
         throw new Error(`AI tool is not allowed by organization policy: ${call.name}`);
       }
     }
-    const run=await this.client.query<{id:string}>(`INSERT INTO ai_runs(org_id,user_id,thread_id,capability,privacy_scope,request_id,input,billing_owner_type,billing_owner_id) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9) RETURNING id`,[request.orgId,request.userId,request.threadId??null,request.capability,request.privacyScope,request.requestId,JSON.stringify({message:request.message,activeEventKey:active,selected:request.selected??{},toolCalls:plannedToolCalls}),billingOwner.type,billingOwner.id]);
+    const run=await this.client.query<{id:string}>(`INSERT INTO ai_runs(org_id,user_id,thread_id,capability,privacy_scope,request_id,input,billing_owner_type,billing_owner_id) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9) RETURNING id`,[request.orgId,request.userId,request.threadId??null,request.capability,request.privacyScope,request.requestId,JSON.stringify({message:request.message,activeEventKey:active,seasonYear,selected:request.selected??{},toolCalls:plannedToolCalls}),billingOwner.type,billingOwner.id]);
     const runId=run.rows[0]!.id;let sequence=0;
     try{
       const context=buildUnifiedContext(request.contextSources,request.tokenBudget??4000);
