@@ -1,5 +1,19 @@
 import type { NextConfig } from "next";
 
+/** Legacy / renamed routes — keep bookmarks working without dead ends. See docs/FEATURE_MAP.md. */
+const LEGACY_REDIRECTS: Array<{ source: string; destination: string }> = [
+  { source: "/knowledge", destination: "/team/knowledge" },
+  { source: "/knowledge/:path*", destination: "/team/knowledge" },
+  { source: "/repairs", destination: "/incidents" },
+  { source: "/repairs/:path*", destination: "/incidents" },
+  { source: "/meetings", destination: "/team/calendar" },
+  { source: "/meetings/:path*", destination: "/team/calendar" },
+  { source: "/config", destination: "/robot" },
+  { source: "/config/:path*", destination: "/robot" },
+  { source: "/changes", destination: "/decisions" },
+  { source: "/changes/:path*", destination: "/decisions" },
+];
+
 const config: NextConfig = {
   transpilePackages: [
     "@vantage/agent",
@@ -14,6 +28,9 @@ const config: NextConfig = {
     "@vantage/scouting",
   ],
   poweredByHeader: false,
+  async redirects() {
+    return LEGACY_REDIRECTS.map((entry) => ({ ...entry, permanent: false }));
+  },
   async headers() {
     return [{
       source: "/(.*)",

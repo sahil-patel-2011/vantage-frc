@@ -1,8 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { withOrgHref } from "../lib/nav/product-nav";
 
 export type TeamOpsKey =
+  | "start"
   | "practice"
   | "todos"
   | "messages"
@@ -13,8 +15,14 @@ export type TeamOpsKey =
   | "admin";
 
 const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path: string) => boolean }> = [
+  { key: "start", href: "/start", label: "Your path", match: (p) => p === "/start" || p.startsWith("/start/") },
   { key: "practice", href: "/practice", label: "Practice", match: (p) => p.startsWith("/practice") },
-  { key: "todos", href: "/tasks", label: "Todos", match: (p) => p.startsWith("/tasks") },
+  {
+    key: "todos",
+    href: "/tasks",
+    label: "Todos",
+    match: (p) => p.startsWith("/todos") || p.startsWith("/tasks"),
+  },
   { key: "messages", href: "/messages", label: "Messages", match: (p) => p.startsWith("/messages") },
   {
     key: "calendar",
@@ -29,15 +37,13 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
     key: "admin",
     href: "/team",
     label: "Admin",
-    match: (p) => (p === "/team" || p.startsWith("/team/")) && !p.startsWith("/team/calendar"),
+    match: (p) =>
+      (p === "/team" || p.startsWith("/team/")) &&
+      !p.startsWith("/team/calendar") &&
+      !p.startsWith("/team/knowledge") &&
+      !p.startsWith("/team/getting-started"),
   },
 ];
-
-function withOrg(href: string, orgId?: string | null) {
-  if (!orgId) return href;
-  const join = href.includes("?") ? "&" : "?";
-  return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
-}
 
 type TeamOpsNavProps = {
   orgId?: string | null;
@@ -46,7 +52,10 @@ type TeamOpsNavProps = {
   className?: string;
 };
 
-/** Cross-links for Team ops surfaces — Practice / Todos / Messages / Calendar first. */
+/**
+ * Cross-links for Team + Calendar surfaces.
+ * Keep in sync with Calendar / Team pillars in `lib/nav/product-nav.ts` and docs/FEATURE_MAP.md.
+ */
 export function TeamOpsNav({ orgId, active, className }: TeamOpsNavProps) {
   const pathname = usePathname() || "";
   return (
@@ -59,7 +68,7 @@ export function TeamOpsNav({ orgId, active, className }: TeamOpsNavProps) {
         return (
           <a
             key={link.key}
-            href={withOrg(link.href, orgId)}
+            href={withOrgHref(link.href, orgId)}
             className={selected ? "active" : undefined}
             aria-current={selected ? "page" : undefined}
           >
