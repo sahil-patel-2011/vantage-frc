@@ -8,14 +8,14 @@ import {
   loadGitHubContextItems,
   type GitHubContextRequest,
 } from "../../../lib/github";
+import { failMeteredAi } from "../../../lib/metered-ai-fail";
 
 async function current() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("Authentication required");
   return session;
 }
-const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Agent request failed" }, { status: 400 });
+const fail = (error: unknown) => failMeteredAi(error, "Agent request failed");
 
 export async function GET(request: Request) {
   try {

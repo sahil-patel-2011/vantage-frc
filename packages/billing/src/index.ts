@@ -39,18 +39,97 @@ export {
   type OrgAiPolicy,
 } from "./ai-governance";
 
+export {
+  UsageHardCutoffError,
+  classifyMeteredAiError,
+  cutoffMessage,
+  meteredAiErrorBody,
+  meteredAiErrorResponse,
+  type ClassifiedMeteredAiError,
+  type UsageCutoffCode as MeteredCutoffCode,
+  type UsageCutoffCta,
+  type UsageCutoffReason,
+} from "./usage-cutoff";
+
+import {
+  UsageHardCutoffError,
+  classifyMeteredAiError,
+  meteredAiErrorResponse,
+} from "./usage-cutoff";
+
+/** Stable machine codes for Soft-UI + API clients — never silent overage. */
+export type UsageCutoffCode =
+  | "credit_cap_exceeded"
+  | "payg_not_enabled"
+  | "insufficient_prepaid_balance"
+  | "spend_cap"
+  | "kill_switch"
+  | "managed_allowance_exhausted"
+  | "sponsored_allowance_exhausted";
+
+export const USAGE_CUTOFF_MESSAGES: Record<UsageCutoffCode, string> = {
+  credit_cap_exceeded:
+    "This organization has reached its Vantage AI credit limit. Buy Usage Credits or enable PAYG with a spend cap — there is no silent overage.",
+  payg_not_enabled:
+    "Included API allowance is exhausted and pay-as-you-go is off. Buy Usage Credits or enable PAYG with a spend cap to continue.",
+  insufficient_prepaid_balance:
+    "Prepaid Usage Credits cannot cover this call. Buy a credit pack or raise the PAYG spend cap.",
+  spend_cap:
+    "PAYG overage is hard-stopped at the monthly spend cap. Raise the cap or buy Usage Credits.",
+  kill_switch: "AI usage is currently disabled for this organization.",
+  managed_allowance_exhausted:
+    "Managed plan allowance is exhausted for this period. Buy Usage Credits or enable PAYG with a spend cap.",
+  sponsored_allowance_exhausted:
+    "Sponsored AI allowance is exhausted. Use BYO keys, local AI, or upgrade.",
+};
+
 export class CreditCapExceededError extends Error {
-  constructor() {
-    super("This organization has reached its Vantage AI credit limit.");
+  readonly code = "credit_cap_exceeded" as const;
+  constructor(message = USAGE_CUTOFF_MESSAGES.credit_cap_exceeded) {
+    super(message);
     this.name = "CreditCapExceededError";
   }
 }
 
 export class BillingDisabledError extends Error {
-  constructor() {
-    super("AI usage is currently disabled for this organization.");
+  readonly code = "kill_switch" as const;
+  constructor(message = USAGE_CUTOFF_MESSAGES.kill_switch) {
+    super(message);
     this.name = "BillingDisabledError";
   }
+}
+
+/** Map meteredAI / budget errors to HTTP 402 bodies with stable `code` fields. */
+export function describeBillingError(error: unknown): {
+  code: string;
+  message: string;
+  status: 402 | 403 | 429;
+  reason?: string;
+} | null {
+  const classified = classifyMeteredAiError(error);
+  if (classified) {
+    return {
+      code: classified.code,
+      message: classified.message,
+      status: classified.status,
+      reason: classified.reason,
+    };
+  }
+  if (error instanceof BudgetLimitExceededError) {
+    return { code: error.reason, message: error.message, status: 402, reason: error.reason };
+  }
+  return null;
+}
+
+export function billingErrorResponse(error: unknown): Response | null {
+  return meteredAiErrorResponse(error) ?? (() => {
+    const described = describeBillingError(error);
+    if (!described) return null;
+    return Response.json(
+      { error: described.message, code: described.code, reason: described.reason, hardStop: true },
+      { status: described.status },
+    );
+  })();
 }
 
 export type UsageReceipt<T> = {
@@ -222,9 +301,11 @@ async function enforceApiBudgets<T>(
 }
 
 export class BudgetLimitExceededError extends Error {
+  readonly code: string;
   constructor(readonly reason: string) {
     super(`API budget limit reached (${reason}).`);
     this.name = "BudgetLimitExceededError";
+    this.code = reason;
   }
 }
 
@@ -404,8 +485,61 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     );
     const used = Number(totals.rows[0]?.used ?? 0);
     const grants = Number(totals.rows[0]?.grants ?? 0);
-    if (used + input.estimatedCostUsd > Number(account.credit_cap_usd) + grants) {
-      throw new CreditCapExceededError();
+    // Included allowance is the period credit cap only — grants/credits are prepaid, not silent overage.
+    const includedCap = Number(account.credit_cap_usd);
+    let includedRemainingUsd = Math.max(0, includedCap - used);
+    const overageUsedUsd = Math.max(0, used - includedCap);
+
+    const policy = await input.client.query<{
+      payg_enabled: boolean;
+      prepaid_balance_usd: string;
+      overage_spend_cap_usd: string;
+      kill_switch: boolean;
+    }>(
+      `SELECT payg_enabled, prepaid_balance_usd, overage_spend_cap_usd, kill_switch
+         FROM org_usage_policies WHERE org_id = $1`,
+      [input.orgId],
+    );
+    const usagePolicy = policy.rows[0];
+    const paygOnly =
+      typeof input.metadata?.paygOnly === "boolean" ? input.metadata.paygOnly : false;
+    const walletPrepaid = creditWallet
+      ? creditWallet.purchased + creditWallet.gifted
+      : 0;
+    if (creditWallet) {
+      includedRemainingUsd = Math.max(includedRemainingUsd, creditWallet.included);
+    }
+    const decision = evaluateManagedUsage({
+      includedRemainingUsd,
+      estimatedCostUsd: input.estimatedCostUsd * (creditWallet?.serviceMultiplier ?? 1),
+      paygOnly,
+      paygEnabled: usagePolicy?.payg_enabled === true,
+      prepaidBalanceUsd: Number(usagePolicy?.prepaid_balance_usd ?? 0) + grants + walletPrepaid,
+      overageUsedUsd,
+      overageSpendCapUsd: Number(usagePolicy?.overage_spend_cap_usd ?? 0),
+      killSwitch: account.kill_switch || usagePolicy?.kill_switch === true,
+    });
+    if (!decision.allowed) {
+      const reason = decision.reason ?? "payg_not_enabled";
+      await input.client.query(
+        `INSERT INTO api_usage_denials(org_id,user_id,feature,provider,model,estimated_cost_usd,
+          estimated_tokens,reason,request_id,metadata)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
+         ON CONFLICT(request_id) DO NOTHING`,
+        [
+          input.orgId,
+          input.userId,
+          input.feature,
+          input.provider ?? null,
+          input.model ?? null,
+          input.estimatedCostUsd,
+          (input.estimatedPromptTokens ?? 0) + (input.estimatedCompletionTokens ?? 0),
+          reason,
+          input.requestId,
+          JSON.stringify({ ...(input.metadata ?? {}), hardCutoff: true, bucket: decision.bucket }),
+        ],
+      );
+      throw new CommitAndThrowError(new UsageHardCutoffError(reason));
     }
   }
 
@@ -608,15 +742,23 @@ export function evaluateManagedUsage(input: {
   overageSpendCapUsd: number;
   killSwitch: boolean;
 }) {
-  if (input.killSwitch) return { allowed: false, bucket: "blocked" as const, reason: "kill_switch" };
+  if (input.killSwitch) return { allowed: false, bucket: "blocked" as const, reason: "kill_switch" as const };
   if (!input.paygOnly && input.estimatedCostUsd <= input.includedRemainingUsd)
     return { allowed: true, bucket: "included" as const };
+  // Usage Credits / prepaid grants cover the call without requiring PAYG enrollment.
+  if (input.estimatedCostUsd <= input.prepaidBalanceUsd) {
+    if (input.paygEnabled && input.overageUsedUsd + input.estimatedCostUsd > input.overageSpendCapUsd) {
+      return { allowed: false, bucket: "blocked" as const, reason: "spend_cap" as const };
+    }
+    return { allowed: true, bucket: input.paygEnabled ? ("payg" as const) : ("prepaid" as const) };
+  }
+  // Included + prepaid exhausted — hard stop unless PAYG is explicitly enabled with room under the spend cap.
   if (!input.paygEnabled)
-    return { allowed: false, bucket: "blocked" as const, reason: "payg_not_enabled" };
+    return { allowed: false, bucket: "blocked" as const, reason: "payg_not_enabled" as const };
   if (input.estimatedCostUsd > input.prepaidBalanceUsd)
-    return { allowed: false, bucket: "blocked" as const, reason: "insufficient_prepaid_balance" };
+    return { allowed: false, bucket: "blocked" as const, reason: "insufficient_prepaid_balance" as const };
   if (input.overageUsedUsd + input.estimatedCostUsd > input.overageSpendCapUsd)
-    return { allowed: false, bucket: "blocked" as const, reason: "spend_cap" };
+    return { allowed: false, bucket: "blocked" as const, reason: "spend_cap" as const };
   return { allowed: true, bucket: "payg" as const };
 }
 

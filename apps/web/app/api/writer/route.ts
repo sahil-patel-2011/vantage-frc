@@ -38,6 +38,7 @@ import type {
   SponsorInput,
   WriterTone,
 } from "../../../lib/writer/types";
+import { failMeteredAi } from "../../../lib/metered-ai-fail";
 
 export type { WriterView };
 
@@ -375,16 +376,6 @@ export async function POST(request: Request) {
 
     return Response.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Writing assistant request failed";
-    const status =
-      message === "forbidden"
-        ? 403
-        : /credit|cap exceeded|policy denied|approval/i.test(message)
-          ? 402
-          : 400;
-    return Response.json(
-      { error: message === "forbidden" ? "Organization access denied" : message },
-      { status },
-    );
+    return failMeteredAi(error, "Writing assistant request failed");
   }
 }
