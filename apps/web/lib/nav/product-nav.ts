@@ -59,6 +59,7 @@ export const ORG_EXEMPT_HREFS = new Set([
   "/admin",
   "/notifications",
   "/help",
+  "/support",
   "/signin",
   "/sign-in",
 ]);
@@ -207,7 +208,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     icon: "gear",
     items: [
       { href: "/account", label: "Account", icon: "users" },
-      { href: "/help", label: "Help & Support", icon: "chat" },
+      { href: "/support", label: "Help & Support", icon: "chat" },
       { href: "/notifications", label: "Notifications", icon: "bell" },
       { href: "/security", label: "Security", icon: "gear" },
       { href: "/team/security", label: "Team security", icon: "gear" },
