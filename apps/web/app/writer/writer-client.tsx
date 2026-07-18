@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
-import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
-import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
+import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { composeGrantAnswer, composeSponsorEmail, emailKindLabel, grantFocusLabel } from "../../lib/writer";
 import { DRAFT_STATUSES, WRITER_TONES, type WriterView } from "../../lib/writer/compute-writer";
 import type {
@@ -15,6 +14,7 @@ import type {
   WriterProfile,
   WriterTone,
 } from "../../lib/writer/types";
+import { writerNextActions } from "../../lib/writer/writer-next-actions";
 import { withOrgHref } from "../../lib/nav/product-nav";
 
 type LiveView = Extract<WriterView, { status: "live" }>;
@@ -27,18 +27,68 @@ function kindLabel(kind: DraftKind): string {
   return kind === "grant" ? "Grant answer" : emailKindLabel(kind);
 }
 
+function WriterNextActions({
+  orgId,
+  draftCount,
+  hasMission,
+  hasAchievements,
+}: {
+  orgId?: string | null;
+  draftCount: number;
+  hasMission: boolean;
+  hasAchievements: boolean;
+}) {
+  const actions = writerNextActions({ orgId, draftCount, hasMission, hasAchievements });
+  if (!actions.length) return null;
+  return (
+    <section className="writer-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>
+          Grants, Awards, and Knowledge stay org-scoped — Writer never invents essays or DEMO award copy.
+        </p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function WriterCrossLinks({ orgId }: { orgId: string }) {
+  return (
+    <nav className="writer-cross-links intel-actions" aria-label="Related writing tools">
+      <a href={withOrgHref("/team/grants", orgId)}>Grants</a>
+      <a href={withOrgHref("/team/awards", orgId)}>Awards</a>
+      <a href={withOrgHref("/team/knowledge", orgId)}>Knowledge</a>
+    </nav>
+  );
+}
+
 export default function WriterClient() {
   const [view, setView] = useState<WriterView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
+    setCutoffCode(null);
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
@@ -87,8 +137,12 @@ export default function WriterClient() {
     [orgId, season, busy],
   );
 
+  const setupOrg =
+    view?.status === "setup_required" ? view.orgId : orgId;
+  const live = view?.status === "live" ? view : null;
+
   return (
-    <main className="module-page">
+    <main className="module-page writer-page">
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">AI / Writing Assistant</span>
@@ -98,18 +152,18 @@ export default function WriterClient() {
             metered FRC Assistant. Review and edit before sending; nothing is invented across orgs.
           </p>
         </div>
-        {view?.status === "live" && view.seasons.length > 0 ? (
+        {live && live.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
             <select
-              value={season ?? view.seasonYear}
+              value={season ?? live.seasonYear}
               onChange={(event) => {
                 const next = Number(event.target.value);
                 setSeason(next);
                 load(next);
               }}
             >
-              {view.seasons.map((year) => (
+              {live.seasons.map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>
@@ -120,6 +174,9 @@ export default function WriterClient() {
       </header>
 
       {orgId ? <AiHubRelated orgId={orgId} active="writer" /> : null}
+      {orgId ? <WriterCrossLinks orgId={orgId} /> : null}
+
+      {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -141,9 +198,13 @@ export default function WriterClient() {
           <p className="app-muted">Checking your workspace.</p>
         </section>
       ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel">
+        <section className="app-card soft-panel writer-setup">
           <span className="app-badge setup">Setup required</span>
           <h2>{view.message}</h2>
+          <p className="app-muted">
+            Select a workspace before composing. FRC Assistant never invents essays when a provider key is missing —
+            use templates once a team is selected.
+          </p>
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -155,9 +216,24 @@ export default function WriterClient() {
               </li>
             ))}
           </ol>
+          <WriterNextActions
+            orgId={setupOrg}
+            draftCount={0}
+            hasMission={false}
+            hasAchievements={false}
+          />
         </section>
       ) : (
-        <WriterWorkspace view={view} busy={busy} mutate={mutate} setView={setView} setError={setError} setBusy={setBusy} />
+        <WriterWorkspace
+          view={view}
+          busy={busy}
+          mutate={mutate}
+          setView={setView}
+          setError={setError}
+          setBusy={setBusy}
+          cutoffCode={cutoffCode}
+          setCutoffCode={setCutoffCode}
+        />
       )}
     </main>
   );
@@ -170,6 +246,8 @@ function WriterWorkspace({
   setView,
   setError,
   setBusy,
+  cutoffCode,
+  setCutoffCode,
 }: {
   view: LiveView;
   busy: boolean;
@@ -177,6 +255,8 @@ function WriterWorkspace({
   setView: (view: WriterView) => void;
   setError: (message: string) => void;
   setBusy: (busy: boolean) => void;
+  cutoffCode: string | null;
+  setCutoffCode: (code: string | null) => void;
 }) {
   const [profile, setProfile] = useState(() => toForm(view.profile));
   useEffect(() => {
@@ -197,9 +277,24 @@ function WriterWorkspace({
     [profile],
   );
 
+  const hasMission = Boolean(liveProfile.mission?.trim());
+  const hasAchievements = liveProfile.achievements.length > 0;
+
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <ProfilePanel profile={profile} setProfile={setProfile} busy={busy} mutate={mutate} />
+    <div className="writer-workspace">
+      <WriterNextActions
+        orgId={view.orgId}
+        draftCount={view.drafts.length}
+        hasMission={hasMission}
+        hasAchievements={hasAchievements}
+      />
+      <ProfilePanel
+        profile={profile}
+        setProfile={setProfile}
+        busy={busy}
+        mutate={mutate}
+        thinProfile={!hasMission || !hasAchievements}
+      />
       <Composer
         liveProfile={liveProfile}
         profileForm={profile}
@@ -210,6 +305,8 @@ function WriterWorkspace({
         setView={setView}
         setError={setError}
         setBusy={setBusy}
+        cutoffCode={cutoffCode}
+        setCutoffCode={setCutoffCode}
       />
       <DraftLibrary view={view} busy={busy} mutate={mutate} />
     </div>
@@ -245,21 +342,32 @@ function ProfilePanel({
   setProfile,
   busy,
   mutate,
+  thinProfile,
 }: {
   profile: ProfileForm;
   setProfile: (updater: (prev: ProfileForm) => ProfileForm) => void;
   busy: boolean;
   mutate: Mutate;
+  thinProfile: boolean;
 }) {
   const set = (key: keyof ProfileForm) => (event: { target: { value: string } }) =>
     setProfile((prev) => ({ ...prev, [key]: event.target.value }));
 
   return (
-    <section className="app-card soft-panel" style={{ display: "grid", gap: 10 }}>
+    <section className="app-card soft-panel writer-profile" style={{ display: "grid", gap: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
         <h2 style={{ margin: 0 }}>Team profile</h2>
         <small className="app-muted">Used to tailor every draft — edits apply to the preview live.</small>
       </div>
+      {thinProfile ? (
+        <div className="writer-empty-hint" role="status">
+          <span className="app-badge setup">Profile incomplete</span>
+          <p className="app-muted" style={{ margin: "6px 0 0" }}>
+            Add a mission and at least one achievement so templates pull real team facts. Empty fields stay blank —
+            Writer never fabricates essays.
+          </p>
+        </div>
+      ) : null}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
         <label style={{ display: "grid", gap: 4 }}>
           <span className="app-muted">Team name</span>
@@ -338,6 +446,23 @@ type PitchResponse = WriterView & {
   };
 };
 
+type PitchErrorResponse = {
+  error?: string;
+  code?: string;
+  status?: string;
+  message?: string;
+  steps?: Array<{ id: string; label: string; detail: string; href: string }>;
+};
+
+function isPitchResponse(data: PitchResponse | PitchErrorResponse): data is PitchResponse {
+  return (
+    "status" in data &&
+    (data.status === "live" || data.status === "setup_required") &&
+    "orgId" in data &&
+    "seasonYear" in data
+  );
+}
+
 function Composer({
   liveProfile,
   profileForm,
@@ -348,6 +473,8 @@ function Composer({
   setView,
   setError,
   setBusy,
+  cutoffCode,
+  setCutoffCode,
 }: {
   liveProfile: WriterProfile;
   profileForm: ProfileForm;
@@ -358,6 +485,8 @@ function Composer({
   setView: (view: WriterView) => void;
   setError: (message: string) => void;
   setBusy: (busy: boolean) => void;
+  cutoffCode: string | null;
+  setCutoffCode: (code: string | null) => void;
 }) {
   const [kind, setKind] = useState<DraftKind>("sponsorship_ask");
   const [sponsorName, setSponsorName] = useState("");
@@ -376,7 +505,6 @@ function Composer({
   const [draftSource, setDraftSource] = useState<"template" | "ai" | null>(null);
   const [aiMeta, setAiMeta] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [providerSetup, setProviderSetup] = useState<{
     message: string;
     steps: Array<{ id: string; label: string; detail: string; href: string }>;
@@ -385,6 +513,8 @@ function Composer({
   const isGrant = kind === "grant";
 
   const generate = () => {
+    setCutoffCode(null);
+    setProviderSetup(null);
     if (isGrant) {
       const text = composeGrantAnswer(liveProfile, {
         prompt,
@@ -447,19 +577,14 @@ function Composer({
       }),
     })
       .then(async (response) => {
-        const data = (await response.json()) as
-          | PitchResponse
-          | {
-              error?: string;
-              code?: string;
-              status?: string;
-              message?: string;
-              steps?: Array<{ id: string; label: string; detail: string; href: string }>;
-            };
-        if (!response.ok || !("status" in data) || data.status === "setup_required") {
-          const cutoff = resolveCutoffErrorCode(response.status, data);
+        const data = (await response.json()) as PitchResponse | PitchErrorResponse;
+        if (!response.ok || !isPitchResponse(data) || data.status === "setup_required") {
+          const cutoff = resolveCutoffErrorCode(response.status, {
+            code: "code" in data ? data.code : undefined,
+            error: "error" in data ? data.error : undefined,
+          });
           if (cutoff) setCutoffCode(cutoff);
-          if (data.code === "setup_required" || data.status === "setup_required") {
+          if (("code" in data && data.code === "setup_required") || data.status === "setup_required") {
             setProviderSetup({
               message:
                 ("message" in data && data.message) ||
@@ -468,7 +593,7 @@ function Composer({
               steps: "steps" in data && Array.isArray(data.steps) ? data.steps : [],
             });
             setError("");
-          } else {
+          } else if (!cutoff) {
             setError("error" in data && data.error ? data.error : "FRC Assistant draft failed.");
           }
           return;
@@ -504,11 +629,11 @@ function Composer({
   const targetName = isGrant ? (prompt.slice(0, 60) || "Grant answer") : sponsorName || null;
 
   return (
-    <section className="app-card soft-panel" style={{ display: "grid", gap: 12 }}>
+    <section className="app-card soft-panel writer-composer" style={{ display: "grid", gap: 12 }}>
       <h2 style={{ margin: 0 }}>Compose a draft</h2>
-      <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
+      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
       {providerSetup ? (
-        <div className="product-hub-setup" role="status" style={{ padding: 0 }}>
+        <div className="product-hub-setup writer-provider-setup" role="status">
           <span className="app-badge setup">Setup required</span>
           <p className="app-muted" style={{ margin: "8px 0" }}>
             {providerSetup.message}
@@ -532,7 +657,7 @@ function Composer({
           ) : null}
         </div>
       ) : null}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div className="writer-kind-pills" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {(["grant", ...EMAIL_KINDS] as DraftKind[]).map((k) => (
           <button
             key={k}
@@ -604,7 +729,7 @@ function Composer({
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <button type="button" className="app-button secondary" onClick={generate} disabled={busy}>
-          Template draft
+          Compose from template
         </button>
         <button type="button" className="app-button" onClick={generateWithAssistant} disabled={busy}>
           {busy ? "Drafting…" : "Draft with FRC Assistant"}
@@ -613,7 +738,7 @@ function Composer({
       </div>
 
       {draftBody ? (
-        <div style={{ display: "grid", gap: 8, borderTop: "1px solid rgba(128,128,128,0.2)", paddingTop: 12 }}>
+        <div className="writer-draft-preview" style={{ display: "grid", gap: 8, borderTop: "1px solid rgba(128,128,128,0.2)", paddingTop: 12 }}>
           {draftSource ? (
             <span className={`app-badge ${draftSource === "ai" ? "good" : "demo"}`}>
               {draftSource === "ai" ? "AI draft" : "Template draft"}
@@ -657,7 +782,20 @@ function Composer({
             </small>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="writer-template-empty" role="status">
+          <span className="app-badge setup">No draft yet</span>
+          <h3 style={{ margin: "8px 0 4px", fontSize: "1rem" }}>Templates stay empty until you compose</h3>
+          <p className="app-muted" style={{ margin: 0 }}>
+            Pick a grant or sponsor template above, then <strong>Compose from template</strong> for org-scoped text from
+            your profile only. FRC Assistant requires a configured provider key and shows setup — it never invents essays
+            when keys are missing. Pair with{" "}
+            <a href={withOrgHref("/team/grants", orgId)}>Grants</a>,{" "}
+            <a href={withOrgHref("/team/awards", orgId)}>Awards</a>, or{" "}
+            <a href={withOrgHref("/team/knowledge", orgId)}>Knowledge</a> for longer narratives.
+          </p>
+        </div>
+      )}
     </section>
   );
 }
@@ -665,16 +803,23 @@ function Composer({
 function DraftLibrary({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
   if (view.drafts.length === 0) {
     return (
-      <section className="app-card soft-panel">
+      <section className="app-card soft-panel writer-drafts-empty">
         <span className="app-badge setup">No saved drafts</span>
         <h2>Your draft library</h2>
-        <p className="app-muted">Generate a grant answer or sponsor email above and save it here to reuse and refine.</p>
+        <p className="app-muted">
+          Generate a grant answer or sponsor email above and save it here to reuse and refine. Saved drafts are
+          org-scoped for this season — nothing is seeded with DEMO essays.
+        </p>
+        <WriterCrossLinks orgId={view.orgId} />
       </section>
     );
   }
   return (
-    <section style={{ display: "grid", gap: 12 }}>
-      <h2 style={{ margin: 0 }}>Saved drafts ({view.drafts.length})</h2>
+    <section className="writer-drafts" style={{ display: "grid", gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+        <h2 style={{ margin: 0 }}>Saved drafts ({view.drafts.length})</h2>
+        <WriterCrossLinks orgId={view.orgId} />
+      </div>
       {view.drafts.map((draft) => (
         <DraftCard key={draft.id} draft={draft} busy={busy} mutate={mutate} />
       ))}
@@ -696,7 +841,7 @@ function DraftCard({ draft, busy, mutate }: { draft: WriterDraft; busy: boolean;
     );
   };
   return (
-    <article className="app-card soft-panel">
+    <article className="app-card soft-panel writer-draft-card">
       <header style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
         <div>
           <span className="app-badge demo">{kindLabel(draft.kind)}</span>{" "}
