@@ -1,0 +1,24 @@
+/* Soft-UI Pair VS Code — .pair-* + shared Soft-UI tokens. Never DEMO pairing metrics. */
+.pair-page{display:grid;gap:16px}
+.pair-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.pair-related{display:flex;flex-wrap:wrap;gap:8px}
+.pair-next-actions{margin:0}
+.pair-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.pair-stats strong{font-size:1.5rem}
+.pair-layout{display:grid;gap:16px;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+.pair-panel{display:grid;gap:12px}
+.pair-form{display:grid;gap:12px}
+.pair-form label{display:grid;gap:6px}
+.pair-form small{color:var(--app-muted, #5b6b7c);font-size:.85rem}
+.pair-form input,.pair-form select{min-height:44px}
+.pair-message{margin:0}
+.pair-device-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.pair-device-card{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pair-tip{margin:0}
+.pair-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.pair-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+@media(max-width:900px){
+  .pair-header-actions{justify-content:flex-start}
+  .pair-layout{grid-template-columns:1fr}
+  .pair-next-actions li,.pair-setup-steps li,.pair-device-card{flex-direction:column;align-items:stretch}
+}

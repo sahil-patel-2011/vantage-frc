@@ -68,7 +68,11 @@ export async function POST(request: Request) {
     );
     await relay.query("COMMIT");
 
-    return Response.json({ success: true, machineName: row.machine_name });
+    return Response.json({
+      success: true,
+      machineName: row.machine_name,
+      deviceId: device.rows[0]!.id,
+    });
   } catch (error) {
     await relay.query("ROLLBACK");
     return Response.json(
