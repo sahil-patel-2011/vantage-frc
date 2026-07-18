@@ -1,0 +1,379 @@
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
+
+/** Soft-UI related surfaces for main Strategy (never DEMO win rates). */
+export const STRATEGY_RELATED_LINKS = [
+  { id: "pick-desk", label: "Pick desk", kind: "path" as const, path: "/strategy?tab=picks" },
+  { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
+  { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
+  { id: "draft", label: "Draft board", kind: "path" as const, path: "/strategy/draft" },
+  { id: "coverage", label: "Scout coverage", kind: "path" as const, path: "/scout-coverage-live" },
+  { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
+] as const;
+
+export type StrategyRelatedId = (typeof STRATEGY_RELATED_LINKS)[number]["id"];
+
+export type StrategyRelatedLink = {
+  id: StrategyRelatedId;
+  label: string;
+  href: string;
+};
+
+/** Focused Soft-UI strip — Pick desk · Scouting · Event Day. */
+export const STRATEGY_RELATED_INCLUDE: StrategyRelatedId[] = [
+  "pick-desk",
+  "scouting",
+  "command",
+];
+
+/**
+ * Soft-UI cross-links from Strategy → Pick desk / Scouting / Event Day.
+ * Build with hubHref / withOrgHref — never broken JSX href templates.
+ */
+export function strategyRelatedLinks(
+  orgId?: string | null,
+  options?: { active?: StrategyRelatedId; include?: StrategyRelatedId[] },
+): StrategyRelatedLink[] {
+  const include = options?.include ? new Set(options.include) : null;
+  return STRATEGY_RELATED_LINKS.filter((link) => {
+    if (link.id === options?.active) return false;
+    if (include && !include.has(link.id)) return false;
+    return true;
+  }).map((link) => {
+    if (link.kind === "hub") {
+      return { id: link.id, label: link.label, href: hubHref("/competition", link.tab, orgId) };
+    }
+    return { id: link.id, label: link.label, href: withOrgHref(link.path, orgId) };
+  });
+}
+
+export type StrategyShellKind = "loading" | "error" | "setup" | "empty" | "ready";
+
+export type StrategyShellNextAction = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+  primary?: boolean;
+};
+
+export type StrategyEmptyCopy = {
+  kind: StrategyShellKind;
+  badge?: string;
+  title: string;
+  description: string;
+};
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO win rates. */
+export type StrategyShellSetupStep = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+};
+
+export function strategyShellSetupSteps(orgId?: string | null): StrategyShellSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Strategy is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "command",
+      label: "Set active event",
+      detail: "Event Day Command picks the TBA event Strategy and picks use.",
+      href: hubHref("/competition", "command", orgId),
+    },
+    {
+      id: "team-data",
+      label: "Sync Team Data",
+      detail: "Pull TBA/Statbotics rows into Neon — never invent DEMO win rates.",
+      href: withOrgHref("/team/data", orgId),
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Match and pit entries deepen explainability once synced.",
+      href: hubHref("/competition", "scouting", orgId),
+    },
+    {
+      id: "pick-desk",
+      label: "Open Pick desk",
+      detail: "First / second / third tiers stay blank until real event metrics exist.",
+      href: withOrgHref("/strategy?tab=picks", orgId),
+    },
+  ];
+}
+
+/** Real prediction / factor counts only — never invent DEMO totals. */
+export function formatStrategyMetric(value: unknown, loaded: boolean): string {
+  if (!loaded) return "…";
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n) || n < 0) return "0";
+  return Math.floor(n).toLocaleString();
+}
+
+/** Hide zeroed win-rate tiles until a live match prediction exists. */
+export function shouldShowStrategyWinRate(status: "live" | "empty" | "setup_required" | null): boolean {
+  return status === "live";
+}
+
+/** Classify main Strategy Soft-UI shell — never invents DEMO win rates. */
+export function classifyStrategyShell(input: {
+  loading?: boolean;
+  fetchFailed?: boolean;
+  status?: "setup_required" | "empty" | "live" | null;
+  orgId?: string | null;
+}): StrategyShellKind {
+  if (input.loading) return "loading";
+  if (input.fetchFailed) return "error";
+  if (input.status === "setup_required" || !input.orgId) return "setup";
+  if (input.status === "empty") return "empty";
+  if (input.status === "live") return "ready";
+  return "error";
+}
+
+/** Soft-UI empty / setup / error copy — never DEMO win rates. */
+export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
+  switch (kind) {
+    case "loading":
+      return {
+        kind,
+        title: "Loading strategy…",
+        description:
+          "Checking workspace, active event, and TBA/Statbotics metrics — never DEMO win rates.",
+      };
+    case "error":
+      return {
+        kind,
+        badge: "Unavailable",
+        title: "Could not load strategy",
+        description:
+          "A network or server issue blocked strategy context. Retry, or open Pick desk / Scouting / Event Day while it reloads — never invent DEMO win rates.",
+      };
+    case "setup":
+      return {
+        kind,
+        badge: "Setup required",
+        title: "Select a team workspace and event",
+        description:
+          "Strategy is org- and event-scoped. Pick a workspace, set an active TBA event, and sync metrics before win probability appears — nothing is pre-seeded.",
+      };
+    case "empty":
+      return {
+        kind,
+        badge: "No prediction yet",
+        title: "Waiting on a real matchup",
+        description:
+          "Win probability stays blank until TBA/Statbotics (and optional scout) inputs exist for a scheduled match — never DEMO win rates. Cross-check Pick desk, Scouting, and Event Day.",
+      };
+    default:
+      return {
+        kind: "ready",
+        title: "Strategy & AI",
+        description:
+          "Live win/loss and playbooks use synced TBA/Statbotics metrics and your scout notes — never DEMO win rates.",
+      };
+  }
+}
+
+/**
+ * Soft-UI next actions for Strategy empty/setup shells.
+ * Points at Pick desk / Scouting / Event Day — never invents DEMO win rates.
+ */
+export function strategyNextActions(input: {
+  orgId?: string | null;
+  shell: StrategyShellKind;
+  eventKey?: string | null;
+  tbaConfigured?: boolean;
+  hasMetrics?: boolean;
+}): StrategyShellNextAction[] {
+  const orgId = input.orgId ?? null;
+  const eventKey = input.eventKey ?? null;
+
+  if (!orgId || input.shell === "setup") {
+    if (!orgId) {
+      return [
+        {
+          id: "workspace",
+          label: "Select workspace",
+          detail: "Strategy is org-scoped — choose a team before loading event predictions.",
+          href: "/workspace",
+          primary: true,
+        },
+        {
+          id: "pick-desk",
+          label: "Open Pick desk",
+          detail: "Pick tiers stay blank until real metrics exist — never DEMO win rates.",
+          href: withOrgHref("/strategy?tab=picks", null),
+        },
+        {
+          id: "scouting",
+          label: "Open Scouting",
+          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          href: hubHref("/competition", "scouting", null),
+        },
+        {
+          id: "command",
+          label: "Open Event Day",
+          detail: "Active event context lives on Event Day Command — never DEMO schedule.",
+          href: hubHref("/competition", "command", null),
+        },
+      ];
+    }
+    if (!eventKey) {
+      return [
+        {
+          id: "command",
+          label: "Set active event",
+          detail: "Event Day Command picks the TBA event Strategy and picks use.",
+          href: hubHref("/competition", "command", orgId),
+          primary: true,
+        },
+        {
+          id: "pick-desk",
+          label: "Open Pick desk",
+          detail: "Confirm event context before arranging first / second / third picks.",
+          href: withOrgHref("/strategy?tab=picks", orgId),
+        },
+        {
+          id: "scouting",
+          label: "Open Scouting",
+          detail: "Scout depth stays honest when the event is unset — never DEMO scores.",
+          href: hubHref("/competition", "scouting", orgId),
+        },
+        {
+          id: "team-data",
+          label: "Sync Team Data",
+          detail: "Pull TBA/Statbotics once an event is selected — never invent DEMO win rates.",
+          href: withOrgHref("/team/data", orgId),
+        },
+      ];
+    }
+    return [
+      {
+        id: "team-data",
+        label: "Sync Team Data",
+        detail: "Strategy needs TBA/Statbotics rows before win probability can appear.",
+        href: withOrgHref("/team/data", orgId),
+        primary: true,
+      },
+      {
+        id: "pick-desk",
+        label: "Open Pick desk",
+        detail: "Arrange first / second / third from real event teams.",
+        href: withOrgHref("/strategy?tab=picks", orgId),
+      },
+      {
+        id: "scouting",
+        label: "Open Scouting",
+        detail: "Add match notes so explainability lands once metrics sync.",
+        href: hubHref("/competition", "scouting", orgId),
+      },
+      {
+        id: "command",
+        label: "Open Event Day",
+        detail: "Confirm the synced event context day-of ops share.",
+        href: hubHref("/competition", "command", orgId),
+      },
+    ];
+  }
+
+  if (input.shell === "error") {
+    return [
+      {
+        id: "retry",
+        label: "Retry strategy",
+        detail: "Reload real TBA/Statbotics match context — nothing is invented while this fails.",
+        href: hubHref("/competition", "strategy", orgId),
+        primary: true,
+      },
+      {
+        id: "pick-desk",
+        label: "Open Pick desk",
+        detail: "Pick lists stay available while matchup reloads.",
+        href: withOrgHref("/strategy?tab=picks", orgId),
+      },
+      {
+        id: "scouting",
+        label: "Open Scouting",
+        detail: "Scout coverage stays available while strategy reloads.",
+        href: hubHref("/competition", "scouting", orgId),
+      },
+      {
+        id: "command",
+        label: "Open Event Day",
+        detail: "Day-of command stays available while strategy reloads.",
+        href: hubHref("/competition", "command", orgId),
+      },
+    ];
+  }
+
+  if (input.shell === "empty") {
+    const needsTba = input.tbaConfigured === false;
+    const needsMetrics = input.hasMetrics === false;
+    return [
+      {
+        id: needsTba || needsMetrics ? "team-data" : "command",
+        label: needsTba || needsMetrics ? "Sync event metrics" : "Check Event Day schedule",
+        detail:
+          needsTba || needsMetrics
+            ? "Pull TBA/Statbotics team_event_metrics — win probability stays blank until then, never DEMO win rates."
+            : "Confirm a scheduled match for your team — Strategy never invents DEMO win rates.",
+        href:
+          needsTba || needsMetrics
+            ? withOrgHref("/team/data", orgId)
+            : hubHref("/competition", "command", orgId),
+        primary: true,
+      },
+      {
+        id: "pick-desk",
+        label: "Open Pick desk",
+        detail: "Pick tiers wait on the same Neon reference rows.",
+        href: withOrgHref("/strategy?tab=picks", orgId),
+      },
+      {
+        id: "scouting",
+        label: "Open Scouting",
+        detail: "Add match notes so factors deepen once a matchup loads.",
+        href: hubHref("/competition", "scouting", orgId),
+      },
+      {
+        id: "command",
+        label: "Open Event Day",
+        detail: "Confirm the active event and schedule sync status.",
+        href: hubHref("/competition", "command", orgId),
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "pick-desk",
+      label: "Open Pick desk",
+      detail: "Arrange first / second / third picks from the same real event pool.",
+      href: withOrgHref("/strategy?tab=picks", orgId),
+      primary: true,
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Deepen matchup explainability with membership-bound scout rows.",
+      href: hubHref("/competition", "scouting", orgId),
+    },
+    {
+      id: "command",
+      label: "Open Event Day",
+      detail: "Pit queues and readiness share this event context.",
+      href: hubHref("/competition", "command", orgId),
+    },
+    {
+      id: "draft",
+      label: "Open Draft board",
+      detail: "Run draft day on the same real event pool — never DEMO alliance slots.",
+      href: withOrgHref("/strategy/draft", orgId),
+    },
+  ];
+}
