@@ -12,6 +12,7 @@ type InAppPrefs = {
   todoCompleted: boolean;
   dutyAssigned: boolean;
   calendarEvents: boolean;
+  sponsorReminders: boolean;
 };
 
 type EmailPrefs = {
