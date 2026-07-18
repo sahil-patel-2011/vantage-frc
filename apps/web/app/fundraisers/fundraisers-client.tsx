@@ -1,126 +1,492 @@
 "use client";
+
 import { useCallback, useEffect, useState } from "react";
-import { FUNDRAISER_TYPE_LABEL, FUNDRAISER_TYPES, attainmentPct, type FundraiserStatus, type FundraiserType } from "../../lib/fundraisers";
+import { BusinessRelated } from "../../components/business-related";
+import { EmptyState } from "../../components/ui";
+import { FUNDRAISERS_RELATED_INCLUDE } from "../../lib/business/business-related";
+import { fundraisersNextActions } from "../../lib/business/fundraisers-next-actions";
+import {
+  FUNDRAISER_TYPE_LABEL,
+  FUNDRAISER_TYPES,
+  attainmentPct,
+  hasFundraiserGoalProgress,
+  type FundraiserStatus,
+  type FundraiserType,
+} from "../../lib/fundraisers";
+import "./fundraisers.css";
 
 type FundraiserEvent = {
-  id: string; seasonYear: number; name: string; type: FundraiserType; eventDate: string;
-  goalUsd: number | null; proceedsUsd: number; status: FundraiserStatus; location: string; notes: string; byName: string | null;
+  id: string;
+  seasonYear: number;
+  name: string;
+  type: FundraiserType;
+  eventDate: string;
+  goalUsd: number | null;
+  proceedsUsd: number;
+  status: FundraiserStatus;
+  location: string;
+  notes: string;
+  byName: string | null;
 };
-type View =
-  | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; events: FundraiserEvent[]; summary: { totalRaised: number; totalGoal: number; attainment: number | null; planned: number; active: number; completed: number } };
 
-const STATUS_FLOW: Record<FundraiserStatus, FundraiserStatus | null> = { planned: "active", active: "completed", completed: null, cancelled: null };
+type View =
+  | { status: "setup_required"; message: string; orgId?: string | null }
+  | {
+      status: "ready";
+      context: { orgId: string; orgName?: string; role: string };
+      seasonYear: number;
+      events: FundraiserEvent[];
+      summary: {
+        totalRaised: number;
+        totalGoal: number;
+        attainment: number | null;
+        planned: number;
+        active: number;
+        completed: number;
+      };
+    };
+
+const STATUS_FLOW: Record<FundraiserStatus, FundraiserStatus | null> = {
+  planned: "active",
+  active: "completed",
+  completed: null,
+  cancelled: null,
+};
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function moneyUsd(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function FundraisersNextActions({
+  actions,
+}: {
+  actions: ReturnType<typeof fundraisersNextActions>;
+}) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions fr-next-actions" aria-label="Next actions">
+      <header>
+        <span className="biz-overline">Next actions</span>
+        <h2>Plan events and record real deposits</h2>
+        <p>Raised totals stay empty until someone logs proceeds — never DEMO campaign dollars.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
 }
 
 export default function FundraisersClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
-  const [form, setForm] = useState({ name: "", type: "car_wash", eventDate: todayIso(), goalUsd: "", location: "", notes: "" });
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    type: "car_wash",
+    eventDate: todayIso(),
+    goalUsd: "",
+    location: "",
+    notes: "",
+  });
 
   const load = useCallback(async () => {
-    const response = await fetch(`/api/fundraisers?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
+    const response = await fetch(
+      `/api/fundraisers?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`,
+    );
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load fundraisers"); return; }
+    if (!response.ok) {
+      setMessage(data.error ?? "Failed to load fundraisers");
+      return;
+    }
     setView(data);
   }, [orgId, seasonYear]);
-  useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function post(body: Record<string, unknown>, okMessage: string) {
     if (view?.status !== "ready") return;
-    const response = await fetch("/api/fundraisers", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId: view.context.orgId, ...body }),
-    });
-    const data = await response.json();
-    setMessage(response.ok ? okMessage : data.error);
-    if (response.ok) await load();
+    setBusy(true);
+    try {
+      const response = await fetch("/api/fundraisers", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId: view.context.orgId, ...body }),
+      });
+      const data = await response.json();
+      setMessage(response.ok ? okMessage : (data.error as string));
+      if (response.ok) await load();
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function addEvent(event: React.FormEvent) {
     event.preventDefault();
     await post({ action: "create_event", seasonYear, ...form }, "Fundraiser added.");
-    if (view?.status === "ready") setForm({ name: "", type: "car_wash", eventDate: todayIso(), goalUsd: "", location: "", notes: "" });
+    if (view?.status === "ready") {
+      setForm({ name: "", type: "car_wash", eventDate: todayIso(), goalUsd: "", location: "", notes: "" });
+    }
   }
 
   async function recordProceeds(id: string) {
     const amount = window.prompt("How much did you collect (deposit amount, $)?");
     if (!amount) return;
-    await post({ action: "record_proceeds", id, amountUsd: Number(amount) }, "Proceeds recorded and posted to finance.");
+    await post(
+      { action: "record_proceeds", id, amountUsd: Number(amount) },
+      "Proceeds recorded and posted to finance.",
+    );
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading fundraisers…"}</p></main>;
+  if (!view) {
+    return (
+      <main className="module-page fr-page">
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">Business / Fundraisers</span>
+            <h1>Fundraisers</h1>
+          </div>
+        </header>
+        <EmptyState
+          soft
+          title={message || "Loading fundraisers…"}
+          description="Opening this season’s community events."
+          aria-busy
+        />
+      </main>
+    );
+  }
+
   if (view.status === "setup_required") {
-    return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / FUNDRAISERS</span><h1>Fundraisers</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
+    const setupOrg = view.orgId ?? orgId;
+    const nextActions = fundraisersNextActions({ orgId: setupOrg, eventCount: 0 });
+    return (
+      <main className="module-page fr-page">
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">Business / Fundraisers</span>
+            <h1>Fundraisers</h1>
+            <p className="app-muted">
+              Team-run events for this workspace only — proceeds post to finance when recorded, never DEMO raised
+              totals.
+            </p>
+          </div>
+        </header>
+        {setupOrg ? (
+          <BusinessRelated
+            orgId={setupOrg}
+            active="fundraisers"
+            include={FUNDRAISERS_RELATED_INCLUDE}
+            ariaLabel="Related fundraising tools"
+          />
+        ) : null}
+        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+          <FundraisersNextActions actions={nextActions} />
+        </EmptyState>
+      </main>
+    );
   }
 
   const canManageMoney = view.context.role === "owner" || view.context.role === "admin";
+  const showProgress = hasFundraiserGoalProgress(view.summary);
+  const attainment =
+    view.summary.attainment ??
+    (view.summary.totalGoal > 0
+      ? Math.min(100, Math.round((view.summary.totalRaised / view.summary.totalGoal) * 100))
+      : null);
+  const nextActions = fundraisersNextActions({
+    orgId: view.context.orgId,
+    canManageMoney,
+    eventCount: view.events.length,
+    plannedCount: view.summary.planned,
+    activeCount: view.summary.active,
+    totalGoalUsd: view.summary.totalGoal,
+    totalRaisedUsd: view.summary.totalRaised,
+  });
 
   return (
-    <main className="intel-app">
-      <header className="intel-header">
-        <div><span className="eyebrow">VANTAGE / FUNDRAISERS</span><h1>Fundraiser events — {seasonYear}</h1></div>
-        <nav className="intel-actions"><a href={`/team/finance${orgId ? `?orgId=${orgId}` : ""}`}>Finance</a><a href={`/team/sponsors${orgId ? `?orgId=${orgId}` : ""}`}>Sponsors</a><a href="/workspace">Workspace →</a></nav>
+    <main className="module-page fr-page">
+      <header className="app-page-header">
+        <div>
+          <span className="breadcrumbs">Business / Fundraisers</span>
+          <h1>Fundraiser events — {seasonYear}</h1>
+          <p className="app-muted">
+            Community campaigns for {view.context.orgName ?? "your team"}. Goal bars use recorded goals and deposits
+            only — never DEMO raised totals.
+          </p>
+        </div>
       </header>
-      {message && <p className="telemetry-status">{message}</p>}
 
-      <section className="metric-grid">
-        <article><span>Raised this season</span><strong>${view.summary.totalRaised.toLocaleString()}</strong></article>
-        <article><span>Combined goal</span><strong>{view.summary.totalGoal ? `$${view.summary.totalGoal.toLocaleString()}` : "—"}</strong></article>
-        <article><span>Attainment</span><strong>{view.summary.attainment != null ? `${view.summary.attainment}%` : "—"}</strong></article>
-        <article><span>Planned / active / done</span><strong>{view.summary.planned} / {view.summary.active} / {view.summary.completed}</strong></article>
-      </section>
+      <BusinessRelated
+        orgId={view.context.orgId}
+        active="fundraisers"
+        include={FUNDRAISERS_RELATED_INCLUDE}
+        ariaLabel="Related fundraising tools"
+      />
 
-      <section className="admin-grid">
-        <form className="intel-panel" onSubmit={addEvent}>
-          <span className="eyebrow">PLAN A FUNDRAISER</span>
-          <label>Name<input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Spring car wash" /></label>
-          <div className="budget-fields">
-            <label>Type<select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{FUNDRAISER_TYPES.map((t) => <option key={t} value={t}>{FUNDRAISER_TYPE_LABEL[t]}</option>)}</select></label>
-            <label>Date<input type="date" value={form.eventDate} onChange={(e) => setForm({ ...form, eventDate: e.target.value })} /></label>
+      {message ? (
+        <p className="fr-status" role="status">
+          {message}
+        </p>
+      ) : null}
+
+      <FundraisersNextActions actions={nextActions} />
+
+      {showProgress ? (
+        <section className="app-card soft-panel fr-progress" aria-label="Fundraiser goal progress">
+          <header className="biz-card-head">
+            <div>
+              <span className="biz-overline">Season events</span>
+              <h2>Goal progress from recorded data</h2>
+            </div>
+            <span className={`biz-badge ${attainment != null && attainment >= 100 ? "good" : attainment != null && attainment >= 50 ? "blue" : "neutral"}`}>
+              {attainment != null ? `${attainment}% of goals` : "No combined goal"}
+            </span>
+          </header>
+          <div className="soft-snapshot-grid fr-stats">
+            <div>
+              <strong className="accent">{moneyUsd(view.summary.totalRaised)}</strong>
+              <span>recorded proceeds</span>
+            </div>
+            <div>
+              <strong>{view.summary.totalGoal > 0 ? moneyUsd(view.summary.totalGoal) : "—"}</strong>
+              <span>combined event goals</span>
+            </div>
+            <div>
+              <strong>
+                {view.summary.planned} / {view.summary.active} / {view.summary.completed}
+              </strong>
+              <span>planned / active / done</span>
+            </div>
           </div>
-          <div className="budget-fields">
-            <label>Goal ($)<input type="number" min="0" step="0.01" value={form.goalUsd} onChange={(e) => setForm({ ...form, goalUsd: e.target.value })} /></label>
-            <label>Location<input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></label>
-          </div>
-          <label>Notes<input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
-          <button className="primary-action">Add fundraiser</button>
-        </form>
-        <section className="intel-panel">
-          <span className="eyebrow">HOW IT CONNECTS</span>
-          <p>Recorded proceeds post straight to your <a href={`/team/finance${orgId ? `?orgId=${orgId}` : ""}`}>team finance</a> ledger as income (source: fundraiser), so your season fundraising total stays accurate automatically.</p>
-          <p>{canManageMoney ? "You can record proceeds." : "Ask an owner/admin to record proceeds — money entries are admin-only."}</p>
+          {view.summary.totalGoal > 0 && attainment != null ? (
+            <div
+              className="soft-track fr-track"
+              aria-label={`${attainment}% of combined fundraiser goals`}
+            >
+              <i style={{ width: `${Math.min(100, Math.max(0, attainment))}%` }} />
+            </div>
+          ) : (
+            <p className="app-muted fr-progress-note">
+              Progress bar appears after you set at least one event goal. Raised $ only counts deposits you logged.
+            </p>
+          )}
         </section>
-      </section>
+      ) : null}
 
-      <section className="intel-panel invite-list">
-        <span className="eyebrow">FUNDRAISERS</span>
-        {view.events.length === 0 && <p>No fundraisers planned yet.</p>}
-        {view.events.map((e) => {
-          const pct = attainmentPct(e.proceedsUsd, e.goalUsd);
-          return (
-            <article key={e.id}>
-              <div style={{ flex: 1 }}>
-                <strong>{e.name} · {FUNDRAISER_TYPE_LABEL[e.type]}</strong>
-                <small>
-                  {new Date(e.eventDate).toLocaleDateString()} · {e.status}
-                  {e.location ? ` · ${e.location}` : ""} · raised ${e.proceedsUsd.toLocaleString()}
-                  {e.goalUsd ? ` of $${e.goalUsd.toLocaleString()}${pct != null ? ` (${pct}%)` : ""}` : ""}
-                </small>
-              </div>
-              <div>
-                {STATUS_FLOW[e.status] && <button onClick={() => void post({ action: "set_status", id: e.id, status: STATUS_FLOW[e.status] }, "Status updated.")}>Mark {STATUS_FLOW[e.status]}</button>}
-                {canManageMoney && e.status !== "cancelled" && <button onClick={() => void recordProceeds(e.id)}>Record $</button>}
-                {e.status !== "completed" && e.status !== "cancelled" && <button onClick={() => void post({ action: "set_status", id: e.id, status: "cancelled" }, "Cancelled.")}>Cancel</button>}
-              </div>
-            </article>
-          );
-        })}
-      </section>
+      {!view.events.length ? (
+        <EmptyState
+          soft
+          badge={canManageMoney ? "Get started" : "Empty"}
+          badgeTone={canManageMoney ? "" : "setup"}
+          title="No fundraisers planned yet"
+          description={
+            canManageMoney
+              ? "Add a community event below. Proceeds stay at $0 until an owner/admin records a real deposit."
+              : "A finance lead plans events and records deposits. Open Sponsors, Grants, or Orders meanwhile."
+          }
+        >
+          <BusinessRelated
+            orgId={view.context.orgId}
+            include={["sponsors", "grants", "orders"]}
+            ariaLabel="Empty fundraisers related links"
+          />
+        </EmptyState>
+      ) : null}
+
+      <div className="fr-grid">
+        <form className="app-card soft-panel fr-form" onSubmit={addEvent}>
+          <span className="biz-overline">Plan a fundraiser</span>
+          <h2>Add a community event</h2>
+          <label>
+            Name
+            <input
+              required
+              value={form.name}
+              disabled={busy}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Spring car wash"
+            />
+          </label>
+          <div className="fr-fields">
+            <label>
+              Type
+              <select
+                value={form.type}
+                disabled={busy}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+              >
+                {FUNDRAISER_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {FUNDRAISER_TYPE_LABEL[t]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Date
+              <input
+                type="date"
+                value={form.eventDate}
+                disabled={busy}
+                onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
+              />
+            </label>
+          </div>
+          <div className="fr-fields">
+            <label>
+              Goal ($)
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.goalUsd}
+                disabled={busy}
+                onChange={(e) => setForm({ ...form, goalUsd: e.target.value })}
+                placeholder="Optional"
+              />
+            </label>
+            <label>
+              Location
+              <input
+                value={form.location}
+                disabled={busy}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+              />
+            </label>
+          </div>
+          <label>
+            Notes
+            <input
+              value={form.notes}
+              disabled={busy}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </label>
+          <button className="app-button" type="submit" disabled={busy}>
+            Add fundraiser
+          </button>
+        </form>
+
+        <section className="app-card soft-panel fr-connect">
+          <span className="biz-overline">How it connects</span>
+          <h2>Finance, sponsors, grants, orders</h2>
+          <p>
+            Recorded proceeds post to your team finance ledger as income (source: fundraiser), so season fundraising
+            stays accurate automatically.
+          </p>
+          <p>
+            {canManageMoney
+              ? "You can record proceeds on active events."
+              : "Ask an owner/admin to record proceeds — money entries are admin-only."}
+          </p>
+          <BusinessRelated
+            orgId={view.context.orgId}
+            include={["sponsors", "grants", "orders", "finance-ai"]}
+            ariaLabel="Fundraiser finance related links"
+          />
+        </section>
+      </div>
+
+      {view.events.length > 0 ? (
+        <section className="app-card soft-panel fr-list" aria-label="Fundraiser events">
+          <header className="biz-card-head">
+            <div>
+              <span className="biz-overline">This season</span>
+              <h2>{view.events.length} fundraiser{view.events.length === 1 ? "" : "s"}</h2>
+            </div>
+          </header>
+          <ul className="fr-event-list">
+            {view.events.map((e) => {
+              const pct = attainmentPct(e.proceedsUsd, e.goalUsd);
+              return (
+                <li key={e.id}>
+                  <div>
+                    <strong>
+                      {e.name} · {FUNDRAISER_TYPE_LABEL[e.type]}
+                    </strong>
+                    <span>
+                      {new Date(e.eventDate).toLocaleDateString()} · {e.status}
+                      {e.location ? ` · ${e.location}` : ""}
+                      {e.proceedsUsd > 0
+                        ? ` · raised ${moneyUsd(e.proceedsUsd)}`
+                        : " · no proceeds recorded"}
+                      {e.goalUsd
+                        ? ` of ${moneyUsd(e.goalUsd)}${pct != null ? ` (${pct}%)` : ""}`
+                        : ""}
+                    </span>
+                    {e.goalUsd != null && e.goalUsd > 0 && pct != null ? (
+                      <div className="soft-track fr-track-sm" aria-hidden>
+                        <i style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="fr-event-actions">
+                    {STATUS_FLOW[e.status] ? (
+                      <button
+                        type="button"
+                        className="app-button secondary sm"
+                        disabled={busy}
+                        onClick={() =>
+                          void post(
+                            { action: "set_status", id: e.id, status: STATUS_FLOW[e.status] },
+                            "Status updated.",
+                          )
+                        }
+                      >
+                        Mark {STATUS_FLOW[e.status]}
+                      </button>
+                    ) : null}
+                    {canManageMoney && e.status !== "cancelled" ? (
+                      <button
+                        type="button"
+                        className="app-button secondary sm"
+                        disabled={busy}
+                        onClick={() => void recordProceeds(e.id)}
+                      >
+                        Record $
+                      </button>
+                    ) : null}
+                    {e.status !== "completed" && e.status !== "cancelled" ? (
+                      <button
+                        type="button"
+                        className="app-button secondary sm"
+                        disabled={busy}
+                        onClick={() =>
+                          void post({ action: "set_status", id: e.id, status: "cancelled" }, "Cancelled.")
+                        }
+                      >
+                        Cancel
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
     </main>
   );
 }

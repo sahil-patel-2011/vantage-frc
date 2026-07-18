@@ -1,0 +1,141 @@
+/* Soft-UI fundraiser events — scoped to .fr-* */
+.fr-page {
+  display: grid;
+  gap: 16px;
+}
+
+.fr-status {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  background: var(--soft-bg, #f8fafc);
+  color: var(--soft-muted, #6b7280);
+  font-size: 13px;
+}
+
+.fr-progress {
+  gap: 14px;
+}
+
+.fr-stats {
+  margin-top: 2px;
+}
+
+.fr-track {
+  height: 10px;
+  margin-top: 4px;
+}
+
+.fr-track i {
+  background: linear-gradient(90deg, var(--biz-mint, #2f8f6b), #4aa882);
+}
+
+.fr-track-sm {
+  height: 6px;
+  margin-top: 8px;
+  max-width: 220px;
+}
+
+.fr-track-sm i {
+  background: linear-gradient(90deg, var(--biz-mint, #2f8f6b), #4aa882);
+}
+
+.fr-progress-note {
+  margin: 0;
+  font-size: 13px;
+}
+
+.fr-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.fr-form h2,
+.fr-connect h2,
+.fr-list h2,
+.fr-next-actions h2 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.fr-form,
+.fr-connect {
+  align-content: start;
+}
+
+.fr-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fr-connect p {
+  margin: 0;
+  color: var(--soft-muted, #6b7280);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.fr-connect .business-related,
+.fr-page > .business-related {
+  margin-top: 4px;
+}
+
+.fr-event-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.fr-event-list li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  background: var(--soft-bg, #f8fafc);
+}
+
+.fr-event-list li > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fr-event-list strong {
+  font-size: 14px;
+}
+
+.fr-event-list span {
+  color: var(--soft-muted, #6b7280);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.fr-event-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: none;
+}
+
+@media (max-width: 860px) {
+  .fr-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fr-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .fr-event-list li {
+    flex-direction: column;
+  }
+}

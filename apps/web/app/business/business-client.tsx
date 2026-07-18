@@ -400,7 +400,18 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
       <section className="biz-kpis" aria-label="Season funding summary">
         <Kpi label="Working funds" value={money(available)} detail={`${money(view.budget.totalBudgetCents)} base budget`} tone="blue" />
         <Kpi label="Committed" value={money(view.budget.committedCents)} detail={`${utilization}% of working funds`} tone={utilization > 90 ? "danger" : "neutral"} />
-        <Kpi label="Raised vs goal" value={`${progress.percentOfGoal}%`} detail={`${money(progress.actualCents)} of ${money(progress.goalCents)}`} tone={progress.percentOfGoal >= 100 ? "good" : "blue"} />
+        <Kpi
+          label="Raised vs goal"
+          value={progress.goalCents > 0 ? `${progress.percentOfGoal}%` : "—"}
+          detail={
+            progress.goalCents > 0
+              ? `${money(progress.actualCents)} of ${money(progress.goalCents)}`
+              : progress.actualCents > 0
+                ? `${money(progress.actualCents)} recorded · set a goal`
+                : "Set a season goal — no DEMO %"
+          }
+          tone={progress.goalCents > 0 && progress.percentOfGoal >= 100 ? "good" : "blue"}
+        />
         <Kpi label="Grant awards" value={money(view.budget.grantIncomeCents)} detail={`${view.grants.length} applications tracked`} tone="good" />
         <Kpi label="Awaiting approval" value={money(view.budget.requestedCents)} detail={`${pulse.pendingCount} open orders`} tone={pulse.pendingCount ? "warn" : "neutral"} />
         <Kpi label="Ready to buy" value={String(pulse.readyToBuyCount)} detail={`${money(pulse.openTotalCents)} open`} tone={pulse.readyToBuyCount ? "warn" : "neutral"} />

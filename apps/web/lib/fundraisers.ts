@@ -34,6 +34,14 @@ export function attainmentPct(proceedsUsd: number, goalUsd: number | null): numb
   return Math.round((proceedsUsd / goalUsd) * 100);
 }
 
+/**
+ * Show goal-progress chrome only when the team set a goal or recorded proceeds.
+ * Hides zeroed $0 / 0% tiles that look like DEMO raised totals.
+ */
+export function hasFundraiserGoalProgress(summary: { totalGoal: number; totalRaised: number }): boolean {
+  return summary.totalGoal > 0 || summary.totalRaised > 0;
+}
+
 export function summarizeFundraisers(events: { status: FundraiserStatus; goalUsd: number | null; proceedsUsd: number }[]) {
   const counted = events.filter((e) => e.status !== "cancelled");
   const totalRaised = round2(counted.reduce((sum, e) => sum + e.proceedsUsd, 0));

@@ -59,6 +59,15 @@ export const BUSINESS_GRANTS_RELATED_INCLUDE: BusinessRelatedId[] = [
   "finance-ai",
 ];
 
+/** Fundraisers Soft-UI strip (`/fundraisers`) — sponsors, grants, orders. */
+export const FUNDRAISERS_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "sponsors",
+  "grants",
+  "orders",
+  "budget",
+  "finance-ai",
+];
+
 /** Cross-links for Business Soft-UI (never DEMO placeholders). */
 export function businessRelatedLinks(
   orgId?: string | null,
