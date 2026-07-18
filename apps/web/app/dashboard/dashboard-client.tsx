@@ -893,7 +893,7 @@ export default function DashboardClient() {
                 <span>Starter match and pit forms for the season</span>
               </div>
               {orgId && !setupRequired && !hasScoutingSchemas ? (
-                <a href={`/scouting?orgId=${encodeURIComponent(orgId)}`}>Open</a>
+                <a href={`/scouting/forms?orgId=${encodeURIComponent(orgId)}`}>Open</a>
               ) : orgId && hasScoutingSchemas ? (
                 <em>Ready</em>
               ) : (

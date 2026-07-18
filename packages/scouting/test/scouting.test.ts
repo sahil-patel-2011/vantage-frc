@@ -26,6 +26,36 @@ describe("version-pinned payload validation", () => {
       "Climb has an invalid option",
     ]);
   });
+
+  it("validates form-builder field kinds including drivetrain and multi-choice", () => {
+    const builderSchema: SchemaDefinition = {
+      title: "Pit builder",
+      fields: [
+        { key: "dt", label: "Drivetrain", type: "drivetrain_type", required: true },
+        {
+          key: "caps",
+          label: "Capabilities",
+          type: "multiple_choice",
+          options: ["climb", "shoot"],
+          config: { allowMultiple: true },
+        },
+        { key: "photo", label: "Robot photo", type: "robot_image" },
+        { key: "notes", label: "Notes", type: "long_text" },
+      ],
+    };
+    expect(
+      validatePayload(builderSchema, {
+        dt: "swerve",
+        caps: ["climb"],
+        photo: "media:abc",
+        notes: "fast cycles",
+      }),
+    ).toEqual([]);
+    expect(validatePayload(builderSchema, { dt: "hovercraft", caps: "climb" })).toEqual([
+      "Drivetrain has an invalid drivetrain type",
+      "Capabilities must be a list of options",
+    ]);
+  });
 });
 
 describe("cross-scout disagreements", () => {
@@ -82,6 +112,17 @@ describe("interoperable scouting fallback", () => {
     expect(importScoutData({ content: `vantage://${encoded}`, format: "qr" })[0]?.payload).toEqual({
       score: 8,
     });
+  });
+
+  it("strips free-text scout names from imported payloads (identity lock)", () => {
+    const [record] = importScoutData({
+      content: "event,match,team,scout_name,auto,scouter\n2026test,qm1,254,Chloe,3,Chleo\n",
+      format: "csv",
+      source: "generic",
+    });
+    expect(record?.payload).toEqual({ auto: "3" });
+    expect(record?.payload).not.toHaveProperty("scout_name");
+    expect(record?.payload).not.toHaveProperty("scouter");
   });
 
   it("rotates limited scouts across every team assignment", () => {
