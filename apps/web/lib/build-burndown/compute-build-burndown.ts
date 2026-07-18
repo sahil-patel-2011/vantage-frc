@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeBurndownSeries, currentSeasonYear, summarizeBurndown } from ".";
+import { buildBurndownSetupSteps, type BuildBurndownSetupStep } from "./build-burndown-related";
 import type {
   BuildBurndownPlan,
   BuildBurndownSummary,
@@ -9,12 +10,7 @@ import type {
   BurndownPoint,
 } from "./types";
 
-export type BuildBurndownSetupStep = {
-  id: string;
-  label: string;
-  detail: string;
-  href: string;
-};
+export type { BuildBurndownSetupStep };
 
 export type BuildBurndownView =
   | {
@@ -108,9 +104,7 @@ export async function computeBuildBurndownView(
     return {
       status: "setup_required",
       message: "Select a team workspace to track the build-season burndown.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: buildBurndownSetupSteps(null),
       orgId: null,
       seasonYear,
     };

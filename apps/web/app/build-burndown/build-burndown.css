@@ -1,0 +1,20 @@
+/* Soft-UI Build-Season Burndown — .build-burndown-* + shared Soft-UI tokens. Never DEMO metrics. */
+.build-burndown-page{display:grid;gap:16px}
+.build-burndown-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.build-burndown-related{display:flex;flex-wrap:wrap;gap:8px}
+.build-burndown-next-actions{margin:0}
+.build-burndown-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.build-burndown-stats strong{font-size:1.5rem;display:block}
+.build-burndown-panel{display:grid;gap:12px}
+.build-burndown-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.build-burndown-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.build-burndown-tip{margin:0}
+.build-burndown-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.build-burndown-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.build-burndown-chart{display:grid;gap:6px}
+.build-burndown-chart-row{display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;align-items:center}
+@media(max-width:900px){
+  .build-burndown-header-actions{justify-content:flex-start}
+  .build-burndown-next-actions li,.build-burndown-setup-steps li,.build-burndown-row{flex-direction:column;align-items:stretch}
+  .build-burndown-chart-row{grid-template-columns:1fr}
+}

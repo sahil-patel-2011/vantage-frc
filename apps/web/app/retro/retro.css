@@ -1,0 +1,16 @@
+/* Soft-UI Team Retrospective — .retro-* + shared Soft-UI tokens. Never DEMO metrics. */
+.retro-page{display:grid;gap:16px}
+.retro-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.retro-related{display:flex;flex-wrap:wrap;gap:8px}
+.retro-next-actions{margin:0}
+.retro-panel{display:grid;gap:12px}
+.retro-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.retro-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.retro-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.retro-tip{margin:0}
+.retro-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.retro-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+@media(max-width:900px){
+  .retro-header-actions{justify-content:flex-start}
+  .retro-next-actions li,.retro-setup-steps li,.retro-row{flex-direction:column;align-items:stretch}
+}

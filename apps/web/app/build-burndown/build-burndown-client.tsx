@@ -1,22 +1,181 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { BUILD_TASK_CATEGORIES, buildTaskCategoryLabel, buildTaskStatusLabel } from "../../lib/build-burndown";
 import { type BuildBurndownView } from "../../lib/build-burndown/compute-build-burndown";
+import {
+  BUILD_BURNDOWN_RELATED_INCLUDE,
+  buildBurndownNextActions,
+  buildBurndownRelatedLinks,
+  buildBurndownSetupSteps,
+  buildBurndownShellCopy,
+  classifyBuildBurndownShell,
+  formatBuildBurndownMetric,
+  formatBuildBurndownPercent,
+  shouldShowBuildBurndownSummaryTiles,
+  type BuildBurndownNextAction,
+  type BuildBurndownShellKind,
+} from "../../lib/build-burndown/build-burndown-related";
 import type { BuildTaskCategory, BuildTaskStatus } from "../../lib/build-burndown/types";
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./build-burndown.css";
 
 function paceLabel(paceSignal: number): { text: string; tone: string } {
-  if (paceSignal > 0.05) return { text: `Ahead of plan (${pct(paceSignal)})`, tone: "good" };
-  if (paceSignal < -0.05) return { text: `Behind plan (${pct(Math.abs(paceSignal))})`, tone: "demo" };
+  if (paceSignal > 0.05) return { text: `Ahead of plan (${formatBuildBurndownPercent(paceSignal, true)})`, tone: "good" };
+  if (paceSignal < -0.05) {
+    return { text: `Behind plan (${formatBuildBurndownPercent(Math.abs(paceSignal), true)})`, tone: "danger" };
+  }
   return { text: "On plan", tone: "setup" };
 }
 
 type LiveView = Extract<BuildBurndownView, { status: "live" }>;
+
+function BurndownRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = buildBurndownRelatedLinks(orgId, {
+    include: [...BUILD_BURNDOWN_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related build-burndown-related" aria-label="Related build tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function BurndownNextActionsPanel({ actions }: { actions: BuildBurndownNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions build-burndown-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Task board, Kickoff, and FMEA — never DEMO burndown metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function BurndownShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: BuildBurndownShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = buildBurndownNextActions({ orgId, shell });
+  const copy = buildBurndownShellCopy(shell);
+  const teamHref = hubHref("/team", "build-burndown", orgId);
+  const steps = shell === "setup" ? buildBurndownSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page build-burndown-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Build Burndown"}
+          </>
+        }
+        title="Build-Season Burndown"
+        description={description}
+      >
+        <BurndownRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No tasks yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#build-burndown-plan">
+              Set kickoff plan
+            </a>
+            <a className="app-button secondary" href={hubHref("/build", "kickoff", orgId)}>
+              Open Kickoff
+            </a>
+            <a className="app-button secondary" href={hubHref("/team", "task-board", orgId)}>
+              Open Task board
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="build-burndown-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Task board, Kickoff, and FMEA — never DEMO burndown metrics.</p>
+          </header>
+          <ul className="build-burndown-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted build-burndown-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <BurndownNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function BuildBurndownClient() {
   const [view, setView] = useState<BuildBurndownView | null>(null);
@@ -24,8 +183,6 @@ export default function BuildBurndownClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -52,6 +209,32 @@ export default function BuildBurndownClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const taskCount = view?.status === "live" ? view.tasks.length : 0;
+  const hasPlan = view?.status === "live" ? Boolean(view.plan) : false;
+  const remainingTasks = view?.status === "live" ? view.summary.remainingTasks : 0;
+
+  const shell = classifyBuildBurndownShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    taskCount,
+  });
+  const shellCopy = buildBurndownShellCopy(shell);
+  const nextActions = buildBurndownNextActions({
+    orgId,
+    shell,
+    taskCount,
+    hasPlan,
+    remainingTasks,
+  });
+  const relatedLinks = buildBurndownRelatedLinks(orgId, {
+    include: [...BUILD_BURNDOWN_RELATED_INCLUDE],
+  });
+  const teamHref = hubHref("/team", "build-burndown", orgId);
+  const showTiles = shouldShowBuildBurndownSummaryTiles({ taskCount, hasPlan });
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -80,20 +263,50 @@ export default function BuildBurndownClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <BurndownShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <BurndownShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <BurndownShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <BurndownShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page build-burndown-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
+            <a href={teamHref}>Team</a>
             {" / Build Burndown"}
           </>
         }
         title="Build-Season Burndown"
-        description="Chart remaining build tasks against the kickoff-plan timeline. Readiness uses only what you record."
+        description="Chart remaining build tasks against the kickoff-plan timeline. Readiness uses only what you record. Cross-check Task board, Kickoff, and FMEA — never DEMO burndown metrics."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
+        <div className="build-burndown-header-actions">
+          {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
@@ -112,6 +325,11 @@ export default function BuildBurndownClient() {
               </select>
             </label>
           ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
       </PageHeader>
 
@@ -121,39 +339,36 @@ export default function BuildBurndownClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <BurndownNextActionsPanel actions={nextActions} />
+
+      {showTiles ? <SummaryTiles view={view} /> : null}
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load Build Burndown"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No tasks yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+          className="product-hub-setup"
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href={hasPlan ? "#build-burndown-tasks" : "#build-burndown-plan"}>
+            {hasPlan ? "Add a build task" : "Set kickoff plan"}
+          </a>
+          <a className="app-button secondary" href={hubHref("/build", "kickoff", orgId)}>
+            Open Kickoff
+          </a>
+          <a className="app-button secondary" href={hubHref("/team", "task-board", orgId)}>
+            Open Task board
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          {!view.plan ? <PlanForm busy={busy} mutate={mutate} /> : <BurndownChart view={view} />}
-          <TaskForm busy={busy} mutate={mutate} />
-          <TaskList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      ) : null}
+
+      <div style={{ display: "grid", gap: 16 }}>
+        {!view.plan ? <PlanForm busy={busy} mutate={mutate} /> : <BurndownChart view={view} />}
+        <TaskForm busy={busy} mutate={mutate} />
+        <TaskList view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -161,25 +376,32 @@ export default function BuildBurndownClient() {
 function SummaryTiles({ view }: { view: LiveView }) {
   const { summary } = view;
   const pace = paceLabel(summary.paceSignal);
-  const tiles = [
-    { label: "Total tasks", value: String(summary.totalTasks) },
-    { label: "Completed", value: String(summary.completedTasks) },
-    { label: "Remaining", value: String(summary.remainingTasks) },
-    { label: "Overdue", value: String(summary.overdueTasks) },
-    { label: "Progress", value: pct(summary.percentComplete) },
-  ];
   return (
-    <Panel>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+    <Panel className="build-burndown-panel" aria-label="Build burndown counts">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <span className={`app-badge ${pace.tone}`}>{pace.text}</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
+      <div className="build-burndown-stats">
+        <div>
+          <strong>{formatBuildBurndownMetric(summary.totalTasks, true)}</strong>
+          <span className="app-muted">Total tasks</span>
+        </div>
+        <div>
+          <strong>{formatBuildBurndownMetric(summary.completedTasks, true)}</strong>
+          <span className="app-muted">Completed</span>
+        </div>
+        <div>
+          <strong>{formatBuildBurndownMetric(summary.remainingTasks, true)}</strong>
+          <span className="app-muted">Remaining</span>
+        </div>
+        <div>
+          <strong>{formatBuildBurndownMetric(summary.overdueTasks, true)}</strong>
+          <span className="app-muted">Overdue</span>
+        </div>
+        <div>
+          <strong>{formatBuildBurndownPercent(summary.percentComplete, true)}</strong>
+          <span className="app-muted">Progress</span>
+        </div>
       </div>
     </Panel>
   );
@@ -189,22 +411,24 @@ function BurndownChart({ view }: { view: LiveView }) {
   if (view.series.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No tasks yet"
         badgeTone="setup"
         title="Add build tasks to see the burndown line"
-        description="Once tasks have planned dates, this chart compares remaining work against the kickoff plan."
+        description="Once tasks have planned dates, this chart compares remaining work against the kickoff plan — never DEMO progress."
       />
     );
   }
   const maxRemaining = Math.max(1, ...view.series.map((p) => Math.max(p.planned, p.actual ?? 0)));
   return (
-    <Panel aria-label="Burndown chart">
+    <Panel className="build-burndown-panel" aria-label="Burndown chart">
       <h2 style={{ marginTop: 0 }}>Remaining tasks vs. plan</h2>
-      <div style={{ display: "grid", gap: 6 }}>
+      <p className="app-muted">Real planned and actual remaining counts only — never DEMO progress.</p>
+      <div className="build-burndown-chart">
         {view.series
           .filter((_, index) => index % Math.max(1, Math.ceil(view.series.length / 30)) === 0)
           .map((point) => (
-            <div key={point.date} style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr", gap: 8, alignItems: "center" }}>
+            <div key={point.date} className="build-burndown-chart-row">
               <small className="app-muted">{point.date}</small>
               <span className="mini-probability" aria-label={`Planned remaining ${point.planned}`}>
                 <i style={{ width: `${(point.planned / maxRemaining) * 100}%`, background: "var(--app-accent, #6c8cff)" }} />
@@ -230,16 +454,17 @@ function PlanForm({ busy, mutate }: { busy: boolean; mutate: (payload: Record<st
   return (
     <Panel
       as="form"
+      id="build-burndown-plan"
+      className="build-burndown-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!kickoffDate || !competitionDate) return;
         mutate({ action: "set-plan", kickoffDate, competitionDate });
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Set the kickoff plan</h2>
       <p className="app-muted">
-        Enter the build-season window so the burndown chart can draw the ideal plan line.
+        Enter the real build-season window so the burndown chart can draw the ideal plan line — never DEMO timelines.
       </p>
       <FormGrid min={160}>
         <FormRow label="Kickoff date">
@@ -275,6 +500,8 @@ function TaskForm({ busy, mutate }: { busy: boolean; mutate: (payload: Record<st
   return (
     <Panel
       as="form"
+      id="build-burndown-tasks"
+      className="build-burndown-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.title.trim() || !form.plannedDate) return;
@@ -287,9 +514,9 @@ function TaskForm({ busy, mutate }: { busy: boolean; mutate: (payload: Record<st
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add build task</h2>
+      <p className="app-muted">Tasks with planned dates drive the burndown — never DEMO progress.</p>
       <FormGrid min={160}>
         <FormRow label="Title">
           <input value={form.title} onChange={set("title")} placeholder="Machine chassis rails" required />
@@ -331,20 +558,22 @@ function TaskList({
   if (view.tasks.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No tasks yet"
         badgeTone="setup"
         title="Add your first build task"
-        description="Tasks with planned dates from the kickoff plan drive the burndown line."
+        description="Tasks with planned dates from the kickoff plan drive the burndown line — never DEMO progress."
       />
     );
   }
   const statuses: BuildTaskStatus[] = ["pending", "in_progress", "done", "blocked"];
   return (
-    <Panel>
+    <Panel className="build-burndown-panel">
       <h2 style={{ marginTop: 0 }}>Build tasks</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <p className="app-muted">Logged task rows only — never DEMO readiness.</p>
+      <ul className="build-burndown-list">
         {view.tasks.map((task) => (
-          <li key={task.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={task.id} className="build-burndown-row">
             <div>
               <strong>{task.title}</strong>
               <small className="app-muted" style={{ display: "block" }}>

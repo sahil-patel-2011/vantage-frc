@@ -1,10 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { RETRO_ITEM_KINDS, retroItemKindLabel } from "../../lib/retro";
 import type { RetroView } from "../../lib/retro/compute-retro";
+import {
+  RETRO_RELATED_INCLUDE,
+  classifyRetroShell,
+  formatRetroMetric,
+  retroNextActions,
+  retroRelatedLinks,
+  retroSetupSteps,
+  retroShellCopy,
+  shouldShowRetroSummaryTiles,
+  type RetroNextAction,
+  type RetroShellKind,
+} from "../../lib/retro/retro-related";
 import type { RetroActionStatus, RetroItemKind } from "../../lib/retro/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./retro.css";
 
 export type { RetroView };
 
@@ -16,11 +31,153 @@ const ACTION_STATUS_LABEL: Record<RetroActionStatus, string> = {
 
 const KIND_TONE: Record<RetroItemKind, string> = {
   start: "good",
-  stop: "demo",
+  stop: "danger",
   continue: "setup",
 };
 
 type LiveView = Extract<RetroView, { status: "live" }>;
+
+function RetroRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = retroRelatedLinks(orgId, {
+    include: [...RETRO_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related retro-related" aria-label="Related team tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function RetroNextActionsPanel({ actions }: { actions: RetroNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions retro-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Messages, FMEA, and Decisions — never DEMO retro metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function RetroShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: RetroShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = retroNextActions({ orgId, shell });
+  const copy = retroShellCopy(shell);
+  const teamHref = hubHref("/team", "retro", orgId);
+  const steps = shell === "setup" ? retroSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page retro-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Retro"}
+          </>
+        }
+        title="Team Retrospective"
+        description={description}
+      >
+        <RetroRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No session yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#retro-new-session">
+              Start a session
+            </a>
+            <a className="app-button secondary" href={hubHref("/team", "messages", orgId)}>
+              Open Messages
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/decisions", orgId)}>
+              Open Decisions
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="retro-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Messages, FMEA, and Decisions — never DEMO retro metrics.</p>
+          </header>
+          <ul className="retro-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted retro-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <RetroNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function RetroClient() {
   const [view, setView] = useState<RetroView | null>(null);
@@ -29,8 +186,6 @@ export default function RetroClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((overrides?: { season?: number; sessionId?: string | null }) => {
     setFetchFailed(false);
@@ -61,6 +216,39 @@ export default function RetroClient() {
     load();
   }, [load]);
 
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const sessionCount = view?.status === "live" ? view.sessions.length : 0;
+  const itemCount =
+    view?.status === "live"
+      ? RETRO_ITEM_KINDS.reduce((sum, kind) => sum + view.itemsByKind[kind].length, 0)
+      : 0;
+  const openActionCount =
+    view?.status === "live" ? view.actionItems.filter((a) => a.status !== "done").length : 0;
+
+  const shell = classifyRetroShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    sessionCount,
+  });
+  const shellCopy = retroShellCopy(shell);
+  const nextActions = retroNextActions({
+    orgId,
+    shell,
+    sessionCount,
+    openActionCount,
+  });
+  const relatedLinks = retroRelatedLinks(orgId, {
+    include: [...RETRO_RELATED_INCLUDE],
+  });
+  const teamHref = hubHref("/team", "retro", orgId);
+  const showTiles = shouldShowRetroSummaryTiles({
+    sessionCount,
+    itemCount,
+    openActionCount,
+  });
+
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
@@ -70,7 +258,12 @@ export default function RetroClient() {
         const response = await fetch("/api/retro", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, seasonYear: season ?? undefined, sessionId: sessionId ?? undefined, ...payload }),
+          body: JSON.stringify({
+            orgId,
+            seasonYear: season ?? undefined,
+            sessionId: sessionId ?? undefined,
+            ...payload,
+          }),
         });
         const data = (await response.json()) as RetroView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -89,37 +282,74 @@ export default function RetroClient() {
     [orgId, season, sessionId, busy],
   );
 
+  if (shell === "loading") {
+    return <RetroShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <RetroShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <RetroShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <RetroShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page retro-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
+            <a href={teamHref}>Team</a>
             {" / Retro"}
           </>
         }
         title="Team Retrospective"
-        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and FMEA log."
+        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and FMEA log. Cross-check Messages, FMEA, and Decisions — never DEMO retro metrics."
       >
-        {view?.status === "live" && view.sessions.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Session
-            <select
-              value={sessionId ?? view.activeSession?.id ?? ""}
-              onChange={(event) => {
-                const next = event.target.value;
-                setSessionId(next);
-                load({ sessionId: next });
-              }}
-            >
-              {view.sessions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title} ({s.status})
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="retro-header-actions">
+          {view.sessions.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Session
+              <select
+                value={sessionId ?? view.activeSession?.id ?? ""}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setSessionId(next);
+                  load({ sessionId: next });
+                }}
+              >
+                {view.sessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title} ({s.status})
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -128,47 +358,70 @@ export default function RetroClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState title="Could not load the retrospective" description="A network or server issue prevented loading. Try again.">
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+      <RetroNextActionsPanel actions={nextActions} />
+
+      {showTiles ? (
+        <Panel className="retro-panel" aria-label="Retro session counts">
+          <div className="retro-board" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
+            <div>
+              <strong>{formatRetroMetric(sessionCount, true)}</strong>
+              <span className="app-muted">Sessions</span>
+            </div>
+            <div>
+              <strong>{formatRetroMetric(itemCount, true)}</strong>
+              <span className="app-muted">Items</span>
+            </div>
+            <div>
+              <strong>{formatRetroMetric(openActionCount, true)}</strong>
+              <span className="app-muted">Open actions</span>
+            </div>
+            <div>
+              <strong>{formatRetroMetric(view.postmortems.length, true)}</strong>
+              <span className="app-muted">Postmortems</span>
+            </div>
+          </div>
+        </Panel>
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No session yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+          className="product-hub-setup"
+        >
+          <a className="app-button" href="#retro-new-session">
+            Start a session
+          </a>
+          <a className="app-button secondary" href={hubHref("/team", "messages", orgId)}>
+            Open Messages
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/decisions", orgId)}>
+            Open Decisions
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <NewSessionForm busy={busy} mutate={mutate} />
-          {view.activeSession ? (
-            <>
-              <ItemBoard view={view} busy={busy} mutate={mutate} />
-              <ActionItems view={view} busy={busy} mutate={mutate} />
-            </>
-          ) : (
-            <EmptyState
-              badge="No session yet"
-              badgeTone="setup"
-              title="Start your first retro"
-              description="Create a session above to begin collecting start/stop/continue feedback."
-            />
-          )}
-          <Postmortems view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      ) : null}
+
+      <div style={{ display: "grid", gap: 16 }}>
+        <NewSessionForm busy={busy} mutate={mutate} />
+        {view.activeSession ? (
+          <>
+            <ItemBoard view={view} busy={busy} mutate={mutate} />
+            <ActionItems view={view} busy={busy} mutate={mutate} />
+          </>
+        ) : shell !== "empty" ? (
+          <EmptyState
+            soft
+            badge="No active session"
+            badgeTone="setup"
+            title="Start a retro session"
+            description="Create a session above to begin collecting start/stop/continue feedback — never DEMO items."
+          />
+        ) : null}
+        <Postmortems view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -185,6 +438,8 @@ function NewSessionForm({
   return (
     <Panel
       as="form"
+      id="retro-new-session"
+      className="retro-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!title.trim()) return;
@@ -192,9 +447,9 @@ function NewSessionForm({
         setTitle("");
         setPeriodLabel("");
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>New retro session</h2>
+      <p className="app-muted">Sessions start empty — never DEMO feedback.</p>
       <FormGrid min={180}>
         <FormRow label="Title">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Week 3 build retro" required />
@@ -222,10 +477,7 @@ function ItemBoard({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <section
-      className="app-card soft-panel"
-      style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}
-    >
+    <section className="app-card soft-panel retro-board" aria-label="Start stop continue board">
       {RETRO_ITEM_KINDS.map((kind) => (
         <ItemColumn key={kind} kind={kind} view={view} busy={busy} mutate={mutate} />
       ))}
@@ -250,7 +502,7 @@ function ItemColumn({
     <div>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <span className={`app-badge ${KIND_TONE[kind]}`}>{retroItemKindLabel(kind)}</span>
-        <small className="app-muted">{items.length}</small>
+        <small className="app-muted">{formatRetroMetric(items.length, true)}</small>
       </header>
       <form
         onSubmit={(event) => {
@@ -272,14 +524,11 @@ function ItemColumn({
         </button>
       </form>
       {items.length === 0 ? (
-        <p className="app-muted">No items yet.</p>
+        <p className="app-muted">No items yet — never DEMO feedback.</p>
       ) : (
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <ul className="retro-list">
           {items.map((item) => (
-            <li
-              key={item.id}
-              style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-            >
+            <li key={item.id} className="retro-row">
               <div>
                 <span>{item.content}</span>
                 <small className="app-muted" style={{ display: "block" }}>
@@ -325,8 +574,9 @@ function ActionItems({
   const [owner, setOwner] = useState("");
   const [dueOn, setDueOn] = useState("");
   return (
-    <Panel>
+    <Panel className="retro-panel" id="retro-actions">
       <h2 style={{ marginTop: 0 }}>Action items</h2>
+      <p className="app-muted">Tracked from real retro sessions only — never DEMO actions.</p>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -358,9 +608,9 @@ function ActionItems({
       {view.actionItems.length === 0 ? (
         <p className="app-muted">No action items yet.</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
+        <ul className="retro-list">
           {view.actionItems.map((item) => (
-            <li key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+            <li key={item.id} className="retro-row">
               <div>
                 <strong>{item.title}</strong>
                 <small className="app-muted" style={{ display: "block" }}>
@@ -408,7 +658,7 @@ function Postmortems({
 }) {
   const latest = useMemo(() => view.postmortems[0] ?? null, [view.postmortems]);
   return (
-    <Panel>
+    <Panel className="retro-panel">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 style={{ margin: 0 }}>Season postmortem</h2>
         <button
@@ -431,7 +681,7 @@ function Postmortems({
       ) : (
         <p className="app-muted" style={{ marginTop: 12 }}>
           No postmortem compiled yet for this season. It draws from your decisions, risks, incidents, and FMEA log —
-          nothing is invented if those are empty.
+          nothing is invented if those are empty — never DEMO metrics.
         </p>
       )}
     </Panel>
