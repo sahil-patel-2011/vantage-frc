@@ -359,3 +359,16 @@ export {
   type CoverageGapSummary,
   type CoverageSlotInput,
 } from "./coverage";
+
+export {
+  buildChoseScoutResolution,
+  buildDismissResolution,
+  formatConflictValue,
+  resolutionSummary,
+  validateResolution,
+  zipCandidates,
+  type AuditAction,
+  type DisagreementCandidate,
+  type DisagreementResolution,
+  type ResolutionOutcome,
+} from "./resolution";
