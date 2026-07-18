@@ -1,5 +1,7 @@
 "use client";
 
+import { BusinessRelated } from "../../components/business-related";
+import { EmptyState } from "../../components/ui";
 import type { BusinessView } from "../../lib/business-portal";
 import { PIPELINE_STAGE_LABELS } from "../../lib/sponsor-pipeline";
 
@@ -25,22 +27,51 @@ export function FundraisingGlance({
   onOpenSponsors: () => void;
 }) {
   const progress = view.fundraisingProgress;
+  const hasGoal = progress.goalCents > 0;
+  const hasActual = progress.actualCents > 0 || progress.pledgedPipelineCents > 0;
+  const partnerCount = progress.stages.reduce((sum, stage) => sum + stage.count, 0);
   const maxStageValue = Math.max(1, ...progress.stages.map((stage) => stage.valueCents || stage.count * 100));
-  const attainment = percent(progress.actualCents, progress.goalCents || 1);
+  const attainment = hasGoal ? percent(progress.actualCents, progress.goalCents) : null;
   const tone =
-    progress.percentOfGoal >= 100 ? "good" : progress.percentOfGoal >= 50 ? "blue" : progress.goalCents > 0 ? "warn" : "neutral";
+    attainment != null && attainment >= 100
+      ? "good"
+      : attainment != null && attainment >= 50
+        ? "blue"
+        : hasGoal
+          ? "warn"
+          : "neutral";
+
+  if (!hasGoal && !hasActual && partnerCount === 0) {
+    return (
+      <EmptyState
+        soft
+        className="biz-fundraising-glance"
+        badge="Get started"
+        title="No season fundraising goal yet"
+        description="Set a budget goal, then add sponsors, grants, or fundraiser events. Progress never invents DEMO raised totals."
+      >
+        <BusinessRelated
+          orgId={view.orgId}
+          include={["budget", "sponsors", "grants", "fundraisers", "orders"]}
+          ariaLabel="Fundraising glance setup links"
+        />
+      </EmptyState>
+    );
+  }
 
   return (
     <section className="app-card soft-panel biz-fundraising-glance" aria-label="Fundraising goal versus actual">
       <header className="biz-card-head">
         <div>
           <span className="biz-overline">Season fundraising</span>
-          <h2>Goal vs actual</h2>
+          <h2>{hasGoal ? "Goal vs actual" : "Recorded inflows"}</h2>
           <p className="app-muted" style={{ margin: "6px 0 0", fontSize: 13 }}>
-            Org-local cash + grants only — never mixed with other teams.
+            Org-local cash + grants only — never mixed with other teams or DEMO dollars.
           </p>
         </div>
-        <span className={`biz-badge ${tone}`}>{progress.percentOfGoal}% of goal</span>
+        <span className={`biz-badge ${tone}`}>
+          {attainment != null ? `${attainment}% of goal` : "Set a season goal"}
+        </span>
       </header>
 
       <div className="biz-fundraising-stats soft-snapshot-grid">
@@ -49,23 +80,36 @@ export function FundraisingGlance({
           <span>actual in</span>
         </div>
         <div>
-          <strong>{money(progress.goalCents)}</strong>
+          <strong>{hasGoal ? money(progress.goalCents) : "—"}</strong>
           <span>season goal</span>
         </div>
         <div>
-          <strong>{money(progress.remainingCents)}</strong>
-          <span>remaining</span>
+          <strong>{hasGoal ? money(progress.remainingCents) : money(progress.pledgedPipelineCents)}</strong>
+          <span>{hasGoal ? "remaining" : "pledged"}</span>
         </div>
       </div>
 
-      <div className="soft-track biz-fundraising-track" aria-label={`${attainment}% of fundraising goal`}>
-        <i style={{ width: `${attainment}%` }} />
-      </div>
+      {hasGoal && attainment != null ? (
+        <div className="soft-track biz-fundraising-track" aria-label={`${attainment}% of fundraising goal`}>
+          <i style={{ width: `${attainment}%` }} />
+        </div>
+      ) : (
+        <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
+          Progress bar appears after you set a fundraising goal on Budget. Actual in only counts recorded sponsor cash
+          and grant awards.
+        </p>
+      )}
       <footer className="biz-fundraising-split">
         <span>{money(progress.actualCashCents)} sponsors</span>
         <span>{money(progress.grantIncomeCents)} grants</span>
         <span>{money(progress.pledgedPipelineCents)} pledged</span>
       </footer>
+
+      <BusinessRelated
+        orgId={view.orgId}
+        include={["fundraisers", "sponsors", "grants", "orders"]}
+        ariaLabel="Fundraising glance related links"
+      />
 
       <div className="biz-stage-pipeline" aria-label="Sponsor stage pipeline">
         <header>
@@ -74,19 +118,30 @@ export function FundraisingGlance({
             Open CRM
           </button>
         </header>
-        <ol className="biz-stage-strip">
-          {progress.stages.map((stage) => {
-            const bar = Math.max(stage.count > 0 ? 12 : 4, percent(stage.valueCents || stage.count, maxStageValue));
-            return (
-              <li key={stage.stage} className={stage.count ? "has-partners" : ""}>
-                <span className="biz-stage-label">{PIPELINE_STAGE_LABELS[stage.stage]}</span>
-                <span className="biz-stage-count">{stage.count}</span>
-                <i className="biz-stage-bar" style={{ height: `${bar}%` }} />
-                <strong>{stage.valueCents > 0 ? money(stage.valueCents) : "—"}</strong>
-              </li>
-            );
-          })}
-        </ol>
+        {partnerCount === 0 ? (
+          <EmptyState
+            soft
+            title="Sponsor pipeline is empty"
+            description="Partners you add appear by stage. Amounts stay blank until you record ask, pledge, or cash."
+          />
+        ) : (
+          <ol className="biz-stage-strip">
+            {progress.stages.map((stage) => {
+              const bar = Math.max(
+                stage.count > 0 ? 12 : 4,
+                percent(stage.valueCents || stage.count, maxStageValue),
+              );
+              return (
+                <li key={stage.stage} className={stage.count ? "has-partners" : ""}>
+                  <span className="biz-stage-label">{PIPELINE_STAGE_LABELS[stage.stage]}</span>
+                  <span className="biz-stage-count">{stage.count}</span>
+                  <i className="biz-stage-bar" style={{ height: `${bar}%` }} />
+                  <strong>{stage.valueCents > 0 ? money(stage.valueCents) : "—"}</strong>
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </div>
     </section>
   );
