@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) throw new Error("orgId is required");
     const data = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      const [policy, members, features, models, usage] = await Promise.all([
+      const [policy, members, features, models, usage, entitlement, wallet, usagePolicy] = await Promise.all([
         client.query(`SELECT daily_spend_limit_usd AS "dailySpendLimitUsd",
           monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
           monthly_token_limit AS "monthlyTokenLimit",warning_thresholds AS "warningThresholds",
@@ -42,16 +42,39 @@ export async function GET(request: Request) {
           COALESCE(sum(total_tokens) FILTER(WHERE created_at>=date_trunc('day',now())),0)::text AS "dailyTokens",
           COALESCE(sum(total_tokens),0)::text AS "monthlyTokens"
           FROM ai_usage_events WHERE org_id=$1 AND created_at>=date_trunc('month',now())`, [orgId]),
+        client.query(`SELECT e.plan_code AS "planCode",e.status,
+          p.included_allowance_usd AS "includedAllowance"
+          FROM org_entitlements e JOIN pricing_plans p ON p.code=e.plan_code WHERE e.org_id=$1`, [orgId]),
+        client.query(`SELECT COALESCE(sum(amount_usd),0)::text AS balance FROM wallet_ledger WHERE org_id=$1`, [orgId]),
+        client.query(`SELECT payg_enabled AS "paygEnabled",overage_spend_cap_usd AS "spendCap",
+          kill_switch AS "killSwitch" FROM org_usage_policies WHERE org_id=$1`, [orgId]),
       ]);
       const row = usage.rows[0] as Record<string, string>;
       const elapsedDays = Math.max(1, new Date().getUTCDate());
       const monthlyLimit = Number(policy.rows[0]?.monthlySpendLimitUsd ?? 0);
       const dailyRate = Number(row.monthlySpend ?? 0) / elapsedDays;
+      const included = Number(entitlement.rows[0]?.includedAllowance ?? 0);
+      const used = Number(row.monthlySpend ?? 0);
+      const policyKill = Boolean(policy.rows[0]?.killSwitch);
+      const usageKill = Boolean(usagePolicy.rows[0]?.killSwitch);
       return {
         policy: policy.rows[0] ?? null, members: members.rows, features: features.rows, models: models.rows,
         usage: row,
         projectedExhaustionDays: monthlyLimit > 0 && dailyRate > 0
           ? Math.max(0, (monthlyLimit - Number(row.monthlySpend)) / dailyRate) : null,
+        cutoff: {
+          planCode: entitlement.rows[0]?.planCode ?? null,
+          includedAllowanceUsd: included,
+          usedUsd: used,
+          allowancePercent: included > 0 ? Math.min(999, (used / included) * 100) : null,
+          walletBalanceUsd: Number(wallet.rows[0]?.balance ?? 0),
+          paygEnabled: Boolean(usagePolicy.rows[0]?.paygEnabled),
+          spendCapUsd: usagePolicy.rows[0]?.spendCap == null ? null : Number(usagePolicy.rows[0].spendCap),
+          killSwitch: policyKill || usageKill,
+          monthlySpendUsd: used,
+          monthlySpendLimitUsd: monthlyLimit > 0 ? monthlyLimit : null,
+          warningThresholds: (policy.rows[0]?.warningThresholds as number[] | undefined) ?? [50, 75, 90],
+        },
       };
     });
     return Response.json(data);

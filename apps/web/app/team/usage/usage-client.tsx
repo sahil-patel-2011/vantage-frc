@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
+import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
 
 type UsageData = {
   members: Array<{ id: string; name: string | null; email: string | null; tokens: string; cost: string }>;
@@ -9,6 +11,16 @@ type UsageData = {
   wallet: { balance: string; providerCost: string; markup: string } | null;
   policy: { paygEnabled?: boolean; spendCap?: string; killSwitch?: boolean } | null;
   allowancePercent: number | null;
+  cutoff?: {
+    planCode?: string | null;
+    includedAllowanceUsd?: number;
+    usedUsd?: number;
+    walletBalanceUsd?: number;
+    paygEnabled?: boolean;
+    spendCapUsd?: number | null;
+    killSwitch?: boolean;
+    warningThresholds?: number[];
+  };
 };
 
 type ActivityEvent = {
@@ -153,6 +165,33 @@ export default function UsageClient({ orgId }: { orgId: string }) {
 
   const windowDays = activity?.windowDays ?? 30;
 
+  const cutoffSnapshot = useMemo(() => {
+    if (!usage) return null;
+    if (usage.cutoff) {
+      return buildUsageCutoffSnapshot({
+        planCode: usage.cutoff.planCode ?? usage.entitlement?.planCode,
+        includedAllowanceUsd: usage.cutoff.includedAllowanceUsd ?? usage.entitlement?.includedAllowance,
+        usedUsd: usage.cutoff.usedUsd,
+        walletBalanceUsd: usage.cutoff.walletBalanceUsd ?? usage.wallet?.balance,
+        paygEnabled: usage.cutoff.paygEnabled ?? usage.policy?.paygEnabled,
+        spendCapUsd: usage.cutoff.spendCapUsd ?? usage.policy?.spendCap,
+        killSwitch: usage.cutoff.killSwitch ?? usage.policy?.killSwitch,
+        warningThresholds: usage.cutoff.warningThresholds ?? [50, 75, 90],
+      });
+    }
+    const used = usage.models.reduce((sum, row) => sum + Number(row.cost ?? 0), 0);
+    return buildUsageCutoffSnapshot({
+      planCode: usage.entitlement?.planCode,
+      includedAllowanceUsd: usage.entitlement?.includedAllowance,
+      usedUsd: used,
+      walletBalanceUsd: usage.wallet?.balance,
+      paygEnabled: usage.policy?.paygEnabled,
+      spendCapUsd: usage.policy?.spendCap,
+      killSwitch: usage.policy?.killSwitch,
+      warningThresholds: [50, 75, 90],
+    });
+  }, [usage]);
+
   return (
     <main className="intel-app">
       <header className="intel-header">
@@ -177,6 +216,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
       </header>
 
       {message && <p role="status" className="telemetry-status">{message}</p>}
+      {!loading && cutoffSnapshot ? <UsageCutoffBanner orgId={orgId} snapshot={cutoffSnapshot} /> : null}
       {loading && <p className="app-muted">Loading usage…</p>}
 
       {!loading && activity && (
