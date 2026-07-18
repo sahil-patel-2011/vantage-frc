@@ -20,8 +20,25 @@ describe("waitlist validation", () => {
     { email: "x@example.com", teamNumber: 254, phone: "202-555-0123", smsConsent: true },
     { email: "x@example.com", teamNumber: 254, phone: "+12025550123", smsConsent: false },
     { email: "x@example.com", teamNumber: 254, website: "bot.example" },
+    { email: "x@example.com", teamNumber: 254, termsAccepted: false },
+    { email: "x@example.com", teamNumber: 254 },
   ])("rejects malformed or non-consensual input: %#", (input) => {
     expect(waitlistSchema.safeParse(input).success).toBe(false);
+  });
+
+  it("requires termsAccepted true", () => {
+    const denied = waitlistSchema.safeParse({
+      email: "ok@example.com",
+      teamNumber: 254,
+      termsAccepted: false,
+    });
+    expect(denied.success).toBe(false);
+    const accepted = waitlistSchema.safeParse({
+      email: "ok@example.com",
+      teamNumber: 254,
+      termsAccepted: true,
+    });
+    expect(accepted.success).toBe(true);
   });
 });
 
