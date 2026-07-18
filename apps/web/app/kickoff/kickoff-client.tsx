@@ -926,6 +926,15 @@ export default function KickoffClient() {
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — structure the game, rank
             scoring value, lock design priorities, and hand a CAD brief to Onshape/Fusion paths.
           </p>
+          <p className="app-muted" style={{ marginTop: "0.5rem" }}>
+            <a href={`/team/getting-started?orgId=${encodeURIComponent(orgId)}`}>Getting started</a>
+            {" · "}
+            <a href={`/team/calendar?orgId=${encodeURIComponent(orgId)}`}>Subteam calendar</a>
+            {" · "}
+            <a href={`/team/knowledge?orgId=${encodeURIComponent(orgId)}`}>Knowledge wiki</a>
+            {" · "}
+            <a href={`/logistics?orgId=${encodeURIComponent(orgId)}`}>Logistics</a>
+          </p>
         </div>
         <label className="kick-year">
           Season

@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PartnerPlacement from "../../components/partner-placement";
-type Data = { organization:{name:string;teamNumber:number|null;role:string};context:{eventKey:string|null;eventName:string|null};nextMatch:{matchKey:string;compLevel:string;matchNumber:number;scheduledTime:string|null}|null;gate:{state:"go"|"check"|"hold";reasons:string[]};summary:{openIssues:number;overdueMaintenance:number;readyBatteries:number;activeBatteries:number};issues:Array<{id:string;subsystem:string;severity:string;symptoms:string;occurredAt:string;matchKey:string|null;canResolve:boolean}>;maintenance:Array<{id:string;subsystem:string;task:string;dueAt:string|null}>;batteries:Array<{id:string;assetTag:string;status:"active"|"service"|"retired";measuredAt:string|null;voltage:number|null;resistanceMilliohms:number|null;gate:"ready"|"review"|"unread"}>;rules:{battery:string;hold:string};updatedAt:string;};
+type Data = { organization:{name:string;teamNumber:number|null;role:string};context:{eventKey:string|null;eventName:string|null};nextMatch:{matchKey:string;compLevel:string;matchNumber:number;scheduledTime:string|null}|null;gate:{state:"go"|"check"|"hold";reasons:string[]};summary:{openIssues:number;overdueMaintenance:number;readyBatteries:number;activeBatteries:number;repeatFailureSubsystems?:number};repeatAlerts?:Array<{subsystemName:string;failureCount:number;openCount:number;level:string;message:string;recentTitles:string[];href:string}>;issues:Array<{id:string;subsystem:string;severity:string;symptoms:string;occurredAt:string;matchKey:string|null;canResolve:boolean}>;maintenance:Array<{id:string;subsystem:string;task:string;dueAt:string|null}>;batteries:Array<{id:string;assetTag:string;status:"active"|"service"|"retired";measuredAt:string|null;voltage:number|null;resistanceMilliohms:number|null;gate:"ready"|"review"|"unread"}>;rules:{battery:string;hold:string};updatedAt:string;};
 type Form = {kind:"battery"|"issue"|"maintenance"|"resolve";id?:string}|null;
 const subsystems=["Drivetrain","Game piece mechanism","Electrical","Controls","Pneumatics","Structure","Bumpers","Other"];
 const ago=(value:string|null)=>{if(!value)return"No reading";const m=Math.round((Date.now()-new Date(value).getTime())/60000);return m<1?"just now":m<60?`${m}m ago`:m<2160?`${Math.round(m/60)}h ago`:new Date(value).toLocaleDateString();};
@@ -21,7 +21,30 @@ export default function PitCommandClient({orgId}:{orgId:string}){
     <header className="pit-header"><div><span className="breadcrumbs">Competition / Pit Command · Team {data.organization.teamNumber??"—"}</span><h1>Robot release board</h1><p>{data.context.eventName??"No active event"} · explicit evidence, no invented percentage</p></div><div className="pit-next"><span>NEXT MATCH</span><strong>{match(data.nextMatch)}</strong><b>{countdown(data.nextMatch?.scheduledTime,now)}</b></div></header>
     {error?<p className="telemetry-status" role="alert">{error}</p>:null}{message?<p className="telemetry-status success" role="status">{message}</p>:null}
     <section className={`pit-gate ${data.gate.state}`}><div className="pit-gate-state"><span>RELEASE GATE</span><strong>{data.gate.state.toUpperCase()}</strong><small>{data.gate.state==="go"?"Evidence clear":data.gate.state==="hold"?"Do not release":"Crew review needed"}</small></div><div className="pit-reasons"><span>WHY</span><ul>{data.gate.reasons.map(r=><li key={r}>{r}</li>)}</ul></div><dl><div><dt>Issues</dt><dd>{data.summary.openIssues}</dd></div><div><dt>Overdue</dt><dd>{data.summary.overdueMaintenance}</dd></div><div><dt>Batteries</dt><dd>{data.summary.readyBatteries}/{data.summary.activeBatteries}</dd></div></dl></section>
-    <section className="pit-actions"><button onClick={()=>setForm({kind:"battery"})}><span>01</span><strong>Log battery</strong><small>Voltage + resistance</small></button><button onClick={()=>setForm({kind:"issue"})}><span>02</span><strong>Report issue</strong><small>Put it on the board</small></button><button onClick={()=>setForm({kind:"maintenance"})}><span>03</span><strong>Add work</strong><small>Task + due time</small></button><button onClick={()=>void load()}><span>↻</span><strong>Refresh gate</strong><small>Recheck now</small></button></section>
+    
+    {data.repeatAlerts?.length ? (
+      <section className="pit-repeat" aria-label="Repeat failure patterns">
+        <header>
+          <div>
+            <span>SEASON PATTERN</span>
+            <h2>Repeat failures</h2>
+          </div>
+          <a href="/fmea">Open FMEA log</a>
+        </header>
+        <ul>
+          {data.repeatAlerts.map((alert) => (
+            <li key={alert.subsystemName} data-level={alert.level}>
+              <strong>{alert.message}</strong>
+              <span>
+                {alert.openCount} still open
+                {alert.recentTitles.length ? ` · ${alert.recentTitles.slice(0, 2).join("; ")}` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ) : null}
+<section className="pit-actions"><button onClick={()=>setForm({kind:"battery"})}><span>01</span><strong>Log battery</strong><small>Voltage + resistance</small></button><button onClick={()=>setForm({kind:"issue"})}><span>02</span><strong>Report issue</strong><small>Put it on the board</small></button><button onClick={()=>setForm({kind:"maintenance"})}><span>03</span><strong>Add work</strong><small>Task + due time</small></button><button onClick={()=>void load()}><span>↻</span><strong>Refresh gate</strong><small>Recheck now</small></button></section>
     {form?<section className="pit-capture"><header><div><span>FAST CAPTURE</span><h2>{form.kind==="battery"?"Battery check":form.kind==="issue"?"Report robot issue":form.kind==="maintenance"?"Add maintenance":"Close issue"}</h2></div><button type="button" aria-label="Close" onClick={()=>setForm(null)}>×</button></header><form onSubmit={submit}>
       {form.kind==="battery"?<><label>Battery tag<input name="assetTag" autoFocus required placeholder="COMP-04"/></label><label>Voltage<input name="voltage" type="number" step=".01" min="0" max="20" placeholder="12.74"/></label><label>Resistance (mΩ)<input name="resistanceMilliohms" type="number" step=".1" min="0" max="100" placeholder="18.2"/></label><label>Charger cycles<input name="chargerCycles" type="number" min="0" step="1" placeholder="Optional"/></label></>:null}
       {form.kind==="issue"?<><label>Subsystem<select name="subsystem" autoFocus>{subsystems.map(s=><option key={s}>{s}</option>)}</select></label><label>Severity<select name="severity" defaultValue="degraded"><option value="minor">Minor</option><option value="degraded">Degraded</option><option value="disabled">Robot disabled</option><option value="safety">Safety — hold</option></select></label><label className="wide">What happened?<textarea name="symptoms" required rows={3} maxLength={2000}/></label></>:null}

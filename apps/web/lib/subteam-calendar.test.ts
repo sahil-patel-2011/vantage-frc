@@ -212,6 +212,12 @@ describe("my-subteam strip + workflow deep links", () => {
       ORG,
     );
     expect(deadline.some((l) => l.href.includes("/business"))).toBe(true);
+
+    const discuss = eventWorkflowLinks(
+      event({ id: "c", title: "Shop night", startsAt: "2026-02-01T18:00:00.000Z", kind: "build" }),
+      ORG,
+    );
+    expect(discuss.some((l) => l.label === "Discuss in Messages" && l.href.includes("linkType=event"))).toBe(true);
   });
 });
 
