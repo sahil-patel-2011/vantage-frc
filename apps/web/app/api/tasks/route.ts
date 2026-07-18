@@ -8,6 +8,7 @@ import {
   createTask,
   currentSeasonYear,
   deleteTask,
+  replaceTaskAssignees,
   setTaskStatus,
   updateTaskFields,
   type TasksView,
@@ -39,6 +40,11 @@ function estimateOrNull(value: unknown): number | null {
 function seasonFrom(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) && n > 2000 && n < 3000 ? Math.round(n) : currentSeasonYear();
+}
+
+function assigneesFrom(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : typeof value === "string" ? value.split(",") : [];
+  return [...new Set(values.map((entry) => trimmedOrNull(entry,120)).filter((entry): entry is string => Boolean(entry)))].slice(0,12);
 }
 
 export async function GET(request: Request) {
@@ -108,6 +114,7 @@ export async function POST(request: Request) {
             subsystem: trimmedOrNull(body.subsystem, 60) ?? "general",
             priority: oneOf<TaskPriority>(TASK_PRIORITIES, body.priority) ?? "normal",
             assignee: trimmedOrNull(body.assignee, 120),
+            assignees: assigneesFrom(body.assignees ?? body.assignee),
             estimateHours: estimateOrNull(body.estimateHours),
             dueOn: isoDateOrNull(body.dueOn),
             seasonYear,
@@ -142,12 +149,24 @@ export async function POST(request: Request) {
             estimateHours: body.estimateHours === undefined ? undefined : estimateOrNull(body.estimateHours),
             dueOn: body.dueOn === undefined ? undefined : isoDateOrNull(body.dueOn),
           });
+          if(body.assignees !== undefined) await replaceTaskAssignees(client,{orgId,taskId,userId,assignees:assigneesFrom(body.assignees)});
           break;
         }
         case "delete-task": {
           const taskId = trimmedOrNull(body.taskId, 64);
           if (!taskId) throw new Error("taskId is required");
           await deleteTask(client, { orgId, taskId });
+          break;
+        }
+        case "set-benchmark-opt-in": {
+          const allowed = await client.query<{ allowed: boolean }>(
+            `SELECT has_org_role($1,ARRAY['owner','admin']::org_role[]) AS allowed`,[orgId]);
+          if(!allowed.rows[0]?.allowed) throw new Error("Owner or admin role required");
+          await client.query(
+            `INSERT INTO org_ops_benchmark_settings(org_id,opted_in,updated_by) VALUES($1,$2,$3)
+             ON CONFLICT(org_id) DO UPDATE SET opted_in=excluded.opted_in,updated_by=excluded.updated_by,updated_at=now()`,
+            [orgId,body.optedIn===true,userId],
+          );
           break;
         }
         default:

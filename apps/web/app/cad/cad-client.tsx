@@ -143,6 +143,7 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
   const [title, setTitle] = useState("Strategy-linked mechanism");
   const [request, setRequest] = useState("Create a serviceable mechanism concept for the selected scoring task.");
   const [teamKey, setTeamKey] = useState("");
+  const [matchKey, setMatchKey] = useState("");
   const [platform, setPlatform] = useState<Platform>("mock");
   const [brainMode, setBrainMode] = useState<BrainMode>("mock");
   const [autoRunVerify, setAutoRunVerify] = useState(false);
@@ -163,6 +164,19 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
     steps: Array<{ order: number; name: string; featureType: string; plainEnglish: string; tip?: string }>;
     disclaimer: string;
   } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linkedMatch = params.get("matchKey")?.trim();
+    const linkedJob = params.get("jobId")?.trim();
+    const seededTitle = params.get("title")?.trim();
+    const seededRequest = params.get("request")?.trim();
+    if (linkedMatch) setMatchKey(linkedMatch);
+    if (linkedJob) setSelected(linkedJob);
+    if (seededTitle) setTitle(seededTitle.slice(0, 160));
+    if (seededRequest) setRequest(seededRequest.slice(0, 8_000));
+    if (linkedMatch || seededTitle || seededRequest) setCreating(true);
+  }, [orgId]);
 
   async function load(jobId = selected) {
     const response = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}${jobId ? `&jobId=${encodeURIComponent(jobId)}` : ""}`);
@@ -462,6 +476,7 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
                     title,
                     request,
                     teamKey,
+                    matchKey,
                     platform,
                     executionMode: platform === "fusion360" ? "local" : "hosted",
                   }).then(() => setCreating(false));
@@ -519,6 +534,11 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
                 <label>
                   Selected team (optional)
                   <input value={teamKey} onChange={(e) => setTeamKey(e.target.value)} placeholder="frc254" />
+                </label>
+                <label>
+                  Linked strategy match (optional)
+                  <input value={matchKey} onChange={(e) => setMatchKey(e.target.value)} placeholder="2027event_qm12" />
+                  <small>Confirmed CAD requirements and artifacts flow back into this match strategy.</small>
                 </label>
                 <label>
                   AI brain

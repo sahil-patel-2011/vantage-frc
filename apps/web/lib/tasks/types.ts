@@ -82,3 +82,19 @@ export type TaskBoard = {
   /** Prioritized, actionable "do next" list (excludes done/blocked/archived). */
   focus: TaskWithFlags[];
 };
+
+export type MemberWorkload = {
+  userId: string;
+  name: string;
+  openTasks: number;
+  inProgressTasks: number;
+  estimatedOpenHours: number;
+  availableNow: boolean;
+};
+
+export type MeetingOutput = {
+  weekStart: string;
+  loggedHours: number;
+  tasksCompleted: number;
+  hoursPerCompletedTask: number | null;
+};

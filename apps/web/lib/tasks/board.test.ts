@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard, focusList, isoWeekStart, priorityWeight, statusLabel } from "./board";
+import { buildBoard, buildMemberWorkload, focusList, isoWeekStart, priorityWeight, statusLabel, summarizeMeetingOutput, visibleBenchmarkMedian } from "./board";
 import type { BuildTask, TaskPriority, TaskStatus } from "./types";
 
 let seq = 0;
@@ -195,5 +195,34 @@ describe("labels + weights", () => {
     expect(board.focus).toEqual([]);
     const statuses: TaskStatus[] = board.columns.map((c) => c.status);
     expect(statuses).toEqual(["todo", "in_progress", "blocked", "done"]);
+  });
+});
+
+describe("team workload intelligence", () => {
+  it("supports collaborative ownership and identifies available members", () => {
+    const tasks = [
+      task({ status: "in_progress", assignee: "Avery", assignees: ["Avery", "Jordan"], estimateHours: 3 }),
+      task({ status: "todo", assignee: "Jordan", assignees: ["Jordan"], estimateHours: 2 }),
+    ];
+    const workload = buildMemberWorkload([
+      { userId: "u1", name: "Avery" },
+      { userId: "u2", name: "Jordan" },
+      { userId: "u3", name: "Sam" },
+    ], tasks);
+    expect(workload.find((row) => row.name === "Jordan")).toMatchObject({ openTasks: 2, estimatedOpenHours: 5, availableNow: false });
+    expect(workload.find((row) => row.name === "Sam")?.availableNow).toBe(true);
+  });
+
+  it("correlates weekly hours with completed tasks without inventing a ratio", () => {
+    expect(summarizeMeetingOutput({ weekStart: "2026-07-13", loggedHours: 47.04, tasksCompleted: 4 })).toEqual({
+      weekStart: "2026-07-13", loggedHours: 47, tasksCompleted: 4, hoursPerCompletedTask: 11.8,
+    });
+    expect(summarizeMeetingOutput({ weekStart: "2026-07-13", loggedHours: 8, tasksCompleted: 0 }).hoursPerCompletedTask).toBeNull();
+  });
+
+  it("hides anonymous norms until opt-in and the five-team privacy floor", () => {
+    expect(visibleBenchmarkMedian({ optedIn: false, teamCount: 20, median: 18 })).toBeNull();
+    expect(visibleBenchmarkMedian({ optedIn: true, teamCount: 4, median: 18 })).toBeNull();
+    expect(visibleBenchmarkMedian({ optedIn: true, teamCount: 5, median: 18.26 })).toBe(18.3);
   });
 });

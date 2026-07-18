@@ -5,12 +5,12 @@ CREATE TABLE feature_context_links (
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   source_kind text NOT NULL CHECK (source_kind IN (
     'strategy_match','reference_team','cad_job','cad_artifact','build_task',
-    'inventory_item','knowledge_page','sponsor','budget','fmea_failure','scout_entry'
+    'inventory_item','purchase_request','knowledge_page','sponsor','budget','fmea_failure','scout_entry'
   )),
   source_id text NOT NULL,
   target_kind text NOT NULL CHECK (target_kind IN (
     'strategy_match','reference_team','cad_job','cad_artifact','build_task',
-    'inventory_item','knowledge_page','sponsor','budget','fmea_failure','scout_entry'
+    'inventory_item','purchase_request','knowledge_page','sponsor','budget','fmea_failure','scout_entry'
   )),
   target_id text NOT NULL,
   relation text NOT NULL CHECK (relation IN (

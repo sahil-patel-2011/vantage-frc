@@ -44,16 +44,16 @@ Katie_UPS's canonical CD thread (345 likes) is the industry's most-cited scoutin
 
 The Purple Standard project spent significant effort trying to get teams to converge on a shared scouting data format and stalled — teams don't want to migrate schemas, they want a tool that ingests theirs.
 
-19. **Universal scouting-data importer** (CSV/JSON from other popular apps: FRC Scouting, Scout Radioactive, generic Google Sheets exports) — meet teams where they are instead of asking them to convert, which is exactly what killed The Purple Standard's adoption.
-20. **Export in Purple-Standard-compatible schema** [EXTEND] — Vantage's `export-center` registry already streams 21 domains; add one more adapter targeting the community format so Vantage becomes the tool other teams' data flows *into*, not a third silo.
-21. **One-click "start from last year's schema" carry-forward** — CD: teams rebuild their entire scouting app from scratch every single year, often because the person who built it graduated. Vantage's `scout_schemas` versioning already stores history — surface a "clone previous season, tweak for new game" flow front-and-center at kickoff.
+19. ~~**Universal scouting-data importer**~~ — **shipped:** CSV, JSON, and offline QR ingestion normalizes common FRC Scouting, Scout Radioactive, ScoutingPASS, and Google Sheets identity headers while preserving source/file/time provenance.
+20. ~~**Export in Purple-Standard-compatible schema** [EXTEND]~~ — **shipped:** the export center now offers an event-filterable `scouting-purple-standard` adapter with standard abilities, counters, data, metadata, ratings, and timers fields; robot/match metadata is normalized and scouter identity is excluded.
+21. ~~**One-click "start from last year's schema" carry-forward**~~ — **shipped:** scouting’s form-accuracy panel offers separate one-click match and pit form cloning into the current season, creates a new version, and records the source schema for traceability.
 
 ## E. Alliance selection & pick strategy
 
-22. **Low-scouting-data fallback picklist mode** — CD explicitly notes under-resourced teams need a "quick pick" style tool when they don't have a full scouting corps. Vantage's `rankPickCandidates` already supports tiers; add a reduced-input mode driven mostly by TBA/Statbotics for teams that can't staff full scouting.
-23. **45-second pick-clock assistant** — CD: captains get 45 seconds to decide. A single-screen "next best pick + why" view (reusing `pick-desk.ts`'s reliability/foul-risk scoring) tuned for glanceability under time pressure, not a dashboard you have to read.
-24. **EPA-drift callout** — Statbotics under-reacts to a team's recent improvement (CD's cited example: team jumped from EPA 60 to real-world 80-level play and the number lagged). Surface "this team's last-3-match trend diverges from their season EPA" so pickers don't trust a stale number.
-25. **Per-field API-vs-scout trust toggle** — CD showed climb-call error is field-dependent (3% at one event, 20%+ at another) — there's no universal rule for "trust the API" vs. "trust your scouts." Let each org configure, per field, which source wins when they disagree, instead of hardcoding one philosophy.
+22. ~~**Low-scouting-data fallback picklist mode**~~ — **shipped:** candidate coverage is detected automatically; thin events switch to an explicitly labeled TBA/Statbotics EPA-first quick-pick ranking without scout-reliability demotion.
+23. ~~**45-second pick-clock assistant**~~ — **shipped:** `/pick-clock` provides a glanceable 45-second countdown, one next-best recommendation with reasons, an alternate queue, draft-board exclusions, and links back to the dossier and draft board.
+24. ~~**EPA-drift callout**~~ — **shipped:** strategy and pick-clock compare each team’s real last-three alliance score share with season EPA, label meaningful upward/downward divergence, and carry the warning into draft-day views.
+25. ~~**Per-field API-vs-scout trust toggle**~~ — **shipped:** owner/admin field policies choose scout, TBA, Statbotics, or consensus per schema field, including official-key mapping and team-indexed extraction.
 
 ## F. Institutional knowledge & continuity (root cause behind burnout, scouting churn, and inventory chaos)
 
@@ -69,18 +69,18 @@ CD, verbatim: "we only retain students for 2 years, so institutional knowledge w
 
 The single most-liked statement across CD's burnout threads (46 likes): teams don't need more meeting hours, they need better management of the hours they have — and the concrete failure mode is 95% of the work concentrating on a few students while others idle at meetings with nothing to do.
 
-31. **Live "who has nothing to do right now" board** — Vantage's task board (`lib/tasks/board.ts`) already tracks assignment; add a real-time view surfacing unassigned/idle members during a build meeting so leads can redistribute on the spot, not after the fact.
-32. **Multi-assignee tasks** — CD: Asana's one-assignee-per-task limit was a named reason teams abandoned it, since FRC tasks are inherently collaborative. Confirm/extend Vantage's task model to support this natively.
-33. **Meeting-time-vs-output tracker** — correlate logged build hours against tasks actually closed, to surface the CD-documented pattern where teams meet 47 hours/week but output stalls, without shaming anyone — just visibility.
-34. **Norms benchmarking (opt-in, anonymized)** — CD mentors didn't realize their 47-hour week was abnormal until an outside thread told them. An opt-in, anonymized cross-team benchmark ("median team logs X build hours/week") would be a genuinely unique data asset only a multi-tenant platform like Vantage can offer.
+31. ~~**Live "who has nothing to do right now" board**~~ — **shipped:** `/tasks` compares active collaborative assignments with the workspace roster and surfaces available members plus current workload.
+32. ~~**Multi-assignee tasks**~~ — **shipped:** `build_task_assignees` supports up to 12 collaborators while preserving the legacy primary owner for compatibility.
+33. ~~**Meeting-time-vs-output tracker**~~ — **shipped:** `/tasks` correlates this week's real `hour_logs` duration with tasks completed in the same week; the ratio is visibility, not a student score.
+34. ~~**Norms benchmarking (opt-in, anonymized)**~~ — **shipped:** owner/admin opt-in, aggregate-only database function, and a five-team privacy floor before the median is revealed.
 
 ## H. Inventory & parts (bus-factor problem, not a tooling-adoption problem)
 
 CD is unusually blunt here: "tracking exactly how many of every component your team has in stock is almost certainly a losing battle," and spreadsheet lookups get abandoned ("the number of people who'll check a spreadsheet rounds to zero"). The real pain is findability and the fact that one adult holds the whole inventory in his head.
 
-35. **Bin/location-first inventory, not quantity-first** [EXTEND] — Vantage's inventory+BOM (`lib/inventory.ts`) exists; reframe the primary UI around "where is X" with printable bin labels (QR or barcode) rather than stock-count accuracy, matching what CD says actually gets adopted.
-36. **Phone-camera barcode/QR lookup for "do we have this part"** — scan a bin label, see contents instantly, addressing the literal "30 minutes looking through every box" complaint.
-37. **Inventory knowledge capture from the one person who has it** — a guided "brain dump" flow (reusing #27's exit-interview pattern) targeted specifically at the team's de facto parts-hoarder before they graduate or quit.
+35. ~~**Bin/location-first inventory, not quantity-first** [EXTEND]~~ — **shipped:** inventory search includes locations and the primary scan/label workflow opens directly to the contents of a bin, while quantities remain available as supporting data.
+36. ~~**Phone-camera barcode/QR lookup for "do we have this part"**~~ — **shipped:** rear-camera QR scanning with native BarcodeDetector + `jsQR` fallback, manual URL fallback, printable location labels, and direct bin-content filtering.
+37. ~~**Inventory knowledge capture from the one person who has it**~~ — **shipped:** the Team Knowledge template gallery now includes an inventory-expert brain dump covering hidden storage, substitutes, vendors, event packing, and label cleanup.
 
 ## I. Attendance
 

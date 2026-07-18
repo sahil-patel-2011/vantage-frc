@@ -207,6 +207,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
       ? `Qualification ${view.matchNumber}`
       : `${view.compLevel.toUpperCase()} ${view.matchNumber}`;
   const ourWin = view.ourAlliance === "red" ? view.prediction.pRed : view.prediction.pBlue;
+  const cadHref = `/cad?orgId=${encodeURIComponent(view.orgId)}&matchKey=${encodeURIComponent(view.matchKey)}&title=${encodeURIComponent(`${title} strategy mechanism`)}&request=${encodeURIComponent(`Engineer for ${title}. Priorities: ${view.playbook.priorities.slice(0, 3).join("; ")}`)}`;
 
   return (
     <section className="strategy-workbench strategy-live-grid">
@@ -401,6 +402,104 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
             <span key={item}>{item}</span>
           ))}
         </div>
+      </Panel>
+
+      <Panel className="strategy-engineering-card">
+        <header>
+          <div>
+            <span className="eyebrow">STRATEGY ↔ CAD</span>
+            <h2>Engineering reality</h2>
+          </div>
+          <a className="app-button secondary" href={cadHref}>Send match to CAD</a>
+        </header>
+        {view.engineeringContext.length ? (
+          <ul className="strategy-engineering-list">
+            {view.engineeringContext.map((item) => (
+              <li key={item.jobId}>
+                <div>
+                  <strong>{item.title}</strong>
+                  <span className={`app-badge ${item.status === "completed" ? "good" : "setup"}`}>
+                    {item.status.replaceAll("_", " ")}
+                  </span>
+                </div>
+                <p>{item.requirements.slice(0, 2).join(" · ") || "Brief requirements awaiting confirmation."}</p>
+                {item.latestArtifact ? (
+                  <small>Latest verified output: {item.latestArtifact.title} · v{item.latestArtifact.version}</small>
+                ) : (
+                  <small>No geometry artifact yet — strategy should treat this capability as unverified.</small>
+                )}
+                <a href={`/cad?orgId=${encodeURIComponent(view.orgId)}&jobId=${encodeURIComponent(item.jobId)}`}>Open engineering job</a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="app-muted">
+            No engineering job is linked to this match yet. Send the live priorities to CAD; confirmed requirements and artifacts will return here automatically.
+          </p>
+        )}
+      </Panel>
+
+      <Panel className="strategy-rules-card">
+        <header>
+          <div>
+            <span className="eyebrow">THIS SEASON ONLY · {view.gameRules.seasonYear}</span>
+            <h2>Game rules</h2>
+          </div>
+          <a className="app-button secondary" href={view.gameRules.kickoffHref}>
+            Open kickoff
+          </a>
+        </header>
+        {view.gameRules.status === "ready" ? (
+          <>
+            <p className="app-muted">{view.gameRules.message}</p>
+            {view.gameRules.constraints.length ? (
+              <ul>
+                {view.gameRules.constraints.slice(0, 6).map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ) : null}
+            {view.gameRules.designPriorities.length ? (
+              <>
+                <h3>Design priorities</h3>
+                <ul>
+                  {view.gameRules.designPriorities.slice(0, 6).map((item) => (
+                    <li key={item.id}>
+                      <strong>{item.capability}</strong>
+                      {item.rationale ? <small> — {item.rationale}</small> : null}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {view.gameRules.ruleNotes.filter((n) => n.status === "open").length ? (
+              <>
+                <h3>Open rule questions</h3>
+                <ul>
+                  {view.gameRules.ruleNotes
+                    .filter((n) => n.status === "open")
+                    .slice(0, 5)
+                    .map((item) => (
+                      <li key={item.id}>
+                        {item.ruleRef ? <b>{item.ruleRef}</b> : null} {item.question}
+                      </li>
+                    ))}
+                </ul>
+              </>
+            ) : null}
+          </>
+        ) : (
+          <EmptyState
+            badge={view.gameRules.status === "setup_required" ? "Setup required" : "Empty"}
+            badgeTone={view.gameRules.status === "setup_required" ? "setup" : ""}
+            title={`No ${view.gameRules.seasonYear} game rules yet`}
+            description={view.gameRules.message}
+          >
+            <a className="app-button" href={view.gameRules.kickoffHref}>
+              Capture {view.gameRules.seasonYear} rules on Kickoff
+            </a>
+          </EmptyState>
+        )}
       </Panel>
 
       <Panel className="what-if-card">

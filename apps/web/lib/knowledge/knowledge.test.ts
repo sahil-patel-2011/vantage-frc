@@ -26,6 +26,9 @@ describe("knowledge wiki helpers", () => {
     expect(applied.title).toMatch(/handoff/i);
     expect(applied.body).toContain("Team 254");
     expect(applied.tags.length).toBeGreaterThan(0);
+    const inventory = applyKnowledgeTemplate("inventory_handoff",254);
+    expect(inventory.body).toMatch(/bin naming|Critical spares/i);
+    expect(inventory.tags).toContain("inventory");
   });
 
   it("builds snippets and hrefs", () => {

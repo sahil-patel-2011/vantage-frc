@@ -7,6 +7,8 @@ import type {
   SubsystemProgress,
   TaskBoard,
   TaskMetrics,
+  MemberWorkload,
+  MeetingOutput,
   TaskPriority,
   TaskStatus,
   TaskWithFlags,
@@ -137,7 +139,7 @@ function summarize(flagged: TaskWithFlags[], asOf: string, weeks: number): TaskM
     done: done.length,
     blocked: blocked.length,
     inProgress: inProgress.length,
-    unassigned: open.filter((task) => !task.assignee).length,
+    unassigned: open.filter((task) => !(task.assignees?.length || task.assignee)).length,
     overdue: live.filter((task) => task.flags.overdue).length,
     dueSoon: live.filter((task) => task.flags.dueSoon).length,
     completionPct: live.length > 0 ? Math.round((done.length / live.length) * 100) / 100 : 0,
@@ -203,4 +205,45 @@ export function buildBoard(
 /** UTC "today" as YYYY-MM-DD. Isolated so tests inject a fixed date instead. */
 export function todayIso(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);
+}
+
+export function buildMemberWorkload(
+  members: Array<{ userId: string; name: string }>,
+  tasks: BuildTask[],
+): MemberWorkload[] {
+  return members.map((member) => {
+    const key = member.name.trim().toLocaleLowerCase();
+    const assigned = tasks.filter((task) => {
+      if (task.status === "done" || task.status === "archived") return false;
+      const names = task.assignees?.length ? task.assignees : task.assignee ? [task.assignee] : [];
+      return names.some((name) => name.trim().toLocaleLowerCase() === key);
+    });
+    return {
+      userId: member.userId,
+      name: member.name,
+      openTasks: assigned.length,
+      inProgressTasks: assigned.filter((task) => task.status === "in_progress").length,
+      estimatedOpenHours: Math.round(assigned.reduce((sum, task) => sum + (task.estimateHours ?? 0), 0) * 10) / 10,
+      availableNow: assigned.length === 0,
+    };
+  });
+}
+
+export function summarizeMeetingOutput(input: {
+  weekStart: string;
+  loggedHours: number;
+  tasksCompleted: number;
+}): MeetingOutput {
+  const loggedHours = Math.max(0, Math.round(input.loggedHours * 10) / 10);
+  const tasksCompleted = Math.max(0, Math.trunc(input.tasksCompleted));
+  return {
+    weekStart: input.weekStart,
+    loggedHours,
+    tasksCompleted,
+    hoursPerCompletedTask: tasksCompleted ? Math.round((loggedHours / tasksCompleted) * 10) / 10 : null,
+  };
+}
+
+export function visibleBenchmarkMedian(input: { optedIn: boolean; teamCount: number; median: number | null }) {
+  return input.optedIn && input.teamCount >= 5 && input.median != null ? Math.round(input.median * 10) / 10 : null;
 }

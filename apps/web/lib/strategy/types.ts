@@ -30,6 +30,41 @@ export type StrategyPlaybookView = {
   provenance: string[];
 };
 
+export type StrategyEngineeringContext = {
+  jobId: string;
+  title: string;
+  status: string;
+  platform: string;
+  requirements: string[];
+  constraints: string[];
+  risks: string[];
+  latestArtifact: { id: string; type: string; title: string; version: number } | null;
+  updatedAt: string;
+};
+
+/** Kickoff game rules locked to the org active season — never prior-season mix. */
+export type StrategyGameRulesContext = {
+  seasonYear: number;
+  status: "ready" | "empty" | "setup_required";
+  message: string;
+  kickoffHref: string;
+  constraints: string[];
+  ruleNotes: Array<{
+    id: string;
+    question: string;
+    answer: string;
+    ruleRef: string;
+    status: string;
+  }>;
+  designPriorities: Array<{
+    id: string;
+    capability: string;
+    rationale: string;
+    weight: number;
+    status: string;
+  }>;
+};
+
 /** Honest TBA access / cache state — never implies live data when only env is set. */
 export type TbaAccessInfo = {
   tbaConfigured: boolean;
@@ -67,6 +102,8 @@ export type StrategyView =
       referenceAccess?: ReferenceAccessInfo;
       /** TBA/Statbotics ingest health — strategy still uses Neon last-good when degraded. */
       dataSourceHealth?: DataSourceHealthView;
+      /** Active-season kickoff rules / design priorities (empty when none for this seasonYear). */
+      gameRules?: StrategyGameRulesContext;
     }
   | {
       status: "live";
@@ -96,6 +133,10 @@ export type StrategyView =
       scoutProvenance: ScoutProvenanceRef[];
       /** Per-team scout operational signals used by the model. */
       operations: TeamOperationalSignal[];
+      /** Confirmed CAD requirements and latest artifacts durably linked to this match. */
+      engineeringContext: StrategyEngineeringContext[];
+      /** Active-season kickoff rules — compliance / CAD must use only this seasonYear. */
+      gameRules: StrategyGameRulesContext;
       sources: Array<{ source: string; syncedAt: string | null; teamKey: string }>;
       computedAt: string;
     };

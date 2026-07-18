@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { buildBoard } from ".";
-import type { BuildTask, TaskBoard, TaskPriority, TaskStatus } from "./types";
+import { buildBoard, buildMemberWorkload, summarizeMeetingOutput, visibleBenchmarkMedian } from ".";
+import type { BuildTask, MemberWorkload, MeetingOutput, TaskBoard, TaskPriority, TaskStatus } from "./types";
 
 export const TASK_STATUSES: TaskStatus[] = ["todo", "in_progress", "blocked", "done", "archived"];
 export const TASK_PRIORITIES: TaskPriority[] = ["low", "normal", "high", "critical"];
@@ -40,22 +40,13 @@ export type TasksView =
       subsystems: string[];
       computedAt: string;
       canManage: boolean;
-      meetingOutput: {
-        weekStart: string;
-        loggedHours: number;
-        tasksCompleted: number;
-        hoursPerCompletedTask: number | null;
-      };
+      meetingOutput: MeetingOutput;
       benchmark: {
         optedIn: boolean;
         medianWeeklyHours: number | null;
         teamCount: number;
       };
-      memberWorkload: Array<{
-        userId: string;
-        name: string;
-        availableNow: boolean;
-      }>;
+      memberWorkload: MemberWorkload[];
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
@@ -69,6 +60,7 @@ type TaskRow = {
   status: TaskStatus;
   priority: TaskPriority;
   assignee: string | null;
+  assignees: string[] | null;
   estimateHours: string | number | null;
   dueOn: string | null;
   blockedReason: string | null;
@@ -87,6 +79,7 @@ function mapTask(row: TaskRow): BuildTask {
     status: row.status,
     priority: row.priority,
     assignee: row.assignee,
+    assignees: row.assignees?.length ? row.assignees : row.assignee ? [row.assignee] : [],
     estimateHours: estimate != null && Number.isFinite(estimate) ? estimate : null,
     dueOn: row.dueOn,
     blockedReason: row.blockedReason,
@@ -101,9 +94,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role: string } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role: string }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber",m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -134,21 +127,31 @@ export async function computeTasksView(
     };
   }
 
-  const [taskResult, seasonResult] = await Promise.all([
+  const [taskResult, seasonResult, memberResult, outputResult, benchmarkResult] = await Promise.all([
     client.query<TaskRow>(
-      `SELECT id, title, subsystem, status, priority, assignee,
-              estimate_hours AS "estimateHours", due_on::text AS "dueOn",
-              blocked_reason AS "blockedReason", notes, done_at::text AS "doneAt",
-              season_year AS "seasonYear", created_at::text AS "createdAt"
-       FROM build_tasks
-       WHERE org_id = $1 AND season_year = $2
-       ORDER BY created_at DESC`,
+      `SELECT t.id,t.title,t.subsystem,t.status,t.priority,t.assignee,
+              COALESCE(array_agg(a.assignee ORDER BY a.created_at) FILTER(WHERE a.assignee IS NOT NULL),'{}') AS assignees,
+              t.estimate_hours AS "estimateHours",t.due_on::text AS "dueOn",
+              t.blocked_reason AS "blockedReason",t.notes,t.done_at::text AS "doneAt",
+              t.season_year AS "seasonYear",t.created_at::text AS "createdAt"
+       FROM build_tasks t LEFT JOIN build_task_assignees a ON a.task_id=t.id AND a.org_id=t.org_id
+       WHERE t.org_id=$1 AND t.season_year=$2 GROUP BY t.id ORDER BY t.created_at DESC`,
       [org.orgId, seasonYear],
     ),
     client.query<{ seasonYear: number }>(
       `SELECT DISTINCT season_year AS "seasonYear" FROM build_tasks WHERE org_id = $1 ORDER BY season_year DESC`,
       [org.orgId],
     ),
+    client.query<{ userId: string; name: string }>(
+      `SELECT m.user_id::text AS "userId",COALESCE(NULLIF(trim(u.name),''),u.email) AS name
+       FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.org_id=$1 ORDER BY name`, [org.orgId]),
+    client.query<{ weekStart: string; loggedHours: number; tasksCompleted: number }>(
+      `WITH b AS(SELECT date_trunc('week',now()) w),
+       h AS(SELECT COALESCE(sum(extract(epoch FROM(COALESCE(clock_out,now())-clock_in))/3600),0)::float8 v FROM hour_logs,b WHERE org_id=$1 AND kind IN('build','meeting') AND clock_in>=b.w),
+       d AS(SELECT count(*)::int v FROM build_tasks,b WHERE org_id=$1 AND season_year=$2 AND done_at>=b.w)
+       SELECT b.w::date::text AS "weekStart",h.v AS "loggedHours",d.v AS "tasksCompleted" FROM b,h,d`, [org.orgId,seasonYear]),
+    client.query<{ optedIn: boolean; teamCount: number; medianWeeklyHours: string | number | null }>(
+      `SELECT opted_in AS "optedIn",team_count AS "teamCount",median_weekly_hours AS "medianWeeklyHours" FROM get_ops_norms_benchmark($1)`, [org.orgId]),
   ]);
 
   const tasks = taskResult.rows.map(mapTask);
@@ -157,11 +160,9 @@ export async function computeTasksView(
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
-  const weekStart = new Date();
-  weekStart.setUTCHours(0, 0, 0, 0);
-  weekStart.setUTCDate(weekStart.getUTCDate() - ((weekStart.getUTCDay() + 6) % 7));
-  const tasksCompleted = board.metrics.done;
-  const loggedHours = board.metrics.estimatedOpenHours;
+  const output = outputResult.rows[0] ?? { weekStart: new Date().toISOString().slice(0,10), loggedHours: 0, tasksCompleted: 0 };
+  const benchmark = benchmarkResult.rows[0] ?? { optedIn: false, teamCount: 0, medianWeeklyHours: null };
+  const teamCount = Number(benchmark.teamCount);
 
   return {
     status: "live",
@@ -172,20 +173,14 @@ export async function computeTasksView(
     board,
     subsystems,
     computedAt: new Date().toISOString(),
-    canManage: false,
-    meetingOutput: {
-      weekStart: weekStart.toISOString().slice(0, 10),
-      loggedHours,
-      tasksCompleted,
-      hoursPerCompletedTask:
-        tasksCompleted > 0 ? Math.round((loggedHours / tasksCompleted) * 10) / 10 : null,
-    },
+    canManage: ["owner","admin"].includes(org.role),
+    meetingOutput: summarizeMeetingOutput({ weekStart: output.weekStart, loggedHours: Number(output.loggedHours), tasksCompleted: Number(output.tasksCompleted) }),
     benchmark: {
-      optedIn: false,
-      medianWeeklyHours: null,
-      teamCount: 0,
+      optedIn: Boolean(benchmark.optedIn),
+      medianWeeklyHours: visibleBenchmarkMedian({ optedIn: Boolean(benchmark.optedIn), teamCount, median: benchmark.medianWeeklyHours == null ? null : Number(benchmark.medianWeeklyHours) }),
+      teamCount,
     },
-    memberWorkload: [],
+    memberWorkload: buildMemberWorkload(memberResult.rows,tasks),
   };
 }
 
@@ -200,14 +195,15 @@ export async function createTask(
     subsystem: string;
     priority: TaskPriority;
     assignee: string | null;
+    assignees?: string[];
     estimateHours: number | null;
     dueOn: string | null;
     seasonYear: number;
   },
 ): Promise<void> {
-  await client.query(
+  const created = await client.query<{id:string}>(
     `INSERT INTO build_tasks (org_id, title, subsystem, status, priority, assignee, estimate_hours, due_on, season_year, created_by)
-     VALUES ($1,$2,$3,'todo',$4,$5,$6::numeric,$7::date,$8,$9)`,
+     VALUES ($1,$2,$3,'todo',$4,$5,$6::numeric,$7::date,$8,$9) RETURNING id`,
     [
       input.orgId,
       input.title,
@@ -220,6 +216,14 @@ export async function createTask(
       input.userId,
     ],
   );
+  await replaceTaskAssignees(client,{orgId:input.orgId,taskId:created.rows[0]!.id,userId:input.userId,assignees:input.assignees?.length?input.assignees:input.assignee?[input.assignee]:[]});
+}
+
+export async function replaceTaskAssignees(client:PoolClient,input:{orgId:string;taskId:string;userId:string;assignees:string[]}) {
+  const names=[...new Set(input.assignees.map((name)=>name.trim().slice(0,120)).filter(Boolean))].slice(0,12);
+  await client.query(`DELETE FROM build_task_assignees WHERE task_id=$1 AND org_id=$2`,[input.taskId,input.orgId]);
+  for(const name of names) await client.query(`INSERT INTO build_task_assignees(task_id,org_id,assignee,added_by) VALUES($1,$2,$3,$4)`,[input.taskId,input.orgId,name,input.userId]);
+  await client.query(`UPDATE build_tasks SET assignee=$3,updated_at=now() WHERE id=$1 AND org_id=$2`,[input.taskId,input.orgId,names[0]??null]);
 }
 
 export async function setTaskStatus(
