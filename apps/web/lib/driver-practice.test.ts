@@ -107,8 +107,9 @@ describe("parseDriverPracticeAction", () => {
     expect(() => parseDriverPracticeAction({ action: "add_cycle", orgId: ORG, sessionId: SID, cycleAction: "x", seconds: 5000 })).toThrow(/between 0 and 3600/);
   });
   it("builds a sparse cycle patch and rejects empty updates", () => {
-    const patch = parseDriverPracticeAction({ action: "update_cycle", orgId: ORG, id: SID, success: false });
-    expect(patch).toMatchObject({ action: "update_cycle", patch: { success: false } });
+    expect(parseDriverPracticeAction({ action: "update_cycle", orgId: ORG, id: SID, success: false })).toMatchObject({
+      patch: { success: false },
+    });
     expect(() => parseDriverPracticeAction({ action: "update_cycle", orgId: ORG, id: SID })).toThrow(/No changes/);
   });
 });
