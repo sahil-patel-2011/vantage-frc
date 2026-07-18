@@ -1,4 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { computeRiskBurndownSeries, severityBandOf, severityOf, summarizeRisks } from ".";
 import type { RiskBurndownPoint, RiskCategory, RiskItem, RiskStatus, RiskSummary } from "./types";
 
@@ -10,6 +12,30 @@ export type RiskBurndownSetupStep = {
   detail: string;
   href: string;
 };
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO risk metrics. */
+function setupStepsFor(orgId: string | null): RiskBurndownSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Risk-Register Burndown is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "risks",
+      label: "Open Risks",
+      detail: "Season L×I scores stay empty until logged — never DEMO totals.",
+      href: withOrgHref("/risks", orgId),
+    },
+    {
+      id: "fmea",
+      label: "Open FMEA",
+      detail: "Failure modes stay blank until logged — never DEMO RPN scores.",
+      href: hubHref("/team", "fmea", orgId),
+    },
+  ];
+}
 
 export type RiskBurndownView =
   | {
@@ -105,9 +131,7 @@ export async function computeRiskBurndownView(
     return {
       status: "setup_required",
       message: "Select a team workspace to track your season risk register.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: setupStepsFor(null),
       orgId: null,
       seasonYear,
     };
