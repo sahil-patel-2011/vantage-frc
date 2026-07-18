@@ -12,6 +12,13 @@ import {
   type SponsorProspect,
   type WritingDraft,
 } from "./business-portal";
+import {
+  buildSponsorReminders,
+  isPipelineStage,
+  mapLegacyStatusToPipelineStage,
+  summarizeFundraisingProgress,
+  type SponsorPipelineStage,
+} from "./sponsor-pipeline";
 
 export function currentBusinessSeason(now = new Date()): number {
   return now.getUTCFullYear();
@@ -47,6 +54,7 @@ export async function loadBusinessView(
   );
   const org = membership.rows[0];
   if (!org) {
+    if (input.requestedOrg) throw new Error("Organization access denied");
     return {
       status: "setup_required",
       message: "Select a team workspace to manage budgets, sponsors, grants, and team evidence.",
@@ -104,19 +112,32 @@ export async function loadBusinessView(
       [orgId, seasonYear],
     ),
     client.query<{
-      id: string; name: string; status: Sponsor["status"]; tier: string | null; website: string | null;
-      industry: string | null; contactName: string | null; contactEmail: string | null; relationshipOwner: string | null;
-      lastContactOn: string | null; nextFollowUpOn: string | null; notes: string | null;
-      lifetimeUsd: string; seasonUsd: string; seasonCashUsd: string;
+      id: string; name: string; status: Sponsor["status"]; pipelineStage: string | null; tier: string | null;
+      website: string | null; industry: string | null; contactName: string | null; contactEmail: string | null;
+      relationshipOwner: string | null; lastContactOn: string | null; nextFollowUpOn: string | null; notes: string | null;
+      askUsd: string | null; pledgedUsd: string | null;
+      thankYouDueOn: string | null; renewalDueOn: string | null;
+      lifetimeUsd: string; seasonUsd: string; seasonCashUsd: string; hasUnthankedContribution: boolean;
     }>(
-      `SELECT s.id, s.name, s.status::text AS status, s.tier::text AS tier, s.website, s.industry,
+      `SELECT s.id, s.name, s.status::text AS status,
+              COALESCE(s.pipeline_stage::text, NULL) AS "pipelineStage",
+              s.tier::text AS tier, s.website, s.industry,
               contact.name AS "contactName", contact.email AS "contactEmail",
               s.relationship_owner AS "relationshipOwner",
               interaction.last_contact_on::text AS "lastContactOn",
               COALESCE(interaction.next_follow_up_on, s.next_follow_up_on)::text AS "nextFollowUpOn",
-              s.notes, COALESCE(contribution.lifetime_usd, 0)::text AS "lifetimeUsd",
+              s.notes,
+              s.ask_amount_usd::text AS "askUsd",
+              s.pledged_amount_usd::text AS "pledgedUsd",
+              s.thank_you_due_on::text AS "thankYouDueOn",
+              s.renewal_due_on::text AS "renewalDueOn",
+              COALESCE(contribution.lifetime_usd, 0)::text AS "lifetimeUsd",
               COALESCE(contribution.season_usd, 0)::text AS "seasonUsd",
-              COALESCE(contribution.season_cash_usd, 0)::text AS "seasonCashUsd"
+              COALESCE(contribution.season_cash_usd, 0)::text AS "seasonCashUsd",
+              EXISTS (
+                SELECT 1 FROM sponsor_contributions c
+                WHERE c.sponsor_id = s.id AND c.org_id = s.org_id AND c.thank_you_sent_at IS NULL
+              ) AS "hasUnthankedContribution"
        FROM sponsors s
        LEFT JOIN LATERAL (
          SELECT name, email FROM sponsor_contacts
@@ -135,7 +156,9 @@ export async function loadBusinessView(
          FROM sponsor_interactions WHERE sponsor_id = s.id AND org_id = s.org_id
        ) interaction ON true
        WHERE s.org_id = $1
-       ORDER BY CASE s.status::text WHEN 'active' THEN 0 WHEN 'prospect' THEN 1 ELSE 2 END, s.name
+       ORDER BY CASE COALESCE(s.pipeline_stage::text, 'prospect')
+         WHEN 'renewal' THEN 0 WHEN 'active' THEN 1 WHEN 'pledged' THEN 2
+         WHEN 'visit' THEN 3 WHEN 'ask' THEN 4 ELSE 5 END, s.name
        LIMIT 200`,
       [orgId, seasonYear],
     ),
@@ -249,23 +272,41 @@ export async function loadBusinessView(
     neededBy: row.neededBy,
     orderedOn: row.orderedOn,
   }));
-  const sponsors: Sponsor[] = sponsorsResult.rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    status: row.status,
-    tier: row.tier,
-    website: row.website,
-    industry: row.industry,
-    contactName: row.contactName,
-    contactEmail: row.contactEmail,
-    relationshipOwner: row.relationshipOwner,
-    lastContactOn: row.lastContactOn,
-    nextFollowUpOn: row.nextFollowUpOn,
-    notes: row.notes,
-    lifetimeCents: toCents(row.lifetimeUsd),
-    seasonCents: toCents(row.seasonUsd),
-    seasonCashCents: toCents(row.seasonCashUsd),
-  }));
+  const sponsors: Sponsor[] = sponsorsResult.rows.map((row) => {
+    const pipelineStage: SponsorPipelineStage = isPipelineStage(row.pipelineStage)
+      ? row.pipelineStage
+      : mapLegacyStatusToPipelineStage(row.status);
+    return {
+      id: row.id,
+      name: row.name,
+      status: row.status,
+      pipelineStage,
+      tier: row.tier,
+      website: row.website,
+      industry: row.industry,
+      contactName: row.contactName,
+      contactEmail: row.contactEmail,
+      relationshipOwner: row.relationshipOwner,
+      lastContactOn: row.lastContactOn,
+      nextFollowUpOn: row.nextFollowUpOn,
+      notes: row.notes,
+      askCents: toCents(row.askUsd),
+      pledgedCents: toCents(row.pledgedUsd),
+      thankYouDueOn: row.thankYouDueOn,
+      renewalDueOn: row.renewalDueOn,
+      lifetimeCents: toCents(row.lifetimeUsd),
+      seasonCents: toCents(row.seasonUsd),
+      seasonCashCents: toCents(row.seasonCashUsd),
+    };
+  });
+  const sponsorReminders = buildSponsorReminders(
+    sponsors.map((sponsor) => ({
+      ...sponsor,
+      thankYouSentAt: sponsorsResult.rows.find((row) => row.id === sponsor.id)?.hasUnthankedContribution
+        ? null
+        : "handled",
+    })),
+  );
   const grants: GrantApplication[] = grantsResult.rows.map((row) => ({
     id: row.id,
     funder: row.funder,
@@ -287,6 +328,12 @@ export async function loadBusinessView(
   const totalBudgetCents = configuredBudgetCents > 0 ? configuredBudgetCents : allocatedCents;
   const sponsorIncomeCents = sponsors.reduce((total, sponsor) => total + sponsor.seasonCashCents, 0);
   const grantIncomeCents = grants.reduce((total, grant) => total + grant.awardedCents, 0);
+  const fundraisingGoalCents = toCents(season?.fundraisingGoalUsd);
+  const fundraisingProgress = summarizeFundraisingProgress({
+    fundraisingGoalCents,
+    sponsors,
+    grantIncomeCents,
+  });
   const totals = summarizeBudget({ totalBudgetCents, purchases, sponsorIncomeCents, grantIncomeCents });
   const impactRow = impactResult.rows[0];
   const seasons = seasonsResult.rows.map((row) => Number(row.seasonYear));
@@ -303,7 +350,7 @@ export async function loadBusinessView(
     seasons,
     budget: {
       totalBudgetCents,
-      fundraisingGoalCents: toCents(season?.fundraisingGoalUsd),
+      fundraisingGoalCents,
       sponsorIncomeCents,
       grantIncomeCents,
       ...totals,
@@ -317,6 +364,8 @@ export async function loadBusinessView(
     categories,
     purchases,
     sponsors,
+    fundraisingProgress,
+    sponsorReminders,
     interactions: interactionsResult.rows as SponsorInteraction[],
     prospects: prospectsResult.rows,
     grants,

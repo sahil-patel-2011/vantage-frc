@@ -84,7 +84,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
 
-    const view = await withRls({ userId: session.user.id }, async (client) => {
+    const view = await withRls({ userId: session.user.id, orgId: requestedOrg ?? undefined }, async (client) => {
       const membership = await client.query<{
         orgId: string;
         orgName: string;
@@ -102,6 +102,7 @@ export async function GET(request: Request) {
 
       const row = membership.rows[0];
       if (!row) {
+        if (requestedOrg) throw new HttpError(403, "Organization access denied");
         return {
           status: "setup_required",
           message: "Select a team workspace to plan your season calendar.",

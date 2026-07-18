@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { auth } from "@vantage/core";
+import { auth, emitPreferredNotification } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { loadBusinessView, validSeason } from "../../../lib/business-data";
@@ -109,6 +109,9 @@ export async function GET(request: Request) {
     );
     return Response.json(view);
   } catch (error) {
+    if (error instanceof Error && /access denied/i.test(error.message)) {
+      return Response.json({ error: error.message }, { status: 403 });
+    }
     const message = error instanceof Error && /finance_season_settings|shipping_cost_usd|document_type/.test(error.message)
       ? "The Team Business Portal database migration has not been applied yet."
       : "Could not load the Team Business Portal.";
@@ -194,6 +197,28 @@ export async function POST(request: Request) {
           );
           entityId = inserted.rows[0]?.id ?? null;
           await audit(client, { orgId, userId: session.user.id, action, entityType: "purchase_request", entityId });
+          if (entityId) {
+            const total = Math.round((quantity * unitCost + shipping) * 100) / 100;
+            const admins = await client.query<{ userId: string }>(
+              `SELECT user_id AS "userId" FROM memberships
+               WHERE org_id = $1 AND role IN ('owner', 'admin') AND user_id <> $2`,
+              [orgId, session.user.id],
+            );
+            const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(entityId)}`;
+            for (const adminRow of admins.rows) {
+              await emitPreferredNotification(client, {
+                userId: adminRow.userId,
+                orgId,
+                type: "purchase_request_submitted",
+                payload: {
+                  title: "New purchase request",
+                  body: `${itemName} (~$${total})`,
+                  orderId: entityId,
+                  href,
+                },
+              });
+            }
+          }
           break;
         }
         case "set-purchase-status": {
@@ -340,7 +365,8 @@ export async function POST(request: Request) {
           const occurredOn = date(body.occurredOn);
           if (!sponsorId || !summary || !occurredOn) throw new Error("Sponsor, date, and interaction summary are required");
           const requestedType = choice(["email", "call", "meeting", "visit", "thank_you", "note"] as const, body.interactionType) ?? "note";
-          const interactionType = requestedType === "visit" ? "meeting" : requestedType === "note" ? "other" : requestedType;
+          // Prefer native `visit` when the enum supports it (pipeline CRM); map note → other.
+          const interactionType = requestedType === "note" ? "other" : requestedType;
           const inserted = await client.query<{ id: string }>(
             `INSERT INTO sponsor_interactions(
                org_id, sponsor_id, type, notes, occurred_at, next_step, next_follow_up_on, logged_by
@@ -351,6 +377,27 @@ export async function POST(request: Request) {
           if (!inserted.rows[0]) throw new Error("Sponsor not found");
           entityId = inserted.rows[0].id;
           await audit(client, { orgId, userId: session.user.id, action, entityType: "sponsor_interaction", entityId });
+          break;
+        }
+        case "mark-thank-you-sent": {
+          requireAdmin(member);
+          const sponsorId = text(body.sponsorId, 64);
+          if (!sponsorId) throw new Error("Sponsor is required");
+          const updated = await client.query(
+            `UPDATE sponsor_contributions SET thank_you_sent_at = COALESCE(thank_you_sent_at, now())
+             WHERE org_id = $1 AND sponsor_id = $2 AND thank_you_sent_at IS NULL`,
+            [orgId, sponsorId],
+          );
+          await client.query(
+            `UPDATE sponsors SET thank_you_due_on = NULL, updated_at = now()
+             WHERE id = $1 AND org_id = $2`,
+            [sponsorId, orgId],
+          );
+          if (!updated.rowCount) {
+            // Still clear the due date so the reminder queue advances.
+          }
+          entityId = sponsorId;
+          await audit(client, { orgId, userId: session.user.id, action, entityType: "sponsor", entityId: sponsorId });
           break;
         }
         case "save-prospect": {
