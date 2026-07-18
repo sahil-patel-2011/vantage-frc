@@ -6,12 +6,12 @@ import {
 } from "./in-app-notifications";
 
 describe("in-app notification prefs", () => {
-  it("defaults team-ops alerts on and product notes off", () => {
+  it("defaults team-ops and product notes on", () => {
     expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.todoAssigned).toBe(true);
     expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.dutyAssigned).toBe(true);
     expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.calendarEvents).toBe(true);
     expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.sponsorReminders).toBe(true);
-    expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.productUpdates).toBe(false);
+    expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.productUpdates).toBe(true);
   });
 
   it("merges partial prefs without dropping unknowns as false", () => {

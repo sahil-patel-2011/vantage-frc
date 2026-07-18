@@ -5,6 +5,7 @@ import {
 } from "../../../../lib/reference/run-ingest";
 import { notifyMatchScheduleAfterSync } from "../../../../lib/reference/notify-schedule";
 import { runSponsorReminders } from "../../../../lib/run-sponsor-reminders";
+import { runProductReleasePublish } from "../../../../lib/run-product-release-publish";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -51,9 +52,10 @@ async function run(request: Request) {
         if (effectiveMode === "season") {
           const summary = await runTbaSeasonSync(body.year ?? year);
           const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
-          // Hobby allows 2 crons — piggyback daily sponsor reminders on season sync.
+          // Hobby allows 2 crons — piggyback daily sponsor reminders + scheduled releases on season sync.
           const sponsorReminders = await runSponsorReminders();
-          return Response.json({ ok: true, summary, matchAlerts, sponsorReminders });
+          const productReleases = await runProductReleasePublish();
+          return Response.json({ ok: true, summary, matchAlerts, sponsorReminders, productReleases });
         }
         const summary = await runTbaEventDaySync({
           year: body.year ?? year,
@@ -73,9 +75,10 @@ async function run(request: Request) {
     if (mode === "season") {
       const summary = await runTbaSeasonSync(year);
       const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
-      // Hobby allows 2 crons — piggyback daily sponsor reminders on season sync.
+      // Hobby allows 2 crons — piggyback daily sponsor reminders + scheduled releases on season sync.
       const sponsorReminders = await runSponsorReminders();
-      return Response.json({ ok: true, summary, matchAlerts, sponsorReminders });
+      const productReleases = await runProductReleasePublish();
+      return Response.json({ ok: true, summary, matchAlerts, sponsorReminders, productReleases });
     }
 
     const eventKey = url.searchParams.get("eventKey");

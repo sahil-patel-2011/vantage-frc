@@ -208,6 +208,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     icon: "gear",
     items: [
       { href: "/account", label: "Account", icon: "users" },
+      { href: "/whats-new", label: "What’s new", icon: "bell" },
       { href: "/support", label: "Help & Support", icon: "chat" },
       { href: "/notifications", label: "Notifications", icon: "bell" },
       { href: "/security", label: "Security", icon: "gear" },
