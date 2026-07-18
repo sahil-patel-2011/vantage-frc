@@ -449,7 +449,7 @@ export default function PracticeClient() {
             in the same loop for {context.orgName ?? "your team"}.
           </p>
           <div className="practice-hero-links">
-            <a href={withOrg("/tasks", orgId)}>Todos</a>
+            <a href={withOrg("/todos", orgId)">Todos</a>
             <a href={withOrg("/messages", orgId)}>Messages</a>
             <a href={withOrg("/team/calendar", orgId)}>Calendar</a>
             <a href={withOrg("/attendance", orgId)}>Attendance</a>
