@@ -218,6 +218,13 @@ describe("my-subteam strip + workflow deep links", () => {
       ORG,
     );
     expect(discuss.some((l) => l.label === "Discuss in Messages" && l.href.includes("linkType=event"))).toBe(true);
+
+    const outreach = eventWorkflowLinks(
+      event({ id: "o", title: "Partner night", startsAt: "2026-02-01T18:00:00.000Z", kind: "outreach" }),
+      ORG,
+    );
+    expect(outreach.some((l) => l.href.includes("/visit-invites"))).toBe(true);
+    expect(outreach.some((l) => l.label === "Visit invites")).toBe(true);
   });
 });
 
