@@ -697,6 +697,9 @@ html[data-theme="dark"] .dash-remove-btn{background:#e2e8f0;color:#0f172a}
 .dash-next-match{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .dash-next-match>div:first-child span,.dash-countdown>span,.dash-next-match footer span{color:var(--soft-muted);font-size:10px;font-weight:700;text-transform:uppercase}
 .dash-next-match strong{display:block;font-size:32px;line-height:1}
+.dash-bumper-cue{grid-column:1/-1;margin:0;font-size:14px;font-weight:700}
+.dash-next-match.alliance-red .dash-bumper-cue{color:#d43a3a}
+.dash-next-match.alliance-blue .dash-bumper-cue{color:#2f6fdd}
 .dash-countdown{text-align:right}
 .dash-countdown strong{font:700 26px ui-monospace,monospace}
 .dash-next-match footer{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:8px;border-top:1px solid var(--soft-line)}

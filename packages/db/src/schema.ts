@@ -55,6 +55,7 @@ export const scoutSource = pgEnum("scout_source", [
   "manual",
   "voice",
   "import",
+  "video",
 ]);
 export const scoutMediaKind = pgEnum("scout_media_kind", ["photo", "video"]);
 export const scoutMediaStatus = pgEnum("scout_media_status", [
@@ -204,7 +205,26 @@ export const organizations = pgTable("organizations", {
   slug: text("slug").notNull().unique(),
   teamNumber: integer("team_number"),
   isDemo: boolean("is_demo").notNull().default(false),
+  city: text("city"),
+  stateProv: text("state_prov"),
+  description: text("description"),
   createdAt: timestamps.createdAt,
+});
+
+/** Org-scoped sponsorship/grant background — mission, history, demographics, achievements. */
+export const teamBackgroundProfile = pgTable("team_background_profile", {
+  orgId: uuid("org_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  mission: text("mission"),
+  history: text("history"),
+  demographics: text("demographics"),
+  achievements: jsonb("achievements").$type<string[]>().notNull().default([]),
+  studentCount: integer("student_count"),
+  mentorCount: integer("mentor_count"),
+  foundedYear: integer("founded_year"),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  ...timestamps,
 });
 
 export const orgAuthPolicies = pgTable("org_auth_policies", {
@@ -1830,6 +1850,10 @@ export const orgAiPolicies = pgTable("org_ai_policies", {
   dailySpendAlertUsd: numeric("daily_spend_alert_usd", { precision: 12, scale: 6 }),
   monthlySpendAlertUsd: numeric("monthly_spend_alert_usd", { precision: 12, scale: 6 }),
   spendAlertThresholds: integer("spend_alert_thresholds").array().notNull().default([50, 75, 90]),
+  financeInAiEnabled: boolean("finance_in_ai_enabled").notNull().default(false),
+  financeInAiAcceptedAt: timestamp("finance_in_ai_accepted_at", { withTimezone: true }),
+  financeInAiAcceptedBy: uuid("finance_in_ai_accepted_by").references(() => users.id),
+  financeInAiAckVersion: text("finance_in_ai_ack_version"),
   updatedBy: uuid("updated_by").notNull().references(() => users.id),
   ...timestamps,
 });
@@ -2027,6 +2051,8 @@ export const matchScoutEntries = pgTable(
     matchKey: text("match_key")
       .notNull()
       .references(() => matchesRef.matchKey),
+    videoReviewId: uuid("video_review_id"),
+    videoAtSeconds: integer("video_at_seconds"),
   },
   (table) => [
     uniqueIndex("match_scout_entries_org_client_uq").on(
@@ -2039,6 +2065,8 @@ export const matchScoutEntries = pgTable(
       table.matchKey,
       table.teamKey,
     ),
+    index("match_scout_entries_video_review_idx").on(table.videoReviewId),
+    index("match_scout_entries_org_source_idx").on(table.orgId, table.source),
   ],
 );
 
@@ -2106,6 +2134,9 @@ export const scoutDisagreements = pgTable(
     resolution: jsonb("resolution").$type<Record<string, unknown> | null>(),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    winningEntryId: uuid("winning_entry_id"),
+    winningScoutUserId: uuid("winning_scout_user_id").references(() => users.id),
+    chosenValue: jsonb("chosen_value"),
     ...timestamps,
   },
   (table) => [
@@ -2408,11 +2439,20 @@ export const sponsorTier = pgEnum("sponsor_tier", [
   "custom",
 ]);
 export const sponsorStatus = pgEnum("sponsor_status", ["prospect", "active", "lapsed", "declined"]);
+export const sponsorPipelineStage = pgEnum("sponsor_pipeline_stage", [
+  "prospect",
+  "ask",
+  "visit",
+  "pledged",
+  "active",
+  "renewal",
+]);
 export const sponsorContributionType = pgEnum("sponsor_contribution_type", ["cash", "in_kind", "discount"]);
 export const sponsorInteractionType = pgEnum("sponsor_interaction_type", [
   "email",
   "call",
   "meeting",
+  "visit",
   "event_invite",
   "thank_you",
   "other",
@@ -2435,6 +2475,7 @@ export const sponsors = pgTable(
     website: text("website"),
     tier: sponsorTier("tier").notNull().default("custom"),
     status: sponsorStatus("status").notNull().default("prospect"),
+    pipelineStage: sponsorPipelineStage("pipeline_stage").notNull().default("prospect"),
     industry: text("industry"),
     city: text("city"),
     stateProv: text("state_prov"),
@@ -2442,6 +2483,10 @@ export const sponsors = pgTable(
     firstSponsoredSeason: integer("first_sponsored_season"),
     relationshipOwner: text("relationship_owner"),
     nextFollowUpOn: date("next_follow_up_on"),
+    askAmountUsd: numeric("ask_amount_usd", { precision: 12, scale: 2 }),
+    pledgedAmountUsd: numeric("pledged_amount_usd", { precision: 12, scale: 2 }),
+    thankYouDueOn: date("thank_you_due_on"),
+    renewalDueOn: date("renewal_due_on"),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id),
@@ -2449,6 +2494,7 @@ export const sponsors = pgTable(
   },
   (table) => [
     index("sponsors_org_status_idx").on(table.orgId, table.status),
+    index("sponsors_org_pipeline_idx").on(table.orgId, table.pipelineStage),
     uniqueIndex("sponsors_org_name_uq").on(table.orgId, table.name),
   ],
 );
@@ -2603,6 +2649,7 @@ export const purchaseRequests = pgTable(
     reviewedBy: uuid("reviewed_by").references(() => users.id),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     reviewNotes: text("review_notes"),
+    buyerUserId: uuid("buyer_user_id").references(() => users.id, { onDelete: "set null" }),
     orderedAt: timestamp("ordered_at", { withTimezone: true }),
     receivedAt: timestamp("received_at", { withTimezone: true }),
     ...timestamps,
@@ -2610,6 +2657,7 @@ export const purchaseRequests = pgTable(
   (table) => [
     index("purchase_requests_org_status_idx").on(table.orgId, table.status),
     index("purchase_requests_org_season_idx").on(table.orgId, table.seasonYear),
+    index("purchase_requests_org_buyer_idx").on(table.orgId, table.buyerUserId),
   ],
 );
 
