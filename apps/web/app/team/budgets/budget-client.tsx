@@ -145,18 +145,19 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     }
     setLoadError(null);
     if (data.policy) {
+      const policy = data.policy;
       setPolicy((prev) => ({
         ...prev,
-        ...data.policy,
+        ...policy,
         dailySpendLimitUsd:
-          data.policy.dailySpendLimitUsd == null ? "" : String(data.policy.dailySpendLimitUsd),
+          policy.dailySpendLimitUsd == null ? "" : String(policy.dailySpendLimitUsd),
         monthlySpendLimitUsd:
-          data.policy.monthlySpendLimitUsd == null ? "" : String(data.policy.monthlySpendLimitUsd),
+          policy.monthlySpendLimitUsd == null ? "" : String(policy.monthlySpendLimitUsd),
         dailyTokenLimit:
-          data.policy.dailyTokenLimit == null ? "" : String(data.policy.dailyTokenLimit),
+          policy.dailyTokenLimit == null ? "" : String(policy.dailyTokenLimit),
         monthlyTokenLimit:
-          data.policy.monthlyTokenLimit == null ? "" : String(data.policy.monthlyTokenLimit),
-        warningThresholds: ((data.policy.warningThresholds as number[] | undefined) ?? [50, 75, 90]).join(
+          policy.monthlyTokenLimit == null ? "" : String(policy.monthlyTokenLimit),
+        warningThresholds: ((policy.warningThresholds as number[] | undefined) ?? [50, 75, 90]).join(
           ",",
         ),
       }));
