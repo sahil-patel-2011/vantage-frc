@@ -10,3 +10,23 @@ export {
   type AccountRelatedId,
   type AccountRelatedLink,
 } from "./account-related";
+
+export {
+  CONNECTIONS_RELATED_INCLUDE,
+  CONNECTIONS_RELATED_LINKS,
+  buildConnectionConnectors,
+  classifyConnectionsShell,
+  connectionBadgeLabel,
+  connectionBadgeTone,
+  connectionsEmptyCopy,
+  connectionsNextActions,
+  connectionsRelatedLinks,
+  type ConnectionConnectorId,
+  type ConnectionConnectorStatus,
+  type ConnectionConnectorView,
+  type ConnectionsEmptyCopy,
+  type ConnectionsNextAction,
+  type ConnectionsRelatedId,
+  type ConnectionsRelatedLink,
+  type ConnectionsShellKind,
+} from "./connections-related";

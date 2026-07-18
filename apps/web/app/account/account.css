@@ -142,6 +142,75 @@
   line-height: 1.35;
 }
 
+.settings-connections {
+  display: grid;
+  gap: 14px;
+}
+
+.connections-related {
+  margin: 0;
+}
+
+.settings-connections-grid {
+  margin: 0;
+}
+
+.settings-connection-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.settings-connection-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.settings-connection-card-top h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.settings-connection-card .app-badge {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.settings-connection-card p {
+  margin: 0;
+  color: var(--soft-muted, var(--app-muted));
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.settings-connection-card a {
+  color: var(--soft-accent, var(--app-accent));
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.settings-connection-footer {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-connection-footer h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.settings-connection-footer p {
+  margin: 0;
+  color: var(--soft-muted, var(--app-muted));
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 @media (max-width: 640px) {
   .account-next-actions li {
     flex-direction: column;

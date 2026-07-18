@@ -4,6 +4,10 @@ import { FormEvent, useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import {
+  CONNECTIONS_RELATED_INCLUDE,
+  connectionsRelatedLinks,
+} from "../../../lib/account";
+import {
   DISCORD_RELATED_INCLUDE,
   discordNextActions,
   discordRelatedLinks,
@@ -46,14 +50,27 @@ const emptyForm = {
 
 function DiscordRelated({ orgId }: { orgId: string }) {
   const links = discordRelatedLinks(orgId, { include: [...DISCORD_RELATED_INCLUDE] });
+  const connectionLinks = connectionsRelatedLinks(orgId, {
+    active: "discord",
+    include: [...CONNECTIONS_RELATED_INCLUDE],
+  });
   return (
-    <nav className="product-hub-related team-discord-related" aria-label="Related team tools">
-      {links.map((link) => (
-        <a key={link.id} className="app-button secondary" href={link.href}>
-          {link.label}
-        </a>
-      ))}
-    </nav>
+    <>
+      <nav className="product-hub-related team-discord-related" aria-label="Related team tools">
+        {links.map((link) => (
+          <a key={link.id} className="app-button secondary" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
+      <nav className="product-hub-related team-discord-connections" aria-label="Related connection tools">
+        {connectionLinks.map((link) => (
+          <a key={link.id} className="app-button secondary" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
+    </>
   );
 }
 
