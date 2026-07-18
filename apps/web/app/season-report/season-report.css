@@ -1,0 +1,21 @@
+/* Soft-UI Season Report — .season-report-* + shared Soft-UI tokens. Never DEMO season stats. */
+.season-report-page{display:grid;gap:16px}
+.season-report-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.season-report-related{display:flex;flex-wrap:wrap;gap:8px}
+.season-report-next-actions{margin:0}
+.season-report-metered{margin:0}
+.season-report-coverage header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.season-report-coverage-pct{font-size:2rem}
+.season-report-bars{display:grid;gap:8px;margin-top:12px}
+.season-report-bar-row{display:grid;grid-template-columns:160px 1fr 48px;gap:8px;align-items:center}
+.season-report-breakdown{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.season-report-list{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.season-report-list li{display:flex;justify-content:space-between;gap:8px}
+.season-report-entry-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.season-report-entry-list li{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.season-report-snapshots{display:grid;gap:16px;margin-top:12px}
+@media(max-width:900px){
+  .season-report-header-actions{justify-content:flex-start}
+  .season-report-bar-row{grid-template-columns:1fr}
+  .season-report-next-actions li{flex-direction:column;align-items:stretch}
+}
