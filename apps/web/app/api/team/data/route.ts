@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { notifyNextMatchReady } from "../../../../lib/notify-match";
 import { loadDataSourceHealth } from "../../../../lib/reference-health";
+import { notifyMatchScheduleAfterSync } from "../../../../lib/reference/notify-schedule";
 import { runTbaEventDaySync } from "../../../../lib/reference/run-ingest";
 
 async function current() {
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
     const session = await current();
     const body = (await request.json()) as { orgId: string; action?: "sync" };
     if (body.action !== "sync") throw new Error("Unsupported action");
-    const summary = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
+    const result = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
       await assertOrgCapability(client, body.orgId, "manage_api_keys");
       const active = await client.query<{ eventKey: string | null; credentialId: string | null }>(
         `SELECT c.active_event_key AS "eventKey",
@@ -134,7 +135,13 @@ export async function POST(request: Request) {
       }
       return { summary, matchNotify };
     });
-    return Response.json({ success: true, ...result });
+    const matchAlerts = await notifyMatchScheduleAfterSync(result.summary.eventKeys ?? []);
+    return Response.json({
+      success: true,
+      summary: result.summary,
+      matchNotify: result.matchNotify,
+      matchAlerts,
+    });
   } catch (error) {
     return responseError(error);
   }
