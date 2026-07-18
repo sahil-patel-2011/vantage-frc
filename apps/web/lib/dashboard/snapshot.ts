@@ -428,6 +428,151 @@ export async function loadDashboardSnapshot(
     });
   }
 
+  async function teamTodos() {
+    try {
+      const [counts, items] = await Promise.all([
+        client.query<{ todo: string; doing: string; mineOpen: string; overdue: string }>(
+          `SELECT
+             count(*) FILTER (WHERE status = 'todo')::text AS todo,
+             count(*) FILTER (WHERE status = 'doing')::text AS doing,
+             count(*) FILTER (
+               WHERE status <> 'done' AND assignee_user_id = $2
+             )::text AS "mineOpen",
+             count(*) FILTER (
+               WHERE status <> 'done' AND due_on IS NOT NULL AND due_on < CURRENT_DATE
+             )::text AS overdue
+           FROM team_todos
+           WHERE org_id = $1`,
+          [input.orgId, input.userId],
+        ),
+        client.query<{
+          id: string;
+          title: string;
+          status: string;
+          dueOn: string | null;
+          assigneeName: string | null;
+        }>(
+          `SELECT
+             t.id,
+             t.title,
+             t.status,
+             t.due_on::text AS "dueOn",
+             u.name AS "assigneeName"
+           FROM team_todos t
+           LEFT JOIN users u ON u.id = t.assignee_user_id
+           WHERE t.org_id = $1 AND t.status <> 'done'
+           ORDER BY
+             CASE WHEN t.assignee_user_id = $2 THEN 0 ELSE 1 END,
+             CASE t.status WHEN 'doing' THEN 0 ELSE 1 END,
+             t.due_on NULLS LAST,
+             t.created_at DESC
+           LIMIT 5`,
+          [input.orgId, input.userId],
+        ),
+      ]);
+      const todo = Number(counts.rows[0]?.todo ?? 0);
+      const doing = Number(counts.rows[0]?.doing ?? 0);
+      const mineOpen = Number(counts.rows[0]?.mineOpen ?? 0);
+      const overdue = Number(counts.rows[0]?.overdue ?? 0);
+      const open = todo + doing;
+      widgets.team_todos = stamp(open > 0 ? "live" : "empty", "team_todos", {
+        todo,
+        doing,
+        open,
+        mineOpen,
+        overdue,
+        items: items.rows,
+      });
+    } catch {
+      widgets.team_todos = stamp(
+        "setup_required",
+        "team_todos",
+        undefined,
+        "Team todos need the latest database migration.",
+      );
+    }
+  }
+
+  async function subteamUpcoming() {
+    const orgQuery = `?orgId=${encodeURIComponent(input.orgId)}`;
+    try {
+      const [subteamCount, mySubteams, events] = await Promise.all([
+        client.query<{ count: string }>(
+          `SELECT count(*)::text AS count FROM team_subteams WHERE org_id = $1`,
+          [input.orgId],
+        ),
+        client.query<{ id: string; name: string; color: string }>(
+          `SELECT s.id, s.name, s.color
+           FROM team_subteam_members m
+           JOIN team_subteams s ON s.id = m.subteam_id
+           WHERE m.org_id = $1 AND m.user_id = $2
+           ORDER BY s.sort_order, lower(s.name)`,
+          [input.orgId, input.userId],
+        ),
+        client.query<{
+          id: string;
+          title: string;
+          kind: string;
+          startsAt: string;
+          subteamName: string | null;
+          subteamColor: string | null;
+        }>(
+          `SELECT e.id, e.title, e.kind, e.starts_at::text AS "startsAt",
+                  st.name AS "subteamName", st.color AS "subteamColor"
+           FROM subteam_calendar_events e
+           LEFT JOIN team_subteams st ON st.id = e.subteam_id
+           WHERE e.org_id = $1
+             AND e.starts_at >= now()
+             AND (
+               e.subteam_id IS NULL
+               OR e.subteam_id IN (
+                 SELECT subteam_id FROM team_subteam_members
+                 WHERE org_id = $1 AND user_id = $2
+               )
+             )
+           ORDER BY e.starts_at ASC
+           LIMIT 5`,
+          [input.orgId, input.userId],
+        ),
+      ]);
+      const totalSubteams = Number(subteamCount.rows[0]?.count ?? 0);
+      if (totalSubteams === 0) {
+        widgets.subteam_upcoming = stamp(
+          "setup_required",
+          "subteam_upcoming",
+          { href: `/team/calendar${orgQuery}`, ctaLabel: "Create first subteam" },
+          "Create a subteam, then schedule your first practice.",
+        );
+        return;
+      }
+      if (events.rows.length === 0) {
+        widgets.subteam_upcoming = stamp(
+          "empty",
+          "subteam_upcoming",
+          {
+            mySubteams: mySubteams.rows,
+            href: `/team/calendar${orgQuery}`,
+            ctaLabel: "Schedule first practice",
+          },
+          "Nothing upcoming for your subteams — schedule a practice on the team calendar.",
+        );
+        return;
+      }
+      widgets.subteam_upcoming = stamp("live", "subteam_upcoming", {
+        items: events.rows,
+        mySubteams: mySubteams.rows,
+        href: `/team/calendar${orgQuery}`,
+      });
+    } catch {
+      widgets.subteam_upcoming = stamp(
+        "setup_required",
+        "subteam_upcoming",
+        { href: `/team/calendar${orgQuery}` },
+        "Subteam calendars need the latest database migration.",
+      );
+    }
+  }
+
   async function quickActions() {
     const orgQuery = `?orgId=${encodeURIComponent(input.orgId)}`;
     widgets.quick_actions = stamp("live", "quick_actions", {
@@ -437,6 +582,7 @@ export async function loadDashboardSnapshot(
         { href: `/strategy${orgQuery}`, label: "Strategize", detail: "Run match what-if" },
         { href: `/business${orgQuery}`, label: "Business", detail: "Budget, sponsors & grants" },
         { href: `/messages${orgQuery}`, label: "Messages", detail: "Team chat & DMs" },
+        { href: `/team/calendar${orgQuery}`, label: "Calendar", detail: "What's next for your subteam" },
       ],
     });
   }
@@ -502,6 +648,8 @@ export async function loadDashboardSnapshot(
     notifications(),
     robotReadiness(),
     alerts(),
+    teamTodos(),
+    subteamUpcoming(),
     quickActions(),
   ]);
 

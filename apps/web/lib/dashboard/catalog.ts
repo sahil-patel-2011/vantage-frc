@@ -12,6 +12,8 @@ export const DASHBOARD_WIDGET_TYPES = [
   "notifications",
   "robot_readiness",
   "alerts",
+  "team_todos",
+  "subteam_upcoming",
 ] as const;
 
 export type DashboardWidgetType = (typeof DASHBOARD_WIDGET_TYPES)[number];
@@ -138,6 +140,24 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
     minH: 2,
   },
   {
+    type: "team_todos",
+    label: "Team todos",
+    description: "Open shared todos, yours first — no invented demo items",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+  },
+  {
+    type: "subteam_upcoming",
+    label: "What's next (subteam)",
+    description: "Upcoming practices and deadlines for your subteams",
+    defaultW: 4,
+    defaultH: 3,
+    minW: 3,
+    minH: 2,
+  },
+  {
     type: "scouting_coverage",
     label: "Scouting coverage",
     description: "Assignments, reports, and open disagreements",
@@ -207,10 +227,44 @@ export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidgetLayout[] = [
   { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
   { i: "w-next_match", type: "next_match", x: 0, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
   { i: "w-robot_readiness", type: "robot_readiness", x: 6, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
-  { i: "w-prediction_summary", type: "prediction_summary", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-subteam_upcoming", type: "subteam_upcoming", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-alerts", type: "alerts", x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-quick_actions", type: "quick_actions", x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
 ];
+
+export type DashboardPrimaryFocus = "competition" | "build" | "business" | "leadership";
+
+const FOCUS_DASHBOARD_LAYOUTS: Record<DashboardPrimaryFocus, DashboardWidgetLayout[]> = {
+  competition: DEFAULT_DASHBOARD_LAYOUT,
+  build: [
+    { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
+    { i: "w-robot_readiness", type: "robot_readiness", x: 0, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
+    { i: "w-subteam_upcoming", type: "subteam_upcoming", x: 6, y: 4, w: 6, h: 4, minW: 3, minH: 2 },
+    { i: "w-quick_actions", type: "quick_actions", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-alerts", type: "alerts", x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-sync_status", type: "sync_status", x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+  ],
+  business: [
+    { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
+    { i: "w-quick_actions", type: "quick_actions", x: 0, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
+    { i: "w-notifications", type: "notifications", x: 6, y: 4, w: 6, h: 3, minW: 3, minH: 2 },
+    { i: "w-competition_snapshot", type: "competition_snapshot", x: 0, y: 7, w: 6, h: 3, minW: 3, minH: 2 },
+    { i: "w-alerts", type: "alerts", x: 6, y: 7, w: 6, h: 3, minW: 3, minH: 2 },
+  ],
+  leadership: [
+    { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
+    { i: "w-robot_readiness", type: "robot_readiness", x: 0, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
+    { i: "w-alerts", type: "alerts", x: 6, y: 4, w: 6, h: 4, minW: 3, minH: 2 },
+    { i: "w-notifications", type: "notifications", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-quick_actions", type: "quick_actions", x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+    { i: "w-ai_usage", type: "ai_usage", x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+  ],
+};
+
+export function defaultDashboardLayoutForFocus(focus: string | null | undefined): DashboardWidgetLayout[] {
+  const key = (focus && focus in FOCUS_DASHBOARD_LAYOUTS ? focus : "competition") as DashboardPrimaryFocus;
+  return FOCUS_DASHBOARD_LAYOUTS[key].map((item) => ({ ...item }));
+}
 
 export const SECONDARY_WIDGET_TYPES: DashboardWidgetType[] = [
   "competition_snapshot",
@@ -219,6 +273,9 @@ export const SECONDARY_WIDGET_TYPES: DashboardWidgetType[] = [
   "recent_result",
   "pit_youtube",
   "notifications",
+  "team_todos",
+  "prediction_summary",
+  "subteam_upcoming",
 ];
 
 export function isDashboardWidgetType(value: unknown): value is DashboardWidgetType {

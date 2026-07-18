@@ -2,6 +2,15 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import {
+  PRIMARY_TABS,
+  PRODUCT_NAV_GROUPS,
+  breadcrumbForPath,
+  findNavMatch,
+  navTitleForPath,
+  withOrgHref,
+  type ProductNavIcon,
+} from "../lib/nav/product-nav";
 import { signOutAndRedirect } from "../lib/sign-out";
 
 type Me = {
@@ -9,6 +18,7 @@ type Me = {
   email?: string | null;
   image?: string | null;
   orgId?: string | null;
+  orgName?: string | null;
   teamNumber?: number | null;
   role?: string | null;
   platformAdmin?: boolean;
@@ -16,107 +26,10 @@ type Me = {
   unreadMessageCount?: number;
 };
 
-type NavItem = { href: string; label: string; icon: IconName; state?: "setup" | "planned" };
-type NavGroup = { label: string; tone: string; toneBg: string; icon: IconName; items: NavItem[] };
+type IconName = ProductNavIcon;
 
-type IconName =
-  | "menu" | "search" | "bell" | "x" | "home" | "swords" | "scout" | "stats"
-  | "chevron" | "chat" | "target" | "calendar" | "clipboard" | "users" | "bolt"
-  | "cube" | "code" | "display" | "gear" | "grid" | "pin" | "back";
-
-const groups: NavGroup[] = [
-  {
-    label: "Core",
-    tone: "#1f4fd6",
-    toneBg: "#e8eefc",
-    icon: "swords",
-    items: [
-      { href: "/dashboard", label: "Home", icon: "home" },
-      { href: "/command", label: "Event Day", icon: "target" },
-      { href: "/pit", label: "Pit Command", icon: "cube" },
-      { href: "/batteries", label: "Batteries", icon: "bolt" },
-      { href: "/repairs", label: "Repair Log", icon: "gear" },
-      { href: "/intel", label: "Matches", icon: "swords" },
-      { href: "/workspace", label: "Schedule", icon: "calendar" },
-      { href: "/calendar", label: "Season Calendar", icon: "calendar" },
-    ],
-  },
-  {
-    label: "Scouting",
-    tone: "#1f4fd6",
-    toneBg: "#e8eefc",
-    icon: "scout",
-    items: [
-      { href: "/scouting", label: "Scouting Hub", icon: "clipboard" },
-      { href: "/scouting/lineup", label: "Lineup & Coverage", icon: "target" },
-      { href: "/intel", label: "Teams", icon: "users" },
-      { href: "/strategy", label: "Strategy & AI", icon: "bolt" },
-      { href: "/chemistry", label: "Alliance Chemistry", icon: "users" },
-    ],
-  },
-  {
-    label: "Build",
-    tone: "#1f4fd6",
-    toneBg: "#e8eefc",
-    icon: "cube",
-    items: [
-      { href: "/cad", label: "AI CAD", icon: "cube", state: "setup" },
-      { href: "/code", label: "Code", icon: "code" },
-      { href: "/display", label: "Displays", icon: "display" },
-      { href: "/inventory", label: "Inventory & BOM", icon: "grid" },
-      { href: "/vendors", label: "Vendors & Suppliers", icon: "clipboard" },
-      { href: "/parts-relay", label: "FRC Parts Relay", icon: "bolt" },
-      { href: "/config", label: "Robot Configuration", icon: "gear" },
-      { href: "/changes", label: "Engineering Changes", icon: "clipboard" },
-    ],
-  },
-  {
-    label: "Team",
-    tone: "#1f4fd6",
-    toneBg: "#e8eefc",
-    icon: "gear",
-    items: [
-      { href: "/announcements", label: "Announcements", icon: "bell" },
-      { href: "/practice", label: "Practice", icon: "target" },
-      { href: "/todos", label: "Todos", icon: "clipboard" },
-      { href: "/messages", label: "Messages", icon: "chat" },
-      { href: "/team/calendar", label: "Calendar", icon: "calendar" },
-      { href: "/attendance", label: "Attendance", icon: "users" },
-      { href: "/goals", label: "Goals", icon: "target" },
-      { href: "/business", label: "Business", icon: "clipboard" },
-      { href: "/costs", label: "Season Costs", icon: "stats" },
-      { href: "/hours", label: "Build Hours", icon: "calendar" },
-      { href: "/training", label: "Training Matrix", icon: "users" },
-      { href: "/season-rollover", label: "Season Rollover", icon: "calendar" },
-      { href: "/leadership", label: "Leadership Continuity", icon: "users" },
-      { href: "/retro", label: "Team Retrospective", icon: "chat" },
-      { href: "/knowledge", label: "Team Knowledge Base", icon: "clipboard" },
-      { href: "/mock-judging", label: "Mock Judging", icon: "chat" },
-      { href: "/impact", label: "Community Impact", icon: "target" },
-      { href: "/travel", label: "Event Travel", icon: "pin" },
-      { href: "/team", label: "Admin", icon: "gear" },
-      { href: "/team/data", label: "Data analytics", icon: "stats" },
-      { href: "/exports", label: "Exports", icon: "clipboard" },
-      { href: "/team/usage", label: "AI usage", icon: "stats" },
-      { href: "/chat", label: "Vantage AI", icon: "bolt" },
-    ],
-  },
-  {
-    label: "Settings",
-    tone: "#1f4fd6",
-    toneBg: "#e8eefc",
-    icon: "gear",
-    items: [
-      { href: "/account", label: "Account", icon: "users" },
-      { href: "/help", label: "Help & Support", icon: "chat" },
-      { href: "/notifications", label: "Notifications", icon: "bell" },
-      { href: "/security", label: "Security", icon: "gear" },
-      { href: "/team/security", label: "Team security", icon: "gear" },
-      { href: "/team/budgets", label: "API budgets", icon: "stats" },
-      { href: "/team", label: "API keys & admin", icon: "gear" },
-    ],
-  },
-];
+const groups = PRODUCT_NAV_GROUPS;
+const primaryTabs = PRIMARY_TABS;
 
 function Icon({ name }: { name: IconName }) {
   const p = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -150,20 +63,6 @@ function Icon({ name }: { name: IconName }) {
     </svg>
   );
 }
-
-function withOrg(href: string, orgId: string) {
-  if (!orgId) return href;
-  if (["/dashboard", "/account", "/security", "/admin", "/notifications"].includes(href)) return href;
-  const join = href.includes("?") ? "&" : "?";
-  return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
-}
-
-const primaryTabs = [
-  { href: "/dashboard", label: "Home", icon: "home" as const },
-  { href: "/command", label: "Event Day", icon: "target" as const },
-  { href: "/scouting", label: "Scout", icon: "scout" as const },
-  { href: "/strategy", label: "Stats", icon: "stats" as const },
-];
 
 export default function AppShell({ themeControl }: { themeControl: React.ReactNode }) {
   const pathname = usePathname();
@@ -233,22 +132,27 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
     pathname.startsWith("/team") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/security") ||
-    pathname.startsWith("/notifications");
-  const title = pathname.startsWith("/account")
-    ? "Account"
-    : pathname.startsWith("/notifications")
-      ? "Notifications"
-      : pathname.startsWith("/admin")
-        ? "Admin"
-        : pathname.startsWith("/team/security")
-          ? "Team security"
-          : pathname.startsWith("/team/budgets")
-            ? "API budgets"
-            : pathname.startsWith("/team")
-              ? "Admin"
-              : pathname.startsWith("/security")
-                ? "Security"
-                : null;
+    pathname.startsWith("/notifications") ||
+    pathname.startsWith("/help");
+  const title =
+    navTitleForPath(pathname) ??
+    (pathname.startsWith("/account")
+      ? "Account"
+      : pathname.startsWith("/notifications")
+        ? "Notifications"
+        : pathname.startsWith("/admin")
+          ? "Admin"
+          : pathname.startsWith("/help")
+            ? "Help & Support"
+            : pathname.startsWith("/security")
+              ? "Security"
+              : null);
+  const orgLabel =
+    me.teamNumber != null
+      ? `Team ${me.teamNumber}${me.orgName ? ` · ${me.orgName}` : ""}`
+      : me.orgName ?? (orgId ? "Active workspace" : "No workspace selected");
+  const crumbHint = breadcrumbForPath(pathname);
+  const activeNav = findNavMatch(pathname);
 
   async function handleSignOut() {
     if (signingOut) return;
@@ -265,7 +169,10 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             <button className="soft-icon-btn" type="button" aria-label="Go back" onClick={() => router.back()}>
               <Icon name="back" />
             </button>
-            <h1>{title}</h1>
+            <div className="soft-page-head-copy">
+              <h1>{title}</h1>
+              <small className="soft-org-crumb">{crumbHint}</small>
+            </div>
           </div>
         ) : (
           <button
@@ -306,6 +213,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                 <div className="soft-account-pop-head">
                   <strong>{me.name ?? "Signed-in user"}</strong>
                   <span>{me.email ?? "Account"}</span>
+                  <span className="soft-account-org">{orgLabel}</span>
                 </div>
                 <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
                   Account settings
@@ -317,7 +225,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                   Inbox
                   {unreadCount >= 1 ? <b>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
                 </a>
-                <a role="menuitem" href={withOrg("/messages", orgId)} onClick={() => setAccountMenuOpen(false)}>
+                <a role="menuitem" href={withOrgHref("/messages", orgId)} onClick={() => setAccountMenuOpen(false)}>
                   Team messages
                   {unreadMessages >= 1 ? <b>{unreadMessages > 99 ? "99+" : unreadMessages}</b> : null}
                 </a>
@@ -325,7 +233,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                   Security
                 </a>
                 {orgId ? (
-                  <a role="menuitem" href={withOrg("/team", orgId)} onClick={() => setAccountMenuOpen(false)}>
+                  <a role="menuitem" href={withOrgHref("/team", orgId)} onClick={() => setAccountMenuOpen(false)}>
                     API keys &amp; team admin
                   </a>
                 ) : null}
@@ -373,6 +281,16 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
               <Icon name="chevron" />
             </span>
           </a>
+          <div className="soft-org-chip" title={orgLabel}>
+            <Icon name="users" />
+            <div>
+              <strong>{orgLabel}</strong>
+              <span>{me.role ? `${me.role} · org context on links` : "Pick a workspace from Home"}</span>
+            </div>
+            <a href={withOrgHref("/workspace", orgId)} onClick={() => setOpen(false)}>
+              Switch
+            </a>
+          </div>
           <div className="soft-profile-actions">
             <a href="/account" onClick={() => setOpen(false)}>
               Account
@@ -388,7 +306,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             </button>
           </div>
         </div>
-        <p className="soft-drawer-hint">Only the main places you use most.</p>
+        <p className="soft-drawer-hint">Competition · Calendar · Team · Business — unfinished items stay Planned.</p>
         {groups.map((group) => (
           <section className="soft-nav-group" key={group.label} style={{ ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg }}>
             <div className="soft-nav-heading">
@@ -399,16 +317,18 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             </div>
             {group.items.map((item) =>
               item.state === "planned" ? (
-                <span className="planned" key={item.label}>
+                <span className="planned" key={`${group.label}-${item.label}`}>
                   <Icon name={item.icon} />
                   {item.label}
                   <small>Planned</small>
                 </span>
               ) : (
                 <a
-                  aria-current={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href)) ? "page" : undefined}
-                  href={withOrg(item.href, orgId)}
-                  key={item.label}
+                  aria-current={
+                    activeNav?.item.href === item.href && activeNav.group.label === group.label ? "page" : undefined
+                  }
+                  href={withOrgHref(item.href, orgId)}
+                  key={`${group.label}-${item.label}`}
                   onClick={() => setOpen(false)}
                 >
                   <Icon name={item.icon} />
@@ -449,8 +369,14 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
       <nav className="soft-island" aria-label="Primary tabs">
         {primaryTabs.map((tab) => (
           <a
-            aria-current={pathname === tab.href || (tab.href !== "/dashboard" && pathname.startsWith(tab.href)) ? "page" : undefined}
-            href={withOrg(tab.href, orgId)}
+            aria-current={
+              pathname === tab.href ||
+              (tab.href === "/team/calendar" && (pathname.startsWith("/team/calendar") || pathname === "/calendar")) ||
+              (tab.href !== "/dashboard" && tab.href !== "/team/calendar" && pathname.startsWith(tab.href))
+                ? "page"
+                : undefined
+            }
+            href={withOrgHref(tab.href, orgId)}
             key={tab.href}
           >
             <Icon name={tab.icon} />
@@ -469,7 +395,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
         </button>
       </nav>
 
-      <a className="soft-fab" href={withOrg("/chat", orgId)} aria-label="Open Vantage AI chat">
+      <a className="soft-fab" href={withOrgHref("/chat", orgId)} aria-label="Open Vantage AI chat">
         <Icon name="chat" />
       </a>
 
@@ -484,7 +410,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             </header>
             <nav>
               {flat.map((item) => (
-                <a href={withOrg(item.href, orgId)} key={`${item.href}-${item.label}`} onClick={() => setCommandOpen(false)}>
+                <a href={withOrgHref(item.href, orgId)} key={`${item.href}-${item.label}`} onClick={() => setCommandOpen(false)}>
                   <Icon name={item.icon} />
                   <span>{item.label}</span>
                   {item.state && <small>{item.state}</small>}

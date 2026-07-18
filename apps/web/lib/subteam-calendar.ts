@@ -52,6 +52,15 @@ export type SubteamMemberLite = {
   subteamIds: string[];
 };
 
+export const RSVP_RESPONSES = ["going", "maybe", "no"] as const;
+export type RsvpResponse = (typeof RSVP_RESPONSES)[number];
+
+export const RSVP_LABELS: Record<RsvpResponse, string> = {
+  going: "I'm going",
+  maybe: "Maybe",
+  no: "Can't make it",
+};
+
 export type CalendarEvent = {
   id: string;
   title: string;
@@ -68,7 +77,23 @@ export type CalendarEvent = {
   milestoneId: string | null;
   driverSessionId: string | null;
   createdByName: string | null;
+  /** Current user's RSVP, when the RSVP table is available. */
+  myRsvp: RsvpResponse | null;
+  rsvpGoing: number;
+  rsvpMaybe: number;
+  rsvpNo: number;
 };
+
+export type CalendarViewMode = "agenda" | "week" | "month";
+
+export type CalendarGridCell = {
+  day: string;
+  inMonth: boolean;
+  isToday: boolean;
+  items: CalendarEvent[];
+};
+
+export type WorkflowLink = { href: string; label: string };
 
 export type LinkableAttendance = {
   id: string;
@@ -92,6 +117,31 @@ export type SubteamCalendarContext = {
   canManage: boolean;
 };
 
+export const CALENDAR_FEED_SCOPES = ["personal", "org", "subteam"] as const;
+export type CalendarFeedScope = (typeof CALENDAR_FEED_SCOPES)[number];
+
+export type CalendarFeedInfo = {
+  token: string | null;
+  scope: CalendarFeedScope;
+  subteamId: string | null;
+};
+
+export type DutyOnCalendar = {
+  id: string;
+  title: string;
+  kind: "scouting" | "pit" | "drive_team" | "outreach";
+  startsAt: string;
+  endsAt: string | null;
+  subteamId: string | null;
+  subteamName: string | null;
+  subteamColor: string | null;
+  assignedUserId: string | null;
+  assignedUserName: string | null;
+  calendarEventId: string | null;
+  notes: string;
+  mine: boolean;
+};
+
 export type SubteamCalendarView =
   | {
       status: "ready";
@@ -99,9 +149,13 @@ export type SubteamCalendarView =
       subteams: Subteam[];
       members: SubteamMemberLite[];
       events: CalendarEvent[];
+      /** Duty roster slots (empty until assigned). */
+      duties: DutyOnCalendar[];
       mySubteamIds: string[];
       attendanceEvents: LinkableAttendance[];
       practiceSessions: LinkablePractice[];
+      /** Personal subscribe token for the active scope (opaque; treat as a secret). */
+      calendarFeed: CalendarFeedInfo;
     }
   | { status: "setup_required"; context: SubteamCalendarContext; message: string };
 
@@ -160,6 +214,154 @@ export function upcomingEvents(events: CalendarEvent[], now: Date = new Date(), 
     .slice(0, limit);
 }
 
+/** Events for the signed-in member's subteams (plus whole-team rows). */
+export function eventsForMySubteams(events: CalendarEvent[], mySubteamIds: string[]): CalendarEvent[] {
+  if (mySubteamIds.length === 0) {
+    return events.filter((event) => event.subteamId == null);
+  }
+  const mine = new Set(mySubteamIds);
+  return events.filter((event) => event.subteamId == null || mine.has(event.subteamId));
+}
+
+function withOrgPath(path: string, orgId: string): string {
+  const join = path.includes("?") ? "&" : "?";
+  return `${path}${join}orgId=${encodeURIComponent(orgId)}`;
+}
+
+/**
+ * Deep links from a calendar row into workflow surfaces.
+ * Kind drives defaults; explicit practice / attendance / milestone links win when set.
+ */
+export function eventWorkflowLinks(event: CalendarEvent, orgId: string): WorkflowLink[] {
+  const links: WorkflowLink[] = [];
+  const push = (href: string, label: string) => {
+    if (!links.some((link) => link.href === href)) links.push({ href, label });
+  };
+
+  if (event.driverSessionId || event.kind === "practice" || event.kind === "build") {
+    push(withOrgPath("/practice", orgId), "Practice Planner");
+  }
+  if (event.kind === "event") {
+    push(withOrgPath("/command", orgId), "Event Day Command");
+    push(withOrgPath("/scouting", orgId), "Scouting duty");
+  }
+  if (event.kind === "deadline") {
+    push(withOrgPath("/business", orgId), "Business deadlines");
+  }
+  if (event.attendanceEventId) {
+    push(withOrgPath("/attendance", orgId), "Attendance roll call");
+  }
+  if (event.milestoneId) {
+    push(withOrgPath("/calendar", orgId), "Season milestone");
+  }
+  if (event.kind === "meeting" || event.kind === "outreach") {
+    push(withOrgPath("/team/calendar", orgId), "Team calendar");
+  }
+  return links;
+}
+
+/** Local YYYY-MM-DD for a Date (browser / Node local zone). */
+export function localDayKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export function parseLocalDay(day: string): Date {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(y!, (m ?? 1) - 1, d ?? 1);
+}
+
+/** Sunday-start week (Soft-UI month grids match US FRC shop calendars). */
+export function startOfWeek(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+function eventsByLocalDay(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
+  const map = new Map<string, CalendarEvent[]>();
+  for (const event of sortEvents(events)) {
+    const day = localDayKey(new Date(event.startsAt));
+    const list = map.get(day) ?? [];
+    list.push(event);
+    map.set(day, list);
+  }
+  return map;
+}
+
+export function buildWeekCells(anchor: Date, events: CalendarEvent[], today: Date = new Date()): CalendarGridCell[] {
+  const start = startOfWeek(anchor);
+  const byDay = eventsByLocalDay(events);
+  const todayKey = localDayKey(today);
+  const cells: CalendarGridCell[] = [];
+  for (let i = 0; i < 7; i += 1) {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const day = localDayKey(date);
+    cells.push({
+      day,
+      inMonth: true,
+      isToday: day === todayKey,
+      items: byDay.get(day) ?? [],
+    });
+  }
+  return cells;
+}
+
+export function buildMonthCells(anchor: Date, events: CalendarEvent[], today: Date = new Date()): CalendarGridCell[] {
+  const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const gridStart = startOfWeek(monthStart);
+  const byDay = eventsByLocalDay(events);
+  const todayKey = localDayKey(today);
+  const month = anchor.getMonth();
+  const cells: CalendarGridCell[] = [];
+  for (let i = 0; i < 42; i += 1) {
+    const date = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+    const day = localDayKey(date);
+    cells.push({
+      day,
+      inMonth: date.getMonth() === month,
+      isToday: day === todayKey,
+      items: byDay.get(day) ?? [],
+    });
+  }
+  return cells;
+}
+
+export function shiftAnchor(anchor: Date, mode: CalendarViewMode, delta: number): Date {
+  const next = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+  if (mode === "month") {
+    next.setMonth(next.getMonth() + delta);
+    return next;
+  }
+  next.setDate(next.getDate() + delta * 7);
+  return next;
+}
+
+export function formatAnchorLabel(anchor: Date, mode: CalendarViewMode): string {
+  if (mode === "month") {
+    return anchor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+  const start = startOfWeek(anchor);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+  const left = start.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const right = end.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  return `${left} – ${right}`;
+}
+
+/** Default local datetime-local value for quick-add (next top-of-hour, or noon on a picked day). */
+export function defaultQuickAddStartsAt(day?: string | null, now: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (day) {
+    return `${day}T16:00`;
+  }
+  const d = new Date(now);
+  d.setMinutes(0, 0, 0);
+  d.setHours(d.getHours() + 1);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 // ---------------------------------------------------------------------------
 // Action validation
 // ---------------------------------------------------------------------------
@@ -201,6 +403,26 @@ function eventKind(value: unknown): SubteamEventKind {
   const text = requiredText(value, "Kind", 40);
   if (!(SUBTEAM_EVENT_KINDS as readonly string[]).includes(text)) throw new Error("Kind is invalid");
   return text as SubteamEventKind;
+}
+
+function feedScope(value: unknown): CalendarFeedScope {
+  const text = requiredText(value ?? "personal", "Feed scope", 40);
+  if (!(CALENDAR_FEED_SCOPES as readonly string[]).includes(text)) {
+    throw new Error("Feed scope must be personal, org, or subteam");
+  }
+  return text as CalendarFeedScope;
+}
+
+function parseFeedAction(
+  action: "ensure_calendar_feed" | "rotate_calendar_feed" | "disable_calendar_feed",
+  orgId: string,
+  body: Record<string, unknown>,
+): SubteamCalendarAction {
+  const scope = feedScope(body.scope);
+  const subteamId = optionalUuid(body.subteamId, "Subteam");
+  if (scope === "subteam" && !subteamId) throw new Error("Subteam is required for a subteam feed");
+  if (scope !== "subteam" && subteamId) throw new Error("Subteam applies only to subteam feeds");
+  return { action, orgId, scope, subteamId: scope === "subteam" ? subteamId : null };
 }
 
 /** Accept ISO datetime or datetime-local; normalize to ISO string. */
@@ -281,7 +503,26 @@ export type SubteamCalendarAction =
       attendanceCreditHours: number;
     }
   | { action: "update_event"; orgId: string; id: string; patch: EventPatch }
-  | { action: "delete_event"; orgId: string; id: string };
+  | { action: "delete_event"; orgId: string; id: string }
+  | { action: "set_rsvp"; orgId: string; id: string; response: RsvpResponse | null; note: string }
+  | {
+      action: "ensure_calendar_feed";
+      orgId: string;
+      scope: CalendarFeedScope;
+      subteamId: string | null;
+    }
+  | {
+      action: "rotate_calendar_feed";
+      orgId: string;
+      scope: CalendarFeedScope;
+      subteamId: string | null;
+    }
+  | {
+      action: "disable_calendar_feed";
+      orgId: string;
+      scope: CalendarFeedScope;
+      subteamId: string | null;
+    };
 
 export function parseSubteamCalendarAction(input: unknown): SubteamCalendarAction {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
@@ -406,6 +647,30 @@ export function parseSubteamCalendarAction(input: unknown): SubteamCalendarActio
 
     case "delete_event":
       return { action, orgId, id: uuid(body.id, "Event") };
+
+    case "set_rsvp": {
+      const responseRaw = body.response;
+      let response: RsvpResponse | null = null;
+      if (responseRaw != null && String(responseRaw).trim() !== "") {
+        const text = requiredText(responseRaw, "RSVP", 16);
+        if (!(RSVP_RESPONSES as readonly string[]).includes(text)) {
+          throw new Error("RSVP must be going, maybe, or no");
+        }
+        response = text as RsvpResponse;
+      }
+      return {
+        action,
+        orgId,
+        id: uuid(body.id, "Event"),
+        response,
+        note: optionalText(body.note, 500),
+      };
+    }
+
+    case "ensure_calendar_feed":
+    case "rotate_calendar_feed":
+    case "disable_calendar_feed":
+      return parseFeedAction(action, orgId, body);
 
     default:
       throw new Error("Unsupported calendar action");

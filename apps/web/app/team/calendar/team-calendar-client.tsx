@@ -3,13 +3,36 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import {
+  googleCalendarSubscribeUrl,
+  toWebcalUrl,
+} from "../../../lib/calendar-ics";
+import {
+  DUTY_KIND_LABELS,
+  DUTY_KINDS,
+  defaultDutyTitle,
+  dutyWorkflowLinks,
+  groupDutiesByDay,
+  type DutyKind,
+} from "../../../lib/duty-roster";
+import {
+  buildMonthCells,
+  buildWeekCells,
+  defaultQuickAddStartsAt,
+  eventWorkflowLinks,
   filterEventsBySubteam,
+  formatAnchorLabel,
   groupEventsByDay,
+  RSVP_LABELS,
+  shiftAnchor,
   SUBTEAM_COLOR_SUGGESTIONS,
   SUBTEAM_EVENT_KIND_LABELS,
   SUBTEAM_EVENT_KINDS,
   upcomingEvents,
+  type CalendarFeedScope,
   type CalendarEvent,
+  type CalendarViewMode,
+  type DutyOnCalendar,
+  type RsvpResponse,
   type Subteam,
   type SubteamCalendarView,
   type SubteamEventKind,
@@ -18,7 +41,8 @@ import {
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<SubteamCalendarView, { status: "ready" }>;
-type Tab = "calendar" | "subteams";
+type Tab = "calendar" | "subteams" | "duties" | "sync";
+type DutyScope = "team" | "mine";
 
 function withOrg(path: string, orgId: string) {
   const join = path.includes("?") ? "&" : "?";
@@ -37,11 +61,14 @@ function fmtWhen(iso: string): string {
   });
 }
 
-function toLocalInput(iso: string): string {
+function fmtTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+function dayNum(day: string): string {
+  return String(Number(day.slice(8, 10)));
 }
 
 function EventCard({
@@ -50,14 +77,19 @@ function EventCard({
   busy,
   canDelete,
   onDelete,
+  onRsvp,
 }: {
   event: CalendarEvent;
   orgId: string;
   busy: boolean;
   canDelete: boolean;
   onDelete: () => void;
+  onRsvp: (response: RsvpResponse | null) => void;
 }) {
   const accent = event.subteamColor ?? "var(--app-accent)";
+  const links = eventWorkflowLinks(event, orgId);
+  const going = event.myRsvp === "going";
+
   return (
     <article className="tc-event" style={{ ["--tc-accent" as string]: accent }}>
       <div className="tc-event-top">
@@ -70,19 +102,171 @@ function EventCard({
       </div>
       <div className="tc-event-meta">
         <span className="tc-chip">{SUBTEAM_EVENT_KIND_LABELS[event.kind]}</span>
-        <span>{fmtWhen(event.startsAt)}{event.endsAt ? ` → ${fmtWhen(event.endsAt)}` : ""}</span>
+        <span>
+          {fmtWhen(event.startsAt)}
+          {event.endsAt ? ` → ${fmtWhen(event.endsAt)}` : ""}
+        </span>
         {event.subteamName ? <span style={{ color: accent }}>{event.subteamName}</span> : <span>Whole team</span>}
         {event.location ? <span>{event.location}</span> : null}
       </div>
       {event.notes ? <p className="tc-muted">{event.notes}</p> : null}
-      <div className="tc-links">
-        {event.attendanceEventId ? (
-          <a href={withOrg("/attendance", orgId)}>Attendance: {event.attendanceEventTitle ?? "open roll call"} →</a>
-        ) : null}
-        {event.driverSessionId ? <a href={withOrg("/practice", orgId)}>Practice session →</a> : null}
-        {event.milestoneId ? <a href={withOrg("/calendar", orgId)}>Season milestone →</a> : null}
+
+      <div className="tc-rsvp" role="group" aria-label="RSVP">
+        <button
+          type="button"
+          className={going ? "tc-rsvp-btn active" : "tc-rsvp-btn"}
+          disabled={busy}
+          onClick={() => onRsvp(going ? null : "going")}
+        >
+          {going ? "You're going" : "I'm going"}
+          {event.rsvpGoing > 0 ? <span>{event.rsvpGoing}</span> : null}
+        </button>
+        <button
+          type="button"
+          className={event.myRsvp === "maybe" ? "tc-rsvp-btn soft active" : "tc-rsvp-btn soft"}
+          disabled={busy}
+          onClick={() => onRsvp(event.myRsvp === "maybe" ? null : "maybe")}
+        >
+          {RSVP_LABELS.maybe}
+        </button>
+        <button
+          type="button"
+          className={event.myRsvp === "no" ? "tc-rsvp-btn soft active" : "tc-rsvp-btn soft"}
+          disabled={busy}
+          onClick={() => onRsvp(event.myRsvp === "no" ? null : "no")}
+        >
+          No
+        </button>
       </div>
+
+      {links.length > 0 ? (
+        <div className="tc-links">
+          {links.map((link) => (
+            <a key={link.href + link.label} href={link.href}>
+              {link.label} →
+            </a>
+          ))}
+        </div>
+      ) : null}
     </article>
+  );
+}
+
+function QuickAddForm({
+  orgId,
+  subteams,
+  filterSubteamId,
+  initialStartsAt,
+  busy,
+  run,
+  onDone,
+}: {
+  orgId: string;
+  subteams: Subteam[];
+  filterSubteamId: string | null;
+  initialStartsAt: string;
+  busy: boolean;
+  run: (body: ActionBody, key: string) => Promise<boolean>;
+  onDone?: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [kind, setKind] = useState<SubteamEventKind>("practice");
+  const [startsAt, setStartsAt] = useState(initialStartsAt);
+  const [subteamId, setSubteamId] = useState(filterSubteamId ?? "");
+  const [createAttendance, setCreateAttendance] = useState(true);
+
+  useEffect(() => {
+    setStartsAt(initialStartsAt);
+  }, [initialStartsAt]);
+
+  useEffect(() => {
+    setSubteamId(filterSubteamId ?? "");
+  }, [filterSubteamId]);
+
+  useEffect(() => {
+    setCreateAttendance(kind === "practice" || kind === "build");
+  }, [kind]);
+
+  return (
+    <form
+      className="tc-quick-add"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!title.trim() || !startsAt) return;
+        void run(
+          {
+            action: "create_event",
+            orgId,
+            title: title.trim(),
+            kind,
+            startsAt: new Date(startsAt).toISOString(),
+            endsAt: null,
+            location: "",
+            notes: "",
+            subteamId: subteamId || null,
+            createAttendance,
+            attendanceEventId: null,
+            driverSessionId: null,
+          },
+          "quick-add",
+        ).then((ok) => {
+          if (ok) {
+            setTitle("");
+            onDone?.();
+          }
+        });
+      }}
+    >
+      <div className="tc-quick-head">
+        <h2>Quick add</h2>
+        <p className="tc-muted">One title + time — defaults to practice with attendance roll-call.</p>
+      </div>
+      <div className="tc-quick-grid">
+        <input
+          value={title}
+          disabled={busy}
+          required
+          placeholder="e.g. Tuesday drive practice"
+          aria-label="Event title"
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <select value={kind} disabled={busy} aria-label="Kind" onChange={(e) => setKind(e.target.value as SubteamEventKind)}>
+          {SUBTEAM_EVENT_KINDS.map((value) => (
+            <option key={value} value={value}>
+              {SUBTEAM_EVENT_KIND_LABELS[value]}
+            </option>
+          ))}
+        </select>
+        <input
+          type="datetime-local"
+          value={startsAt}
+          disabled={busy}
+          required
+          aria-label="Starts"
+          onChange={(e) => setStartsAt(e.target.value)}
+        />
+        <select value={subteamId} disabled={busy} aria-label="Subteam" onChange={(e) => setSubteamId(e.target.value)}>
+          <option value="">Whole team</option>
+          {subteams.map((st) => (
+            <option key={st.id} value={st.id}>
+              {st.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <label className="tc-check">
+        <input
+          type="checkbox"
+          checked={createAttendance}
+          disabled={busy}
+          onChange={(e) => setCreateAttendance(e.target.checked)}
+        />
+        <span>Create attendance roll-call</span>
+      </label>
+      <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsAt}>
+        Add event
+      </button>
+    </form>
   );
 }
 
@@ -105,7 +289,7 @@ function CreateEventForm({
 }) {
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<SubteamEventKind>("practice");
-  const [startsAt, setStartsAt] = useState(() => toLocalInput(new Date().toISOString()));
+  const [startsAt, setStartsAt] = useState(() => defaultQuickAddStartsAt());
   const [endsAt, setEndsAt] = useState("");
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
@@ -153,8 +337,8 @@ function CreateEventForm({
         });
       }}
     >
-      <h2>Schedule</h2>
-      <p className="tc-muted">Practices, build sessions, deadlines, and events — optionally tied to attendance or practice logs.</p>
+      <h2>Full schedule</h2>
+      <p className="tc-muted">Location, notes, and links to practice or attendance.</p>
       <div className="tc-form-grid">
         <label className="tc-field wide">
           <span>Title</span>
@@ -242,8 +426,8 @@ function CreateEventForm({
           <span>Also create an attendance roll-call for this date</span>
         </label>
       ) : null}
-      <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsAt}>
-        Add to calendar
+      <button type="submit" className="app-button secondary" disabled={busy || !title.trim() || !startsAt}>
+        Add detailed event
       </button>
     </form>
   );
@@ -293,7 +477,9 @@ function SubteamsPanel({
           }}
         >
           <h2>Create a subteam</h2>
-          <p className="tc-muted">Mechanical, Electrical, Programming, Business, Drive — whatever your team uses. Nothing is seeded for you.</p>
+          <p className="tc-muted">
+            Mechanical, Electrical, Programming, Business, Drive — whatever your team uses. Nothing is seeded for you.
+          </p>
           <label className="tc-field">
             <span>Name</span>
             <input value={name} disabled={busy} placeholder="Programming" required onChange={(e) => setName(e.target.value)} />
@@ -396,6 +582,462 @@ function SubteamsPanel({
   );
 }
 
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function DutyCard({
+  duty,
+  orgId,
+  highlighted,
+  canDelete,
+  busy,
+  onDelete,
+}: {
+  duty: DutyOnCalendar;
+  orgId: string;
+  highlighted: boolean;
+  canDelete: boolean;
+  busy: boolean;
+  onDelete: () => void;
+}) {
+  const accent = duty.subteamColor ?? "var(--app-accent)";
+  const links = dutyWorkflowLinks(duty.kind, orgId);
+
+  return (
+    <article
+      id={`duty-${duty.id}`}
+      className={highlighted ? "tc-event tc-duty highlighted" : "tc-event tc-duty"}
+      style={{ ["--tc-accent" as string]: accent }}
+    >
+      <div className="tc-event-top">
+        <strong>{duty.title}</strong>
+        {canDelete ? (
+          <button type="button" className="tc-text-btn" disabled={busy} onClick={onDelete}>
+            Remove
+          </button>
+        ) : null}
+      </div>
+      <div className="tc-event-meta">
+        <span className="tc-chip">{DUTY_KIND_LABELS[duty.kind]}</span>
+        <span>
+          {fmtWhen(duty.startsAt)}
+          {duty.endsAt ? ` → ${fmtWhen(duty.endsAt)}` : ""}
+        </span>
+        {duty.assignedUserName ? (
+          <span>{duty.mine ? "You" : duty.assignedUserName}</span>
+        ) : (
+          <span className="tc-muted">Unassigned</span>
+        )}
+        {duty.subteamName ? <span style={{ color: accent }}>{duty.subteamName}</span> : null}
+      </div>
+      {duty.notes ? <p className="tc-muted">{duty.notes}</p> : null}
+      {links.length > 0 ? (
+        <div className="tc-links">
+          {links.map((link) => (
+            <a key={link.href + link.label} href={link.href}>
+              {link.label} →
+            </a>
+          ))}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function AssignDutyForm({
+  orgId,
+  subteams,
+  members,
+  initialStartsAt,
+  busy,
+  onSubmit,
+}: {
+  orgId: string;
+  subteams: Subteam[];
+  members: SubteamMemberLite[];
+  initialStartsAt: string;
+  busy: boolean;
+  onSubmit: (body: Record<string, unknown>) => Promise<boolean>;
+}) {
+  const [kind, setKind] = useState<DutyKind>("scouting");
+  const [title, setTitle] = useState("");
+  const [startsAt, setStartsAt] = useState(initialStartsAt);
+  const [endsAt, setEndsAt] = useState("");
+  const [subteamId, setSubteamId] = useState("");
+  const [assignedUserId, setAssignedUserId] = useState("");
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    setStartsAt(initialStartsAt);
+  }, [initialStartsAt]);
+
+  return (
+    <form
+      className="tc-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void onSubmit({
+          action: "create_duty",
+          orgId,
+          kind,
+          title: title.trim() || defaultDutyTitle(kind),
+          startsAt,
+          endsAt: endsAt || null,
+          subteamId: subteamId || null,
+          assignedUserId: assignedUserId || null,
+          notes,
+          linkCalendar: true,
+        }).then((ok) => {
+          if (!ok) return;
+          setTitle("");
+          setEndsAt("");
+          setNotes("");
+          setAssignedUserId("");
+        });
+      }}
+    >
+      <h3>Assign duty</h3>
+      <p className="tc-muted">Scouting, pit, drive team, or outreach — empty until you assign someone.</p>
+      <label>
+        Kind
+        <select value={kind} onChange={(event) => setKind(event.target.value as DutyKind)}>
+          {DUTY_KINDS.map((value) => (
+            <option key={value} value={value}>
+              {DUTY_KIND_LABELS[value]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Title
+        <input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder={defaultDutyTitle(kind)}
+          maxLength={200}
+        />
+      </label>
+      <label>
+        Starts
+        <input type="datetime-local" required value={startsAt} onChange={(event) => setStartsAt(event.target.value)} />
+      </label>
+      <label>
+        Ends
+        <input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} />
+      </label>
+      <label>
+        Member
+        <select value={assignedUserId} onChange={(event) => setAssignedUserId(event.target.value)}>
+          <option value="">Unassigned</option>
+          {members.map((member) => (
+            <option key={member.userId} value={member.userId}>
+              {member.name || member.email || member.userId}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Subteam
+        <select value={subteamId} onChange={(event) => setSubteamId(event.target.value)}>
+          <option value="">Whole team</option>
+          {subteams.map((st) => (
+            <option key={st.id} value={st.id}>
+              {st.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Notes
+        <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} maxLength={2000} />
+      </label>
+      <button type="submit" className="app-button" disabled={busy}>
+        Assign to calendar
+      </button>
+    </form>
+  );
+}
+
+function DutiesPanel({
+  orgId,
+  duties,
+  subteams,
+  members,
+  mySubteamIds,
+  canManage,
+  busyKey,
+  highlightId,
+  initialStartsAt,
+  onMutate,
+}: {
+  orgId: string;
+  duties: DutyOnCalendar[];
+  subteams: Subteam[];
+  members: SubteamMemberLite[];
+  mySubteamIds: string[];
+  canManage: boolean;
+  busyKey: string | null;
+  highlightId: string | null;
+  initialStartsAt: string;
+  onMutate: (body: Record<string, unknown>, key: string) => Promise<boolean>;
+}) {
+  const [scope, setScope] = useState<DutyScope>("team");
+  // Personal scope uses `mine` plus subteam-only slots for the member's groups.
+  const scoped = useMemo(() => {
+    if (scope === "team") return duties;
+    return duties.filter(
+      (duty) =>
+        duty.mine ||
+        (duty.assignedUserId == null && duty.subteamId != null && mySubteamIds.includes(duty.subteamId)),
+    );
+  }, [duties, scope, mySubteamIds]);
+  const days = useMemo(() => groupDutiesByDay(scoped), [scoped]);
+  const busy = busyKey != null;
+
+  useEffect(() => {
+    if (!highlightId) return;
+    document.getElementById(`duty-${highlightId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightId, scoped]);
+
+  return (
+    <div className="tc-layout">
+      <section className="tc-panel tc-main">
+        <div className="tc-mode" role="group" aria-label="Duty scope">
+          <button type="button" className={scope === "team" ? "active" : undefined} onClick={() => setScope("team")}>
+            Team roster
+          </button>
+          <button type="button" className={scope === "mine" ? "active" : undefined} onClick={() => setScope("mine")}>
+            My duties
+          </button>
+        </div>
+
+        {scoped.length === 0 ? (
+          <div className="app-card tc-empty tc-guide">
+            <strong>{scope === "mine" ? "No duties assigned to you yet" : "No duties on the roster yet"}</strong>
+            <p className="app-muted">
+              Assign scouting shifts, pit blocks, drive team, or outreach to a member or subteam. Nothing is seeded —
+              the roster stays empty until you assign.
+            </p>
+          </div>
+        ) : (
+          days.map((bucket) => (
+            <div key={bucket.day} className="tc-day">
+              <h3>{bucket.day}</h3>
+              {bucket.items.map((duty) => (
+                <DutyCard
+                  key={duty.id}
+                  duty={duty}
+                  orgId={orgId}
+                  highlighted={duty.id === highlightId}
+                  canDelete={canManage}
+                  busy={busy}
+                  onDelete={() => {
+                    if (confirm(`Remove duty “${duty.title}”?`)) {
+                      void onMutate({ action: "delete_duty", orgId, id: duty.id }, `duty-del:${duty.id}`);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          ))
+        )}
+      </section>
+
+      <aside className="tc-panel">
+        <AssignDutyForm
+          orgId={orgId}
+          subteams={subteams}
+          members={members}
+          initialStartsAt={initialStartsAt}
+          busy={busy}
+          onSubmit={(body) => onMutate(body, "duty-create")}
+        />
+        <div className="tc-related">
+          <a href={withOrg("/scouting", orgId)}>Scout forms</a>
+          <a href={withOrg("/pit", orgId)}>Pit Command</a>
+          <a href={withOrg("/command", orgId)}>Event Day</a>
+          <a href={withOrg("/impact", orgId)}>Outreach / Impact</a>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function CalendarSyncPanel({
+  orgId,
+  subteams,
+  feedToken,
+  scope,
+  subteamId,
+  onScopeChange,
+  onSubteamChange,
+  busyKey,
+  run,
+}: {
+  orgId: string;
+  subteams: Subteam[];
+  feedToken: string | null;
+  scope: CalendarFeedScope;
+  subteamId: string;
+  onScopeChange: (scope: CalendarFeedScope) => void;
+  onSubteamChange: (subteamId: string) => void;
+  busyKey: string | null;
+  run: (body: ActionBody, key: string) => Promise<boolean>;
+}) {
+  const [copied, setCopied] = useState(false);
+  const busy = busyKey === "cal-feed";
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const httpsUrl = feedToken ? `${origin}/api/calendar/feed/${feedToken}` : "";
+  const webcalUrl = httpsUrl ? toWebcalUrl(httpsUrl) : "";
+  const googleUrl = webcalUrl ? googleCalendarSubscribeUrl(webcalUrl) : "";
+
+  const feedBody = () => ({
+    orgId,
+    scope,
+    subteamId: scope === "subteam" ? subteamId || null : null,
+  });
+
+  const copy = async () => {
+    if (!httpsUrl) return;
+    try {
+      await navigator.clipboard.writeText(httpsUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* selectable input fallback */
+    }
+  };
+
+  const downloadHref = (() => {
+    const params = new URLSearchParams({ orgId, format: "ics", scope });
+    if (scope === "subteam" && subteamId) params.set("subteamId", subteamId);
+    return `/api/team/calendar?${params.toString()}`;
+  })();
+
+  return (
+    <section className="soft-panel tc-sync" aria-labelledby="tc-sync-title">
+      <div className="tc-sync-head">
+        <div>
+          <h2 id="tc-sync-title">Add to Google / Apple Calendar</h2>
+          <p className="app-muted">
+            Subscribe once and Vantage practices, build nights, and season milestones stay updated in your phone
+            calendar. The link is a secret — only people with it can see the feed.
+          </p>
+        </div>
+      </div>
+
+      <div className="tc-sync-grid">
+        <label>
+          Feed
+          <select
+            value={scope}
+            disabled={busy}
+            onChange={(event) => onScopeChange(event.target.value as CalendarFeedScope)}
+          >
+            <option value="personal">Personal (my subteams + whole team)</option>
+            <option value="org">Whole team (every subteam)</option>
+            <option value="subteam">One subteam</option>
+          </select>
+        </label>
+        {scope === "subteam" ? (
+          <label>
+            Subteam
+            <select
+              value={subteamId}
+              disabled={busy}
+              onChange={(event) => onSubteamChange(event.target.value)}
+            >
+              <option value="">Select subteam…</option>
+              {subteams.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+
+      {feedToken && httpsUrl ? (
+        <>
+          <label className="tc-sync-url">
+            Subscribe URL
+            <div className="tc-sync-url-row">
+              <input readOnly value={httpsUrl} onFocus={(e) => e.currentTarget.select()} aria-label="Calendar feed URL" />
+              <button type="button" className="app-button secondary" disabled={busy} onClick={() => void copy()}>
+                {copied ? "Copied" : "Copy link"}
+              </button>
+            </div>
+          </label>
+          <div className="tc-sync-actions">
+            <a className="app-button" href={webcalUrl}>
+              Add to Apple Calendar
+            </a>
+            <a className="app-button secondary" href={googleUrl} target="_blank" rel="noreferrer">
+              Add to Google Calendar
+            </a>
+            <a className="app-button secondary" href={downloadHref}>
+              Download .ics
+            </a>
+          </div>
+          <div className="tc-sync-actions">
+            <button
+              type="button"
+              className="tc-text-btn"
+              disabled={busy || (scope === "subteam" && !subteamId)}
+              onClick={() => {
+                if (
+                  confirm(
+                    "Generate a new link? Your current subscription will stop updating until you re-add the new one.",
+                  )
+                ) {
+                  void run({ action: "rotate_calendar_feed", ...feedBody() }, "cal-feed");
+                }
+              }}
+            >
+              Regenerate link
+            </button>
+            <button
+              type="button"
+              className="tc-text-btn danger"
+              disabled={busy}
+              onClick={() => {
+                if (confirm("Turn off this calendar subscription? The link will stop working.")) {
+                  void run({ action: "disable_calendar_feed", ...feedBody() }, "cal-feed");
+                }
+              }}
+            >
+              Turn off
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="tc-sync-actions">
+          <button
+            type="button"
+            className="app-button"
+            disabled={busy || (scope === "subteam" && !subteamId)}
+            onClick={() => void run({ action: "ensure_calendar_feed", ...feedBody() }, "cal-feed")}
+          >
+            Create my subscribe link
+          </button>
+          <a className="app-button secondary" href={downloadHref}>
+            Download .ics once
+          </a>
+        </div>
+      )}
+
+      <aside className="tc-sync-note" aria-label="Timezone notes">
+        <strong>Timezone</strong>
+        <p className="app-muted">
+          Timed events are stored in UTC and shown in your calendar app&apos;s local zone. Season milestones are
+          all-day dates (no timezone shift), so Kickoff stays on the calendar day you set. Vantage does not invent a
+          team timezone.
+        </p>
+      </aside>
+    </section>
+  );
+}
+
 export default function TeamCalendarClient() {
   const [view, setView] = useState<SubteamCalendarView | null>(null);
   const [error, setError] = useState("");
@@ -403,13 +1045,29 @@ export default function TeamCalendarClient() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("calendar");
   const [filterSubteamId, setFilterSubteamId] = useState<string | null>(null);
+  const [mode, setMode] = useState<CalendarViewMode>("week");
+  const [anchor, setAnchor] = useState(() => new Date());
+  const [quickDay, setQuickDay] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [syncScope, setSyncScope] = useState<CalendarFeedScope>("personal");
+  const [syncSubteamId, setSyncSubteamId] = useState<string | null>(null);
+  const [highlightDutyId, setHighlightDutyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setFetchFailed(false);
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
+    const dutyId = params.get("dutyId");
+    if (dutyId) {
+      setHighlightDutyId(dutyId);
+      setTab("duties");
+    }
     try {
-      const response = await fetch(`/api/team/calendar${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
+      const query = new URLSearchParams();
+      if (orgId) query.set("orgId", orgId);
+      query.set("scope", syncScope);
+      if (syncScope === "subteam" && syncSubteamId) query.set("subteamId", syncSubteamId);
+      const response = await fetch(`/api/team/calendar?${query.toString()}`);
       const data = (await response.json()) as SubteamCalendarView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the team calendar.");
@@ -421,7 +1079,7 @@ export default function TeamCalendarClient() {
     } catch {
       setFetchFailed(true);
     }
-  }, []);
+  }, [syncScope, syncSubteamId]);
 
   useEffect(() => {
     void load();
@@ -454,6 +1112,33 @@ export default function TeamCalendarClient() {
     [load],
   );
 
+  const runDuty = useCallback(
+    async (body: Record<string, unknown>, key: string) => {
+      setBusyKey(key);
+      setError("");
+      try {
+        const response = await fetch("/api/duties", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = (await response.json()) as { error?: string };
+        if (!response.ok) {
+          setError(data.error ?? "Duty action failed.");
+          return false;
+        }
+        await load();
+        return true;
+      } catch {
+        setError("Network error — duty was not saved.");
+        return false;
+      } finally {
+        setBusyKey(null);
+      }
+    },
+    [load],
+  );
+
   const ready = view?.status === "ready" ? view : null;
   const filtered = useMemo(
     () => (ready ? filterEventsBySubteam(ready.events, filterSubteamId) : []),
@@ -461,13 +1146,20 @@ export default function TeamCalendarClient() {
   );
   const days = useMemo(() => groupEventsByDay(filtered), [filtered]);
   const upcoming = useMemo(() => upcomingEvents(filtered, new Date(), 6), [filtered]);
+  const weekCells = useMemo(() => buildWeekCells(anchor, filtered), [anchor, filtered]);
+  const monthCells = useMemo(() => buildMonthCells(anchor, filtered), [anchor, filtered]);
+  const selectedEvent = useMemo(
+    () => (selectedEventId ? filtered.find((event) => event.id === selectedEventId) ?? null : null),
+    [filtered, selectedEventId],
+  );
+  const quickStartsAt = useMemo(() => defaultQuickAddStartsAt(quickDay), [quickDay]);
 
   if (fetchFailed || !view) {
     return (
       <main className="module-page tc-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Team / Calendar</span>
+            <span className="breadcrumbs">Calendar / Team Calendar</span>
             <h1>Calendar</h1>
           </div>
         </header>
@@ -494,7 +1186,7 @@ export default function TeamCalendarClient() {
       <main className="module-page tc-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Team / Calendar</span>
+            <span className="breadcrumbs">Calendar / Team Calendar</span>
             <h1>Calendar</h1>
             <p>Subteam calendars for practices, build sessions, and deadlines.</p>
           </div>
@@ -514,15 +1206,38 @@ export default function TeamCalendarClient() {
   const orgId = view.context.orgId!;
   const canManage = view.context.canManage;
   const teamLabel = view.context.teamNumber ? `Team ${view.context.teamNumber}` : view.context.orgName;
+  const busy = busyKey != null;
+  const hasSubteams = view.subteams.length > 0;
+  const hasEvents = view.events.length > 0;
+
+  const setRsvp = (eventId: string, response: RsvpResponse | null) => {
+    void run({ action: "set_rsvp", orgId, id: eventId, response }, `rsvp:${eventId}`);
+  };
+
+  const renderEventCard = (event: CalendarEvent) => (
+    <EventCard
+      key={event.id}
+      event={event}
+      orgId={orgId}
+      busy={busy}
+      canDelete={canManage}
+      onDelete={() => {
+        if (confirm(`Remove “${event.title}” from the calendar?`)) {
+          void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
+        }
+      }}
+      onRsvp={(response) => setRsvp(event.id, response)}
+    />
+  );
 
   return (
     <main className="module-page tc-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Team / Calendar</span>
+          <span className="breadcrumbs">Calendar / Team Calendar</span>
           <h1>Calendar</h1>
           <p>
-            {teamLabel} — filter by subteam or view the combined schedule. Season milestones stay on{" "}
+            {teamLabel} — practices, duty roster, and “I’m going.” Season milestones stay on{" "}
             <a href={withOrg("/calendar", orgId)}>Season Calendar</a>.
           </p>
         </div>
@@ -532,20 +1247,125 @@ export default function TeamCalendarClient() {
       {error ? <p className="tc-error">{error}</p> : null}
 
       <div className="tc-tabs" role="tablist" aria-label="Calendar sections">
-        <button type="button" role="tab" aria-selected={tab === "calendar"} className={tab === "calendar" ? "active" : ""} onClick={() => setTab("calendar")}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "calendar"}
+          className={tab === "calendar" ? "active" : ""}
+          onClick={() => setTab("calendar")}
+        >
           Calendar
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "duties"}
+          className={tab === "duties" ? "active" : ""}
+          onClick={() => setTab("duties")}
+        >
+          Duties{(view.duties?.length ?? 0) > 0 ? ` (${view.duties!.length})` : ""}
+        </button>
         {canManage ? (
-          <button type="button" role="tab" aria-selected={tab === "subteams"} className={tab === "subteams" ? "active" : ""} onClick={() => setTab("subteams")}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "subteams"}
+            className={tab === "subteams" ? "active" : ""}
+            onClick={() => setTab("subteams")}
+          >
             Subteams
           </button>
         ) : null}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "sync"}
+          className={tab === "sync" ? "active" : ""}
+          onClick={() => setTab("sync")}
+        >
+          Sync
+        </button>
       </div>
 
-      {tab === "subteams" && canManage ? (
+      {tab === "duties" ? (
+        <DutiesPanel
+          orgId={orgId}
+          duties={view.duties ?? []}
+          subteams={view.subteams}
+          members={view.members}
+          mySubteamIds={view.mySubteamIds}
+          canManage={canManage}
+          busyKey={busyKey}
+          highlightId={highlightDutyId}
+          initialStartsAt={quickStartsAt}
+          onMutate={runDuty}
+        />
+      ) : tab === "subteams" && canManage ? (
         <SubteamsPanel orgId={orgId} subteams={view.subteams} members={view.members} busyKey={busyKey} run={run} />
+      ) : tab === "sync" ? (
+        <CalendarSyncPanel
+          orgId={orgId}
+          subteams={view.subteams}
+          feedToken={view.calendarFeed?.token ?? null}
+          scope={syncScope}
+          subteamId={syncSubteamId ?? ""}
+          onScopeChange={(next) => {
+            setSyncScope(next);
+            if (next !== "subteam") setSyncSubteamId(null);
+          }}
+          onSubteamChange={(next) => setSyncSubteamId(next || null)}
+          busyKey={busyKey}
+          run={run}
+        />
       ) : (
         <>
+          {!hasSubteams ? (
+            <div className="app-card tc-empty tc-guide">
+              <strong>Create your first subteam</strong>
+              <p className="app-muted">
+                Calendars get useful once groups exist — Mechanical, Programming, Business, Drive. Then schedule the first
+                practice on that subteam.
+              </p>
+              <div className="tc-guide-actions">
+                {canManage ? (
+                  <button type="button" className="app-button" onClick={() => setTab("subteams")}>
+                    Create first subteam
+                  </button>
+                ) : (
+                  <span className="tc-muted">Ask an owner or admin to create the first subteam.</span>
+                )}
+                <a className="app-button secondary" href={withOrg("/practice", orgId)}>
+                  Open Practice Planner
+                </a>
+              </div>
+            </div>
+          ) : null}
+
+          {hasSubteams && !hasEvents ? (
+            <div className="app-card tc-empty tc-guide">
+              <strong>Schedule your first practice</strong>
+              <p className="app-muted">
+                Use Quick add for a Tuesday shop night, or jump to Practice Planner to log cycles after the session.
+              </p>
+              <div className="tc-guide-actions">
+                <button
+                  type="button"
+                  className="app-button"
+                  onClick={() => {
+                    setMode("week");
+                    setQuickDay(null);
+                    document.getElementById("tc-quick-add")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
+                  Quick-add practice
+                </button>
+                <a className="app-button secondary" href={withOrg("/practice", orgId)}>
+                  Practice Planner
+                </a>
+              </div>
+            </div>
+          ) : null}
+
           <div className="tc-filters" role="group" aria-label="Filter by subteam">
             <button
               type="button"
@@ -568,57 +1388,158 @@ export default function TeamCalendarClient() {
               </button>
             ))}
             {view.mySubteamIds.length > 0 && filterSubteamId == null ? (
-              <span className="tc-muted">You’re on {view.mySubteamIds.length} subteam{view.mySubteamIds.length === 1 ? "" : "s"}</span>
+              <span className="tc-muted">
+                You’re on {view.mySubteamIds.length} subteam{view.mySubteamIds.length === 1 ? "" : "s"}
+              </span>
             ) : null}
           </div>
 
-          {view.subteams.length === 0 ? (
-            <div className="app-card tc-empty">
-              <strong>No subteams yet</strong>
-              <p className="app-muted">
-                {canManage
-                  ? "Create Mechanical, Electrical, Programming, or any group your team uses — then schedule on their calendars."
-                  : "Ask an owner or admin to create subteams so the calendar can filter by group."}
-              </p>
-              {canManage ? (
-                <button type="button" className="app-button" onClick={() => setTab("subteams")}>
-                  Set up subteams
+          <div className="tc-toolbar">
+            <div className="tc-mode" role="group" aria-label="Calendar view">
+              {(["week", "month", "agenda"] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={mode === value ? "active" : undefined}
+                  onClick={() => setMode(value)}
+                >
+                  {value === "agenda" ? "Agenda" : value === "week" ? "Week" : "Month"}
                 </button>
-              ) : null}
+              ))}
             </div>
-          ) : null}
+            {mode !== "agenda" ? (
+              <div className="tc-nav-range">
+                <button type="button" className="tc-icon-btn" aria-label="Previous" onClick={() => setAnchor((d) => shiftAnchor(d, mode, -1))}>
+                  ‹
+                </button>
+                <strong>{formatAnchorLabel(anchor, mode)}</strong>
+                <button type="button" className="tc-icon-btn" aria-label="Next" onClick={() => setAnchor((d) => shiftAnchor(d, mode, 1))}>
+                  ›
+                </button>
+                <button type="button" className="tc-text-link" onClick={() => setAnchor(new Date())}>
+                  Today
+                </button>
+              </div>
+            ) : null}
+          </div>
 
           <div className="tc-layout">
-            <section className="tc-panel">
-              {days.length === 0 ? (
-                <div className="tc-empty" style={{ padding: 8 }}>
-                  <strong>No events in this view</strong>
-                  <p className="tc-muted">Schedule a practice, build session, or deadline — or switch filters.</p>
+            <section className="tc-panel tc-main">
+              {mode === "agenda" ? (
+                days.length === 0 ? (
+                  <div className="tc-empty" style={{ padding: 8 }}>
+                    <strong>No events in this view</strong>
+                    <p className="tc-muted">Quick-add a practice, or switch filters.</p>
+                  </div>
+                ) : (
+                  days.map((bucket) => (
+                    <div key={bucket.day} className="tc-day">
+                      <h3>{bucket.label}</h3>
+                      {bucket.items.map((event) => renderEventCard(event))}
+                    </div>
+                  ))
+                )
+              ) : null}
+
+              {mode === "week" ? (
+                <div className="tc-week">
+                  {weekCells.map((cell) => (
+                    <button
+                      key={cell.day}
+                      type="button"
+                      className={["tc-week-day", cell.isToday ? "today" : "", quickDay === cell.day ? "picked" : ""]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => {
+                        setQuickDay(cell.day);
+                        setSelectedEventId(null);
+                      }}
+                    >
+                      <header>
+                        <span>{WEEKDAYS[new Date(`${cell.day}T12:00:00`).getDay()]}</span>
+                        <strong>{dayNum(cell.day)}</strong>
+                      </header>
+                      <ul>
+                        {cell.items.slice(0, 4).map((event) => (
+                          <li
+                            key={event.id}
+                            style={{ borderColor: event.subteamColor ?? "var(--app-accent)" }}
+                            onClick={(click) => {
+                              click.stopPropagation();
+                              setSelectedEventId(event.id);
+                            }}
+                          >
+                            <b>{fmtTime(event.startsAt)}</b>
+                            <span>{event.title}</span>
+                          </li>
+                        ))}
+                        {cell.items.length > 4 ? <li className="more">+{cell.items.length - 4} more</li> : null}
+                      </ul>
+                      <span className="tc-add-hint">Tap to quick-add</span>
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                days.map((bucket) => (
-                  <div key={bucket.day} className="tc-day">
-                    <h3>{bucket.label}</h3>
-                    {bucket.items.map((event) => (
-                      <EventCard
-                        key={event.id}
-                        event={event}
-                        orgId={orgId}
-                        busy={busyKey != null}
-                        canDelete={canManage || event.createdByName != null}
-                        onDelete={() => {
-                          if (confirm(`Remove “${event.title}” from the calendar?`)) {
-                            void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
-                          }
-                        }}
-                      />
+              ) : null}
+
+              {mode === "month" ? (
+                <div className="tc-month">
+                  <div className="tc-month-head">
+                    {WEEKDAYS.map((label) => (
+                      <span key={label}>{label}</span>
                     ))}
                   </div>
-                ))
-              )}
+                  <div className="tc-month-grid">
+                    {monthCells.map((cell) => (
+                      <button
+                        key={cell.day}
+                        type="button"
+                        className={[
+                          "tc-month-cell",
+                          cell.inMonth ? "" : "out",
+                          cell.isToday ? "today" : "",
+                          quickDay === cell.day ? "picked" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        onClick={() => {
+                          setQuickDay(cell.day);
+                          setSelectedEventId(cell.items[0]?.id ?? null);
+                          setMode("week");
+                          setAnchor(new Date(`${cell.day}T12:00:00`));
+                        }}
+                      >
+                        <strong>{dayNum(cell.day)}</strong>
+                        <ul>
+                          {cell.items.slice(0, 3).map((event) => (
+                            <li key={event.id} style={{ background: event.subteamColor ?? "var(--app-accent)" }}>
+                              {event.title}
+                            </li>
+                          ))}
+                        </ul>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {selectedEvent && mode !== "agenda" ? (
+                <div className="tc-selected">{renderEventCard(selectedEvent)}</div>
+              ) : null}
             </section>
 
             <aside className="tc-panel">
+              <div id="tc-quick-add">
+                <QuickAddForm
+                  orgId={orgId}
+                  subteams={view.subteams}
+                  filterSubteamId={filterSubteamId}
+                  initialStartsAt={quickStartsAt}
+                  busy={busy}
+                  run={run}
+                  onDone={() => setQuickDay(null)}
+                />
+              </div>
+
               <h2>Coming up</h2>
               {upcoming.length === 0 ? (
                 <p className="tc-muted">Nothing upcoming in this filter.</p>
@@ -626,29 +1547,38 @@ export default function TeamCalendarClient() {
                 <ul className="tc-upcoming">
                   {upcoming.map((event) => (
                     <li key={event.id}>
-                      <strong>{event.title}</strong>
-                      <span>
-                        {fmtWhen(event.startsAt)}
-                        {event.subteamName ? ` · ${event.subteamName}` : " · Whole team"}
-                      </span>
+                      <button type="button" className="tc-upcoming-btn" onClick={() => setSelectedEventId(event.id)}>
+                        <strong>{event.title}</strong>
+                        <span>
+                          {fmtWhen(event.startsAt)}
+                          {event.subteamName ? ` · ${event.subteamName}` : " · Whole team"}
+                          {event.myRsvp === "going" ? " · going" : ""}
+                        </span>
+                      </button>
                     </li>
                   ))}
                 </ul>
               )}
 
-              <CreateEventForm
-                orgId={orgId}
-                subteams={view.subteams}
-                attendanceEvents={view.attendanceEvents}
-                practiceSessions={view.practiceSessions}
-                filterSubteamId={filterSubteamId}
-                busy={busyKey != null}
-                run={run}
-              />
+              <details className="tc-details">
+                <summary>More event details</summary>
+                <CreateEventForm
+                  orgId={orgId}
+                  subteams={view.subteams}
+                  attendanceEvents={view.attendanceEvents}
+                  practiceSessions={view.practiceSessions}
+                  filterSubteamId={filterSubteamId}
+                  busy={busy}
+                  run={run}
+                />
+              </details>
 
               <div className="tc-related">
+                <a href={withOrg("/practice", orgId)}>Practice</a>
+                <a href={withOrg("/scouting", orgId)}>Scouting</a>
+                <a href={withOrg("/command", orgId)}>Event Day</a>
+                <a href={withOrg("/business", orgId)}>Business</a>
                 <a href={withOrg("/attendance", orgId)}>Attendance</a>
-                <a href={withOrg("/practice", orgId)}>Practice Planner</a>
                 <a href={withOrg("/calendar", orgId)}>Season milestones</a>
               </div>
             </aside>
