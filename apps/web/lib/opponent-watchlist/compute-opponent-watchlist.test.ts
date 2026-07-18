@@ -23,7 +23,13 @@ describe("computeOpponentWatchlistView", () => {
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
-      expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps.map((s) => s.id)).toEqual([
+        "workspace",
+        "strategy",
+        "epa-trend-alerts",
+        "scouting",
+      ]);
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
     }
   });
 
