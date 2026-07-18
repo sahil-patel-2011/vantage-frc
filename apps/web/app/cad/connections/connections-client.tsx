@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  CONNECTIONS_RELATED_INCLUDE,
+  connectionsRelatedLinks,
+} from "../../../lib/account";
+import { hubHref } from "../../../lib/nav/hubs";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 
 const install = `npm install
 npm run build --workspace=@vantage/cad-cli
@@ -41,6 +47,10 @@ export default function CadConnections({ orgId }: { orgId: string }) {
   const [onshapeSetupMessage, setOnshapeSetupMessage] = useState("");
   const [osSupport, setOsSupport] = useState<OsRow[]>([]);
   const [busy, setBusy] = useState(false);
+  const related = connectionsRelatedLinks(orgId, {
+    active: "cad",
+    include: [...CONNECTIONS_RELATED_INCLUDE],
+  });
 
   async function load() {
     const r = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`);
@@ -95,6 +105,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     }
   }
 
+  // Connected only when a real cad_connections row reports status=connected — never DEMO.
   const onshapeConnected = onshapeConnections.some((c) => c.status === "connected");
 
   return (
@@ -106,22 +117,29 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           <p>Pair in the browser. Never type your Vantage password in a terminal. Fusion stays local — never hosted on Vercel.</p>
         </div>
         <nav className="cad-header-actions">
-          <a className="app-button secondary" href={`/cad?orgId=${orgId}`}>
+          <a className="app-button secondary" href={withOrgHref("/cad", orgId)}>
             ← CAD Builder
           </a>
-          <a className="app-button secondary" href={`/cad/setup?orgId=${orgId}`}>
+          <a className="app-button secondary" href={withOrgHref("/cad/setup", orgId)}>
             Setup wizard
           </a>
-          <a className="app-button secondary" href={`/cad/pair?orgId=${orgId}`}>
+          <a className="app-button secondary" href={withOrgHref("/cad/pair", orgId)}>
             Pair desktop
           </a>
         </nav>
       </header>
+      <nav className="product-hub-related" aria-label="Related connection tools">
+        {related.map((link) => (
+          <a key={link.id} className="app-button secondary" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
       <nav className="intel-actions" aria-label="Connect paths" style={{ marginBottom: 12 }}>
-        <a href={`/cad/setup?orgId=${orgId}`}>Guided setup</a>
-        <a href={`#onshape`}>Onshape OAuth</a>
-        <a href={`#fusion`}>Fusion relay</a>
-        <a href={`/team/budgets?orgId=${orgId}#prompt-caching`}>Prompt caching</a>
+        <a href={withOrgHref("/cad/setup", orgId)}>Guided setup</a>
+        <a href="#onshape">Onshape OAuth</a>
+        <a href="#fusion">Fusion relay</a>
+        <a href={hubHref("/ai", "budgets", orgId)}>Budgets</a>
       </nav>
       {message ? (
         <p role="status" className="telemetry-status">
@@ -200,7 +218,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
             </ol>
             <small className="app-muted">Linux: Fusion is unavailable — use Onshape or VANTAGE_CAD_MOCK=1 for protocol tests.</small>
           </div>
-          <a className="app-button secondary" href={`/cad/pair?orgId=${orgId}`}>
+          <a className="app-button secondary" href={withOrgHref("/cad/pair", orgId)}>
             Pair desktop
           </a>
         </article>
