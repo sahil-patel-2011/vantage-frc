@@ -650,6 +650,11 @@ export default function CommandClient() {
           <strong>Batteries</strong>
           <span>Fleet readiness</span>
         </a>
+        <a href={snap?.links.logistics ?? (orgId ? `/logistics?orgId=${encodeURIComponent(orgId)}` : "/logistics")}>
+          <Icon name="pin" />
+          <strong>Logistics</strong>
+          <span>Hotel & travel</span>
+        </a>
         <a href={snap?.links.intel ?? "/intel"}>
           <Icon name="stats" />
           <strong>Intel</strong>
