@@ -1,12 +1,153 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { AWARD_LABEL, IMPACT_ESSAY_AWARDS, awardLabel } from "../../lib/impact-essay";
 import type { ImpactEssayView } from "../../lib/impact-essay/compute-impact-essay";
+import {
+  IMPACT_ESSAY_RELATED_INCLUDE,
+  classifyImpactEssayShell,
+  formatImpactEssayHours,
+  formatImpactEssayMetric,
+  impactEssayNextActions,
+  impactEssayRelatedLinks,
+  impactEssayShellCopy,
+  shouldShowImpactEssaySummaryTiles,
+  type ImpactEssayNextAction,
+  type ImpactEssayShellKind,
+} from "../../lib/impact-essay/impact-essay-related";
 import type { ImpactEssayAward } from "../../lib/impact-essay/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./impact-essay.css";
 
 type LiveView = Extract<ImpactEssayView, { status: "live" }>;
+
+function ImpactEssayRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = impactEssayRelatedLinks(orgId, {
+    include: [...IMPACT_ESSAY_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related impact-essay-related" aria-label="Related business tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function ImpactEssayNextActionsPanel({ actions }: { actions: ImpactEssayNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions impact-essay-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Community Impact, Awards, and Writer — never DEMO essay metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ImpactEssayShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: ImpactEssayShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = impactEssayNextActions({ orgId, shell });
+  const copy = impactEssayShellCopy(shell);
+  const businessHref = hubHref("/business", "impact-essay", orgId);
+  const impactHref = hubHref("/business", "impact", orgId);
+  const awardsHref = hubHref("/business", "evidence", orgId);
+  const writerHref = hubHref("/ai", "writer", orgId);
+
+  return (
+    <main className="module-page impact-essay-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={businessHref}>Business</a>
+            {" / Impact Essay"}
+          </>
+        }
+        title="FIRST Impact Essay Generator"
+        description={description}
+      >
+        <ImpactEssayRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No grounded records"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={impactHref}>
+              Open Community Impact
+            </a>
+            <a className="app-button secondary" href={awardsHref}>
+              Open Awards
+            </a>
+            <a className="app-button secondary" href={writerHref}>
+              Open Writer
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <ImpactEssayNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function ImpactEssayClient() {
   const [view, setView] = useState<ImpactEssayView | null>(null);
@@ -15,8 +156,6 @@ export default function ImpactEssayClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [award, setAward] = useState<ImpactEssayAward>("impact");
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -43,6 +182,39 @@ export default function ImpactEssayClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const hasGroundedData = view?.status === "live" ? view.facts.hasGroundedData : false;
+  const draftCount = view?.status === "live" ? view.drafts.length : 0;
+  const outreachCount = view?.status === "live" ? view.facts.outreachActivities.length : 0;
+  const peopleReached = view?.status === "live" ? view.facts.totalPeopleReached : 0;
+  const outreachHours = view?.status === "live" ? view.facts.totalOutreachHours : 0;
+  const buildHours = view?.status === "live" ? view.facts.buildHours.totalHours : 0;
+  const sponsorCount = view?.status === "live" ? view.facts.sponsors.length : 0;
+  const eventCount = view?.status === "live" ? view.facts.events.length : 0;
+
+  const shell = classifyImpactEssayShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    hasGroundedData,
+  });
+  const shellCopy = impactEssayShellCopy(shell);
+  const nextActions = impactEssayNextActions({
+    orgId,
+    shell,
+    hasGroundedData,
+    draftCount,
+    outreachCount,
+  });
+  const relatedLinks = impactEssayRelatedLinks(orgId, {
+    include: [...IMPACT_ESSAY_RELATED_INCLUDE],
+  });
+  const businessHref = hubHref("/business", "impact-essay", orgId);
+  const impactHref = hubHref("/business", "impact", orgId);
+  const awardsHref = hubHref("/business", "evidence", orgId);
+  const writerHref = hubHref("/ai", "writer", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -71,20 +243,64 @@ export default function ImpactEssayClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <ImpactEssayShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <ImpactEssayShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <ImpactEssayShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      >
+        {view?.status === "setup_required" && view.steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {view.steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </ImpactEssayShell>
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <ImpactEssayShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page impact-essay-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
+            <a href={businessHref}>Business</a>
             {" / Impact Essay"}
           </>
         }
         title="FIRST Impact Essay Generator"
-        description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record."
+        description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record. Never DEMO essay metrics. Cross-check Community Impact, Awards, and Writer."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
+        <div className="impact-essay-header-actions">
+          {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
@@ -103,11 +319,11 @@ export default function ImpactEssayClient() {
               </select>
             </label>
           ) : null}
-          {orgId ? (
-            <a className="app-button secondary" href={`/impact?orgId=${encodeURIComponent(orgId)}`}>
-              Community Impact log
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
             </a>
-          ) : null}
+          ))}
         </div>
       </PageHeader>
 
@@ -117,70 +333,82 @@ export default function ImpactEssayClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the Impact essay generator"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <GroundedFactsPanel view={view} />
-          <GenerateForm busy={busy} award={award} setAward={setAward} mutate={mutate} hasData={view.facts.hasGroundedData} />
-          <DraftsList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
+      <ImpactEssayNextActionsPanel actions={nextActions} />
 
-function GroundedFactsPanel({ view }: { view: LiveView }) {
-  const { facts } = view;
-  const tiles = [
-    { label: "Outreach activities", value: String(facts.outreachActivities.length) },
-    { label: "People reached", value: facts.totalPeopleReached.toLocaleString() },
-    { label: "Outreach hours", value: String(facts.totalOutreachHours) },
-    { label: "Build/shop hours", value: String(facts.buildHours.totalHours) },
-    { label: "Active sponsors", value: String(facts.sponsors.length) },
-    { label: "Team events", value: String(facts.events.length) },
-  ];
-  return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Grounded records — {view.seasonYear}</h2>
-      {!facts.hasGroundedData ? (
-        <p className="app-muted">
-          No outreach activities, hours, sponsors, or team events are logged for this season yet. Log records
-          elsewhere in Vantage, then generate a draft here — the essay will only ever cite real records.
-        </p>
-      ) : null}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.4rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {shouldShowImpactEssaySummaryTiles(hasGroundedData) ? (
+        <section className="impact-essay-stats" aria-label="Grounded record counts">
+          <div>
+            <strong>{formatImpactEssayMetric(outreachCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Outreach activities
+            </span>
           </div>
-        ))}
+          <div>
+            <strong>{formatImpactEssayMetric(peopleReached, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              People reached
+            </span>
+          </div>
+          <div>
+            <strong>{formatImpactEssayHours(outreachHours, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Outreach hours
+            </span>
+          </div>
+          <div>
+            <strong>{formatImpactEssayHours(buildHours, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Build/shop hours
+            </span>
+          </div>
+          <div>
+            <strong>{formatImpactEssayMetric(sponsorCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Active sponsors
+            </span>
+          </div>
+          <div>
+            <strong>{formatImpactEssayMetric(eventCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Team events
+            </span>
+          </div>
+        </section>
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No grounded records"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href={impactHref}>
+            Open Community Impact
+          </a>
+          <a className="app-button secondary" href={awardsHref}>
+            Open Awards
+          </a>
+          <a className="app-button secondary" href={writerHref}>
+            Open Writer
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div className="impact-essay-layout">
+        <GenerateForm busy={busy} award={award} setAward={setAward} mutate={mutate} hasData={hasGroundedData} />
+        <DraftsList view={view} busy={busy} mutate={mutate} />
+        <Panel className="impact-essay-tip" aria-label="Impact Essay tip">
+          <span className="eyebrow">Grounding path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Keep outreach facts in <a href={impactHref}>Community Impact</a>, upload packets in{" "}
+            <a href={awardsHref}>Awards</a>, and pair language in <a href={writerHref}>Writer</a> — never invent
+            DEMO essay metrics, people reached, or award claims.
+          </p>
+        </Panel>
       </div>
-    </Panel>
+    </main>
   );
 }
 
@@ -199,6 +427,7 @@ function GenerateForm({
 }) {
   return (
     <Panel
+      id="impact-essay-generate"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -207,6 +436,10 @@ function GenerateForm({
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Generate a draft</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Composition cites only outreach, hours, sponsors, and events your team logged for this season — never DEMO
+        essay metrics.
+      </p>
       <label className="app-muted" style={{ display: "flex", gap: 8, alignItems: "center" }}>
         Award
         <select value={award} onChange={(event) => setAward(event.target.value as ImpactEssayAward)}>
@@ -223,7 +456,7 @@ function GenerateForm({
         </button>
         {!hasData ? (
           <span className="app-muted" style={{ marginLeft: 10 }}>
-            Log at least one record to enable generation.
+            Log at least one real record to enable generation — never DEMO fillers.
           </span>
         ) : null}
       </div>
@@ -243,17 +476,18 @@ function DraftsList({
   if (view.drafts.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No drafts yet"
         badgeTone="setup"
         title="No essay drafts generated for this season"
-        description="Generate a draft above once you have logged outreach, hours, sponsor, or event records."
+        description="Generate a draft above once you have logged outreach, hours, sponsor, or event records — never invent DEMO essays."
       />
     );
   }
   return (
-    <Panel>
+    <Panel id="impact-essay-drafts">
       <h2 style={{ marginTop: 0 }}>Drafts</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 16 }}>
+      <ul className="impact-essay-drafts">
         {view.drafts.map((draft) => (
           <li key={draft.id} className="app-card soft-panel" style={{ display: "grid", gap: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>

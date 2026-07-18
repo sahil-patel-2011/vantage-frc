@@ -1,0 +1,14 @@
+/* Soft-UI Impact Essay — .impact-essay-* + shared Soft-UI tokens. Never DEMO essay metrics. */
+.impact-essay-page{display:grid;gap:16px}
+.impact-essay-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.impact-essay-related{display:flex;flex-wrap:wrap;gap:8px}
+.impact-essay-next-actions{margin:0}
+.impact-essay-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.impact-essay-stats strong{font-size:1.5rem}
+.impact-essay-layout{display:grid;gap:16px}
+.impact-essay-tip{margin:0}
+.impact-essay-drafts{list-style:none;padding:0;display:grid;gap:16px}
+@media(max-width:900px){
+  .impact-essay-header-actions{justify-content:flex-start}
+  .impact-essay-next-actions li{flex-direction:column;align-items:stretch}
+}

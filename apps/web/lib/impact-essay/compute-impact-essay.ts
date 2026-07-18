@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { awardPrompt, composeEssay, round1, wordCount } from ".";
 import type {
   ImpactEssayAward,
@@ -17,6 +19,36 @@ export type ImpactEssaySetupStep = {
   detail: string;
   href: string;
 };
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO essay metrics. */
+function setupStepsFor(orgId: string | null): ImpactEssaySetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Impact Essay is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "impact",
+      label: "Open Community Impact",
+      detail: "Outreach claims stay blank until real activities exist — never DEMO hours.",
+      href: hubHref("/business", "impact", orgId),
+    },
+    {
+      id: "evidence",
+      label: "Open Awards",
+      detail: "Award packets stay blank until your team uploads evidence — never DEMO packets.",
+      href: hubHref("/business", "evidence", orgId),
+    },
+    {
+      id: "writer",
+      label: "Open Writer",
+      detail: "Grant and sponsor copy stays empty until you draft it — never DEMO awards.",
+      href: hubHref("/ai", "writer", orgId),
+    },
+  ];
+}
 
 export type ImpactEssayView =
   | {
@@ -189,9 +221,7 @@ export async function computeImpactEssayView(
     return {
       status: "setup_required",
       message: "Select a team workspace to draft a grounded FIRST Impact essay.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: setupStepsFor(null),
       orgId: null,
       seasonYear,
     };
