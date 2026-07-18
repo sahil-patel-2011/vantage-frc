@@ -28,7 +28,12 @@ export default async function MessagesPage({
           description="Open Messages from your team workspace so org-scoped chat stays in the right tenancy."
         />
         <TeamOpsNav active="messages" />
-        <EmptyState title="Select a team workspace" description="Team and private chats are organization-scoped." badge="Setup" badgeTone="setup">
+        <EmptyState
+          title="Select a team workspace"
+          description="Team and private chats are organization-scoped. Pick a workspace so messages never cross teams."
+          badge="Setup"
+          badgeTone="setup"
+        >
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
