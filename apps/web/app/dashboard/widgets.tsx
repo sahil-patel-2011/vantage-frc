@@ -296,6 +296,21 @@ export function DashboardWidgetView({
               {typeof data.bumperCue === "string" && data.bumperCue ? (
                 <p className="dash-bumper-cue">{data.bumperCue}</p>
               ) : null}
+              {Array.isArray(data.partners) || Array.isArray(data.opponents) ? (
+                <p className="dash-match-sides">
+                  With{" "}
+                  {Array.isArray(data.partners) && data.partners.length
+                    ? data.partners.map(String).join(" · ")
+                    : "—"}
+                  <em>
+                    {" "}
+                    vs{" "}
+                    {Array.isArray(data.opponents) && data.opponents.length
+                      ? data.opponents.map(String).join(" · ")
+                      : "—"}
+                  </em>
+                </p>
+              ) : null}
               <footer>
                 <div>
                   <span>Red</span>
