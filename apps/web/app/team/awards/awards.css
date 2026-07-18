@@ -1,0 +1,164 @@
+/* Soft-UI FIRST awards workbench — scoped to .awards-* */
+.awards-page {
+  display: grid;
+  gap: 16px;
+}
+
+.awards-status {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  background: var(--soft-bg, #f8fafc);
+  color: var(--soft-muted, #6b7280);
+  font-size: 13px;
+}
+
+.awards-status.ok {
+  border-color: color-mix(in srgb, var(--biz-mint, #2f8f6b) 35%, var(--soft-line, #d5dde8));
+  color: var(--biz-mint, #2f8f6b);
+}
+
+.awards-stats {
+  margin-top: 2px;
+}
+
+.awards-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 14px;
+}
+
+.awards-form h2,
+.awards-list h2,
+.awards-items h2,
+.awards-next-actions h2 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.awards-form p,
+.awards-items p {
+  margin: 0;
+  color: var(--soft-muted, #6b7280);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.awards-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.awards-submission-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.awards-submission-list li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  background: var(--soft-bg, #f8fafc);
+  cursor: pointer;
+}
+
+.awards-submission-list li[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--soft-accent, #2563eb) 40%, var(--soft-line, #d5dde8));
+  background: color-mix(in srgb, var(--soft-accent-soft, #eff6ff) 70%, var(--soft-card, #fff));
+}
+
+.awards-submission-list li > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.awards-submission-list strong {
+  font-size: 14px;
+}
+
+.awards-submission-list span {
+  color: var(--soft-muted, #6b7280);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.awards-submission-list select {
+  flex: none;
+  min-height: 36px;
+  max-width: 160px;
+}
+
+.awards-item-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.awards-item-list li {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  background: var(--soft-bg, #f8fafc);
+}
+
+.awards-item-list textarea {
+  min-height: 120px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--soft-line, #e5e7eb);
+  border-radius: 12px;
+  font: 500 14px var(--font-source-sans), ui-sans-serif;
+  background: #fff;
+  color: inherit;
+  resize: vertical;
+}
+
+.awards-item-list .check-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.awards-add-item {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--soft-line, #d5dde8);
+}
+
+.awards-add-item-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 120px;
+  gap: 10px;
+}
+
+.awards-page > .business-related {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .awards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .awards-add-item-row {
+    grid-template-columns: 1fr;
+  }
+}
