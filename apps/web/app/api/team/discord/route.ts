@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     const current = await session();
     const body = (await request.json()) as {
       orgId?: string;
-      action?: "save" | "test" | "announce";
+      action?: "save" | "test" | "announce" | "digest";
       webhookUrl?: string;
       channelLabel?: string;
       enabled?: boolean;
@@ -89,11 +89,32 @@ export async function POST(request: Request) {
       );
       if (!row.rowCount) throw new Error("Connect a Discord webhook first");
       if (!row.rows[0]!.enabled) throw new Error("Discord posting is turned off for this team");
-      const content =
-        body.action === "test"
-          ? "✅ Vantage is connected to this channel. Alumni-network announcements will post here."
-          : (body.message ?? "").trim();
-      if (body.action === "announce" && !content) throw new Error("Message is required");
+
+      let content: string;
+      if (body.action === "test") {
+        content = "✅ Vantage is connected to this channel. Alumni-network announcements will post here.";
+      } else if (body.action === "digest") {
+        // Summarize the alumni network. Admins can read team_alumni via RLS.
+        const stats = await client.query<{ total: string }>(
+          `SELECT count(*) AS total FROM team_alumni WHERE org_id=$1`,
+          [orgId],
+        );
+        const recent = await client.query<{ fullName: string; gradYear: number | null }>(
+          `SELECT full_name AS "fullName", grad_year AS "gradYear" FROM team_alumni
+           WHERE org_id=$1 ORDER BY created_at DESC LIMIT 5`,
+          [orgId],
+        );
+        const total = Number(stats.rows[0]?.total ?? 0);
+        if (!total) throw new Error("Add some alumni before posting a digest");
+        const names = recent.rows
+          .map((r) => `• ${r.fullName}${r.gradYear ? ` ’${String(r.gradYear).slice(2)}` : ""}`)
+          .join("\n");
+        content = `📇 **Alumni network update** — ${total} alum${total === 1 ? "" : "s"} in our directory.\nRecently added:\n${names}\n\nAlumni: help us keep it current!`;
+      } else {
+        content = (body.message ?? "").trim();
+        if (!content) throw new Error("Message is required");
+      }
+
       const post = await postToDiscord(row.rows[0]!.webhookUrl, content);
       if (!post.ok) throw new Error(post.error ?? "Discord rejected the message");
       return { posted: true };
