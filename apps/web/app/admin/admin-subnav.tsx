@@ -6,6 +6,7 @@ const links = [
   { href: "/admin", label: "Teams" },
   { href: "/admin/waitlist", label: "Waitlist" },
   { href: "/admin/plans", label: "Plans" },
+  { href: "/admin/releases", label: "Releases" },
   { href: "/admin/commercial", label: "Commercial" },
   { href: "/admin/connectors", label: "Connectors" },
   { href: "/admin/models", label: "Models" },

@@ -3,7 +3,10 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { isEmailProviderConfigured, resolveAuthBaseURL, runtimeEnv } from "./access-policy";
 import { createEmailProvider } from "./email";
 
-/** Opt-in email categories. All default OFF — never send without an explicit true preference. */
+/**
+ * Email notification categories.
+ * Product updates default ON (users can opt out). Coach/sponsor categories default OFF.
+ */
 export const EMAIL_NOTIFICATION_CATEGORIES = [
   "product_updates",
   "coach_assignments",
@@ -23,7 +26,7 @@ export type UserEmailPreferences = {
 };
 
 export const DEFAULT_EMAIL_PREFERENCES: UserEmailPreferences = {
-  productUpdates: false,
+  productUpdates: true,
   coachAssignments: false,
   coachTodos: false,
   coachPracticeReminders: false,
@@ -83,7 +86,7 @@ function mapPrefsRow(row: {
   };
 }
 
-/** Ensure a prefs row exists (all categories false). Safe under self RLS. */
+/** Ensure a prefs row exists (product updates ON by default). Safe under self RLS. */
 export async function ensureUserEmailPreferences(client: PoolClient, userId: string) {
   const existing = await client.query<{
     productUpdates: boolean;
@@ -109,8 +112,8 @@ export async function ensureUserEmailPreferences(client: PoolClient, userId: str
     coachPracticeReminders: boolean;
     sponsorReminders: boolean;
   }>(
-    `INSERT INTO user_email_preferences (user_id, unsubscribe_token)
-     VALUES ($1::uuid, $2)
+    `INSERT INTO user_email_preferences (user_id, product_updates, unsubscribe_token)
+     VALUES ($1::uuid, true, $2)
      ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
      RETURNING product_updates AS "productUpdates",
                coach_assignments AS "coachAssignments",

@@ -3,8 +3,8 @@ import { emitNotification } from "./notifications-emit";
 
 /**
  * In-app inbox preferences stored on `profiles.notification_prefs` (jsonb).
- * Distinct from opt-in email categories in `user_email_preferences`.
- * Team-ops categories default ON (actionable coach→member alerts); product notes default OFF.
+ * Distinct from email categories in `user_email_preferences`.
+ * Team-ops and product updates default ON; users can opt out.
  */
 export type InAppNotificationPrefs = {
   matchAlerts: boolean;
@@ -22,7 +22,7 @@ export const DEFAULT_IN_APP_NOTIFICATION_PREFS: InAppNotificationPrefs = {
   matchAlerts: true,
   scoutReminders: true,
   syncFailures: true,
-  productUpdates: false,
+  productUpdates: true,
   todoAssigned: true,
   todoCompleted: true,
   dutyAssigned: true,

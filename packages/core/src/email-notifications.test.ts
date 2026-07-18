@@ -10,9 +10,9 @@ import {
 } from "./email-notifications";
 
 describe("email notification preferences", () => {
-  it("defaults every category to opt-out", () => {
+  it("defaults product updates on and other email categories off", () => {
     expect(DEFAULT_EMAIL_PREFERENCES).toEqual({
-      productUpdates: false,
+      productUpdates: true,
       coachAssignments: false,
       coachTodos: false,
       coachPracticeReminders: false,
