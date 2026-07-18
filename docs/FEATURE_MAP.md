@@ -20,3 +20,12 @@ Bottom island (mobile): **Home · Event · Scout · Team · More** (`PRIMARY_TAB
 More sheet quick links: My Day, Messages, Logistics, Business, Build, AI.
 
 Legacy redirects live in `apps/web/next.config.ts` (orgId preserved). Exact `/cad` redirects; `/cad/pair` stays.
+
+## Role onboarding (CD #28)
+
+| Route | What it is |
+|---|---|
+| `/start` | Personal Soft-UI checklists auto-assigned from `team_role`, `primary_focus`, and calendar subteam membership |
+| `/team/getting-started` | Org-wide workspace setup signals (invites, knowledge, budgets) — not the personal path |
+
+Templates live in `apps/web/lib/role-onboarding/`; progress in `member_onboarding_*` (migration `0163_role_onboarding`).
