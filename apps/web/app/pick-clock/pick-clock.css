@@ -1,0 +1,255 @@
+/* Pick Clock — Soft-UI, glanceable under the 45s alliance selection timer.
+   Prefixed .pck-* ; theme via --app-* / --soft-* tokens. */
+
+.pck-page .app-page-header {
+  margin-bottom: 14px;
+}
+
+.pck-header-actions,
+.pck-setup-links,
+.pck-tools,
+.pck-clock-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.pck-clock {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "label actions"
+    "value actions";
+  align-items: end;
+  gap: 4px 16px;
+  margin: 0 0 16px;
+  padding: 18px 20px;
+  border-radius: var(--soft-radius, 16px);
+  border: 1px solid var(--soft-line, var(--app-line));
+  background: var(--soft-card, var(--app-surface));
+  box-shadow: var(--soft-shadow, var(--app-shadow));
+}
+
+.pck-clock-label {
+  grid-area: label;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.pck-clock-value {
+  grid-area: value;
+  margin: 0;
+  font-size: clamp(56px, 12vw, 88px);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--app-ink);
+}
+
+.pck-clock-actions {
+  grid-area: actions;
+  justify-content: flex-end;
+}
+
+.pck-clock.pck-warn {
+  border-color: color-mix(in srgb, var(--app-warning, #b45309) 45%, var(--app-line));
+  background: color-mix(in srgb, var(--app-warning, #b45309) 8%, var(--soft-card, #fff));
+}
+
+.pck-clock.pck-warn .pck-clock-value {
+  color: var(--app-warning, #b45309);
+}
+
+.pck-clock.pck-critical {
+  border-color: color-mix(in srgb, var(--app-critical, #b91c1c) 50%, var(--app-line));
+  background: color-mix(in srgb, var(--app-critical, #b91c1c) 10%, var(--soft-card, #fff));
+}
+
+.pck-clock.pck-critical .pck-clock-value {
+  color: var(--app-critical, #b91c1c);
+}
+
+.pck-hero {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 22px 24px 20px;
+  margin-bottom: 14px;
+}
+
+.pck-eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.pck-team-number {
+  margin: 0;
+  font-size: clamp(72px, 18vw, 128px);
+  line-height: 0.88;
+  letter-spacing: -0.05em;
+  font-weight: 800;
+  color: var(--app-ink);
+}
+
+.pck-nickname {
+  margin: 0;
+  font-size: clamp(20px, 3.5vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--app-ink);
+}
+
+.pck-headline {
+  margin: 4px 0 0;
+  max-width: 36ch;
+  font-size: clamp(18px, 2.8vw, 24px);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--app-accent, #2563eb);
+}
+
+.pck-mode-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-warning, #b45309) 40%, var(--app-line));
+  background: color-mix(in srgb, var(--app-warning, #b45309) 8%, var(--soft-card, #fff));
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.pck-drift {
+  margin: 0;
+  max-width: 48ch;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-warning, #b45309) 45%, var(--app-line));
+  background: color-mix(in srgb, var(--app-warning, #b45309) 10%, transparent);
+  font-size: clamp(15px, 2vw, 18px);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--app-ink);
+}
+
+.pck-reasons {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.pck-reason {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--app-line);
+  background: var(--app-bg, var(--soft-bg));
+  font-size: clamp(16px, 2.2vw, 19px);
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.pck-reason.strong {
+  border-color: color-mix(in srgb, var(--app-positive, #15803d) 40%, var(--app-line));
+  background: color-mix(in srgb, var(--app-positive, #15803d) 9%, transparent);
+}
+
+.pck-reason.caution {
+  border-color: color-mix(in srgb, var(--app-warning, #b45309) 45%, var(--app-line));
+  background: color-mix(in srgb, var(--app-warning, #b45309) 10%, transparent);
+}
+
+.pck-tools {
+  margin-top: 8px;
+}
+
+.pck-alts {
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  border-radius: var(--soft-radius, 16px);
+  border: 1px solid var(--soft-line, var(--app-line));
+  background: color-mix(in srgb, var(--soft-card, #fff) 92%, var(--soft-bg, #eef2f7));
+}
+
+.pck-alts h3 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.pck-alts ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.pck-alts button {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: var(--soft-card, var(--app-surface));
+  color: var(--app-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pck-alts button strong {
+  flex: none;
+  min-width: 3.5ch;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pck-alts button span {
+  font-size: 14px;
+  color: var(--app-muted);
+}
+
+.pck-sources {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .pck-clock {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "label"
+      "value"
+      "actions";
+  }
+
+  .pck-clock-actions {
+    justify-content: flex-start;
+  }
+
+  .pck-alts button {
+    flex-direction: column;
+    gap: 2px;
+  }
+}
