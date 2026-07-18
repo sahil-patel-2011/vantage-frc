@@ -9,6 +9,7 @@ describe("onboarding validation", () => {
     gender: "prefer_not_to_say" as const,
     preferredTeamNumber: 254,
     teamRole: "student" as const,
+    termsAccepted: true,
   };
 
   it("accepts a complete youth-safe payload", () => {
@@ -16,6 +17,8 @@ describe("onboarding validation", () => {
     expect(result.displayName).toBe("Sahil Patel");
     expect(result.preferredTeamNumber).toBe(254);
   });
+
+  it("requires explicit terms acceptance", () => { expect(() => validateOnboardingPayload({ ...base, termsAccepted: false })).toThrow(/Terms of Service/i); });
 
   it("rejects future birthdays and invalid team numbers", () => {
     expect(() => validateOnboardingPayload({ ...base, dateOfBirth: "2999-01-01" })).toThrow(/future/i);
