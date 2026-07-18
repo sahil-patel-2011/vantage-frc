@@ -3,6 +3,7 @@ import {
   runTbaEventDaySync,
   runTbaSeasonSync,
 } from "../../../../lib/reference/run-ingest";
+import { notifyMatchScheduleAfterSync } from "../../../../lib/reference/notify-schedule";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -12,6 +13,8 @@ export const maxDuration = 300;
  * - Default: incremental event-day sync (active ±1 day + subscribed events)
  * - ?mode=season&year=2026: full season ingest
  * - body/query eventKey: force refresh one event
+ * After a successful sync, emit_match_schedule_alerts fans out match_alert rows
+ * when our team's schedule fingerprint changes (My Day).
  */
 export async function GET(request: Request) {
   const denied = assertCronAuthorized(request);
@@ -46,13 +49,15 @@ async function run(request: Request) {
         const effectiveMode = body.mode ?? mode;
         if (effectiveMode === "season") {
           const summary = await runTbaSeasonSync(body.year ?? year);
-          return Response.json({ ok: true, summary });
+          const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
+          return Response.json({ ok: true, summary, matchAlerts });
         }
         const summary = await runTbaEventDaySync({
           year: body.year ?? year,
           eventKeys,
         });
-        return Response.json({ ok: true, summary });
+        const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
+        return Response.json({ ok: true, summary, matchAlerts });
       } catch (error) {
         if (error instanceof SyntaxError) {
           // empty body — fall through to query params
@@ -64,7 +69,8 @@ async function run(request: Request) {
 
     if (mode === "season") {
       const summary = await runTbaSeasonSync(year);
-      return Response.json({ ok: true, summary });
+      const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
+      return Response.json({ ok: true, summary, matchAlerts });
     }
 
     const eventKey = url.searchParams.get("eventKey");
@@ -72,7 +78,8 @@ async function run(request: Request) {
       year,
       eventKeys: eventKey ? [eventKey] : undefined,
     });
-    return Response.json({ ok: true, summary });
+    const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
+    return Response.json({ ok: true, summary, matchAlerts });
   } catch (error) {
     return Response.json(
       {
