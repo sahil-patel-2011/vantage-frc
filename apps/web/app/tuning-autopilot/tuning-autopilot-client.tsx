@@ -1,22 +1,161 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { TUNING_CONTROLLER_TYPES, tuningControllerTypeLabel, tuningSessionStatusLabel } from "../../lib/tuning-autopilot";
 import type { TuningAutopilotView } from "../../lib/tuning-autopilot/compute-tuning-autopilot";
-import type { TuningControllerType, TuningSessionStatus } from "../../lib/tuning-autopilot/types";
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+import {
+  TUNING_AUTOPILOT_RELATED_INCLUDE,
+  classifyTuningAutopilotShell,
+  formatTuningAutopilotMetric,
+  formatTuningScorePct,
+  tuningAutopilotNextActions,
+  tuningAutopilotRelatedLinks,
+  tuningAutopilotShellCopy,
+  type TuningAutopilotNextAction,
+  type TuningAutopilotShellKind,
+} from "../../lib/tuning-autopilot/tuning-autopilot-related";
+import type { TuningControllerType } from "../../lib/tuning-autopilot/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./tuning-autopilot.css";
 
 function scoreTone(score: number): string {
   if (score >= 0.75) return "good";
   if (score >= 0.4) return "setup";
-  return "demo";
+  return "danger";
 }
 
 type LiveView = Extract<TuningAutopilotView, { status: "live" }>;
+
+function TuningRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = tuningAutopilotRelatedLinks(orgId, {
+    include: [...TUNING_AUTOPILOT_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related tuning-autopilot-related" aria-label="Related build tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function TuningNextActionsPanel({ actions }: { actions: TuningAutopilotNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions tuning-autopilot-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">CAD, FMEA, and Practice — never DEMO gain metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function TuningShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: TuningAutopilotShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = tuningAutopilotNextActions({ orgId, shell });
+  const copy = tuningAutopilotShellCopy(shell);
+  const buildHref = hubHref("/build", "tuning-autopilot", orgId);
+  const cadHref = hubHref("/build", "cad", orgId);
+  const fmeaHref = hubHref("/build", "fmea", orgId);
+  const practiceHref = hubHref("/team", "practice", orgId);
+
+  return (
+    <main className="module-page tuning-autopilot-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Tuning Autopilot"}
+          </>
+        }
+        title="Tuning Autopilot"
+        description={description}
+      >
+        <TuningRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No sessions yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#tuning-autopilot-new-session">
+              Start a session
+            </a>
+            <a className="app-button secondary" href={cadHref}>
+              Open CAD
+            </a>
+            <a className="app-button secondary" href={fmeaHref}>
+              Open FMEA
+            </a>
+            <a className="app-button secondary" href={practiceHref}>
+              Open Practice
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <TuningNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function TuningAutopilotClient() {
   const [view, setView] = useState<TuningAutopilotView | null>(null);
@@ -24,8 +163,6 @@ export default function TuningAutopilotClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((overrides?: { seasonYear?: number; sessionId?: string | null }) => {
     setFetchFailed(false);
@@ -54,6 +191,44 @@ export default function TuningAutopilotClient() {
     load();
   }, [load]);
 
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const sessionCount = view?.status === "live" ? view.sessions.length : 0;
+  const iterationCount = view?.status === "live" ? view.iterations.length : 0;
+  const activeCount =
+    view?.status === "live"
+      ? view.sessions.filter((row) => row.session.status === "active").length
+      : 0;
+  const bestScore =
+    view?.status === "live"
+      ? (view.sessions.find((row) => row.session.id === view.selectedSessionId)?.bestScore ?? null)
+      : null;
+  const hasSuggestion = view?.status === "live" ? Boolean(view.suggestion) : false;
+  const converged = view?.status === "live" ? Boolean(view.suggestion?.converged) : false;
+
+  const shell = classifyTuningAutopilotShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    sessionCount,
+  });
+  const shellCopy = tuningAutopilotShellCopy(shell);
+  const nextActions = tuningAutopilotNextActions({
+    orgId,
+    shell,
+    sessionCount,
+    iterationCount,
+    hasSuggestion,
+    converged,
+  });
+  const relatedLinks = tuningAutopilotRelatedLinks(orgId, {
+    include: [...TUNING_AUTOPILOT_RELATED_INCLUDE],
+  });
+  const buildHref = hubHref("/build", "tuning-autopilot", orgId);
+  const cadHref = hubHref("/build", "cad", orgId);
+  const fmeaHref = hubHref("/build", "fmea", orgId);
+  const practiceHref = hubHref("/team", "practice", orgId);
+
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
@@ -81,37 +256,74 @@ export default function TuningAutopilotClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <TuningShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <TuningShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <TuningShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <TuningShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page tuning-autopilot-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
+            <a href={buildHref}>Build</a>
             {" / Tuning Autopilot"}
           </>
         }
         title="Tuning Autopilot"
-        description="Log each PID/feedforward gain set you try and its test result. The next gain set is suggested from your own logged trend — never invented."
+        description="Log each PID/feedforward gain set you try and its test result. The next gain set is suggested from your own logged trend — never DEMO gain metrics. Cross-check CAD, FMEA, and Practice."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load({ seasonYear: next });
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="tuning-autopilot-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted tuning-autopilot-season">
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load({ seasonYear: next });
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -120,52 +332,118 @@ export default function TuningAutopilotClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <TuningNextActionsPanel actions={nextActions} />
+
+      <SummaryTiles
+        sessionCount={sessionCount}
+        activeCount={activeCount}
+        iterationCount={iterationCount}
+        bestScore={bestScore}
+        loaded
+      />
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load the tuning autopilot"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No sessions yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href="#tuning-autopilot-new-session">
+            Start a session
+          </a>
+          <a className="app-button secondary" href={cadHref}>
+            Open CAD
+          </a>
+          <a className="app-button secondary" href={fmeaHref}>
+            Open FMEA
+          </a>
+          <a className="app-button secondary" href={practiceHref}>
+            Open Practice
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SessionSwitcher view={view} busy={busy} onSelect={(sessionId) => load({ sessionId })} mutate={mutate} />
-          <NewSessionForm busy={busy} mutate={mutate} />
-          {view.selectedSessionId ? (
-            <>
-              <SuggestionPanel view={view} />
-              <LogIterationForm view={view} busy={busy} mutate={mutate} />
-              <IterationHistory view={view} busy={busy} mutate={mutate} />
-            </>
-          ) : (
-            <EmptyState
-              badge="No sessions yet"
-              badgeTone="setup"
-              title="Start your first tuning session"
-              description="Pick a subsystem and controller type above, then log the gain sets you try and the observed test result."
-            />
-          )}
-        </div>
-      )}
+      ) : null}
+
+      <div className="tuning-autopilot-layout">
+        <SessionSwitcher view={view} busy={busy} onSelect={(sessionId) => load({ sessionId })} mutate={mutate} />
+        <NewSessionForm busy={busy} mutate={mutate} />
+        {shell === "ready" && view.selectedSessionId ? (
+          <>
+            <SuggestionPanel view={view} />
+            <LogIterationForm view={view} busy={busy} mutate={mutate} />
+            <IterationHistory view={view} busy={busy} mutate={mutate} />
+            <Panel className="tuning-autopilot-tip" aria-label="Tuning tip">
+              <span className="eyebrow">Before you converge</span>
+              <p className="app-muted" style={{ marginTop: 8 }}>
+                Re-test suggested gains on the robot. Keep <a href={cadHref}>CAD</a>,{" "}
+                <a href={fmeaHref}>FMEA</a>, and <a href={practiceHref}>Practice</a> aligned with the
+                subsystem you’re tuning — never invent DEMO gain metrics.
+              </p>
+            </Panel>
+          </>
+        ) : null}
+        {shell === "ready" && !view.selectedSessionId ? (
+          <EmptyState
+            soft
+            badge="No sessions yet"
+            badgeTone="setup"
+            title="Start your first tuning session"
+            description="Pick a subsystem and controller type above, then log the gain sets you try and the observed test result — never DEMO scores."
+          />
+        ) : null}
+      </div>
     </main>
+  );
+}
+
+function SummaryTiles({
+  sessionCount,
+  activeCount,
+  iterationCount,
+  bestScore,
+  loaded,
+}: {
+  sessionCount: number;
+  activeCount: number;
+  iterationCount: number;
+  bestScore: number | null;
+  loaded: boolean;
+}) {
+  const hasIterations = iterationCount > 0;
+  const tiles = [
+    { label: "Sessions", value: formatTuningAutopilotMetric(sessionCount, loaded) },
+    { label: "Active", value: formatTuningAutopilotMetric(activeCount, loaded) },
+    { label: "Iterations", value: formatTuningAutopilotMetric(iterationCount, loaded) },
+    {
+      label: "Best score",
+      value: formatTuningScorePct(bestScore, loaded, hasIterations),
+    },
+  ];
+  return (
+    <Panel className="tuning-autopilot-coverage" aria-label="Tuning Autopilot summary">
+      <div className="tuning-autopilot-stats">
+        <div>
+          <span
+            className={`app-badge ${
+              sessionCount === 0 ? "setup" : hasIterations ? "good" : "setup"
+            }`}
+          >
+            {sessionCount === 0 ? "EMPTY" : hasIterations ? "LOGGING" : "NO ITERATIONS"}
+          </span>
+          <h2 style={{ margin: "6px 0 0" }}>Season tuning</h2>
+          <small className="app-muted">Logged gain sets only — never DEMO gain metrics</small>
+        </div>
+        {tiles.map((tile) => (
+          <div key={tile.label}>
+            <strong>{tile.value}</strong>
+            <small className="app-muted" style={{ display: "block" }}>
+              {tile.label}
+            </small>
+          </div>
+        ))}
+      </div>
+    </Panel>
   );
 }
 
@@ -183,11 +461,11 @@ function SessionSwitcher({
   if (view.sessions.length === 0) return null;
   const selected = view.sessions.find((s) => s.session.id === view.selectedSessionId) ?? null;
   return (
-    <Panel>
+    <Panel className="tuning-autopilot-panel" id="tuning-autopilot-sessions">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
           <h2 style={{ margin: 0 }}>Sessions</h2>
-          <small className="app-muted">One session per subsystem/controller you're tuning this season.</small>
+          <small className="app-muted">One session per subsystem/controller you&apos;re tuning this season.</small>
         </div>
         <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
           Session
@@ -202,19 +480,25 @@ function SessionSwitcher({
         </label>
       </header>
       {selected ? (
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 12, alignItems: "center" }}>
+        <div className="tuning-autopilot-session-meta">
           <span className="app-muted">{selected.session.goal || "No goal recorded."}</span>
-          <span className="app-muted">{selected.iterationCount} iteration(s)</span>
+          <span className="app-muted">
+            {formatTuningAutopilotMetric(selected.iterationCount, true)} iteration(s)
+          </span>
           {selected.bestScore != null ? (
-            <span className={`app-badge ${scoreTone(selected.bestScore)}`}>Best {pct(selected.bestScore)}</span>
+            <span className={`app-badge ${scoreTone(selected.bestScore)}`}>
+              Best {formatTuningScorePct(selected.bestScore, true, true)}
+            </span>
           ) : null}
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          <div className="tuning-autopilot-session-actions">
             {selected.session.status !== "converged" ? (
               <button
                 type="button"
                 className="app-button secondary"
                 disabled={busy}
-                onClick={() => mutate({ action: "update-session-status", sessionId: selected.session.id, status: "converged" })}
+                onClick={() =>
+                  mutate({ action: "update-session-status", sessionId: selected.session.id, status: "converged" })
+                }
               >
                 Mark converged
               </button>
@@ -224,7 +508,9 @@ function SessionSwitcher({
                 type="button"
                 className="app-button secondary"
                 disabled={busy}
-                onClick={() => mutate({ action: "update-session-status", sessionId: selected.session.id, status: "abandoned" })}
+                onClick={() =>
+                  mutate({ action: "update-session-status", sessionId: selected.session.id, status: "abandoned" })
+                }
               >
                 Abandon
               </button>
@@ -265,7 +551,9 @@ function NewSessionForm({
 
   return (
     <Panel
+      id="tuning-autopilot-new-session"
       as="form"
+      className="tuning-autopilot-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.subsystem.trim()) return;
@@ -277,9 +565,11 @@ function NewSessionForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>New tuning session</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Name a real subsystem — suggestions stay blank until you log iterations.
+      </p>
       <FormGrid min={160}>
         <FormRow label="Subsystem">
           <input value={form.subsystem} onChange={set("subsystem")} placeholder="Arm, Shooter, Drivetrain…" required />
@@ -309,7 +599,7 @@ function NewSessionForm({
 function SuggestionPanel({ view }: { view: LiveView }) {
   const { suggestion } = view;
   return (
-    <Panel aria-label="Next gain suggestion">
+    <Panel id="tuning-autopilot-suggestion" className="tuning-autopilot-panel" aria-label="Next gain suggestion">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div>
           {suggestion ? (
@@ -317,25 +607,22 @@ function SuggestionPanel({ view }: { view: LiveView }) {
               {suggestion.converged ? "Converged" : "Suggested next gains"}
             </span>
           ) : (
-            <span className="app-badge demo">No iterations yet</span>
+            <span className="app-badge setup">No iterations yet</span>
           )}
           <h2 style={{ margin: "6px 0 0" }}>Next gain set</h2>
         </div>
-        {suggestion ? <small className="app-muted">Confidence {pct(suggestion.confidence)}</small> : null}
+        {suggestion ? (
+          <small className="app-muted">
+            Confidence {formatTuningScorePct(suggestion.confidence, true, true)}
+          </small>
+        ) : null}
       </header>
       {suggestion ? (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))",
-              gap: 10,
-              marginTop: 12,
-            }}
-          >
+          <div className="tuning-autopilot-gains">
             {(["kP", "kI", "kD", "kS", "kV", "kG"] as const).map((key) => (
               <div key={key}>
-                <strong style={{ display: "block", fontSize: "1.2rem" }}>{suggestion.gains[key]}</strong>
+                <strong>{suggestion.gains[key]}</strong>
                 <span className="app-muted">{key}</span>
               </div>
             ))}
@@ -348,7 +635,7 @@ function SuggestionPanel({ view }: { view: LiveView }) {
         </>
       ) : (
         <p className="app-muted" style={{ marginTop: 12 }}>
-          Log your first iteration below to get a suggested next gain set.
+          Log your first iteration below to get a suggested next gain set — never DEMO setpoints.
         </p>
       )}
     </Panel>
@@ -386,7 +673,9 @@ function LogIterationForm({
 
   return (
     <Panel
+      id="tuning-autopilot-log-iteration"
       as="form"
+      className="tuning-autopilot-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!view.selectedSessionId) return;
@@ -409,9 +698,11 @@ function LogIterationForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Log iteration</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Enter the gain set you tried and the observed test result — predictions stay blank until you submit.
+      </p>
       <FormGrid min={100}>
         <FormRow label="kP">
           <input type="number" step="any" value={form.kP} onChange={set("kP")} />
@@ -475,26 +766,30 @@ function IterationHistory({
   if (view.iterations.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No iterations yet"
         badgeTone="setup"
         title="Log your first gain set and test result"
-        description="Each iteration you log sharpens the next-gain suggestion above."
-      />
+        description="Each iteration you log sharpens the next-gain suggestion above — never DEMO scores."
+      >
+        <a className="app-button" href="#tuning-autopilot-log-iteration">
+          Log iteration
+        </a>
+      </EmptyState>
     );
   }
   return (
-    <Panel>
+    <Panel id="tuning-autopilot-history" className="tuning-autopilot-panel">
       <h2 style={{ marginTop: 0 }}>Iteration history</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <p className="app-muted" style={{ marginTop: 0 }}>
+        Scores come only from overshoot, settle time, error, and oscillation you logged.
+      </p>
+      <ul className="tuning-autopilot-list">
         {[...view.iterations].reverse().map((iteration) => (
-          <li
-            key={iteration.id}
-            className="app-card soft-panel"
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-          >
+          <li key={iteration.id} className="app-card soft-panel tuning-autopilot-card">
             <div>
               <span className={`app-badge ${scoreTone(iteration.score)}`}>
-                #{iteration.iterationIndex} · {pct(iteration.score)}
+                #{iteration.iterationIndex} · {formatTuningScorePct(iteration.score, true, true)}
                 {iteration.id === view.bestIterationId ? " · best" : ""}
               </span>
               <strong style={{ display: "block", marginTop: 4 }}>
@@ -514,7 +809,9 @@ function IterationHistory({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => mutate({ action: "delete-iteration", iterationId: iteration.id, sessionId: view.selectedSessionId })}
+              onClick={() =>
+                mutate({ action: "delete-iteration", iterationId: iteration.id, sessionId: view.selectedSessionId })
+              }
             >
               Delete
             </button>
