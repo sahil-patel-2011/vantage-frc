@@ -110,7 +110,7 @@ describe("buildConnectionConnectors", () => {
     expect(cards.every((c) => c.status !== "connected")).toBe(true);
     expect(cards.find((c) => c.id === "onshape")?.href).toBe("/cad/connections?orgId=org-1");
     expect(cards.find((c) => c.id === "discord")?.href).toBe("/team/discord?orgId=org-1");
-    expect(cards.find((c) => c.id === "github")?.href).toBe("/team/admin?orgId=org-1");
+    expect(cards.find((c) => c.id === "github")?.href).toBe("/team/admin?orgId=org-1#github-connection");
   });
 
   it("preserves a real Connected status when provided", () => {

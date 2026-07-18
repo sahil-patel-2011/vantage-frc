@@ -229,7 +229,7 @@ export function CodeClient({
               Build · CAD
             </a>
             {orgId ? (
-              <a className="app-button secondary" href={withOrgHref("/team", orgId) + "#github-connection"}>
+              <a className="app-button secondary" href={withOrgHref("/team/admin", orgId) + "#github-connection"}>
                 GitHub context
               </a>
             ) : null}

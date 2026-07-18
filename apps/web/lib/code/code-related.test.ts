@@ -19,7 +19,7 @@ describe("codeCoachRelatedLinks", () => {
     );
     expect(links.find((l) => l.id === "cad")?.href).toContain("/build");
     expect(links.find((l) => l.id === "cad")?.href).toContain("tab=cad");
-    expect(links.find((l) => l.id === "github")?.href).toContain("#github-connection");
+    expect(links.find((l) => l.id === "github")?.href).toBe("/team/admin?orgId=org-1#github-connection");
     expect(links.find((l) => l.id === "chat")?.href).toContain("/ai");
   });
 });

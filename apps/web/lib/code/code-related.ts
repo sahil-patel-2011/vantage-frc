@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { githubConnectionHref } from "../github/github-related";
 
 /** Known teaching sample — proposals may use the grounded sample diff only for this content. */
 export const CODE_COACH_SAMPLE = `public void periodic() {
@@ -39,7 +40,7 @@ export function codeCoachRelatedLinks(
   const include = options?.include ? new Set(options.include) : null;
   const all: CodeCoachRelatedLink[] = [
     { id: "cad", label: "CAD", href: hubHref("/build", "cad", orgId) },
-    { id: "github", label: "GitHub context", href: withOrgHref("/team", orgId) + "#github-connection" },
+    { id: "github", label: "GitHub context", href: githubConnectionHref(orgId) },
     { id: "chat", label: "AI chat", href: hubHref("/ai", "chat", orgId) },
     { id: "pair", label: "Pair VS Code", href: withOrgHref("/editor/pair", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
@@ -114,7 +115,7 @@ export function codeCoachNextActions(input: {
       id: "github",
       label: "Connect GitHub",
       detail: "Optional: hydrate file content from your default repo — still reviewed with local rules only.",
-      href: withOrgHref("/team", orgId) + "#github-connection",
+      href: githubConnectionHref(orgId),
     },
     {
       id: "chat",
