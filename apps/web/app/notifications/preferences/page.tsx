@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+﻿import NotificationPreferencesClient from "./preferences-client";
 
-/** Deep link used by email preference footers (`buildPreferencesUrl`). */
+/** Preference center for in-app event toggles + email opt-ins (also linked from email footers). */
 export default function NotificationPreferencesPage() {
-  redirect("/account?tab=notifications");
+  return <NotificationPreferencesClient />;
 }

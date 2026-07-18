@@ -40,6 +40,29 @@ export function notificationHref(
     case "billing":
     case "credit_low":
       return orgId ? `/team/budgets${orgQuery}` : "/account";
+    case "todo_assigned":
+    case "todo_completed": {
+      const todoId = payload.todoId;
+      if (orgId && typeof todoId === "string" && todoId) {
+        return `/todos?orgId=${encodeURIComponent(orgId)}&todoId=${encodeURIComponent(todoId)}`;
+      }
+      return orgId ? `/todos${orgQuery}` : "/todos";
+    }
+    case "duty_assigned": {
+      const dutyId = payload.dutyId;
+      if (orgId && typeof dutyId === "string" && dutyId) {
+        return `/team/calendar?orgId=${encodeURIComponent(orgId)}&dutyId=${encodeURIComponent(dutyId)}`;
+      }
+      return orgId ? `/team/calendar${orgQuery}` : "/team/calendar";
+    }
+    case "calendar_event":
+    case "calendar_updated": {
+      const eventId = payload.eventId;
+      if (orgId && typeof eventId === "string" && eventId) {
+        return `/team/calendar?orgId=${encodeURIComponent(orgId)}&eventId=${encodeURIComponent(eventId)}`;
+      }
+      return orgId ? `/team/calendar${orgQuery}` : "/team/calendar";
+    }
     default:
       return null;
   }

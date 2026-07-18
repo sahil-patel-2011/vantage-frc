@@ -10,6 +10,10 @@ type NotificationPrefs = {
   scoutReminders: boolean;
   syncFailures: boolean;
   productUpdates: boolean;
+  todoAssigned: boolean;
+  todoCompleted: boolean;
+  dutyAssigned: boolean;
+  calendarEvents: boolean;
 };
 
 type EmailPrefs = {
@@ -38,6 +42,26 @@ type AccountView = {
 type Tab = "profile" | "appearance" | "notifications" | "integrations";
 
 const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail: string }[] = [
+  {
+    key: "todoAssigned",
+    title: "Todo assignments",
+    detail: "Inbox when a coach or teammate assigns you a todo.",
+  },
+  {
+    key: "todoCompleted",
+    title: "Todo completions",
+    detail: "Inbox when someone finishes a todo you created or own.",
+  },
+  {
+    key: "dutyAssigned",
+    title: "Duty assignments",
+    detail: "Inbox when you are put on a scouting, pit, drive, or outreach duty.",
+  },
+  {
+    key: "calendarEvents",
+    title: "Calendar events",
+    detail: "Inbox when your subteam (or whole team) gets a new or updated event.",
+  },
   { key: "matchAlerts", title: "Match alerts", detail: "Upcoming match reminders when live TBA data is available." },
   { key: "scoutReminders", title: "Scout reminders", detail: "Assigned scouting form nudges for your workspace." },
   { key: "syncFailures", title: "Sync failures", detail: "Notify when TBA/reference ingest health degrades." },
@@ -45,10 +69,26 @@ const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail: string
 ];
 
 const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string }[] = [
-  { key: "productUpdates", title: "Product updates (email)", detail: "Occasional product notes by email. Off until you opt in." },
-  { key: "coachAssignments", title: "Coach assignments", detail: "Email when practice or task assignments land for coaches." },
-  { key: "coachTodos", title: "Coach todos", detail: "Email digests for open coach todos." },
-  { key: "coachPracticeReminders", title: "Practice reminders", detail: "Email reminders ahead of scheduled practice." },
+  {
+    key: "productUpdates",
+    title: "Product updates / changelog",
+    detail: "Occasional Vantage product notes by email. Off until you opt in.",
+  },
+  {
+    key: "coachAssignments",
+    title: "Coach / mentor assignments",
+    detail: "Email when a coach or mentor assigns you work.",
+  },
+  {
+    key: "coachTodos",
+    title: "Coach / mentor todos",
+    detail: "Email when a todo is assigned to you.",
+  },
+  {
+    key: "coachPracticeReminders",
+    title: "Practice reminders",
+    detail: "Email reminders for scheduled driver / team practice.",
+  },
 ];
 
 function withOrg(href: string, orgId: string | null) {
@@ -66,6 +106,10 @@ export default function AccountClient() {
     scoutReminders: true,
     syncFailures: true,
     productUpdates: false,
+    todoAssigned: true,
+    todoCompleted: true,
+    dutyAssigned: true,
+    calendarEvents: true,
   });
   const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>({
     productUpdates: false,
@@ -287,8 +331,11 @@ export default function AccountClient() {
         <Panel className="account-panel">
           <h2>In-app notifications</h2>
           <p className="app-muted">
-            Controls what Vantage may put in your inbox. It does not invent live competition data.{" "}
+            Controls what Vantage may put in your inbox — including coach→member todos, duties, and calendar events.
+            It does not invent live competition data.{" "}
             <a href="/notifications">Open inbox</a>
+            {" · "}
+            <a href="/notifications/preferences">Full preference center</a>
           </p>
           <ul className="account-prefs">
             {PREF_LABELS.map((item) => (
@@ -310,7 +357,10 @@ export default function AccountClient() {
           </ul>
 
           <h2 className="account-prefs-heading">Email opt-ins</h2>
-          <p className="app-muted">Email stays off until you explicitly opt in. You can change these anytime.</p>
+          <p className="app-muted">
+            Email stays off until you explicitly opt in. Auth codes and security notices are separate.{" "}
+            <a href="/notifications/preferences">Open email preference center</a>
+          </p>
           <ul className="account-prefs">
             {EMAIL_PREF_LABELS.map((item) => (
               <li key={item.key}>

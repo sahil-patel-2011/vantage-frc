@@ -93,7 +93,8 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         <button type="button" disabled={busy || unreadCount < 1} onClick={() => void patch("read_all")}>
           Mark all read
         </button>
-        <a href="/account?tab=notifications">Prefs &amp; email opt-ins</a>
+        <a href="/notifications/preferences">Which events notify</a>
+        <a href="/account?tab=notifications">Account prefs</a>
         <a href="/security">Security</a>
       </TabBar>
 
@@ -111,11 +112,14 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           badge="Empty"
           badgeTone="good"
           title={filter === "unread" ? "No unread notifications" : "No notifications yet"}
-          description="When exports finish, teammates message you, or billing/sync events fire, they appear here with a real timestamp — never as placeholder competition noise."
+          description="When a coach assigns a todo or duty, schedules a calendar event, exports finish, or teammates message you, they appear here with a real timestamp — never as placeholder competition noise."
         >
           <div className="settings-inline-links">
+            <a className="app-button secondary" href="/notifications/preferences">
+              Which events notify
+            </a>
             <a className="app-button secondary" href="/account?tab=notifications">
-              Notification &amp; email prefs
+              Account prefs
             </a>
             <a className="app-button secondary" href="/security">
               Security
