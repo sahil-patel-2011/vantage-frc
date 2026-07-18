@@ -1,0 +1,150 @@
+/* Account Soft-UI — profile + workspace context; never DEMO plan/usage figures. */
+.account-page {
+  display: grid;
+  gap: 14px;
+  max-width: 720px;
+}
+
+.account-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.account-related {
+  margin: 0 0 2px;
+}
+
+.account-org-context {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.account-org-context-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.account-org-context h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.account-org-context p {
+  margin: 4px 0 0;
+  color: var(--soft-muted, var(--app-muted));
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.account-org-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.account-org-meta .app-badge {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.account-next-actions {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 16px 18px;
+}
+
+.account-next-actions > header {
+  display: grid;
+  gap: 4px;
+}
+
+.account-next-actions h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.account-next-actions > header p {
+  margin: 0;
+  color: var(--soft-muted, var(--app-muted));
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.account-next-actions ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.account-next-actions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-line, var(--app-line));
+  background: var(--soft-bg, var(--app-bg));
+}
+
+.account-next-actions li.primary {
+  border-color: color-mix(in srgb, var(--soft-accent, var(--app-accent)) 35%, var(--soft-line, var(--app-line)));
+  background: color-mix(in srgb, var(--soft-accent, var(--app-accent)) 8%, var(--soft-bg, var(--app-bg)));
+}
+
+.account-next-actions li div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.account-next-actions li strong {
+  font-size: 14px;
+}
+
+.account-next-actions li span {
+  color: var(--soft-muted, var(--app-muted));
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.account-next-actions li .app-button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.account-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.account-identity-scope {
+  display: block;
+  margin-top: 4px;
+  color: var(--soft-muted, var(--app-muted));
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .account-next-actions li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
-import { ThemeToggle } from "../theme-provider";
+import {
+  ACCOUNT_RELATED_INCLUDE,
+  accountNextActions,
+  accountRelatedLinks,
+  formatAccountOrgLabel,
+  formatAccountRole,
+} from "../../lib/account";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { signOutAndRedirect } from "../../lib/sign-out";
+import { ThemeToggle } from "../theme-provider";
+import "./account.css";
 
 type NotificationPrefs = {
   matchAlerts: boolean;
@@ -35,10 +44,21 @@ type AccountView = {
   themePreference?: "light" | "dark";
   notificationPrefs?: NotificationPrefs;
   emailPrefs?: EmailPrefs;
+  emailDelivery?: Integration;
+  unreadNotificationCount?: number;
   integrations?: {
     google: Integration;
     tba: Integration;
   };
+};
+
+type OrgContext = {
+  orgId: string | null;
+  orgName: string | null;
+  teamNumber: number | null;
+  role: string | null;
+  planCode: string | null;
+  workspaceCount: number;
 };
 
 type Tab = "profile" | "appearance" | "notifications" | "integrations";
@@ -103,15 +123,133 @@ const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string 
   },
 ];
 
-function withOrg(href: string, orgId: string | null) {
-  if (!orgId) return href;
-  const join = href.includes("?") ? "&" : "?";
-  return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
+function AccountRelated({ orgId }: { orgId: string | null }) {
+  const links = accountRelatedLinks(orgId, { include: [...ACCOUNT_RELATED_INCLUDE] });
+  return (
+    <nav className="product-hub-related account-related" aria-label="Related account tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActions({
+  orgId,
+  hasProfile,
+  emailDeliveryReady,
+  googleReady,
+  tbaReady,
+}: {
+  orgId: string | null;
+  hasProfile: boolean;
+  emailDeliveryReady: boolean;
+  googleReady: boolean;
+  tbaReady: boolean;
+}) {
+  const actions = accountNextActions({
+    orgId,
+    hasProfile,
+    emailDeliveryReady,
+    googleReady,
+    tbaReady,
+  });
+  return (
+    <section className="account-next-actions app-card soft-panel" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>
+          Profile is personal; billing and usage follow your active workspace — never DEMO plan or ledger figures.
+        </p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function OrgContextCard({ org }: { org: OrgContext }) {
+  const label = formatAccountOrgLabel(org);
+  const role = formatAccountRole(org.role);
+
+  if (!org.orgId) {
+    return (
+      <EmptyState
+        soft
+        badge="Setup required"
+        badgeTone="setup"
+        title="No workspace selected"
+        description={
+          org.workspaceCount > 0
+            ? "Your profile prefs still apply to this login. Pick an active team for billing, AI usage, and connectors."
+            : "You are signed in, but no team membership is attached yet. Ask an owner for an invite — nothing is pre-seeded here."
+        }
+      >
+        <div className="account-empty-actions">
+          <a className="app-button" href="/workspace">
+            Open Workspace
+          </a>
+          <a className="app-button secondary" href="/support">
+            Help & Support
+          </a>
+        </div>
+      </EmptyState>
+    );
+  }
+
+  return (
+    <Panel className="account-org-context" aria-label="Active workspace">
+      <div className="account-org-context-top">
+        <div>
+          <h2>Active workspace</h2>
+          <p>{label}</p>
+        </div>
+        <div className="account-org-meta">
+          {role ? <span className="app-badge">{role}</span> : null}
+          {org.planCode?.trim() ? (
+            <span className="app-badge good">{org.planCode.trim()}</span>
+          ) : (
+            <span className="app-badge setup">Plan unset</span>
+          )}
+        </div>
+      </div>
+      <p className="app-muted">
+        Display name and notification prefs are personal. Billing, AI usage, TBA connectors, and team security follow
+        this workspace.
+      </p>
+      <div className="settings-inline-links">
+        <a href="/workspace">Switch workspace</a>
+        <a href={withOrgHref("/ai?tab=budgets", org.orgId)}>Billing</a>
+        <a href={withOrgHref("/team/usage", org.orgId)}>AI usage</a>
+      </div>
+    </Panel>
+  );
 }
 
 export default function AccountClient() {
   const [tab, setTab] = useState<Tab>("profile");
   const [account, setAccount] = useState<AccountView | null>(null);
+  const [org, setOrg] = useState<OrgContext>({
+    orgId: null,
+    orgName: null,
+    teamNumber: null,
+    role: null,
+    planCode: null,
+    workspaceCount: 0,
+  });
   const [displayName, setDisplayName] = useState("");
   const [prefs, setPrefs] = useState<NotificationPrefs>({
     matchAlerts: true,
@@ -134,7 +272,8 @@ export default function AccountClient() {
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [orgId, setOrgId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchFailed, setFetchFailed] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -150,21 +289,59 @@ export default function AccountClient() {
   }, []);
 
   async function load() {
-    const response = await fetch("/api/account");
-    if (!response.ok) {
-      setMessage("Could not load account settings.");
+    setLoading(true);
+    setFetchFailed(false);
+    try {
+      const response = await fetch("/api/account");
+      if (!response.ok) {
+        setMessage("Could not load account settings.");
+        setMessageOk(false);
+        setAccount(null);
+        setFetchFailed(true);
+        return;
+      }
+      const data = (await response.json()) as AccountView;
+      setAccount(data);
+      setDisplayName(data.displayName ?? data.name ?? "");
+      if (data.notificationPrefs) setPrefs(data.notificationPrefs);
+      if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
+      setMessage("");
+
+      const meResponse = await fetch("/api/me");
+      if (meResponse.ok) {
+        const me = (await meResponse.json()) as {
+          orgId?: string | null;
+          orgName?: string | null;
+          teamNumber?: number | null;
+          role?: string | null;
+          planCode?: string | null;
+          workspaces?: unknown[];
+        };
+        setOrg({
+          orgId: me.orgId ?? null,
+          orgName: me.orgName ?? null,
+          teamNumber: me.teamNumber ?? null,
+          role: me.role ?? null,
+          planCode: me.planCode ?? null,
+          workspaceCount: Array.isArray(me.workspaces) ? me.workspaces.length : me.orgId ? 1 : 0,
+        });
+      } else {
+        setOrg({
+          orgId: null,
+          orgName: null,
+          teamNumber: null,
+          role: null,
+          planCode: null,
+          workspaceCount: 0,
+        });
+      }
+    } catch {
+      setMessage("Network error loading account settings.");
       setMessageOk(false);
-      return;
-    }
-    const data = (await response.json()) as AccountView;
-    setAccount(data);
-    setDisplayName(data.displayName ?? data.name ?? "");
-    if (data.notificationPrefs) setPrefs(data.notificationPrefs);
-    if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
-    const meResponse = await fetch("/api/me");
-    if (meResponse.ok) {
-      const me = await meResponse.json();
-      setOrgId(me.orgId ?? null);
+      setAccount(null);
+      setFetchFailed(true);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -224,58 +401,35 @@ export default function AccountClient() {
   }
 
   const initial = (displayName.trim()?.[0] ?? account?.email?.trim()?.[0] ?? "V").toUpperCase();
+  const orgId = org.orgId;
+  const hasProfile = Boolean(displayName.trim());
+  const emailDeliveryReady = account?.emailDelivery?.status !== "setup_required";
+  const googleReady = account?.integrations?.google.status === "available";
+  const tbaReady = account?.integrations?.tba.status === "available";
+  const showNextActions =
+    !loading &&
+    !fetchFailed &&
+    account != null &&
+    (!orgId || !hasProfile || !emailDeliveryReady || !googleReady || !tbaReady);
 
   return (
     <main className="module-page account-page">
       <PageHeader
         breadcrumbs="Account / Settings"
         title="Your settings"
-        description="Profile, appearance, notification preferences, email opt-ins, and where security and API keys live."
-      />
+        description="Personal profile and prefs for this login. Billing, AI usage, and team connectors follow your active workspace."
+      >
+        <div className="account-header-actions">
+          <a className="app-button secondary" href="/whats-new">
+            What’s new
+          </a>
+          <a className="app-button secondary" href="/support">
+            Support
+          </a>
+        </div>
+      </PageHeader>
 
-      <nav className="settings-hub" aria-label="Related settings">
-        <a href="/security">
-          <strong>Security</strong>
-          <span>Authenticator app, remembered devices</span>
-        </a>
-        <a href="/notifications">
-          <strong>Inbox</strong>
-          <span>In-app alerts for this account</span>
-        </a>
-        <button type="button" onClick={() => setTab("notifications")}>
-          <strong>Notification prefs</strong>
-          <span>In-app alerts and email opt-ins</span>
-        </button>
-        {orgId ? (
-          <>
-            <a href={withOrg("/team/security", orgId)}>
-              <strong>Team security</strong>
-              <span>Auth policy and delegated powers</span>
-            </a>
-            <a href={withOrg("/team", orgId)}>
-              <strong>API keys</strong>
-              <span>BYOK providers and connectors</span>
-            </a>
-            <a href={withOrg("/team/budgets", orgId)}>
-              <strong>API budgets</strong>
-              <span>Hard spend and token limits</span>
-            </a>
-          </>
-        ) : null}
-      </nav>
-
-      <TabBar
-        className="account-tabs"
-        aria-label="Account sections"
-        value={tab}
-        onChange={(id) => setTab(id as Tab)}
-        tabs={[
-          { id: "profile", label: "Profile" },
-          { id: "appearance", label: "Appearance" },
-          { id: "notifications", label: "Notifications" },
-          { id: "integrations", label: "Connections" },
-        ]}
-      />
+      <AccountRelated orgId={orgId} />
 
       {message ? (
         <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
@@ -283,152 +437,299 @@ export default function AccountClient() {
         </p>
       ) : null}
 
-      {!account && !message ? (
+      {loading ? (
         <EmptyState
           soft
           badge="Loading"
           badgeTone="setup"
           title="Loading account"
-          description="Pulling your profile and preferences…"
+          description="Pulling your profile, workspace context, and preferences…"
           aria-busy
         />
       ) : null}
 
-      {tab === "profile" && account ? (
-        <Panel className="account-panel">
-          <div className="account-identity">
-            {account.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="soft-avatar lg" src={account.image} alt="" />
+      {fetchFailed ? (
+        <>
+          <EmptyState
+            soft
+            badge="Unavailable"
+            badgeTone="setup"
+            title="Couldn’t load account settings"
+            description="A network or server issue prevented loading. Try again, or open Support if this keeps failing."
+          >
+            <div className="account-empty-actions">
+              <button type="button" className="app-button" onClick={() => void load()}>
+                Retry
+              </button>
+              <a className="app-button secondary" href="/support">
+                Help & Support
+              </a>
+            </div>
+          </EmptyState>
+          <NextActions
+            orgId={null}
+            hasProfile={false}
+            emailDeliveryReady
+            googleReady
+            tbaReady
+          />
+        </>
+      ) : null}
+
+      {!loading && !fetchFailed && account ? (
+        <>
+          <OrgContextCard org={org} />
+
+          {showNextActions ? (
+            <NextActions
+              orgId={orgId}
+              hasProfile={hasProfile}
+              emailDeliveryReady={emailDeliveryReady}
+              googleReady={googleReady}
+              tbaReady={tbaReady}
+            />
+          ) : null}
+
+          <nav className="settings-hub" aria-label="Related settings">
+            <a href="/security">
+              <strong>Security</strong>
+              <span>Authenticator app, remembered devices</span>
+            </a>
+            <a href="/notifications">
+              <strong>Inbox</strong>
+              <span>In-app alerts for this account</span>
+            </a>
+            <button type="button" onClick={() => setTab("notifications")}>
+              <strong>Notification prefs</strong>
+              <span>In-app alerts and email opt-ins</span>
+            </button>
+            <a href="/whats-new">
+              <strong>What’s new</strong>
+              <span>Published releases for your plan</span>
+            </a>
+            {orgId ? (
+              <>
+                <a href={withOrgHref("/ai?tab=budgets", orgId)}>
+                  <strong>Billing</strong>
+                  <span>API budgets and Usage Credits</span>
+                </a>
+                <a href={withOrgHref("/team/usage", orgId)}>
+                  <strong>AI usage</strong>
+                  <span>Live metered ledger for this team</span>
+                </a>
+                <a href={withOrgHref("/team/security", orgId)}>
+                  <strong>Team security</strong>
+                  <span>Auth policy and delegated powers</span>
+                </a>
+                <a href={withOrgHref("/team", orgId)}>
+                  <strong>API keys</strong>
+                  <span>BYOK providers and connectors</span>
+                </a>
+              </>
             ) : (
-              <span className="soft-avatar lg">{initial}</span>
+              <a href="/workspace">
+                <strong>Workspace</strong>
+                <span>Choose a team for billing and usage</span>
+              </a>
             )}
-            <div>
-              <strong>{displayName || "Signed-in user"}</strong>
-              <span>{account.email ?? "—"}</span>
-            </div>
-          </div>
-          <form className="account-form" onSubmit={(event) => void saveProfile(event)}>
-            <label>
-              Display name
-              <input
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                maxLength={80}
-                autoComplete="name"
-                required
-              />
-            </label>
-            <label>
-              Email
-              <input value={account.email ?? ""} readOnly disabled />
-            </label>
-            <div className="account-actions">
-              <button className="primary-action" type="submit" disabled={busy}>
-                Save profile
-              </button>
-              <button className="danger-action" type="button" disabled={busy} onClick={() => void signOut()}>
-                Sign out
-              </button>
-            </div>
-          </form>
-        </Panel>
-      ) : null}
+          </nav>
 
-      {tab === "appearance" ? (
-        <Panel className="appearance-panel account-panel">
-          <ThemeToggle expanded />
-        </Panel>
-      ) : null}
+          <TabBar
+            className="account-tabs"
+            aria-label="Account sections"
+            value={tab}
+            onChange={(id) => setTab(id as Tab)}
+            tabs={[
+              { id: "profile", label: "Profile" },
+              { id: "appearance", label: "Appearance" },
+              { id: "notifications", label: "Notifications" },
+              { id: "integrations", label: "Connections" },
+            ]}
+          />
 
-      {tab === "notifications" ? (
-        <Panel className="account-panel">
-          <h2>In-app notifications</h2>
-          <p className="app-muted">
-            Controls what Vantage may put in your inbox — including coach→member todos, duties, and calendar events.
-            It does not invent live competition data.{" "}
-            <a href="/notifications">Open inbox</a>
-            {" · "}
-            <a href="/notifications/preferences">Full preference center</a>
-          </p>
-          <ul className="account-prefs">
-            {PREF_LABELS.map((item) => (
-              <li key={item.key}>
+          {tab === "profile" ? (
+            <Panel className="account-panel">
+              <div className="account-identity">
+                {account.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="soft-avatar lg" src={account.image} alt="" />
+                ) : (
+                  <span className="soft-avatar lg">{initial}</span>
+                )}
                 <div>
-                  <strong>{item.title}</strong>
-                  <small>{item.detail}</small>
+                  <strong>{displayName || "Signed-in user"}</strong>
+                  <span>{account.email ?? "—"}</span>
+                  <span className="account-identity-scope">
+                    {orgId
+                      ? `Personal account · workspace ${formatAccountOrgLabel(org) ?? "active"}`
+                      : "Personal account · no workspace selected"}
+                  </span>
                 </div>
-                <label className="account-switch">
-                  <span className="sr-only">{item.title}</span>
+              </div>
+              <form className="account-form" onSubmit={(event) => void saveProfile(event)}>
+                <label>
+                  Display name
                   <input
-                    type="checkbox"
-                    checked={prefs[item.key]}
-                    onChange={(event) => setPrefs((current) => ({ ...current, [item.key]: event.target.checked }))}
+                    value={displayName}
+                    onChange={(event) => setDisplayName(event.target.value)}
+                    maxLength={80}
+                    autoComplete="name"
+                    required
                   />
                 </label>
-              </li>
-            ))}
-          </ul>
-
-          <h2 className="account-prefs-heading">Email opt-ins</h2>
-          <p className="app-muted">
-            Email stays off until you explicitly opt in. Auth codes and security notices are separate.{" "}
-            <a href="/notifications/preferences">Open email preference center</a>
-          </p>
-          <ul className="account-prefs">
-            {EMAIL_PREF_LABELS.map((item) => (
-              <li key={item.key}>
-                <div>
-                  <strong>{item.title}</strong>
-                  <small>{item.detail}</small>
-                </div>
-                <label className="account-switch">
-                  <span className="sr-only">{item.title}</span>
-                  <input
-                    type="checkbox"
-                    checked={emailPrefs[item.key]}
-                    onChange={(event) =>
-                      setEmailPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
-                    }
-                  />
+                <label>
+                  Email
+                  <input value={account.email ?? ""} readOnly disabled />
                 </label>
-              </li>
-            ))}
-          </ul>
-          <button className="primary-action" type="button" disabled={busy} onClick={() => void savePrefs()}>
-            Save preferences
-          </button>
-        </Panel>
-      ) : null}
+                <div className="account-actions">
+                  <button className="primary-action" type="submit" disabled={busy}>
+                    Save profile
+                  </button>
+                  <button className="danger-action" type="button" disabled={busy} onClick={() => void signOut()}>
+                    Sign out
+                  </button>
+                </div>
+              </form>
+            </Panel>
+          ) : null}
 
-      {tab === "integrations" ? (
-        <section className="admin-grid settings-connections">
-          <Panel as="article">
-            <h2>Google</h2>
-            <span className={`app-badge ${account?.integrations?.google.status === "available" ? "good" : "setup"}`}>
-              {account?.integrations?.google.status === "available" ? "Available" : "Setup required"}
-            </span>
-            <p>{account?.integrations?.google.detail ?? "Checking Google configuration…"}</p>
-            <a href="/signin">Open sign-in</a>
-          </Panel>
-          <Panel as="article">
-            <h2>The Blue Alliance</h2>
-            <span className={`app-badge ${account?.integrations?.tba.status === "available" ? "good" : "setup"}`}>
-              {account?.integrations?.tba.status === "available" ? "Configured" : "Not configured"}
-            </span>
-            <p>{account?.integrations?.tba.detail ?? "Checking TBA configuration…"}</p>
-            {orgId ? <a href={withOrg("/team/data", orgId)}>Open TBA connectors</a> : null}
-          </Panel>
-          <Panel as="article">
-            <h2>Security &amp; API keys</h2>
-            <p>Personal 2FA lives on Security. Team API keys, BYOK providers, and budgets live under Team admin.</p>
-            <div className="settings-inline-links">
-              <a href="/security">Security</a>
-              {orgId ? <a href={withOrg("/team", orgId)}>Team API keys</a> : null}
-              {orgId ? <a href={withOrg("/team/budgets", orgId)}>API budgets</a> : null}
-            </div>
-          </Panel>
-        </section>
+          {tab === "appearance" ? (
+            <Panel className="appearance-panel account-panel">
+              <ThemeToggle expanded />
+            </Panel>
+          ) : null}
+
+          {tab === "notifications" ? (
+            <Panel className="account-panel">
+              {account.emailDelivery?.status === "setup_required" ? (
+                <EmptyState
+                  soft
+                  badge="Setup required"
+                  badgeTone="setup"
+                  title="Email delivery not configured"
+                  description={account.emailDelivery.detail}
+                >
+                  <p className="app-muted">
+                    In-app prefs still save. Opt-in email stays quiet until Resend is configured on this deployment.
+                  </p>
+                </EmptyState>
+              ) : null}
+              <h2>In-app notifications</h2>
+              <p className="app-muted">
+                Controls what Vantage may put in your inbox — including coach→member todos, duties, and calendar events.
+                It does not invent live competition data.{" "}
+                <a href="/notifications">Open inbox</a>
+                {" · "}
+                <a href="/notifications/preferences">Full preference center</a>
+                {" · "}
+                <a href="/whats-new">What’s new</a>
+              </p>
+              <ul className="account-prefs">
+                {PREF_LABELS.map((item) => (
+                  <li key={item.key}>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <small>{item.detail}</small>
+                    </div>
+                    <label className="account-switch">
+                      <span className="sr-only">{item.title}</span>
+                      <input
+                        type="checkbox"
+                        checked={prefs[item.key]}
+                        onChange={(event) => setPrefs((current) => ({ ...current, [item.key]: event.target.checked }))}
+                      />
+                    </label>
+                  </li>
+                ))}
+              </ul>
+
+              <h2 className="account-prefs-heading">Email opt-ins</h2>
+              <p className="app-muted">
+                Email stays off until you explicitly opt in. Auth codes and security notices are separate.{" "}
+                <a href="/notifications/preferences">Open email preference center</a>
+                {" · "}
+                <a href="/support">Help & Support</a>
+              </p>
+              <ul className="account-prefs">
+                {EMAIL_PREF_LABELS.map((item) => (
+                  <li key={item.key}>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <small>{item.detail}</small>
+                    </div>
+                    <label className="account-switch">
+                      <span className="sr-only">{item.title}</span>
+                      <input
+                        type="checkbox"
+                        checked={emailPrefs[item.key]}
+                        onChange={(event) =>
+                          setEmailPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
+                        }
+                      />
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              <button className="primary-action" type="button" disabled={busy} onClick={() => void savePrefs()}>
+                Save preferences
+              </button>
+            </Panel>
+          ) : null}
+
+          {tab === "integrations" ? (
+            <section className="admin-grid settings-connections">
+              {!orgId ? (
+                <EmptyState
+                  soft
+                  badge="Setup required"
+                  badgeTone="setup"
+                  title="Connectors need a workspace"
+                  description="Google sign-in is personal. TBA connectors and team API keys are saved per active team."
+                >
+                  <div className="account-empty-actions">
+                    <a className="app-button" href="/workspace">
+                      Open Workspace
+                    </a>
+                    <a className="app-button secondary" href="/support">
+                      Help & Support
+                    </a>
+                  </div>
+                </EmptyState>
+              ) : null}
+              <Panel as="article">
+                <h2>Google</h2>
+                <span className={`app-badge ${googleReady ? "good" : "setup"}`}>
+                  {googleReady ? "Available" : "Setup required"}
+                </span>
+                <p>{account.integrations?.google.detail ?? "Checking Google configuration…"}</p>
+                <a href="/signin">Open sign-in</a>
+              </Panel>
+              <Panel as="article">
+                <h2>The Blue Alliance</h2>
+                <span className={`app-badge ${tbaReady ? "good" : "setup"}`}>
+                  {tbaReady ? "Configured" : "Not configured"}
+                </span>
+                <p>{account.integrations?.tba.detail ?? "Checking TBA configuration…"}</p>
+                {orgId ? <a href={withOrgHref("/team/data", orgId)}>Open TBA connectors</a> : null}
+              </Panel>
+              <Panel as="article">
+                <h2>Security, billing &amp; usage</h2>
+                <p>
+                  Personal 2FA lives on Security. Workspace billing, AI usage, BYOK keys, and budgets follow the active
+                  team — never invented spend.
+                </p>
+                <div className="settings-inline-links">
+                  <a href="/security">Security</a>
+                  {orgId ? <a href={withOrgHref("/ai?tab=budgets", orgId)}>Billing</a> : null}
+                  {orgId ? <a href={withOrgHref("/team/usage", orgId)}>AI usage</a> : null}
+                  {orgId ? <a href={withOrgHref("/team", orgId)}>Team API keys</a> : null}
+                  <a href="/whats-new">What’s new</a>
+                  <a href="/support">Support</a>
+                </div>
+              </Panel>
+            </section>
+          ) : null}
+        </>
       ) : null}
     </main>
   );
