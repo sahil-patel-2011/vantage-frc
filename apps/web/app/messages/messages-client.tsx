@@ -13,6 +13,11 @@ import {
   type MentionRef,
 } from "../../lib/messages/mentions";
 import {
+  COMPOSER_OBJECT_TYPES,
+  OBJECT_TYPE_OPTIONS,
+  type MessageObjectLink,
+} from "../../lib/messages/object-links";
+import {
   LONG_POLL_MAX_MS,
   mergeMessages,
   nextWatermark,
@@ -44,7 +49,14 @@ type Message = {
   pinnedBy?: string | null;
   mine: boolean;
   mentions?: MentionRef[];
+  objectLink?: MessageObjectLink | null;
 };
+
+type LinkTarget = MessageObjectLink & { subtitle?: string | null };
+
+function objectTypeLabel(objectType: MessageObjectLink["objectType"]) {
+  return OBJECT_TYPE_OPTIONS.find((option) => option.value === objectType)?.label ?? objectType;
+}
 
 type Member = { id: string; name: string; email: string; role: string };
 
@@ -140,9 +152,11 @@ function sleep(ms: number, signal: AbortSignal) {
 export default function MessagesClient({
   orgId,
   initialConversationId = null,
+  initialObjectLink = null,
 }: {
   orgId: string;
   initialConversationId?: string | null;
+  initialObjectLink?: MessageObjectLink | null;
 }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(initialConversationId);
@@ -158,6 +172,13 @@ export default function MessagesClient({
   const [status, setStatus] = useState("");
   const [sending, setSending] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pendingObjectLink, setPendingObjectLink] = useState<MessageObjectLink | null>(initialObjectLink);
+  const [linkPickerOpen, setLinkPickerOpen] = useState(Boolean(initialObjectLink));
+  const [linkPickerType, setLinkPickerType] = useState<MessageObjectLink["objectType"]>(
+    initialObjectLink?.objectType ?? COMPOSER_OBJECT_TYPES[0]!,
+  );
+  const [linkQuery, setLinkQuery] = useState("");
+  const [linkTargets, setLinkTargets] = useState<LinkTarget[]>([]);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -174,6 +195,41 @@ export default function MessagesClient({
   const mentionSuggestions = activeMention
     ? filterMembersForMention(members, activeMention.query)
     : [];
+
+  useEffect(() => {
+    if (initialObjectLink) {
+      setPendingObjectLink(initialObjectLink);
+      setLinkPickerOpen(true);
+      setLinkPickerType(initialObjectLink.objectType);
+    }
+  }, [initialObjectLink]);
+
+  const loadLinkTargets = useCallback(
+    async (objectType: MessageObjectLink["objectType"], query: string) => {
+      const params = new URLSearchParams({
+        orgId,
+        mode: "link_targets",
+        linkType: objectType,
+        q: query,
+      });
+      const response = await fetch(`/api/messages?${params}`);
+      const data = await response.json();
+      if (!response.ok) {
+        setLinkTargets([]);
+        return;
+      }
+      setLinkTargets((data.targets ?? []) as LinkTarget[]);
+    },
+    [orgId],
+  );
+
+  useEffect(() => {
+    if (!linkPickerOpen || active?.kind !== "team") return;
+    const timer = window.setTimeout(() => {
+      void loadLinkTargets(linkPickerType, linkQuery);
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [active?.kind, linkPickerOpen, linkPickerType, linkQuery, loadLinkTargets]);
 
   useEffect(() => {
     activeIdRef.current = activeId;
@@ -440,6 +496,7 @@ export default function MessagesClient({
           conversationId: activeId,
           body: text,
           mentionedUserIds: active?.kind === "team" ? mentionedUserIds : [],
+          objectLink: active?.kind === "team" ? pendingObjectLink : undefined,
         }),
       });
       const data = await response.json();
@@ -449,6 +506,9 @@ export default function MessagesClient({
       }
       setText("");
       setMentionedUserIds([]);
+      setPendingObjectLink(null);
+      setLinkPickerOpen(false);
+      setLinkQuery("");
       setComposerCursor(0);
       stickToBottomRef.current = true;
       sinceRef.current = null;
@@ -620,6 +680,12 @@ export default function MessagesClient({
                         {item.pinnedAt ? " · pinned" : ""}
                       </span>
                       <MessageBody body={item.body} mentions={item.mentions} members={members} />
+                      {item.objectLink ? (
+                        <a className="message-object-link" href={item.objectLink.href ?? "#"}>
+                          <span className="message-object-link-kind">{objectTypeLabel(item.objectLink.objectType)}</span>
+                          {item.objectLink.label}
+                        </a>
+                      ) : null}
                       <div className="message-actions">
                         {pinsSupported && active.kind === "team" ? (
                           <button type="button" className="message-pin" onClick={() => void togglePin(item)}>
@@ -640,8 +706,80 @@ export default function MessagesClient({
             </div>
 
             <form className="chat-composer" onSubmit={send}>
-              {active.kind === "team" ? <div>Team channel · type @ to mention a teammate</div> : null}
+              {active.kind === "team" ? (
+                <div className="messages-composer-hint">
+                  Team channel · type @ to mention · link a task, CAD, inventory, or event
+                </div>
+              ) : null}
+              {active.kind === "team" && pendingObjectLink ? (
+                <div className="messages-link-chip-row">
+                  <span className="messages-link-chip">
+                    <span className="messages-link-chip-kind">{objectTypeLabel(pendingObjectLink.objectType)}</span>
+                    {pendingObjectLink.label}
+                    <button
+                      type="button"
+                      className="messages-link-chip-clear"
+                      aria-label="Remove linked object"
+                      onClick={() => setPendingObjectLink(null)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                </div>
+              ) : null}
               <div className="messages-composer-wrap">
+                {active.kind === "team" && linkPickerOpen ? (
+                  <div className="messages-link-picker" role="dialog" aria-label="Link an object">
+                    <div className="messages-link-picker-head">
+                      {COMPOSER_OBJECT_TYPES.map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          className={linkPickerType === type ? "active" : undefined}
+                          onClick={() => {
+                            setLinkPickerType(type);
+                            setLinkQuery("");
+                          }}
+                        >
+                          {objectTypeLabel(type)}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      className="messages-link-picker-search"
+                      value={linkQuery}
+                      onChange={(event) => setLinkQuery(event.target.value)}
+                      placeholder={`Search ${objectTypeLabel(linkPickerType).toLowerCase()}…`}
+                      aria-label="Search link targets"
+                    />
+                    <ul className="messages-link-picker-list" role="listbox" aria-label="Link targets">
+                      {linkTargets.length === 0 ? (
+                        <li className="messages-link-picker-empty">No matches yet.</li>
+                      ) : (
+                        linkTargets.map((target) => (
+                          <li key={`${target.objectType}-${target.objectId}`}>
+                            <button
+                              type="button"
+                              role="option"
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                setPendingObjectLink(target);
+                                setLinkPickerOpen(false);
+                                setLinkQuery("");
+                              }}
+                            >
+                              <strong>{target.label}</strong>
+                              {target.subtitle ? <small>{target.subtitle}</small> : null}
+                            </button>
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                    <button type="button" className="messages-link-picker-close" onClick={() => setLinkPickerOpen(false)}>
+                      Close
+                    </button>
+                  </div>
+                ) : null}
                 {active.kind === "team" && activeMention && mentionSuggestions.length > 0 ? (
                   <ul className="messages-mention-menu" role="listbox" aria-label="Mention teammate">
                     {mentionSuggestions.map((member, index) => (
@@ -685,6 +823,16 @@ export default function MessagesClient({
                   maxLength={8000}
                 />
               </div>
+              {active.kind === "team" ? (
+                <button
+                  type="button"
+                  className="messages-link-toggle"
+                  onClick={() => setLinkPickerOpen((open) => !open)}
+                  disabled={sending}
+                >
+                  Link
+                </button>
+              ) : null}
               <button type="submit" disabled={!text.trim() || sending}>
                 Send
               </button>

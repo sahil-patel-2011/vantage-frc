@@ -1,13 +1,24 @@
 import { EmptyState, PageHeader } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { parseComposerLinkFromSearch } from "../../lib/messages/object-links";
 import MessagesClient from "./messages-client";
 
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ orgId?: string; conversationId?: string }>;
+  searchParams: Promise<{
+    orgId?: string;
+    conversationId?: string;
+    linkType?: string;
+    linkId?: string;
+    linkLabel?: string;
+  }>;
 }) {
-  const { orgId, conversationId } = await searchParams;
+  const params = await searchParams;
+  const { orgId, conversationId } = params;
+  const initialObjectLink = orgId
+    ? parseComposerLinkFromSearch(new URLSearchParams(params as Record<string, string>), orgId)
+    : null;
   if (!orgId) {
     return (
       <main className="module-page">
@@ -25,5 +36,11 @@ export default async function MessagesPage({
       </main>
     );
   }
-  return <MessagesClient orgId={orgId} initialConversationId={conversationId ?? null} />;
+  return (
+    <MessagesClient
+      orgId={orgId}
+      initialConversationId={conversationId ?? null}
+      initialObjectLink={initialObjectLink}
+    />
+  );
 }
