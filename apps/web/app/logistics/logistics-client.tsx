@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
@@ -190,10 +190,7 @@ export default function LogisticsClient() {
   const canManage = context.canManage;
   const trip = trips.find((t) => t.id === selectedTripId) ?? trips[0] ?? null;
   const legs = trip?.travelLegs ?? [];
-  const viewerChecklist = useMemo(
-    () => filterChecklistForViewer(sharedChecklist, context.teamRole),
-    [sharedChecklist, context.teamRole],
-  );
+  const viewerChecklist = filterChecklistForViewer(sharedChecklist, context.teamRole);
   const checklistStats = checklistProgress(viewerChecklist);
   const busy = busyKey != null;
   const act = canActOnline(online, fromCache);
@@ -571,7 +568,342 @@ export default function LogisticsClient() {
               Save on-duty slot
             </button>
           </form>
-          <OnDutyManageList orgId={orgId} slots={ready.activeOnDuty ? [ready.activeOnDuty] : []} />
+          {activeOnDuty ? (
+            <div className="log-manage-row">
+              <span>
+                {activeOnDuty.mentorName || "On duty"} · {fmtWhen(activeOnDuty.startsAt)}
+              </span>
+              <button
+                type="button"
+                className="log-link danger"
+                disabled={!act || busy}
+                onClick={() => void run({ action: "delete_on_duty", orgId, id: activeOnDuty.id }, `del-od:${activeOnDuty.id}`)}
+              >
+                Remove active slot
+              </button>
+            </div>
+          ) : (
+            <p className="app-muted">No on-duty slot is active right now. Add one above before travel.</p>
+          )}
         </Panel>
       ) : null}
+
+      <Panel>
+        <h2>Trips and travel times</h2>
+        <p className="app-muted">Publish leave, hotel, venue, and return times. They sync to Team Calendar when configured.</p>
+        {trips.length ? (
+          <div className="log-trip-tabs" role="tablist">
+            {trips.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={trip?.id === t.id ? "active" : undefined}
+                onClick={() => setSelectedTripId(t.id)}
+              >
+                {t.title}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="app-muted">No trips yet. Mentors add one when the event is booked.</p>
+        )}
+
+        {canManage ? (
+          <form
+            className="log-grid-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              void run(
+                {
+                  action: "create_trip",
+                  orgId,
+                  title: String(fd.get("title") ?? ""),
+                  eventKey: String(fd.get("eventKey") ?? "") || null,
+                  venueName: String(fd.get("venueName") ?? ""),
+                  venueAddress: String(fd.get("venueAddress") ?? ""),
+                  travelNotes: String(fd.get("travelNotes") ?? ""),
+                  transportNotes: String(fd.get("transportNotes") ?? ""),
+                  startsOn: String(fd.get("startsOn") ?? "") || null,
+                  endsOn: String(fd.get("endsOn") ?? "") || null,
+                },
+                "trip",
+              ).then(() => e.currentTarget.reset());
+            }}
+          >
+            <input name="title" placeholder="Trip title" required />
+            <input name="eventKey" placeholder="TBA event key (optional)" />
+            <input name="venueName" placeholder="Venue name" />
+            <input name="venueAddress" placeholder="Venue address" />
+            <input name="startsOn" type="date" />
+            <input name="endsOn" type="date" />
+            <textarea name="travelNotes" placeholder="Travel notes" rows={2} />
+            <textarea name="transportNotes" placeholder="Transport notes" rows={2} />
+            <button type="submit" disabled={!act || busy}>
+              Add trip
+            </button>
+          </form>
+        ) : null}
+
+        {canManage && trip ? (
+          <div className="log-inline-actions">
+            <button
+              type="button"
+              className="log-link danger"
+              disabled={!act || busy}
+              onClick={() => {
+                if (confirm(`Delete trip "${trip.title}" and its hotels/legs?`)) {
+                  void run({ action: "delete_trip", orgId, id: trip.id }, `del-trip:${trip.id}`);
+                }
+              }}
+            >
+              Delete selected trip
+            </button>
+          </div>
+        ) : null}
+
+        {trip ? (
+          <div className="log-trip-block">
+            <h3>{trip.title}</h3>
+            {(trip.venueName || trip.startsOn) && (
+              <p className="app-muted">
+                {[trip.venueName, trip.startsOn, trip.endsOn].filter(Boolean).join(" · ")}
+              </p>
+            )}
+            {trip.travelNotes ? <p className="app-muted">{trip.travelNotes}</p> : null}
+
+            <h4>Hotels and rooming</h4>
+            {trip.hotels.length === 0 ? (
+              <p className="app-muted">No hotels added for this trip yet.</p>
+            ) : (
+              trip.hotels.map((hotel) => (
+                <HotelBlock
+                  key={hotel.id}
+                  hotel={hotel}
+                  orgId={orgId}
+                  members={members}
+                  canManage={canManage}
+                  act={act}
+                  busy={busy}
+                  run={run}
+                />
+              ))
+            )}
+
+            {canManage ? (
+              <form
+                className="log-grid-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  void run(
+                    {
+                      action: "create_hotel",
+                      orgId,
+                      tripId: trip.id,
+                      name: String(fd.get("name") ?? ""),
+                      address: String(fd.get("address") ?? ""),
+                      phone: String(fd.get("phone") ?? ""),
+                      confirmationCode: String(fd.get("confirmationCode") ?? ""),
+                      checkInAt: String(fd.get("checkInAt") ?? "") || null,
+                      checkOutAt: String(fd.get("checkOutAt") ?? "") || null,
+                      roomBlockNotes: String(fd.get("roomBlockNotes") ?? ""),
+                      notes: String(fd.get("notes") ?? ""),
+                    },
+                    `hotel:${trip.id}`,
+                  ).then(() => e.currentTarget.reset());
+                }}
+              >
+                <input name="name" placeholder="Hotel name" required />
+                <input name="address" placeholder="Address" />
+                <input name="phone" placeholder="Phone" />
+                <input name="confirmationCode" placeholder="Confirmation code" />
+                <input name="checkInAt" type="datetime-local" />
+                <input name="checkOutAt" type="datetime-local" />
+                <textarea name="roomBlockNotes" placeholder="Room block notes" rows={2} />
+                <button type="submit" disabled={!act || busy}>
+                  Add hotel
+                </button>
+              </form>
+            ) : null}
+
+            <h4>Get there and back</h4>
+            {legs.length === 0 ? (
+              <p className="app-muted">No timed legs yet.</p>
+            ) : (
+              <ol className="logistics-timeline">
+                {legs.map((leg) => (
+                  <li key={leg.id}>
+                    <span className="logistics-timeline-kind">{TRAVEL_LEG_LABELS[leg.kind]}</span>
+                    <strong>{fmtWhen(leg.startsAt)}</strong>
+                    <span>
+                      {leg.title}
+                      {leg.meetingPoint ? ` · ${leg.meetingPoint}` : ""}
+                    </span>
+                    {canManage ? (
+                      <button
+                        type="button"
+                        className="log-link danger"
+                        disabled={!act || busy}
+                        onClick={() => {
+                          if (confirm(`Remove "${leg.title}"?`)) {
+                            void run({ action: "delete_travel_leg", orgId, id: leg.id }, `del-leg:${leg.id}`);
+                          }
+                        }}
+                      >
+                        Remove
+                      </button>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            )}
+            {canManage ? (
+              <form
+                className="log-grid-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  const starts = String(fd.get("startsAt") ?? "");
+                  void run(
+                    {
+                      action: "upsert_travel_leg",
+                      orgId,
+                      tripId: trip.id,
+                      kind: String(fd.get("kind") ?? "depart_home") as TravelLegKind,
+                      title: String(fd.get("title") ?? ""),
+                      startsAt: starts ? new Date(starts).toISOString() : "",
+                      endsAt: null,
+                      location: String(fd.get("location") ?? ""),
+                      meetingPoint: String(fd.get("meetingPoint") ?? ""),
+                      notes: String(fd.get("notes") ?? ""),
+                      subteamId: null,
+                      sortOrder: 0,
+                    },
+                    "leg",
+                  ).then(() => e.currentTarget.reset());
+                }}
+              >
+                <select name="kind" defaultValue="depart_home">
+                  {TRAVEL_LEG_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {TRAVEL_LEG_LABELS[k]}
+                    </option>
+                  ))}
+                </select>
+                <input name="title" placeholder="Title (optional)" />
+                <input name="startsAt" type="datetime-local" required />
+                <input name="meetingPoint" placeholder="Meeting point" />
+                <input name="location" placeholder="Location" />
+                <button type="submit" disabled={!act || busy}>
+                  Add travel time
+                </button>
+              </form>
+            ) : null}
+          </div>
+        ) : null}
+      </Panel>
+    </main>
+  );
+}
+
+function HotelBlock({
+  hotel,
+  orgId,
+  members,
+  canManage,
+  act,
+  busy,
+  run,
+}: {
+  hotel: Hotel;
+  orgId: string;
+  members: LogisticsMember[];
+  canManage: boolean;
+  act: boolean;
+  busy: boolean;
+  run: (body: ActionBody, key: string) => Promise<void>;
+}) {
+  return (
+    <div className="log-hotel-block">
+      <div className="log-hotel-head">
+        <strong>{hotel.name}</strong>
+        {canManage ? (
+          <button
+            type="button"
+            className="log-link danger"
+            disabled={!act || busy}
+            onClick={() => {
+              if (confirm(`Delete hotel "${hotel.name}"?`)) {
+                void run({ action: "delete_hotel", orgId, id: hotel.id }, `del-hotel:${hotel.id}`);
+              }
+            }}
+          >
+            Delete hotel
+          </button>
+        ) : null}
+      </div>
+      {hotel.address ? <p className="app-muted">{hotel.address}</p> : null}
+      {hotel.phone ? <p>{hotel.phone}</p> : null}
+      {hotel.rooms.length === 0 ? (
+        <p className="app-muted">No rooms in the block yet.</p>
+      ) : (
+        <ul className="logistics-list">
+          {hotel.rooms.map((room) => (
+            <li key={room.id}>
+              <strong>Room {room.roomLabel}</strong>
+              <span>{room.occupantName || room.occupantUserId ? memberLabel(members.find((m) => m.userId === room.occupantUserId) ?? { userId: room.occupantUserId ?? "", name: room.occupantName, email: null, role: "" }) : "Unassigned"}</span>
+              {canManage ? (
+                <button
+                  type="button"
+                  className="log-link danger"
+                  disabled={!act || busy}
+                  onClick={() => void run({ action: "delete_room", orgId, id: room.id }, `del-room:${room.id}`)}
+                >
+                  Remove room
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      {canManage ? (
+        <form
+          className="log-grid-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            void run(
+              {
+                action: "upsert_room",
+                orgId,
+                hotelId: hotel.id,
+                roomLabel: String(fd.get("roomLabel") ?? ""),
+                occupantUserId: String(fd.get("occupantUserId") || "") || null,
+                occupantName: String(fd.get("occupantName") ?? ""),
+                notes: String(fd.get("notes") ?? ""),
+              },
+              `room:${hotel.id}`,
+            ).then(() => e.currentTarget.reset());
+          }}
+        >
+          <input name="roomLabel" placeholder="Room label" required />
+          <select name="occupantUserId" defaultValue="">
+            <option value="">Assign member (optional)</option>
+            {members.map((m) => (
+              <option key={m.userId} value={m.userId}>
+                {memberLabel(m)}
+              </option>
+            ))}
+          </select>
+          <input name="occupantName" placeholder="Or type occupant name" />
+          <input name="notes" placeholder="Notes" />
+          <button type="submit" disabled={!act || busy}>
+            Add / update room
+          </button>
+        </form>
+      ) : null}
+    </div>
+  );
+}
 
