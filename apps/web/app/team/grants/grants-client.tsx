@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, PageHeader } from "../../../components/ui";
 import { GRANT_ITEM_KINDS, GRANT_STATUSES, grantStatusLabel } from "../../../lib/grants";
 
 type Opportunity = {
@@ -247,83 +246,67 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
   const doneItems = items.filter((item) => item.done).length;
 
   return (
-    <main className="module-page business-page biz-workbench">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
-            {" / Grants"}
-          </>
-        }
-        title="Grants workbench"
-        description="Track funders, draft prompt-by-prompt essays with character limits, and keep the Business pipeline in sync. Empty lists are real — nothing is invented until you add it."
-      >
-        <div className="biz-header-actions">
-          <a className="app-button" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>
-            Business · Grants
-          </a>
-          <a className="app-button secondary" href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>
-            Awards
-          </a>
-          <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=sponsors`}>
-            Sponsors
-          </a>
+    <main className="intel-app">
+      <header className="intel-header">
+        <div>
+          <span className="eyebrow">VANTAGE / GRANTS</span>
+          <h1>Grant tracker &amp; writing workspace</h1>
+          <p className="app-muted">
+            Track funders, draft prompt-by-prompt essays with character limits, and keep the Business portal
+            pipeline in sync. Empty lists are real — nothing is invented until you add it.
+          </p>
         </div>
-      </PageHeader>
+        <nav className="intel-actions" aria-label="Grants workbench links">
+          <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>Business · Grants</a>
+          <a href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>Awards workbench</a>
+          <a href={`/team/sponsors?orgId=${encodeURIComponent(orgId)}`}>Sponsors</a>
+          <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team admin</a>
+        </nav>
+      </header>
 
       {message ? (
         <p role="status" className={`telemetry-status${messageTone === "ok" ? " success" : ""}`}>
           {message}
         </p>
       ) : null}
-      {loading ? (
-        <EmptyState soft title="Loading grants…" description="Fetching opportunities and applications." aria-busy />
-      ) : null}
+      {loading ? <p className="app-muted">Loading grants…</p> : null}
 
       {!loading ? (
-        <section className="biz-summary" aria-label="Grants summary">
-          <div className="biz-summary-tile">
-            <strong>{openApps}</strong>
+        <section className="metric-grid">
+          <article>
             <span>Open applications</span>
-          </div>
-          <div className="biz-summary-tile">
-            <strong>{awardedApps.length}</strong>
+            <strong>{openApps}</strong>
+          </article>
+          <article>
             <span>Awarded</span>
-          </div>
-          <div className="biz-summary-tile">
-            <strong>{money(totalAwarded)}</strong>
+            <strong>{awardedApps.length}</strong>
+          </article>
+          <article>
             <span>Total awarded</span>
-          </div>
-          <div className="biz-summary-tile">
-            <strong>{opportunities.length}</strong>
+            <strong>{money(totalAwarded)}</strong>
+          </article>
+          <article>
             <span>Grant sources</span>
-          </div>
+            <strong>{opportunities.length}</strong>
+          </article>
         </section>
       ) : null}
 
       {!loading && opportunities.length === 0 && applications.length === 0 ? (
-        <EmptyState
-          soft
-          badge="Empty"
-          badgeTone="good"
-          title="No grant work tracked yet"
-          description={
-            <>
-              Start by saving a funder opportunity, then open an application. You can also add quick pipeline rows from{" "}
-              <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>Business · Grants</a> and finish
-              essays here.
-            </>
-          }
-        >
-          <a className="app-button" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>
-            Add grant in Business
-          </a>
-        </EmptyState>
+        <section className="app-empty">
+          <span className="eyebrow">EMPTY PIPELINE</span>
+          <h2>No grant work tracked yet</h2>
+          <p>
+            Start by saving a funder opportunity, then open an application. You can also add quick pipeline rows from{" "}
+            <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>Business · Grants</a> and finish
+            essays here.
+          </p>
+        </section>
       ) : null}
 
       {!loading ? (
         <section className="admin-grid">
-          <form className="app-card soft-panel" onSubmit={addOpportunity}>
+          <form className="intel-panel" onSubmit={addOpportunity}>
             <span className="eyebrow">TRACK A GRANT OPPORTUNITY</span>
             <label>
               Name
@@ -387,12 +370,12 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
                 placeholder="Eligibility, reporting, attachments…"
               />
             </label>
-            <button className="app-button" type="submit">
+            <button className="primary-action" type="submit">
               Save opportunity
             </button>
           </form>
 
-          <section className="app-card soft-panel invite-list">
+          <section className="intel-panel invite-list">
             <span className="eyebrow">GRANT OPPORTUNITIES</span>
             {opportunities.length === 0 ? (
               <p className="app-muted">No opportunities yet — save one on the left, or add a grant from Business.</p>
@@ -424,7 +407,7 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
 
       {!loading ? (
         <section className="admin-grid">
-          <form className="app-card soft-panel" onSubmit={startApplication}>
+          <form className="intel-panel" onSubmit={startApplication}>
             <span className="eyebrow">START AN APPLICATION</span>
             <label>
               Opportunity
@@ -449,12 +432,12 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
                 onChange={(e) => setAppForm({ ...appForm, amountRequestedUsd: e.target.value })}
               />
             </label>
-            <button className="app-button" type="submit">
+            <button className="primary-action" type="submit">
               Start application
             </button>
           </form>
 
-          <section className="app-card soft-panel invite-list">
+          <section className="intel-panel invite-list">
             <span className="eyebrow">APPLICATIONS</span>
             {applications.length === 0 ? (
               <p className="app-muted">No applications yet. Start one here after you have an opportunity, or open Business · Grants.</p>
@@ -505,7 +488,7 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
             {doneItems}/{items.length} items marked done · click another application to switch.
           </p>
 
-          <div className="app-card soft-panel">
+          <div className="intel-panel">
             {items.length === 0 ? (
               <p className="app-muted">
                 No prompts yet. Add essay questions, attachments, or requirements below — or paste requirements when
@@ -571,13 +554,13 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
                   onChange={(e) => setItemForm({ ...itemForm, charLimit: e.target.value })}
                 />
               </label>
-              <button className="app-button" type="submit">
+              <button className="primary-action" type="submit">
                 Add item
               </button>
             </form>
           </div>
 
-          <div className="app-card soft-panel">
+          <div className="intel-panel">
             <span className="eyebrow">STATUS &amp; FOLLOW-UP</span>
             {selectedApp.status === "awarded" || selectedApp.status === "submitted" ? (
               <div className="budget-fields">
@@ -593,7 +576,7 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
                 </label>
                 <button
                   type="button"
-                  className="app-button"
+                  className="primary-action"
                   onClick={() => void updateStatus(selectedApp.id, "awarded", awardedAmount || selectedApp.amountRequestedUsd || "")}
                 >
                   Record as awarded

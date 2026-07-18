@@ -14,3 +14,12 @@ The sibling worktree was removed during local folder consolidation. Prefer a sin
 `C:\Users\sahil\Cursor Projects\Vantage`
 
 Do not stand up a second Vercel/Neon app for a separate business portal.
+
+## Local folder rename (2026-07-17)
+
+- Sibling `…-business-portal` worktree: removed (empty after unregister; no unique leftovers).
+- Preferred path `C:\Users\sahil\Cursor Projects\Vantage`: created as a **directory junction** to the
+  still-locked folder `Vantage FRC Robotics AIO APP` (Cursor/other agents held open handles).
+- To finish a true rename later: close Cursor/agents on the old path, delete the junction
+  (`rmdir "C:\Users\sahil\Cursor Projects\Vantage"` — does not delete target), then
+  `Rename-Item` the old folder to `Vantage`.
