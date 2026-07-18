@@ -183,6 +183,40 @@
   min-width: 190px;
 }
 
+.workspace-related-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0 0 18px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--soft-line, #e5e7eb);
+}
+
+.workspace-related-strip a {
+  color: var(--soft-accent, #2563eb);
+  font: 700 12px var(--font-ibm-plex-sans), system-ui, sans-serif;
+  text-decoration: none;
+}
+
+.workspace-related-strip a:hover {
+  text-decoration: underline;
+}
+
+.workspace-membership-count {
+  margin: 0 0 12px;
+  color: var(--soft-muted, #6b7280);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.workspace-org-pick {
+  margin: 0 0 18px;
+}
+
+.invite-flow-header .invite-empty-badge {
+  margin: 0 auto 8px;
+}
+
 .invite-next-actions {
   display: grid;
   gap: 12px;
