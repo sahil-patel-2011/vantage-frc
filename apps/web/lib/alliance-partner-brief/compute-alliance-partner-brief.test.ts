@@ -79,7 +79,15 @@ describe("computeAlliancePartnerBriefView", () => {
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
-      expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps.map((s) => s.id)).toEqual(
+        expect.arrayContaining(["workspace", "alliance-board", "strategy", "scouting"]),
+      );
+      expect(view.steps.find((s) => s.id === "workspace")?.href).toBe("/workspace");
+      expect(view.steps.find((s) => s.id === "alliance-board")?.href).toBe("/strategy/draft");
+      expect(view.steps.find((s) => s.id === "strategy")?.href).toBe("/competition?tab=strategy");
+      expect(view.steps.find((s) => s.id === "scouting")?.href).toBe("/competition?tab=scouting");
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
+      expect(view.steps.some((s) => /never DEMO/i.test(s.detail))).toBe(true);
     }
   });
 
@@ -91,6 +99,15 @@ describe("computeAlliancePartnerBriefView", () => {
     });
     const view = await computeAlliancePartnerBriefView(client, { userId: USER, requestedOrg: ORG });
     expect(view.status).toBe("setup_required");
+    if (view.status === "setup_required") {
+      expect(view.orgId).toBe(ORG);
+      expect(view.steps.find((s) => s.id === "alliance-board")?.href).toBe(
+        `/strategy/draft?orgId=${ORG}`,
+      );
+      expect(view.steps.find((s) => s.id === "strategy")?.href).toBe(
+        `/competition?tab=strategy&orgId=${ORG}`,
+      );
+    }
   });
 
   it("returns a live view over a finalized board, highlighting our alliance and any saved brief", async () => {

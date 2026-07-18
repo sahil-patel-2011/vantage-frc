@@ -1,0 +1,17 @@
+/* Soft-UI Alliance-Partner Brief — .alliance-partner-brief-* + shared Soft-UI tokens. Never DEMO partner metrics. */
+.alliance-partner-brief-page{display:grid;gap:16px}
+.alliance-partner-brief-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.alliance-partner-brief-related{display:flex;flex-wrap:wrap;gap:8px}
+.alliance-partner-brief-next-actions{margin:0}
+.alliance-partner-brief-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.alliance-partner-brief-stats strong{font-size:1.5rem}
+.alliance-partner-brief-layout{display:grid;gap:16px}
+.alliance-partner-brief-panel{display:grid;gap:12px}
+.alliance-partner-brief-seeds{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.alliance-partner-brief-list{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.alliance-partner-brief-card{padding:12px}
+.alliance-partner-brief-tip{margin:0}
+@media(max-width:900px){
+  .alliance-partner-brief-header-actions{justify-content:flex-start}
+  .alliance-partner-brief-next-actions li{flex-direction:column;align-items:stretch}
+}
