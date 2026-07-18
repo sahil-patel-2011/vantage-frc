@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import {
   ruleChangeCategoryLabel,
@@ -14,12 +14,26 @@ import {
   SUBSYSTEM_CATEGORIES,
   type RuleImpactView,
 } from "../../lib/rule-impact/compute-rule-impact";
+import {
+  RULE_IMPACT_RELATED_INCLUDE,
+  classifyRuleImpactShell,
+  formatRuleImpactConfidencePct,
+  formatRuleImpactMetric,
+  ruleImpactNextActions,
+  ruleImpactRelatedLinks,
+  ruleImpactShellCopy,
+  type RuleImpactNextAction,
+  type RuleImpactShellKind,
+} from "../../lib/rule-impact/rule-impact-related";
 import type {
   RuleChangeCategory,
   RuleChangeSeverity,
   RuleImpactStatus,
   SubsystemCategory,
 } from "../../lib/rule-impact/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./rule-impact.css";
 
 function statusTone(status: RuleImpactStatus): string {
   if (status === "still_legal") return "good";
@@ -33,11 +47,136 @@ function severityTone(severity: RuleChangeSeverity): string {
   return "good";
 }
 
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
+type LiveView = Extract<RuleImpactView, { status: "live" }>;
+
+function RuleImpactRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = ruleImpactRelatedLinks(orgId, {
+    include: [...RULE_IMPACT_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related rule-impact-related" aria-label="Related build tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
 }
 
-type LiveView = Extract<RuleImpactView, { status: "live" }>;
+function RuleImpactNextActionsPanel({ actions }: { actions: RuleImpactNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions rule-impact-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Kickoff, CAD, and Subsystems — never DEMO impact metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function RuleImpactShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: RuleImpactShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = ruleImpactNextActions({ orgId, shell });
+  const copy = ruleImpactShellCopy(shell);
+  const buildHref = hubHref("/build", "rule-impact", orgId);
+  const kickoffHref = hubHref("/build", "kickoff", orgId);
+  const cadHref = hubHref("/build", "cad", orgId);
+  const subsystemsHref = withOrgHref("/subsystems", orgId);
+
+  return (
+    <main className="module-page rule-impact-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Rule Impact Analyzer"}
+          </>
+        }
+        title="Rule Impact Analyzer"
+        description={description}
+      >
+        <RuleImpactRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No rule changes yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#rule-impact-log-change">
+              Log a rule change
+            </a>
+            <a className="app-button secondary" href={kickoffHref}>
+              Open Kickoff
+            </a>
+            <a className="app-button secondary" href={cadHref}>
+              Open CAD
+            </a>
+            <a className="app-button secondary" href={subsystemsHref}>
+              Open Subsystems
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <RuleImpactNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function RuleImpactClient() {
   const [view, setView] = useState<RuleImpactView | null>(null);
@@ -45,8 +184,6 @@ export default function RuleImpactClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -73,6 +210,42 @@ export default function RuleImpactClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const ruleChangeCount = view?.status === "live" ? view.ruleChanges.length : 0;
+  const candidateCount = view?.status === "live" ? view.candidates.length : 0;
+  const blockedCount =
+    view?.status === "live"
+      ? view.candidates.filter((row) => row.impactStatus === "blocked").length
+      : 0;
+  const openAssessmentCount =
+    view?.status === "live"
+      ? view.assessments.filter((row) => row.status === "open").length
+      : 0;
+
+  const shell = classifyRuleImpactShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    ruleChangeCount,
+  });
+  const shellCopy = ruleImpactShellCopy(shell);
+  const nextActions = ruleImpactNextActions({
+    orgId,
+    shell,
+    ruleChangeCount,
+    candidateCount,
+    blockedCount,
+    openAssessmentCount,
+  });
+  const relatedLinks = ruleImpactRelatedLinks(orgId, {
+    include: [...RULE_IMPACT_RELATED_INCLUDE],
+  });
+  const buildHref = hubHref("/build", "rule-impact", orgId);
+  const kickoffHref = hubHref("/build", "kickoff", orgId);
+  const cadHref = hubHref("/build", "cad", orgId);
+  const subsystemsHref = withOrgHref("/subsystems", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -101,37 +274,74 @@ export default function RuleImpactClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <RuleImpactShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <RuleImpactShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <RuleImpactShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <RuleImpactShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page rule-impact-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
+            <a href={buildHref}>Build</a>
             {" / Rule Impact Analyzer"}
           </>
         }
         title="Rule Impact Analyzer"
-        description="Log this season's game-manual rule changes and diff them against your subsystem library — see which prior-season designs are still legal, need rework, or are blocked."
+        description="Log this season's game-manual rule changes and diff them against your subsystem library — still-legal, rework, or blocked from logged rules only. Cross-check Kickoff, CAD, and Subsystems — never DEMO impact metrics."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="rule-impact-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted rule-impact-season">
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -140,49 +350,106 @@ export default function RuleImpactClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <RuleImpactNextActionsPanel actions={nextActions} />
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load the Rule Impact Analyzer"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No rule changes yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href="#rule-impact-log-change">
+            Log a rule change
+          </a>
+          <a className="app-button secondary" href={kickoffHref}>
+            Open Kickoff
+          </a>
+          <a className="app-button secondary" href={cadHref}>
+            Open CAD
+          </a>
+          <a className="app-button secondary" href={subsystemsHref}>
+            Open Subsystems
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <RuleChangeForm busy={busy} mutate={mutate} />
-          <RuleChangeList view={view} busy={busy} mutate={mutate} />
-          {view.candidates.length > 0 ? (
-            <CandidateList view={view} busy={busy} mutate={mutate} />
-          ) : (
-            <EmptyState
-              badge="No subsystem history"
-              badgeTone="setup"
-              title="No prior-season subsystems on file"
-              description="Log robot subsystems on the Build spec sheet to see rule-impact candidates here."
-            />
-          )}
-          <AssessmentList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      ) : null}
+
+      <SummaryTiles view={view} loaded />
+
+      <div className="rule-impact-layout">
+        <RuleChangeForm busy={busy} mutate={mutate} />
+        <RuleChangeList view={view} busy={busy} mutate={mutate} />
+        {view.candidates.length > 0 ? (
+          <CandidateList view={view} busy={busy} mutate={mutate} />
+        ) : (
+          <EmptyState
+            soft
+            badge="No subsystem history"
+            badgeTone="setup"
+            title="No prior-season subsystems on file"
+            description="Log robot subsystems so Rule Impact can diff them against logged rule changes — empty means nothing on file, not a DEMO library."
+          >
+            <a className="app-button" href={subsystemsHref}>
+              Open Subsystems
+            </a>
+            <a className="app-button secondary" href={kickoffHref}>
+              Open Kickoff
+            </a>
+            <a className="app-button secondary" href={cadHref}>
+              Open CAD
+            </a>
+          </EmptyState>
+        )}
+        <AssessmentList view={view} busy={busy} mutate={mutate} />
+        <Panel className="rule-impact-tip" aria-label="Impact tip">
+          <span className="eyebrow">Reuse path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Keep{" "}
+            <a href={kickoffHref}>Kickoff</a> rule notes aligned with logged deltas, verify geometry in{" "}
+            <a href={cadHref}>CAD</a>, and match candidate names to{" "}
+            <a href={subsystemsHref}>Subsystems</a> — never invent DEMO impact metrics.
+          </p>
+        </Panel>
+      </div>
     </main>
+  );
+}
+
+function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
+  const blocked = view.candidates.filter((row) => row.impactStatus === "blocked").length;
+  const needsRework = view.candidates.filter((row) => row.impactStatus === "needs_rework").length;
+  const tiles = [
+    { label: "Rule changes", value: formatRuleImpactMetric(view.ruleChanges.length, loaded) },
+    { label: "Candidates", value: formatRuleImpactMetric(view.candidates.length, loaded) },
+    { label: "Needs rework", value: formatRuleImpactMetric(needsRework, loaded) },
+    { label: "Blocked", value: formatRuleImpactMetric(blocked, loaded) },
+    { label: "Assessments", value: formatRuleImpactMetric(view.assessments.length, loaded) },
+  ];
+  return (
+    <Panel className="rule-impact-coverage" aria-label="Rule Impact summary">
+      <div className="rule-impact-stats">
+        <div>
+          <span
+            className={`app-badge ${
+              view.ruleChanges.length === 0 ? "setup" : view.candidates.length === 0 ? "setup" : "good"
+            }`}
+          >
+            {view.ruleChanges.length === 0 ? "EMPTY" : view.candidates.length === 0 ? "NO HISTORY" : "LIVE"}
+          </span>
+          <h2 style={{ margin: "6px 0 0" }}>Season impact</h2>
+          <small className="app-muted">Logged rules × prior subsystems only — never DEMO impact metrics</small>
+        </div>
+        {tiles.map((tile) => (
+          <div key={tile.label}>
+            <strong>{tile.value}</strong>
+            <small className="app-muted" style={{ display: "block" }}>
+              {tile.label}
+            </small>
+          </div>
+        ))}
+      </div>
+    </Panel>
   );
 }
 
@@ -211,7 +478,9 @@ function RuleChangeForm({
 
   return (
     <Panel
+      id="rule-impact-log-change"
       as="form"
+      className="rule-impact-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.ruleCode.trim() || !form.title.trim()) return;
@@ -227,9 +496,12 @@ function RuleChangeForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Log a rule change</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Add each new-season game-manual delta you verified — Rule Impact never invents DEMO rule text or
+        confidence scores.
+      </p>
       <FormGrid min={160}>
         <FormRow label="Rule code">
           <input value={form.ruleCode} onChange={set("ruleCode")} placeholder="R301" required />
@@ -293,25 +565,32 @@ function RuleChangeList({
   if (view.ruleChanges.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No rule changes logged"
         badgeTone="setup"
         title="Log this season's rule changes"
-        description="Add each new-season game-manual delta above to start diffing it against your subsystem library."
+        description="Add each new-season game-manual delta above to start diffing it against your subsystem library — never DEMO impact metrics."
       />
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Logged rule changes ({view.ruleChanges.length})</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel className="rule-impact-panel">
+      <h2 style={{ marginTop: 0 }}>
+        Logged rule changes ({formatRuleImpactMetric(view.ruleChanges.length, true)})
+      </h2>
+      <ul className="rule-impact-list">
         {view.ruleChanges.map((rule) => (
-          <li key={rule.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={rule.id} className="rule-impact-card">
             <div>
-              <span className={`app-badge ${severityTone(rule.severity)}`}>{ruleChangeSeverityLabel(rule.severity)}</span>{" "}
+              <span className={`app-badge ${severityTone(rule.severity)}`}>
+                {ruleChangeSeverityLabel(rule.severity)}
+              </span>{" "}
               <strong>{rule.ruleCode}</strong> — {rule.title}
               <small className="app-muted" style={{ display: "block" }}>
                 {ruleChangeCategoryLabel(rule.category)}
-                {rule.subsystemCategory ? ` · ${subsystemCategoryLabel(rule.subsystemCategory)}` : " · applies to all subsystems"}
+                {rule.subsystemCategory
+                  ? ` · ${subsystemCategoryLabel(rule.subsystemCategory)}`
+                  : " · applies to all subsystems"}
                 {rule.summary ? ` · ${rule.summary}` : ""}
               </small>
             </div>
@@ -344,19 +623,23 @@ function CandidateList({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Subsystem impact ({view.candidates.length})</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel id="rule-impact-candidates" className="rule-impact-panel">
+      <h2 style={{ marginTop: 0 }}>
+        Subsystem impact ({formatRuleImpactMetric(view.candidates.length, true)})
+      </h2>
+      <ul className="rule-impact-list">
         {view.candidates.map((candidate) => (
-          <li key={candidate.subsystemId} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={candidate.subsystemId} className="rule-impact-card">
             <div>
               <span className={`app-badge ${statusTone(candidate.impactStatus)}`}>
                 {ruleImpactStatusLabel(candidate.impactStatus)}
               </span>{" "}
               <strong>{candidate.subsystemName}</strong>
               <small className="app-muted" style={{ display: "block" }}>
-                {subsystemCategoryLabel(candidate.category)} · {candidate.sourceSeasonYear} · {candidate.motorType}
-                {candidate.motorCount ? ` ×${candidate.motorCount}` : ""} · {pct(candidate.confidence)} confidence
+                {subsystemCategoryLabel(candidate.category)} · {candidate.sourceSeasonYear} ·{" "}
+                {candidate.motorType}
+                {candidate.motorCount ? ` ×${candidate.motorCount}` : ""} ·{" "}
+                {formatRuleImpactConfidencePct(candidate.confidence, true, true)} confidence
               </small>
               <small className="app-muted" style={{ display: "block" }}>
                 {candidate.rationale}
@@ -402,40 +685,46 @@ function AssessmentList({
   if (view.assessments.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No assessments yet"
         badgeTone="setup"
         title="Assess a subsystem above"
-        description="Persisted assessments — including status changes as you triage them — appear here."
+        description="Persisted assessments — including status changes as you triage them — appear here from real assess actions only — never DEMO impact metrics."
       />
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Assessments ({view.assessments.length})</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel id="rule-impact-assessments" className="rule-impact-panel">
+      <h2 style={{ marginTop: 0 }}>
+        Assessments ({formatRuleImpactMetric(view.assessments.length, true)})
+      </h2>
+      <ul className="rule-impact-list">
         {view.assessments.map((assessment) => (
-          <li key={assessment.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={assessment.id} className="rule-impact-card">
             <div>
               <span className={`app-badge ${statusTone(assessment.impactStatus)}`}>
                 {ruleImpactStatusLabel(assessment.impactStatus)}
               </span>{" "}
               <strong>{assessment.subsystemName}</strong>
               <small className="app-muted" style={{ display: "block" }}>
-                {subsystemCategoryLabel(assessment.category)} · {assessment.matchedRuleCount} matched rule(s) ·{" "}
-                {pct(assessment.confidence)} confidence · {assessment.status}
+                {subsystemCategoryLabel(assessment.category)} · {assessment.matchedRuleCount} matched
+                rule(s) · {formatRuleImpactConfidencePct(assessment.confidence, true, true)} confidence ·{" "}
+                {assessment.status}
               </small>
               <small className="app-muted" style={{ display: "block" }}>
                 {assessment.rationale}
               </small>
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div className="rule-impact-card-actions">
               {assessment.status === "open" ? (
                 <>
                   <button
                     type="button"
                     className="text-button"
                     disabled={busy}
-                    onClick={() => mutate({ action: "update-status", assessmentId: assessment.id, status: "accepted" })}
+                    onClick={() =>
+                      mutate({ action: "update-status", assessmentId: assessment.id, status: "accepted" })
+                    }
                   >
                     Accept
                   </button>
@@ -443,7 +732,9 @@ function AssessmentList({
                     type="button"
                     className="text-button"
                     disabled={busy}
-                    onClick={() => mutate({ action: "update-status", assessmentId: assessment.id, status: "dismissed" })}
+                    onClick={() =>
+                      mutate({ action: "update-status", assessmentId: assessment.id, status: "dismissed" })
+                    }
                   >
                     Dismiss
                   </button>
