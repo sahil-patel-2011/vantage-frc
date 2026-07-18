@@ -146,7 +146,26 @@ export async function loadDashboardSnapshot(
       widgets.next_match = stamp("empty", "next_match", undefined, "No upcoming match found for your team at this event.");
       return;
     }
-    widgets.next_match = stamp("live", "next_match", match.rows[0] as unknown as Record<string, unknown>);
+    const row = match.rows[0];
+    const redKeys = Array.isArray((row.redAlliance as { teamKeys?: unknown } | null)?.teamKeys)
+      ? ((row.redAlliance as { teamKeys: unknown[] }).teamKeys as unknown[]).map(String)
+      : [];
+    const blueKeys = Array.isArray((row.blueAlliance as { teamKeys?: unknown } | null)?.teamKeys)
+      ? ((row.blueAlliance as { teamKeys: unknown[] }).teamKeys as unknown[]).map(String)
+      : [];
+    const ourAlliance = redKeys.includes(teamKey) ? "red" : blueKeys.includes(teamKey) ? "blue" : null;
+    widgets.next_match = stamp("live", "next_match", {
+      ...row,
+      ourAlliance,
+      bumperCue:
+        ourAlliance === "red"
+          ? "Switch to RED bumpers"
+          : ourAlliance === "blue"
+            ? "Switch to BLUE bumpers"
+            : "Alliance TBD — confirm bumpers",
+      bumperColor: ourAlliance ? ourAlliance.toUpperCase() : null,
+      href: `/my-day?orgId=${encodeURIComponent(input.orgId)}`,
+    } as unknown as Record<string, unknown>);
   }
 
   async function recentResult() {

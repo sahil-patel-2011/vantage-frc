@@ -293,13 +293,21 @@ export function milestoneWorkflowLinks(
   switch (milestone.kind) {
     case "kickoff":
     case "design":
-      return [{ href: `/kickoff${q}`, label: "Kickoff analysis" }];
+      return [
+        { href: `/kickoff${q}`, label: "Kickoff analysis" },
+        { href: `/team/knowledge${q}`, label: "Knowledge wiki" },
+        { href: `/team/getting-started${q}`, label: "Onboarding checklist" },
+      ];
     case "practice":
-      return [{ href: `/practice${q}`, label: "Practice planner" }];
+      return [
+        { href: `/practice${q}`, label: "Practice planner" },
+        { href: `/team/calendar${q}`, label: "Subteam calendar" },
+      ];
     case "event":
       return [
         { href: `/event-readiness${q}`, label: "Event readiness" },
         { href: `/packing${q}`, label: "Packing" },
+        { href: `/logistics${q}`, label: "Event logistics" },
       ];
     case "deadline":
       return [

@@ -207,6 +207,29 @@ export async function POST(request: Request) {
             }),
           );
         }
+
+        try {
+          const { loadRepeatFailureAlerts } = await import("../../../lib/fmea/repeat-failures");
+          const alerts = await loadRepeatFailureAlerts(client, orgId, { limit: 8 });
+          for (const alert of alerts) {
+            sources.push({
+              type: "module_data",
+              id: `fmea:repeat:${alert.subsystemName}`,
+              content: [
+                alert.message,
+                alert.openCount ? `${alert.openCount} still open` : null,
+                alert.recentTitles.length ? `Recent: ${alert.recentTitles.join("; ")}` : null,
+                `Max RPN ${alert.maxRpn} (${alert.level})`,
+              ]
+                .filter(Boolean)
+                .join(" · "),
+              importance: 0.95,
+              classification: "hard_metric",
+            });
+          }
+        } catch {
+          // FMEA unavailable — continue without invented risks
+        }
         return repository.createBriefJob({
           orgId,
           userId: session.user.id,

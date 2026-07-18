@@ -4,9 +4,8 @@ import { headers } from "next/headers";
 
 // Team transition/onboarding checklist. Aggregates the real state of a workspace
 // so a team moving in can see, at a glance, what is set up and what is left:
-// members invited, team knowledge written, AI budgets configured, the assistant
-// tried, alumni network started, Discord connected. All member-readable except
-// admin-only signals (budgets, Discord), which are gated by the viewer's role.
+// members invited, subteam calendar, knowledge wiki, logistics, kickoff summary,
+// AI budgets, assistant tried, alumni/Discord. Admin-only signals are gated.
 
 export async function GET(request: Request) {
   try {
@@ -16,8 +15,15 @@ export async function GET(request: Request) {
       return Response.json({ error: "Authentication and organization are required" }, { status: 401 });
     }
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const membership = await client.query<{ role: string; teamNumber: number | null; orgName: string }>(
-        `SELECT m.role, o.team_number AS "teamNumber", o.name AS "orgName"
+      const membership = await client.query<{
+        role: string;
+        teamNumber: number | null;
+        orgName: string;
+        city: string | null;
+        stateProv: string | null;
+      }>(
+        `SELECT m.role, o.team_number AS "teamNumber", o.name AS "orgName",
+                o.city, o.state_prov AS "stateProv"
          FROM memberships m JOIN organizations o ON o.id = m.org_id
          WHERE m.org_id=$1 AND m.user_id=$2`,
         [orgId, session.user.id],
@@ -29,21 +35,43 @@ export async function GET(request: Request) {
       const count = async (sql: string) =>
         Number((await client.query<{ c: string }>(sql, [orgId])).rows[0]?.c ?? 0);
 
-      const [members, pendingInvites, knowledgeLen, memoriesCount, alumniCount, runsCount] = await Promise.all([
+      const [
+        members,
+        pendingInvites,
+        knowledgeLen,
+        memoriesCount,
+        alumniCount,
+        runsCount,
+        mySubteams,
+        logisticsTrips,
+        kickoffActions,
+      ] = await Promise.all([
         count(`SELECT count(*) AS c FROM memberships WHERE org_id=$1`),
         count(`SELECT count(*) AS c FROM invites WHERE org_id=$1 AND status='pending'`),
         count(`SELECT COALESCE(length(btrim(content)),0) AS c FROM team_knowledge WHERE org_id=$1`),
         count(`SELECT count(*) AS c FROM team_memories WHERE org_id=$1`),
         count(`SELECT count(*) AS c FROM team_alumni WHERE org_id=$1`),
         count(`SELECT count(*) AS c FROM ai_runs WHERE org_id=$1`),
+        client
+          .query<{ c: string }>(
+            `SELECT count(*) AS c FROM team_subteam_members WHERE org_id=$1 AND user_id=$2`,
+            [orgId, session.user.id],
+          )
+          .then((r) => Number(r.rows[0]?.c ?? 0))
+          .catch(() => 0),
+        count(`SELECT count(*) AS c FROM logistics_trips WHERE org_id=$1`).catch(() => 0),
+        count(`SELECT count(*) AS c FROM game_scoring_actions WHERE org_id=$1`).catch(() => 0),
       ]);
 
       let budgetsConfigured: boolean | null = null;
       let discordConnected: boolean | null = null;
+      let hasLocation: boolean | null = null;
       if (isAdmin) {
         budgetsConfigured =
           (await count(`SELECT count(*) AS c FROM org_api_budget_policies WHERE org_id=$1`)) > 0;
         discordConnected = (await count(`SELECT count(*) AS c FROM team_discord WHERE org_id=$1`)) > 0;
+        const orgRow = membership.rows[0]!;
+        hasLocation = Boolean(orgRow.city?.trim() && orgRow.stateProv?.trim());
       }
 
       return {
@@ -60,6 +88,9 @@ export async function GET(request: Request) {
           assistantRuns: runsCount,
           budgetsConfigured,
           discordConnected,
+          joinedSubteam: mySubteams > 0,
+          logisticsTrips,
+          kickoffActions,
         },
       };
     });

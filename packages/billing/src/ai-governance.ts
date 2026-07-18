@@ -18,6 +18,9 @@ export class AiPolicyDeniedError extends Error {
   }
 }
 
+/** Bump when risk-acceptance modal copy changes — forces re-acceptance. */
+export const FINANCE_IN_AI_ACK_VERSION = "2026-07-17";
+
 export type OrgAiPolicy = {
   featureAllowlistEnabled: boolean;
   allowedFeatures: string[];
@@ -30,6 +33,11 @@ export type OrgAiPolicy = {
   dailySpendAlertUsd: number | null;
   monthlySpendAlertUsd: number | null;
   spendAlertThresholds: number[];
+  /** Org admin opt-in: AI may read redacted team financial summaries. */
+  financeInAiEnabled: boolean;
+  financeInAiAcceptedAt: string | null;
+  financeInAiAcceptedBy: string | null;
+  financeInAiAckVersion: string | null;
 };
 
 export const DEFAULT_ORG_AI_POLICY: OrgAiPolicy = {
@@ -44,6 +52,10 @@ export const DEFAULT_ORG_AI_POLICY: OrgAiPolicy = {
   dailySpendAlertUsd: null,
   monthlySpendAlertUsd: null,
   spendAlertThresholds: [50, 75, 90],
+  financeInAiEnabled: false,
+  financeInAiAcceptedAt: null,
+  financeInAiAcceptedBy: null,
+  financeInAiAckVersion: null,
 };
 
 const KNOWN_FEATURES = [
@@ -69,8 +81,12 @@ const KNOWN_TOOLS = [
   "kickoff.rules",
   "rules.compliance",
   "cad.briefs",
+  "fmea.repeat",
   "knowledge.search",
   "knowledge.get_page",
+  "finance.summary",
+  "finance.orders",
+  "finance.create_purchase_request",
 ] as const;
 
 export function knownAiFeatures() {
@@ -125,6 +141,19 @@ export function isToolAllowed(policy: OrgAiPolicy, toolName: string): boolean {
   return policy.allowedTools.some((entry) => entry === needle || entry === "*");
 }
 
+/** True only when enabled and risk acceptance matches the current ack version. */
+export function isFinanceInAiAllowed(policy: OrgAiPolicy): boolean {
+  return (
+    policy.financeInAiEnabled &&
+    Boolean(policy.financeInAiAcceptedAt) &&
+    policy.financeInAiAckVersion === FINANCE_IN_AI_ACK_VERSION
+  );
+}
+
+export function isFinanceAiTool(toolName: string): boolean {
+  return toolName.trim().toLowerCase().startsWith("finance.");
+}
+
 export function needsAiApproval(
   policy: OrgAiPolicy,
   input: { feature: string; estimatedCostUsd: number; isOrgAdmin: boolean },
@@ -144,6 +173,12 @@ export function needsAiApproval(
     return { required: true, reason: "cost.above_threshold" };
   }
   return { required: false, reason: null };
+}
+
+function stringOrNull(value: unknown): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
 }
 
 export function mapOrgAiPolicyRow(row: Record<string, unknown> | undefined): OrgAiPolicy {
@@ -169,6 +204,10 @@ export function mapOrgAiPolicyRow(row: Record<string, unknown> | undefined): Org
     spendAlertThresholds: normalizeThresholds(
       row.spend_alert_thresholds ?? row.spendAlertThresholds,
     ),
+    financeInAiEnabled: Boolean(row.finance_in_ai_enabled ?? row.financeInAiEnabled),
+    financeInAiAcceptedAt: stringOrNull(row.finance_in_ai_accepted_at ?? row.financeInAiAcceptedAt),
+    financeInAiAcceptedBy: stringOrNull(row.finance_in_ai_accepted_by ?? row.financeInAiAcceptedBy),
+    financeInAiAckVersion: stringOrNull(row.finance_in_ai_ack_version ?? row.financeInAiAckVersion),
   };
 }
 
@@ -182,7 +221,9 @@ export async function loadOrgAiPolicy(client: PoolClient, orgId: string): Promis
   const result = await client.query(
     `SELECT feature_allowlist_enabled, allowed_features, tool_allowlist_enabled, allowed_tools,
             high_cost_threshold_usd, require_approval_above_threshold, require_approval_for_features,
-            admin_bypass_approval, daily_spend_alert_usd, monthly_spend_alert_usd, spend_alert_thresholds
+            admin_bypass_approval, daily_spend_alert_usd, monthly_spend_alert_usd, spend_alert_thresholds,
+            finance_in_ai_enabled, finance_in_ai_accepted_at, finance_in_ai_accepted_by,
+            finance_in_ai_ack_version
      FROM org_ai_policies WHERE org_id=$1`,
     [orgId],
   );
