@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, PageHeader, TabBar } from "../../components/ui";
 import {
@@ -14,6 +15,7 @@ import {
   type PurchaseRequest,
   type Sponsor,
 } from "../../lib/business-portal";
+import { BUSINESS_GRANTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
   hubById,
   hubLegacyHref,
@@ -561,21 +563,195 @@ function PurchaseRow({ purchase, canManage, busy, mutate }: { purchase: Purchase
 function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const [selectedDraft, setSelectedDraft] = useState(view.drafts[0]?.id ?? "");
   const draft = view.drafts.find((item) => item.id === selectedDraft) ?? view.drafts[0];
-  return     <div className="biz-stack">
+  return (
+    <div className="biz-stack">
+      <BusinessRelated
+        orgId={view.orgId}
+        active="grants"
+        include={BUSINESS_GRANTS_RELATED_INCLUDE}
+        ariaLabel="Related grant writing tools"
+      />
       <div className="biz-detail-link">
-        <span>Need prompt-by-prompt essays, character limits, attachments, assignees, and due dates?</span>
-        <a href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>Open the full application workbench →</a>
+        <span>Need guided need · impact · budget · timeline essays with metered AI assist?</span>
+        <a href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>Open the grant writing workbench →</a>
+        <a href={`/writer?orgId=${encodeURIComponent(view.orgId)}`}>Writer →</a>
         <a href={`/grant-report?orgId=${encodeURIComponent(view.orgId)}`}>Grant report →</a>
       </div>
+      {!view.grants.length ? (
+        <EmptyState
+          soft
+          badge={view.canManageFinance ? "Get started" : "Setup"}
+          badgeTone={view.canManageFinance ? "" : "setup"}
+          title={view.canManageFinance ? "No grant applications yet" : "Grant pipeline is empty"}
+          description="Add opportunities below or compose narratives in the writing workbench. Award $ appears only after you record a real award — never DEMO totals."
+        >
+          <BusinessRelated
+            orgId={view.orgId}
+            include={["grant-workbench", "sponsors", "fundraisers", "writer"]}
+            ariaLabel="Empty grants next links"
+          />
+        </EmptyState>
+      ) : null}
       <section className="biz-grid two">
-      <article className="app-card"><span className="biz-overline">Grant pipeline</span><h2>Turn a deadline into an owned plan.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-grant", ["requested"])}><Field label="Funder"><input name="funder" required placeholder="Community Foundation" /></Field><Field label="Opportunity"><input name="title" required placeholder="Youth STEM Innovation Grant" /></Field><Field label="Source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Deadline"><input name="deadline" type="date" /></Field><Field label="Request amount"><input name="requestedDollars" type="number" min="0" step="0.01" /></Field><Field label="Owner"><input name="ownerName" placeholder="Student + mentor pair" /></Field><Field label="Purpose / project" wide><textarea name="purpose" required rows={3} placeholder="Exactly what this funding would make possible…" /></Field><Field label="Eligibility" wide><textarea name="eligibility" rows={2} placeholder="501(c)(3), geography, grade levels…" /></Field><Field label="Requirements" wide><textarea name="requirements" rows={2} placeholder="Prompts, attachments, character limits, reporting…" /></Field><button className="app-button" disabled={busy}>Add to pipeline</button></form></article>
-      <article className="app-card biz-writer"><span className="biz-overline">Evidence-grounded writing studio</span><h2>Draft faster without inventing a single metric.</h2><p>The writer pulls only from this team’s Impact log and award history, then attaches its evidence list for review.</p><form className="biz-form-grid" onSubmit={(event) => void submit(event, "generate-draft")}><Field label="Document"><select name="documentType" defaultValue="sponsor_email"><option value="sponsor_email">Sponsor introduction</option><option value="grant_narrative">Grant narrative</option><option value="thank_you">Sponsor thank-you</option><option value="renewal">Renewal request</option></select></Field><Field label="Audience"><input name="audience" required placeholder="Foundation review committee" /></Field><Field label="Sponsor (optional)"><select name="sponsorName" defaultValue=""><option value="">No specific sponsor</option>{view.sponsors.map((sponsor) => <option key={sponsor.id}>{sponsor.name}</option>)}</select></Field><Field label="Goal" wide><textarea name="goal" rows={3} required placeholder="Fund 12 new student tool certifications and safety equipment…" /></Field><button className="app-button" disabled={busy}>Create sourced draft</button></form></article>
-    </section>
+        <article className="app-card">
+          <span className="biz-overline">Grant pipeline</span>
+          <h2>Turn a deadline into an owned plan.</h2>
+          <form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-grant", ["requested"])}>
+            <Field label="Funder">
+              <input name="funder" required placeholder="Community Foundation" />
+            </Field>
+            <Field label="Opportunity">
+              <input name="title" required placeholder="Youth STEM Innovation Grant" />
+            </Field>
+            <Field label="Source">
+              <input name="sourceUrl" type="url" placeholder="https://…" />
+            </Field>
+            <Field label="Deadline">
+              <input name="deadline" type="date" />
+            </Field>
+            <Field label="Request amount" hint="Optional ask — leave blank rather than inventing an award.">
+              <input name="requestedDollars" type="number" min="0" step="0.01" placeholder="Your ask" />
+            </Field>
+            <Field label="Owner">
+              <input name="ownerName" placeholder="Student + mentor pair" />
+            </Field>
+            <Field label="Purpose / project" wide>
+              <textarea name="purpose" required rows={3} placeholder="Exactly what this funding would make possible…" />
+            </Field>
+            <Field label="Eligibility" wide>
+              <textarea name="eligibility" rows={2} placeholder="501(c)(3), geography, grade levels…" />
+            </Field>
+            <Field label="Requirements" wide>
+              <textarea name="requirements" rows={2} placeholder="Prompts, attachments, character limits, reporting…" />
+            </Field>
+            <button className="app-button" disabled={busy}>
+              Add to pipeline
+            </button>
+          </form>
+        </article>
+        <article className="app-card biz-writer">
+          <span className="biz-overline">Evidence-grounded writing studio</span>
+          <h2>Draft faster without inventing a single metric.</h2>
+          <p>
+            Template drafts pull only from this team&apos;s Impact log and award history. For metered AI assist with hard
+            cutoffs, open the grant writing workbench or Writer.
+          </p>
+          <form className="biz-form-grid" onSubmit={(event) => void submit(event, "generate-draft")}>
+            <Field label="Document">
+              <select name="documentType" defaultValue="grant_narrative">
+                <option value="grant_narrative">Grant narrative</option>
+                <option value="sponsor_email">Sponsor introduction</option>
+                <option value="thank_you">Sponsor thank-you</option>
+                <option value="renewal">Renewal request</option>
+              </select>
+            </Field>
+            <Field label="Audience">
+              <input name="audience" required placeholder="Foundation review committee" />
+            </Field>
+            <Field label="Sponsor (optional)">
+              <select name="sponsorName" defaultValue="">
+                <option value="">No specific sponsor</option>
+                {view.sponsors.map((sponsor) => (
+                  <option key={sponsor.id}>{sponsor.name}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Goal" wide>
+              <textarea name="goal" rows={3} required placeholder="Fund student tool certifications and safety equipment…" />
+            </Field>
+            <button className="app-button" disabled={busy}>
+              Create sourced draft
+            </button>
+          </form>
+        </article>
+      </section>
 
-    <section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Application board</span><h2>Research → draft → review → submit → report</h2></div><span className="biz-count">{view.grants.length}</span></header><div className="biz-grant-board">{GRANT_STATUSES.map((status) => <div key={status}><header><span>{statusLabel(status)}</span><b>{view.grants.filter((grant) => grant.status === status).length}</b></header>{view.grants.filter((grant) => grant.status === status).map((grant) => <GrantCard key={grant.id} grant={grant} canManage={view.canManageFinance} busy={busy} mutate={mutate} />)}</div>)}</div></section>
+      <section className="app-card">
+        <header className="biz-card-head">
+          <div>
+            <span className="biz-overline">Application board</span>
+            <h2>Research → draft → review → submit → report</h2>
+          </div>
+          <span className="biz-count">{view.grants.length}</span>
+        </header>
+        <div className="biz-grant-board">
+          {GRANT_STATUSES.map((status) => (
+            <div key={status}>
+              <header>
+                <span>{statusLabel(status)}</span>
+                <b>{view.grants.filter((grant) => grant.status === status).length}</b>
+              </header>
+              {view.grants
+                .filter((grant) => grant.status === status)
+                .map((grant) => (
+                  <GrantCard key={grant.id} grant={grant} canManage={view.canManageFinance} busy={busy} mutate={mutate} />
+                ))}
+            </div>
+          ))}
+        </div>
+      </section>
 
-    <section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Draft library</span><h2>Reusable writing with its receipts attached</h2></div>{view.drafts.length ? <select value={draft?.id} onChange={(event) => setSelectedDraft(event.target.value)}>{view.drafts.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select> : null}</header>{draft ? <div className="biz-draft"><article><pre>{draft.body}</pre><button type="button" onClick={() => void navigator.clipboard.writeText(draft.body)}>Copy draft</button></article><aside><h3>Evidence used</h3>{draft.evidence.map((item, index) => <div key={`${item.label}-${index}`}><strong>{item.label}</strong><span>{item.value}</span>{item.source.startsWith("http") ? <a href={item.source} target="_blank" rel="noreferrer">Source ↗</a> : <small>{item.source}</small>}</div>)}{!draft.evidence.length ? <p>No quantitative evidence was available. Add verified Impact activities or awards before final submission.</p> : null}<p className="biz-review-warning">Human review required before sending. Confirm names, requirements, dates, and every claim.</p></aside></div> : <p className="biz-empty-inline">Generate the first sourced grant narrative, sponsor email, renewal, or thank-you above.</p>}</section>
-  </div>;
+      <section className="app-card">
+        <header className="biz-card-head">
+          <div>
+            <span className="biz-overline">Draft library</span>
+            <h2>Reusable writing with its receipts attached</h2>
+          </div>
+          {view.drafts.length ? (
+            <select value={draft?.id} onChange={(event) => setSelectedDraft(event.target.value)}>
+              {view.drafts.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </select>
+          ) : null}
+        </header>
+        {draft ? (
+          <div className="biz-draft">
+            <article>
+              <pre>{draft.body}</pre>
+              <button type="button" onClick={() => void navigator.clipboard.writeText(draft.body)}>
+                Copy draft
+              </button>
+            </article>
+            <aside>
+              <h3>Evidence used</h3>
+              {draft.evidence.map((item, index) => (
+                <div key={`${item.label}-${index}`}>
+                  <strong>{item.label}</strong>
+                  <span>{item.value}</span>
+                  {item.source.startsWith("http") ? (
+                    <a href={item.source} target="_blank" rel="noreferrer">
+                      Source ↗
+                    </a>
+                  ) : (
+                    <small>{item.source}</small>
+                  )}
+                </div>
+              ))}
+              {!draft.evidence.length ? (
+                <p>No quantitative evidence was available. Add verified Impact activities or awards before final submission.</p>
+              ) : null}
+              <p className="biz-review-warning">
+                Human review required before sending. Confirm names, requirements, dates, and every claim.
+              </p>
+            </aside>
+          </div>
+        ) : (
+          <EmptyState
+            soft
+            title="No sourced drafts yet"
+            description="Generate a template draft above, or open the grant writing workbench for guided fields and metered AI."
+          >
+            <a className="app-button secondary" href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>
+              Grant writing workbench
+            </a>
+          </EmptyState>
+        )}
+      </section>
+    </div>
+  );
 }
 
 function GrantCard({ grant, canManage, busy, mutate }: { grant: GrantApplication; canManage: boolean; busy: boolean; mutate: Mutate }) {
