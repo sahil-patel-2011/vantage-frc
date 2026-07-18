@@ -1,40 +1,18 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { sanitizeFinanceWriteBody } from "../../../lib/finance/sanitize-write";
 import {
   assignBuyer,
   computeOrdersView,
   progressOrder,
   reviewOrder,
   submitOrder,
+  updateOrderItemUrl,
   type OrdersView,
 } from "../../../lib/orders/compute-orders";
 
 export type { OrdersView };
-
-const PAYMENT_FIELD_KEYS = [
-  "cardNumber",
-  "card_number",
-  "cvv",
-  "cvc",
-  "cardExpiry",
-  "card_expiry",
-  "expiry",
-  "bankAccount",
-  "bank_account",
-  "routingNumber",
-  "routing_number",
-  "accountNumber",
-  "account_number",
-] as const;
-
-function stripPaymentFields(body: Record<string, unknown>): Record<string, unknown> {
-  const cleaned = { ...body };
-  for (const key of PAYMENT_FIELD_KEYS) {
-    delete cleaned[key];
-  }
-  return cleaned;
-}
 
 function uuidOrNull(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -91,7 +69,7 @@ export async function POST(request: Request) {
 
   let body: Record<string, unknown>;
   try {
-    body = stripPaymentFields((await request.json()) as Record<string, unknown>);
+    body = sanitizeFinanceWriteBody((await request.json()) as Record<string, unknown>);
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -152,6 +130,13 @@ export async function POST(request: Request) {
           const buyerUserId = uuidOrNull(body.buyerUserId);
           if (!orderId || !buyerUserId) throw new Error("orderId and buyerUserId are required");
           await assignBuyer(client, { orgId, userId, orderId, buyerUserId });
+          break;
+        }
+        case "update-item-url": {
+          const orderId = uuidOrNull(body.orderId) ?? trimmedOrNull(body.orderId, 64);
+          const itemUrl = trimmedOrNull(body.itemUrl, 2000);
+          if (!orderId || !itemUrl) throw new Error("orderId and itemUrl are required");
+          await updateOrderItemUrl(client, { orgId, userId, orderId, itemUrl });
           break;
         }
         case "mark-ordered": {

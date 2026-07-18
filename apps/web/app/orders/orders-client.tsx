@@ -9,6 +9,13 @@ import type { OrderRequest } from "../../lib/orders/types";
 type LiveView = Extract<OrdersView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
 
+export type OrdersClientProps = {
+  /** When embedded in Business hub, hide page chrome and inherit season. */
+  embedded?: boolean;
+  seasonYear?: number;
+  orgId?: string | null;
+};
+
 function usd(value: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -17,36 +24,46 @@ function usd(value: number): string {
   }).format(value);
 }
 
-export default function OrdersClient() {
+export default function OrdersClient({ embedded = false, seasonYear, orgId: orgIdProp }: OrdersClientProps = {}) {
   const [view, setView] = useState<OrdersView | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [season, setSeason] = useState<number | null>(seasonYear ?? null);
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
+  const orgId = (view && "orgId" in view ? view.orgId : null) ?? orgIdProp ?? null;
 
-  const load = useCallback(() => {
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const orderId = params.get("orderId");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (orderId) query.set("orderId", orderId);
-    void fetch(`/api/orders${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as OrdersView & { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Could not load orders");
-          return;
-        }
-        setView(data);
-      })
-      .catch(() => setError("Network error — please try again."));
-  }, []);
+  const load = useCallback(
+    (seasonOverride?: number) => {
+      setError("");
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = orgIdProp ?? params.get("orgId");
+      const orderId = params.get("orderId");
+      const seasonQuery =
+        seasonOverride ??
+        seasonYear ??
+        (params.get("season") ? Number(params.get("season")) : null);
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (orderId) query.set("orderId", orderId);
+      if (seasonQuery && Number.isFinite(seasonQuery)) query.set("season", String(seasonQuery));
+      void fetch(`/api/orders${query.toString() ? `?${query.toString()}` : ""}`)
+        .then(async (response) => {
+          const data = (await response.json()) as OrdersView & { error?: string };
+          if (!response.ok || !("status" in data)) {
+            setError("error" in data && data.error ? data.error : "Could not load orders");
+            return;
+          }
+          setView(data);
+          if (data.status === "live") setSeason(data.seasonYear);
+        })
+        .catch(() => setError("Network error — please try again."));
+    },
+    [orgIdProp, seasonYear],
+  );
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load(seasonYear);
+  }, [load, seasonYear]);
 
   const mutate = useCallback<Mutate>(
     (payload) => {
@@ -56,7 +73,7 @@ export default function OrdersClient() {
       void fetch("/api/orders", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, ...payload }),
+        body: JSON.stringify({ orgId, seasonYear: season ?? seasonYear ?? undefined, ...payload }),
       })
         .then(async (response) => {
           const data = (await response.json()) as OrdersView & { error?: string };
@@ -65,35 +82,23 @@ export default function OrdersClient() {
             return;
           }
           setView(data);
+          if (data.status === "live") setSeason(data.seasonYear);
         })
         .catch(() => setError("Network error — please try again."))
         .finally(() => setBusy(false));
     },
-    [orgId, busy],
+    [orgId, busy, season, seasonYear],
   );
 
   const live = view?.status === "live" ? view : null;
   const orgQ = live ? `?orgId=${encodeURIComponent(live.orgId)}` : "";
+  const seasonOptions = useMemo(() => {
+    const year = live?.seasonYear ?? season ?? new Date().getFullYear();
+    return [year - 1, year, year + 1];
+  }, [live?.seasonYear, season]);
 
-  return (
-    <main className="module-page orders-page">
-      <PageHeader
-        navPath="/orders"
-        title="Purchase requests"
-        description="Tell mentors what the team needs, get approval, then buy on the vendor site. Vantage never stores card or bank details."
-      >
-        {live ? (
-          <div className="orders-links">
-            <a className="app-button secondary" href={`/business${orgQ}`}>
-              Business portal
-            </a>
-            <a className="app-button secondary" href={`/costs${orgQ}`}>
-              Season costs
-            </a>
-          </div>
-        ) : null}
-      </PageHeader>
-
+  const body = (
+    <>
       {error ? (
         <p className="orders-error" role="alert">
           {error}
@@ -121,7 +126,35 @@ export default function OrdersClient() {
         </section>
       ) : (
         <>
+          {!embedded ? (
+            <label className="orders-season">
+              Season
+              <select
+                value={live!.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {seasonOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <MetricsPanel view={live!} />
+          {live!.orders.length === 0 ? (
+            <section className="soft-panel">
+              <h2>No purchase requests yet</h2>
+              <p className="app-muted">
+                Submit what the team needs below. Mentors approve here, then the buyer opens the vendor
+                link and pays outside Vantage — card and bank details are never stored.
+              </p>
+            </section>
+          ) : null}
           {live!.financeAiEnabled && live!.aiSummary ? <AiSummaryPanel summary={live!.aiSummary} /> : null}
           {live!.metrics.mineToBuy > 0 ? (
             <p className="orders-warn" role="status">
@@ -133,6 +166,32 @@ export default function OrdersClient() {
           <OrdersList view={live!} busy={busy} mutate={mutate} />
         </>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="orders-embedded">{body}</div>;
+  }
+
+  return (
+    <main className="module-page orders-page">
+      <PageHeader
+        navPath="/orders"
+        title="Purchase requests"
+        description="Tell mentors what the team needs, get approval, then buy on the vendor site. Vantage never stores card or bank details."
+      >
+        {live ? (
+          <div className="orders-links">
+            <a className="app-button secondary" href={`/business${orgQ}`}>
+              Business portal
+            </a>
+            <a className="app-button secondary" href={`/costs${orgQ}`}>
+              Season costs
+            </a>
+          </div>
+        ) : null}
+      </PageHeader>
+      {body}
     </main>
   );
 }
@@ -171,6 +230,9 @@ function AiSummaryPanel({ summary }: { summary: NonNullable<LiveView["aiSummary"
           <li key={line}>{line}</li>
         ))}
       </ul>
+      <small className="app-muted">
+        Local Season Costs opt-in — separate from AI chat Finance-in-AI under Team → AI governance.
+      </small>
     </section>
   );
 }
@@ -190,7 +252,7 @@ function SubmitForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       <form className="orders-form" onSubmit={onSubmit}>
         <label>
           What do you need?
-          <input name="title" required maxLength={200} placeholder="e.g. 1/2&quot; hex shaft stock" />
+          <input name="title" required maxLength={200} placeholder='e.g. 1/2" hex shaft stock' />
         </label>
         <label>
           Why does the team need it?
@@ -198,7 +260,7 @@ function SubmitForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
             name="justification"
             required
             maxLength={2000}
-            placeholder="Subsystem, event deadline, or pit spare rationale"
+            placeholder="Subsystem, event deadline, or pit spare rationale — never paste card or bank numbers"
           />
         </label>
         <div className="orders-form-grid">
@@ -334,7 +396,7 @@ function OrderCard({
       </div>
 
       {showBuyPanel(order.status) ? (
-        <BuyPanel order={order} canBuy={canBuy} />
+        <BuyPanel order={order} canBuy={canBuy} busy={busy} mutate={mutate} />
       ) : null}
 
       {view.isAdmin && order.status === "pending" ? (
@@ -371,7 +433,19 @@ function OrderCard({
   );
 }
 
-function BuyPanel({ order, canBuy }: { order: OrderRequest; canBuy: boolean }) {
+function BuyPanel({
+  order,
+  canBuy,
+  busy,
+  mutate,
+}: {
+  order: OrderRequest;
+  canBuy: boolean;
+  busy: boolean;
+  mutate: Mutate;
+}) {
+  const [itemUrl, setItemUrl] = useState(order.itemUrl ?? "");
+
   return (
     <div className="orders-buy-panel">
       <h3>Ordering checklist</h3>
@@ -385,8 +459,29 @@ function BuyPanel({ order, canBuy }: { order: OrderRequest; canBuy: boolean }) {
         <a href={order.itemUrl} target="_blank" rel="noopener noreferrer">
           Open buy link ↗
         </a>
+      ) : canBuy ? (
+        <form
+          className="orders-admin-row"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!itemUrl.trim()) return;
+            mutate({ action: "update-item-url", orderId: order.id, itemUrl: itemUrl.trim() });
+          }}
+        >
+          <input
+            type="url"
+            placeholder="https://… product URL"
+            value={itemUrl}
+            onChange={(event) => setItemUrl(event.target.value)}
+            required
+            aria-label="Product URL"
+          />
+          <button type="submit" disabled={busy || !itemUrl.trim()}>
+            Save buy link
+          </button>
+        </form>
       ) : (
-        <span className="app-muted">No product URL on file — add one before buying.</span>
+        <span className="app-muted">No product URL on file — ask an admin or buyer to add one.</span>
       )}
       {!canBuy ? <span className="app-muted">Waiting on the assigned buyer or an admin.</span> : null}
     </div>
@@ -410,7 +505,7 @@ function AdminReview({
   return (
     <div className="orders-admin-row">
       <select value={buyerUserId} onChange={(event) => setBuyerUserId(event.target.value)} aria-label="Assign buyer">
-        <option value="">Assign buyer (optional)</option>
+        <option value="">Buyer defaults to requester</option>
         {buyerOptions.map((member) => (
           <option key={member.userId} value={member.userId}>
             {member.name} ({member.role})

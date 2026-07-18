@@ -69,7 +69,8 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
         <h2 style={{ marginTop: 0 }}>Finance in AI</h2>
         <p className="app-muted">
           When enabled, Vantage assistants may call redacted finance tools (season summary, open orders,
-          draft purchase requests). Dollar figures stay summarized — never raw bank credentials.
+          draft purchase requests). Payment credentials are never stored or sent — card/bank patterns are
+          stripped on write and again before any model call.
         </p>
         {policy?.financeInAiAcceptedAt ? (
           <p className="app-muted">
