@@ -784,6 +784,49 @@
   gap: 5px;
 }
 
+
+/* Fundraising goal vs actual + stage pipeline (Overview glance) */
+.biz-fundraising-glance { display: grid; gap: 14px; }
+.biz-fundraising-stats { margin-top: 4px; }
+.biz-fundraising-track { height: 10px; margin: 2px 0 0; }
+.biz-fundraising-track i { background: linear-gradient(90deg, var(--biz-mint, #2f8f6b), #4aa882); }
+.biz-fundraising-split { display: flex; flex-wrap: wrap; gap: 14px; color: var(--app-muted); font-size: 12px; }
+.biz-stage-pipeline { display: grid; gap: 10px; padding-top: 8px; border-top: 1px solid var(--soft-line, var(--app-line)); }
+.biz-stage-pipeline > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.biz-stage-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.biz-stage-strip li {
+  display: grid; grid-template-rows: auto auto 72px auto; align-items: end; gap: 4px;
+  min-height: 130px; padding: 10px 8px; text-align: center;
+  background: var(--soft-card, var(--app-soft)); border: 1px solid var(--soft-line, transparent);
+  border-radius: 14px; box-shadow: var(--soft-shadow, none);
+}
+.biz-stage-strip li.has-partners { border-color: color-mix(in srgb, var(--biz-mint, #2f8f6b) 35%, var(--app-line)); }
+.biz-stage-label { color: var(--app-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.biz-stage-count { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.biz-stage-bar {
+  display: block; align-self: end; width: 42%; min-height: 4px; margin: 0 auto;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--biz-mint, #2f8f6b) 70%, #fff), var(--biz-mint, #2f8f6b));
+  border-radius: 999px 999px 4px 4px;
+}
+.biz-stage-strip strong { color: var(--app-muted); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.biz-pipeline-goal-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.biz-pipeline-goal-stats b { display: grid; gap: 4px; padding: 12px; background: var(--app-soft); border-radius: 12px; font-size: 18px; font-variant-numeric: tabular-nums; }
+.biz-pipeline-goal-stats small { color: var(--app-muted); font-size: 11px; font-weight: 500; }
+.biz-meter { height: 10px; margin: 4px 0 12px; overflow: hidden; background: var(--app-soft); border: 1px solid var(--app-line); border-radius: 999px; }
+.biz-meter > span { display: block; height: 100%; background: linear-gradient(90deg, var(--biz-mint), #4aa882); border-radius: inherit; }
+.biz-sponsor-board { display: grid; grid-template-columns: repeat(6, minmax(160px, 1fr)); gap: 8px; overflow: auto; }
+.biz-sponsor-board > div { display: grid; align-content: start; gap: 8px; min-height: 180px; padding: 9px; background: var(--app-soft); border-radius: 12px; }
+.biz-sponsor-board > div > header { display: flex; justify-content: space-between; padding: 4px; color: var(--app-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.biz-sponsor-board > div > article { display: grid; gap: 8px; padding: 12px; background: var(--app-surface); border: 1px solid var(--app-line); border-radius: 12px; }
+.biz-pipeline-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.biz-reminder-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.biz-reminder-list li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; background: var(--app-soft); border-radius: 12px; }
+@media (max-width: 900px) {
+  .biz-stage-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .biz-sponsor-board { grid-template-columns: repeat(2, minmax(210px, 1fr)); }
+  .biz-pipeline-goal-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 .biz-grant-board {
   display: grid;
   grid-template-columns: repeat(6, minmax(170px, 1fr));
