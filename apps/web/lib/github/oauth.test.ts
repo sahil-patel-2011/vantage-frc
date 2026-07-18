@@ -8,11 +8,13 @@ import {
 import { formatGitHubFileContext, formatGitHubTreeContext } from "./api";
 
 describe("github oauth config", () => {
-  it("reports setup required when env is blank", () => {
+  it("keeps PAT available when OAuth env is blank (no feature-level setup_required)", () => {
     const status = githubSetupStatus({});
     expect(status.configured).toBe(false);
-    expect(status.setupRequired).toBe(true);
+    expect(status.oauthSetupRequired).toBe(true);
+    expect(status.setupRequired).toBe(false);
     expect(status.patAvailable).toBe(true);
+    expect(status.message.toLowerCase()).toContain("pat");
     expect(isGitHubOAuthConfigured({})).toBe(false);
   });
 
@@ -24,6 +26,7 @@ describe("github oauth config", () => {
     };
     const status = githubSetupStatus(env);
     expect(status.configured).toBe(true);
+    expect(status.oauthSetupRequired).toBe(false);
     expect(status.setupRequired).toBe(false);
     expect(status.redirectUri).toBe("https://app.example.com/api/github/oauth/callback");
   });

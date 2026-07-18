@@ -41,15 +41,20 @@ export function getGitHubOAuthConfig(env: NodeJS.ProcessEnv = process.env): GitH
 export function githubSetupStatus(env: NodeJS.ProcessEnv = process.env) {
   const configured = isGitHubOAuthConfigured(env);
   const config = configured ? getGitHubOAuthConfig(env) : null;
+  // Feature is never blocked: PAT encrypt/save works without GITHUB_OAUTH_*.
+  // Only the OAuth button needs server credentials.
   return {
     configured,
-    setupRequired: !configured,
+    /** True only when the OAuth App credentials are missing — PAT path still works. */
+    oauthSetupRequired: !configured,
+    /** Always false: org GitHub context is available via encrypted PAT without OAuth env. */
+    setupRequired: false,
     redirectUri: config?.redirectUri ?? null,
     scopes: config?.scopes ?? [...GITHUB_DEFAULT_SCOPES],
     patAvailable: true,
     message: configured
       ? "GitHub OAuth is configured. Owners/admins can connect a robot-code repo in Team settings."
-      : "Setup required for OAuth — set GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET (optional GITHUB_OAUTH_REDIRECT_URI). A fine-grained or classic PAT can still be saved encrypted.",
+      : "OAuth App not configured on this deployment — owners/admins can still encrypt and save a fine-grained or classic PAT in Team settings.",
   };
 }
 
