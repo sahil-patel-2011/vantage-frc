@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { surfaceOnboardingLinks } from "../../../lib/onboarding-workflow";
 
 type Signals = {
+  hasLocation: boolean | null;
   members: number;
   pendingInvites: number;
   knowledgeChars: number;
