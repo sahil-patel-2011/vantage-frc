@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { CadPurchaseRequestPanel } from "./cad-purchase-request";
 
 type Job = {
   id: string;
@@ -299,11 +300,19 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
 
       <nav className="intel-actions" aria-label="AI governance" style={{ marginBottom: 12 }}>
         <a href={`/chat?orgId=${encodeURIComponent(orgId)}`}>Assistant</a>
+        <a href={`/orders?orgId=${encodeURIComponent(orgId)}`}>Orders</a>
         <a href={`/code?orgId=${encodeURIComponent(orgId)}`}>Code Coach</a>
         <a href={`/team/budgets?orgId=${encodeURIComponent(orgId)}#prompt-caching`}>Prompt caching</a>
         <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
         <a href={`/team/ai-runs?orgId=${encodeURIComponent(orgId)}`}>AI runs</a>
       </nav>
+
+      <CadPurchaseRequestPanel
+        orgId={orgId}
+        defaultTitle={`Need part for ${title}`}
+        defaultWhy={`CAD need for “${title}”. ${request.trim().slice(0, 300) || "Hardware required for the designed mechanism."}`}
+        onSubmitted={(msg) => setMessage(msg)}
+      />
 
       {message ? (
         <p className="telemetry-status" role="status">
