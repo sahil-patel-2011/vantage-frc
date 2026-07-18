@@ -2,11 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
+import { TeamHubRelated } from "../../../components/team-hub-related";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import {
   googleCalendarSubscribeUrl,
   toWebcalUrl,
 } from "../../../lib/calendar-ics";
+import {
+  CALENDAR_TEAM_RELATED_INCLUDE,
+  calendarNextActions,
+  calendarOpsRelatedLinks,
+  monthEventCountLabel,
+  monthEventPeek,
+} from "../../../lib/calendar/calendar-related";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../../lib/offline";
 import {
   DUTY_KIND_LABELS,
@@ -72,6 +80,44 @@ function fmtTime(iso: string): string {
 
 function dayNum(day: string): string {
   return String(Number(day.slice(8, 10)));
+}
+
+function formatDayLabelLocal(day: string): string {
+  const date = new Date(`${day}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return day;
+  return date.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+function CalendarNextActions({ actions }: { actions: ReturnType<typeof calendarNextActions> }) {
+  if (actions.length === 0) return null;
+  return (
+    <section className="tc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>From your real subteams and events — empty until those exist. Never DEMO events.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
 }
 
 function EventCard({
@@ -584,8 +630,6 @@ function SubteamsPanel({
     </div>
   );
 }
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function DutyCard({
   duty,
@@ -1224,6 +1268,22 @@ export default function TeamCalendarClient() {
     [ready, filterSubteamId],
   );
   const days = useMemo(() => groupEventsByDay(filtered), [filtered]);
+  const listDays = useMemo(() => {
+    if (!quickDay) return days;
+    const focused = days.filter((bucket) => bucket.day === quickDay);
+    const rest = days.filter((bucket) => bucket.day !== quickDay);
+    if (focused.length === 0) {
+      return [
+        {
+          day: quickDay,
+          label: formatDayLabelLocal(quickDay),
+          items: [] as CalendarEvent[],
+        },
+        ...rest,
+      ];
+    }
+    return [...focused, ...rest];
+  }, [days, quickDay]);
   const upcoming = useMemo(() => upcomingEvents(filtered, new Date(), 6), [filtered]);
   const weekCells = useMemo(() => buildWeekCells(anchor, filtered), [anchor, filtered]);
   const monthCells = useMemo(() => buildMonthCells(anchor, filtered), [anchor, filtered]);
@@ -1238,8 +1298,9 @@ export default function TeamCalendarClient() {
       <main className="module-page tc-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Calendar / Team Calendar</span>
+            <span className="breadcrumbs">Team / Calendar</span>
             <h1>Calendar</h1>
+            <p>Subteam calendars for practices, build sessions, and deadlines — never DEMO events.</p>
           </div>
         </header>
         <TeamOpsNav active="calendar" />
@@ -1254,9 +1315,14 @@ export default function TeamCalendarClient() {
                     ? "No cached calendar on this device yet. Open this page once while online."
                     : "Check your connection and try again.")}
               </p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
+              <div className="tc-guide-actions">
+                <button type="button" className="app-button secondary" onClick={() => void load()}>
+                  Retry
+                </button>
+                <a className="app-button secondary" href="/workspace">
+                  Workspace
+                </a>
+              </div>
             </>
           ) : (
             <p className="app-muted">Loading team calendar…</p>
@@ -1267,11 +1333,17 @@ export default function TeamCalendarClient() {
   }
 
   if (view.status === "setup_required") {
+    const setupActions = calendarNextActions({
+      orgId: view.context.orgId,
+      subteamCount: 0,
+      eventCount: 0,
+      canManage: false,
+    });
     return (
       <main className="module-page tc-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Calendar / Team Calendar</span>
+            <span className="breadcrumbs">Team / Calendar</span>
             <h1>Calendar</h1>
             <p>Subteam calendars for practices, build sessions, and deadlines.</p>
           </div>
@@ -1281,10 +1353,13 @@ export default function TeamCalendarClient() {
         <div className="app-card tc-empty">
           <strong>Select a team workspace</strong>
           <p className="app-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">
-            Choose workspace
-          </a>
+          <div className="tc-guide-actions">
+            <a className="app-button" href="/workspace">
+              Choose workspace
+            </a>
+          </div>
         </div>
+        <CalendarNextActions actions={setupActions} />
       </main>
     );
   }
@@ -1295,6 +1370,13 @@ export default function TeamCalendarClient() {
   const busy = busyKey != null;
   const hasSubteams = view.subteams.length > 0;
   const hasEvents = view.events.length > 0;
+  const nextActions = calendarNextActions({
+    orgId,
+    subteamCount: view.subteams.length,
+    eventCount: view.events.length,
+    canManage,
+  });
+  const opsLinks = calendarOpsRelatedLinks(orgId);
 
   const setRsvp = (eventId: string, response: RsvpResponse | null) => {
     void run({ action: "set_rsvp", orgId, id: eventId, response }, `rsvp:${eventId}`);
@@ -1320,25 +1402,30 @@ export default function TeamCalendarClient() {
     <main className="module-page tc-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Calendar / Team Calendar</span>
+          <span className="breadcrumbs">Team / Calendar</span>
           <h1>Calendar</h1>
           <p>
-            {teamLabel} — practices, duty roster, and “I’m going.” Season milestones stay on{" "}
-            <a href={withOrg("/calendar", orgId)}>Season Calendar</a>. New members:{" "}
-            <a href={withOrg("/team/getting-started", orgId)}>Getting started</a>
-            {" · "}
-            <a href={withOrg("/team/knowledge", orgId)}>Knowledge</a>
-            {" · "}
-            <a href={withOrg("/logistics", orgId)}>Logistics</a>
-            {" · "}
-            <a href={withOrg("/kickoff", orgId)}>Kickoff</a>.
+            {teamLabel} — practices, subteams, and “I’m going.” Season milestones stay on{" "}
+            <a href={withOrg("/calendar", orgId)}>Season Calendar</a>. Nothing is seeded as DEMO.
           </p>
         </div>
       </header>
       <TeamOpsNav orgId={orgId} active="calendar" />
+      <TeamHubRelated orgId={orgId} active="calendar" include={[...CALENDAR_TEAM_RELATED_INCLUDE]} />
+      {opsLinks.length > 0 ? (
+        <nav className="product-hub-related tc-ops-related" aria-label="Related ops tools">
+          {opsLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      ) : null}
       <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? <p className="tc-error">{error}</p> : null}
+
+      <CalendarNextActions actions={nextActions} />
 
       <div className="tc-tabs" role="tablist" aria-label="Calendar sections">
         <button
@@ -1428,8 +1515,8 @@ export default function TeamCalendarClient() {
             <div className="app-card tc-empty tc-guide">
               <strong>Create your first subteam</strong>
               <p className="app-muted">
-                Calendars get useful once groups exist — Mechanical, Programming, Business, Drive. Then schedule the first
-                practice on that subteam.
+                Calendars stay empty until groups exist — Mechanical, Programming, Business, Drive. No DEMO
+                subteams are seeded.
               </p>
               <div className="tc-guide-actions">
                 {canManage ? (
@@ -1440,7 +1527,10 @@ export default function TeamCalendarClient() {
                   <span className="tc-muted">Ask an owner or admin to create the first subteam.</span>
                 )}
                 <a className="app-button secondary" href={withOrg("/practice", orgId)}>
-                  Open Practice Planner
+                  Open Practice
+                </a>
+                <a className="app-button secondary" href={withOrg("/messages", orgId)}>
+                  Messages
                 </a>
               </div>
             </div>
@@ -1450,7 +1540,8 @@ export default function TeamCalendarClient() {
             <div className="app-card tc-empty tc-guide">
               <strong>Schedule your first practice</strong>
               <p className="app-muted">
-                Use Quick add for a Tuesday shop night, or jump to Practice Planner to log cycles after the session.
+                Quick-add a Tuesday shop night, or open Practice / Attendance after the real session. Nothing
+                is invented for you.
               </p>
               <div className="tc-guide-actions">
                 <button
@@ -1465,7 +1556,13 @@ export default function TeamCalendarClient() {
                   Quick-add practice
                 </button>
                 <a className="app-button secondary" href={withOrg("/practice", orgId)}>
-                  Practice Planner
+                  Practice
+                </a>
+                <a className="app-button secondary" href={withOrg("/attendance", orgId)}>
+                  Attendance
+                </a>
+                <a className="app-button secondary" href={withOrg("/logistics", orgId)}>
+                  Logistics
                 </a>
               </div>
             </div>
@@ -1508,7 +1605,7 @@ export default function TeamCalendarClient() {
                   className={mode === value ? "active" : undefined}
                   onClick={() => setMode(value)}
                 >
-                  {value === "agenda" ? "Agenda" : value === "week" ? "Week" : "Month"}
+                  {value === "agenda" ? "List" : value === "week" ? "Week" : "Month"}
                 </button>
               ))}
             </div>
@@ -1525,22 +1622,62 @@ export default function TeamCalendarClient() {
                   Today
                 </button>
               </div>
-            ) : null}
+            ) : quickDay ? (
+              <div className="tc-nav-range">
+                <strong>List · {formatDayLabelLocal(quickDay)}</strong>
+                <button type="button" className="tc-text-link" onClick={() => setQuickDay(null)}>
+                  Clear day focus
+                </button>
+              </div>
+            ) : (
+              <p className="tc-muted tc-list-hint">Chronological list by local day — same events as Month / Week.</p>
+            )}
           </div>
 
           <div className="tc-layout">
             <section className="tc-panel tc-main">
               {mode === "agenda" ? (
-                days.length === 0 ? (
-                  <div className="tc-empty" style={{ padding: 8 }}>
-                    <strong>No events in this view</strong>
-                    <p className="tc-muted">Quick-add a practice, or switch filters.</p>
+                listDays.length === 0 ? (
+                  <div className="tc-empty tc-list-empty">
+                    <strong>No events in this list</strong>
+                    <p className="tc-muted">
+                      Switch filters, Quick-add a practice, or open Practice / Attendance after a real session.
+                    </p>
+                    <div className="tc-guide-actions">
+                      <button
+                        type="button"
+                        className="app-button"
+                        onClick={() =>
+                          document.getElementById("tc-quick-add")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      >
+                        Quick-add
+                      </button>
+                      <a className="app-button secondary" href={withOrg("/practice", orgId)}>
+                        Practice
+                      </a>
+                    </div>
                   </div>
                 ) : (
-                  days.map((bucket) => (
-                    <div key={bucket.day} className="tc-day">
-                      <h3>{bucket.label}</h3>
-                      {bucket.items.map((event) => renderEventCard(event))}
+                  listDays.map((bucket) => (
+                    <div
+                      key={bucket.day}
+                      className={["tc-day", quickDay === bucket.day ? "focused" : ""].filter(Boolean).join(" ")}
+                      id={quickDay === bucket.day ? "tc-list-focus" : undefined}
+                    >
+                      <h3>
+                        {bucket.label}
+                        <span className="tc-day-count">
+                          {bucket.items.length === 0
+                            ? " · none scheduled"
+                            : ` · ${bucket.items.length} event${bucket.items.length === 1 ? "" : "s"}`}
+                        </span>
+                      </h3>
+                      {bucket.items.length === 0 ? (
+                        <p className="tc-muted">Tap Quick-add to schedule this day — the calendar does not invent DEMO events.</p>
+                      ) : (
+                        bucket.items.map((event) => renderEventCard(event))
+                      )}
                     </div>
                   ))
                 )
@@ -1594,35 +1731,75 @@ export default function TeamCalendarClient() {
                     ))}
                   </div>
                   <div className="tc-month-grid">
-                    {monthCells.map((cell) => (
-                      <button
-                        key={cell.day}
-                        type="button"
-                        className={[
-                          "tc-month-cell",
-                          cell.inMonth ? "" : "out",
-                          cell.isToday ? "today" : "",
-                          quickDay === cell.day ? "picked" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        onClick={() => {
-                          setQuickDay(cell.day);
-                          setSelectedEventId(cell.items[0]?.id ?? null);
-                          setMode("week");
-                          setAnchor(new Date(`${cell.day}T12:00:00`));
-                        }}
-                      >
-                        <strong>{dayNum(cell.day)}</strong>
-                        <ul>
-                          {cell.items.slice(0, 3).map((event) => (
-                            <li key={event.id} style={{ background: event.subteamColor ?? "var(--app-accent)" }}>
-                              {event.title}
-                            </li>
-                          ))}
-                        </ul>
-                      </button>
-                    ))}
+                    {monthCells.map((cell) => {
+                      const countLabel = monthEventCountLabel(cell.items.length);
+                      const { peeks, overflow } = monthEventPeek(
+                        cell.items.map((event) => event.title),
+                        2,
+                      );
+                      return (
+                        <button
+                          key={cell.day}
+                          type="button"
+                          className={[
+                            "tc-month-cell",
+                            cell.inMonth ? "" : "out",
+                            cell.isToday ? "today" : "",
+                            quickDay === cell.day ? "picked" : "",
+                            cell.items.length > 0 ? "has-events" : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          aria-label={`${formatDayLabelLocal(cell.day)}${
+                            cell.items.length > 0
+                              ? `, ${cell.items.length} event${cell.items.length === 1 ? "" : "s"}`
+                              : ", no events"
+                          }`}
+                          onClick={() => {
+                            setQuickDay(cell.day);
+                            setAnchor(new Date(`${cell.day}T12:00:00`));
+                            if (cell.items.length > 0) {
+                              setSelectedEventId(cell.items[0]!.id);
+                              setMode("agenda");
+                              requestAnimationFrame(() => {
+                                document.getElementById("tc-list-focus")?.scrollIntoView({
+                                  behavior: "smooth",
+                                  block: "start",
+                                });
+                              });
+                            } else {
+                              setSelectedEventId(null);
+                              document
+                                .getElementById("tc-quick-add")
+                                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }
+                          }}
+                        >
+                          <header className="tc-month-cell-head">
+                            <strong>{dayNum(cell.day)}</strong>
+                            {countLabel ? <span className="tc-month-count">{countLabel}</span> : null}
+                          </header>
+                          <ul>
+                            {peeks.map((title, index) => {
+                              const event = cell.items[index]!;
+                              return (
+                                <li
+                                  key={event.id}
+                                  style={{ background: event.subteamColor ?? "var(--app-accent)" }}
+                                  title={title}
+                                >
+                                  {title}
+                                </li>
+                              );
+                            })}
+                            {overflow > 0 ? <li className="more">+{overflow}</li> : null}
+                          </ul>
+                          {cell.items.length === 0 && cell.inMonth ? (
+                            <span className="tc-month-empty">Add</span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ) : null}
@@ -1680,10 +1857,9 @@ export default function TeamCalendarClient() {
 
               <div className="tc-related">
                 <a href={withOrg("/practice", orgId)}>Practice</a>
-                <a href={withOrg("/scouting", orgId)}>Scouting</a>
-                <a href={withOrg("/command", orgId)}>Event Day</a>
-                <a href={withOrg("/business", orgId)}>Business</a>
                 <a href={withOrg("/attendance", orgId)}>Attendance</a>
+                <a href={withOrg("/logistics", orgId)}>Logistics</a>
+                <a href={withOrg("/messages", orgId)}>Messages</a>
                 <a href={withOrg("/calendar", orgId)}>Season milestones</a>
               </div>
             </aside>
