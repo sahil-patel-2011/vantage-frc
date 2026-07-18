@@ -10,7 +10,7 @@ import {
 export const metadata: Metadata = {
   title: "Showcase — Vantage",
   description:
-    "Curated Vantage workflows: FRC Assistant, strategy, CAD, FRC code review, integrated scouting, intelligence, displays, and team operations.",
+    "Curated Vantage workflows: FRC Assistant, strategy, CAD, FRC code review, Event Day, My Day, knowledge, scouting trust, logistics, sponsorship, and team operations.",
   alternates: { canonical: "/features" },
 };
 
@@ -21,14 +21,34 @@ const support = [
     "Offline match/pit forms sync into attributed facts that weight predictions, playbooks, pick lists, live boards, and FRC Assistant context.",
   ],
   [
-    "Setup required",
-    "Combine live event and team intelligence",
-    "TBA and Statbotics-backed caches, freshness state, global team lookup, source-linked research, comparisons, and pick evidence.",
+    "Shipping",
+    "Scouting trust before pick lists",
+    "Disagreement review, coverage gaps, and scout reliability signals so strategy weighs evidence quality—not just entry count.",
   ],
   [
     "Available",
-    "Run the competition command layer",
-    "Active event context, next-match queue, quick actions, offline status, team controls, display setup, and export center.",
+    "Event Day + My Day",
+    "Shared event command for next match and readiness, plus personal shifts, todos, and acknowledgements for what you own today.",
+  ],
+  [
+    "Available",
+    "Team knowledge & wiki",
+    "Procedures and season notes stay org-scoped so the Assistant and humans read the same durable context.",
+  ],
+  [
+    "Available",
+    "CAD ↔ strategy link",
+    "Strategy constraints can become approval-gated CAD work—build changes keep the match reason that created them.",
+  ],
+  [
+    "Shipping",
+    "Logistics & sponsorship",
+    "Travel/lodging/packing beside the calendar, plus sponsor pipeline and ask drafts with honest AI-assist labels.",
+  ],
+  [
+    "Setup required",
+    "Combine live event and team intelligence",
+    "TBA and Statbotics-backed caches, freshness state, global team lookup, source-linked research, comparisons, and pick evidence.",
   ],
   [
     "Available",
@@ -115,7 +135,13 @@ export default function FeaturesPage() {
           <div>
             {support.map(([status, title, copy]) => (
               <article key={title}>
-                <span className={`app-badge ${status === "Available" ? "good" : "setup"}`}>{status}</span>
+                <span
+                  className={`app-badge ${
+                    status === "Available" ? "good" : status === "Shipping" ? "demo" : "setup"
+                  }`}
+                >
+                  {status}
+                </span>
                 <h3>{title}</h3>
                 <p>{copy}</p>
               </article>
