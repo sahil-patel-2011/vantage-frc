@@ -296,6 +296,11 @@ export async function POST(request: Request) {
 
         if (action === "share") {
           if (!body.boardId) throw new Error("boardId is required");
+          const owned = await client.query(
+            `SELECT 1 FROM alliance_boards WHERE id = $1::uuid AND org_id = $2::uuid`,
+            [body.boardId, body.orgId],
+          );
+          if (!owned.rowCount) throw new Error("Alliance board not found");
           const token = randomBytes(32).toString("base64url");
           await client.query(
             `INSERT INTO alliance_board_share_tokens(org_id, board_id, token_hash, created_by, expires_at)

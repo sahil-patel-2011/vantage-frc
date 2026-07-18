@@ -69,6 +69,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/writer")).toBe("AI / Award Writer");
     expect(breadcrumbForPath("/team/usage")).toBe("AI / AI usage");
     expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
+    expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Form builder");
   });
 
   it("resolves nested team knowledge via hub legacy href", () => {
