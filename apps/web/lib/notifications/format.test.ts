@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { notificationBody, notificationHref, notificationTitle } from "./notifications";
+import { notificationBody, notificationHref, notificationTitle } from "./format";
 
 describe("notification helpers", () => {
   it("prefers payload title and body", () => {
