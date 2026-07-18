@@ -126,6 +126,24 @@ export type CalendarFeedInfo = {
   subteamId: string | null;
 };
 
+
+export type TravelLegOnCalendar = {
+  id: string;
+  tripId: string;
+  tripTitle: string;
+  kind: string;
+  title: string;
+  startsAt: string;
+  endsAt: string | null;
+  location: string;
+  meetingPoint: string;
+  notes: string;
+  subteamId: string | null;
+  subteamName: string | null;
+  subteamColor: string | null;
+  calendarEventId: string | null;
+};
+
 export type DutyOnCalendar = {
   id: string;
   title: string;
@@ -152,6 +170,7 @@ export type SubteamCalendarView =
       events: CalendarEvent[];
       /** Duty roster slots (empty until assigned). */
       duties: DutyOnCalendar[];
+      travelLegs: TravelLegOnCalendar[];
       mySubteamIds: string[];
       attendanceEvents: LinkableAttendance[];
       practiceSessions: LinkablePractice[];
@@ -244,7 +263,8 @@ export function eventWorkflowLinks(event: CalendarEvent, orgId: string): Workflo
     push(withOrgPath("/practice", orgId), "Practice Planner");
   }
   if (event.kind === "event") {
-    push(withOrgPath("/command", orgId), "Event Day Command");`r`n    push(withOrgPath("/my-day", orgId), "My Day");
+    push(withOrgPath("/command", orgId), "Event Day Command");
+    push(withOrgPath("/my-day", orgId), "My Day");
     push(withOrgPath("/scouting", orgId), "Scouting duty");
     push(withOrgPath("/logistics", orgId), "Event logistics");
   }

@@ -1,0 +1,191 @@
+/* Soft-UI personal onboarding path (CD #28). */
+
+.start-page {
+  --start-ink: var(--soft-ink, #132033);
+  --start-muted: var(--soft-muted, #5a6578);
+  --start-line: var(--soft-line, #d5dde8);
+  --start-card: var(--soft-card, #fff);
+  --start-accent: var(--soft-accent, #1f4fd6);
+  --start-ok: #1f7a3d;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 28px) 16px calc(48px + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  gap: 14px;
+  color: var(--start-ink);
+}
+
+.start-meta {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--start-line);
+  background: color-mix(in srgb, var(--start-card) 92%, #eef2f7);
+  color: var(--start-muted);
+  font: 600 13px/1.35 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.start-progress {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--start-line);
+  background: var(--start-card);
+}
+
+.start-progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #e8eef6;
+  overflow: hidden;
+}
+
+.start-progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--start-accent);
+  border-radius: inherit;
+}
+
+.start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--start-line);
+  background: var(--start-card);
+  color: var(--start-ink);
+  font: 600 13px/1 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.start-btn.primary {
+  border-color: transparent;
+  background: var(--start-accent);
+  color: #fff;
+}
+
+.start-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.start-track {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--start-line);
+  background: var(--start-card);
+}
+
+.start-track.dismissed {
+  opacity: 0.72;
+}
+
+.start-track-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.start-track-head h2 {
+  margin: 0;
+  font: 700 1.1rem/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.start-track-head p {
+  margin: 4px 0 0;
+  color: var(--start-muted);
+  font: 400 14px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.start-reason {
+  margin: 0;
+  color: var(--start-muted);
+  font: 600 12px/1.3 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.start-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.start-check {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--start-line);
+  background: color-mix(in srgb, var(--start-card) 88%, #eef2f7);
+}
+
+.start-check.done {
+  border-color: color-mix(in srgb, var(--start-ok) 35%, var(--start-line));
+}
+
+.start-check strong {
+  display: block;
+  font: 700 14px/1.3 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.start-check span {
+  display: block;
+  margin-top: 2px;
+  color: var(--start-muted);
+  font: 400 13px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.start-check a {
+  color: var(--start-accent);
+  font: 600 13px/1 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.start-empty {
+  display: grid;
+  gap: 12px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--start-line);
+  background: var(--start-card);
+}
+
+.start-empty p {
+  margin: 0;
+  color: var(--start-muted);
+  font: 400 15px/1.45 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.start-warn {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+  font: 600 13px/1.35 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Shared polish for Team setup (/team/getting-started) */
+.getting-started-page .start-track {
+  margin: 0;
+}

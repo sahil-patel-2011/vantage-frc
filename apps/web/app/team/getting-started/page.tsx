@@ -1,4 +1,5 @@
 import GettingStartedClient from "./getting-started-client";
+import "../../start/start.css";
 
 export default async function TeamGettingStartedPage({
   searchParams,
