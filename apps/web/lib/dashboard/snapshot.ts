@@ -154,9 +154,16 @@ export async function loadDashboardSnapshot(
       ? ((row.blueAlliance as { teamKeys: unknown[] }).teamKeys as unknown[]).map(String)
       : [];
     const ourAlliance = redKeys.includes(teamKey) ? "red" : blueKeys.includes(teamKey) ? "blue" : null;
+    const partnerKeys = (ourAlliance === "red" ? redKeys : ourAlliance === "blue" ? blueKeys : []).filter(
+      (key) => key !== teamKey,
+    );
+    const opponentKeys = ourAlliance === "red" ? blueKeys : ourAlliance === "blue" ? redKeys : [];
+    const strip = (key: string) => key.replace(/^frc/i, "");
     widgets.next_match = stamp("live", "next_match", {
       ...row,
       ourAlliance,
+      partners: partnerKeys.map(strip),
+      opponents: opponentKeys.map(strip),
       bumperCue:
         ourAlliance === "red"
           ? "Switch to RED bumpers"
