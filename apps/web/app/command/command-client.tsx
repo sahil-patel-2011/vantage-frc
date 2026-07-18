@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "../../components/app-shell";
+import { PageHeader } from "../../components/ui";
 import { countdownLabel } from "../dashboard/widgets";
 import type { CommandSnapshot } from "../../lib/command/types";
 
@@ -163,32 +164,34 @@ export default function CommandClient() {
   if (!orgId && !loading) {
     return (
       <main className="edc-page">
-        <header className="edc-header">
-          <div>
-            <p className="edc-kicker">Event Day Command</p>
-            <h1>Select a team workspace</h1>
-            <p>Open Home to choose your organization, then return here for the field-side command center.</p>
-          </div>
+        <PageHeader
+          breadcrumbs="Competition / Event Day"
+          title="Select a team workspace"
+          description="Open Home to choose your organization, then return here for the field-side command center."
+        >
           <a className="app-button" href="/dashboard">
             Go to Home
           </a>
-        </header>
+        </PageHeader>
       </main>
     );
   }
 
   return (
     <main className="edc-page">
-      <header className="edc-header">
-        <div>
-          <p className="edc-kicker">Event Day Command</p>
-          <h1>{snap?.eventName ?? "Competition day OS"}</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Competition / Event Day"
+        title={snap?.eventName ?? "Event Day Command"}
+        description={
+          <>
             {snap?.orgName ? `${snap.orgName}` : me.orgName ?? "Your team"}
             {snap?.teamNumber ? ` · Team ${snap.teamNumber}` : ""}
             {snap?.eventKey ? ` · ${snap.eventKey}` : ""}
-          </p>
-        </div>
+            {" — "}
+            Next match, scout gaps, and labeled model briefs. No demo data.
+          </>
+        }
+      >
         <div className="edc-header-actions">
           <span className="edc-live" aria-live="polite">
             {loading && !snap ? "Loading…" : `Updated ${snap ? new Date(snap.computedAt).toLocaleTimeString() : "—"}`}
@@ -202,7 +205,7 @@ export default function CommandClient() {
             Refresh
           </button>
         </div>
-      </header>
+      </PageHeader>
 
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
@@ -507,31 +510,26 @@ export default function CommandClient() {
         </article>
       </section>
 
-      <nav className="edc-actions" aria-label="One-tap deep links">
+      <nav className="edc-actions" aria-label="Primary competition links">
         <a href={snap?.links.strategy ?? "/strategy"}>
           <Icon name="bolt" />
           <strong>Strategy</strong>
-          <span>Full playbook & what-if</span>
+          <span>Playbook & prediction</span>
         </a>
         <a href={snap?.links.scouting ?? "/scouting"}>
           <Icon name="clipboard" />
           <strong>Scouting</strong>
-          <span>Forms & disagreements</span>
-        </a>
-        <a href={snap?.links.messages ?? "/messages"}>
-          <Icon name="chat" />
-          <strong>Messages</strong>
-          <span>Team channel & DMs</span>
-        </a>
-        <a href={snap?.links.chemistry ?? (orgId ? `/chemistry?orgId=${encodeURIComponent(orgId)}` : "/chemistry")}>
-          <Icon name="users" />
-          <strong>Chemistry</strong>
-          <span>Alliance fit scorer</span>
+          <span>Match & pit forms</span>
         </a>
         <a href={snap?.links.intel ?? "/intel"}>
           <Icon name="stats" />
           <strong>Intel</strong>
-          <span>Team dossiers</span>
+          <span>Team lookup</span>
+        </a>
+        <a href={snap?.links.chemistry ?? (orgId ? `/chemistry?orgId=${encodeURIComponent(orgId)}` : "/chemistry")}>
+          <Icon name="users" />
+          <strong>Chemistry</strong>
+          <span>Alliance fit</span>
         </a>
       </nav>
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { runWhatIf } from "@vantage/prediction-strategy";
+import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { strategyFixture } from "../../lib/marketing/strategy-demo";
 import type { StrategyView } from "../../lib/strategy/types";
 import { PickListWorkbench } from "./pick-list-workbench";
@@ -190,6 +191,7 @@ function ContributionColumn({
 
 function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }) {
   const [whatIfOn, setWhatIfOn] = useState(false);
+  const [showDeep, setShowDeep] = useState(false);
   const scenario = useMemo(() => {
     if (!whatIfOn) return null;
     return runWhatIf(view.prediction, [
@@ -203,12 +205,11 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
     view.compLevel === "qm"
       ? `Qualification ${view.matchNumber}`
       : `${view.compLevel.toUpperCase()} ${view.matchNumber}`;
-  const ourWin =
-    view.ourAlliance === "red" ? view.prediction.pRed : view.prediction.pBlue;
+  const ourWin = view.ourAlliance === "red" ? view.prediction.pRed : view.prediction.pBlue;
 
   return (
     <section className="strategy-workbench strategy-live-grid">
-      <article className="app-card strategy-primary soft-panel">
+      <Panel className="strategy-primary">
         <header>
           <div>
             <span className="app-badge good">Live inputs</span>
@@ -217,17 +218,16 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
           <small>{view.prediction.modelVersion}</small>
         </header>
         <p className="app-muted strategy-provenance">
-          <span className="app-badge setup">MODEL</span> Sources: {sourceLabel} · computed{" "}
-          {new Date(view.computedAt).toLocaleString()} · match {view.matchKey}
-          {view.eventName ? ` · ${view.eventName}` : ""} · you are {view.ourAlliance.toUpperCase()} (
-          {Math.round(ourWin * 100)}% win)
+          <span className="app-badge setup">MODEL</span> Sources: {sourceLabel} · you are{" "}
+          {view.ourAlliance.toUpperCase()} ({Math.round(ourWin * 100)}% win)
+          {view.eventName ? ` · ${view.eventName}` : ""}
         </p>
         <div className="strategy-probability">
           <strong>{Math.round(view.prediction.pRed * 100)}%</strong>
           <span>Red alliance</span>
           <small>
             {Math.round(view.prediction.confidenceLow * 100)}–{Math.round(view.prediction.confidenceHigh * 100)}%
-            confidence · effective sample {view.prediction.effectiveSampleSize}
+            confidence · sample {view.prediction.effectiveSampleSize}
           </small>
         </div>
         <div className="mini-probability">
@@ -259,50 +259,48 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
               <span>
                 <em className={`strategy-kind ${factor.kind}`}>{factor.kind.toUpperCase()}</em> {factor.name}
               </span>
-              <small>
-                {factor.evidence}
-                {factor.scoutEntryIds?.length
-                  ? ` · entries ${factor.scoutEntryIds
-                      .slice(0, 4)
-                      .map((id) => id.slice(0, 8))
-                      .join(", ")}`
-                  : ""}
-              </small>
+              <small>{factor.evidence}</small>
             </li>
           ))}
         </ul>
-        <h3>Alliance contribution (3v3)</h3>
-        <p className="app-muted strategy-contrib-note">
-          <span className="app-badge setup">MODEL</span> Leave-one-out Δp(red) and rating share — not TBA facts.
-        </p>
-        <div className="strategy-contrib-grid">
-          <ContributionColumn title="Red" rows={view.allianceBreakdown.red} />
-          <ContributionColumn title="Blue" rows={view.allianceBreakdown.blue} />
-        </div>
-        <h3>Cited match results</h3>
-        {view.allianceBreakdown.citations.length === 0 ? (
-          <p className="app-muted">No completed TBA match results for these alliances yet.</p>
-        ) : (
-          <ul className="strategy-citations">
-            {view.allianceBreakdown.citations.map((citation) => (
-              <li key={citation.matchKey}>
-                <span className="app-badge good">FACT</span>
-                <span>{citation.summary.replace(/^FACT\s*/, "")}</span>
-              </li>
-            ))}
-          </ul>
-        )}
         {view.prediction.caveats.map((item) => (
           <p className="app-muted" key={item}>
             {item}
           </p>
         ))}
-      </article>
+        <button type="button" className="text-button" onClick={() => setShowDeep((open) => !open)}>
+          {showDeep ? "Hide contribution & citations" : "Alliance contribution & citations"}
+        </button>
+        {showDeep ? (
+          <div className="strategy-deep">
+            <p className="app-muted strategy-contrib-note">
+              <span className="app-badge setup">MODEL</span> Leave-one-out Δp(red) and rating share — not TBA facts.
+            </p>
+            <div className="strategy-contrib-grid">
+              <ContributionColumn title="Red" rows={view.allianceBreakdown.red} />
+              <ContributionColumn title="Blue" rows={view.allianceBreakdown.blue} />
+            </div>
+            <h3>Cited match results</h3>
+            {view.allianceBreakdown.citations.length === 0 ? (
+              <p className="app-muted">No completed TBA match results for these alliances yet.</p>
+            ) : (
+              <ul className="strategy-citations">
+                {view.allianceBreakdown.citations.map((citation) => (
+                  <li key={citation.matchKey}>
+                    <span className="app-badge good">FACT</span>
+                    <span>{citation.summary.replace(/^FACT\s*/, "")}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+      </Panel>
 
-      <article className="app-card strategy-matchup-card soft-panel">
+      <Panel className="strategy-matchup-card">
         <header>
-          <h2>Alliance considerations</h2>
-          <span className="app-badge good">From metrics + scout</span>
+          <h2>Coach notes</h2>
+          <span className="app-badge good">Metrics + scout</span>
         </header>
         <ul className="strategy-considerations">
           {view.matchup.considerations.map((item) => (
@@ -329,95 +327,84 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
             ))}
           </ul>
         )}
-        <h3>Pick-list inputs</h3>
-        {view.pickListHints.length === 0 ? (
-          <p className="app-muted">
-            No pick-list ranks for these alliance teams yet. Build lists in the Pick lists tab or{" "}
-            <a href={`/intel?orgId=${encodeURIComponent(view.orgId)}`}>Intel</a>
-            {" · "}
-            <a href={`/dossier?orgId=${encodeURIComponent(view.orgId)}`}>Season dossier</a>.
-          </p>
-        ) : (
-          <ul className="strategy-pick-hints">
-            {view.pickListHints.map((hint) => (
-              <li key={`${hint.listName}-${hint.teamKey}-${hint.rank}`}>
-                <b>#{hint.rank}</b>
-                <span>
-                  {hint.teamKey.replace(/^frc/, "")} · {hint.listName}
-                  {hint.tier ? ` · ${hint.tier}` : ""}
-                </span>
-                {hint.notes ? <small>{hint.notes}</small> : null}
-              </li>
-            ))}
-          </ul>
-        )}
-        <h3>Scout provenance</h3>
-        {view.scoutProvenance.length === 0 ? (
-          <p className="app-muted">No org scout entries influenced this prediction yet.</p>
-        ) : (
+        {view.pickListHints.length > 0 ? (
           <>
-            <ul className="strategy-scout-provenance">
-              {view.scoutProvenance.slice(0, 24).map((ref) => (
-                <li key={`${ref.entryId}-${ref.influence}`}>
-                  <strong>{ref.teamKey.replace(/^frc/, "")}</strong>
+            <h3>Pick-list inputs</h3>
+            <ul className="strategy-pick-hints">
+              {view.pickListHints.map((hint) => (
+                <li key={`${hint.listName}-${hint.teamKey}-${hint.rank}`}>
+                  <b>#{hint.rank}</b>
                   <span>
-                    {ref.entryType} · {ref.influence}
-                    {ref.weight < 0.95 ? ` · weight ${Math.round(ref.weight * 100)}%` : ""}
+                    {hint.teamKey.replace(/^frc/, "")} · {hint.listName}
+                    {hint.tier ? ` · ${hint.tier}` : ""}
                   </span>
-                  <small>
-                    entry {ref.entryId.slice(0, 8)}
-                    {ref.matchKey ? ` · ${ref.matchKey}` : ""}
-                    {ref.scoutUserId ? ` · scout ${ref.scoutUserId.slice(0, 8)}` : ""}
-                  </small>
                 </li>
               ))}
             </ul>
-            {view.operations.some((op) => (op.qualityNotes?.length ?? 0) > 0) ? (
-              <div className="strategy-quality-notes">
-                <h4>Scout quality</h4>
-                <ul>
-                  {view.operations
-                    .flatMap((op) =>
-                      (op.qualityNotes ?? []).map((note) => ({ teamKey: op.teamKey, note })),
-                    )
-                    .slice(0, 8)
-                    .map(({ teamKey, note }) => (
-                      <li key={`${teamKey}-${note}`}>
-                        <small>
-                          {teamKey.replace(/^frc/, "")}: {note}
-                        </small>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            ) : null}
-            {view.operations.some((op) => (op.pitNotes?.length ?? 0) > 0) ? (
-              <div className="strategy-pit-notes">
-                <h4>Pit / match notes</h4>
-                <ul>
-                  {view.operations
-                    .filter((op) => (op.pitNotes?.length ?? 0) > 0)
-                    .map((op) => (
-                      <li key={op.teamKey}>
-                        <strong>{op.teamKey.replace(/^frc/, "")}</strong>
-                        <small>{op.pitNotes!.slice(0, 2).join(" · ")}</small>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            ) : null}
           </>
+        ) : (
+          <p className="app-muted">
+            No pick ranks yet. Use the Pick lists tab or{" "}
+            <a href={`/intel?orgId=${encodeURIComponent(view.orgId)}`}>Intel</a>.
+          </p>
         )}
-      </article>
+        {view.scoutProvenance.length > 0 || view.operations.some((op) => (op.pitNotes?.length ?? 0) > 0) ? (
+          <details className="strategy-provenance-details">
+            <summary>Scout provenance & pit notes</summary>
+            {view.scoutProvenance.length === 0 ? (
+              <p className="app-muted">No org scout entries influenced this prediction yet.</p>
+            ) : (
+              <ul className="strategy-scout-provenance">
+                {view.scoutProvenance.slice(0, 12).map((ref) => (
+                  <li key={`${ref.entryId}-${ref.influence}`}>
+                    <strong>{ref.teamKey.replace(/^frc/, "")}</strong>
+                    <span>
+                      {ref.entryType} · {ref.influence}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {view.operations
+              .filter((op) => (op.pitNotes?.length ?? 0) > 0)
+              .map((op) => (
+                <p key={op.teamKey} className="app-muted">
+                  <strong>{op.teamKey.replace(/^frc/, "")}</strong>: {op.pitNotes!.slice(0, 2).join(" · ")}
+                </p>
+              ))}
+          </details>
+        ) : null}
+      </Panel>
 
-      <article className="app-card what-if-card soft-panel">
+      <Panel className="playbook-card">
         <header>
-          <h2>What-if scenario</h2>
-          <span className="app-badge setup">Assumptions</span>
+          <h2>Alliance playbook</h2>
+          <span className="app-badge good">From live prediction</span>
+        </header>
+        <ol>
+          {view.playbook.priorities.map((item, index) => (
+            <li key={item}>
+              <b>{index + 1}</b>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ol>
+        <h3>Role checkpoints</h3>
+        <div className="checkpoint-row">
+          {view.playbook.checkpoints.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel className="what-if-card">
+        <header>
+          <h2>What-if</h2>
+          <span className="app-badge setup">Optional assumptions</span>
         </header>
         {!whatIfOn ? (
           <div className="strategy-empty-block">
-            <p>Optional. What-if deltas are assumptions layered on the live prediction — not scouting observations.</p>
+            <p className="app-muted">Layer assumption deltas on the live prediction — not scouting observations.</p>
             <button type="button" className="app-button secondary" onClick={() => setWhatIfOn(true)}>
               Run assumption scenario
             </button>
@@ -447,28 +434,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
             </button>
           </>
         ) : null}
-      </article>
-
-      <article className="app-card playbook-card soft-panel">
-        <header>
-          <h2>Alliance playbook</h2>
-          <span className="app-badge good">From live prediction</span>
-        </header>
-        <ol>
-          {view.playbook.priorities.map((item, index) => (
-            <li key={item}>
-              <b>{index + 1}</b>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ol>
-        <h3>Role checkpoints</h3>
-        <div className="checkpoint-row">
-          {view.playbook.checkpoints.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-      </article>
+      </Panel>
     </section>
   );
 }
@@ -562,15 +528,11 @@ export default function StrategyClient() {
 
   return (
     <main className="module-page strategy-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Competition / Strategy</span>
-          <h1>Win / Loss + Strategy</h1>
-          <p>
-            Predictions and pick desks run only on synced TBA/Statbotics metrics and your scout notes. Vantage does not
-            invent win probability, EPA, ranks, or confidence.
-          </p>
-        </div>
+      <PageHeader
+        breadcrumbs="Competition / Strategy"
+        title="Strategy & AI"
+        description="Win/loss and pick desks run only on synced TBA/Statbotics metrics and your scout notes — never invented."
+      >
         <div className="strategy-header-actions">
           {orgId ? (
             <a className="app-button secondary" href={`/strategy/draft?orgId=${encodeURIComponent(orgId)}`}>
@@ -587,26 +549,17 @@ export default function StrategyClient() {
             <span className="app-badge good">Live inputs</span>
           ) : null}
         </div>
-      </header>
+      </PageHeader>
 
-      <nav className="strategy-tabs" aria-label="Strategy sections">
-        <button
-          type="button"
-          className={tab === "matchup" ? "active" : undefined}
-          aria-selected={tab === "matchup"}
-          onClick={() => setTab("matchup")}
-        >
-          Matchup
-        </button>
-        <button
-          type="button"
-          className={tab === "picks" ? "active" : undefined}
-          aria-selected={tab === "picks"}
-          onClick={() => setTab("picks")}
-        >
-          Pick lists
-        </button>
-      </nav>
+      <TabBar
+        aria-label="Strategy sections"
+        value={tab}
+        onChange={(id) => setTab(id as StrategyTab)}
+        tabs={[
+          { id: "matchup", label: "Matchup" },
+          { id: "picks", label: "Pick lists" },
+        ]}
+      />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -621,29 +574,26 @@ export default function StrategyClient() {
       ) : demo ? (
         <DemoPanel onHide={() => setDemo(false)} />
       ) : fetchFailed ? (
-        <section className="app-card strategy-empty-panel soft-panel">
-          <h2>Could not load strategy — try again</h2>
-          <p className="app-muted">A network or server issue prevented loading your strategy context.</p>
+        <EmptyState
+          title="Could not load strategy"
+          description="A network or server issue prevented loading your strategy context."
+        >
           <button type="button" className="app-button secondary" onClick={loadStrategy}>
             Retry
           </button>
-        </section>
+        </EmptyState>
       ) : view == null ? (
-        <section className="app-card strategy-empty-panel soft-panel">
-          <h2>Loading strategy context…</h2>
-          <p className="app-muted">Checking workspace, event, and TBA/reference metrics.</p>
-        </section>
+        <EmptyState title="Loading…" description="Checking workspace, event, and TBA/reference metrics." aria-busy />
       ) : view.status === "live" ? (
         <LivePanel view={view} />
       ) : (
         <section className="strategy-setup" aria-label="Strategy setup">
-          <article className="app-card strategy-empty-panel soft-panel">
-            <span className="app-badge setup">{view.status === "empty" ? "No prediction yet" : "Setup required"}</span>
-            <h2>{view.message}</h2>
-            <p className="app-muted">
-              No fabricated win probability is shown until TBA/Statbotics (and optional scouting) inputs are available for
-              a real match. You can still open Pick lists once an event is selected.
-            </p>
+          <EmptyState
+            badge={view.status === "empty" ? "No prediction yet" : "Setup required"}
+            badgeTone="setup"
+            title={view.message}
+            description="No fabricated win probability until TBA/Statbotics (and optional scouting) inputs exist for a real match. Pick lists still work once an event is selected."
+          >
             <ol className="strategy-setup-steps">
               {view.steps.map((step) => (
                 <li key={step.id} className={step.done ? "done" : undefined}>
@@ -655,16 +605,16 @@ export default function StrategyClient() {
                 </li>
               ))}
             </ol>
-          </article>
-          <aside className="app-card strategy-demo-optin soft-panel">
-            <h2>Try demo scenario</h2>
-            <p>
-              Optional illustrative fixture only. Labeled non-factual — never used as your default Stats/Strategy view.
+          </EmptyState>
+          <Panel className="strategy-demo-optin" style={{ minHeight: "auto" }}>
+            <h2 style={{ marginTop: 0 }}>Try demo scenario</h2>
+            <p className="app-muted">
+              Optional illustrative fixture only. Labeled non-factual — never your default Strategy view.
             </p>
             <button type="button" className="app-button secondary" onClick={() => setDemo(true)}>
               Try demo scenario
             </button>
-          </aside>
+          </Panel>
         </section>
       )}
     </main>
