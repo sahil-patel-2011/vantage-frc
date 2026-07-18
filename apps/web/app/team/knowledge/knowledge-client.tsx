@@ -46,6 +46,10 @@ export default function KnowledgeClient() {
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     if (urlOrg) params.set("orgId", urlOrg);
+    // Soft-UI hub redirects used to emit revisionId; wiki API expects pageId.
+    const revisionId = params.get("revisionId");
+    if (revisionId && !params.get("pageId")) params.set("pageId", revisionId);
+    params.delete("revisionId");
     if (opts?.pageId) params.set("pageId", opts.pageId);
     if (opts?.page) params.set("page", opts.page);
     if (opts?.q) params.set("q", opts.q);
