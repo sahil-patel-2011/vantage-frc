@@ -31,8 +31,6 @@ const PUBLIC_PREFIXES = [
   "/api/strategy/draft/public",
   "/api/partner-placements",
   "/api/partner-assets",
-  "/api/support",
-  "/support",
   // Opt-in email one-click unsubscribe (token in body; no session).
   "/api/notifications/unsubscribe",
   // Vercel cron jobs authenticate via CRON_SECRET (Bearer / x-cron-secret).
@@ -64,10 +62,26 @@ function isPublicCalendarFeed(pathname: string) {
   return /^\/api\/calendar\/feed\/[A-Za-z0-9_-]{16,100}$/.test(pathname);
 }
 
+/**
+ * Public partner storefronts live at `/support/{uuid}` (and matching API).
+ * Authenticated Soft-UI tickets use exact `/support` — keep that gated.
+ */
+function isPublicPartnerStorefront(pathname: string) {
+  return (
+    /^\/support\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      pathname,
+    ) ||
+    /^\/api\/support\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      pathname,
+    )
+  );
+}
+
 function isPublic(pathname: string) {
   return (
     PUBLIC_PAGES.has(pathname) ||
     isPublicCalendarFeed(pathname) ||
+    isPublicPartnerStorefront(pathname) ||
     PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
     PUBLIC_FILE.test(pathname)
   );

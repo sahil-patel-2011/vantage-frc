@@ -278,7 +278,8 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
     pathname.startsWith("/admin") ||
     pathname.startsWith("/security") ||
     pathname.startsWith("/notifications") ||
-    pathname.startsWith("/help");
+    pathname.startsWith("/help") ||
+    pathname === "/support";
 
   const title =
     navTitleForPath(pathname) ??
@@ -288,7 +289,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
         ? "Notifications"
         : pathname.startsWith("/admin")
           ? "Admin"
-          : pathname.startsWith("/help")
+          : pathname.startsWith("/help") || pathname === "/support"
             ? "Help & Support"
             : pathname.startsWith("/security")
               ? "Security"
@@ -429,6 +430,9 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                 </div>
                 <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
                   Account settings
+                </a>
+                <a role="menuitem" href="/support" onClick={() => setAccountMenuOpen(false)}>
+                  Help &amp; Support
                 </a>
                 <a role="menuitem" href="/account?tab=notifications" onClick={() => setAccountMenuOpen(false)}>
                   Notification &amp; email prefs

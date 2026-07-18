@@ -214,7 +214,7 @@ export const organizations = pgTable("organizations", {
   createdAt: timestamps.createdAt,
 });
 
-/** Org-scoped sponsorship/grant background — mission, history, demographics, achievements. */
+/** Org-scoped sponsorship/grant background ΓÇö mission, history, demographics, achievements. */
 export const teamBackgroundProfile = pgTable("team_background_profile", {
   orgId: uuid("org_id")
     .primaryKey()
@@ -2371,7 +2371,7 @@ export const dashboards = pgTable(
   ],
 );
 
-/** Human team channel or DM ΓÇö not Vantage AI agent threads. */
+/** Human team channel or DM ╬ô├ç├╢ not Vantage AI agent threads. */
 export const orgConversations = pgTable(
   "org_conversations",
   {
@@ -2887,7 +2887,7 @@ export const grantApplicationItems = pgTable(
   (table) => [index("grant_application_items_application_idx").on(table.applicationId, table.sortOrder)],
 );
 
-/** Guided grant narratives (need/impact/budget/timeline) — org-isolated via RLS. */
+/** Guided grant narratives (need/impact/budget/timeline) ΓÇö org-isolated via RLS. */
 export const grantWritingDrafts = pgTable(
   "grant_writing_drafts",
   {
@@ -2923,7 +2923,7 @@ export const grantWritingDrafts = pgTable(
   ],
 );
 
-/** Sponsorship value-prop one-pagers — who we are / what we do / ask / sponsor gets. */
+/** Sponsorship value-prop one-pagers ΓÇö who we are / what we do / ask / sponsor gets. */
 export const sponsorshipValueProps = pgTable(
   "sponsorship_value_props",
   {
@@ -3075,7 +3075,7 @@ export const dutyAssignments = pgTable(
   ],
 );
 
-/** Event logistics — trips, lodging, checklists, contacts, on-duty mentors. */
+/** Event logistics ΓÇö trips, lodging, checklists, contacts, on-duty mentors. */
 export const logisticsTrips = pgTable(
   "logistics_trips",
   {
@@ -3216,4 +3216,28 @@ export const logisticsTravelLegs = pgTable(
   },
   (table) => [index("logistics_travel_legs_trip_idx").on(table.orgId, table.tripId, table.startsAt)],
 );
-
+/** Member → platform owner support tickets (Soft-UI /support; triage at /admin/support). */
+export const supportTickets = pgTable(
+  "support_tickets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    status: text("status").notNull().default("open"),
+    adminResponse: text("admin_response"),
+    adminUserId: uuid("admin_user_id").references(() => users.id, { onDelete: "set null" }),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("support_tickets_user_created_idx").on(table.userId, table.createdAt),
+    index("support_tickets_org_created_idx").on(table.orgId, table.createdAt),
+    index("support_tickets_status_created_idx").on(table.status, table.createdAt),
+  ],
+);
