@@ -133,6 +133,13 @@ export function buildOnboardingChecklistSteps(signals: OnboardingSignals): Onboa
       href: `/team/data${q}`,
     },
     {
+      key: "next_match",
+      label: "Know your next match",
+      detail: "Bumper color, start time, and travel cues on My Day",
+      done: Boolean(signals.knowsNextMatch),
+      href: `/my-day${q}`,
+    },
+    {
       key: "scouting",
       label: "Scout",
       detail: "Starter match and pit forms",
