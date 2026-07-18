@@ -230,6 +230,12 @@ export async function POST(request: Request) {
         } catch {
           // FMEA unavailable — continue without invented risks
         }
+        const matchKey = body.matchKey ? String(body.matchKey).trim() : "";
+        const seasonYearRaw = body.seasonYear != null ? Number(body.seasonYear) : NaN;
+        const seasonYear =
+          Number.isInteger(seasonYearRaw) && seasonYearRaw >= 1992 && seasonYearRaw <= 2100
+            ? seasonYearRaw
+            : undefined;
         return repository.createBriefJob({
           orgId,
           userId: session.user.id,
@@ -240,6 +246,11 @@ export async function POST(request: Request) {
           sources,
           platform: (body.platform ?? "mock") as "onshape" | "fusion360" | "mock",
           executionMode: (body.executionMode ?? "hosted") as "hosted" | "local",
+          selected: {
+            ...(teamKey ? { teamKey } : {}),
+            ...(matchKey ? { matchKey } : {}),
+          },
+          seasonYear,
         });
       }
       if (action === "confirm")
