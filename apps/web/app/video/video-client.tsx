@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AiInsightPanel } from "../../components/ai-insight-panel";
 import {
   fmtTimestamp,
   NOTE_TAGS,
@@ -424,6 +425,13 @@ export default function VideoClient() {
           </div>
         )}
       </div>
+
+      <AiInsightPanel
+        orgId={orgId}
+        kind="video_scout_summary"
+        title="Video scout summary"
+        description="AI rollup of every timestamped note — recurring failures, defense patterns, and the deepest-reviewed matches."
+      />
     </main>
   );
 }

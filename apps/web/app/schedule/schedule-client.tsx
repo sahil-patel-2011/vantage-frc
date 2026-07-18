@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AiInsightPanel } from "../../components/ai-insight-panel";
 import {
   allianceOf,
   compLevelLabel,
@@ -255,6 +256,13 @@ export default function ScheduleClient() {
           </section>
         ))
       )}
+
+      <AiInsightPanel
+        orgId={view.context.orgId ?? ""}
+        kind="model_accuracy"
+        title="Prediction accuracy"
+        description="How well the strategy model has called played matches — accuracy, calibration, and the biggest miss."
+      />
     </main>
   );
 }
