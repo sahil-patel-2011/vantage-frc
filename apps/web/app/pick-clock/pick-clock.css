@@ -1,8 +1,29 @@
 /* Pick Clock — Soft-UI, glanceable under the 45s alliance selection timer.
-   Prefixed .pck-* ; theme via --app-* / --soft-* tokens. */
+   Prefixed .pck-* ; theme via --app-* / --soft-* tokens. Never DEMO picks. */
+
+.pck-workbench {
+  display: grid;
+  gap: 16px;
+}
 
 .pck-page .app-page-header {
   margin-bottom: 14px;
+}
+
+.pck-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.pck-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .pck-header-actions,
@@ -13,6 +34,44 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.pck-empty {
+  margin: 0;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px dashed var(--soft-line, #d7dde3);
+}
+
+.pck-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pck-kpis article {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card, #fff);
+  box-shadow: var(--soft-shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
+}
+
+.pck-kpis strong {
+  font: 700 22px/1.1 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  color: var(--soft-ink, #132033);
+  letter-spacing: -0.02em;
+}
+
+.pck-kpis small {
+  color: var(--soft-muted, #5a6578);
+  font: 600 12px var(--font-source-sans), ui-sans-serif;
+}
+
+.pck-panel {
+  min-height: auto;
 }
 
 .pck-clock {
@@ -236,40 +295,47 @@
 }
 
 .pck-next-actions {
-  margin: 0 0 14px;
+  margin: 0;
 }
 
-.pck-next-list {
-  margin: 8px 0 0;
-  padding: 0;
+.pck-setup-steps {
   list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
-.pck-next-list li {
+.pck-setup-steps li {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--soft-line, #d7dde3);
 }
 
-.pck-next-list li div {
-  display: grid;
-  gap: 2px;
-  min-width: min(100%, 220px);
+.pck-setup-steps li:last-child {
+  border-bottom: 0;
 }
 
-.pck-next-list li span {
-  font-size: 13px;
-  color: var(--app-muted);
+.pck-setup-steps p {
+  margin: 4px 0 0;
 }
 
-.pck-setup-steps {
-  width: 100%;
-  text-align: left;
-  margin: 12px 0;
+@media (max-width: 800px) {
+  .pck-heading {
+    flex-direction: column;
+  }
+
+  .pck-related {
+    justify-content: flex-start;
+  }
+
+  .pck-kpis {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
