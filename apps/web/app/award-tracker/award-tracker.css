@@ -1,0 +1,13 @@
+/* Soft-UI Award Tracker — .award-tracker-* + shared Soft-UI tokens. Never DEMO win rates. */
+.award-tracker-page{display:grid;gap:16px}
+.award-tracker-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.award-tracker-related{display:flex;flex-wrap:wrap;gap:8px}
+.award-tracker-next-actions{margin:0}
+.award-tracker-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.award-tracker-stats strong{font-size:1.5rem}
+.award-tracker-layout{display:grid;gap:16px}
+.award-tracker-tip{margin:0}
+@media(max-width:900px){
+  .award-tracker-header-actions{justify-content:flex-start}
+  .award-tracker-next-actions li{flex-direction:column;align-items:stretch}
+}

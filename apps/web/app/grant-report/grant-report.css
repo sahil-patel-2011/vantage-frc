@@ -1,0 +1,13 @@
+/* Soft-UI Grant Report — .grant-report-* + shared Soft-UI tokens. Never DEMO grant dollars. */
+.grant-report-page{display:grid;gap:16px}
+.grant-report-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.grant-report-related{display:flex;flex-wrap:wrap;gap:8px}
+.grant-report-next-actions{margin:0}
+.grant-report-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.grant-report-stats strong{font-size:1.5rem}
+.grant-report-layout{display:grid;gap:16px}
+.grant-report-tip{margin:0}
+@media(max-width:900px){
+  .grant-report-header-actions{justify-content:flex-start}
+  .grant-report-next-actions li{flex-direction:column;align-items:stretch}
+}
