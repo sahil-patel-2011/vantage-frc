@@ -8,7 +8,10 @@ export const BUSINESS_RELATED_LINKS = [
   { id: "sponsorship", label: "Sponsorship one-pager", kind: "hub" as const, tab: "sponsorship" },
   { id: "orders", label: "Orders", kind: "hub" as const, tab: "orders" },
   { id: "grants", label: "Grants", kind: "hub" as const, tab: "grants" },
+  { id: "evidence", label: "Awards & evidence", kind: "hub" as const, tab: "evidence" },
   { id: "fundraisers", label: "Fundraisers", kind: "path" as const, path: "/fundraisers" },
+  { id: "impact", label: "Community Impact", kind: "path" as const, path: "/impact" },
+  { id: "awards", label: "Awards workbench", kind: "path" as const, path: "/team/awards" },
   { id: "writer", label: "Grant & sponsor writer", kind: "path" as const, path: "/writer" },
   { id: "grant-workbench", label: "Grant writing workbench", kind: "path" as const, path: "/team/grants" },
   { id: "finance-ai", label: "Finance-in-AI", kind: "path" as const, path: "/ai?tab=finance" },
@@ -75,6 +78,24 @@ export const ORDERS_RELATED_INCLUDE: BusinessRelatedId[] = [
   "budget",
   "grants",
   "finance-ai",
+];
+
+/** Community Impact Soft-UI strip (`/impact`) — awards, grants, sponsors. */
+export const IMPACT_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "awards",
+  "evidence",
+  "grants",
+  "sponsors",
+  "grant-workbench",
+];
+
+/** Awards workbench Soft-UI strip (`/team/awards`) — impact, grants, sponsors. */
+export const AWARDS_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "impact",
+  "evidence",
+  "grants",
+  "sponsors",
+  "writer",
 ];
 
 /** Cross-links for Business Soft-UI (never DEMO placeholders). */
