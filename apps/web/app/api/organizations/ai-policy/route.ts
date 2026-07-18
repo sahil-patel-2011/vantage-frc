@@ -109,7 +109,41 @@ export async function POST(request: Request) {
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
 
-    const allowedFeatures = normalizeStringList(body.allowedFeatures);
+    
+    if (body.financeInAiOnly === true) {
+      const enabled = Boolean(body.financeInAiEnabled);
+      const ackAccepted = Boolean(body.financeInAiAckAccepted);
+      if (enabled && !ackAccepted) throw new Error("Finance-in-AI requires risk acknowledgement");
+      await withRls({ userId: current.user.id, orgId }, async (client) => {
+        await assertOrgCapability(client, orgId, "manage_api_keys");
+        const before = (await client.query(`SELECT * FROM org_ai_policies WHERE org_id=$1`, [orgId])).rows[0] ?? null;
+        await client.query(
+          `INSERT INTO org_ai_policies(
+             org_id, finance_in_ai_enabled, finance_in_ai_accepted_at, finance_in_ai_accepted_by,
+             finance_in_ai_ack_version, updated_by
+           ) VALUES (
+             $1, $2, CASE WHEN $2 THEN now() ELSE NULL END, CASE WHEN $2 THEN $3::uuid ELSE NULL END,
+             CASE WHEN $2 THEN $4 ELSE NULL END, $3
+           )
+           ON CONFLICT (org_id) DO UPDATE SET
+             finance_in_ai_enabled=EXCLUDED.finance_in_ai_enabled,
+             finance_in_ai_accepted_at=EXCLUDED.finance_in_ai_accepted_at,
+             finance_in_ai_accepted_by=EXCLUDED.finance_in_ai_accepted_by,
+             finance_in_ai_ack_version=EXCLUDED.finance_in_ai_ack_version,
+             updated_by=EXCLUDED.updated_by,
+             updated_at=now()`,
+          [orgId, enabled, current.user.id, FINANCE_IN_AI_ACK_VERSION],
+        );
+        await client.query(
+          `INSERT INTO org_ai_policy_audit(org_id, actor_user_id, action, before, after)
+           VALUES ($1,$2,'ai_policy.finance_in_ai',$3::jsonb,$4::jsonb)`,
+          [orgId, current.user.id, JSON.stringify(before), JSON.stringify({ financeInAiEnabled: enabled, ackVersion: FINANCE_IN_AI_ACK_VERSION })],
+        );
+      });
+      return Response.json({ success: true });
+    }
+
+const allowedFeatures = normalizeStringList(body.allowedFeatures);
     const allowedTools = normalizeStringList(body.allowedTools);
     const requireApprovalForFeatures = normalizeStringList(body.requireApprovalForFeatures);
     const spendAlertThresholds = normalizeThresholds(body.spendAlertThresholds);
