@@ -10,51 +10,35 @@ import {
 export const metadata: Metadata = {
   title: "Showcase — Vantage",
   description:
-    "Curated Vantage workflows: FRC Assistant, strategy, CAD, FRC code review, Event Day, My Day, knowledge, scouting trust, logistics, sponsorship, and team operations.",
+    "Vantage product showcase: scouting trust, Event Day and My Day, kickoff to CAD, logistics, sponsorship and grants, knowledge, offline QR, and grounded AI.",
   alternates: { canonical: "/features" },
 };
 
-const support = [
-  [
-    "Available",
-    "Scout once — feed the whole loop",
-    "Offline match/pit forms sync into attributed facts that weight predictions, playbooks, pick lists, live boards, and FRC Assistant context.",
-  ],
-  [
-    "Shipping",
-    "Scouting trust before pick lists",
-    "Disagreement review, coverage gaps, and scout reliability signals so strategy weighs evidence quality—not just entry count.",
-  ],
-  [
-    "Available",
-    "Event Day + My Day",
-    "Shared event command for next match and readiness, plus personal shifts, todos, and acknowledgements for what you own today.",
-  ],
-  [
-    "Available",
-    "Team knowledge & wiki",
-    "Procedures and season notes stay org-scoped so the Assistant and humans read the same durable context.",
-  ],
-  [
-    "Available",
-    "CAD ↔ strategy link",
-    "Strategy constraints can become approval-gated CAD work—build changes keep the match reason that created them.",
-  ],
-  [
-    "Shipping",
-    "Logistics & sponsorship",
-    "Travel/lodging/packing beside the calendar, plus sponsor pipeline and ask drafts with honest AI-assist labels.",
-  ],
-  [
-    "Setup required",
-    "Combine live event and team intelligence",
-    "TBA and Statbotics-backed caches, freshness state, global team lookup, source-linked research, comparisons, and pick evidence.",
-  ],
-  [
-    "Available",
-    "Keep team + private chat unified",
-    "Org team channel and member DMs stay inside Vantage with the same membership boundary—no Discord/Slack disconnect for day-of ops.",
-  ],
+const surfaces = [
+  {
+    title: "Scouting trust & offline QR",
+    copy: "Offline match/pit forms, QR handoffs, disagreement review, coverage gaps, and reliability signals so strategy weighs evidence quality.",
+  },
+  {
+    title: "Event Day + My Day",
+    copy: "Shared command for next match and readiness, plus personal shifts, todos, and acknowledgements for what you own today.",
+  },
+  {
+    title: "Kickoff → CAD",
+    copy: "Season constraints become approval-gated Onshape or Fusion work so build changes keep the match reason that created them.",
+  },
+  {
+    title: "Logistics",
+    copy: "Travel legs, lodging, packing, and duties beside the competition calendar—not a parallel spreadsheet season.",
+  },
+  {
+    title: "Sponsorship & grants",
+    copy: "Sponsor pipeline, ask drafts, and grant writing assist with honest AI labels next to impact proof.",
+  },
+  {
+    title: "Team knowledge",
+    copy: "Org-scoped wiki and season notes the Assistant can read—durable procedures, not a lost Google Doc.",
+  },
 ];
 
 export default function FeaturesPage() {
@@ -62,39 +46,45 @@ export default function FeaturesPage() {
     <div className="marketing-site marketing-v2 marketing-dense">
       <SiteHeader />
       <main className="route-page">
-        <header className="route-hero">
-          <div className="showcase-kicker">
-            <span className="brand-chip">Vantage</span>
-            <span className="section-id">PRODUCT SHOWCASE</span>
-          </div>
-          <h1>Assistant and engines. One competition context.</h1>
+        <header className="route-hero brand-route-hero">
+          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
+          <h1>Full-season operations. One competition context.</h1>
           <p>
-            Marketing previews use labeled deterministic fixtures. Authenticated Strategy and the FRC Assistant stay
-            empty until real match/metrics—and scout sync when you have it—exist. Connector states stay explicit:
-            Available, Setup required, or Planned.
+            From trusted scouting and day-of command through kickoff CAD, logistics, sponsors, knowledge, and
+            grounded AI—previews use labeled fixtures; live product stays empty until real data exists.
           </p>
+          <div className="route-hero-actions">
+            <a className="button primary" href="/#waitlist">
+              Join the waitlist
+            </a>
+            <a className="button secondary" href="/pricing">
+              Pricing
+            </a>
+          </div>
         </header>
+
         <section className="gallery-feature">
           <div>
-            <span className="app-badge good">Available</span>
-            <h2>FRC Assistant</h2>
+            <small className="section-id">FRC ASSISTANT</small>
+            <h2>Competition ops and intel in one grounded thread.</h2>
             <p>
-              Competition ops and intel in one grounded thread: strategy, matchups, opponent history, and robot
-              capabilities—fed by scouting and public metrics with provenance intact.
+              Strategy, matchups, opponent history, and robot capabilities—fed by scouting and public metrics with
+              provenance intact. Empty workspace stays empty.
             </p>
             <a className="text-link" href="/features/strategy#frc-assistant">
-              Open Assistant &amp; Strategy detail →
+              Open Assistant &amp; Strategy →
             </a>
           </div>
           <AssistantPreview />
         </section>
+
         <section className="gallery-feature reverse">
           <div>
-            <span className="app-badge good">Available</span>
-            <h2>Win / Loss + Strategy Engine</h2>
+            <small className="section-id">STRATEGY</small>
+            <h2>Inspectable win/loss, then a playbook the drive team can use.</h2>
             <p>
-              Inspect probabilities, confidence, factors, what-if assumptions, playbook priorities, and post-match
-              accuracy—weighted with your synced scout observations.
+              Probabilities, confidence, factors, what-if assumptions, and pick lists weighted with your synced scout
+              observations—not volume alone.
             </p>
             <a className="text-link" href="/features/strategy">
               Open strategy detail →
@@ -102,24 +92,29 @@ export default function FeaturesPage() {
           </div>
           <StrategyPreview />
         </section>
+
         <section className="gallery-feature">
           <div>
-            <span className="app-badge setup">Setup required</span>
-            <h2>AI CAD Builder</h2>
-            <p>Move from a confirmed brief to approval-gated Onshape or Fusion work and verified geometry artifacts.</p>
+            <small className="section-id">CAD</small>
+            <h2>Confirm the brief before geometry changes.</h2>
+            <p>
+              Kickoff and strategy constraints become an action plan with human approval on each step—Onshape OAuth
+              or a paired Fusion/terminal relay.
+            </p>
             <a className="text-link" href="/features/cad">
               Open CAD detail →
             </a>
           </div>
           <CadPreview />
         </section>
+
         <section className="gallery-feature reverse">
           <div>
-            <span className="app-badge good">Available</span>
-            <h2>FRC Code Coach</h2>
+            <small className="section-id">CODE</small>
+            <h2>Flag robot-code risk. Teach the safer habit.</h2>
             <p>
-              Flag robot-specific risk, explain why it matters, teach safer WPILib habits, and prepare human-approved
-              unified diffs—without claiming autonomous deployment.
+              Repository-aware WPILib reviews return human-approved diffs. Vantage never claims to deploy code to a
+              robot.
             </p>
             <a className="text-link" href="/features/code">
               Open code detail →
@@ -127,25 +122,38 @@ export default function FeaturesPage() {
           </div>
           <CodePreview />
         </section>
+
         <section className="supporting-gallery" id="supporting-ops">
           <header>
-            <span className="section-id">SUPPORTING OPERATIONS</span>
-            <h2>Scouting is the feed—not a sideshow.</h2>
+            <span className="section-id">AROUND THE ENGINES</span>
+            <h2>The rest of the season, in the same org.</h2>
           </header>
           <div>
-            {support.map(([status, title, copy]) => (
-              <article key={title}>
-                <span
-                  className={`app-badge ${
-                    status === "Available" ? "good" : status === "Shipping" ? "demo" : "setup"
-                  }`}
-                >
-                  {status}
-                </span>
-                <h3>{title}</h3>
-                <p>{copy}</p>
+            {surfaces.map((item) => (
+              <article key={item.title}>
+                <h3>{item.title}</h3>
+                <p>{item.copy}</p>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="pricing-preview">
+          <div>
+            <span className="section-id">NEXT</span>
+            <h2>Join the waitlist or review raised plans.</h2>
+            <p>
+              Free competition core with BYOK. Paid Individual and Team plans include managed API allowance at list
+              rates. Legal: <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
+            </p>
+          </div>
+          <div className="pricing-preview-actions">
+            <a className="button primary" href="/#waitlist">
+              Join waitlist
+            </a>
+            <a className="button secondary" href="/pricing">
+              Pricing
+            </a>
           </div>
         </section>
       </main>

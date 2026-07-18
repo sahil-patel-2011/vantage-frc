@@ -1,290 +1,91 @@
-import type { ReactNode } from "react";
 import { WaitlistForm } from "../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import {
-  AssistantPreview,
   CadPreview,
-  CodePreview,
-  DashboardPreview,
-  DisplayPreview,
   ScoutPreview,
   StrategyPreview,
-  TeamOpsPreview,
-  WorkflowStrip,
 } from "../components/marketing/product-demos";
 import { FAQ } from "../components/marketing/faq";
 
-const capIcons: Record<string, ReactNode> = {
-  clipboard: (
-    <>
-      <rect x="6" y="4" width="12" height="17" rx="2" />
-      <path d="M9.5 4h5v2.5h-5z" />
-      <path d="M9 11.5h6M9 15h4" />
-    </>
-  ),
-  activity: <path d="M3 12h4l2.5 6 4-15 2.5 9H21" />,
-  chat: (
-    <>
-      <path d="M5 6h14v9H9l-4 4V6z" />
-      <circle cx="9" cy="10.5" r=".8" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="10.5" r=".8" fill="currentColor" stroke="none" />
-      <circle cx="15" cy="10.5" r=".8" fill="currentColor" stroke="none" />
-    </>
-  ),
-  target: (
-    <>
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="12" cy="12" r="3.3" />
-    </>
-  ),
-  flag: (
-    <>
-      <path d="M6 21V4" />
-      <path d="M6 5h11l-2 3 2 3H6" />
-    </>
-  ),
-  link: (
-    <>
-      <path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5.93" />
-      <path d="M14 11a5 5 0 0 0-7.07 0L5.52 12.4a5 5 0 0 0 7.07 7.07L14 18.07" />
-    </>
-  ),
-  cube: (
-    <>
-      <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" />
-      <path d="M12 12.2 4.3 7.8M12 12.2l7.7-4.4M12 12.2V21" />
-    </>
-  ),
-  code: <path d="M9 8.5 5 12l4 3.5M15 8.5 19 12l-4 3.5" />,
-  monitor: (
-    <>
-      <rect x="3" y="4.5" width="18" height="12" rx="1.6" />
-      <path d="M9 20h6M12 16.5V20" />
-    </>
-  ),
-  grid: (
-    <>
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </>
-  ),
-  users: (
-    <>
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3 19a6 6 0 0 1 12 0M16 8a3 3 0 1 1 0 6m2 5a5 5 0 0 0-3-4.5" />
-    </>
-  ),
-  clock: (
-    <>
-      <circle cx="12" cy="12" r="8" />
-      <path d="M12 8v4l3 2" />
-    </>
-  ),
-  inspect: (
-    <>
-      <rect x="6" y="4" width="12" height="17" rx="2" />
-      <path d="M9.5 4h5v2.5h-5z" />
-      <path d="m9 13 2 2 4-4" />
-    </>
-  ),
-  stopwatch: (
-    <>
-      <circle cx="12" cy="13" r="7" />
-      <path d="M12 13V9.5" />
-      <path d="M9.5 3h5" />
-      <path d="m18.2 6.8 1.3-1.3" />
-    </>
-  ),
-  checklist: (
-    <>
-      <path d="M9 5.5h9M9 12h9M9 18.5h9" />
-      <path d="m3.5 5 1 1 1.6-2M3.5 11.5l1 1 1.6-2M3.5 18l1 1 1.6-2" />
-    </>
-  ),
-  briefcase: (
-    <>
-      <rect x="3" y="7" width="18" height="13" rx="2" />
-      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      <path d="M3 13h18" />
-    </>
-  ),
-  book: (
-    <>
-      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z" />
-      <path d="M4 5.5V21.5" />
-      <path d="M8 7h8M8 11h8" />
-    </>
-  ),
-  shield: (
-    <>
-      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
-      <path d="m9.5 12 1.8 1.8 3.7-3.8" />
-    </>
-  ),
-  truck: (
-    <>
-      <path d="M3 7h11v9H3z" />
-      <path d="M14 10h4l3 3v3h-7z" />
-      <circle cx="7.5" cy="17.5" r="1.5" />
-      <circle cx="17.5" cy="17.5" r="1.5" />
-    </>
-  ),
-  sun: (
-    <>
-      <circle cx="12" cy="12" r="3.5" />
-      <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8" />
-    </>
-  ),
-};
-
-function CapIcon({ name }: { name: string }) {
-  return (
-    <span className="cap-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-        {capIcons[name]}
-      </svg>
-    </span>
-  );
-}
-
-const capabilities = [
+const pillars = [
   {
-    icon: "clipboard",
-    status: "Available",
-    title: "Offline scouting → shared data",
-    copy: "Match and pit forms keep working without venue Wi-Fi. Synced observations become team-shared facts with attribution—and they feed strategy, predictions, and the Assistant.",
+    id: "scouting",
+    kicker: "01 / SCOUTING TRUST",
+    title: "Scout offline. Sync with attribution. Trust the evidence.",
+    copy: "Match and pit forms keep working without venue Wi-Fi. QR handoffs move assignments between devices. Synced observations become team-shared facts—with disagreement review, coverage gaps, and reliability signals so pick lists weigh evidence, not volume.",
+    points: [
+      "Offline-first forms with automatic sync",
+      "QR scout handoff when Wi-Fi is unreliable",
+      "Trust layer: disagreements, gaps, reliability",
+    ],
   },
   {
-    icon: "chat",
-    status: "Available",
-    title: "FRC Assistant for competition ops",
-    copy: "Ask about strategy, matchups, opponent history, and robot capabilities inside your active event. Answers stay source-labeled; empty context stays empty.",
+    id: "event-day",
+    kicker: "02 / EVENT DAY · MY DAY",
+    title: "One shared event picture—and a personal day that stays clear.",
+    copy: "Event Day command puts next match, readiness, duties, and pit signals in front of the whole crew. My Day surfaces your shifts, todos, and acknowledgements so nobody hunts the group chat for what they own.",
+    points: [
+      "Shared next-match and readiness board",
+      "Personal shifts, todos, and check-ins",
+      "Pit and TV boards that stay offline-aware",
+    ],
   },
   {
-    icon: "target",
-    status: "Available",
-    title: "Win / loss from TBA + scout facts",
-    copy: "Weighted-current predictions combine live TBA/Statbotics metrics with your scouted observations, then show confidence, factors, and caveats.",
+    id: "kickoff-cad",
+    kicker: "03 / KICKOFF → CAD",
+    title: "From game manual to approval-gated geometry.",
+    copy: "Kickoff captures season constraints and strategy intent. Those requirements can become CAD briefs with human checkpoints before Onshape or Fusion mutates anything—so build changes keep the match reason that created them.",
+    points: [
+      "Kickoff brief tied to active season context",
+      "Strategy constraints linked into CAD work",
+      "Onshape OAuth or local Fusion/terminal relay",
+    ],
   },
   {
-    icon: "flag",
-    status: "Available",
-    title: "Strategy & pick lists",
-    copy: "What-if assumptions stay labeled as assumptions. Playbooks and pick lists travel with the active event so drive team and strategy stay aligned.",
+    id: "logistics",
+    kicker: "04 / LOGISTICS",
+    title: "Travel, lodging, and packing beside the calendar.",
+    copy: "Leave times, hotel nights, venue arrival, and return legs live next to competition days—not in a separate spreadsheet season. Packing and duties stay org-scoped with the same event.",
+    points: [
+      "Travel legs and lodging on the trip timeline",
+      "Packing lists and owned duties",
+      "Visit invites without another tool",
+    ],
   },
   {
-    icon: "link",
-    status: "Available",
-    title: "Scouting integrated—not a silo",
-    copy: "One connected system: scout sync informs predictions, playbooks, pick lists, live boards, and Assistant context where it matters.",
+    id: "sponsors",
+    kicker: "05 / SPONSORS · GRANTS",
+    title: "Pipeline, asks, and grant drafts in the same workspace.",
+    copy: "Sponsor CRM, follow-ups, and value props sit next to impact proof. Grant writing assist drafts from real team context—with honest labels when AI helps—so fundraising is not a parallel season.",
+    points: [
+      "Sponsor pipeline and reminder cadence",
+      "Ask drafts grounded in team facts",
+      "Grant assist with clear AI disclosure",
+    ],
   },
   {
-    icon: "cube",
-    status: "Setup required",
-    title: "AI CAD · Fusion + terminal path",
-    copy: "Confirm a brief, then run approval-gated steps through Onshape OAuth or a paired local Fusion/terminal relay—with checkpoints before geometry mutates.",
+    id: "knowledge",
+    kicker: "06 / KNOWLEDGE",
+    title: "Procedures that survive the season—and feed the Assistant.",
+    copy: "Team wiki and durable notes stay org-scoped so humans and the FRC Assistant read the same procedures. No more lost Google Docs the night before quals.",
+    points: [
+      "Org-scoped wiki and season notes",
+      "Readable by Assistant when allowed",
+      "Continuity across mentors and students",
+    ],
   },
   {
-    icon: "code",
-    status: "Available",
-    title: "FRC code review",
-    copy: "Repository-aware WPILib/vendor risk checks return human-approved diffs. Vantage never claims to deploy code to a robot.",
-  },
-  {
-    icon: "monitor",
-    status: "Available",
-    title: "Live event / TV boards",
-    copy: "Pit and stands kiosks show next match, readiness, and predictions offline-aware—so the queue survives flaky venue Wi-Fi.",
-  },
-  {
-    icon: "grid",
-    status: "Available",
-    title: "Custom dashboard widgets",
-    copy: "Rearrange next-match, readiness, alerts, and scouting coverage. Empty widgets stay empty until workspace, event, and TBA are connected.",
-  },
-  {
-    icon: "users",
-    status: "Available",
-    title: "Invites, privacy, usage controls",
-    copy: "Org-scoped membership, invite-only access, row-level boundaries, and hard AI usage budgets before managed calls run.",
+    id: "ai",
+    kicker: "07 / AI INTEGRATION",
+    title: "Grounded Assistant, inspectable strategy, human-gated build.",
+    copy: "Managed AI routes through the same event context as scouting and strategy. Answers stay source-labeled. Strategy probabilities show confidence and caveats. CAD and code stay proposal-only until a person approves—never silent robot deploys.",
+    points: [
+      "FRC Assistant grounded in scout + TBA facts",
+      "Win/loss with confidence, factors, and what-ifs",
+      "Code review and CAD behind human approval",
+    ],
   },
 ];
-
-const expandedSurface = [
-  {
-    icon: "flag",
-    status: "Available",
-    title: "Event Day command",
-    copy: "One active-event board for next match, readiness, duties, and pit signals—so the whole crew shares the same day-of picture.",
-  },
-  {
-    icon: "sun",
-    status: "Available",
-    title: "My Day",
-    copy: "Personal shifts, todos, and acknowledgements for what you own today—without hunting the group chat.",
-  },
-  {
-    icon: "book",
-    status: "Available",
-    title: "Team knowledge & wiki",
-    copy: "Durable procedures and season notes the Assistant can read—kept in the org, not a lost Google Doc.",
-  },
-  {
-    icon: "shield",
-    status: "Shipping",
-    title: "Scouting trust layer",
-    copy: "Disagreement review, coverage gaps, and scout reliability signals so pick lists weight evidence—not volume alone.",
-  },
-  {
-    icon: "link",
-    status: "Available",
-    title: "CAD ↔ strategy link",
-    copy: "Strategy constraints can become approval-gated CAD work so build changes keep the match reason that created them.",
-  },
-  {
-    icon: "truck",
-    status: "Shipping",
-    title: "Event logistics",
-    copy: "Travel legs, lodging, and packing context beside the competition calendar—not a separate spreadsheet season.",
-  },
-  {
-    icon: "briefcase",
-    status: "Shipping",
-    title: "Sponsorship pipeline",
-    copy: "Sponsor CRM, ask drafts, and value props in the same workspace as impact proof—honest labels when AI assists.",
-  },
-];
-
-const seasonHighlights = [
-  {
-    icon: "clock",
-    title: "Build hours",
-    copy: "Shop clock-in, leaderboard, and season-goal progress.",
-  },
-  {
-    icon: "inspect",
-    title: "Inspection & weigh-in",
-    copy: "Year-agnostic checklist plus overweight flags.",
-  },
-  {
-    icon: "stopwatch",
-    title: "Driver practice",
-    copy: "Timed cycles with success rate and best times.",
-  },
-  {
-    icon: "checklist",
-    title: "Event readiness",
-    copy: "Owned checklists with ready / watch / blocked risk.",
-  },
-];
-
-function statusBadgeClass(status: string) {
-  if (status === "Available") return "good";
-  if (status === "Shipping") return "demo";
-  return "setup";
-}
 
 export default function Home() {
   return (
@@ -307,288 +108,103 @@ export default function Home() {
           </div>
           <div className="brand-hero-copy">
             <p className="brand-hero-wordmark">Vantage</p>
-            <h1 id="brand-hero-title">One shared event for scout, ask, decide, and build.</h1>
+            <h1 id="brand-hero-title">The competition OS for FRC teams.</h1>
             <p>
-              Competition ops for FRC teams—offline scouting, grounded Assistant answers, and human-gated CAD and code
-              inside one invite-only workspace.
+              Scout with trust, run Event Day, move kickoff into CAD, manage logistics and sponsors, and keep AI
+              grounded in one invite-only workspace.
             </p>
             <div className="actions">
-              <a className="button primary" href="#hero-email">
+              <a className="button primary" href="#waitlist">
                 Join the waitlist
               </a>
-              <a className="button secondary" href="#product-substance">
-                See what it does
+              <a className="button secondary" href="#product">
+                See the product
               </a>
             </div>
           </div>
         </section>
 
-        <section className="capability-overview" id="product-substance" aria-labelledby="capabilities-title">
-          <header>
-            <span className="section-id">WHAT YOU ACTUALLY GET</span>
-            <h2 id="capabilities-title">Concrete workflows from pit to playoffs.</h2>
-            <p>
-              Each module exists so scouting, the FRC Assistant, strategy, CAD, code, and pit displays share one
-              organization-scoped event context—not a feature laundry list.
-            </p>
-            <div className="status-legend">
-              <span className="app-badge good">Available</span>
-              <span className="app-badge demo">Shipping</span>
-              <span className="app-badge setup">Setup required</span>
-              <span className="status-legend-note">Status labels stay honest; setup paths are explicit.</span>
-            </div>
-          </header>
-          <div className="capability-grid">
-            {capabilities.map((item) => (
-              <article className="capability-card" key={item.title}>
-                <CapIcon name={item.icon} />
-                <h3>{item.title}</h3>
-                <p>{item.copy}</p>
-                <span className={`app-badge ${statusBadgeClass(item.status)}`}>{item.status}</span>
-              </article>
-            ))}
-          </div>
+        <section className="product-thesis" id="product" aria-labelledby="thesis-title">
+          <span className="section-id">THE PRODUCT</span>
+          <h2 id="thesis-title">One shared season—not five tabs and a group chat.</h2>
+          <p>
+            Vantage connects scouting, day-of ops, build, travel, fundraising, knowledge, and metered AI under the
+            same organization and active event. Empty context stays empty. Approvals stay human.
+          </p>
         </section>
 
-        <section className="capability-overview" id="expanded-surface" aria-labelledby="expanded-title">
-          <header>
-            <span className="section-id">EXPANDED PRODUCT SURFACE</span>
-            <h2 id="expanded-title">Day-of ops, knowledge, trust, and team business.</h2>
-            <p>
-              Newer surfaces for Event Day, My Day, knowledge, scouting trust, CAD↔strategy, logistics, and sponsorship—labeled
-              Available when ready to use, Shipping when still landing in the product.
-            </p>
-          </header>
-          <div className="capability-grid">
-            {expandedSurface.map((item) => (
-              <article className="capability-card" key={item.title}>
-                <CapIcon name={item.icon} />
-                <h3>{item.title}</h3>
-                <p>{item.copy}</p>
-                <span className={`app-badge ${statusBadgeClass(item.status)}`}>{item.status}</span>
-              </article>
-            ))}
-          </div>
+        <section className="pillar-stack" aria-label="Product pillars">
+          {pillars.map((pillar) => (
+            <article className="pillar-row" id={pillar.id} key={pillar.id}>
+              <div className="pillar-copy">
+                <small>{pillar.kicker}</small>
+                <h2>{pillar.title}</h2>
+                <p>{pillar.copy}</p>
+                <ul>
+                  {pillar.points.map((point) => (
+                    <li key={point}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))}
         </section>
 
-        <section className="ops-preview-band" aria-labelledby="ops-title">
+        <section className="ops-preview-band" aria-labelledby="proof-title">
           <header>
-            <span className="section-id">DAY-OF OPERATIONS</span>
-            <h2 id="ops-title">How work moves during an event.</h2>
-            <p>Labeled demo fixtures of scouting sync, the customizable home board, and pit/TV display state.</p>
+            <span className="section-id">IN THE PRODUCT</span>
+            <h2 id="proof-title">Labeled previews of the loop that matters.</h2>
+            <p>
+              Deterministic demo fixtures for marketing only. Signed-in surfaces stay empty until real workspace,
+              event, and data exist.
+            </p>
           </header>
           <div className="ops-preview-grid">
             <ScoutPreview />
-            <DashboardPreview />
-            <DisplayPreview />
+            <StrategyPreview />
+            <CadPreview />
           </div>
         </section>
 
         <section className="stitch-compare" aria-labelledby="stitch-title">
           <header>
-            <span className="section-id">WHY IT&apos;S DIFFERENT</span>
-            <h2 id="stitch-title">Stop stitching the season across five tabs.</h2>
+            <span className="section-id">WHY TEAMS SWITCH</span>
+            <h2 id="stitch-title">Stop stitching the season across five tools.</h2>
           </header>
           <div className="stitch-cols">
             <article className="stitch-old">
               <h3>Usual season</h3>
               <ul>
-                <li>Scouting in a shared spreadsheet</li>
-                <li>TBA &amp; Statbotics in other tabs</li>
-                <li>CAD on someone&apos;s laptop</li>
-                <li>Strategy on a whiteboard photo</li>
-                <li>Decisions buried in group chat</li>
+                <li>Scouting in a spreadsheet with no trust signals</li>
+                <li>Event duties and travel in separate docs</li>
+                <li>Sponsor asks and grants in another inbox</li>
+                <li>CAD and strategy disconnected from match reason</li>
+                <li>AI chat that invents context you do not have</li>
               </ul>
-              <p>Disconnected tools, unclear provenance, and no shared event context.</p>
+              <p>Disconnected tools, unclear provenance, no shared event picture.</p>
             </article>
             <article className="stitch-new">
               <h3>With Vantage</h3>
               <ul>
-                <li>Scout offline → sync into team data</li>
-                <li>FRC Assistant grounded in that same context</li>
-                <li>Predict from TBA + scouted facts</li>
-                <li>Strategy playbooks &amp; pick lists in-event</li>
-                <li>CAD &amp; code behind human approval</li>
+                <li>Offline scout + QR handoff → attributed team facts</li>
+                <li>Event Day / My Day for shared and personal work</li>
+                <li>Logistics, sponsors, and grants in the same org</li>
+                <li>Kickoff → strategy → approval-gated CAD</li>
+                <li>Assistant and strategy grounded, source-labeled</li>
               </ul>
-              <p>One continuous, source-labeled loop—scouting feeds the rest, not a silo.</p>
+              <p>One continuous loop—with honest empty states and human gates.</p>
             </article>
           </div>
         </section>
 
-        <section className="signature-intro">
-          <span className="section-id">CORE ENGINES</span>
-          <h2>Assistant, strategy, CAD, and code—with the same provenance rules.</h2>
-          <p>
-            Each preview is labeled demo data. Signed-in Strategy and the FRC Assistant stay empty until workspace,
-            event, and TBA/Statbotics (plus scout sync when you have it) exist—they do not invent win probability.
-          </p>
-        </section>
-
-        <section className="signature-section assistant-signature" id="frc-assistant">
-          <div className="signature-copy">
-            <span className="app-badge good">Available</span>
-            <small>00 / FRC ASSISTANT</small>
-            <h2>Competition ops and intel in one grounded chat.</h2>
-            <p>
-              Ask about strategy, best matchups, what other teams tend to do from history, and robot capabilities.
-              Scouting, TBA/Statbotics, and event context travel with the thread—so answers stay useful for drive team
-              and strategy, not a detached chatbot.
-            </p>
-            <ul>
-              <li>Strategy, matchups, and opponent patterns from attributed evidence</li>
-              <li>Scout sync + public metrics kept distinct and labeled</li>
-              <li>Feeds the same pick lists, playbooks, and live boards as the rest of the app</li>
-            </ul>
-            <a className="text-link" href="/features/strategy#frc-assistant">
-              Explore FRC Assistant &amp; Strategy →
-            </a>
-          </div>
-          <AssistantPreview />
-        </section>
-
-        <section className="signature-section strategy-signature">
-          <div className="signature-copy">
-            <span className="app-badge good">Available</span>
-            <small>01 / WIN–LOSS + STRATEGY</small>
-            <h2>Probability you can inspect, then a playbook the drive team can use.</h2>
-            <p>
-              Combine live TBA/Statbotics metrics with scouted observations. Confidence bands, key factors, and
-              caveats stay visible. What-if changes are stored as assumptions—not as fake observations.
-            </p>
-            <ul>
-              <li>Weighted-current model with confidence interval</li>
-              <li>What-if, defense, and role planning</li>
-              <li>Pick lists and debrief prompts in-event</li>
-            </ul>
-            <a className="text-link" href="/features/strategy">
-              Explore Strategy →
-            </a>
-          </div>
-          <StrategyPreview />
-        </section>
-
-        <section className="signature-section cad-signature-v2">
-          <CadPreview />
-          <div className="signature-copy">
-            <span className="app-badge setup">Setup required</span>
-            <small>02 / AI CAD · FUSION / TERMINAL</small>
-            <h2>Confirm the brief before any geometry changes.</h2>
-            <p>
-              Strategy-linked requirements become an action plan with human approval on each step. Hosted Onshape
-              OAuth or a paired local Fusion/terminal relay—connectors report setup state honestly.
-            </p>
-            <ul>
-              <li>Onshape path with configured OAuth</li>
-              <li>Fusion 360 via local relay / terminal</li>
-              <li>Checkpoints before mutation; BOM context kept</li>
-            </ul>
-            <a className="text-link" href="/features/cad">
-              Explore CAD Builder →
-            </a>
-          </div>
-        </section>
-
-        <section className="signature-section code-signature">
-          <div className="signature-copy">
-            <span className="app-badge good">Available</span>
-            <small>03 / FRC CODE COACH</small>
-            <h2>Flag robot-code risk, explain why, teach the safer habit.</h2>
-            <p>
-              Repository-aware reviews catch WPILib pattern risks with file evidence, then coach students through
-              the failure mode and a better approach. Proposals stay human-approved unified diffs—no autonomous
-              robot deploy.
-            </p>
-            <ul>
-              <li>Blocking loops, CAN IDs, units, disabled-state checks</li>
-              <li>Teach why a pattern fails under match pressure</li>
-              <li>Proposal only—mentor or student must approve</li>
-            </ul>
-            <a className="text-link" href="/features/code">
-              Explore Code Builder →
-            </a>
-          </div>
-          <CodePreview />
-        </section>
-
-        <section className="signature-section business-signature" id="business">
-          <div className="signature-copy">
-            <span className="app-badge good">Available</span>
-            <small>04 / BUSINESS &amp; SPONSORS</small>
-            <h2>Budget, sponsors, grants, and awards in the same workspace.</h2>
-            <p>
-              Competition day is the spike. The rest of the season is purchase orders, sponsor follow-ups, grant
-              pipelines, and awards evidence—usually scattered across a dozen spreadsheets. Vantage keeps them
-              org-scoped next to scouting and strategy.
-            </p>
-            <ul>
-              <li>Budget and purchase orders with clear ownership</li>
-              <li>Sponsor CRM with follow-ups and health scoring</li>
-              <li>Grant pipeline and awards evidence in one place</li>
-            </ul>
-            <a className="text-link" href="/features#supporting-ops">
-              See supporting operations →
-            </a>
-          </div>
-          <div className="season-highlight-panel" aria-label="Season operations highlights">
-            <header>
-              <span className="section-id">ALSO IN THE WORKSPACE</span>
-              <strong>Build season ops without another spreadsheet</strong>
-            </header>
-            <ul>
-              {seasonHighlights.map((item) => (
-                <li key={item.title}>
-                  <CapIcon name={item.icon} />
-                  <div>
-                    <b>{item.title}</b>
-                    <span>{item.copy}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="workflow-band">
-          <header>
-            <span className="section-id">END-TO-END LOOP</span>
-            <h2>Scout → predict → assist → strategize → build → present</h2>
-            <p>
-              Sources, org scope, active event, scout attributions, assumptions, and approvals travel with the work—so
-              the FRC Assistant and Strategy see the same facts as pick lists and live boards.
-            </p>
-          </header>
-          <WorkflowStrip />
-          <a className="text-link" href="/workflow">
-            See the full workflow →
-          </a>
-        </section>
-
-        <section className="team-ops-section" aria-labelledby="team-ops-title">
-          <div className="signature-copy">
-            <span className="section-id">TEAM ACCESS &amp; CONTROLS</span>
-            <h2 id="team-ops-title">Invites, privacy boundaries, and AI usage caps.</h2>
-            <p>
-              Access is waitlist- and invite-gated. Org admins manage membership; platform Global Team Manager stays
-              locked to platform admins. Usage budgets hard-stop managed AI before spend surprises.
-            </p>
-            <ul>
-              <li>Email invites into an organization-scoped workspace</li>
-              <li>Row-level scope on protected competition data</li>
-              <li>Team channel and private member messaging in-app</li>
-              <li>Budgets and hard caps on managed AI calls</li>
-            </ul>
-          </div>
-          <TeamOpsPreview />
-        </section>
-
-        <section className="pricing-preview">
+        <section className="pricing-preview" id="pricing-preview">
           <div>
             <span className="section-id">PRICING</span>
-            <h2>Start with the complete non-AI competition core.</h2>
+            <h2>Free competition core. Raised paid plans for managed AI.</h2>
             <p>
-              Free covers scouting, reference data, manual strategy, exports, and team operations—the same core the FRC
-              Assistant uses when AI is enabled. Paid plans add managed API allowance at provider list rates (no Vantage
-              markup), then a hard stop unless you buy Usage Credits or enable PAYG.
+              Free covers scouting, reference data, manual strategy, exports, and team ops with BYOK or local AI.
+              Paid plans add managed routing and included API allowance at provider list rates—then a hard stop unless
+              you buy Usage Credits or enable PAYG. Individual Pro $49 · Max $79 · Team Pro $149 · Team Max $299.
             </p>
           </div>
           <a className="button secondary" href="/pricing">
@@ -603,8 +219,9 @@ export default function Home() {
             <span className="section-id">EARLY ACCESS</span>
             <h2>Put one operational picture in front of the whole team.</h2>
             <p>
-              Join the prelaunch list. Account verification, current terms, and administrator-created team access
-              remain separate launch steps.
+              Join the prelaunch list. Account verification,{" "}
+              <a href="/terms">terms</a>, <a href="/privacy">privacy</a>, and administrator-created team access
+              remain separate launch steps. See <a href="/pricing">pricing</a> for plan details.
             </p>
           </div>
           <WaitlistForm idPrefix="hero" />
