@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AiInsightPanel } from "../../components/ai-insight-panel";
 import {
   daysUntil,
   groupByMonth,
   KIND_LABELS,
+  meetingProvider,
   MILESTONE_KINDS,
   nextUpcoming,
   seasonProgress,
@@ -72,6 +74,11 @@ function MilestoneRow({
           ) : null}
         </span>
         {milestone.notes ? <p className="cal-item-notes app-muted">{milestone.notes}</p> : null}
+        {milestone.meetingUrl ? (
+          <a className="cal-join" href={milestone.meetingUrl} target="_blank" rel="noopener noreferrer">
+            ▶ Join {meetingProvider(milestone.meetingUrl) ?? "meeting"}
+          </a>
+        ) : null}
       </div>
       <button
         type="button"
@@ -101,6 +108,7 @@ export default function CalendarClient() {
   const [startsOn, setStartsOn] = useState("");
   const [endsOn, setEndsOn] = useState("");
   const [notes, setNotes] = useState("");
+  const [meetingUrl, setMeetingUrl] = useState("");
 
   const load = useCallback(async () => {
     setFetchFailed(false);
@@ -216,6 +224,7 @@ export default function CalendarClient() {
         startsOn,
         endsOn: endsOn || null,
         notes: notes.trim(),
+        meetingUrl: meetingUrl.trim() || null,
       },
       "add",
     ).then(() => {
@@ -223,6 +232,7 @@ export default function CalendarClient() {
       setStartsOn("");
       setEndsOn("");
       setNotes("");
+      setMeetingUrl("");
     });
   };
 
@@ -256,6 +266,11 @@ export default function CalendarClient() {
                 <span className={`cal-chip kind-${next.kind}`}>{KIND_LABELS[next.kind]}</span>
               </div>
               <span className="app-muted">{fmtDate(next.startsOn)}</span>
+              {next.meetingUrl ? (
+                <a className="cal-join hero" href={next.meetingUrl} target="_blank" rel="noopener noreferrer">
+                  ▶ Join {meetingProvider(next.meetingUrl) ?? "meeting"}
+                </a>
+              ) : null}
             </>
           ) : (
             <>
@@ -348,10 +363,24 @@ export default function CalendarClient() {
           <input type="date" value={endsOn} disabled={busy} aria-label="End date (optional)" onChange={(event) => setEndsOn(event.target.value)} />
         </div>
         <input value={notes} disabled={busy} placeholder="Notes (optional)" onChange={(event) => setNotes(event.target.value)} />
+        <input
+          value={meetingUrl}
+          disabled={busy}
+          type="url"
+          placeholder="Remote join link — Zoom / Google Meet / Teams (optional)"
+          onChange={(event) => setMeetingUrl(event.target.value)}
+        />
         <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsOn}>
           Add milestone
         </button>
       </form>
+
+      <AiInsightPanel
+        orgId={orgId}
+        kind="schedule_risk"
+        title="Schedule risk"
+        description="AI pace check — overdue milestones, this week's load, and what threatens the next event."
+      />
     </main>
   );
 }
