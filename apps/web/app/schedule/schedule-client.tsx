@@ -1,8 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { OfflineBanner } from "../../components/offline-banner";
+import { ScheduleRelated } from "../../components/schedule-related";
+import { EmptyState, Panel } from "../../components/ui";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import {
+  SCHEDULE_RELATED_INCLUDE,
+  scheduleNextActions,
+  type ScheduleNextAction,
+  type ScheduleShellKind,
+} from "../../lib/schedule/schedule-related";
 import {
   allianceOf,
   compLevelLabel,
@@ -18,7 +27,17 @@ import {
   type ScheduleView,
 } from "../../lib/schedule-board";
 
-function AllianceTeams({ keys, color, teamKey, ours }: { keys: string[]; color: "red" | "blue"; teamKey: string | null; ours: boolean }) {
+function AllianceTeams({
+  keys,
+  color,
+  teamKey,
+  ours,
+}: {
+  keys: string[];
+  color: "red" | "blue";
+  teamKey: string | null;
+  ours: boolean;
+}) {
   return (
     <span className="sched-alliance">
       <i className={`sched-dot ${color}`} aria-hidden="true" />
@@ -71,6 +90,116 @@ function MatchRow({ match, teamKey, isNext }: { match: ScheduleMatch; teamKey: s
   );
 }
 
+function ScheduleNextActionsPanel({ actions }: { actions: ScheduleNextAction[] }) {
+  if (actions.length === 0) return null;
+  return (
+    <Panel className="sched-next-actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>Calendar, Event Day, and My Day only — never DEMO match rows.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
+
+function ScheduleShell({
+  title,
+  description,
+  orgId,
+  shell,
+  hasActiveEvent,
+  matchCount,
+  fetchFailed,
+  error,
+  onRetry,
+  children,
+}: {
+  title: string;
+  description: string;
+  orgId?: string | null;
+  shell: ScheduleShellKind;
+  hasActiveEvent?: boolean;
+  matchCount?: number;
+  fetchFailed?: boolean;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = scheduleNextActions({
+    orgId,
+    shell,
+    hasActiveEvent,
+    matchCount,
+  });
+  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+
+  return (
+    <main className="module-page sched-page">
+      <header className="app-page-header">
+        <div>
+          <span className="breadcrumbs">Competition / Schedule</span>
+          <h1>Match Schedule</h1>
+          <p>{description}</p>
+        </div>
+        <ScheduleRelated orgId={orgId} include={[...SCHEDULE_RELATED_INCLUDE]} />
+      </header>
+      <OfflineBanner
+        feature="Schedule"
+        fromCache={false}
+        detail={
+          fetchFailed
+            ? "Open Schedule once online so the shell can cache for venue Wi-Fi drops."
+            : undefined
+        }
+      />
+      {children}
+      <EmptyState
+        soft
+        badge={shell === "setup" ? "Setup" : shell === "error" ? "Unavailable" : shell === "empty" ? "No matches yet" : undefined}
+        badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
+        title={title}
+        description={
+          shell === "error"
+            ? error || "Check your connection and try again — nothing is filled with DEMO matches."
+            : description
+        }
+        aria-busy={shell === "loading" || undefined}
+      >
+        <div className="sched-inline-actions">
+          {shell === "error" && onRetry ? (
+            <button type="button" className="app-button secondary" onClick={onRetry}>
+              Retry
+            </button>
+          ) : null}
+          {shell === "setup" ? (
+            <a className="app-button" href={workspaceHref}>
+              Open Workspace
+            </a>
+          ) : null}
+          <ScheduleRelated
+            orgId={orgId}
+            include={shell === "setup" ? ["calendar", "command", "my-day"] : [...SCHEDULE_RELATED_INCLUDE]}
+          />
+        </div>
+      </EmptyState>
+      {shell !== "loading" ? <ScheduleNextActionsPanel actions={actions} /> : null}
+    </main>
+  );
+}
+
 export default function ScheduleClient() {
   const [view, setView] = useState<ScheduleView | null>(null);
   const [error, setError] = useState("");
@@ -107,57 +236,35 @@ export default function ScheduleClient() {
 
   if (!view) {
     return (
-      <main className="module-page sched-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Competition / Schedule</span>
-            <h1>Match Schedule</h1>
-          </div>
-        </header>
-        <OfflineBanner
-          feature="Schedule"
-          fromCache={false}
-          detail={fetchFailed ? "Open Schedule once online so the shell can cache for venue Wi-Fi drops." : undefined}
-        />
-        <div className="app-card sched-empty">
-          {fetchFailed ? (
-            <>
-              <strong>Could not load the match schedule</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
-          ) : (
-            <p className="app-muted">Loading match schedule…</p>
-          )}
-        </div>
-      </main>
+      <ScheduleShell
+        title={fetchFailed ? "Could not load the match schedule" : "Loading match schedule…"}
+        description={
+          fetchFailed
+            ? "A network or server issue blocked the board. Retry — never DEMO match rows."
+            : "Pulling TBA matches for your active event…"
+        }
+        shell={fetchFailed ? "error" : "loading"}
+        fetchFailed={fetchFailed}
+        error={error}
+        onRetry={() => void load()}
+      />
     );
   }
 
   if (view.status === "setup_required") {
+    const orgId = view.context.orgId;
     return (
-      <main className="module-page sched-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Competition / Schedule</span>
-            <h1>Match Schedule</h1>
-            <p>Every match at your active event — your matches highlighted, with results and scout coverage.</p>
-          </div>
-        </header>
-        <OfflineBanner feature="Schedule" fromCache={false} />
-        <div className="app-card sched-empty">
-          <strong>Almost there</strong>
-          <p className="app-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">
-            Open Workspace
-          </a>
-        </div>
-      </main>
+      <ScheduleShell
+        title="Almost there"
+        description={view.message}
+        orgId={orgId}
+        shell="setup"
+        hasActiveEvent={Boolean(view.context.eventKey)}
+      />
     );
   }
 
+  const orgId = view.context.orgId;
   const teamKey = view.context.teamNumber != null ? `frc${view.context.teamNumber}` : null;
   const next = teamKey ? nextOurMatch(view.matches, teamKey) : null;
   const nextSide = next && teamKey ? allianceOf(next, teamKey) : null;
@@ -171,6 +278,14 @@ export default function ScheduleClient() {
   const base = scope === "ours" && teamKey ? ourMatches(view.matches, teamKey) : view.matches;
   const visible = hidePlayed ? base.filter((entry) => !isScored(entry)) : base;
   const groups = splitByLevel(visible);
+  const shell: ScheduleShellKind = view.matches.length === 0 ? "empty" : "ready";
+  const nextActions = scheduleNextActions({
+    orgId,
+    shell,
+    hasActiveEvent: Boolean(view.context.eventKey),
+    matchCount: view.matches.length,
+  });
+  const eventLabel = view.context.eventName ?? view.context.eventKey ?? "Active event";
 
   return (
     <main className="module-page sched-page">
@@ -179,14 +294,17 @@ export default function ScheduleClient() {
           <span className="breadcrumbs">Competition / Schedule</span>
           <h1>Match Schedule</h1>
           <p>
-            {view.context.eventName ?? view.context.eventKey}
+            {eventLabel}
             {view.context.teamNumber ? ` — Team ${view.context.teamNumber}` : ""} · {view.matches.length}{" "}
             {view.matches.length === 1 ? "match" : "matches"}
           </p>
         </div>
-        <button type="button" className="app-button secondary" onClick={() => void load()}>
-          Refresh
-        </button>
+        <div className="sched-header-actions">
+          <ScheduleRelated orgId={orgId} include={[...SCHEDULE_RELATED_INCLUDE]} />
+          <button type="button" className="app-button secondary" onClick={() => void load()}>
+            Refresh
+          </button>
+        </div>
       </header>
 
       <OfflineBanner
@@ -229,51 +347,77 @@ export default function ScheduleClient() {
         </section>
       ) : null}
 
-      <div className="sched-controls">
-        <div className="sched-toggle" role="group" aria-label="Match filter">
-          <button type="button" className={scope === "all" ? "active" : undefined} onClick={() => setScope("all")}>
-            All matches
-          </button>
-          <button
-            type="button"
-            className={scope === "ours" ? "active" : undefined}
-            disabled={!teamKey}
-            title={teamKey ? undefined : "Set a team number in Workspace to filter"}
-            onClick={() => setScope("ours")}
-          >
-            Our matches
-          </button>
-        </div>
-        <label className="sched-check">
-          <input type="checkbox" checked={hidePlayed} onChange={(event) => setHidePlayed(event.target.checked)} />
-          Hide played
-        </label>
-      </div>
-
       {view.matches.length === 0 ? (
-        <div className="app-card sched-empty">
-          <strong>No matches synced for this event yet</strong>
-          <p className="app-muted">Once the schedule is posted and reference sync runs, matches appear here automatically.</p>
-        </div>
-      ) : visible.length === 0 ? (
-        <div className="app-card sched-empty">
-          <strong>Nothing matches your filters</strong>
-          <p className="app-muted">Try showing played matches or switching back to all matches.</p>
-        </div>
+        <>
+          <EmptyState
+            soft
+            badge="No matches yet"
+            badgeTone="setup"
+            title="No matches synced for this event yet"
+            description="Once the schedule is posted and reference sync runs, matches appear here automatically — never DEMO placeholders."
+          >
+            <div className="sched-inline-actions">
+              <ScheduleRelated orgId={orgId} include={["calendar", "command", "my-day"]} />
+            </div>
+          </EmptyState>
+          <ScheduleNextActionsPanel actions={nextActions} />
+        </>
       ) : (
-        groups.map((group) => (
-          <section key={group.level} className="sched-group">
-            <h2>
-              {group.label}
-              <span>{group.matches.length}</span>
-            </h2>
-            <ul>
-              {group.matches.map((entry) => (
-                <MatchRow key={entry.matchKey} match={entry} teamKey={teamKey} isNext={entry.matchKey === next?.matchKey} />
-              ))}
-            </ul>
-          </section>
-        ))
+        <>
+          <div className="sched-controls">
+            <div className="sched-toggle" role="group" aria-label="Match filter">
+              <button type="button" className={scope === "all" ? "active" : undefined} onClick={() => setScope("all")}>
+                All matches
+              </button>
+              <button
+                type="button"
+                className={scope === "ours" ? "active" : undefined}
+                disabled={!teamKey}
+                title={teamKey ? undefined : "Set a team number in Workspace to filter"}
+                onClick={() => setScope("ours")}
+              >
+                Our matches
+              </button>
+            </div>
+            <label className="sched-check">
+              <input type="checkbox" checked={hidePlayed} onChange={(event) => setHidePlayed(event.target.checked)} />
+              Hide played
+            </label>
+          </div>
+
+          {visible.length === 0 ? (
+            <EmptyState
+              soft
+              title="Nothing matches your filters"
+              description="Try showing played matches or switching back to all matches."
+            >
+              <div className="sched-inline-actions">
+                <ScheduleRelated orgId={orgId} include={["my-day", "command", "calendar"]} />
+              </div>
+            </EmptyState>
+          ) : (
+            groups.map((group) => (
+              <section key={group.level} className="sched-group">
+                <h2>
+                  {group.label}
+                  <span>{group.matches.length}</span>
+                </h2>
+                <ul>
+                  {group.matches.map((entry) => (
+                    <MatchRow
+                      key={entry.matchKey}
+                      match={entry}
+                      teamKey={teamKey}
+                      isNext={entry.matchKey === next?.matchKey}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))
+          )}
+
+          <ScheduleNextActionsPanel actions={nextActions} />
+        </>
       )}
 
       <AiInsightPanel
