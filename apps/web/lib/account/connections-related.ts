@@ -1,4 +1,5 @@
 import { withOrgHref } from "../nav/product-nav";
+import { githubConnectionHref } from "../github/github-related";
 
 /** Soft-UI connector ids on Account → Connections (never DEMO connected). */
 export type ConnectionConnectorId = "google" | "tba" | "onshape" | "discord" | "github";
@@ -21,7 +22,7 @@ export const CONNECTIONS_RELATED_LINKS = [
   { id: "cad", label: "CAD Connections", kind: "path" as const, path: "/cad/connections" },
   { id: "discord", label: "Discord", kind: "path" as const, path: "/team/discord" },
   { id: "tba", label: "Team Data", kind: "path" as const, path: "/team/data" },
-  { id: "github", label: "Team admin · GitHub", kind: "path" as const, path: "/team/admin" },
+  { id: "github", label: "Team admin · GitHub", kind: "path" as const, path: "/team/admin", hash: "#github-connection" },
   { id: "workspace", label: "Workspace", kind: "path" as const, path: "/workspace" },
 ] as const;
 
@@ -53,7 +54,8 @@ export function connectionsRelatedLinks(
     if (link.id === "workspace") {
       return { id: link.id, label: link.label, href: "/workspace" };
     }
-    return { id: link.id, label: link.label, href: withOrgHref(link.path, orgId) };
+    const hash = "hash" in link ? link.hash : "";
+    return { id: link.id, label: link.label, href: withOrgHref(link.path, orgId) + hash };
   });
 }
 
@@ -231,7 +233,7 @@ export function connectionsNextActions(input: {
       id: "github",
       label: "Link GitHub",
       detail: "Owners/admins connect OAuth or save an encrypted PAT in Team admin — AI context stays empty until linked.",
-      href: withOrgHref("/team/admin", orgId),
+      href: githubConnectionHref(orgId),
       primary: actions.length === 0,
     });
   }
@@ -336,7 +338,7 @@ export function buildConnectionConnectors(input: {
       label: "GitHub",
       status: input.github?.status ?? (orgId ? "empty" : "setup_required"),
       detail: input.github?.detail ?? "Checking GitHub link…",
-      href: orgId ? withOrgHref("/team/admin", orgId) : "/workspace",
+      href: orgId ? githubConnectionHref(orgId) : "/workspace",
       cta: orgId ? "Open Team admin" : "Select workspace",
     },
   ];

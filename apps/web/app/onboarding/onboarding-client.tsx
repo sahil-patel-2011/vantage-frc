@@ -91,7 +91,7 @@ function approvedDestination(state: OnboardingState, nextParam: string | null) {
   if (nextParam) return safeAppPath(nextParam, "/workspace");
   // Build & code focus → deep-link Team GitHub connection for robot-code AI context.
   if (state.workspaceOrgId && state.primaryFocus === "build") {
-    return `/team?orgId=${encodeURIComponent(state.workspaceOrgId)}#github-connection`;
+    return `/team/admin?orgId=${encodeURIComponent(state.workspaceOrgId)}#github-connection`;
   }
   // Role / subteam Soft-UI path (CD #28) after profile approval.
   if (state.workspaceOrgId) return `/start?orgId=${encodeURIComponent(state.workspaceOrgId)}`;
@@ -99,8 +99,8 @@ function approvedDestination(state: OnboardingState, nextParam: string | null) {
 }
 
 function githubConnectionHref(orgId: string | null | undefined) {
-  if (!orgId) return "/team#github-connection";
-  return `/team?orgId=${encodeURIComponent(orgId)}#github-connection`;
+  if (!orgId) return "/team/admin#github-connection";
+  return `/team/admin?orgId=${encodeURIComponent(orgId)}#github-connection`;
 }
 
 export default function OnboardingClient() {

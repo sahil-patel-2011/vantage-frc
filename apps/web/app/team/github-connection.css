@@ -1,0 +1,84 @@
+/* Soft-UI GitHub robot-code context — never DEMO repos. */
+.github-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.github-panel {
+  margin-top: 0.5rem;
+}
+
+.github-next-actions ol,
+.github-setup-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.github-next-actions li,
+.github-setup-steps li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--app-border, #d0d7de) 80%, transparent);
+}
+
+.github-next-actions li:first-child,
+.github-setup-steps li:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.github-next-actions li.primary strong {
+  color: var(--app-fg, inherit);
+}
+
+.github-next-actions li div,
+.github-setup-steps li div {
+  display: grid;
+  gap: 0.25rem;
+  flex: 1 1 12rem;
+}
+
+.github-next-actions li span,
+.github-tip {
+  color: var(--app-muted, #656d76);
+  font-size: 0.9rem;
+}
+
+.github-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.github-metrics article {
+  flex: 1 1 7rem;
+  min-width: 6.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--app-surface, #fff) 88%, var(--app-border, #d0d7de));
+}
+
+.github-metrics article strong {
+  display: block;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.github-metrics article span {
+  font-size: 0.8rem;
+  color: var(--app-muted, #656d76);
+}
+
+.github-oauth-note {
+  margin: 0.75rem 0;
+}

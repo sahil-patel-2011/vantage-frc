@@ -1,5 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { githubConnectionHref } from "../github/github-related";
 
 /** Soft-UI related surfaces for Pair VS Code (never DEMO pairing metrics). */
 export const PAIR_RELATED_LINKS = [
@@ -8,7 +9,7 @@ export const PAIR_RELATED_LINKS = [
     id: "github",
     label: "GitHub context",
     kind: "path" as const,
-    path: "/team",
+    path: "/team/admin",
     hash: "#github-connection",
   },
   { id: "chat", label: "AI chat", kind: "ai" as const, tab: "chat" },
@@ -94,7 +95,7 @@ export function pairSetupSteps(orgId?: string | null): PairSetupStep[] {
       id: "github",
       label: "Connect GitHub",
       detail: "Optional repo context stays disconnected until you link it — never DEMO repos.",
-      href: withOrgHref("/team", orgId) + "#github-connection",
+      href: githubConnectionHref(orgId),
     },
     {
       id: "chat",
@@ -215,7 +216,7 @@ export function pairNextActions(input: {
           id: "github",
           label: "Connect GitHub",
           detail: "Optional repo context stays disconnected until linked — never DEMO repos.",
-          href: withOrgHref("/team", null) + "#github-connection",
+          href: githubConnectionHref(null),
         },
         {
           id: "chat",
@@ -243,7 +244,7 @@ export function pairNextActions(input: {
         id: "github",
         label: "Connect GitHub",
         detail: "Optional repo context stays disconnected until you link it.",
-        href: withOrgHref("/team", orgId) + "#github-connection",
+        href: githubConnectionHref(orgId),
       },
       {
         id: "chat",
@@ -275,7 +276,7 @@ export function pairNextActions(input: {
         id: "github",
         label: "Connect GitHub",
         detail: "Optional: hydrate file content from your default repo after you link it.",
-        href: withOrgHref("/team", orgId) + "#github-connection",
+        href: githubConnectionHref(orgId),
       },
       {
         id: "chat",
@@ -298,7 +299,7 @@ export function pairNextActions(input: {
       id: "github",
       label: "Connect GitHub",
       detail: "Optional repo context for Code Coach — still never invents DEMO findings.",
-      href: withOrgHref("/team", orgId) + "#github-connection",
+      href: githubConnectionHref(orgId),
     },
     {
       id: "chat",
