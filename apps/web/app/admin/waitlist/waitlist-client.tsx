@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { adminProvisionHref, adminRelatedLinks } from "../../../lib/admin";
+import "../admin-flow.css";
 
 type WaitlistEntry = {
   email: string;
@@ -14,11 +16,7 @@ type WaitlistEntry = {
 };
 
 function provisionHref(entry: WaitlistEntry) {
-  const params = new URLSearchParams({
-    ownerEmail: entry.email,
-    teamNumber: String(entry.teamNumber),
-  });
-  return `/admin?${params.toString()}`;
+  return adminProvisionHref({ ownerEmail: entry.email, teamNumber: entry.teamNumber });
 }
 
 export default function WaitlistAdminClient() {
@@ -81,11 +79,18 @@ export default function WaitlistAdminClient() {
       <PageHeader
         breadcrumbs="Platform / Waitlist"
         title="Waitlist"
-        description="Review launch interest, mark outreach, and jump to team provisioning when you are ready to invite an owner."
+        description="Review launch interest, mark outreach, and jump to team provisioning when you are ready to invite an owner. Real entries only — never DEMO interest."
       >
-        <a className="app-button secondary" href="/admin">
-          Team provisioning
-        </a>
+        <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
+          {adminRelatedLinks({
+            active: "waitlist",
+            include: ["teams", "plans", "support", "releases"],
+          }).map((link) => (
+            <a key={link.id} href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
       </PageHeader>
 
       <div className="cards">

@@ -3,6 +3,17 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import {
+  ADMIN_RELATED_INCLUDE,
+  adminEmptyCopy,
+  adminNextActions,
+  adminOrgMetric,
+  adminRelatedLinks,
+  classifyAdminShell,
+  formatAdminOrgLabel,
+  type AdminShellKind,
+} from "../../lib/admin";
+import "./admin-flow.css";
 
 type Organization = {
   id: string;
@@ -12,12 +23,56 @@ type Organization = {
   ownerEmail: string;
 };
 
+function AdminRelated({ active }: { active?: "teams" }) {
+  const links = adminRelatedLinks({
+    active,
+    include: [...ADMIN_RELATED_INCLUDE],
+  });
+  return (
+    <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
+      {links.map((link) => (
+        <a key={link.id} href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function AdminNextActions({ kind }: { kind: AdminShellKind }) {
+  const actions = adminNextActions(kind);
+  if (actions.length === 0) return null;
+  return (
+    <section className="admin-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>Real platform rows only — never DEMO org counts, plan metrics, or invented tickets.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 function AdminClientInner() {
   const searchParams = useSearchParams();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [form, setForm] = useState({ name: "", slug: "", teamNumber: "", ownerEmail: "" });
   const [message, setMessage] = useState("");
-  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const ownerEmail = searchParams.get("ownerEmail")?.trim() ?? "";
@@ -32,10 +87,30 @@ function AdminClientInner() {
   }, [searchParams]);
 
   async function load() {
-    const response = await fetch("/api/admin/organizations");
-    const data = await response.json();
-    setOrganizations(data.organizations ?? []);
-    setLoaded(true);
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const response = await fetch("/api/admin/organizations");
+      const data = (await response.json()) as {
+        organizations?: Organization[];
+        error?: string;
+      };
+      setStatus(response.status);
+      if (!response.ok) {
+        setOrganizations([]);
+        setLoadError(data.error ?? "Could not load organizations.");
+        return;
+      }
+      // Real organization rows only — never invent DEMO provisioned teams.
+      setOrganizations(Array.isArray(data.organizations) ? data.organizations : []);
+      setLoadError(null);
+    } catch {
+      setStatus(null);
+      setOrganizations([]);
+      setLoadError("Network error loading organizations.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -49,34 +124,63 @@ function AdminClientInner() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ ...form, teamNumber: Number(form.teamNumber) }),
     });
-    const data = await response.json();
-    setMessage(response.ok ? "Team workspace created and owner seeded." : data.error);
+    const data = (await response.json()) as { error?: string };
+    setMessage(response.ok ? "Team workspace created and owner seeded." : (data.error ?? "Create failed."));
     if (response.ok) {
       setForm({ name: "", slug: "", teamNumber: "", ownerEmail: "" });
       await load();
     }
   }
 
+  const shell = classifyAdminShell({
+    loading,
+    status,
+    error: loadError,
+    organizationCount: organizations.length,
+  });
+  const copy = adminEmptyCopy(shell, loadError);
+  const blocked = shell === "forbidden" || shell === "auth_required" || shell === "setup_required";
+
+  if (loading) {
+    return (
+      <main className="module-page admin-control admin-flow-page">
+        <EmptyState soft title={copy.title} description={copy.description} aria-busy />
+      </main>
+    );
+  }
+
+  if (blocked) {
+    return (
+      <main className="module-page admin-control admin-flow-page">
+        <PageHeader breadcrumbs="Platform / Admin" title={copy.title} description={copy.description}>
+          {copy.badge ? <span className="admin-shell-badge">{copy.badge}</span> : null}
+        </PageHeader>
+        <EmptyState soft title={copy.title} description={copy.description}>
+          {shell === "setup_required" ? (
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
+        <AdminNextActions kind={shell} />
+      </main>
+    );
+  }
+
   return (
-    <main className="module-page admin-control">
+    <main className="module-page admin-control admin-flow-page">
       <PageHeader
         breadcrumbs="Platform / Admin"
         title="Team provisioning"
         description="Closed membership: provision each team workspace and seed the first owner. Launch interest lives on the waitlist surface."
       >
-        <nav className="settings-inline-links" aria-label="Platform shortcuts">
-          <a href="/admin/waitlist">Waitlist</a>
-          <a href="/admin/plans">Org plans</a>
-          <a href="/admin/connectors">Connectors / API keys</a>
-          <a href="/admin/models">Models</a>
-          <a href="/admin/audit">Audit log</a>
-        </nav>
+        <AdminRelated active="teams" />
       </PageHeader>
 
-      <div className="cards">
+      <div className="cards" aria-label="Provisioning summary">
         <article className="card">
           <span>Organizations</span>
-          <strong>{loaded ? organizations.length : "…"}</strong>
+          <strong>{adminOrgMetric(organizations.length, true)}</strong>
         </article>
         <article className="card">
           <span>Membership</span>
@@ -131,26 +235,21 @@ function AdminClientInner() {
         </Panel>
         <Panel>
           <span className="eyebrow">Provisioned teams</span>
-          {!loaded ? (
-            <EmptyState soft title="Loading organizations…" aria-busy />
-          ) : organizations.length === 0 ? (
-            <EmptyState
-              soft
-              title="No teams provisioned yet"
-              description="Create the first workspace on the left, or start from a waitlist entry."
-            >
+          {shell === "empty" ? (
+            <EmptyState soft title={copy.title} description={copy.description}>
               <a className="app-button secondary" href="/admin/waitlist">
                 Open waitlist
               </a>
             </EmptyState>
           ) : (
             organizations.map((org) => (
-              <article className="admin-org" key={org.id}>
+              <article className="admin-org" key={org.id} title={formatAdminOrgLabel(org)}>
                 <b>#{org.teamNumber}</b>
                 <div>
                   <strong>{org.name}</strong>
                   <small>
-                    {org.slug} · {org.ownerEmail}
+                    {org.slug}
+                    {org.ownerEmail ? ` · ${org.ownerEmail}` : ""}
                   </small>
                 </div>
               </article>
@@ -158,6 +257,8 @@ function AdminClientInner() {
           )}
         </Panel>
       </section>
+
+      <AdminNextActions kind={shell} />
     </main>
   );
 }
@@ -166,7 +267,7 @@ export default function AdminClient() {
   return (
     <Suspense
       fallback={
-        <main className="module-page admin-control">
+        <main className="module-page admin-control admin-flow-page">
           <EmptyState soft title="Loading admin…" aria-busy />
         </main>
       }
