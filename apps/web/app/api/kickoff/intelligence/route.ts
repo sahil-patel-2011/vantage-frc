@@ -341,22 +341,24 @@ export async function POST(request: Request) {
           const strategy = buildStrategyFromIntelligence({ summary, priorCapabilities });
           const cadSeed = buildCadBriefFromIntelligence({ summary, strategy });
 
-          const contextSources: ContextSource[] = [
-            {
-              type: "module_data",
-              id: `kickoff-manual:${action.seasonYear}`,
-              content: excerpt(manualText, 6_000),
-              importance: 1,
-              classification: "researched_claim",
-            },
-            {
-              type: "module_data",
-              id: `kickoff-transcript:${action.seasonYear}`,
-              content: excerpt(transcriptText, 6_000),
-              importance: 0.95,
-              classification: "researched_claim",
-            },
-          ].filter((source) => source.content.trim());
+          const contextSources = (
+            [
+              {
+                type: "module_data" as const,
+                id: `kickoff-manual:${action.seasonYear}`,
+                content: excerpt(manualText, 6_000),
+                importance: 1,
+                classification: "researched_claim" as const,
+              },
+              {
+                type: "module_data" as const,
+                id: `kickoff-transcript:${action.seasonYear}`,
+                content: excerpt(transcriptText, 6_000),
+                importance: 0.95,
+                classification: "researched_claim" as const,
+              },
+            ] satisfies ContextSource[]
+          ).filter((source) => source.content.trim());
 
           const orchestrated = await new AIOrchestrator(client).run({
             orgId: action.orgId,
