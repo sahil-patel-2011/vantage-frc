@@ -276,7 +276,8 @@ export async function POST(request: Request) {
           const bundle = buildPitchBundle(pitchInput);
 
           const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
-          // Honest setup_required when no provider key — never invent AI text via local adapter.
+          // Honest setup_required (via ChatProviderResolutionError → failMeteredAi) when no
+          // provider key — never invent essays via LocalDeterministicChatAdapter.
           const adapter = await resolveOrgChatAdapter(client, { orgId, promptCachingEnabled });
 
           const requestId = randomUUID();

@@ -19,3 +19,8 @@ export {
   type PitchDraftInput,
   type BuiltPitch,
 } from "./ai-pitch";
+export {
+  writerNextActions,
+  type WriterNextAction,
+  type WriterNextActionContext,
+} from "./writer-next-actions";
