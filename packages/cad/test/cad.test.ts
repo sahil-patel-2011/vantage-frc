@@ -1,11 +1,17 @@
 import { describe,expect,it } from "vitest";
-import { DeterministicMockCadAdapter,validateCadPlan } from "../src";
+import { DeterministicMockCadAdapter,planCadKnowledgeToolCalls,validateCadPlan } from "../src";
 import { FUSION_RELAY_PROTOCOL_VERSION,pairingState,signFusionRelayJob,verifyFusionRelayJob } from "../src/fusion-relay";
 describe("CAD safety contracts",()=>{
  it("requires approval and rejects non-allowlisted or over-complex plans",()=>{
   expect(()=>validateCadPlan([{operation:"create_extrude",parameters:{depth:"25 mm"},requiresApproval:false,reason:"test"}])).toThrow("requires approval");
   expect(()=>validateCadPlan([{operation:"delete_document" as never,parameters:{},requiresApproval:true,reason:"test"}])).toThrow("not allowlisted");
   expect(()=>validateCadPlan(Array.from({length:51},()=>({operation:"create_sketch" as const,parameters:{},requiresApproval:true,reason:"test"})))).toThrow("complexity");
+ });
+ it("plans knowledge.search so CAD briefs can retrieve wiki/decisions",()=>{
+  const explicit=planCadKnowledgeToolCalls("Why did we choose the climber design review envelope?");
+  expect(explicit.some((call)=>call.name==="knowledge.search")).toBe(true);
+  const implicit=planCadKnowledgeToolCalls("Design a 2-stage elevator within last year's weight budget");
+  expect(implicit.some((call)=>call.name==="knowledge.search")).toBe(true);
  });
  it("verifies topology and render after deterministic mutations",async()=>{
   const adapter=new DeterministicMockCadAdapter(),action={operation:"create_extrude" as const,parameters:{depth:"25 mm"},requiresApproval:true,reason:"confirmed"};

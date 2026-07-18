@@ -3,6 +3,9 @@ export type PlannedToolCall = { name: string; input: unknown };
 export type ChatToolPlanOptions = {
   selected?: { teamKey?: string; matchKey?: string };
   activeEventKey?: string | null;
+  /** When set, planner can prefer CAD/finance tools for that surface. */
+  capability?: "strategy" | "team_intel" | "research" | "prediction" | "cad" | "coding" | "maintenance" | "chat" | "writer";
+  seasonYear?: number;
 };
 
 const TEAM_KEY_RE = /\bfrc\d{1,5}\b/gi;
@@ -18,9 +21,41 @@ const METRIC_RE = /\b(epa|metric|stat(?:s|istics)?|rank(?:ing)?|opr|compare|capa
 const RESEARCH_RE = /\b(research|finding|article|source|cite|citation)\b/i;
 const TEAM_INTENT_RE = /\b(team|opponent|alliance|robot)\b/i;
 const MATCH_INTENT_RE = /\b(match|qual|qm|qf|sf|final)\b/i;
+const FMEA_RE =
+  /\b(fmea|failure\s*log|repeat(?:ed|ing)?\s*fail|fail(?:ed|ure)s?\s*(?:again|pattern|history)|most\s*failure|subsystem\s*reliab|root\s*cause|five\s*whys|RPN)\b/i;
+const PIT_OPS_RE = /\b(pit\s*(?:board|command|crew)?|release\s*gate|robot\s*issue)\b/i;
+const SEASON_YEAR_RE = /\b(20\d{2})\b/;
+const FINANCE_ORDERS_RE =
+  /\b(purchase\s*requests?|purchase\s*orders?|open\s*orders?|ordering\s*requests?|budget\s*requests?|awaiting\s*approval|ready\s*to\s*buy|finance\s*assistant)\b/i;
+const FINANCE_SUMMARY_RE =
+  /\b(budget|spend(?:ing)?|expense|expenses|income|ledger|how\s+much\s+(?:have\s+we|did\s+we|we)\s+spend|remaining\s+budget|season\s+budget|fundraising\s+goal|category\s+limit|vendor\s+spend)\b/i;
+const NEED_PART_RE =
+  /\b(?:need|order|buy|purchase|request)\s+(?:a\s+|an\s+|the\s+)?(?:part|component|bolt|bearing|motor|gear|belt|shaft|sensor|pneumatic|cylinder|tube|plate|spacer)\b/i;
+const NEED_PART_NAME_RE =
+  /\b(?:need|order|buy|purchase|request)\s+(?:a\s+|an\s+|the\s+)?(?:part\s+)?["“]?([^"”\n,.!?]{2,80})["”]?/i;
+const CAD_RE = /\b(cad|onshape|fusion|engineering\s*brief|design\s*brief|mechanism|extrude|sketch|geometry)\b/i;
+const KNOWLEDGE_RE =
+  /\b(wiki|knowledge\s*base|handoff|onboarding|institutional\s*knowledge|why\s+did\s+we|how\s+do\s+we|decision(?:\s+record)?s?|design\s*review|ADR|last\s+season|prior\s+season|cross[- ]season|convention(?:s)?|subsystem\s+guide)\b/i;
+const WIKI_SLUG_RE = /\b(?:wiki|page)\s+([a-z0-9]+(?:-[a-z0-9]+)*)\b/i;
 
 function unique(values: string[]) {
   return [...new Set(values)];
+}
+
+function resolveSeasonYear(message: string, options: ChatToolPlanOptions) {
+  if (options.seasonYear && Number.isInteger(options.seasonYear)) return options.seasonYear;
+  const match = message.match(SEASON_YEAR_RE);
+  if (match) return Number(match[1]);
+  return new Date().getUTCFullYear();
+}
+
+function extractNeedPartTitle(message: string): string | null {
+  const named = message.match(NEED_PART_NAME_RE);
+  if (named?.[1]) {
+    const cleaned = named[1].trim().replace(/^(part|component)\s+/i, "").slice(0, 120);
+    if (cleaned.length >= 2) return cleaned;
+  }
+  return null;
 }
 
 export function extractTeamKeys(message: string, selected?: { teamKey?: string }) {
@@ -64,7 +99,7 @@ export function extractMatchKeys(message: string, options?: ChatToolPlanOptions)
 
 /**
  * Deterministic chat tool planner: inspects the user message and selects authorized
- * registry tools. Does not invent data — tools return Neon/TBA/scout rows or empty.
+ * registry tools. Does not invent data — tools return Neon/TBA/scout/finance rows or empty.
  */
 export function planChatToolCalls(message: string, options: ChatToolPlanOptions = {}): PlannedToolCall[] {
   const text = message.trim();
@@ -72,10 +107,20 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
 
   const teamKeys = extractTeamKeys(text, options.selected);
   const matchKeys = extractMatchKeys(text, options);
+  const seasonYear = resolveSeasonYear(text, options);
+  const isCadSurface = options.capability === "cad";
   const wantsScout = SCOUT_RE.test(text);
   const wantsStrategy = STRATEGY_RE.test(text) || MATCH_INTENT_RE.test(text);
   const wantsMetrics = METRIC_RE.test(text) || TEAM_INTENT_RE.test(text);
   const wantsResearch = RESEARCH_RE.test(text);
+  const wantsFinanceList = FINANCE_ORDERS_RE.test(text);
+  const wantsFinanceSummary = FINANCE_SUMMARY_RE.test(text);
+  const wantsNeedPart =
+    NEED_PART_RE.test(text) ||
+    (isCadSurface && /\bneed\b/i.test(text) && /\b(part|buy|order|purchase)\b/i.test(text));
+  const wantsCad = CAD_RE.test(text) || isCadSurface;
+  const wantsFmea = FMEA_RE.test(text) || PIT_OPS_RE.test(text);
+  const wantsKnowledge = KNOWLEDGE_RE.test(text) || isCadSurface;
 
   const calls: PlannedToolCall[] = [];
   const seen = new Set<string>();
@@ -85,6 +130,60 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
     seen.add(key);
     calls.push({ name, input });
   };
+
+  if (wantsKnowledge) {
+    const slugMatch = text.match(WIKI_SLUG_RE);
+    if (slugMatch?.[1]) add("knowledge.get_page", { slug: slugMatch[1] });
+    add("knowledge.search", { query: text.slice(0, 200), limit: isCadSurface ? 6 : 8 });
+  }
+
+  if (wantsFmea) {
+    add("fmea.repeat", { seasonYear });
+  }
+
+  if (wantsFinanceSummary) {
+    add("finance.summary", { seasonYear });
+  }
+
+  if (wantsFinanceList || (isCadSurface && wantsNeedPart)) {
+    add("finance.orders", { seasonYear });
+  }
+
+  if (wantsNeedPart) {
+    const partTitle = extractNeedPartTitle(text) ?? (isCadSurface ? text.slice(0, 80) : null);
+    if (partTitle) {
+      add("finance.create_purchase_request", {
+        title: partTitle,
+        justification: isCadSurface
+          ? `CAD need: ${text.slice(0, 500)}`
+          : `Requested via assistant: ${text.slice(0, 500)}`,
+        estimateUsd: 0,
+        quantity: 1,
+        seasonYear,
+        source: isCadSurface ? "cad" : "assistant",
+      });
+    }
+  }
+
+  // Strategy ↔ CAD ↔ kickoff loop (shared Assistant/CAD/Strategy graph).
+  const wantsKickoff =
+    /\b(kickoff|game\s*manual|game\s*release|transcript|design\s*priorit|scoring\s*action|game\s*piece)\b/i.test(
+      text,
+    );
+  const wantsRules =
+    /\b(rule(?:s)?|compliance|legal|inspection|constraint|frame\s*perimeter|extension|weight\s*limit|G\d{2,4}|R\d{2,4})\b/i.test(
+      text,
+    );
+  if (isCadSurface || wantsCad || wantsKickoff || wantsRules) {
+    add("kickoff.intelligence", { seasonYear });
+    add("strategy.design", { seasonYear });
+    add("kickoff.rules", { seasonYear });
+    add("rules.compliance", { proposal: text.slice(0, 8_000), seasonYear });
+  }
+
+  if (isCadSurface || wantsCad) {
+    add("cad.briefs", { limit: 6 });
+  }
 
   for (const matchKey of matchKeys) {
     if (wantsStrategy || STRATEGY_RE.test(text) || matchKeys.length) {
@@ -98,7 +197,7 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
         add("reference.team", { teamKey });
       }
     }
-    if (wantsScout || TEAM_INTENT_RE.test(text) || (!matchKeys.length && !wantsResearch)) {
+    if (wantsScout || TEAM_INTENT_RE.test(text) || (!matchKeys.length && !wantsResearch && !isCadSurface)) {
       add("scouting.team", { teamKey });
     }
     if (wantsResearch) add("research.findings", { teamKey });
@@ -110,8 +209,14 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
   }
 
   // Cap tool fan-out for a single chat turn.
-  return calls.slice(0, 8);
+  return calls.slice(0, 10);
 }
+
+export type ToolDataSourceAnnotation = {
+  mode: "ok" | "degraded" | "unavailable" | "stale";
+  usingLastGoodCache: boolean;
+  message: string;
+};
 
 export type AnnotatedToolOutput = {
   name: string;
@@ -120,23 +225,160 @@ export type AnnotatedToolOutput = {
   summary: string;
   output: unknown;
   input?: unknown;
+  /** Present when TBA/Statbotics ingest is degraded/stale and tools still serve Neon cache. */
+  dataSource?: ToolDataSourceAnnotation;
 };
+
+/** Stamp a shared data-source note onto tool outputs (reference/strategy tools only). */
+export function attachDataSourceNote(
+  tools: AnnotatedToolOutput[],
+  note: ToolDataSourceAnnotation | null | undefined,
+): AnnotatedToolOutput[] {
+  if (!note || note.mode === "ok") return tools;
+  return tools.map((tool) => {
+    const usesReference =
+      tool.name.startsWith("reference.") ||
+      tool.name.startsWith("strategy.") ||
+      tool.name === "scouting.team" ||
+      tool.name === "research.findings";
+    if (!usesReference || tool.status === "setup_required") return tool;
+    return { ...tool, dataSource: note };
+  });
+}
 
 export function annotateToolOutput(name: string, output: unknown, input?: unknown): AnnotatedToolOutput {
   const classification =
     name === "scouting.team"
       ? ("scout_observation" as const)
-      : name === "research.findings"
+      : name === "research.findings" || name === "kickoff.intelligence" || name === "kickoff.rules"
         ? ("researched_claim" as const)
-        : name === "strategy.match"
+        : name === "strategy.match" ||
+            name === "strategy.design" ||
+            name === "rules.compliance" ||
+            name.startsWith("finance.") ||
+            name.startsWith("knowledge.") ||
+            name.startsWith("fmea.")
           ? ("model_inference" as const)
           : ("hard_metric" as const);
+
+  if (name === "finance.summary") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    if (row.denied || row.reason === "finance_in_ai.disabled") {
+      return {
+        name,
+        status: "setup_required",
+        classification,
+        summary: String(row.message ?? "Finance-in-AI is disabled for this organization."),
+        output,
+        input,
+      };
+    }
+    if (row.setup_required) {
+      return {
+        name,
+        status: "setup_required",
+        classification,
+        summary: String(row.message ?? "Team finance data is not available yet."),
+        output,
+        input,
+      };
+    }
+    const expense = Number(row.expenseUsd ?? 0);
+    const income = Number(row.incomeUsd ?? 0);
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary: `Season finance: income $${income.toFixed(0)}, spend $${expense.toFixed(0)} (redacted summaries only).`,
+      output,
+      input,
+    };
+  }
+
+  if (name === "finance.orders") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    if (row.denied || row.reason === "finance_in_ai.disabled") {
+      return {
+        name,
+        status: "setup_required",
+        classification,
+        summary: String(row.message ?? "Finance-in-AI is disabled for this organization."),
+        output,
+        input,
+      };
+    }
+    if (row.setup_required) {
+      return {
+        name,
+        status: "setup_required",
+        classification,
+        summary: "Purchase requests table not available yet.",
+        output,
+        input,
+      };
+    }
+    const orders = Array.isArray(row.orders) ? row.orders : [];
+    const ai = row.aiSummary && typeof row.aiSummary === "object" ? (row.aiSummary as { headline?: string }) : null;
+    if (!orders.length) {
+      return {
+        name,
+        status: "empty",
+        classification,
+        summary: "No open purchase requests for this season.",
+        output,
+        input,
+      };
+    }
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary: ai?.headline
+        ? `${orders.length} open order(s). Finance AI: ${ai.headline}`
+        : `${orders.length} open purchase request(s).`,
+      output,
+      input,
+    };
+  }
+
+  if (name === "finance.create_purchase_request") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    if (row.denied || row.reason === "finance_in_ai.disabled") {
+      return {
+        name,
+        status: "setup_required",
+        classification,
+        summary: String(row.message ?? "Finance-in-AI is disabled for this organization."),
+        output,
+        input,
+      };
+    }
+    if (row.setup_required || row.created === false) {
+      return {
+        name,
+        status: "setup_required",
+        classification,
+        summary: String(row.error ?? "Could not create purchase request"),
+        output,
+        input,
+      };
+    }
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary: String(row.message ?? `Created purchase request ${row.orderId ?? ""}`.trim()),
+      output,
+      input,
+    };
+  }
 
   if (name === "strategy.match") {
     const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
     const hasPrediction = row.prediction != null;
     const hasStrategy = row.strategy != null;
-    if (!hasPrediction && !hasStrategy) {
+    const conflicts = Array.isArray(row.scoutTbaConflicts) ? row.scoutTbaConflicts.length : 0;
+    if (!hasPrediction && !hasStrategy && !conflicts) {
       return {
         name,
         status: "empty",
@@ -153,9 +395,117 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
       summary: [
         hasPrediction ? "prediction available" : null,
         hasStrategy ? "strategy plan available" : null,
+        conflicts > 0
+          ? `${conflicts} TBA-contradicted scout field(s) — do not trust those values`
+          : "no TBA scout conflicts",
       ]
         .filter(Boolean)
         .join("; "),
+      output,
+      input,
+    };
+  }
+
+  if (name === "kickoff.intelligence") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    if (row.setup_required) {
+      return { name, status: "setup_required", classification, summary: "Kickoff intelligence table not migrated yet.", output, input };
+    }
+    if (row.record == null) {
+      return {
+        name,
+        status: "empty",
+        classification,
+        summary: "No game-release intelligence summary for this season yet — upload a manual/transcript on /kickoff.",
+        output,
+        input,
+      };
+    }
+    return { name, status: "ok", classification, summary: "Kickoff intelligence summary available", output, input };
+  }
+
+  if (name === "kickoff.rules") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    const notes = Array.isArray(row.ruleNotes) ? row.ruleNotes : [];
+    const constraints = Array.isArray(row.constraints) ? row.constraints : [];
+    if (!notes.length && !constraints.length) {
+      return {
+        name,
+        status: "empty",
+        classification,
+        summary: "No rule notes or stored constraints for this season yet.",
+        output,
+        input,
+      };
+    }
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary: `${notes.length} rule note(s); ${constraints.length} constraint(s)`,
+      output,
+      input,
+    };
+  }
+
+  if (name === "rules.compliance") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    const status = String(row.status ?? "pass");
+    const findings = Array.isArray(row.findings) ? row.findings : [];
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary: `Compliance ${status} (${findings.length} finding${findings.length === 1 ? "" : "s"})`,
+      output,
+      input,
+    };
+  }
+
+  if (name === "strategy.design") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    const priorities = Array.isArray(row.priorities) ? row.priorities : [];
+    if (!priorities.length && row.kickoffStrategy == null) {
+      return {
+        name,
+        status: "empty",
+        classification,
+        summary: "No design priorities or kickoff strategy advice for this season yet.",
+        output,
+        input,
+      };
+    }
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary: `${priorities.length} design priorit${priorities.length === 1 ? "y" : "ies"}${row.kickoffStrategy ? "; kickoff strategy linked" : ""}`,
+      output,
+      input,
+    };
+  }
+
+  if (name === "fmea.repeat") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    if (row.setup_required) {
+      return { name, status: "setup_required", classification: "hard_metric", summary: "Failure log not available yet.", output, input };
+    }
+    const alerts = Array.isArray(row.alerts) ? row.alerts : [];
+    if (!alerts.length) {
+      return {
+        name,
+        status: "empty",
+        classification: "hard_metric",
+        summary: "No repeat-failure patterns this season (threshold not met).",
+        output,
+        input,
+      };
+    }
+    return {
+      name,
+      status: "ok",
+      classification: "hard_metric",
+      summary: `${alerts.length} subsystem(s) with repeat failures this season`,
       output,
       input,
     };
@@ -172,7 +522,33 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
             ? "No match/pit scout entries for this team in the active event."
             : name === "research.findings"
               ? "No research findings stored for this team."
-              : "No reference metrics found for this team/event.",
+              : name === "knowledge.search"
+                ? "No wiki pages, decisions, or design reviews matched that query."
+                : "No reference metrics found for this team/event.",
+        output,
+        input,
+      };
+    }
+    if (name === "scouting.team") {
+      const conflictRows = output.filter(
+        (row) =>
+          row &&
+          typeof row === "object" &&
+          Number((row as { conflictCount?: number }).conflictCount ?? 0) > 0,
+      ).length;
+      const excluded = output.flatMap((row) =>
+        row && typeof row === "object" && Array.isArray((row as { excludedFields?: string[] }).excludedFields)
+          ? (row as { excludedFields: string[] }).excludedFields
+          : [],
+      );
+      return {
+        name,
+        status: "ok",
+        classification,
+        summary:
+          conflictRows > 0
+            ? `${output.length} scout row${output.length === 1 ? "" : "s"}; ${conflictRows} with TBA conflicts (excluded: ${[...new Set(excluded)].join(", ") || "fields"}). Prefer trustedPayload.`
+            : `${output.length} scout row${output.length === 1 ? "" : "s"} with TBA trust checks; use trustedPayload.`,
         output,
         input,
       };
@@ -181,7 +557,10 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
       name,
       status: "ok",
       classification,
-      summary: `${output.length} row${output.length === 1 ? "" : "s"}`,
+      summary:
+        name === "knowledge.search"
+          ? `${output.length} knowledge hit${output.length === 1 ? "" : "s"} (wiki/decisions/reviews)`
+          : `${output.length} row${output.length === 1 ? "" : "s"}`,
       output,
       input,
     };
@@ -208,6 +587,7 @@ export function toolOutputsToContextContent(items: AnnotatedToolOutput[]) {
       summary: item.summary,
       input: item.input ?? null,
       data: item.output,
+      dataSource: item.dataSource ?? null,
     }),
     importance: 1,
   }));
@@ -224,14 +604,21 @@ export function formatGroundedReply(message: string, tools: AnnotatedToolOutput[
             .map(([k, v]) => `${k}=${String(v)}`)
             .join(" ")
         : "";
+    const sourceNote =
+      tool.dataSource && tool.dataSource.mode !== "ok"
+        ? ` · data source ${tool.dataSource.mode}${tool.dataSource.usingLastGoodCache ? " (last-good cache)" : ""}`
+        : "";
     if (tool.status === "empty" || tool.status === "setup_required") {
-      return `- ${tool.name}${target ? ` (${target})` : ""}: ${tool.summary}`;
+      return `- ${tool.name}${target ? ` (${target})` : ""}: ${tool.summary}${sourceNote}`;
     }
-    return `- ${tool.name}${target ? ` (${target})` : ""} [${tool.classification}]: ${tool.summary}`;
+    return `- ${tool.name}${target ? ` (${target})` : ""} [${tool.classification}]: ${tool.summary}${sourceNote}`;
   });
   const emptyOnly = tools.every((tool) => tool.status !== "ok");
+  const degraded = tools.find((tool) => tool.dataSource && tool.dataSource.mode !== "ok")?.dataSource;
   const lead = emptyOnly
     ? "I looked up your event-scoped sources and found no stored rows yet — nothing was invented."
-    : "Grounded in authorized Vantage tools (Neon/TBA/scout). Sources are labeled below.";
+    : degraded
+      ? `Grounded in authorized Vantage tools using the last-good Neon cache — ${degraded.message}`
+      : "Grounded in authorized Vantage tools (Neon/TBA/scout). Sources are labeled below.";
   return `Vantage response: ${message.trim()}\n\n${lead}\n${lines.join("\n")}`;
 }
