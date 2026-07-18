@@ -58,11 +58,11 @@ describe("filterEventsBySubteam", () => {
 });
 
 describe("groupEventsByDay / upcoming", () => {
-  it("groups and sorts by day", () => {
+  it("groups and sorts by local day (matches month/week grids)", () => {
     const buckets = groupEventsByDay([
-      event({ id: "b", title: "B", startsAt: "2026-03-02T20:00:00.000Z" }),
-      event({ id: "a", title: "A", startsAt: "2026-03-02T18:00:00.000Z" }),
-      event({ id: "c", title: "C", startsAt: "2026-03-01T18:00:00.000Z" }),
+      event({ id: "b", title: "B", startsAt: new Date(2026, 2, 2, 15, 0).toISOString() }),
+      event({ id: "a", title: "A", startsAt: new Date(2026, 2, 2, 13, 0).toISOString() }),
+      event({ id: "c", title: "C", startsAt: new Date(2026, 2, 1, 13, 0).toISOString() }),
     ]);
     expect(buckets.map((b) => b.day)).toEqual(["2026-03-01", "2026-03-02"]);
     expect(buckets[1]!.items.map((i) => i.title)).toEqual(["A", "B"]);

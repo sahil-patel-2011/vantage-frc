@@ -197,11 +197,11 @@ export function sortEvents(events: CalendarEvent[]): CalendarEvent[] {
 
 export type DayBucket = { day: string; label: string; items: CalendarEvent[] };
 
-/** Group filtered events by local calendar day (YYYY-MM-DD of startsAt). */
+/** Group filtered events by local calendar day (browser zone — matches week/month grids). */
 export function groupEventsByDay(events: CalendarEvent[]): DayBucket[] {
   const byDay = new Map<string, CalendarEvent[]>();
   for (const event of sortEvents(events)) {
-    const day = event.startsAt.slice(0, 10);
+    const day = localDayKey(new Date(event.startsAt));
     const list = byDay.get(day) ?? [];
     list.push(event);
     byDay.set(day, list);
