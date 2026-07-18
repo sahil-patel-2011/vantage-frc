@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EmptyState, PageHeader } from "../../../components/ui";
 import {
   AWARD_CATALOG,
   AWARD_ITEM_KINDS,
@@ -171,68 +172,89 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
   const catalog = awardCatalogEntry(form.awardType);
 
   return (
-    <main className="intel-app">
-      <header className="intel-header">
-        <div>
-          <span className="eyebrow">VANTAGE / AWARDS</span>
-          <h1>FIRST award submissions</h1>
-          <p className="app-muted">
-            Start a catalog award to seed standard essay prompts, draft responses here, then record wins in{" "}
-            <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>Business · Evidence</a> for reuse in
-            grant writing. Empty means nothing has been started — not a placeholder scoreboard.
-          </p>
+    <main className="module-page business-page biz-workbench">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
+            {" / Awards"}
+          </>
+        }
+        title="Awards workbench"
+        description={
+          <>
+            Start a catalog award to seed essay prompts, draft responses here, then record wins in{" "}
+            <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>Business · Awards</a> for grant
+            writing. Empty means nothing has been started — not a placeholder scoreboard.
+          </>
+        }
+      >
+        <div className="biz-header-actions">
+          <a className="app-button" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>
+            Business · Awards
+          </a>
+          <a className="app-button secondary" href={`/team/grants?orgId=${encodeURIComponent(orgId)}`}>
+            Grants
+          </a>
+          <a className="app-button secondary" href={`/impact?orgId=${encodeURIComponent(orgId)}`}>
+            Impact
+          </a>
         </div>
-        <nav className="intel-actions" aria-label="Awards workbench links">
-          <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>Business · Evidence</a>
-          <a href={`/team/grants?orgId=${encodeURIComponent(orgId)}`}>Grants workbench</a>
-          <a href={`/recognition?orgId=${encodeURIComponent(orgId)}`}>Team recognition</a>
-          <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team admin</a>
-        </nav>
-      </header>
+      </PageHeader>
 
       {message ? (
         <p role="status" className={`telemetry-status${messageTone === "ok" ? " success" : ""}`}>
           {message}
         </p>
       ) : null}
-      {loading ? <p className="app-muted">Loading awards…</p> : null}
+      {loading ? (
+        <EmptyState soft title="Loading awards…" description="Fetching submissions and essay items." aria-busy />
+      ) : null}
 
       {!loading ? (
-        <section className="metric-grid">
-          <article>
-            <span>Submissions · {seasonYear}</span>
+        <section className="biz-summary" aria-label="Awards summary">
+          <div className="biz-summary-tile">
             <strong>{seasonSubs.length}</strong>
-          </article>
-          <article>
-            <span>Won (tracked)</span>
+            <span>Submissions · {seasonYear}</span>
+          </div>
+          <div className="biz-summary-tile">
             <strong>{totalWon}</strong>
-          </article>
-          <article>
-            <span>In progress</span>
+            <span>Won (tracked)</span>
+          </div>
+          <div className="biz-summary-tile">
             <strong>{inProgress}</strong>
-          </article>
-          <article>
-            <span>Catalog awards</span>
+            <span>In progress</span>
+          </div>
+          <div className="biz-summary-tile">
             <strong>{AWARD_CATALOG.length}</strong>
-          </article>
+            <span>Catalog awards</span>
+          </div>
         </section>
       ) : null}
 
       {!loading && submissions.length === 0 ? (
-        <section className="app-empty">
-          <span className="eyebrow">EMPTY WORKBENCH</span>
-          <h2>No FIRST award submissions yet</h2>
-          <p>
-            Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on{" "}
-            <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>Business · Awards &amp; evidence</a>{" "}
-            without inventing history.
-          </p>
-        </section>
+        <EmptyState
+          soft
+          badge="Empty"
+          badgeTone="good"
+          title="No FIRST award submissions yet"
+          description={
+            <>
+              Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on{" "}
+              <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>Business · Awards</a> without
+              inventing history.
+            </>
+          }
+        >
+          <a className="app-button" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>
+            Log award evidence
+          </a>
+        </EmptyState>
       ) : null}
 
       {!loading ? (
         <section className="admin-grid">
-          <form className="intel-panel" onSubmit={addSubmission}>
+          <form className="app-card soft-panel" onSubmit={addSubmission}>
             <span className="eyebrow">START AN AWARD SUBMISSION</span>
             <label>
               Award
@@ -266,12 +288,12 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
                 onChange={(e) => setForm({ ...form, deadline: e.target.value })}
               />
             </label>
-            <button className="primary-action" type="submit">
+            <button className="app-button" type="submit">
               Start submission
             </button>
           </form>
 
-          <section className="intel-panel invite-list">
+          <section className="app-card soft-panel invite-list">
             <span className="eyebrow">SUBMISSIONS</span>
             {submissions.length === 0 ? (
               <p className="app-muted">No submissions yet — start one from the catalog on the left.</p>
@@ -322,7 +344,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
             that feeds Business evidence for grant writing.
           </p>
 
-          <div className="intel-panel">
+          <div className="app-card soft-panel">
             {items.length === 0 ? (
               <p className="app-muted">No essay items on this submission yet. Add a prompt below.</p>
             ) : (
@@ -382,7 +404,7 @@ export default function AwardsClient({ orgId }: { orgId: string }) {
                   onChange={(e) => setItemForm({ ...itemForm, charLimit: e.target.value })}
                 />
               </label>
-              <button className="primary-action" type="submit">
+              <button className="app-button" type="submit">
                 Add item
               </button>
             </form>

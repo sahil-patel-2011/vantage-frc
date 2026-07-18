@@ -97,34 +97,46 @@ export default function CostsClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs="Team / Season Costs"
-        title="Season Costs & Budget"
-        description={
+        breadcrumbs={
           <>
-            The full cost of your season in one place — real-world spend (registration, event fees, purchases), recurring
-            subscriptions, and the app&apos;s own AI/API usage — tracked against one budget.
+            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
+            {" / Season Costs"}
           </>
         }
+        title="Season Costs"
+        description="Real-world spend, subscriptions, and live AI/API usage against one season budget — separate from Business purchase approvals."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          {view?.status === "live" && view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {orgId ? (
+            <>
+              <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=budget`}>
+                Business budget
+              </a>
+              <a className="app-button secondary" href={`/impact?orgId=${encodeURIComponent(orgId)}`}>
+                Impact
+              </a>
+            </>
+          ) : null}
+        </div>
       </PageHeader>
 
       {error ? (
