@@ -68,6 +68,15 @@ export const FUNDRAISERS_RELATED_INCLUDE: BusinessRelatedId[] = [
   "finance-ai",
 ];
 
+/** Orders Soft-UI strip (`/orders` + Business Orders) — sponsors, fundraisers, budget. */
+export const ORDERS_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "sponsors",
+  "fundraisers",
+  "budget",
+  "grants",
+  "finance-ai",
+];
+
 /** Cross-links for Business Soft-UI (never DEMO placeholders). */
 export function businessRelatedLinks(
   orgId?: string | null,

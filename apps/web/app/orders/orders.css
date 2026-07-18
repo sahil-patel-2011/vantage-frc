@@ -1,24 +1,93 @@
-.orders-page {
+/* Business Orders Soft-UI — .orders-* + --soft-* tokens. Approve → buy link only. */
+
+.orders-page,
+.orders-embedded {
   --orders-accent: #1f7a3d;
-  --orders-accent-soft: #e8f5ec;
+  --orders-accent-soft: color-mix(in srgb, var(--orders-accent) 14%, var(--soft-card));
   --orders-accent-border: color-mix(in srgb, var(--orders-accent) 28%, var(--soft-line));
-  max-width: 960px;
-  margin: 0 auto;
-  padding: clamp(18px, 3vw, 32px) 16px 48px;
   display: grid;
   gap: 16px;
 }
 
-.orders-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.orders-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 32px) 16px 48px;
+}
+
+.orders-embedded {
+  padding: 0;
+}
+
+.orders-season {
+  display: inline-grid;
+  gap: 6px;
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
+  color: var(--soft-muted);
+  justify-self: start;
+}
+
+.orders-season select {
+  min-height: 38px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-line);
+  background: var(--soft-card);
+  color: inherit;
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
+}
+
+.orders-flow h2,
+.orders-next-actions h2,
+.soft-panel > h2 {
+  margin: 4px 0 0;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.orders-flow-steps {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.orders-flow-steps li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--soft-line);
+  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
+}
+
+.orders-flow-steps strong {
+  font-size: 13px;
+  color: var(--orders-accent);
+}
+
+.orders-flow-steps span {
+  color: var(--soft-muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .orders-metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 10px;
+  margin-top: 10px;
+}
+
+.orders-metrics-note,
+.orders-form-lead,
+.orders-section-lead {
+  margin: 6px 0 0;
+  color: var(--soft-muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .orders-metric {
@@ -43,7 +112,7 @@
   border-color: var(--orders-accent-border);
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--orders-accent-soft) 80%, #fff),
+    color-mix(in srgb, var(--orders-accent-soft) 80%, var(--soft-card)),
     color-mix(in srgb, var(--soft-card) 92%, #fff)
   );
 }
@@ -62,6 +131,7 @@
 .orders-form {
   display: grid;
   gap: 12px;
+  margin-top: 12px;
 }
 
 .orders-form label {
@@ -72,13 +142,16 @@
 
 .orders-form input,
 .orders-form textarea,
-.orders-form select {
+.orders-form select,
+.orders-admin-row input,
+.orders-admin-row select {
   width: 100%;
   min-height: 40px;
   padding: 8px 12px;
   border-radius: 12px;
   border: 1px solid var(--soft-line);
   background: var(--soft-card);
+  color: inherit;
   font: 400 14px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -180,7 +253,8 @@
 }
 
 .orders-status.ordered,
-.orders-status.received {
+.orders-status.received,
+.orders-status.reimbursed {
   color: #1e3a8a;
   background: #eff6ff;
   border-color: #bfdbfe;
@@ -194,6 +268,11 @@
   gap: 6px 12px;
 }
 
+.orders-waiting {
+  margin: 0;
+  font-size: 12px;
+}
+
 .orders-actions {
   display: flex;
   flex-wrap: wrap;
@@ -202,7 +281,7 @@
 }
 
 .orders-actions button,
-.orders-actions a.orders-link-btn {
+.orders-admin-row button {
   min-height: 34px;
   padding: 0 12px;
   border-radius: 10px;
@@ -210,23 +289,31 @@
   background: var(--soft-card);
   font: 600 12px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
-  text-decoration: none;
   color: inherit;
 }
 
-.orders-actions button.primary {
+.orders-actions button.primary,
+.orders-admin-row button.primary {
   background: var(--orders-accent);
   border-color: var(--orders-accent);
   color: #fff;
 }
 
-.orders-actions button.danger {
+.orders-actions button.danger,
+.orders-admin-row button.danger {
   color: #991b1b;
   border-color: #fecaca;
   background: #fef2f2;
 }
 
-.orders-buy-panel {
+.orders-actions button:disabled,
+.orders-admin-row button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.orders-buy-panel,
+.orders-approve-panel {
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px dashed var(--orders-accent-border);
@@ -235,13 +322,20 @@
   gap: 8px;
 }
 
-.orders-buy-panel h3 {
+.orders-approve-panel {
+  border-style: solid;
+  background: color-mix(in srgb, var(--soft-card) 88%, var(--orders-accent-soft));
+}
+
+.orders-buy-panel h3,
+.orders-approve-panel h3 {
   margin: 0;
   font-size: 13px;
   color: var(--orders-accent);
 }
 
-.orders-buy-panel ol {
+.orders-buy-panel ol,
+.orders-approve-panel p {
   margin: 0;
   padding-left: 18px;
   font-size: 12px;
@@ -250,29 +344,55 @@
   gap: 4px;
 }
 
-.orders-buy-panel a {
+.orders-approve-panel p {
+  padding-left: 0;
+  line-height: 1.4;
+}
+
+.orders-buy-link {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--orders-accent);
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.orders-buy-panel a:not(.orders-buy-link) {
   color: var(--orders-accent);
   font-weight: 700;
 }
 
-.orders-warn {
-  margin: 0;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: #fff7ed;
-  color: #9a3412;
-  border: 1px solid #fed7aa;
-  font: 600 13px var(--font-source-sans), ui-sans-serif;
-}
-
+.orders-info,
+.orders-warn,
 .orders-error {
   margin: 0;
   padding: 10px 14px;
   border-radius: 12px;
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
+}
+
+.orders-info {
+  background: color-mix(in srgb, var(--orders-accent-soft) 70%, var(--soft-card));
+  color: var(--orders-accent);
+  border: 1px solid var(--orders-accent-border);
+}
+
+.orders-warn {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+
+.orders-error {
   background: #fef2f2;
   color: #991b1b;
   border: 1px solid #fecaca;
-  font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
 
 .orders-admin-row {
@@ -282,29 +402,87 @@
   align-items: center;
 }
 
-.orders-admin-row select {
-  min-height: 34px;
-  padding: 4px 10px;
-  border-radius: 10px;
+.orders-admin-row select,
+.orders-admin-row input {
+  width: auto;
+  min-width: min(220px, 100%);
+  flex: 1 1 160px;
+}
+
+.orders-embedded .strategy-setup-steps,
+.orders-page .strategy-setup-steps {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.orders-embedded .strategy-setup-steps li,
+.orders-page .strategy-setup-steps li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
   border: 1px solid var(--soft-line);
-  background: var(--soft-card);
+  background: var(--soft-bg, var(--soft-card));
+}
+
+.orders-embedded .strategy-setup-steps li div,
+.orders-page .strategy-setup-steps li div {
+  display: grid;
+  gap: 2px;
+}
+
+.orders-embedded .strategy-setup-steps span,
+.orders-page .strategy-setup-steps span {
+  color: var(--soft-muted);
   font-size: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .orders-page {
-    --orders-accent-soft: #143322;
+html[data-theme="dark"] .orders-page,
+html[data-theme="dark"] .orders-embedded,
+[data-theme="dark"] .orders-page,
+[data-theme="dark"] .orders-embedded {
+  --orders-accent-soft: color-mix(in srgb, var(--orders-accent) 22%, #0f1a14);
+}
+
+html[data-theme="dark"] .orders-status.pending,
+[data-theme="dark"] .orders-status.pending {
+  background: #431407;
+  color: #fdba74;
+  border-color: #9a3412;
+}
+
+html[data-theme="dark"] .orders-status.rejected,
+[data-theme="dark"] .orders-status.rejected {
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #991b1b;
+}
+
+html[data-theme="dark"] .orders-warn,
+[data-theme="dark"] .orders-warn {
+  background: #431407;
+  color: #fdba74;
+  border-color: #9a3412;
+}
+
+@media (max-width: 650px) {
+  .orders-flow-steps {
+    grid-template-columns: 1fr;
   }
 
-  .orders-status.pending {
-    background: #431407;
-    color: #fdba74;
-    border-color: #9a3412;
+  .orders-admin-row {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .orders-status.rejected {
-    background: #450a0a;
-    color: #fca5a5;
-    border-color: #991b1b;
+  .orders-admin-row select,
+  .orders-admin-row input,
+  .orders-admin-row button {
+    width: 100%;
   }
 }
