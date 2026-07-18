@@ -1,0 +1,102 @@
+/* Soft-UI Team admin membership — never DEMO members. */
+.team-admin-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.team-admin-membership {
+  margin-top: 0.5rem;
+}
+
+.team-admin-next-actions ol,
+.team-admin-setup-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.team-admin-next-actions li,
+.team-admin-setup-steps li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--app-border, #d0d7de) 80%, transparent);
+}
+
+.team-admin-next-actions li:first-child,
+.team-admin-setup-steps li:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.team-admin-next-actions li.primary strong {
+  color: var(--app-fg, inherit);
+}
+
+.team-admin-next-actions li div,
+.team-admin-setup-steps li div {
+  display: grid;
+  gap: 0.25rem;
+  flex: 1 1 12rem;
+}
+
+.team-admin-next-actions li span,
+.team-admin-tip {
+  color: var(--app-muted, #656d76);
+  font-size: 0.9rem;
+}
+
+.team-admin-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.team-admin-metrics article {
+  flex: 1 1 7rem;
+  min-width: 6.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--app-surface, #fff) 88%, var(--app-border, #d0d7de));
+}
+
+.team-admin-metrics article strong {
+  display: block;
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.team-admin-metrics article span {
+  font-size: 0.8rem;
+  color: var(--app-muted, #656d76);
+}
+
+.team-admin-members article {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-border, #d0d7de) 80%, transparent);
+}
+
+.team-admin-members article:last-child {
+  border-bottom: none;
+}
+
+.team-admin-members strong {
+  display: block;
+}
+
+.team-admin-members small {
+  color: var(--app-muted, #656d76);
+}
