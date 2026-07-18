@@ -1,8 +1,37 @@
 import { lockScoutPayload } from "./identity";
+import {
+  assertStorageKeyForOrg,
+  orgScopedStorageKey,
+} from "./org-isolation";
 export type Confidence = "high" | "normal" | "low";
 export type EntrySource = "manual" | "voice" | "import" | "video";
 export type EntryType = "match" | "pit";
-export type FieldType = "number" | "boolean" | "text" | "select";
+
+/** Design-time form-builder field kinds (persisted on scout_form_fields). */
+export type FormBuilderFieldType =
+  | "dropdown"
+  | "multiple_choice"
+  | "short_answer"
+  | "long_text"
+  | "number"
+  | "drivetrain_type"
+  | "robot_image";
+
+/** Runtime + builder field types. Legacy boolean/text/select remain supported. */
+export type FieldType =
+  | "number"
+  | "boolean"
+  | "text"
+  | "select"
+  | FormBuilderFieldType;
+
+export const DEFAULT_DRIVETRAIN_OPTIONS = [
+  "swerve",
+  "west_coast",
+  "tank",
+  "mecanum",
+  "other",
+] as const;
 
 export {
   SCOUT_QR_EMBED_PREFIX,
@@ -29,6 +58,17 @@ export {
 } from "./qr-handoff";
 import { qrContentToImportJson } from "./qr-handoff";
 
+/** Builder UI hint — entry forms may use this for radio vs select / short vs textarea. */
+export type FieldWidget =
+  | "mc"
+  | "short"
+  | "free"
+  | "dropdown"
+  | "number"
+  | "yesno"
+  | "drivetrain"
+  | "robot_image";
+
 export type FieldDefinition = {
   key: string;
   label: string;
@@ -36,6 +76,10 @@ export type FieldDefinition = {
   required?: boolean;
   options?: string[];
   disagreementThreshold?: number;
+  helpText?: string;
+  config?: Record<string, unknown>;
+  /** Soft-UI form builder presentation; ignored by payload validation. */
+  widget?: FieldWidget;
 };
 
 export type SchemaDefinition = { title: string; fields: FieldDefinition[] };
@@ -60,16 +104,38 @@ export const DEFAULT_PIT_SCHEMA: SchemaDefinition = {
   title: "Pit scouting",
   fields: [
     {
-      key: "drivetrain",
+      key: "drivetrain_type",
       label: "Drivetrain",
-      type: "select",
-      options: ["swerve", "tank", "mecanum", "other"],
+      type: "drivetrain_type",
+      options: [...DEFAULT_DRIVETRAIN_OPTIONS],
+      widget: "drivetrain",
+    },
+    {
+      key: "robot_images",
+      label: "Robot images",
+      type: "robot_image",
+      widget: "robot_image",
+      helpText: "Upload or capture pit photos of the robot.",
     },
     { key: "cycle_time", label: "Cycle time (s)", type: "number" },
     { key: "reliable", label: "Reliable", type: "boolean" },
     { key: "notes", label: "Notes", type: "text" },
   ],
 };
+
+/** True when a robot_image payload holds one or more media client ids. */
+export function isRobotImageValue(value: unknown): boolean {
+  if (typeof value === "string") return value.trim().length > 0;
+  return Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === "string" && item.length > 0);
+}
+
+export function normalizeRobotImageRefs(value: unknown): string[] {
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+  }
+  return [];
+}
 
 export type ScoutSchema = {
   id: string;
@@ -91,6 +157,8 @@ export type SyncEntry = {
   confidence: Confidence;
   source: EntrySource;
   updatedAt: string;
+  /** Offline outbox tenant stamp — never sync under a different orgId. */
+  orgId?: string;
   videoReviewId?: string;
   videoAtSeconds?: number;
 };
@@ -114,19 +182,64 @@ export function validatePayload(
   }
   for (const field of schema.fields) {
     const value = payload[field.key];
-    if (field.required && (value === undefined || value === null || value === "")) {
+    const empty =
+      value === undefined ||
+      value === null ||
+      value === "" ||
+      (Array.isArray(value) && value.length === 0);
+    if (field.required && empty) {
       errors.push(`${field.label} is required`);
       continue;
     }
-    if (value === undefined || value === null || value === "") continue;
+    if (empty) continue;
     if (field.type === "number" && (typeof value !== "number" || !Number.isFinite(value))) {
       errors.push(`${field.label} must be a number`);
     } else if (field.type === "boolean" && typeof value !== "boolean") {
       errors.push(`${field.label} must be true or false`);
-    } else if ((field.type === "text" || field.type === "select") && typeof value !== "string") {
+    } else if (field.type === "robot_image") {
+      if (!isRobotImageValue(value)) {
+        errors.push(`${field.label} must be a media id or list of media ids`);
+      }
+    } else if (
+      (field.type === "text" ||
+        field.type === "select" ||
+        field.type === "dropdown" ||
+        field.type === "short_answer" ||
+        field.type === "long_text" ||
+        field.type === "drivetrain_type") &&
+      typeof value !== "string"
+    ) {
       errors.push(`${field.label} must be text`);
-    } else if (field.type === "select" && !field.options?.includes(String(value))) {
+    } else if (field.type === "multiple_choice") {
+      const allowMultiple = field.config?.allowMultiple === true;
+      if (allowMultiple) {
+        if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+          errors.push(`${field.label} must be a list of options`);
+        } else if (field.options?.length) {
+          for (const item of value) {
+            if (!field.options.includes(item)) {
+              errors.push(`${field.label} has an invalid option`);
+              break;
+            }
+          }
+        }
+      } else if (typeof value !== "string") {
+        errors.push(`${field.label} must be text`);
+      } else if (field.options?.length && !field.options.includes(value)) {
+        errors.push(`${field.label} has an invalid option`);
+      }
+    } else if (
+      (field.type === "select" || field.type === "dropdown") &&
+      field.options?.length &&
+      !field.options.includes(String(value))
+    ) {
       errors.push(`${field.label} has an invalid option`);
+    } else if (field.type === "drivetrain_type") {
+      const options =
+        field.options?.length ? field.options : [...DEFAULT_DRIVETRAIN_OPTIONS];
+      if (!options.includes(String(value))) {
+        errors.push(`${field.label} has an invalid drivetrain type`);
+      }
     }
   }
   return errors;
@@ -176,6 +289,8 @@ export function detectDisagreements(
   if (eligible.length < 2) return [];
   const disagreements: Disagreement[] = [];
   for (const field of schema.fields) {
+    // Attachment refs are not comparable categorical answers.
+    if (field.type === "robot_image") continue;
     const observed = eligible
       .map((entry) => ({ id: entry.id, value: entry.payload[field.key] }))
       .filter(({ value }) => value !== undefined && value !== null);
@@ -213,22 +328,39 @@ export class LocalMediaStorage implements MediaStorage {
     contentType: string;
     byteSize: number;
   }) {
+    const storageKey = orgScopedStorageKey(input.orgId, input.clientId);
+    assertStorageKeyForOrg(storageKey, input.orgId);
     return {
-      storageKey: `${input.orgId}/local/${input.clientId}`,
+      storageKey,
       uploadUrl: `/api/scouting/media/${encodeURIComponent(input.clientId)}?orgId=${encodeURIComponent(input.orgId)}`,
     };
   }
 }
 
-export interface VoiceDraftAdapter {
-  transcript(blob: Blob): Promise<string>;
-}
+export {
+  assertExplicitOrgAccess,
+  assertResourceInOrg,
+  assertStorageKeyForOrg,
+  filterMediaForOrg,
+  filterSchemasForOrg,
+  filterVoiceNotesForOrg,
+  isWrongOrgDenied,
+  orgIdFromUploadUrl,
+  orgScopedStorageKey,
+  OrgIsolationError,
+  partitionByOrgId,
+  resourceBelongsToOrg,
+  storageKeyBelongsToOrg,
+  wouldCrossOrgLeak,
+} from "./org-isolation";
 
-export class BrowserVoiceDraftAdapter implements VoiceDraftAdapter {
-  async transcript(): Promise<string> {
-    throw new Error("Browser speech recognition must provide the transcript");
-  }
-}
+export {
+  applyVoiceTranscriptToForm,
+  BrowserVoiceDraftAdapter,
+  coerceVoiceFieldValue,
+  normalizeVoiceLabel,
+  type VoiceDraftAdapter,
+} from "./voice";
 
 export type ImportProvenance = {
   format: "csv" | "json" | "qr";
@@ -310,10 +442,12 @@ export function importScoutData(input: {
       "teamKey", "team_key", "team", "teamNumber", "payload",
       "Event Key", "Event Code", "Match Number", "Match Num", "Team Number", "Team Num", "Robot",
     ]);
-    const payload =
+    const rawPayload =
       row.payload && typeof row.payload === "object"
         ? (row.payload as Record<string, unknown>)
         : Object.fromEntries(Object.entries(row).filter(([key]) => !reserved.has(key)));
+    // CD #4 — never persist free-text scout names from CSV/JSON/QR imports.
+    const payload = lockScoutPayload(rawPayload).payload;
     return {
       clientId: String(row.clientId ?? row.client_id ?? `import-${index}-${eventKey}-${teamKey}`),
       eventKey,
@@ -346,6 +480,7 @@ export {
   isScoutIdentityField,
   lockScoutPayload,
   stripScoutIdentityFields,
+  SCOUT_IDENTITY_LOCK_COPY,
   type ScoutIdentity,
 } from "./identity";
 

@@ -9,6 +9,68 @@ import {
   withScoutingRequest,
 } from "../../../../lib/scouting-auth";
 
+export const dynamic = "force-dynamic";
+
+/** List latest match/pit schemas for the org's active season (form builder). */
+export async function GET(request: Request) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+    const orgId = new URL(request.url).searchParams.get("orgId");
+    const data = await withScoutingRequest(orgId, async (client) => {
+      const allowed = await client.query<{ allowed: boolean }>(
+        `SELECT has_org_role($1, ARRAY['owner','admin']::org_role[]) AS allowed`,
+        [orgId],
+      );
+      const context = await client.query<{ eventKey: string | null; year: number | null }>(
+        `SELECT c.active_event_key AS "eventKey", e.year
+         FROM org_active_context c
+         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+         WHERE c.org_id = $1`,
+        [orgId],
+      );
+      const eventKey = context.rows[0]?.eventKey ?? null;
+      const year = context.rows[0]?.year ?? null;
+      if (!year) {
+        return {
+          eventKey,
+          year: null,
+          canManageSchemas: Boolean(allowed.rows[0]?.allowed),
+          schemas: [] as Array<{
+            id: string;
+            orgId: string;
+            year: number;
+            type: string;
+            version: number;
+            definition: SchemaDefinition;
+          }>,
+        };
+      }
+      const schemas = await client.query(
+        `SELECT DISTINCT ON (type) id, org_id AS "orgId", year, type, version,
+          schema AS definition FROM scout_schemas
+         WHERE org_id = $1 AND year = $2
+         ORDER BY type, version DESC`,
+        [orgId, year],
+      );
+      return {
+        eventKey,
+        year,
+        canManageSchemas: Boolean(allowed.rows[0]?.allowed),
+        schemas: schemas.rows.map((row) => ({
+          ...row,
+          definition: stripScoutIdentityFields(
+            (row as { definition: SchemaDefinition }).definition,
+          ).definition,
+        })),
+      };
+    });
+    return Response.json(data, { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    return scoutingErrorResponse(error);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });

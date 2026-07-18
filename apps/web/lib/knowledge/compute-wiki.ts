@@ -65,7 +65,7 @@ export async function listKnowledgePages(client: PoolClient, orgId: string): Pro
   }>(
     `SELECT p.id, p.slug, p.title, p.template_kind AS "templateKind", p.season_year AS "seasonYear",
             p.tags, p.pinned, p.updated_at AS "updatedAt",
-            (SELECT count(*)::int FROM knowledge_links l WHERE l.page_id = p.id) AS "linkCount"
+            (SELECT count(*)::int FROM knowledge_links l WHERE l.page_id = p.id AND l.org_id = p.org_id) AS "linkCount"
      FROM knowledge_pages p
      WHERE p.org_id = $1::uuid
      ORDER BY p.pinned DESC, p.updated_at DESC`,
@@ -98,7 +98,7 @@ export async function getKnowledgePage(
             p.season_year AS "seasonYear", p.tags, p.pinned,
             p.updated_at AS "updatedAt", p.created_at AS "createdAt",
             cu.name AS "createdByName", uu.name AS "updatedByName",
-            (SELECT count(*)::int FROM knowledge_links l WHERE l.page_id = p.id) AS "linkCount"
+            (SELECT count(*)::int FROM knowledge_links l WHERE l.page_id = p.id AND l.org_id = p.org_id) AS "linkCount"
      FROM knowledge_pages p
      LEFT JOIN users cu ON cu.id = p.created_by
      LEFT JOIN users uu ON uu.id = p.updated_by
@@ -425,6 +425,11 @@ export async function applyKnowledgeWikiAction(
   }
 
   if (action.action === "link") {
+    const page = await client.query(
+      `SELECT 1 FROM knowledge_pages WHERE id = $1::uuid AND org_id = $2::uuid`,
+      [action.pageId, action.orgId],
+    );
+    if (!page.rowCount) throw new Error("Wiki page not found");
     if (action.targetType === "decision") {
       const found = await client.query(
         `SELECT 1 FROM decision_records WHERE id = $1::uuid AND org_id = $2::uuid`,
@@ -441,7 +446,7 @@ export async function applyKnowledgeWikiAction(
     await client.query(
       `INSERT INTO knowledge_links (org_id, page_id, target_type, target_id, note, created_by)
        VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5, $6::uuid)
-       ON CONFLICT (page_id, target_type, target_id) DO UPDATE SET note = excluded.note`,
+       ON CONFLICT (org_id, page_id, target_type, target_id) DO UPDATE SET note = excluded.note`,
       [action.orgId, action.pageId, action.targetType, action.targetId, action.note, userId],
     );
     return;

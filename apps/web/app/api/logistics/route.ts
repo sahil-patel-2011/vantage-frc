@@ -103,7 +103,7 @@ async function loadView(client: PoolClient, userId: string, requestedOrg: string
       client.query(`SELECT i.id, i.trip_id AS "tripId", i.audience, i.label, i.sort_order AS "sortOrder",
         (c.checked_at IS NOT NULL) AS checked, c.checked_at::text AS "checkedAt"
         FROM logistics_checklist_items i
-        LEFT JOIN logistics_checklist_checks c ON c.item_id = i.id AND c.user_id = $2::uuid
+        LEFT JOIN logistics_checklist_checks c ON c.item_id = i.id AND c.org_id = i.org_id AND c.user_id = $2::uuid
         WHERE i.org_id = $1::uuid ORDER BY i.sort_order, i.created_at`, [orgId, userId]),
       client.query<EmergencyContact>(`SELECT id, name, role_label AS "roleLabel", phone, email, notes, is_primary AS "isPrimary", sort_order AS "sortOrder"
         FROM logistics_emergency_contacts WHERE org_id = $1::uuid ORDER BY sort_order, created_at`, [orgId]),
@@ -210,6 +210,31 @@ async function syncTravelLegCalendar(
   return newId ?? null;
 }
 
+async function assertTripInOrg(client: PoolClient, orgId: string, tripId: string | null | undefined) {
+  if (!tripId) return;
+  const row = await client.query(
+    `SELECT 1 FROM logistics_trips WHERE id = $1::uuid AND org_id = $2::uuid`,
+    [tripId, orgId],
+  );
+  if (!row.rowCount) throw new HttpError(400, "Trip not found");
+}
+
+async function assertHotelInOrg(client: PoolClient, orgId: string, hotelId: string) {
+  const row = await client.query(
+    `SELECT 1 FROM logistics_hotels WHERE id = $1::uuid AND org_id = $2::uuid`,
+    [hotelId, orgId],
+  );
+  if (!row.rowCount) throw new HttpError(400, "Hotel not found");
+}
+
+async function assertChecklistItemInOrg(client: PoolClient, orgId: string, itemId: string) {
+  const row = await client.query(
+    `SELECT 1 FROM logistics_checklist_items WHERE id = $1::uuid AND org_id = $2::uuid`,
+    [itemId, orgId],
+  );
+  if (!row.rowCount) throw new HttpError(400, "Checklist item not found");
+}
+
 async function handleAction(client: PoolClient, userId: string, action: ReturnType<typeof parseLogisticsAction>) {
   const membership = await client.query<{ role: string; teamRole: string | null }>(
     `SELECT m.role, p.team_role AS "teamRole" FROM memberships m LEFT JOIN profiles p ON p.user_id = m.user_id
@@ -233,6 +258,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       await client.query(`DELETE FROM logistics_trips WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
       return;
     case "create_hotel":
+      await assertTripInOrg(client, action.orgId, action.tripId);
       await client.query(
         `INSERT INTO logistics_hotels (org_id, trip_id, name, address, phone, confirmation_code, check_in_at, check_out_at, room_block_notes, notes, created_by)
          VALUES ($1::uuid,$2::uuid,$3,$4,$5,$6,$7::timestamptz,$8::timestamptz,$9,$10,$11::uuid)`,
@@ -243,6 +269,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       await client.query(`DELETE FROM logistics_hotels WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
       return;
     case "upsert_room":
+      await assertHotelInOrg(client, action.orgId, action.hotelId);
       if (action.id) {
         await client.query(
           `UPDATE logistics_room_assignments SET room_label = $3, occupant_user_id = $4::uuid, occupant_name = $5, notes = $6
@@ -261,6 +288,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       await client.query(`DELETE FROM logistics_room_assignments WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
       return;
     case "seed_checklist": {
+      await assertTripInOrg(client, action.orgId, action.tripId);
       const existing = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM logistics_checklist_items WHERE org_id = $1::uuid AND ($2::uuid IS NULL OR trip_id = $2::uuid)`,
         [action.orgId, action.tripId],
@@ -288,6 +316,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       return;
     }
     case "add_checklist_item":
+      await assertTripInOrg(client, action.orgId, action.tripId);
       await client.query(
         `INSERT INTO logistics_checklist_items (org_id, trip_id, audience, label, sort_order, created_by)
          VALUES ($1::uuid,$2::uuid,$3,$4,COALESCE((SELECT max(sort_order)+1 FROM logistics_checklist_items WHERE org_id = $1::uuid),0),$5::uuid)`,
@@ -298,6 +327,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       await client.query(`DELETE FROM logistics_checklist_items WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
       return;
     case "toggle_checklist":
+      await assertChecklistItemInOrg(client, action.orgId, action.id);
       if (action.checked) {
         await client.query(
           `INSERT INTO logistics_checklist_checks (org_id, item_id, user_id) VALUES ($1::uuid,$2::uuid,$3::uuid)
@@ -331,6 +361,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       await client.query(`DELETE FROM logistics_emergency_contacts WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
       return;
     case "upsert_on_duty":
+      await assertTripInOrg(client, action.orgId, action.tripId);
       if (action.id) {
         await client.query(
           `UPDATE logistics_on_duty SET trip_id=$3::uuid, mentor_user_id=$4::uuid, mentor_name=$5, phone=$6, starts_at=$7::timestamptz,
@@ -349,6 +380,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       await client.query(`DELETE FROM logistics_on_duty WHERE id = $1::uuid AND org_id = $2::uuid`, [action.id, action.orgId]);
       return;
     case "upsert_travel_leg": {
+      await assertTripInOrg(client, action.orgId, action.tripId);
       let legId = action.id;
       if (legId) {
         await client.query(

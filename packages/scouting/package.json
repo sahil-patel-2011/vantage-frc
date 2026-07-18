@@ -8,6 +8,7 @@
     "./qr-handoff": "./src/qr-handoff.ts",
     "./coverage": "./src/coverage.ts",
     "./identity": "./src/identity.ts",
+    "./org-isolation": "./src/org-isolation.ts",
     "./trust": "./src/trust.ts",
     "./resolution": "./src/resolution.ts"
   },
