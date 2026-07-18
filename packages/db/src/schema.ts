@@ -187,6 +187,7 @@ export const userEmailPreferences = pgTable("user_email_preferences", {
   coachAssignments: boolean("coach_assignments").notNull().default(false),
   coachTodos: boolean("coach_todos").notNull().default(false),
   coachPracticeReminders: boolean("coach_practice_reminders").notNull().default(false),
+  sponsorReminders: boolean("sponsor_reminders").notNull().default(false),
   unsubscribeToken: text("unsubscribe_token").notNull(),
   ...timestamps,
 });
@@ -2151,6 +2152,33 @@ export const scoutDisagreements = pgTable(
   ],
 );
 
+export const scoutDisagreementAudit = pgTable(
+  "scout_disagreement_audit",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    disagreementId: uuid("disagreement_id")
+      .notNull()
+      .references(() => scoutDisagreements.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    action: text("action").notNull(),
+    before: jsonb("before"),
+    after: jsonb("after"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("scout_disagreement_audit_org_created_idx").on(table.orgId, table.createdAt),
+    index("scout_disagreement_audit_disagreement_idx").on(
+      table.disagreementId,
+      table.createdAt,
+    ),
+  ],
+);
+
 export const orgValueFormulas = pgTable(
   "org_value_formulas",
   {
@@ -2810,6 +2838,69 @@ export const grantApplicationItems = pgTable(
     ...timestamps,
   },
   (table) => [index("grant_application_items_application_idx").on(table.applicationId, table.sortOrder)],
+);
+
+/** Guided grant narratives (need/impact/budget/timeline) — org-isolated via RLS. */
+export const grantWritingDrafts = pgTable(
+  "grant_writing_drafts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    grantApplicationId: uuid("grant_application_id").references(() => grantApplications.id, {
+      onDelete: "set null",
+    }),
+    seasonYear: integer("season_year").notNull(),
+    templateKey: text("template_key").notNull(),
+    title: text("title").notNull(),
+    funderName: text("funder_name"),
+    askAmountUsd: numeric("ask_amount_usd", { precision: 12, scale: 2 }),
+    needText: text("need_text").notNull().default(""),
+    impactText: text("impact_text").notNull().default(""),
+    budgetText: text("budget_text").notNull().default(""),
+    timelineText: text("timeline_text").notNull().default(""),
+    body: text("body").notNull().default(""),
+    status: text("status").notNull().default("draft"),
+    source: text("source").notNull().default("template"),
+    provenance: jsonb("provenance").$type<unknown[]>().notNull().default([]),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [
+    index("grant_writing_drafts_org_season_idx").on(table.orgId, table.seasonYear),
+    index("grant_writing_drafts_org_status_idx").on(table.orgId, table.status),
+  ],
+);
+
+/** Sponsorship value-prop one-pagers — who we are / what we do / ask / sponsor gets. */
+export const sponsorshipValueProps = pgTable(
+  "sponsorship_value_props",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    seasonYear: integer("season_year").notNull(),
+    title: text("title").notNull(),
+    whoWeAre: text("who_we_are").notNull().default(""),
+    whatWeDo: text("what_we_do").notNull().default(""),
+    askCashUsd: numeric("ask_cash_usd", { precision: 12, scale: 2 }),
+    askParts: text("ask_parts").notNull().default(""),
+    askMentorship: text("ask_mentorship").notNull().default(""),
+    sponsorGets: text("sponsor_gets").notNull().default(""),
+    inviteEnabled: boolean("invite_enabled").notNull().default(false),
+    inviteDetails: text("invite_details").notNull().default(""),
+    status: text("status").notNull().default("draft"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [index("sponsorship_value_props_org_season_idx").on(table.orgId, table.seasonYear)],
 );
 
 export const awardSubmissions = pgTable(

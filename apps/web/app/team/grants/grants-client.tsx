@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GRANT_ITEM_KINDS, GRANT_STATUSES, grantStatusLabel } from "../../../lib/grants";
+import { GrantNarrativePanel } from "./grant-narrative-panel";
 
 type Opportunity = {
   id: string;
@@ -54,6 +55,7 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
   const [messageTone, setMessageTone] = useState<"ok" | "error">("ok");
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [evidenceNote, setEvidenceNote] = useState("");
   const [oppForm, setOppForm] = useState({
     name: "",
     funder: "",
@@ -69,14 +71,31 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
 
   async function load() {
     setLoading(true);
-    const [oppRes, appRes] = await Promise.all([
+    const seasonYear = new Date().getFullYear();
+    const [oppRes, appRes, evidenceRes] = await Promise.all([
       fetch(`/api/grants/opportunities?orgId=${encodeURIComponent(orgId)}`),
       fetch(`/api/grants/applications?orgId=${encodeURIComponent(orgId)}`),
+      fetch(
+        `/api/grants/assist?orgId=${encodeURIComponent(orgId)}&seasonYear=${encodeURIComponent(String(seasonYear))}`,
+      ),
     ]);
     const oppData = await oppRes.json();
     const appData = await appRes.json();
+    const evidenceData = await evidenceRes.json();
     setOpportunities(oppData.opportunities ?? []);
     setApplications(appData.applications ?? []);
+    if (evidenceRes.ok) {
+      const hours = Number(evidenceData.communityHours ?? 0);
+      const goals = Array.isArray(evidenceData.seasonGoals) ? evidenceData.seasonGoals.length : 0;
+      const activities = Number(evidenceData.impact?.activities ?? 0);
+      setEvidenceNote(
+        `This org only: ${activities} impact activities · ${hours} community hours · ${goals} season goals · ${
+          Array.isArray(evidenceData.awards) ? evidenceData.awards.length : 0
+        } awards. AI assist is metered.`,
+      );
+    } else {
+      setEvidenceNote("");
+    }
     if (!oppRes.ok) {
       setMessageTone("error");
       setMessage(oppData.error ?? "Unable to load grant opportunities");
@@ -257,9 +276,12 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
           </p>
         </div>
         <nav className="intel-actions" aria-label="Grants workbench links">
+          <a href={`#grant-narratives`}>Narrative drafts</a>
+          <a href={`/sponsorship?orgId=${encodeURIComponent(orgId)}`}>Sponsorship one-pagers</a>
           <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>Business · Grants</a>
           <a href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>Awards workbench</a>
           <a href={`/team/sponsors?orgId=${encodeURIComponent(orgId)}`}>Sponsors</a>
+          <a href={`/team/background?orgId=${encodeURIComponent(orgId)}`}>Team background</a>
           <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team admin</a>
         </nav>
       </header>
@@ -270,6 +292,12 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
       {loading ? <p className="app-muted">Loading grants…</p> : null}
+      {!loading && evidenceNote ? (
+        <p className="app-muted" role="status">
+          {evidenceNote}{" "}
+          <a href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>Open awards workbench →</a>
+        </p>
+      ) : null}
 
       {!loading ? (
         <section className="metric-grid">
@@ -605,6 +633,8 @@ export default function GrantsClient({ orgId }: { orgId: string }) {
           </div>
         </section>
       ) : null}
+
+      {!loading ? <GrantNarrativePanel orgId={orgId} /> : null}
     </main>
   );
 }

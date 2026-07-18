@@ -247,7 +247,7 @@ export class ScoutingRepository {
           [hash, orgId, input.clientId],
         );
         if (input.type === "match") {
-          await this.refreshDisagreements(orgId, locked, schema);
+          await this.refreshDisagreements(orgId, userId, locked, schema);
           validations = await this.refreshOfficialValidations(
             orgId,
             existing.serverEntryId,
@@ -308,7 +308,7 @@ export class ScoutingRepository {
     );
     let validations: FieldValidation[] = [];
     if (input.type === "match") {
-      await this.refreshDisagreements(orgId, locked, schema);
+      await this.refreshDisagreements(orgId, userId, locked, schema);
       validations = await this.refreshOfficialValidations(orgId, entryId, locked, schema);
     }
     return { clientId: input.clientId, entryId, duplicate: false, table, validations };
@@ -316,6 +316,7 @@ export class ScoutingRepository {
 
   private async refreshDisagreements(
     orgId: string,
+    actorUserId: string,
     input: SyncEntry,
     schema: ScoutSchema,
   ) {
@@ -325,18 +326,49 @@ export class ScoutingRepository {
       [orgId, input.matchKey, input.teamKey, input.schemaId],
     );
     for (const conflict of detectDisagreements(schema.definition, entries.rows)) {
-      await this.client.query(
+      const previous = await this.client.query<{
+        id: string;
+        status: string;
+        resolution: Record<string, unknown> | null;
+      }>(
+        `SELECT id, status, resolution FROM scout_disagreements
+         WHERE org_id=$1 AND match_key=$2 AND team_key=$3 AND field_key=$4`,
+        [orgId, input.matchKey, input.teamKey, conflict.fieldKey],
+      );
+      const upsert = await this.client.query<{ id: string }>(
         `INSERT INTO scout_disagreements
           (org_id,event_key,match_key,team_key,field_key,entry_ids,values)
          VALUES ($1,$2,$3,$4,$5,$6::uuid[],$7::jsonb)
          ON CONFLICT (org_id,match_key,team_key,field_key) DO UPDATE SET
           entry_ids=excluded.entry_ids, values=excluded.values, status='open',
-          resolution=NULL, reviewed_by=NULL, reviewed_at=NULL, updated_at=now()`,
+          resolution=NULL, reviewed_by=NULL, reviewed_at=NULL,
+          winning_entry_id=NULL, winning_scout_user_id=NULL, chosen_value=NULL,
+          updated_at=now()
+         RETURNING id`,
         [
           orgId, input.eventKey, input.matchKey, input.teamKey,
           conflict.fieldKey, conflict.entryIds, JSON.stringify(conflict.values),
         ],
       );
+      const prev = previous.rows[0];
+      if (prev && (prev.status === "resolved" || prev.status === "dismissed")) {
+        await this.client.query(
+          `INSERT INTO scout_disagreement_audit
+            (org_id, disagreement_id, actor_user_id, action, before, after)
+           VALUES ($1,$2,$3,'reopened',$4::jsonb,$5::jsonb)`,
+          [
+            orgId,
+            upsert.rows[0]?.id ?? prev.id,
+            actorUserId,
+            JSON.stringify({ status: prev.status, resolution: prev.resolution }),
+            JSON.stringify({
+              status: "open",
+              entryIds: conflict.entryIds,
+              values: conflict.values,
+            }),
+          ],
+        );
+      }
     }
   }
 

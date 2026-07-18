@@ -2,6 +2,7 @@
 // transaction. Every query filters by org_id = $1 — never other organizations.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { isFinanceInAiAllowed, loadOrgAiPolicy } from "@vantage/billing";
 import type { PitchBusinessFacts } from "./ai-pitch";
 import type { WriterProfile, WriterTone } from "./types";
 import {
@@ -176,6 +177,13 @@ export async function loadOrgPitchContext(
     seasonSponsorIncomeUsd: num(incomeResult.rows[0]?.seasonUsd),
     activeSponsorCount: sponsorCountResult.rows[0]?.count ?? 0,
   };
+
+  // Strip finance amounts from writer AI context unless Finance-in-AI is accepted.
+  const financePolicy = await loadOrgAiPolicy(client, orgId);
+  if (!isFinanceInAiAllowed(financePolicy)) {
+    business.fundraisingGoalUsd = null;
+    business.seasonSponsorIncomeUsd = null;
+  }
 
   return { profile, business };
 }
