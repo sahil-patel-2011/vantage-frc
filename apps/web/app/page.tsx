@@ -52,15 +52,27 @@ const capabilities: {
     status: "Available",
   },
   {
+    id: "strategy-tools",
+    title: "Strategy Soft-UI tools",
+    copy: "Win/loss, what-if, playbooks, and the Soft-UI pick desk (draft, collab, pick clock)—built from real TBA/Statbotics and scout facts, never DEMO win rates.",
+    status: "Available",
+  },
+  {
     id: "business",
-    title: "Sponsors · grants · orders",
-    copy: "Sponsor pipeline and follow-ups, grant writing assist with clear AI labels, and purchase orders in the same Business hub.",
+    title: "Business hub · sponsors · grants · orders",
+    copy: "Soft-UI fundraising glance, sponsor pipeline and follow-ups, grant writing assist with clear AI labels, and purchase orders in one Business hub.",
     status: "Available",
   },
   {
     id: "knowledge",
     title: "Team knowledge",
     copy: "Org-scoped wiki and handoff templates so mentors, students, and the Assistant read the same procedures.",
+    status: "Available",
+  },
+  {
+    id: "usage-cutoffs",
+    title: "Hard usage cutoffs",
+    copy: "Included managed API allowance hard-stops at 100%—no silent overage. Resume with Usage Credits, explicit PAYG + spend cap, or a higher plan.",
     status: "Available",
   },
   {
@@ -71,8 +83,8 @@ const capabilities: {
   },
   {
     id: "hubs",
-    title: "Product hubs",
-    copy: "Competition, Team, Business, Build, and AI hubs group the season so navigation matches how teams actually work.",
+    title: "Soft-UI product hubs",
+    copy: "Competition, Team, Business, Build, and AI hubs group the season in one Soft-UI shell—so navigation matches how teams actually work.",
     status: "Available",
   },
 ];
@@ -80,15 +92,15 @@ const capabilities: {
 const hubs = [
   {
     name: "Competition",
-    routes: "Command · My Day · Strategy · Scouting · Form builder · Match checklist",
+    routes: "Command · My Day · Strategy · Scouting · Form builder · Voice notes · Match checklist",
   },
   {
     name: "Team",
-    routes: "Calendar · Todos · Messages · Practice · Knowledge",
+    routes: "Calendar · Todos · Messages · Practice · Knowledge · Attendance",
   },
   {
     name: "Business",
-    routes: "Budget · Orders · Sponsors · Sponsorship · Grants",
+    routes: "Overview · Budget · Orders · Sponsors · Sponsorship · Grants",
   },
   {
     name: "Build",
@@ -201,10 +213,10 @@ export default function Home() {
         <section className="hub-band" aria-labelledby="hubs-title">
           <header>
             <span className="section-id">HUBS</span>
-            <h2 id="hubs-title">Navigate the season the way teams work.</h2>
+            <h2 id="hubs-title">Soft-UI hubs match how teams work.</h2>
             <p>
-              Five Soft-UI hubs group competition, team ops, business, build, and AI—so members land where their job
-              actually lives.
+              Five Soft-UI hubs group competition (including form builder and voice notes), team ops, business,
+              build, and AI—so members land where their job actually lives.
             </p>
             <StatusBadge status="Available" />
           </header>
@@ -238,11 +250,11 @@ export default function Home() {
             <article className="stitch-new">
               <h3>With Vantage</h3>
               <ul>
-                <li>Offline scout + QR handoff → attributed team facts</li>
+                <li>Custom forms + voice notes + QR → attributed team facts</li>
                 <li>Event Day / My Day for shared and personal work</li>
-                <li>Logistics, sponsors, grants, and orders in one org</li>
-                <li>Kickoff → strategy → approval-gated CAD</li>
-                <li>Assistant grounded and source-labeled; tool graph still shipping</li>
+                <li>Soft-UI Business hub for sponsors, grants, and orders</li>
+                <li>Kickoff → Soft-UI strategy/picks → approval-gated CAD</li>
+                <li>Assistant grounded and source-labeled; hard AI cutoffs; tool graph still shipping</li>
               </ul>
               <p>One continuous loop—with honest empty states and human gates.</p>
             </article>
@@ -256,7 +268,7 @@ export default function Home() {
             <p>
               Free covers scouting, reference data, manual strategy, exports, and team ops with BYOK or local AI. Paid
               plans add managed routing and included API allowance at provider list rates—then a hard stop unless you buy
-              Usage Credits or enable PAYG. Individual Pro $79 · Max $119 · Team Pro $229 · Team Max $449.
+              Usage Credits or enable PAYG. Access $55 · Individual Pro $79 / Max $119 · Team Pro $229 / Max $449.
             </p>
           </div>
           <a className="button secondary" href="/pricing">

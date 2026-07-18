@@ -109,8 +109,9 @@ export default function StrategyFeaturePage() {
             <span className="section-id">SCOUTING ↔ EVERYTHING ELSE</span>
             <h2 id="scout-integration-title">Scout once. The rest of the system stays current.</h2>
             <p>
-              Offline match and pit forms sync into organization-scoped facts. Those facts don’t sit in a dead archive—they
-              inform Strategy, the Assistant, predictions, pick lists, and day-of awareness as one connected loop.
+              Offline match and pit forms—plus owner-published custom schemas and opt-in voice notes—sync into
+              organization-scoped facts. Those facts don’t sit in a dead archive—they inform Soft-UI Strategy, the
+              Assistant, predictions, pick lists, and day-of awareness as one connected loop.
             </p>
           </header>
           <div className="scout-feed-grid">
@@ -141,10 +142,10 @@ export default function StrategyFeaturePage() {
           </article>
           <article>
             <b>03</b>
-            <h2>Playbook + debrief</h2>
+            <h2>Soft-UI pick desk</h2>
             <p>
-              Alliance priorities, risks, role checkpoints, and post-match prompts stay linked to the factors that
-              produced them.
+              Draft boards, collab pick lists, and pick-clock affordances live in the Competition Soft-UI hub—driven by
+              real coverage and capability tags your scouts recorded, never DEMO rankings.
             </p>
           </article>
         </section>
