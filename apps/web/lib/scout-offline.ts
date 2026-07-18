@@ -1,6 +1,15 @@
 "use client";
 
 import type { SyncEntry } from "@vantage/scouting";
+import {
+  decodeScoutQrContent,
+  encodeScoutQrPayload,
+  importedToSyncEntries,
+  mergeOfflineHandoff,
+  syncEntriesToQrRecords,
+  type OfflineMergeResult,
+  type ScoutQrRecord,
+} from "@vantage/scouting/qr-handoff";
 
 const DB_NAME = "vantage-scouting";
 const DB_VERSION = 2;
@@ -97,6 +106,100 @@ export async function pendingCounts(): Promise<{ entries: number; media: number 
     requestValue(mediaStore.count()),
   ]);
   return { entries, media };
+}
+
+export async function listPendingEntries(): Promise<SyncEntry[]> {
+  const objectStore = await store("readonly", OUTBOX);
+  return requestValue<SyncEntry[]>(objectStore.getAll());
+}
+
+export async function replaceOutbox(entries: SyncEntry[]): Promise<void> {
+  const objectStore = await store("readwrite", OUTBOX);
+  await requestValue(objectStore.clear());
+  for (const entry of entries) await requestValue(objectStore.put(entry));
+}
+
+export async function mergeRecordsIntoOutbox(input: {
+  records: ScoutQrRecord[];
+  schemaId: string;
+  type: "match" | "pit";
+}): Promise<OfflineMergeResult & { entries: SyncEntry[] }> {
+  if (!input.records.length) throw new Error("QR payload did not contain scout entries");
+  const incoming = importedToSyncEntries(input);
+  const existing = await listPendingEntries();
+  const merged = mergeOfflineHandoff(existing, incoming);
+  await replaceOutbox(merged.queued);
+  return { ...merged, entries: incoming };
+}
+
+export async function mergeQrHandoffIntoOutbox(input: {
+  content: string;
+  schemaId: string;
+  type: "match" | "pit";
+  orgId: string;
+}): Promise<OfflineMergeResult & { entries: SyncEntry[]; mode: "embedded" | "handoff" | "json" }> {
+  const decoded = decodeScoutQrContent(input.content);
+  if (decoded.kind === "handoff") {
+    if (!navigator.onLine) {
+      throw new Error("Short-code handoff needs a network redeem. Ask for an embedded QR while offline.");
+    }
+    const response = await fetch(
+      `/api/scouting/handoff?orgId=${encodeURIComponent(input.orgId)}&code=${encodeURIComponent(decoded.code)}`,
+    );
+    const body = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      records?: ScoutQrRecord[];
+    };
+    if (!response.ok) throw new Error(body.error ?? "Could not redeem handoff code");
+    const merged = await mergeRecordsIntoOutbox({
+      records: body.records ?? [],
+      schemaId: input.schemaId,
+      type: input.type,
+    });
+    return { ...merged, mode: "handoff" };
+  }
+  const merged = await mergeRecordsIntoOutbox({
+    records: decoded.records,
+    schemaId: input.schemaId,
+    type: input.type,
+  });
+  return { ...merged, mode: decoded.kind };
+}
+
+export async function encodePendingQrPayload(filter?: { eventKey?: string }): Promise<string> {
+  const pending = await listPendingEntries();
+  const selected = pending.filter((entry) => !filter?.eventKey || entry.eventKey === filter.eventKey);
+  return encodeScoutQrPayload(syncEntriesToQrRecords(selected));
+}
+
+export async function publishPendingShortCodeHandoff(
+  orgId: string,
+  filter?: { eventKey?: string },
+): Promise<{ userCode: string; qrPayload: string; recordCount: number; verificationUri: string }> {
+  const pending = await listPendingEntries();
+  const selected = pending.filter((entry) => !filter?.eventKey || entry.eventKey === filter.eventKey);
+  if (!selected.length) throw new Error("No pending outbox entries to hand off");
+  const response = await fetch("/api/scouting/handoff", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orgId, records: syncEntriesToQrRecords(selected) }),
+  });
+  const body = (await response.json().catch(() => ({}))) as {
+    error?: string;
+    userCode?: string;
+    qrPayload?: string;
+    recordCount?: number;
+    verificationUri?: string;
+  };
+  if (!response.ok || !body.userCode || !body.qrPayload) {
+    throw new Error(body.error ?? "Could not create handoff code");
+  }
+  return {
+    userCode: body.userCode,
+    qrPayload: body.qrPayload,
+    recordCount: body.recordCount ?? selected.length,
+    verificationUri: body.verificationUri ?? "",
+  };
 }
 
 export async function syncOutbox(orgId: string): Promise<{

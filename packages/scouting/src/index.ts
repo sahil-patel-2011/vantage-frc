@@ -1,7 +1,33 @@
+import { lockScoutPayload } from "./identity";
 export type Confidence = "high" | "normal" | "low";
-export type EntrySource = "manual" | "voice" | "import";
+export type EntrySource = "manual" | "voice" | "import" | "video";
 export type EntryType = "match" | "pit";
 export type FieldType = "number" | "boolean" | "text" | "select";
+
+export {
+  SCOUT_QR_EMBED_PREFIX,
+  SCOUT_QR_HANDOFF_PREFIX,
+  SCOUT_QR_MAX_EMBEDDED_BYTES,
+  applyPendingToCoverage,
+  decodeScoutQrContent,
+  encodeScoutHandoffQr,
+  encodeScoutQrPayload,
+  embeddedQrByteLength,
+  formatHandoffCode,
+  importedToSyncEntries,
+  mergeOfflineHandoff,
+  needsShortCodeHandoff,
+  normalizeHandoffCode,
+  qrContentToImportJson,
+  scoutHandoffUserCode,
+  summarizeCoverage,
+  syncEntriesToQrRecords,
+  type CoverageDashboardCell,
+  type OfflineMergeResult,
+  type ScoutQrDecode,
+  type ScoutQrRecord,
+} from "./qr-handoff";
+import { qrContentToImportJson } from "./qr-handoff";
 
 export type FieldDefinition = {
   key: string;
@@ -65,6 +91,8 @@ export type SyncEntry = {
   confidence: Confidence;
   source: EntrySource;
   updatedAt: string;
+  videoReviewId?: string;
+  videoAtSeconds?: number;
 };
 
 export type FormulaExpression =
@@ -204,7 +232,7 @@ export class BrowserVoiceDraftAdapter implements VoiceDraftAdapter {
 
 export type ImportProvenance = {
   format: "csv" | "json" | "qr";
-  source: "scoutingpass" | "vantage" | "generic";
+  source: "scoutingpass" | "scout_radioactive" | "frc_scouting" | "google_sheets" | "vantage" | "generic";
   importedAt: string;
   sourceFile?: string;
 };
@@ -262,23 +290,25 @@ export function importScoutData(input: {
     );
   } else {
     const decoded =
-      input.format === "qr"
-        ? Buffer.from(input.content.replace(/^vantage:\/\//, ""), "base64url").toString("utf8")
-        : input.content;
+      input.format === "qr" ? qrContentToImportJson(input.content) : input.content;
     const parsed = JSON.parse(decoded) as unknown;
     values = Array.isArray(parsed) ? parsed : [parsed];
   }
   return values.map((raw, index) => {
     if (!raw || typeof raw !== "object") throw new Error(`Import row ${index + 1} must be an object`);
     const row = raw as Record<string, unknown>;
-    const eventKey = String(row.eventKey ?? row.event_key ?? row.event ?? "").trim();
-    const matchKey = String(row.matchKey ?? row.match_key ?? row.match ?? "").trim() || undefined;
-    const teamValue = String(row.teamKey ?? row.team_key ?? row.team ?? row.teamNumber ?? "").trim();
+    const normalized = new Map(Object.entries(row).map(([key,value])=>[key.toLowerCase().replace(/[^a-z0-9]/g,""),value]));
+    const pick=(...aliases:string[])=>aliases.map((key)=>normalized.get(key.toLowerCase().replace(/[^a-z0-9]/g,""))).find((value)=>value!=null&&value!=="");
+    const eventKey = String(pick("eventKey","event","eventCode","competition") ?? "").trim();
+    const matchRaw=String(pick("matchKey","match","matchNumber","matchNum")??"").trim();
+    const matchKey = matchRaw ? (/^\d+$/.test(matchRaw)?`qm${matchRaw}`:matchRaw) : undefined;
+    const teamValue = String(pick("teamKey","team","teamNumber","teamNum","robot") ?? "").trim();
     const teamKey = /^frc\d+$/i.test(teamValue) ? teamValue.toLowerCase() : `frc${teamValue}`;
     if (!eventKey || !/^frc\d+$/.test(teamKey)) throw new Error(`Import row ${index + 1} lacks event/team identity`);
     const reserved = new Set([
       "clientId", "client_id", "eventKey", "event_key", "event", "matchKey", "match_key", "match",
       "teamKey", "team_key", "team", "teamNumber", "payload",
+      "Event Key", "Event Code", "Match Number", "Match Num", "Team Number", "Team Num", "Robot",
     ]);
     const payload =
       row.payload && typeof row.payload === "object"
@@ -309,3 +339,23 @@ export function smallTeamAssignments(input: {
     })),
   );
 }
+
+export {
+  assertSchemaIdentityLock,
+  bindScoutIdentity,
+  isScoutIdentityField,
+  lockScoutPayload,
+  stripScoutIdentityFields,
+  type ScoutIdentity,
+} from "./identity";
+
+export {
+  buildCoverageGapBoard,
+  focusLiveCoverage,
+  summarizeCoverageGaps,
+  toGapStatus,
+  type CoverageGapSlot,
+  type CoverageGapStatus,
+  type CoverageGapSummary,
+  type CoverageSlotInput,
+} from "./coverage";
