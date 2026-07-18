@@ -1,15 +1,24 @@
 "use client";
 
-import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
-
-import { OfflineBanner } from "../../components/offline-banner";
-
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { OfflineBanner } from "../../components/offline-banner";
+import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useOnline } from "../../lib/offline";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { statusLabel } from "../../lib/todos";
 import { TODO_STATUSES, type TodosView } from "../../lib/todos/compute-todos";
+import {
+  TODO_LIST_FILTERS,
+  TODOS_RELATED_INCLUDE,
+  filterTodos,
+  todoDeepLink,
+  todosNextActions,
+  type TodoListFilter,
+} from "../../lib/todos/todos-related";
 import type { TeamTodo, TodoStatus } from "../../lib/todos/types";
+import "./todos.css";
 
 type LiveView = Extract<TodosView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -22,21 +31,51 @@ function dueLabel(todo: TeamTodo): { text: string; tone: string } | null {
   return { text: `Due ${todo.dueOn}`, tone: "inherit" };
 }
 
-function withOrg(href: string, orgId: string | null) {
-  if (!orgId) return href;
-  const join = href.includes("?") ? "&" : "?";
-  return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
+function NextActions({
+  orgId,
+  todoCount,
+  mineOpen,
+  overdue,
+}: {
+  orgId?: string | null;
+  todoCount: number;
+  mineOpen: number;
+  overdue: number;
+}) {
+  const actions = todosNextActions({ orgId, todoCount, mineOpen, overdue });
+  if (actions.length === 0) return null;
+  return (
+    <section className="todos-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>From real team_todos only — never a DEMO task list.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
 }
 
 export default function TodosClient() {
   const online = useOnline();
-  const [fromCache, setFromCache] = useState(false);
-  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [fromCache] = useState(false);
+  const [cachedAt] = useState<string | null>(null);
   const [view, setView] = useState<TodosView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [filter, setFilter] = useState<"all" | "mine" | TodoStatus>("all");
+  const [filter, setFilter] = useState<TodoListFilter>("all");
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
@@ -99,25 +138,37 @@ export default function TodosClient() {
   );
 
   return (
-    <main className="module-page">
+    <main className="module-page todos-page">
       <PageHeader
         breadcrumbs="Team / Todos"
         title="Team todos"
         description={
           <>
-            Shared goals and action items for the whole team — assignees, due dates, and optional calendar subteam
-            tags. Empty until your org adds real work; nothing here is demo data.
+            Shared action items for this org — assignees, due dates, and optional calendar subteam tags. Empty until
+            your team adds real work; never a DEMO task list.
           </>
         }
       >
         {view?.status === "live" ? (
-          <a className="app-button secondary" href={withOrg("/tasks", orgId)}>
-            Build board
+          <a className="app-button secondary" href={withOrgHref("/tasks", orgId)}>
+            Build-season board
           </a>
         ) : null}
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="todos" />
+      <TeamHubRelated
+        orgId={orgId}
+        active="todos"
+        include={[...TODOS_RELATED_INCLUDE]}
+        ariaLabel="Related team ops for todos"
+      />
       <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
+
+      {!online ? (
+        <p className="telemetry-status" role="status">
+          You&apos;re offline — browsing last loaded todos only.
+        </p>
+      ) : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -126,15 +177,27 @@ export default function TodosClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState title="Could not load team todos" description="A network or server issue prevented loading. Try again.">
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+        <EmptyState
+          soft
+          badge="Setup"
+          badgeTone="setup"
+          title="Could not load team todos"
+          description="A network or server issue prevented loading. Select a workspace and try again."
+        >
+          <div className="soft-btn-row">
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+            <a className="app-button secondary" href="/workspace">
+              Choose workspace
+            </a>
+          </div>
+          <NextActions orgId={orgId} todoCount={0} mineOpen={0} overdue={0} />
         </EmptyState>
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
+        <EmptyState soft title="Loading…" description="Checking your workspace for real todos." aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -146,13 +209,27 @@ export default function TodosClient() {
               </li>
             ))}
           </ol>
+          <NextActions orgId={view.orgId} todoCount={0} mineOpen={0} overdue={0} />
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <MetricsTiles view={view} />
           <CreateTodoForm view={view} busy={busy} mutate={mutate} />
-          <FilterBar filter={filter} setFilter={setFilter} mineOpen={view.metrics.mineOpen} />
-          <Board view={view} filter={filter} busy={busy} mutate={mutate} />
+          <FilterBar
+            filter={filter}
+            setFilter={setFilter}
+            mineOpen={view.metrics.mineOpen}
+            overdue={view.metrics.overdue}
+          />
+          <Board view={view} filter={filter} setFilter={setFilter} busy={busy} mutate={mutate} />
+          {view.todos.length === 0 || view.metrics.overdue > 0 || view.metrics.mineOpen > 0 ? (
+            <NextActions
+              orgId={view.orgId}
+              todoCount={view.todos.length}
+              mineOpen={view.metrics.mineOpen}
+              overdue={view.metrics.overdue}
+            />
+          ) : null}
         </div>
       )}
     </main>
@@ -171,14 +248,15 @@ function MetricsTiles({ view }: { view: LiveView }) {
   ];
   return (
     <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(96px, 1fr))", gap: 12 }}>
+      <div className="todos-metrics">
         {tiles.map((tile) => (
           <div key={tile.label}>
-            <strong style={{ fontSize: "1.5rem", display: "block" }}>{tile.value}</strong>
+            <strong>{tile.value}</strong>
             <span className="app-muted">{tile.label}</span>
           </div>
         ))}
       </div>
+      <p className="todos-filter-note">Counts reflect saved org todos only — zeros stay zero until work is added.</p>
     </Panel>
   );
 }
@@ -187,30 +265,30 @@ function FilterBar({
   filter,
   setFilter,
   mineOpen,
+  overdue,
 }: {
-  filter: "all" | "mine" | TodoStatus;
-  setFilter: (value: "all" | "mine" | TodoStatus) => void;
+  filter: TodoListFilter;
+  setFilter: (value: TodoListFilter) => void;
   mineOpen: number;
+  overdue: number;
 }) {
-  const options: Array<{ id: "all" | "mine" | TodoStatus; label: string }> = [
-    { id: "all", label: "All" },
-    { id: "mine", label: `Mine (${mineOpen})` },
-    { id: "todo", label: "To do" },
-    { id: "doing", label: "Doing" },
-    { id: "done", label: "Done" },
-  ];
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-      {options.map((option) => (
-        <button
-          key={option.id}
-          type="button"
-          className={filter === option.id ? "app-button" : "app-button secondary"}
-          onClick={() => setFilter(option.id)}
-        >
-          {option.label}
-        </button>
-      ))}
+    <div className="soft-chip-row" role="toolbar" aria-label="Filter todos">
+      {TODO_LIST_FILTERS.map((option) => {
+        let label = option.label;
+        if (option.id === "mine") label = `Mine (${mineOpen})`;
+        if (option.id === "overdue") label = `Overdue (${overdue})`;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={filter === option.id}
+            onClick={() => setFilter(option.id)}
+          >
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -243,6 +321,7 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add todo</h2>
+      <p className="todos-filter-note">Creates a real row for this workspace — no sample lists.</p>
       <FormGrid min={150}>
         <FormRow label="Title" wide>
           <input value={form.title} onChange={set("title")} placeholder="Finish sponsor thank-you emails" required />
@@ -288,35 +367,58 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
 function Board({
   view,
   filter,
+  setFilter,
   busy,
   mutate,
 }: {
   view: LiveView;
-  filter: "all" | "mine" | TodoStatus;
+  filter: TodoListFilter;
+  setFilter: (value: TodoListFilter) => void;
   busy: boolean;
   mutate: Mutate;
 }) {
-  const filtered = view.todos.filter((todo) => {
-    if (filter === "all") return true;
-    if (filter === "mine") return todo.assigneeUserId === view.currentUserId && todo.status !== "done";
-    return todo.status === filter;
-  });
+  const filtered = filterTodos(view.todos, filter, view.currentUserId);
 
   if (view.todos.length === 0) {
     return (
       <EmptyState
+        soft
+        badge="Empty"
+        badgeTone="setup"
         title="No team todos yet"
-        description="Add the first shared action item when your team has real work to track. Vantage does not invent demo todos."
-      />
+        description="Add the first shared action item when your team has real work to track. Vantage does not invent DEMO task lists."
+      >
+        <div className="soft-btn-row">
+          <a className="app-button secondary" href={withOrgHref("/team?tab=calendar", view.orgId)}>
+            Calendar
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/team?tab=messages", view.orgId)}>
+            Messages
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/team?tab=practice", view.orgId)}>
+            Practice
+          </a>
+        </div>
+      </EmptyState>
     );
   }
 
   if (filtered.length === 0) {
-    return <EmptyState title="Nothing in this filter" description="Try All, or create a todo that matches this view." />;
+    return (
+      <EmptyState
+        soft
+        title="Nothing in this filter"
+        description="Try All, or create a todo that matches this view. Filters never invent rows."
+      >
+        <button type="button" className="app-button secondary" onClick={() => setFilter("all")}>
+          Show all
+        </button>
+      </EmptyState>
+    );
   }
 
   return (
-    <div style={{ display: "grid", gap: 10 }}>
+    <div className="todos-list">
       {filtered.map((todo) => (
         <TodoCard
           key={todo.id}
@@ -345,22 +447,14 @@ function TodoCard({
   focused: boolean;
 }) {
   const due = dueLabel(todo);
-  const deepLink = `/todos?orgId=${encodeURIComponent(view.orgId)}&todoId=${encodeURIComponent(todo.id)}`;
+  const deepLink = todoDeepLink(view.orgId, todo.id);
 
   return (
-    <Panel
-      id={`todo-${todo.id}`}
-      style={{
-        display: "grid",
-        gap: 10,
-        outline: focused ? "2px solid #1f4fd6" : undefined,
-        outlineOffset: 2,
-      }}
-    >
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "baseline", justifyContent: "space-between" }}>
+    <article className={focused ? "todos-card is-focused" : "todos-card"} id={`todo-${todo.id}`}>
+      <div className="todos-card-head">
         <div>
-          <strong style={{ fontSize: "1.05rem" }}>{todo.title}</strong>
-          <div className="app-muted" style={{ marginTop: 4 }}>
+          <strong>{todo.title}</strong>
+          <div className="todos-card-meta">
             {todo.assigneeName ? todo.assigneeName : "Unassigned"}
             {todo.subteamName ? (
               <>
@@ -457,7 +551,7 @@ function TodoCard({
         </FormRow>
       </FormGrid>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <div className="todos-card-actions">
         {todo.status !== "doing" && todo.status !== "done" ? (
           <button
             type="button"
@@ -500,6 +594,6 @@ function TodoCard({
           Delete
         </button>
       </div>
-    </Panel>
+    </article>
   );
 }

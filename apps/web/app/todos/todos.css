@@ -1,0 +1,117 @@
+/* Soft-UI Team Todos — list / filters / empty states (never DEMO task lists). */
+.todos-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 920px;
+}
+.todos-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 12px;
+}
+.todos-metrics strong {
+  display: block;
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+.todos-next-actions {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+  box-shadow: var(--soft-shadow);
+}
+.todos-next-actions > header h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+.todos-next-actions > header p {
+  margin: 0;
+  color: var(--soft-muted);
+  font-size: 13px;
+}
+.todos-next-actions ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.todos-next-actions li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--soft-bg) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--soft-line) 70%, transparent);
+}
+.todos-next-actions li.primary {
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+  background: color-mix(in srgb, var(--soft-accent-soft) 65%, var(--soft-card));
+}
+.todos-next-actions li strong {
+  display: block;
+  font-size: 14px;
+}
+.todos-next-actions li span {
+  display: block;
+  color: var(--soft-muted);
+  font-size: 12px;
+  margin-top: 2px;
+  max-width: 52ch;
+}
+.todos-list {
+  display: grid;
+  gap: 10px;
+}
+.todos-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+  box-shadow: var(--soft-shadow);
+}
+.todos-card.is-focused {
+  outline: 2px solid var(--soft-accent);
+  outline-offset: 2px;
+}
+.todos-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.todos-card-head strong {
+  font-size: 1.05rem;
+}
+.todos-card-meta {
+  margin-top: 4px;
+  color: var(--soft-muted);
+  font-size: 13px;
+}
+.todos-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.todos-filter-note {
+  margin: 0;
+  color: var(--soft-muted);
+  font-size: 12px;
+}
+.product-hub-panel .todos-page {
+  max-width: none;
+}
+.product-hub-panel .todos-page .app-page-header,
+.product-hub-panel .todos-page .team-ops-nav {
+  display: none;
+}
