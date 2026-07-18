@@ -1,10 +1,6 @@
 import { requestPool } from "@vantage/db";
 
-/**
- * After a TBA event-day sync, fan out match_alert inbox rows when our team's
- * schedule fingerprint changes. Uses SECURITY DEFINER emit_match_schedule_alerts
- * so cron (no session user) can notify members while respecting matchAlerts prefs.
- */
+/** After TBA cron sync: fan out match_alert rows when our schedule fingerprint changes. */
 export async function notifyMatchScheduleAfterSync(eventKeys: string[]): Promise<number> {
   const keys = [...new Set(eventKeys.filter((key) => typeof key === "string" && key.length > 0))];
   if (keys.length === 0) return 0;

@@ -96,8 +96,8 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   },
   {
     type: "next_match",
-    label: "Next match",
-    description: "Countdown and alliances for your next scheduled match",
+    label: "Next match / bumper",
+    description: "Countdown, bumper color, and alliances for your next match",
     defaultW: 6,
     defaultH: 4,
     minW: 3,
