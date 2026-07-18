@@ -68,3 +68,21 @@ export function selectedSurfaces(value: unknown): PartnerSurface[] {
 export function sponsorAssetUrl(publicId: string): string {
   return `/api/partner-assets/${encodeURIComponent(publicId)}`;
 }
+
+/**
+ * Campaigns may only reference packages that already belong to the org.
+ * Rejects empty / foreign packageIds so placement create cannot IDOR across tenants.
+ */
+export function orgScopedPackageId(
+  packageId: unknown,
+  orgPackageIds: ReadonlySet<string> | readonly string[],
+): string | null {
+  if (typeof packageId !== "string") return null;
+  const id = packageId.trim().slice(0, 64);
+  if (!id) return null;
+  const allowed = orgPackageIds instanceof Set ? orgPackageIds : new Set(orgPackageIds);
+  if (!allowed.has(id)) {
+    throw new Error("Placement package not found");
+  }
+  return id;
+}

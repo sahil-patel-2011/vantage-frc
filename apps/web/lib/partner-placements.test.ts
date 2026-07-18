@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isPartnerSurface, safeHttpUrl, selectedSurfaces, sponsorAssetUrl } from "./partner-placements";
+import {
+  isPartnerSurface,
+  orgScopedPackageId,
+  safeHttpUrl,
+  selectedSurfaces,
+  sponsorAssetUrl,
+} from "./partner-placements";
 
 describe("partner placement boundaries", () => {
   it("accepts only known placement surfaces", () => {
@@ -16,6 +22,12 @@ describe("partner placement boundaries", () => {
 
   it("builds same-origin asset URLs", () => {
     expect(sponsorAssetUrl("a/b")).toBe("/api/partner-assets/a%2Fb");
+  });
+
+  it("scopes packageId to the org and rejects foreign packages", () => {
+    expect(orgScopedPackageId("", ["pkg-a"])).toBeNull();
+    expect(orgScopedPackageId("pkg-a", ["pkg-a", "pkg-b"])).toBe("pkg-a");
+    expect(() => orgScopedPackageId("pkg-other-org", ["pkg-a"])).toThrow(/Placement package not found/);
   });
 });
 

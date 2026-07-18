@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { orgScopedPackageId } from "../../../../lib/partner-placements";
 
 type Body = Record<string, unknown>;
 const surfaces = ["business_wall", "dashboard_footer", "pit_footer"] as const;
@@ -69,10 +70,14 @@ export async function POST(request: Request) {
         const sponsorId = text(body.sponsorId, 64); const name = text(body.name, 160); const campaignSurfaces = list(body.surfaces); const startOn = day(body.startOn, new Date().toISOString().slice(0, 10)); const endOn = day(body.endOn, startOn);
         if (!sponsorId || !name || !campaignSurfaces.length || endOn < startOn) throw new Error("Sponsor, campaign name, valid dates, and at least one surface are required");
         const sponsor = await client.query("SELECT id FROM sponsors WHERE id = $1 AND org_id = $2", [sponsorId, orgId]); if (!sponsor.rows[0]) throw new Error("Sponsor not found");
-        const packageId = text(body.packageId, 64);
-        if (packageId) {
-          const pkg = await client.query("SELECT 1 FROM partner_placement_packages WHERE id = $1 AND org_id = $2", [packageId, orgId]);
-          if (!pkg.rows[0]) throw new Error("Placement package not found");
+        const packageIdRaw = text(body.packageId, 64);
+        let packageId: string | null = null;
+        if (packageIdRaw) {
+          const pkg = await client.query<{ id: string }>(
+            "SELECT id FROM partner_placement_packages WHERE id = $1 AND org_id = $2",
+            [packageIdRaw, orgId],
+          );
+          packageId = orgScopedPackageId(packageIdRaw, pkg.rows.map((row) => row.id));
         }
         await client.query(`INSERT INTO partner_placement_campaigns(org_id,sponsor_id,package_id,season_year,name,headline,link_url,surfaces,start_on,end_on,amount_usd,created_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`, [orgId, sponsorId, packageId, Number(body.seasonYear) || new Date().getUTCFullYear(), name, text(body.headline, 200), url(body.linkUrl), campaignSurfaces, startOn, endOn, money(body.amountUsd), session.user.id]);
         await audit(client, orgId, session.user.id, action, "partner_campaign");

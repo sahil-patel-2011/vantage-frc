@@ -1,6 +1,10 @@
 "use client";
 
 import type { FormEvent, ReactNode } from "react";
+import { BusinessRelated } from "../../components/business-related";
+import { EmptyState } from "../../components/ui";
+import { SPONSOR_CRM_RELATED_INCLUDE } from "../../lib/business/business-related";
+import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 import {
   SPONSOR_PIPELINE_STAGES,
   sponsorHealth,
@@ -57,6 +61,40 @@ function reminderLabel(kind: SponsorReminder["kind"]): string {
   return "Follow-up";
 }
 
+function NextActions({ view }: { view: BusinessView }) {
+  const actions = sponsorCrmNextActions({
+    orgId: view.orgId,
+    surface: "sponsors",
+    canManage: view.canManageFinance,
+    sponsorCount: view.sponsors.filter((s) => s.status !== "declined").length,
+    reminderCount: view.sponsorReminders.length,
+    fundraisingGoalCents: view.fundraisingProgress.goalCents,
+  });
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions biz-next-actions" aria-label="Next actions">
+      <header>
+        <span className="biz-overline">Next actions</span>
+        <h2>Keep the pipeline moving with real team data</h2>
+        <p>Only contacts, amounts, and dates you already recorded — never fabricated pipeline revenue.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export function SponsorPipelinePanel({
   view,
   busy,
@@ -73,15 +111,19 @@ export function SponsorPipelinePanel({
   const byStage = groupSponsorsByStage(view.sponsors);
   const progress = view.fundraisingProgress;
   const reminders = view.sponsorReminders;
+  const activeSponsors = view.sponsors.filter((s) => s.status !== "declined");
 
   return (
     <div className="biz-stack">
-      <div className="biz-detail-link">
-        <span>Need tier math, media kits, walls, or outreach calendars?</span>
-        <a href={`/sponsor-suite?orgId=${encodeURIComponent(view.orgId)}`}>Open Sponsor Suite →</a>
-        <a href={`/media-kit?orgId=${encodeURIComponent(view.orgId)}`}>Media kit →</a>
-        <a href={`/business?orgId=${encodeURIComponent(view.orgId)}&tab=sponsorship`}>Sponsorship one-pager →</a>
-      </div>
+      <BusinessRelated
+        orgId={view.orgId}
+        active="sponsors"
+        include={SPONSOR_CRM_RELATED_INCLUDE}
+        ariaLabel="Related fundraising tools"
+      />
+
+      <NextActions view={view} />
+
       <section className="app-card soft-panel biz-pipeline-goal">
         <header className="biz-card-head">
           <div>
@@ -117,6 +159,26 @@ export function SponsorPipelinePanel({
         </div>
         <p className="app-muted">Pipeline stages stay inside your org workspace. Other teams&apos; sponsors never appear here.</p>
       </section>
+
+      {!activeSponsors.length ? (
+        <EmptyState
+          soft
+          badge={view.canManageFinance ? "Get started" : "Setup"}
+          badgeTone={view.canManageFinance ? "" : "setup"}
+          title={view.canManageFinance ? "No sponsors in the CRM yet" : "Sponsor CRM is empty"}
+          description={
+            view.canManageFinance
+              ? "Add a partner below, run source-linked research, or open Fundraisers and Grants. Pipeline totals only reflect recorded contributions."
+              : "A finance lead adds CRM rows. You can still open related fundraising tools while the board is empty."
+          }
+        >
+          <BusinessRelated
+            orgId={view.orgId}
+            include={["fundraisers", "grants", "placements", "finance-ai"]}
+            ariaLabel="Empty CRM next links"
+          />
+        </EmptyState>
+      ) : null}
 
       {reminders.length ? (
         <section className="app-card biz-reminder-panel">
@@ -180,7 +242,7 @@ export function SponsorPipelinePanel({
             <span className="biz-overline">Sponsor pipeline CRM</span>
             <h2>Prospect → ask → visit → pledged → active → renewal</h2>
           </div>
-          <span className="biz-count">{view.sponsors.filter((s) => s.status !== "declined").length}</span>
+          <span className="biz-count">{activeSponsors.length}</span>
         </header>
         <div className="biz-sponsor-board">
           {SPONSOR_PIPELINE_STAGES.map((stage) => (
@@ -192,7 +254,7 @@ export function SponsorPipelinePanel({
               {byStage[stage].map((sponsor) => (
                 <PipelineCard key={sponsor.id} sponsor={sponsor} stage={stage} view={view} busy={busy} mutate={mutate} />
               ))}
-              {!byStage[stage].length ? <p className="biz-empty-inline">Empty</p> : null}
+              {!byStage[stage].length ? <p className="biz-empty-inline">No partners in this stage</p> : null}
             </div>
           ))}
         </div>
@@ -375,6 +437,14 @@ export function SponsorPipelinePanel({
           </article>
         </section>
       ) : null}
+
+      <div className="biz-detail-link">
+        <span>Need packages, walls, or recognition surfaces?</span>
+        <a href={`/business?tab=placements&orgId=${encodeURIComponent(view.orgId)}`}>Partner packages →</a>
+        <a href={`/sponsor-suite?orgId=${encodeURIComponent(view.orgId)}`}>Sponsor Suite →</a>
+        <a href={`/media-kit?orgId=${encodeURIComponent(view.orgId)}`}>Media kit →</a>
+        <a href={`/business?tab=sponsorship&orgId=${encodeURIComponent(view.orgId)}`}>Sponsorship one-pager →</a>
+      </div>
     </div>
   );
 }
