@@ -15,6 +15,8 @@ FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access i
 
 ## Core capabilities
 - Offline-first match and pit scouting with QR handoffs (works without venue Wi-Fi; syncs later)
+- Custom scouting form builder (versioned match/pit schemas) — Available
+- Scout voice notes (opt-in; attach to entries; cloud STT metered when configured) — Available
 - Scouting trust layer (disagreement review, coverage gaps, reliability signals) — Available
 - FRC Assistant for competition ops/intel: strategy, matchups, opponent history, robot capabilities—grounded in event context with labeled sources — Available
 - Integrated scouting: synced scout facts feed predictions, strategy playbooks, pick lists, live boards, and Assistant context (not a silo)

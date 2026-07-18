@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
 import { parseComposerLinkFromSearch, type MessageObjectLink } from "../../lib/messages/object-links";
 import "../product-hub.css";
 import "./calendar/team-calendar.css";
@@ -65,7 +65,7 @@ export default function TeamHub() {
             </HubOrgGate>
           );
         }
-        return null;
+        return <HubLegacyRedirect hubId="team" tab={tab} orgId={orgId} />;
       }}
     </ProductHubShell>
   );

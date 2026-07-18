@@ -6,6 +6,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 
 import type { SchemaDefinition, ScoutSchema, SyncEntry, ScoutIdentity } from "@vantage/scouting";
 import {
+  applyVoiceTranscriptToForm,
   DEFAULT_DRIVETRAIN_OPTIONS,
   normalizeRobotImageRefs,
 } from "@vantage/scouting";
@@ -468,15 +469,33 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
         }
       />
 
-      <nav className="scout-related" aria-label="Related data tools" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-        <a className="app-button secondary" href={`/scouting/forms?orgId=${encodeURIComponent(orgId)}`}>
+      <nav className="scout-related" aria-label="Related competition tools">
+        <a className="app-button secondary" href={`/competition?tab=forms&orgId=${encodeURIComponent(orgId)}`}>
           Form builder
+        </a>
+        <a
+          className="app-button secondary"
+          href={`/competition?tab=strategy&orgId=${encodeURIComponent(orgId)}`}
+        >
+          Strategy
+        </a>
+        <a
+          className="app-button secondary"
+          href={`/competition?tab=match-checklist&orgId=${encodeURIComponent(orgId)}`}
+        >
+          Match checklist
+        </a>
+        <a className="app-button secondary" href="#scout-voice">
+          Voice notes
         </a>
         <a className="app-button secondary" href={`/scouting/lineup?orgId=${encodeURIComponent(orgId)}`}>
           Lineup &amp; coverage
         </a>
         <a className="app-button secondary" href={`/offline-shell?orgId=${encodeURIComponent(orgId)}`}>
           Offline shell
+        </a>
+        <a className="app-button secondary" href={`/ai?tab=budgets&orgId=${encodeURIComponent(orgId)}`}>
+          AI budgets
         </a>
         <a
           className="app-button secondary"
@@ -518,7 +537,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
               <button className="app-button secondary" type="button" onClick={() => void createStarterForms()}>
                 Create starter forms
               </button>
-              <a className="app-button" href={`/scouting/forms?orgId=${encodeURIComponent(orgId)}`}>
+              <a className="app-button" href={`/competition?tab=forms&orgId=${encodeURIComponent(orgId)}`}>
                 Custom form builder
               </a>
             </div>
@@ -814,6 +833,18 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
               teamKey={teamKey}
               entryType={type}
               pendingEntryClientId={entryClientId}
+              formFields={formFields
+                .filter((field) => field.type !== "robot_image" && field.widget !== "robot_image")
+                .map((field) => ({ key: field.key, label: field.label }))}
+              onApplyToForm={(transcript, fieldKey) => {
+                if (!schema) return;
+                setSource("voice");
+                setPayload((current) =>
+                  applyVoiceTranscriptToForm(schema.definition, current, transcript, {
+                    fieldKey,
+                  }).payload,
+                );
+              }}
               onStatus={setMessage}
               onQueuedMedia={() => {
                 void refreshCounts();
