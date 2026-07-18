@@ -1,0 +1,13 @@
+export const manifest = {
+  slug: "event-day-plan",
+  title: "Event-Day Stress Planner",
+  route: "/event-day-plan",
+  apiRoute: "/api/event-day-plan",
+  hub: "Competition",
+  navGroup: "Competition",
+  metered: false,
+  tables: ["event_day_plan_blocks"],
+  aiTools: [],
+  exportAdapters: [],
+  placeholderRoute: false,
+} as const;
