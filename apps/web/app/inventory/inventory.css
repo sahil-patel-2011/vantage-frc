@@ -59,6 +59,17 @@
 .inventory-locations li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
 .inventory-locations li>div{display:grid;gap:3px}
 .inventory-locations strong{font-size:14px}
+.inventory-label-tools{display:grid;gap:12px;margin-bottom:18px}
+.inventory-label-tools>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.inventory-label-tools h2{margin:0 0 4px;font-size:17px}
+.inventory-label-tools p{margin:0}
+.inventory-scan-actions{display:flex;flex-wrap:wrap;gap:8px}
+.inventory-scan-video{width:min(100%,560px);max-height:360px;object-fit:cover;border:1px solid var(--app-line);border-radius:12px;background:#101418}
+.inventory-scan-video.hidden{display:none}
+.inventory-label-sheet{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.inventory-print-label{display:grid;justify-items:center;gap:5px;padding:14px;text-align:center;background:#fff;color:#172126;border:1px dashed #59666b;border-radius:10px}
+.inventory-print-label strong{font-size:16px}.inventory-print-label span,.inventory-print-label small{font-size:11px}
+.inventory-print-label img{width:180px;height:180px}
 .inventory-bom{display:grid;gap:8px;padding:14px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
 .inventory-bom.buildable{border-color:var(--app-positive)}
 .inventory-bom>header{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -75,6 +86,12 @@
   .inventory-item-id{grid-area:id}
   .inventory-item-qty{grid-area:qty}
   .inventory-item-actions{grid-area:actions;border-top:1px solid var(--app-line);padding-top:8px}
+}
+@media print{
+  body *{visibility:hidden!important}
+  .inventory-label-sheet,.inventory-label-sheet *{visibility:visible!important}
+  .inventory-label-sheet{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;padding:8mm}
+  .inventory-print-label{break-inside:avoid;border:1px dashed #333}
 }
 
 /* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */

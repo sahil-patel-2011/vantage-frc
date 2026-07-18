@@ -40,16 +40,36 @@ export function resolveAuthBaseURL() {
 
 /** Origins allowed for Better Auth CSRF / callback checks. */
 export function resolveAuthTrustedOrigins(baseURL: string) {
-  const origins = new Set<string>([
-    baseURL.replace(/\/$/, ""),
-    "https://vantage-frc-web.vercel.app",
-    "https://vantage-frc-web-sahil-patel-s-projects1.vercel.app",
-  ]);
-  const appUrl = runtimeEnv("NEXT_PUBLIC_APP_URL").replace(/\/$/, "");
-  if (appUrl) origins.add(appUrl);
+  const origins = new Set<string>();
+  const addOrigin = (candidate: string) => {
+    if (!candidate) return;
+    try {
+      const url = new URL(candidate.includes("://") ? candidate : `https://${candidate}`);
+      const localHttp = url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
+      if (url.protocol === "https:" || localHttp) origins.add(url.origin);
+    } catch {
+      // Ignore malformed optional origins instead of weakening the allowlist.
+    }
+  };
+  addOrigin(baseURL);
+  addOrigin("https://vantage-frc-web.vercel.app");
+  addOrigin(runtimeEnv("NEXT_PUBLIC_APP_URL"));
   const productionHost = runtimeEnv("VERCEL_PROJECT_PRODUCTION_URL");
-  if (productionHost) origins.add(`https://${productionHost.replace(/\/$/, "")}`);
+  addOrigin(productionHost);
+  addOrigin(runtimeEnv("VERCEL_URL"));
+  for (const configured of runtimeEnv("AUTH_TRUSTED_ORIGINS").split(",")) addOrigin(configured.trim());
   return [...origins];
+}
+
+export function resolveAuthSecret(
+  configured = runtimeEnv("BETTER_AUTH_SECRET"),
+  environment = process.env.NODE_ENV,
+) {
+  if (configured.trim()) return configured.trim();
+  if (environment === "production") {
+    throw new Error("BETTER_AUTH_SECRET is required in production.");
+  }
+  return "local-development-secret-change-me";
 }
 
 /** Safe, non-secret diagnostics for production Google OAuth wiring. */
@@ -94,6 +114,19 @@ export type AuthCapabilityReport = {
   googleCallbackURL: string;
 };
 
+export type PublicAuthCapabilityReport = Pick<
+  AuthCapabilityReport,
+  | "waitlistOnly"
+  | "publicSignup"
+  | "databaseConfigured"
+  | "emailOtpAvailable"
+  | "email2faEnforced"
+  | "passwordSignInAvailable"
+  | "googleSignInAvailable"
+  | "emailOtpReason"
+  | "passwordReason"
+>;
+
 export function getAuthCapabilities(): AuthCapabilityReport {
   const databaseConfigured = isDatabaseConfigured();
   const emailProvider = isEmailProviderConfigured();
@@ -127,6 +160,26 @@ export function getAuthCapabilities(): AuthCapabilityReport {
     googleClientSecretLooksValid: google.googleClientSecretLooksValid,
     authBaseURL: google.authBaseURL,
     googleCallbackURL: google.googleCallbackURL,
+  };
+}
+
+/** Browser-safe auth capabilities: no owner identity, environment diagnostics, or bypass state. */
+export function getPublicAuthCapabilities(): PublicAuthCapabilityReport {
+  const report = getAuthCapabilities();
+  return {
+    waitlistOnly: report.waitlistOnly,
+    publicSignup: report.publicSignup,
+    databaseConfigured: report.databaseConfigured,
+    emailOtpAvailable: report.emailOtpAvailable,
+    email2faEnforced: report.email2faEnforced,
+    passwordSignInAvailable: report.passwordSignInAvailable,
+    googleSignInAvailable: report.googleSignInAvailable,
+    emailOtpReason: report.emailOtpReason
+      ? "Email code sign-in is temporarily unavailable. Use another enabled method or contact your team leader."
+      : null,
+    passwordReason: report.passwordReason
+      ? "Password sign-in is temporarily unavailable. Use another enabled method or contact your team leader."
+      : null,
   };
 }
 

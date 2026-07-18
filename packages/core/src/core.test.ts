@@ -12,6 +12,7 @@ import {
   totpAt,
   verifyTotp,
   isTotpReplay,
+  resolveAuthSecret,
 } from ".";
 import { createOrganizationAsPlatformAdmin } from "./membership";
 import type { PoolClient } from "@neondatabase/serverless";
@@ -51,6 +52,12 @@ describe("organization authentication and MFA",()=>{
 });
 
 describe("waitlist-only auth access policy", () => {
+  it("never falls back to a predictable auth secret in production", () => {
+    expect(resolveAuthSecret("configured-secret", "production")).toBe("configured-secret");
+    expect(() => resolveAuthSecret("", "production")).toThrow(/BETTER_AUTH_SECRET/);
+    expect(resolveAuthSecret("", "development")).toMatch(/local-development/);
+  });
+
   it("reports public signup closed and gates email OTP when Resend is missing in production", async () => {
     const previous = {
       nodeEnv: process.env.NODE_ENV,
@@ -64,7 +71,7 @@ describe("waitlist-only auth access policy", () => {
     delete process.env.AUTH_EMAIL_FROM;
     delete process.env.ENABLE_EMAIL_2FA_BYPASS;
     process.env.DATABASE_AUTH_URL = "postgresql://example";
-    const { getAuthCapabilities, isEmailProviderConfigured, runtimeEnv } = await import("./access-policy");
+    const { getAuthCapabilities, getPublicAuthCapabilities, isEmailProviderConfigured, runtimeEnv } = await import("./access-policy");
     expect(runtimeEnv("RESEND_API_KEY")).toBe("");
     expect(isEmailProviderConfigured()).toBe(false);
     const report = getAuthCapabilities();
@@ -74,6 +81,10 @@ describe("waitlist-only auth access policy", () => {
     expect(report.email2faEnforced).toBe(false);
     expect(report.emailOtpReason).toMatch(/RESEND_API_KEY/);
     expect(report.passwordSignInAvailable).toBe(true);
+    const publicReport = getPublicAuthCapabilities();
+    expect(publicReport).not.toHaveProperty("ownerEmailHint");
+    expect(publicReport).not.toHaveProperty("email2faBypassEnabled");
+    expect(publicReport.emailOtpReason).not.toMatch(/RESEND_API_KEY|AUTH_EMAIL_FROM/);
 
     process.env.RESEND_API_KEY = "re_test";
     process.env.AUTH_EMAIL_FROM = "Vantage <access@example.com>";

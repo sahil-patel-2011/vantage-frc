@@ -90,6 +90,7 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
   const pct = view.totalCount ? Math.round((view.doneCount / view.totalCount) * 100) : 0;
   const activeTracks = view.tracks.filter((t) => !t.dismissed);
   const dismissedTracks = view.tracks.filter((t) => t.dismissed);
+  const nextCheck = activeTracks.flatMap((track) => track.checks).find((check) => !check.done);
 
   return (
     <main className="module-page start-page">
@@ -139,6 +140,38 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
         </strong>
         <div className="start-progress-bar">
           <span style={{ width: `${pct}%` }} />
+        </div>
+      </section>
+
+      <section className="start-launchpad" aria-labelledby="start-launch-title">
+        <div className="start-launch-head">
+          <div>
+            <span>PERSONAL LAUNCH PLAN</span>
+            <h2 id="start-launch-title">Everything you need to become team-ready</h2>
+          </div>
+          <strong>{pct === 100 ? "Ready" : `${view.totalCount - view.doneCount} steps left`}</strong>
+        </div>
+        <div className="start-launch-grid">
+          <article className="done">
+            <b>1</b>
+            <div><strong>Access verified</strong><span>Your account is connected to this team through a closed membership.</span></div>
+          </article>
+          <article>
+            <b>2</b>
+            <div><strong>{activeTracks.length} paths personalized</strong><span>Built from your role, focus, and assigned subteams—not a generic tour.</span></div>
+          </article>
+          <article>
+            <b>3</b>
+            <div>
+              <strong>{nextCheck?.label ?? "Launch path complete"}</strong>
+              <span>{nextCheck?.detail ?? "You finished every active onboarding check."}</span>
+              {nextCheck?.href ? <a href={nextCheck.href}>Do this next →</a> : null}
+            </div>
+          </article>
+          <article className="security">
+            <b>✓</b>
+            <div><strong>Protect your account</strong><span>Enroll an authenticator and save recovery codes before event day.</span><a href="/security">Open security →</a></div>
+          </article>
         </div>
       </section>
 

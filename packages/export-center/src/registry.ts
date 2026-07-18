@@ -259,6 +259,17 @@ export function createExportRegistry() {
       params: (c) => [c.orgId],
     }),
     sqlAdapter({
+      id: "cad-team-profile",
+      fileName: "cad_team_profile.csv",
+      description: "Shared team manufacturing standards used to ground adaptive CAD plans",
+      scope: "team",
+      category: "ai",
+      provenance: "Team-shared CAD manufacturing profile; private user response preferences excluded",
+      columns: ["default_platform", "preferred_units", "manufacturing_processes_json", "preferred_materials_json", "standard_components_json", "design_rules_json", "updated_at"],
+      query: `SELECT default_platform,preferred_units,to_json(manufacturing_processes)::text AS manufacturing_processes_json,to_json(preferred_materials)::text AS preferred_materials_json,to_json(standard_components)::text AS standard_components_json,to_json(design_rules)::text AS design_rules_json,updated_at FROM cad_team_profiles WHERE org_id=$1`,
+      params: (c) => [c.orgId],
+    }),
+    sqlAdapter({
       id: "feature-context-links",
       fileName: "feature_context_links.csv",
       description: "Auditable relationships between strategy, CAD, inventory, tasks, knowledge, finance, and team evidence",
