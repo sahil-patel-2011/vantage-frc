@@ -29,6 +29,11 @@ type OnboardingState = {
   workspaceOrgId: string | null;
   workspaceOrgName: string | null;
   requestCreatedAt: string | null;
+  isTeamHead: boolean;
+  orgCity: string | null;
+  orgStateProv: string | null;
+  orgDescription: string | null;
+  termsAcceptedAt: string | null;
 };
 
 const GENDERS = [
@@ -103,6 +108,10 @@ export default function OnboardingClient() {
   const [primaryFocus, setPrimaryFocus] = useState<PrimaryFocus>("competition");
   const [displayName, setDisplayName] = useState("");
   const [themePreference, setThemePreference] = useState<"light" | "dark">("light");
+  const [orgCity, setOrgCity] = useState("");
+  const [orgStateProv, setOrgStateProv] = useState("");
+  const [orgDescription, setOrgDescription] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -118,6 +127,10 @@ export default function OnboardingClient() {
     setPrimaryFocus(data.primaryFocus ?? "competition");
     setDisplayName(data.displayName ?? "");
     setThemePreference(data.themePreference ?? "light");
+    setTermsAccepted(Boolean(data.termsAcceptedAt));
+    setOrgCity(data.orgCity ?? "");
+    setOrgStateProv(data.orgStateProv ?? "");
+    setOrgDescription(data.orgDescription ?? "");
   }
 
   function routeCompleteState(data: OnboardingState) {
@@ -157,6 +170,12 @@ export default function OnboardingClient() {
     setBusy(true);
     setMessage("");
     try {
+      const isTeamHead = Boolean(state?.isTeamHead);
+      if (isTeamHead && (!orgCity.trim() || !orgStateProv.trim())) {
+        setMessage("Add your team's city and state so sponsors and partners know where you compete from.");
+        setBusy(false);
+        return;
+      }
       const response = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -170,6 +189,10 @@ export default function OnboardingClient() {
           primaryFocus,
           displayName: displayName.trim() || undefined,
           themePreference,
+          city: isTeamHead ? orgCity.trim() || null : undefined,
+          stateProv: isTeamHead ? orgStateProv.trim() || null : undefined,
+          description: isTeamHead ? orgDescription.trim() || null : undefined,
+          termsAccepted,
         }),
       });
       const data = (await response.json()) as OnboardingState & { error?: string };
@@ -289,6 +312,28 @@ export default function OnboardingClient() {
                 {ROLES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
+            {state?.isTeamHead ? (
+              <fieldset className="onboarding-team-profile">
+                <legend>Team location</legend>
+                <p className="onboarding-team-profile-hint">
+                  Required for owners and admins. Used in sponsorship one-pagers and grant proposals ? this workspace only.
+                </p>
+                <div className="onboarding-row">
+                  <label>
+                    City
+                    <input required maxLength={120} value={orgCity} onChange={(event) => setOrgCity(event.target.value)} autoComplete="address-level2" placeholder="Portland" />
+                  </label>
+                  <label>
+                    State / province
+                    <input required maxLength={80} value={orgStateProv} onChange={(event) => setOrgStateProv(event.target.value)} autoComplete="address-level1" placeholder="OR" />
+                  </label>
+                </div>
+                <label>
+                  Describe your FRC team <small>Optional</small>
+                  <textarea maxLength={2000} rows={3} value={orgDescription} onChange={(event) => setOrgDescription(event.target.value)} placeholder="A short blurb about who you are ? students served, focus areas, community." />
+                </label>
+              </fieldset>
+            ) : null}
             <fieldset className="onboarding-focus-grid">
               <legend>What should Vantage prioritize for you?</legend>
               {FOCUS_OPTIONS.map((option) => (
@@ -334,13 +379,22 @@ export default function OnboardingClient() {
               <label className="check-field"><input type="radio" name="theme" checked={themePreference === "light"} onChange={() => setThemePreference("light")} /> Light</label>
               <label className="check-field"><input type="radio" name="theme" checked={themePreference === "dark"} onChange={() => setThemePreference("dark")} /> Dark</label>
             </fieldset>
+            <label className="check-field onboarding-legal-accept">
+              <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} required />
+              <span>
+                I agree to the{" "}
+                <a href="/terms" target="_blank" rel="noreferrer">Terms of Service</a>
+                {" "}and{" "}
+                <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
+              </span>
+            </label>
             <div className="onboarding-security-note">
               <b aria-hidden="true">✓</b>
               <p><strong>Submitting does not grant access.</strong><span>Your verified request goes to a team owner or administrator. Approval creates membership, ends this temporary session, and emails you a fresh sign-in link.</span></p>
             </div>
             <div className="onboarding-actions">
               <button type="button" className="signin-link" onClick={() => setStep("team")}>Back</button>
-              <button className="signin-submit" type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit access request"}</button>
+              <button className="signin-submit" type="submit" disabled={busy || !termsAccepted}>{busy ? "Submitting…" : "Submit access request"}</button>
             </div>
           </form>
         ) : null}

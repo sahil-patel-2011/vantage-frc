@@ -16,6 +16,9 @@ const completeSchema = z.object({
   teamRole: z.enum(["student", "mentor", "coach", "parent", "other"]).nullable().optional(),
   displayName: z.string().nullable().optional(),
   themePreference: z.enum(["light", "dark"]).optional(),
+  city: z.string().nullable().optional(),
+  stateProv: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
 });
 
 export async function GET() {

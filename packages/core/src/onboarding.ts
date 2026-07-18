@@ -19,6 +19,18 @@ export const TEAM_ROLE_OPTIONS = [
 export type GenderOption = (typeof GENDER_OPTIONS)[number];
 export type TeamRoleOption = (typeof TEAM_ROLE_OPTIONS)[number];
 
+export type OrgLocationInput = {
+  city?: string | null;
+  stateProv?: string | null;
+  description?: string | null;
+};
+
+export type NormalizedOrgLocation = {
+  city: string | null;
+  stateProv: string | null;
+  description: string | null;
+};
+
 export type OnboardingPayload = {
   firstName: string;
   lastName: string;
@@ -28,6 +40,9 @@ export type OnboardingPayload = {
   teamRole?: TeamRoleOption | null;
   displayName?: string | null;
   themePreference?: "light" | "dark";
+  city?: string | null;
+  stateProv?: string | null;
+  description?: string | null;
 };
 
 export type OnboardingState = {
@@ -42,12 +57,40 @@ export type OnboardingState = {
   themePreference: "light" | "dark";
   lockedTeamNumber: number | null;
   lockedOrgName: string | null;
+  lockedOrgId: string | null;
+  isTeamHead: boolean;
+  orgCity: string | null;
+  orgStateProv: string | null;
+  orgDescription: string | null;
   canCreateOrg: boolean;
   platformAdmin: boolean;
 };
 
-function parseDob(value: string): Date {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+function trimOrNull(value: unknown, max: number): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, max);
+}
+
+export function normalizeOrgLocationFields(
+  input: OrgLocationInput,
+  options: { requireLocation: boolean },
+): NormalizedOrgLocation {
+  const city = trimOrNull(input.city, 120);
+  const stateProv = trimOrNull(input.stateProv, 80);
+  const description = trimOrNull(input.description, 2000);
+
+  if (options.requireLocation) {
+    if (!city) throw new Error("City is required.");
+    if (!stateProv) throw new Error("State or province is required.");
+  }
+
+  return { city, stateProv, description };
+}
+
+export function parseDob(value: string): Date {
+  const match = /^(d{4})-(d{2})-(d{2})$/.exec(value.trim());
   if (!match) throw new Error("Enter your date of birth as YYYY-MM-DD.");
   const year = Number(match[1]);
   const month = Number(match[2]);
@@ -85,6 +128,7 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
   if (displayName.length > 80) throw new Error("Display name must be 80 characters or fewer.");
   const themePreference = input.themePreference === "dark" ? "dark" : "light";
   parseDob(input.dateOfBirth);
+  const location = normalizeOrgLocationFields(input, { requireLocation: false });
   return {
     firstName,
     lastName,
@@ -94,7 +138,24 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
     teamRole: input.teamRole || null,
     displayName,
     themePreference,
+    city: location.city,
+    stateProv: location.stateProv,
+    description: location.description,
   };
+}
+
+type LockedOrgRow = {
+  orgId: string;
+  teamNumber: number;
+  orgName: string;
+  role: string | null;
+  city: string | null;
+  stateProv: string | null;
+  description: string | null;
+};
+
+function isTeamHeadRole(role: string | null | undefined): boolean {
+  return role === "owner" || role === "admin";
 }
 
 export async function getOnboardingState(client: PoolClient, userId: string): Promise<OnboardingState> {
@@ -122,8 +183,14 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     [userId],
   );
   const admin = await client.query(`SELECT 1 FROM platform_admins WHERE user_id=$1`, [userId]);
-  const membership = await client.query<{ teamNumber: number; orgName: string }>(
-    `SELECT o.team_number AS "teamNumber", o.name AS "orgName"
+  const membership = await client.query<LockedOrgRow>(
+    `SELECT o.id AS "orgId",
+            o.team_number AS "teamNumber",
+            o.name AS "orgName",
+            m.role::text AS "role",
+            o.city,
+            o.state_prov AS "stateProv",
+            o.description
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id=$1 AND o.team_number IS NOT NULL
@@ -132,8 +199,14 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     [userId],
   );
   const pendingInvite = !membership.rows[0]
-    ? await client.query<{ teamNumber: number; orgName: string }>(
-        `SELECT o.team_number AS "teamNumber", o.name AS "orgName"
+    ? await client.query<LockedOrgRow>(
+        `SELECT o.id AS "orgId",
+                o.team_number AS "teamNumber",
+                o.name AS "orgName",
+                NULL::text AS "role",
+                o.city,
+                o.state_prov AS "stateProv",
+                o.description
          FROM invites i
          JOIN organizations o ON o.id = i.org_id
          JOIN users u ON lower(u.email) = lower(i.email)
@@ -142,7 +215,7 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
          LIMIT 1`,
         [userId],
       )
-    : { rows: [] as Array<{ teamNumber: number; orgName: string }> };
+    : { rows: [] as LockedOrgRow[] };
 
   const locked = membership.rows[0] ?? pendingInvite.rows[0] ?? null;
   const row = profile.rows[0];
@@ -158,6 +231,11 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     themePreference: row?.themePreference === "dark" ? "dark" : "light",
     lockedTeamNumber: locked?.teamNumber ?? null,
     lockedOrgName: locked?.orgName ?? null,
+    lockedOrgId: locked?.orgId ?? null,
+    isTeamHead: isTeamHeadRole(locked?.role),
+    orgCity: locked?.city ?? null,
+    orgStateProv: locked?.stateProv ?? null,
+    orgDescription: locked?.description ?? null,
     canCreateOrg: Boolean(admin.rowCount),
     platformAdmin: Boolean(admin.rowCount),
   };
@@ -182,6 +260,18 @@ export async function completeOnboarding(
   const payload = validateOnboardingPayload(input);
   const teamNumber =
     state.lockedTeamNumber != null ? state.lockedTeamNumber : payload.preferredTeamNumber;
+
+  if (state.isTeamHead && state.lockedOrgId) {
+    const location = normalizeOrgLocationFields(input, { requireLocation: true });
+    await client.query(
+      `UPDATE organizations
+       SET city = $2,
+           state_prov = $3,
+           description = $4
+       WHERE id = $1::uuid`,
+      [state.lockedOrgId, location.city, location.stateProv, location.description],
+    );
+  }
 
   await client.query(
     `INSERT INTO profiles(
