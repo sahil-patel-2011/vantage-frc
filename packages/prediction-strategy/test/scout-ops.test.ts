@@ -329,4 +329,31 @@ describe("scout ops bridge", () => {
     expect(built?.foulRate).toBeLessThan(1);
     expect(built?.foulRate).toBeGreaterThanOrEqual(0);
   });
+
+  it("boosts video-rescored entries and emits video provenance", () => {
+    const manual = matchEntry({
+      id: "16161616-1616-1616-1616-161616161616",
+      teamKey: "frc1",
+      scoutUserId: "consistent",
+      payload: { totalPoints: 40, fouls: 0, autoPoints: 6 },
+    });
+    const video = matchEntry({
+      id: "17171717-1717-1717-1717-171717171717",
+      teamKey: "frc1",
+      scoutUserId: "video-scout",
+      source: "video",
+      videoReviewId: "18181818-1818-1818-1818-181818181818",
+      videoAtSeconds: 92,
+      payload: { totalPoints: 41, fouls: 0, autoPoints: 7 },
+    });
+    const quality = computeScoutQuality([manual, video]);
+    expect(quality.byEntryId[video.id]!).toBeGreaterThan(quality.byEntryId[manual.id]!);
+    expect(quality.transparency.some((line) => /video-rescored/i.test(line))).toBe(true);
+
+    const built = buildTeamOperationalSignal("frc1", [manual, video]);
+    expect(built?.videoRescoutCount).toBe(1);
+    expect(built?.videoReviewIds).toEqual(["18181818-1818-1818-1818-181818181818"]);
+    expect(built?.provenance.some((ref) => ref.influence === "video_rescore")).toBe(true);
+    expect(formatScoutProvenance(built!.provenance)).toMatch(/video:/);
+  });
 });
