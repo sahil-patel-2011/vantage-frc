@@ -1,19 +1,48 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   KNOWLEDGE_TEMPLATES,
   KNOWLEDGE_TEMPLATE_KINDS,
   MAX_BODY,
   TEMPLATE_KIND_LABEL,
+  type KnowledgePageSummary,
   type KnowledgeTemplateKind,
   type KnowledgeWikiView,
 } from "../../../lib/knowledge";
+import { knowledgeSetupNextActions } from "../../../lib/knowledge/knowledge-related";
+import { EmptyState } from "../../../components/ui";
+import { KnowledgeHubRelated } from "../../../components/knowledge-hub-related";
 import { TeamHubRelated } from "../../../components/team-hub-related";
+import { hubHref } from "../../../lib/nav/hubs";
 import "./knowledge.css";
 
 type Tab = "wiki" | "search" | "templates" | "ai";
 type LinkTargetType = "decision" | "design_review";
+type ListFilter = "all" | KnowledgeTemplateKind;
+
+function fmtUpdated(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function filterPages(pages: KnowledgePageSummary[], q: string, kind: ListFilter): KnowledgePageSummary[] {
+  const needle = q.trim().toLowerCase();
+  return pages.filter((page) => {
+    if (kind !== "all" && page.templateKind !== kind) return false;
+    if (!needle) return true;
+    const hay = [page.title, page.slug, TEMPLATE_KIND_LABEL[page.templateKind], ...page.tags]
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(needle);
+  });
+}
 
 export default function KnowledgeClient() {
   const [view, setView] = useState<KnowledgeWikiView | null>(null);
@@ -23,6 +52,8 @@ export default function KnowledgeClient() {
   const [tab, setTab] = useState<Tab>("wiki");
   const [searchDraft, setSearchDraft] = useState("");
   const [creating, setCreating] = useState(false);
+  const [listQuery, setListQuery] = useState("");
+  const [listKind, setListKind] = useState<ListFilter>("all");
 
   const [draftTitle, setDraftTitle] = useState("");
   const [draftBody, setDraftBody] = useState("");
@@ -42,40 +73,72 @@ export default function KnowledgeClient() {
 
   const orgId = view && view.status === "ready" ? view.orgId : "";
   const ready = view?.status === "ready" ? view : null;
+  const teamLabel = ready?.teamNumber ? `Team ${ready.teamNumber}` : "Team";
 
-  const load = useCallback(async (opts?: { pageId?: string; page?: string; q?: string }) => {
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    if (urlOrg) params.set("orgId", urlOrg);
-    // Soft-UI hub redirects used to emit revisionId; wiki API expects pageId.
-    const revisionId = params.get("revisionId");
-    if (revisionId && !params.get("pageId")) params.set("pageId", revisionId);
-    params.delete("revisionId");
-    if (opts?.pageId) params.set("pageId", opts.pageId);
-    if (opts?.page) params.set("page", opts.page);
-    if (opts?.q) params.set("q", opts.q);
-    try {
-      const response = await fetch(`/api/team/wiki?${params}`);
-      const data = (await response.json()) as KnowledgeWikiView | { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Could not load knowledge base.");
-        return;
-      }
-      setError("");
-      setView(data);
-      if (data.status === "ready" && data.selected && !opts?.q) {
-        setDraftTitle(data.selected.title);
-        setDraftBody(data.selected.body);
-        setDraftTemplate(data.selected.templateKind);
-        setDraftSeason(data.selected.seasonYear != null ? String(data.selected.seasonYear) : "");
-        setDraftTags(data.selected.tags.join(", "));
-        setDraftPinned(data.selected.pinned);
-        setCreating(false);
-      }
-    } catch {
-      setError("Network error loading knowledge base.");
+  const dirty = useMemo(() => {
+    if (!ready) return false;
+    if (creating) {
+      return Boolean(draftTitle.trim() || draftBody.trim() || draftTags.trim() || draftPinned);
     }
+    const selected = ready.selected;
+    if (!selected) return false;
+    const season = selected.seasonYear != null ? String(selected.seasonYear) : "";
+    return (
+      draftTitle !== selected.title ||
+      draftBody !== selected.body ||
+      draftTemplate !== selected.templateKind ||
+      draftSeason !== season ||
+      draftTags !== selected.tags.join(", ") ||
+      draftPinned !== selected.pinned
+    );
+  }, [creating, draftBody, draftPinned, draftSeason, draftTags, draftTemplate, draftTitle, ready]);
+
+  const filteredPages = useMemo(
+    () => (ready ? filterPages(ready.pages, listQuery, listKind) : []),
+    [listKind, listQuery, ready],
+  );
+
+  const hydrateFromSelected = useCallback((data: Extract<KnowledgeWikiView, { status: "ready" }>) => {
+    if (!data.selected) return;
+    setDraftTitle(data.selected.title);
+    setDraftBody(data.selected.body);
+    setDraftTemplate(data.selected.templateKind);
+    setDraftSeason(data.selected.seasonYear != null ? String(data.selected.seasonYear) : "");
+    setDraftTags(data.selected.tags.join(", "));
+    setDraftPinned(data.selected.pinned);
+    setCreating(false);
   }, []);
+
+  const load = useCallback(
+    async (opts?: { pageId?: string; page?: string; q?: string }) => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId");
+      if (urlOrg) params.set("orgId", urlOrg);
+      // Soft-UI hub redirects used to emit revisionId; wiki API expects pageId.
+      const revisionId = params.get("revisionId");
+      if (revisionId && !params.get("pageId")) params.set("pageId", revisionId);
+      params.delete("revisionId");
+      if (opts?.pageId) params.set("pageId", opts.pageId);
+      if (opts?.page) params.set("page", opts.page);
+      if (opts?.q) params.set("q", opts.q);
+      try {
+        const response = await fetch(`/api/team/wiki?${params}`);
+        const data = (await response.json()) as KnowledgeWikiView | { error?: string };
+        if (!response.ok || !("status" in data)) {
+          setError("error" in data && data.error ? data.error : "Could not load knowledge base.");
+          return;
+        }
+        setError("");
+        setView(data);
+        if (data.status === "ready" && data.selected && !opts?.q) {
+          hydrateFromSelected(data);
+        }
+      } catch {
+        setError("Network error loading knowledge base.");
+      }
+    },
+    [hydrateFromSelected],
+  );
 
   useEffect(() => {
     void load();
@@ -117,12 +180,7 @@ export default function KnowledgeClient() {
       setStatus("Saved.");
       setCreating(false);
       if (data.status === "ready" && data.selected) {
-        setDraftTitle(data.selected.title);
-        setDraftBody(data.selected.body);
-        setDraftTemplate(data.selected.templateKind);
-        setDraftSeason(data.selected.seasonYear != null ? String(data.selected.seasonYear) : "");
-        setDraftTags(data.selected.tags.join(", "));
-        setDraftPinned(data.selected.pinned);
+        hydrateFromSelected(data);
       }
     } catch {
       setError("Network error — nothing was saved.");
@@ -151,7 +209,86 @@ export default function KnowledgeClient() {
     }
   }
 
-  const teamLabel = ready?.teamNumber ? `Team ${ready.teamNumber}` : "Team";
+  function beginCreate() {
+    setCreating(true);
+    setDraftTitle("");
+    setDraftBody(`# ${teamLabel}\n\n`);
+    setDraftTemplate("blank");
+    setDraftSeason(String(new Date().getFullYear()));
+    setDraftTags("");
+    setDraftPinned(false);
+    setStatus("");
+  }
+
+  function selectPage(pageId: string) {
+    if (dirty && !window.confirm("Discard unsaved changes?")) return;
+    void load({ pageId });
+  }
+
+  function cancelCreate() {
+    if (dirty && !window.confirm("Discard this draft?")) return;
+    setCreating(false);
+    if (ready?.selected) hydrateFromSelected(ready);
+    else {
+      setDraftTitle("");
+      setDraftBody("");
+      setDraftTemplate("blank");
+      setDraftSeason("");
+      setDraftTags("");
+      setDraftPinned(false);
+    }
+  }
+
+  function insertMarkdown(snippet: string) {
+    setDraftBody((prev) => (prev ? `${prev.trimEnd()}\n\n${snippet}` : snippet));
+  }
+
+  const setupActions = knowledgeSetupNextActions(orgId || null);
+  const bodyRemaining = MAX_BODY - draftBody.length;
+
+  if (!view && !error) {
+    return (
+      <main className="module-page kb-page">
+        <EmptyState soft title="Loading knowledge…" description="Opening your team wiki." aria-busy />
+      </main>
+    );
+  }
+
+  if (view?.status === "setup_required") {
+    return (
+      <main className="module-page kb-page">
+        <header className="kb-hero">
+          <div>
+            <h1>Knowledge Base</h1>
+            <p>Org-scoped wiki and handoff templates. Empty until your team writes real procedures — never DEMO articles.</p>
+          </div>
+        </header>
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title="Knowledge wiki not ready"
+          description={view.message}
+        >
+          <div className="kb-empty-actions">
+            {setupActions.map((action) => (
+              <a
+                key={action.id}
+                className={action.primary ? "button primary" : "button secondary"}
+                href={action.href}
+              >
+                {action.label}
+              </a>
+            ))}
+          </div>
+          <KnowledgeHubRelated
+            orgId={view.orgId || null}
+            include={["messages", "fmea", "cad", "getting-started"]}
+          />
+        </EmptyState>
+      </main>
+    );
+  }
 
   return (
     <main className="module-page kb-page">
@@ -159,43 +296,33 @@ export default function KnowledgeClient() {
         <div>
           <h1>Knowledge Base</h1>
           <p>
-            Searchable wiki with handoff templates, linked to decisions and design reviews. The FRC Assistant
-            and CAD agent retrieve these as tools — empty corpus means empty answers, never invented history.
+            Searchable wiki with handoff templates, linked to decisions and design reviews. The FRC Assistant and CAD
+            agent retrieve these as tools — empty corpus means empty answers, never invented history.
           </p>
         </div>
         <div className="kb-hero-actions">
-          {orgId && (
+          {orgId ? (
             <>
-              <a className="button secondary" href={`/team?tab=calendar&orgId=${encodeURIComponent(orgId)}`}>
-                Calendar
-              </a>
-              <a className="button secondary" href={`/team?tab=practice&orgId=${encodeURIComponent(orgId)}`}>
-                Practice
-              </a>
-              <a className="button secondary" href={`/team?tab=attendance&orgId=${encodeURIComponent(orgId)}`}>
-                Attendance
-              </a>
-              <a className="button secondary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
+              <a className="button secondary" href={hubHref("/team", "messages", orgId)}>
                 Messages
               </a>
-              <a className="button secondary" href={`/team?tab=fmea&orgId=${encodeURIComponent(orgId)}`}>
+              <a className="button secondary" href={hubHref("/team", "fmea", orgId)}>
                 FMEA
               </a>
-              <a className="button secondary" href={`/team/getting-started?orgId=${orgId}`}>
-                Getting started
-              </a>
-              <a className="button secondary" href={`/chat?orgId=${orgId}`}>
-                FRC Assistant
-              </a>
-              <a className="button secondary" href={`/decisions?orgId=${orgId}`}>
-                Decisions
+              <a className="button secondary" href={hubHref("/build", "cad", orgId)}>
+                CAD
               </a>
             </>
-          )}
+          ) : null}
         </div>
       </header>
 
-      {orgId ? <TeamHubRelated orgId={orgId} active="knowledge" /> : null}
+      {orgId ? (
+        <>
+          <KnowledgeHubRelated orgId={orgId} include={["messages", "fmea", "cad", "decisions", "assistant"]} />
+          <TeamHubRelated orgId={orgId} active="knowledge" />
+        </>
+      ) : null}
 
       <div className="kb-tabs" role="tablist" aria-label="Knowledge sections">
         {(
@@ -212,14 +339,23 @@ export default function KnowledgeClient() {
         ))}
       </div>
 
-      {error && <p className="kb-alert" role="alert">{error}</p>}
-      {status && <p className="kb-status" role="status">{status}</p>}
+      {error ? (
+        <p className="kb-alert" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {status ? (
+        <p className="kb-status" role="status">
+          {status}
+        </p>
+      ) : null}
 
-      {view?.status === "setup_required" && <p className="kb-alert">{view.message}</p>}
-
-      {tab === "search" && ready && (
+      {tab === "search" && ready ? (
         <section className="kb-main">
           <h2>Cross-season search</h2>
+          <p className="kb-meta">
+            Search wiki pages, decisions, and design reviews in this org only — no fabricated hits.
+          </p>
           <form
             className="kb-tools"
             onSubmit={(e) => {
@@ -237,9 +373,15 @@ export default function KnowledgeClient() {
               Search
             </button>
           </form>
-          {ready.searchQuery && ready.searchHits.length === 0 && (
-            <p className="kb-list-empty">No wiki pages, decisions, or reviews matched “{ready.searchQuery}”.</p>
-          )}
+          {ready.searchQuery && ready.searchHits.length === 0 ? (
+            <EmptyState
+              soft
+              title="No matches"
+              description={`Nothing matched “${ready.searchQuery}”. Write a real page or link a decision — results stay empty until then.`}
+            >
+              <KnowledgeHubRelated orgId={orgId} include={["messages", "decisions", "cad"]} />
+            </EmptyState>
+          ) : null}
           <ul className="kb-list" style={{ marginTop: 12 }}>
             {ready.searchHits.map((hit) => (
               <li key={`${hit.source}:${hit.id}`}>
@@ -249,18 +391,20 @@ export default function KnowledgeClient() {
                     {hit.source.replace("_", " ")}
                     {hit.seasonYear != null ? ` · ${hit.seasonYear}` : ""}
                   </small>
-                  {hit.snippet && <small>{hit.snippet}</small>}
+                  {hit.snippet ? <small>{hit.snippet}</small> : null}
                 </a>
               </li>
             ))}
           </ul>
         </section>
-      )}
+      ) : null}
 
-      {tab === "templates" && ready && (
+      {tab === "templates" && ready ? (
         <section className="kb-main kb-templates">
           <h2>Handoff templates</h2>
-          <p className="kb-meta">Create a structured page — fill in real team facts; nothing is pre-filled with demo data.</p>
+          <p className="kb-meta">
+            Create a structured page — fill in real team facts; nothing is pre-filled with demo data.
+          </p>
           <div className="kb-template-grid">
             {KNOWLEDGE_TEMPLATES.map((tpl) => (
               <button
@@ -268,14 +412,15 @@ export default function KnowledgeClient() {
                 type="button"
                 className="kb-template"
                 disabled={busy}
-                onClick={() =>
+                onClick={() => {
+                  setTab("wiki");
                   void run({
                     action: "upsert_page",
                     fromTemplate: tpl.kind,
                     templateKind: tpl.kind,
                     seasonYear: new Date().getFullYear(),
-                  })
-                }
+                  });
+                }}
               >
                 <span className="kb-badge handoff">{tpl.kind.replace("_", " ")}</span>
                 <strong>{tpl.title}</strong>
@@ -284,14 +429,14 @@ export default function KnowledgeClient() {
             ))}
           </div>
         </section>
-      )}
+      ) : null}
 
-      {tab === "ai" && ready && (
+      {tab === "ai" && ready ? (
         <section className="kb-main kb-ai">
           <h2>Assistant summary</h2>
           <p className="kb-ai-hint">
-            One markdown document injected into every team-scope chat. Prefer durable facts here; put structured
-            handoffs and linked decisions in the Wiki.
+            One markdown document injected into every team-scope chat. Prefer durable facts here; put structured handoffs
+            and linked decisions in the Wiki.
             {aiUpdatedAt ? ` Updated ${new Date(aiUpdatedAt).toLocaleString()}.` : ""}
           </p>
           <textarea
@@ -301,7 +446,7 @@ export default function KnowledgeClient() {
             maxLength={20000}
             onChange={(e) => setAiContent(e.target.value)}
           />
-          {canEditAi && (
+          {canEditAi ? (
             <>
               <label className="kb-row">
                 <input type="checkbox" checked={aiEnabled} onChange={(e) => setAiEnabled(e.target.checked)} />
@@ -313,42 +458,82 @@ export default function KnowledgeClient() {
                 </button>
               </div>
             </>
-          )}
+          ) : null}
           <div className="kb-ai-links">
             <a href={`/team/knowledge/history?orgId=${orgId}`}>Revision history</a>
+            <KnowledgeHubRelated orgId={orgId} include={["assistant", "messages", "cad"]} />
           </div>
         </section>
-      )}
+      ) : null}
 
-      {tab === "wiki" && ready && (
+      {tab === "wiki" && ready ? (
         <section className="kb-layout">
           <aside className="kb-side">
-            <button
-              type="button"
-              className="button primary"
-              disabled={busy}
-              onClick={() => {
-                setCreating(true);
-                setDraftTitle("");
-                setDraftBody(`# ${teamLabel}\n\n`);
-                setDraftTemplate("blank");
-                setDraftSeason(String(new Date().getFullYear()));
-                setDraftTags("");
-                setDraftPinned(false);
-              }}
-            >
-              New page
-            </button>
+            <div className="kb-side-head">
+              <button type="button" className="button primary" disabled={busy} onClick={beginCreate}>
+                New page
+              </button>
+              <p className="kb-meta">
+                {ready.pages.length} page{ready.pages.length === 1 ? "" : "s"}
+                {filteredPages.length !== ready.pages.length ? ` · ${filteredPages.length} shown` : ""}
+              </p>
+            </div>
+
+            <label className="kb-field">
+              <span>Filter pages</span>
+              <input
+                value={listQuery}
+                onChange={(e) => setListQuery(e.target.value)}
+                placeholder="Title, tag, or kind…"
+                aria-label="Filter wiki pages"
+              />
+            </label>
+
+            <div className="kb-cat" role="group" aria-label="Filter by template kind">
+              <button type="button" aria-pressed={listKind === "all"} onClick={() => setListKind("all")}>
+                All
+              </button>
+              {KNOWLEDGE_TEMPLATE_KINDS.filter((k) => k !== "blank" && k !== "other").map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  aria-pressed={listKind === kind}
+                  onClick={() => setListKind(kind)}
+                >
+                  {TEMPLATE_KIND_LABEL[kind]}
+                </button>
+              ))}
+            </div>
+
             <ul className="kb-list">
-              {ready.pages.length === 0 && !creating && (
-                <li className="kb-list-empty">No wiki pages yet. Start from Templates or New page.</li>
-              )}
-              {ready.pages.map((page) => (
+              {ready.pages.length === 0 && !creating ? (
+                <li>
+                  <EmptyState
+                    soft
+                    title="No wiki pages yet"
+                    description="Start from Templates or New page. The list stays empty until someone writes real procedures."
+                  >
+                    <div className="kb-empty-actions">
+                      <button type="button" className="button primary" onClick={() => setTab("templates")}>
+                        Browse templates
+                      </button>
+                      <button type="button" className="button secondary" onClick={beginCreate}>
+                        Blank page
+                      </button>
+                    </div>
+                    <KnowledgeHubRelated orgId={orgId} include={["messages", "fmea", "cad"]} />
+                  </EmptyState>
+                </li>
+              ) : null}
+              {ready.pages.length > 0 && filteredPages.length === 0 ? (
+                <li className="kb-list-empty">No pages match this filter.</li>
+              ) : null}
+              {filteredPages.map((page) => (
                 <li key={page.id}>
                   <button
                     type="button"
                     className={`kb-list-item${ready.selected?.id === page.id && !creating ? " active" : ""}`}
-                    onClick={() => void load({ pageId: page.id })}
+                    onClick={() => selectPage(page.id)}
                   >
                     <b>
                       {page.pinned ? "★ " : ""}
@@ -358,6 +543,7 @@ export default function KnowledgeClient() {
                       {TEMPLATE_KIND_LABEL[page.templateKind]}
                       {page.seasonYear != null ? ` · ${page.seasonYear}` : ""}
                       {page.linkCount ? ` · ${page.linkCount} linked` : ""}
+                      {` · ${fmtUpdated(page.updatedAt)}`}
                     </small>
                   </button>
                 </li>
@@ -366,17 +552,65 @@ export default function KnowledgeClient() {
           </aside>
 
           <div className="kb-main kb-editor">
-            {(creating || ready.selected) && (
+            {creating || ready.selected ? (
               <>
                 <div className="kb-editor-head">
-                  <h2>{creating ? "New page" : "Edit page"}</h2>
-                  {ready.selected && !creating && (
-                    <p className="kb-meta">
-                      Updated {new Date(ready.selected.updatedAt).toLocaleString()}
-                      {ready.selected.updatedByName ? ` · ${ready.selected.updatedByName}` : ""}
-                    </p>
-                  )}
+                  <div>
+                    <h2>{creating ? "New page" : "Edit page"}</h2>
+                    {ready.selected && !creating ? (
+                      <p className="kb-meta">
+                        Updated {fmtUpdated(ready.selected.updatedAt)}
+                        {ready.selected.updatedByName ? ` · ${ready.selected.updatedByName}` : ""}
+                        {ready.selected.slug ? ` · /${ready.selected.slug}` : ""}
+                      </p>
+                    ) : (
+                      <p className="kb-meta">Markdown body. Save only real team knowledge — no DEMO articles.</p>
+                    )}
+                  </div>
+                  {dirty ? (
+                    <span className="kb-dirty" role="status">
+                      Unsaved
+                    </span>
+                  ) : null}
                 </div>
+
+                <div className="kb-editor-toolbar" role="toolbar" aria-label="Editor shortcuts">
+                  <button type="button" className="kb-chip" disabled={busy} onClick={() => insertMarkdown("## Heading\n")}>
+                    Heading
+                  </button>
+                  <button type="button" className="kb-chip" disabled={busy} onClick={() => insertMarkdown("- \n")}>
+                    Bullet
+                  </button>
+                  <button
+                    type="button"
+                    className="kb-chip"
+                    disabled={busy}
+                    onClick={() => insertMarkdown("1. \n")}
+                  >
+                    Numbered
+                  </button>
+                  <button
+                    type="button"
+                    className="kb-chip"
+                    disabled={busy}
+                    onClick={() => insertMarkdown("**bold** ")}
+                  >
+                    Bold
+                  </button>
+                  <button
+                    type="button"
+                    className="kb-chip"
+                    disabled={busy}
+                    onClick={() => insertMarkdown("`code` ")}
+                  >
+                    Code
+                  </button>
+                  <span className="kb-charcount" aria-live="polite">
+                    {draftBody.length.toLocaleString()} / {MAX_BODY.toLocaleString()}
+                    {bodyRemaining < 2000 ? ` · ${bodyRemaining.toLocaleString()} left` : ""}
+                  </span>
+                </div>
+
                 <label className="kb-field">
                   <span>Title</span>
                   <input value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} />
@@ -397,16 +631,28 @@ export default function KnowledgeClient() {
                   </label>
                   <label className="kb-field">
                     <span>Season</span>
-                    <input value={draftSeason} onChange={(e) => setDraftSeason(e.target.value)} placeholder="optional" />
+                    <input
+                      value={draftSeason}
+                      onChange={(e) => setDraftSeason(e.target.value)}
+                      placeholder="optional"
+                    />
                   </label>
                   <label>
-                    <input type="checkbox" checked={draftPinned} onChange={(e) => setDraftPinned(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={draftPinned}
+                      onChange={(e) => setDraftPinned(e.target.checked)}
+                    />
                     Pinned
                   </label>
                 </div>
                 <label className="kb-field">
                   <span>Tags</span>
-                  <input value={draftTags} onChange={(e) => setDraftTags(e.target.value)} placeholder="drivetrain, cad" />
+                  <input
+                    value={draftTags}
+                    onChange={(e) => setDraftTags(e.target.value)}
+                    placeholder="drivetrain, cad"
+                  />
                 </label>
                 <label className="kb-field">
                   <span>Body</span>
@@ -418,10 +664,15 @@ export default function KnowledgeClient() {
                   />
                 </label>
                 <div className="kb-actions">
+                  {creating ? (
+                    <button type="button" className="button secondary" disabled={busy} onClick={cancelCreate}>
+                      Cancel
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="button primary"
-                    disabled={busy || !draftTitle.trim()}
+                    disabled={busy || !draftTitle.trim() || (!creating && !dirty)}
                     onClick={() =>
                       void run({
                         action: "upsert_page",
@@ -437,7 +688,7 @@ export default function KnowledgeClient() {
                   >
                     {busy ? "Saving…" : creating ? "Create page" : "Save page"}
                   </button>
-                  {!creating && ready.selected && (
+                  {!creating && ready.selected ? (
                     <button
                       type="button"
                       className="kb-link danger"
@@ -450,20 +701,20 @@ export default function KnowledgeClient() {
                     >
                       Delete
                     </button>
-                  )}
+                  ) : null}
                 </div>
 
-                {!creating && ready.selected && (
-                  <section style={{ marginTop: 8 }}>
+                {!creating && ready.selected ? (
+                  <section className="kb-links-panel">
                     <h2>Linked decisions / reviews</h2>
                     <ul className="kb-list">
-                      {ready.selected.links.length === 0 && (
+                      {ready.selected.links.length === 0 ? (
                         <li className="kb-list-empty">
-                          Attach the ADR or design review that explains this page.
+                          Attach the ADR or design review that explains this page — same org only.
                         </li>
-                      )}
+                      ) : null}
                       {ready.selected.links.map((link) => (
-                        <li key={link.id} className="kb-list-item" style={{ cursor: "default" }}>
+                        <li key={link.id} className="kb-list-item kb-list-item--static">
                           <b>
                             {link.targetType === "decision" ? "Decision" : "Review"}:{" "}
                             {link.targetTitle ?? link.targetId}
@@ -483,7 +734,7 @@ export default function KnowledgeClient() {
                         </li>
                       ))}
                     </ul>
-                    <div className="kb-row" style={{ marginTop: 10 }}>
+                    <div className="kb-row kb-link-form">
                       <select
                         value={linkType}
                         onChange={(e) => {
@@ -503,7 +754,11 @@ export default function KnowledgeClient() {
                           </option>
                         ))}
                       </select>
-                      <input value={linkNote} onChange={(e) => setLinkNote(e.target.value)} placeholder="Why linked?" />
+                      <input
+                        value={linkNote}
+                        onChange={(e) => setLinkNote(e.target.value)}
+                        placeholder="Why linked?"
+                      />
                       <button
                         type="button"
                         className="button primary"
@@ -521,20 +776,41 @@ export default function KnowledgeClient() {
                         Link
                       </button>
                     </div>
+                    {draftTemplate === "cad_conventions" || draftTemplate === "subsystem" ? (
+                      <p className="kb-meta kb-cross-hint">
+                        Related shop tools:{" "}
+                        <a href={hubHref("/build", "cad", orgId)}>CAD</a>
+                        {" · "}
+                        <a href={hubHref("/team", "fmea", orgId)}>FMEA</a>
+                        {" · "}
+                        <a href={hubHref("/team", "messages", orgId)}>Messages</a>
+                      </p>
+                    ) : null}
                   </section>
-                )}
+                ) : null}
               </>
-            )}
+            ) : null}
 
-            {!creating && !ready.selected && (
-              <div className="kb-empty">
-                <h2>No page selected</h2>
-                <p>Pick a page, create one, or start from a handoff template.</p>
-              </div>
-            )}
+            {!creating && !ready.selected ? (
+              <EmptyState
+                soft
+                title="No page selected"
+                description="Pick a page, create one, or start from a handoff template. Nothing invents DEMO wiki content."
+              >
+                <div className="kb-empty-actions">
+                  <button type="button" className="button primary" onClick={beginCreate}>
+                    New page
+                  </button>
+                  <button type="button" className="button secondary" onClick={() => setTab("templates")}>
+                    Templates
+                  </button>
+                </div>
+                <KnowledgeHubRelated orgId={orgId} include={["messages", "fmea", "cad"]} />
+              </EmptyState>
+            ) : null}
           </div>
         </section>
-      )}
+      ) : null}
     </main>
   );
 }
