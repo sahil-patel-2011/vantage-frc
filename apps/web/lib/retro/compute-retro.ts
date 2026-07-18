@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { buildPostmortemNarrative, countItemsByKind, countOpenActions, groupItemsByKind } from ".";
+import { retroSetupSteps, type RetroSetupStep } from "./retro-related";
 import type {
   RetroActionItem,
   RetroActionStatus,
@@ -13,12 +14,7 @@ import type {
   RetroSessionStatus,
 } from "./types";
 
-export type RetroSetupStep = {
-  id: string;
-  label: string;
-  detail: string;
-  href: string;
-};
+export type { RetroSetupStep };
 
 export type RetroView =
   | {
@@ -106,9 +102,7 @@ export async function computeRetroView(
     return {
       status: "setup_required",
       message: "Select a team workspace to run a retrospective.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: retroSetupSteps(null),
       orgId: null,
       seasonYear,
     };

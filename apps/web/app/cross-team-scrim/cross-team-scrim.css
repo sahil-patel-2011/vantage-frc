@@ -1,0 +1,17 @@
+/* Soft-UI Cross-Team Scrim — .cross-team-scrim-* + shared Soft-UI tokens. Never DEMO metrics. */
+.cross-team-scrim-page{display:grid;gap:16px}
+.cross-team-scrim-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.cross-team-scrim-related{display:flex;flex-wrap:wrap;gap:8px}
+.cross-team-scrim-next-actions{margin:0}
+.cross-team-scrim-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.cross-team-scrim-stats strong{font-size:1.5rem;display:block}
+.cross-team-scrim-panel{display:grid;gap:12px}
+.cross-team-scrim-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.cross-team-scrim-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.cross-team-scrim-tip{margin:0}
+.cross-team-scrim-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.cross-team-scrim-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+@media(max-width:900px){
+  .cross-team-scrim-header-actions{justify-content:flex-start}
+  .cross-team-scrim-next-actions li,.cross-team-scrim-setup-steps li,.cross-team-scrim-row{flex-direction:column;align-items:stretch}
+}
