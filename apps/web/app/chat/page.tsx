@@ -1,3 +1,6 @@
+import { EmptyState } from "../../components/ui";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import ChatClient from "./chat-client";
 import "./chat.css";
 
@@ -14,20 +17,30 @@ export default async function ChatPage({
   const { orgId, prompt, source, contextId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="module-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">AI / Assistant</span>
-            <h1>Select a workspace</h1>
-            <p className="app-muted">Open the assistant from a team workspace so tools and memory stay org-scoped.</p>
-          </div>
-        </header>
-        <section className="app-card" style={{ display: "grid", gap: 12, justifyItems: "start", padding: 20 }}>
-          <span className="app-badge setup">Setup</span>
-          <a className="primary-action" href="/workspace">
-            Choose workspace →
+      <main className="module-page ch-page">
+        <EmptyState
+          soft
+          badge="Setup"
+          badgeTone="setup"
+          title="Select a team workspace"
+          description="Chat channels and memory are org-scoped. Open Workspace or Account, then return from the AI hub — never invent DEMO replies."
+        >
+          <a className="app-button secondary" href="/workspace">
+            Open Workspace
           </a>
-        </section>
+          <a className="app-button secondary" href={withOrgHref("/account", null)}>
+            Account
+          </a>
+          <a className="app-button secondary" href={hubHref("/ai", "budgets", null)}>
+            Budgets
+          </a>
+          <a className="app-button secondary" href={hubHref("/ai", "memory", null)}>
+            Memory
+          </a>
+          <a className="app-button secondary" href={hubHref("/competition", "strategy", null)}>
+            Strategy
+          </a>
+        </EmptyState>
       </main>
     );
   }
