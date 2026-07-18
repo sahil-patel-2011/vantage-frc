@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { riskCategoryLabel, riskStatusLabel } from "../../lib/risk-burndown";
 import {
@@ -8,11 +8,25 @@ import {
   RISK_STATUSES,
   type RiskBurndownView,
 } from "../../lib/risk-burndown/compute-risk-burndown";
+import {
+  RISK_BURNDOWN_RELATED_INCLUDE,
+  classifyRiskBurndownShell,
+  formatRiskBurndownMetric,
+  riskBurndownNextActions,
+  riskBurndownRelatedLinks,
+  riskBurndownShellCopy,
+  shouldShowRiskBurndownSummaryTiles,
+  type RiskBurndownNextAction,
+  type RiskBurndownShellKind,
+} from "../../lib/risk-burndown/risk-burndown-related";
 import type { RiskCategory, RiskSeverityBand, RiskStatus } from "../../lib/risk-burndown/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./risk-burndown.css";
 
 function severityTone(band: RiskSeverityBand): string {
   if (band === "critical") return "danger";
-  if (band === "high") return "demo";
+  if (band === "high") return "setup";
   if (band === "medium") return "setup";
   return "good";
 }
@@ -23,14 +37,134 @@ function pct(value: number): string {
 
 type LiveView = Extract<RiskBurndownView, { status: "live" }>;
 
+function RiskBurndownRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = riskBurndownRelatedLinks(orgId, {
+    include: [...RISK_BURNDOWN_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related risk-burndown-related" aria-label="Related risk tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function RiskBurndownNextActionsPanel({ actions }: { actions: RiskBurndownNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions risk-burndown-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Risks and FMEA — never DEMO burndown metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function RiskBurndownShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: RiskBurndownShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = riskBurndownNextActions({ orgId, shell });
+  const copy = riskBurndownShellCopy(shell);
+  const teamHref = hubHref("/team", "risk-burndown", orgId);
+  const risksHref = withOrgHref("/risks", orgId);
+  const fmeaHref = hubHref("/team", "fmea", orgId);
+
+  return (
+    <main className="module-page risk-burndown-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Risk-Register Burndown"}
+          </>
+        }
+        title="Risk-Register Burndown"
+        description={description}
+      >
+        <RiskBurndownRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No risks yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={risksHref}>
+              Open Risks
+            </a>
+            <a className="app-button secondary" href={fmeaHref}>
+              Open FMEA
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <RiskBurndownNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function RiskBurndownClient() {
   const [view, setView] = useState<RiskBurndownView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -57,6 +191,33 @@ export default function RiskBurndownClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const riskCount = view?.status === "live" ? view.summary.totalRisks : 0;
+  const openRiskCount = view?.status === "live" ? view.summary.openRisks : 0;
+  const highSeverityOpenCount = view?.status === "live" ? view.summary.highSeverityOpenCount : 0;
+
+  const shell = classifyRiskBurndownShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    riskCount,
+  });
+  const shellCopy = riskBurndownShellCopy(shell);
+  const nextActions = riskBurndownNextActions({
+    orgId,
+    shell,
+    riskCount,
+    openRiskCount,
+    highSeverityOpenCount,
+  });
+  const relatedLinks = riskBurndownRelatedLinks(orgId, {
+    include: [...RISK_BURNDOWN_RELATED_INCLUDE],
+  });
+  const teamHref = hubHref("/team", "risk-burndown", orgId);
+  const risksHref = withOrgHref("/risks", orgId);
+  const fmeaHref = hubHref("/team", "fmea", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -85,58 +246,30 @@ export default function RiskBurndownClient() {
     [orgId, season, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Risk-Register Burndown"}
-          </>
-        }
-        title="Risk-Register Burndown"
-        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out."
+  if (shell === "loading") {
+    return <RiskBurndownShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <RiskBurndownShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <RiskBurndownShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-      </PageHeader>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the risk register"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        {view?.status === "setup_required" && view.steps.length > 0 ? (
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -148,16 +281,96 @@ export default function RiskBurndownClient() {
               </li>
             ))}
           </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <BurndownSeries view={view} />
-          <LogRiskForm busy={busy} mutate={mutate} />
-          {view.summary.totalRisks > 0 ? <Breakdowns view={view} /> : null}
-          <RiskRegister view={view} busy={busy} mutate={mutate} />
+        ) : null}
+      </RiskBurndownShell>
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <RiskBurndownShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
+  return (
+    <main className="module-page risk-burndown-page">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Risk-Register Burndown"}
+          </>
+        }
+        title="Risk-Register Burndown"
+        description="Track season risks — technical, schedule, budget, personnel, logistics, safety — and watch the register burn down as mitigations close them out. Cross-check Risks and FMEA — never DEMO burndown metrics."
+      >
+        <div className="risk-burndown-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
-      )}
+      </PageHeader>
+
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <RiskBurndownNextActionsPanel actions={nextActions} />
+
+      {shouldShowRiskBurndownSummaryTiles(riskCount) ? <SummaryTiles view={view} /> : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No risks yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href={risksHref}>
+            Open Risks
+          </a>
+          <a className="app-button secondary" href={fmeaHref}>
+            Open FMEA
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div className="risk-burndown-layout">
+        {shouldShowRiskBurndownSummaryTiles(riskCount) ? <BurndownSeries view={view} /> : null}
+        <LogRiskForm busy={busy} mutate={mutate} />
+        {view.summary.totalRisks > 0 ? <Breakdowns view={view} /> : null}
+        <RiskRegister view={view} busy={busy} mutate={mutate} />
+        <Panel className="risk-burndown-tip" aria-label="Risk burndown tip">
+          <span className="eyebrow">Risk path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Keep season L×I scores in <a href={risksHref}>Risks</a> and failure modes in{" "}
+            <a href={fmeaHref}>FMEA</a> aligned with closures here — never invent DEMO open counts,
+            severity bands, or burndown signal.
+          </p>
+        </Panel>
+      </div>
     </main>
   );
 }
@@ -165,24 +378,30 @@ export default function RiskBurndownClient() {
 function SummaryTiles({ view }: { view: LiveView }) {
   const { summary } = view;
   const tiles = [
-    { label: "Total risks", value: String(summary.totalRisks) },
-    { label: "Open", value: String(summary.openRisks) },
-    { label: "Mitigating", value: String(summary.mitigatingRisks) },
-    { label: "Closed", value: String(summary.closedRisks + summary.acceptedRisks) },
-    { label: "High-severity open", value: String(summary.highSeverityOpenCount) },
+    { label: "Total risks", value: formatRiskBurndownMetric(summary.totalRisks, true) },
+    { label: "Open", value: formatRiskBurndownMetric(summary.openRisks, true) },
+    { label: "Mitigating", value: formatRiskBurndownMetric(summary.mitigatingRisks, true) },
+    {
+      label: "Closed",
+      value: formatRiskBurndownMetric(summary.closedRisks + summary.acceptedRisks, true),
+    },
+    {
+      label: "High-severity open",
+      value: formatRiskBurndownMetric(summary.highSeverityOpenCount, true),
+    },
     { label: "Burndown signal", value: pct(summary.burndownSignal) },
   ];
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <section className="risk-burndown-stats" aria-label="Real risk burndown counts">
+      {tiles.map((tile) => (
+        <div key={tile.label}>
+          <strong>{tile.value}</strong>
+          <span className="app-muted" style={{ display: "block" }}>
+            {tile.label}
+          </span>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -193,24 +412,19 @@ function BurndownSeries({ view }: { view: LiveView }) {
   return (
     <Panel>
       <h2 style={{ marginTop: 0 }}>Open-risk burndown</h2>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 80 }} aria-hidden="true">
+      <div className="risk-burndown-series" aria-hidden="true">
         {recent.map((point) => (
           <span
             key={point.date}
+            className="risk-burndown-series-bar"
             title={`${point.date}: ${point.openCount} open`}
-            style={{
-              display: "inline-block",
-              flex: "1 0 auto",
-              minWidth: 3,
-              height: `${Math.max(4, (point.openCount / maxOpen) * 100)}%`,
-              background: "var(--app-accent, #6366f1)",
-              borderRadius: 2,
-            }}
+            style={{ height: `${Math.max(4, (point.openCount / maxOpen) * 100)}%` }}
           />
         ))}
       </div>
       <small className="app-muted">
-        {recent[0]?.date} → {recent[recent.length - 1]?.date} · {recent[recent.length - 1]?.openCount} open today
+        {recent[0]?.date} → {recent[recent.length - 1]?.date} · {recent[recent.length - 1]?.openCount}{" "}
+        open today
       </small>
     </Panel>
   );
@@ -219,15 +433,12 @@ function BurndownSeries({ view }: { view: LiveView }) {
 function Breakdowns({ view }: { view: LiveView }) {
   const { summary } = view;
   return (
-    <section
-      className="app-card soft-panel"
-      style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}
-    >
+    <section className="app-card soft-panel risk-burndown-breakdowns">
       <div>
         <h2 style={{ marginTop: 0 }}>By category</h2>
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <ul className="risk-burndown-list">
           {summary.byCategory.map((row) => (
-            <li key={row.category} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <li key={row.category} className="risk-burndown-row">
               <span>{riskCategoryLabel(row.category)}</span>
               <small className="app-muted">
                 {row.count} · avg severity {row.avgSeverity}
@@ -238,9 +449,9 @@ function Breakdowns({ view }: { view: LiveView }) {
       </div>
       <div>
         <h2 style={{ marginTop: 0 }}>By status</h2>
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <ul className="risk-burndown-list">
           {summary.byStatus.map((row) => (
-            <li key={row.status} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <li key={row.status} className="risk-burndown-row">
               <span>{riskStatusLabel(row.status)}</span>
               <small className="app-muted">{row.count}</small>
             </li>
@@ -249,9 +460,9 @@ function Breakdowns({ view }: { view: LiveView }) {
       </div>
       <div>
         <h2 style={{ marginTop: 0 }}>By severity band</h2>
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <ul className="risk-burndown-list">
           {summary.bySeverityBand.map((row) => (
-            <li key={row.band} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <li key={row.band} className="risk-burndown-row">
               <span className={`app-badge ${severityTone(row.band)}`}>{row.band.toUpperCase()}</span>
               <small className="app-muted">{row.count}</small>
             </li>
@@ -272,27 +483,23 @@ function RiskRegister({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   if (view.summary.totalRisks === 0) {
-    return (
-      <EmptyState
-        badge="No risks logged yet"
-        badgeTone="setup"
-        title="Log your first season risk"
-        description="Technical, schedule, budget, personnel, logistics, and safety risks all belong in the register."
-      />
-    );
+    return null;
   }
   return (
-    <Panel>
+    <Panel id="risk-burndown-register">
       <h2 style={{ marginTop: 0 }}>Risk register</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul className="risk-burndown-list">
         {view.risks.map((item) => (
-          <li key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={item.id} className="risk-burndown-row">
             <div>
-              <span className={`app-badge ${severityTone(item.severityBand)}`}>{item.severityBand.toUpperCase()}</span>{" "}
+              <span className={`app-badge ${severityTone(item.severityBand)}`}>
+                {item.severityBand.toUpperCase()}
+              </span>{" "}
               <strong>{item.title}</strong>
               <small className="app-muted" style={{ display: "block" }}>
                 {item.identifiedOn} · {riskCategoryLabel(item.category)} · {riskStatusLabel(item.status)}
-                {item.ownerName ? ` · ${item.ownerName}` : ""} · L{item.likelihood} × I{item.impact} = {item.severity}
+                {item.ownerName ? ` · ${item.ownerName}` : ""} · L{item.likelihood} × I{item.impact} ={" "}
+                {item.severity}
               </small>
               {item.mitigationPlan ? (
                 <small className="app-muted" style={{ display: "block" }}>
@@ -300,12 +507,16 @@ function RiskRegister({
                 </small>
               ) : null}
             </div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div className="risk-burndown-row-actions">
               <select
                 value={item.status}
                 disabled={busy}
                 onChange={(event) =>
-                  mutate({ action: "update-status", riskId: item.id, status: event.target.value as RiskStatus })
+                  mutate({
+                    action: "update-status",
+                    riskId: item.id,
+                    status: event.target.value as RiskStatus,
+                  })
                 }
               >
                 {RISK_STATUSES.map((status) => (
@@ -362,6 +573,7 @@ function LogRiskForm({
 
   return (
     <Panel
+      id="risk-burndown-log-risk"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -384,6 +596,9 @@ function LogRiskForm({
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Log risk</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Likelihood × impact come from real season judgment — never DEMO severity scores.
+      </p>
       <FormGrid min={160}>
         <FormRow label="Title">
           <input value={form.title} onChange={set("title")} placeholder="Chassis vendor delay" required />

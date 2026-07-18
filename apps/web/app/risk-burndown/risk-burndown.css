@@ -1,0 +1,21 @@
+/* Soft-UI Risk-Register Burndown — .risk-burndown-* + shared Soft-UI tokens. Never DEMO risk metrics. */
+.risk-burndown-page{display:grid;gap:16px}
+.risk-burndown-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.risk-burndown-related{display:flex;flex-wrap:wrap;gap:8px}
+.risk-burndown-next-actions{margin:0}
+.risk-burndown-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.risk-burndown-stats strong{font-size:1.5rem}
+.risk-burndown-layout{display:grid;gap:16px}
+.risk-burndown-series{display:flex;align-items:flex-end;gap:3px;height:80px}
+.risk-burndown-series-bar{display:inline-block;flex:1 0 auto;min-width:3px;border-radius:2px;background:var(--app-accent,#0f766e)}
+.risk-burndown-breakdowns{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.risk-burndown-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.risk-burndown-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.risk-burndown-row-actions{display:flex;gap:6px;align-items:center}
+.risk-burndown-tip{margin:0}
+@media(max-width:900px){
+  .risk-burndown-header-actions{justify-content:flex-start}
+  .risk-burndown-next-actions li{flex-direction:column;align-items:stretch}
+  .risk-burndown-row{flex-direction:column}
+  .risk-burndown-row-actions{align-items:stretch}
+}
