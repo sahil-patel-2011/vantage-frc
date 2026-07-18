@@ -12,7 +12,7 @@ Single map of product surfaces for humans and agents. Nav labels come from
 | **Scouting** | Collect + use match intel | `/scouting`, `/scouting/lineup`, `/strategy`, `/pick-clock`, `/chemistry`, `/dossier`, `/rankings`, `/video` |
 | **Calendar** | Time: team calendar, season milestones, practice, shifts, attendance, hours | `/team/calendar`, `/my-day`, `/calendar`, `/practice`, `/shifts`, `/attendance`, `/hours` |
 | **Build** | Robot design/build tooling | `/cad`, `/code`, `/robot`, `/subsystems`, `/fmea`, `/display`, `/inventory`, `/vendors`, `/control-map`, `/software-versions` |
-| **Team** | People ops, todos, knowledge, admin | `/tasks` (Todos), `/messages`, `/goals`, `/risks`, `/roles`, `/team/knowledge`, `/team/alumni`, `/team`, `/team/discord`, `/team/data`, `/team/usage` |
+| **Team** | People ops, todos, knowledge, admin | `/tasks` (Todos), `/messages`, `/goals`, `/risks`, `/roles`, `/team/knowledge`, `/team/discord`, `/team/alumni`, `/team`, `/team/discord`, `/team/data`, `/team/usage` |
 | **Logistics** | Get-there-and-back trip times, lodging, packing, duties, visit invites | `/logistics`, `/packing`, `/duties`, `/visit-invites` (+ Team Calendar → My trip) |
 | **Kickoff** | Season start / game manual | `/kickoff` |
 | **Business** | Money, sponsors, awards, impact, exports | `/business`, `/orders`, `/costs`, `/team/finance`, `/team/sponsors`, `/sponsorship`, `/team/grants`, `/team/awards`, `/fundraisers`, `/impact`, `/writer`, `/recognition`, `/exports` |

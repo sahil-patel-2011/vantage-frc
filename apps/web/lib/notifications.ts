@@ -68,6 +68,10 @@ export function notificationHref(
       return orgId ? `/command${orgQuery}` : "/command";
     case "match_alert":
       return orgId ? `/my-day${orgQuery}` : "/my-day";
+    case "sponsor_thank_you_due":
+    case "sponsor_renewal_due":
+    case "sponsor_followup_overdue":
+      return orgId ? `/business?orgId=${encodeURIComponent(orgId)}&tab=sponsors` : "/business?tab=sponsors";
     case "purchase_request_submitted":
     case "purchase_request_approved":
     case "purchase_request_rejected":
