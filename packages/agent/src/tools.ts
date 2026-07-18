@@ -1,5 +1,7 @@
 import { AIToolRegistry, type ToolDefinition } from "./orchestrator";
 import { checkGameRuleCompliance } from "./rule-compliance";
+import { FINANCE_IN_AI_DENIED, sanitizeFinancePayloadForAi } from "./finance-redact";
+import { isFinanceInAiAllowed, loadOrgAiPolicy } from "@vantage/billing";
 
 const object = (value: unknown) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Tool input must be an object");
@@ -51,9 +53,99 @@ export const SHARED_STRATEGY_CAD_TOOLS = [
   "rules.compliance",
   "strategy.design",
   "strategy.match",
-  "cad.briefs",
+  "scouting.team",
+  "reference.team",
+  "fmea.open_risks",
   "fmea.repeat",
+  "cad.briefs",
+  "cad.create_brief",
+  "knowledge.search",
+  "finance.summary",
+  "finance.orders",
+  "finance.create_purchase_request",
 ] as const;
+
+export const ORG_DATA_TOOLS = [
+  "scouting.team",
+  "strategy.match",
+  "strategy.design",
+  "artifacts.related",
+  "kickoff.intelligence",
+  "kickoff.rules",
+  "rules.compliance",
+  "cad.briefs",
+  "cad.create_brief",
+  "knowledge.search",
+  "knowledge.get_page",
+  "fmea.open_risks",
+  "fmea.repeat",
+  "finance.summary",
+  "finance.orders",
+  "finance.create_purchase_request",
+] as const;
+
+function round2(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function usdLabel(value: number) {
+  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
+/** Rule-based open-order blurb — only returned when Finance-in-AI is allowed. */
+export function summarizeOpenPurchaseRequests(
+  orders: Array<{
+    title: string;
+    status: string;
+    totalCostUsd: number;
+    itemUrl: string | null;
+    buyerUserId: string | null;
+  }>,
+) {
+  const open = orders.filter((o) => o.status === "pending" || o.status === "approved");
+  const pending = open.filter((o) => o.status === "pending");
+  const approved = open.filter((o) => o.status === "approved");
+  const openTotalUsd = round2(open.reduce((sum, o) => sum + o.totalCostUsd, 0));
+  const recommendations: string[] = [];
+  if (!open.length) {
+    return {
+      headline: "No open purchase requests — nothing waiting on approval or ordering.",
+      recommendations: ["When someone submits a need, it will show up for admin review."],
+      openCount: 0,
+      openTotalUsd: 0,
+    };
+  }
+  let headline = `${open.length} open request${open.length === 1 ? "" : "s"} totaling ${usdLabel(openTotalUsd)}.`;
+  if (pending.length && approved.length) {
+    headline = `${pending.length} awaiting approval and ${approved.length} ready to buy (${usdLabel(openTotalUsd)} open).`;
+  } else if (pending.length) {
+    headline = `${pending.length} request${pending.length === 1 ? "" : "s"} awaiting admin approval (${usdLabel(openTotalUsd)}).`;
+  } else {
+    headline = `${approved.length} approved request${approved.length === 1 ? "" : "s"} ready to order (${usdLabel(openTotalUsd)}).`;
+  }
+  if (pending.length) {
+    const largest = [...pending].sort((a, b) => b.totalCostUsd - a.totalCostUsd)[0]!;
+    recommendations.push(
+      `Review “${largest.title}” first (${usdLabel(largest.totalCostUsd)}) — largest pending estimate.`,
+    );
+  }
+  const missingLink = approved.filter((o) => !o.itemUrl);
+  if (missingLink.length) {
+    recommendations.push(
+      `${missingLink.length} approved request${missingLink.length === 1 ? "" : "s"} missing a vendor link — add a product URL before ordering.`,
+    );
+  }
+  const unassigned = approved.filter((o) => !o.buyerUserId);
+  if (unassigned.length) {
+    recommendations.push(
+      `Assign a buyer on ${unassigned.length} approved request${unassigned.length === 1 ? "" : "s"}.`,
+    );
+  }
+  if (!recommendations.length) {
+    recommendations.push("Open requests look complete — approve pending items or mark buys as ordered.");
+  }
+  return { headline, recommendations, openCount: open.length, openTotalUsd };
+}
 
 export function createVantageToolRegistry() {
   return new AIToolRegistry()
@@ -702,6 +794,385 @@ export function createVantageToolRegistry() {
             return { seasonYear: input.seasonYear, threshold: input.threshold, alerts };
           } catch {
             return { seasonYear: input.seasonYear, threshold: input.threshold, alerts: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "finance.summary",
+        description:
+          "Read org-scoped season budget/spend summaries (amounts, vendor/source, purpose/category). Requires Finance-in-AI opt-in. Never returns bank/card/SSN data.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId }, input) {
+          const policy = await loadOrgAiPolicy(client, orgId);
+          if (!isFinanceInAiAllowed(policy)) {
+            return { ...FINANCE_IN_AI_DENIED, seasonYear: input.seasonYear };
+          }
+          try {
+            const [txns, plans, season, sponsors] = await Promise.all([
+              client.query<{
+                type: string;
+                amountUsd: string;
+                source: string;
+                description: string | null;
+                categoryName: string | null;
+                occurredAt: string;
+              }>(
+                `SELECT t.type::text AS type, t.amount_usd::text AS "amountUsd",
+                        t.source::text AS source, t.description,
+                        c.name AS "categoryName", t.occurred_at AS "occurredAt"
+                 FROM finance_transactions t
+                 LEFT JOIN finance_categories c ON c.id = t.category_id
+                 WHERE t.org_id=$1 AND t.season_year=$2
+                 ORDER BY t.occurred_at DESC
+                 LIMIT 80`,
+                [orgId, input.seasonYear],
+              ),
+              client.query<{
+                categoryName: string;
+                monthlyLimitUsd: string | null;
+                totalLimitUsd: string | null;
+              }>(
+                `SELECT c.name AS "categoryName",
+                        p.monthly_limit_usd::text AS "monthlyLimitUsd",
+                        p.total_limit_usd::text AS "totalLimitUsd"
+                 FROM finance_budget_plans p
+                 JOIN finance_categories c ON c.id = p.category_id
+                 WHERE c.org_id=$1 AND c.season_year=$2
+                 ORDER BY c.name
+                 LIMIT 40`,
+                [orgId, input.seasonYear],
+              ),
+              client.query<{
+                operatingBudgetUsd: string;
+                fundraisingGoalUsd: string;
+              }>(
+                `SELECT operating_budget_usd::text AS "operatingBudgetUsd",
+                        fundraising_goal_usd::text AS "fundraisingGoalUsd"
+                 FROM finance_season_settings WHERE org_id=$1 AND season_year=$2`,
+                [orgId, input.seasonYear],
+              ),
+              client.query<{ cashUsd: string }>(
+                `SELECT COALESCE(sum(amount_usd),0)::text AS "cashUsd"
+                 FROM sponsor_contributions
+                 WHERE org_id=$1 AND season_year=$2 AND type='cash'`,
+                [orgId, input.seasonYear],
+              ),
+            ]);
+
+            let incomeUsd = 0;
+            let expenseUsd = 0;
+            const recent = txns.rows.map((row) => {
+              const amount = Number(row.amountUsd) || 0;
+              if (row.type === "income") incomeUsd += amount;
+              else expenseUsd += amount;
+              return {
+                type: row.type,
+                amountUsd: amount,
+                source: row.source,
+                purpose: row.description,
+                category: row.categoryName,
+                occurredAt: row.occurredAt,
+              };
+            });
+            incomeUsd = round2(incomeUsd);
+            expenseUsd = round2(expenseUsd);
+
+            const payload = {
+              seasonYear: input.seasonYear,
+              operatingBudgetUsd: Number(season.rows[0]?.operatingBudgetUsd ?? 0) || 0,
+              fundraisingGoalUsd: Number(season.rows[0]?.fundraisingGoalUsd ?? 0) || 0,
+              sponsorCashUsd: Number(sponsors.rows[0]?.cashUsd ?? 0) || 0,
+              incomeUsd,
+              expenseUsd,
+              netUsd: round2(incomeUsd - expenseUsd),
+              categoryLimits: plans.rows.map((row) => ({
+                category: row.categoryName,
+                monthlyLimitUsd: row.monthlyLimitUsd == null ? null : Number(row.monthlyLimitUsd) || 0,
+                totalLimitUsd: row.totalLimitUsd == null ? null : Number(row.totalLimitUsd) || 0,
+              })),
+              recentTransactions: recent,
+            };
+            return sanitizeFinancePayloadForAi(payload);
+          } catch {
+            return {
+              seasonYear: input.seasonYear,
+              setup_required: true,
+              message: "Team finance tables are not available yet.",
+            };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "finance.orders",
+        description:
+          "List open purchase / ordering requests for the season. Requires Finance-in-AI opt-in. Never returns card/bank data.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId }, input) {
+          const policy = await loadOrgAiPolicy(client, orgId);
+          if (!isFinanceInAiAllowed(policy)) {
+            return { ...FINANCE_IN_AI_DENIED, seasonYear: input.seasonYear, orders: [], aiSummary: null };
+          }
+          try {
+            const rows = await client.query<{
+              id: string;
+              title: string;
+              status: string;
+              totalCostUsd: string;
+              itemUrl: string | null;
+              buyerUserId: string | null;
+              quantity: number;
+              vendor: string;
+              justification: string | null;
+            }>(
+              `SELECT pr.id, pr.title, pr.status::text AS status,
+                      pr.total_cost_usd::text AS "totalCostUsd",
+                      pr.item_url AS "itemUrl",
+                      pr.buyer_user_id::text AS "buyerUserId",
+                      pr.quantity, pr.vendor, pr.justification
+               FROM purchase_requests pr
+               WHERE pr.org_id=$1 AND pr.season_year=$2
+                 AND pr.status::text IN ('pending','approved','ordered')
+               ORDER BY CASE pr.status::text WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
+                        pr.created_at DESC
+               LIMIT 40`,
+              [orgId, input.seasonYear],
+            );
+            const orders = rows.rows.map((row) => ({
+              id: row.id,
+              title: row.title,
+              status: row.status,
+              totalCostUsd: Number(row.totalCostUsd) || 0,
+              itemUrl: row.itemUrl,
+              buyerUserId: row.buyerUserId,
+              quantity: row.quantity,
+              vendor: row.vendor,
+              purpose: row.justification,
+            }));
+            return sanitizeFinancePayloadForAi({
+              seasonYear: input.seasonYear,
+              orders,
+              aiSummary: summarizeOpenPurchaseRequests(orders),
+            });
+          } catch {
+            return {
+              seasonYear: input.seasonYear,
+              orders: [],
+              aiSummary: null,
+              setup_required: true,
+            };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "finance.create_purchase_request",
+        description:
+          "Create a pending purchase request (what/why/estimate/optional vendor URL). Requires Finance-in-AI opt-in. Never stores card or bank data.",
+        parseInput(value) {
+          const input = object(value);
+          const title = String(input.title ?? input.partName ?? input.itemName ?? "").trim();
+          if (!title) throw new Error("title (part/item name) is required");
+          if (title.length > 200) throw new Error("title must be 200 characters or fewer");
+          const justification = String(input.justification ?? input.why ?? input.purpose ?? "").trim();
+          if (!justification) throw new Error("justification (why you need it) is required");
+          if (justification.length > 2000) throw new Error("justification must be 2000 characters or fewer");
+          const quantityRaw = Number(input.quantity ?? 1);
+          if (!Number.isInteger(quantityRaw) || quantityRaw < 1 || quantityRaw > 9999) {
+            throw new Error("quantity must be a whole number from 1 to 9999");
+          }
+          const estimateUsd = Number(input.estimateUsd ?? input.unitCostUsd ?? 0);
+          if (!Number.isFinite(estimateUsd) || estimateUsd < 0 || estimateUsd > 1_000_000) {
+            throw new Error("estimateUsd must be a non-negative dollar amount");
+          }
+          const itemUrlRaw = typeof input.itemUrl === "string" ? input.itemUrl.trim() : "";
+          let itemUrl: string | null = null;
+          if (itemUrlRaw) {
+            try {
+              const parsed = new URL(itemUrlRaw);
+              if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+                throw new Error("itemUrl must be http(s)");
+              }
+              itemUrl = parsed.toString();
+            } catch {
+              throw new Error("itemUrl must be a valid URL");
+            }
+          }
+          const vendor = String(input.vendor ?? "unspecified").trim().slice(0, 120) || "unspecified";
+          const season = seasonInput({ seasonYear: input.seasonYear });
+          const source = String(input.source ?? "assistant").trim().slice(0, 40) || "assistant";
+          return {
+            title: title.slice(0, 200),
+            justification: justification.slice(0, 2000),
+            quantity: quantityRaw,
+            estimateUsd: round2(estimateUsd),
+            itemUrl,
+            vendor,
+            seasonYear: season.seasonYear,
+            source,
+          };
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId, userId }, input) {
+          const policy = await loadOrgAiPolicy(client, orgId);
+          if (!isFinanceInAiAllowed(policy)) {
+            return { ...FINANCE_IN_AI_DENIED, created: false };
+          }
+          const unitCostUsd =
+            input.quantity <= 1 ? input.estimateUsd : round2(input.estimateUsd / input.quantity);
+          const totalCostUsd =
+            input.quantity <= 1 ? input.estimateUsd : round2(input.quantity * unitCostUsd);
+          try {
+            const inserted = await client.query<{ id: string }>(
+              `INSERT INTO purchase_requests(
+                 org_id, season_year, requested_by, title, vendor, item_url,
+                 quantity, unit_cost_usd, total_cost_usd, justification
+               ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+               RETURNING id`,
+              [
+                orgId,
+                input.seasonYear,
+                userId,
+                input.title,
+                input.vendor,
+                input.itemUrl,
+                input.quantity,
+                unitCostUsd,
+                totalCostUsd,
+                `${input.justification}${input.source === "cad" ? "\n\n(Source: CAD)" : ""}`,
+              ],
+            );
+            const orderId = inserted.rows[0]!.id;
+            const requester = await client.query<{ name: string | null }>(`SELECT name FROM users WHERE id=$1`, [
+              userId,
+            ]);
+            const admins = await client.query<{ userId: string }>(
+              `SELECT user_id AS "userId" FROM memberships
+               WHERE org_id=$1 AND role IN ('owner','admin') AND user_id <> $2`,
+              [orgId, userId],
+            );
+            const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(orderId)}`;
+            for (const admin of admins.rows) {
+              await client.query(
+                `INSERT INTO notifications (user_id, org_id, type, payload) VALUES ($1,$2,$3,$4::jsonb)`,
+                [
+                  admin.userId,
+                  orgId,
+                  "purchase_request_submitted",
+                  JSON.stringify({
+                    title: "New purchase request",
+                    body: `${requester.rows[0]?.name ?? "A teammate"} requested “${input.title}” (~$${totalCostUsd.toFixed(2)}).`,
+                    orderId,
+                    href,
+                    source: input.source,
+                  }),
+                ],
+              );
+            }
+            return sanitizeFinancePayloadForAi({
+              created: true,
+              orderId,
+              title: input.title,
+              totalCostUsd,
+              status: "pending",
+              href,
+              message: `Purchase request submitted for admin approval. Open ${href} to track it.`,
+            });
+          } catch (error) {
+            return {
+              created: false,
+              setup_required: true,
+              error: error instanceof Error ? error.message : "Could not create purchase request",
+            };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "fmea.open_risks",
+        description:
+          "Read open / fixing FMEA failures ranked by RPN — CAD and strategy treat these as real reliability risks",
+        parseInput(value) {
+          const season = seasonInput(value);
+          const input = object(value);
+          const limitRaw = Number(input.limit ?? 12);
+          const limit = Number.isFinite(limitRaw) ? Math.min(30, Math.max(1, Math.floor(limitRaw))) : 12;
+          return { seasonYear: season.seasonYear, limit };
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            const rows = await client.query(
+              `SELECT id, title, failure_mode AS "failureMode", subsystem_name AS "subsystemName",
+                      context, status, occurrence, severity, detection,
+                      (occurrence * severity * detection) AS rpn,
+                      root_cause AS "rootCause", fix,
+                      event_key AS "eventKey", match_key AS "matchKey",
+                      occurred_at AS "occurredAt"
+               FROM fmea_failures
+               WHERE org_id=$1 AND season_year=$2 AND status IN ('open','fixing')
+               ORDER BY (occurrence * severity * detection) DESC, occurred_at DESC
+               LIMIT $3`,
+              [orgId, input.seasonYear, input.limit],
+            );
+            return { seasonYear: input.seasonYear, failures: rows.rows, openCount: rows.rows.length };
+          } catch {
+            return { seasonYear: input.seasonYear, failures: [], openCount: 0, setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "cad.create_brief",
+        description:
+          "Create a metered CAD engineering brief grounded in strategy.match, kickoff design priorities, FMEA risks, and knowledge (shared tool graph — no copy-paste)",
+        parseInput(value) {
+          const input = object(value);
+          const request = String(input.request ?? input.proposal ?? "").trim();
+          if (!request) throw new Error("request is required");
+          if (request.length > 12_000) throw new Error("request must be 12000 characters or fewer");
+          const title = String(input.title ?? request).trim().slice(0, 160) || "CAD engineering brief";
+          const matchKey = String(input.matchKey ?? "").trim() || undefined;
+          const season = seasonInput({ seasonYear: input.seasonYear });
+          return { request, title, matchKey, seasonYear: season.seasonYear };
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId, userId }, input) {
+          const { createMeteredCadBriefJob } = await import("./cad-brief");
+          try {
+            const created = await createMeteredCadBriefJob(client, {
+              orgId,
+              userId,
+              title: input.title,
+              request: input.request,
+              seasonYear: input.seasonYear,
+              selected: input.matchKey ? { matchKey: input.matchKey } : undefined,
+              sources: [],
+            });
+            return {
+              jobId: created.jobId,
+              status: created.status,
+              aiRunId: created.aiRunId,
+              title: input.title,
+              summary: created.brief.summary,
+              requirementCount: created.brief.requirements.length,
+              riskCount: created.brief.risks.length,
+              tools: created.tools.map((t) => ({ name: t.name, status: t.status, summary: t.summary })),
+            };
+          } catch (error) {
+            return {
+              jobId: null,
+              status: "failed",
+              error: error instanceof Error ? error.message : "CAD brief creation failed",
+            };
           }
         },
       }),

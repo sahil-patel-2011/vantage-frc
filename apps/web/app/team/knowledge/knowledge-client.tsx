@@ -161,6 +161,18 @@ export default function KnowledgeClient() {
         <div className="kb-hero-actions">
           {orgId && (
             <>
+              <a className="button secondary" href={`/team/getting-started?orgId=${orgId}`}>
+                Getting started
+              </a>
+              <a className="button secondary" href={`/team/calendar?orgId=${orgId}`}>
+                Calendar
+              </a>
+              <a className="button secondary" href={`/logistics?orgId=${orgId}`}>
+                Logistics
+              </a>
+              <a className="button secondary" href={`/kickoff?orgId=${orgId}`}>
+                Kickoff
+              </a>
               <a className="button secondary" href={`/chat?orgId=${orgId}`}>
                 FRC Assistant
               </a>
