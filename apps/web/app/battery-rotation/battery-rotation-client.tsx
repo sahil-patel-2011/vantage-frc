@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { batteryStatusLabel, irTrendLabel } from "../../lib/battery-rotation";
 import {
@@ -8,10 +8,21 @@ import {
   type BatteryRotationView,
 } from "../../lib/battery-rotation/compute-battery-rotation";
 import type { BatteryStatus } from "../../lib/battery-rotation/types";
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+import {
+  BATTERY_ROTATION_RELATED_INCLUDE,
+  batteryRotationNextActions,
+  batteryRotationRelatedLinks,
+  batteryRotationSetupSteps,
+  batteryRotationShellCopy,
+  classifyBatteryRotationShell,
+  formatBatteryRotationMetric,
+  formatBatteryRotationPlanReadiness,
+  shouldShowBatteryRotationSummaryTiles,
+  type BatteryRotationNextAction,
+  type BatteryRotationShellKind,
+} from "../../lib/battery-rotation/battery-rotation-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 function statusTone(status: BatteryStatus): string {
   if (status === "short_pack") return "demo";
@@ -21,14 +32,141 @@ function statusTone(status: BatteryStatus): string {
 }
 
 type LiveView = Extract<BatteryRotationView, { status: "live" }>;
+type Mutate = (payload: Record<string, unknown>) => void;
+
+function BatteryRotationRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = batteryRotationRelatedLinks(orgId, {
+    include: [...BATTERY_ROTATION_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related battery-rotation-related" aria-label="Related battery tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function BatteryRotationNextActionsPanel({ actions }: { actions: BatteryRotationNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions battery-rotation-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">
+          Batteries, Health Forecast, and Pit — never DEMO IR or charge metrics.
+        </p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function BatteryRotationShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: BatteryRotationShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = batteryRotationNextActions({ orgId, shell });
+  const copy = batteryRotationShellCopy(shell);
+  const competitionHref = withOrgHref("/competition", orgId);
+  const batteriesHref = hubHref("/team", "batteries", orgId);
+  const forecastHref = hubHref("/build", "battery-health-forecast", orgId);
+  const pitHref = withOrgHref("/pit", orgId);
+
+  return (
+    <main className="module-page battery-rotation-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Battery Rotation"}
+          </>
+        }
+        title="Battery Rotation & Charge Planner"
+        description={description}
+      >
+        <BatteryRotationRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No batteries yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={batteriesHref}>
+              Open Batteries
+            </a>
+            <a className="app-button secondary" href={forecastHref}>
+              Open Health Forecast
+            </a>
+            <a className="app-button secondary" href={pitHref}>
+              Open Pit Command
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <BatteryRotationNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function BatteryRotationClient() {
   const [view, setView] = useState<BatteryRotationView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -53,66 +191,85 @@ export default function BatteryRotationClient() {
     load();
   }, [load]);
 
-  const mutate = useCallback(
-    async (payload: Record<string, unknown>) => {
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const batteryCount = view?.status === "live" ? view.batteries.length : 0;
+  const summary = view?.status === "live" ? view.summary : null;
+
+  const shell = classifyBatteryRotationShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    batteryCount,
+  });
+  const shellCopy = batteryRotationShellCopy(shell);
+  const nextActions = batteryRotationNextActions({
+    orgId,
+    shell,
+    batteryCount,
+    shortPackCount: summary?.shortPackCount ?? 0,
+    chargeShortfallCount: summary?.chargeShortfallCount ?? 0,
+    upcomingAssignments: summary?.upcomingAssignments ?? 0,
+  });
+  const relatedLinks = batteryRotationRelatedLinks(orgId, {
+    include: [...BATTERY_ROTATION_RELATED_INCLUDE],
+  });
+  const competitionHref = withOrgHref("/competition", orgId);
+  const batteriesHref = hubHref("/team", "batteries", orgId);
+  const forecastHref = hubHref("/build", "battery-health-forecast", orgId);
+  const pitHref = withOrgHref("/pit", orgId);
+  const setupSteps = batteryRotationSetupSteps(orgId);
+
+  const mutate = useCallback<Mutate>(
+    (payload) => {
       if (!orgId || busy) return;
       setBusy(true);
       setError("");
-      try {
-        const response = await fetch("/api/battery-rotation", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, ...payload }),
-        });
-        const data = (await response.json()) as BatteryRotationView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
-          return;
-        }
-        setView(data);
-      } catch {
-        setError("Network error — please try again.");
-      } finally {
-        setBusy(false);
-      }
+      void fetch("/api/battery-rotation", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, ...payload }),
+      })
+        .then(async (response) => {
+          const data = (await response.json()) as BatteryRotationView | { error?: string };
+          if (!response.ok || !("status" in data)) {
+            setError("error" in data && data.error ? data.error : "Something went wrong.");
+            return;
+          }
+          setView(data);
+        })
+        .catch(() => setError("Network error — please try again."))
+        .finally(() => setBusy(false));
     },
     [orgId, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Battery Rotation"}
-          </>
-        }
-        title="Battery rotation & charge planner"
-        description="Schedule which pack runs which match from internal-resistance trends vs. match cadence and charge time — with short-pack alerts."
+  if (shell === "loading") {
+    return <BatteryRotationShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <BatteryRotationShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={load}
       />
+    );
+  }
 
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load battery rotation"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+  if (shell === "setup") {
+    return (
+      <BatteryRotationShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      >
+        {(view?.status === "setup_required" ? view.steps : setupSteps).length > 0 ? (
           <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
+            {(view?.status === "setup_required" ? view.steps : setupSteps).map((step) => (
               <li key={step.id}>
                 <div>
                   <strong>{step.label}</strong>
@@ -122,17 +279,85 @@ export default function BatteryRotationClient() {
               </li>
             ))}
           </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryPanel view={view} />
-          <AddBatteryForm busy={busy} mutate={mutate} />
-          {view.batteries.length > 0 ? <FleetHealth view={view} busy={busy} mutate={mutate} /> : null}
-          <LogReadingForm view={view} busy={busy} mutate={mutate} />
-          <ScheduleAssignmentForm view={view} busy={busy} mutate={mutate} />
-          <RotationSchedule view={view} busy={busy} mutate={mutate} />
+        ) : null}
+      </BatteryRotationShell>
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <BatteryRotationShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
+  return (
+    <main className="module-page battery-rotation-page">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Battery Rotation"}
+          </>
+        }
+        title="Battery Rotation & Charge Planner"
+        description="Schedule which pack runs which match from internal-resistance trends vs. match cadence and charge time — never DEMO IR or charge metrics."
+      >
+        <div className="battery-rotation-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
-      )}
+      </PageHeader>
+
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <BatteryRotationNextActionsPanel actions={nextActions} />
+
+      {shouldShowBatteryRotationSummaryTiles(batteryCount) ? <SummaryPanel view={view} /> : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No batteries yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href={batteriesHref}>
+            Open Batteries
+          </a>
+          <a className="app-button secondary" href={forecastHref}>
+            Open Health Forecast
+          </a>
+          <a className="app-button secondary" href={pitHref}>
+            Open Pit Command
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div style={{ display: "grid", gap: 16 }}>
+        <AddBatteryForm busy={busy} mutate={mutate} />
+        {shell === "ready" ? <FleetHealth view={view} busy={busy} mutate={mutate} /> : null}
+        <LogReadingForm view={view} busy={busy} mutate={mutate} />
+        {shell === "ready" ? (
+          <>
+            <ScheduleAssignmentForm view={view} busy={busy} mutate={mutate} />
+            <RotationSchedule view={view} busy={busy} mutate={mutate} />
+          </>
+        ) : null}
+        <Panel aria-label="Battery rotation tip">
+          <span className="eyebrow">Fleet path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Log IR on <a href={batteriesHref}>Batteries</a>, project retirement in{" "}
+            <a href={forecastHref}>Health Forecast</a>, and check event-day rack status in{" "}
+            <a href={pitHref}>Pit Command</a> — never invent DEMO resistance or charge plans.
+          </p>
+        </Panel>
+      </div>
     </main>
   );
 }
@@ -140,15 +365,34 @@ export default function BatteryRotationClient() {
 function SummaryPanel({ view }: { view: LiveView }) {
   const { summary } = view;
   const tiles = [
-    { label: "Batteries", value: String(summary.totalBatteries) },
-    { label: "Active/charging", value: String(summary.activeBatteries) },
-    { label: "Short-pack alerts", value: String(summary.shortPackCount) },
-    { label: "Upcoming assignments", value: String(summary.upcomingAssignments) },
-    { label: "Charge shortfalls", value: String(summary.chargeShortfallCount) },
-    { label: "Plan readiness", value: pct(summary.planReadiness) },
+    { label: "Batteries", value: formatBatteryRotationMetric(summary.totalBatteries, true) },
+    {
+      label: "Active/charging",
+      value: formatBatteryRotationMetric(summary.activeBatteries, true),
+    },
+    {
+      label: "Short-pack alerts",
+      value: formatBatteryRotationMetric(summary.shortPackCount, true),
+    },
+    {
+      label: "Upcoming assignments",
+      value: formatBatteryRotationMetric(summary.upcomingAssignments, true),
+    },
+    {
+      label: "Charge shortfalls",
+      value: formatBatteryRotationMetric(summary.chargeShortfallCount, true),
+    },
+    {
+      label: "Plan readiness",
+      value: formatBatteryRotationPlanReadiness(
+        summary.planReadiness,
+        true,
+        summary.totalBatteries,
+      ),
+    },
   ];
   return (
-    <Panel>
+    <section className="battery-rotation-stats" aria-label="Real battery rotation counts">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -159,10 +403,11 @@ function SummaryPanel({ view }: { view: LiveView }) {
       </div>
       {summary.shortPackCount > 0 ? (
         <p className="app-muted" style={{ marginTop: 12 }} role="alert">
-          {summary.shortPackCount} pack(s) are flagged short — retire or bench them before elimination matches.
+          {summary.shortPackCount} pack(s) are flagged short from logged IR — retire or bench them
+          before elimination matches.
         </p>
       ) : null}
-    </Panel>
+    </section>
   );
 }
 
@@ -173,12 +418,12 @@ function FleetHealth({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   return (
-    <Panel>
+    <Panel id="br-fleet">
       <h2 style={{ marginTop: 0 }}>Fleet health</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10, margin: 0 }}>
         {view.batteries.map((battery) => (
           <li
             key={battery.batteryId}
@@ -186,7 +431,9 @@ function FleetHealth({
           >
             <div>
               <strong>{battery.label}</strong>{" "}
-              <span className={`app-badge ${statusTone(battery.status)}`}>{batteryStatusLabel(battery.status)}</span>
+              <span className={`app-badge ${statusTone(battery.status)}`}>
+                {batteryStatusLabel(battery.status)}
+              </span>
               {battery.shortPackAlert ? <span className="app-badge demo">Short pack</span> : null}
               <small className="app-muted" style={{ display: "block" }}>
                 {battery.readingsCount === 0
@@ -199,7 +446,11 @@ function FleetHealth({
                 value={battery.status}
                 disabled={busy}
                 onChange={(event) =>
-                  mutate({ action: "update-status", batteryId: battery.batteryId, status: event.target.value })
+                  mutate({
+                    action: "update-status",
+                    batteryId: battery.batteryId,
+                    status: event.target.value,
+                  })
                 }
               >
                 {BATTERY_STATUSES.map((status) => (
@@ -228,13 +479,7 @@ function FleetHealth({
   );
 }
 
-function AddBatteryForm({
-  busy,
-  mutate,
-}: {
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
+function AddBatteryForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
   const empty = useMemo(() => ({ label: "", serialNumber: "", purchasedOn: "", notes: "" }), []);
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
@@ -242,6 +487,7 @@ function AddBatteryForm({
 
   return (
     <Panel
+      id="br-add-battery"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -288,7 +534,7 @@ function LogReadingForm({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   const empty = useMemo(
     () => ({ batteryId: "", internalResistanceMohm: "", voltage: "", cycleCount: "", notes: "" }),
@@ -301,10 +547,11 @@ function LogReadingForm({
   if (view.batteries.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No batteries yet"
         badgeTone="setup"
         title="Add a battery first"
-        description="Log an internal-resistance reading once at least one pack is tracked."
+        description="Log an internal-resistance reading once at least one real pack is tracked — never DEMO IR values."
       />
     );
   }
@@ -379,7 +626,7 @@ function ScheduleAssignmentForm({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   const empty = useMemo(
     () => ({ batteryId: "", matchLabel: "", scheduledAt: "", chargeMinutesAvailable: "", notes: "" }),
@@ -393,6 +640,7 @@ function ScheduleAssignmentForm({
 
   return (
     <Panel
+      id="br-schedule-form"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -456,22 +704,23 @@ function RotationSchedule({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   if (view.slots.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No assignments yet"
         badgeTone="setup"
         title="Schedule your first battery-to-match assignment"
-        description="Assignments show the rotation order with charge-time and short-pack warnings."
+        description="Assignments show rotation order with charge-time and short-pack warnings from real logs — never DEMO schedules."
       />
     );
   }
   return (
-    <Panel>
+    <Panel id="br-schedule">
       <h2 style={{ marginTop: 0 }}>Rotation schedule</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10, margin: 0 }}>
         {view.slots.map((slot) => (
           <li
             key={slot.assignmentId}
@@ -480,12 +729,14 @@ function RotationSchedule({
             <div>
               <strong>{slot.matchLabel}</strong>
               <small className="app-muted" style={{ display: "block" }}>
-                {new Date(slot.scheduledAt).toLocaleString()} · {slot.batteryLabel} · {slot.chargeMinutesAvailable} min
-                charge window
+                {new Date(slot.scheduledAt).toLocaleString()} · {slot.batteryLabel} ·{" "}
+                {slot.chargeMinutesAvailable} min charge window
               </small>
               <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                 {slot.batteryAlert ? <span className="app-badge demo">Short pack</span> : null}
-                {!slot.chargeSufficient ? <span className="app-badge setup">Charge shortfall</span> : null}
+                {!slot.chargeSufficient ? (
+                  <span className="app-badge setup">Charge shortfall</span>
+                ) : null}
                 <small className="app-muted">Trend: {irTrendLabel(slot.batteryTrend)}</small>
               </div>
             </div>

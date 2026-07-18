@@ -1,4 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { buildRotationSlots, computeBatteryHealth, summarizeRotation } from ".";
 import type {
   BatteryHealth,
@@ -128,9 +130,33 @@ export async function computeBatteryRotationView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to plan battery rotation and charge scheduling.",
+      message:
+        "Select a team workspace to plan battery rotation and charge scheduling — never DEMO IR or charge metrics.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        {
+          id: "workspace",
+          label: "Select workspace",
+          detail: "Choose your team organization — Battery Rotation is org-scoped.",
+          href: "/workspace",
+        },
+        {
+          id: "batteries",
+          label: "Open Batteries",
+          detail: "IR and cycles stay blank until logged — never DEMO health scores.",
+          href: hubHref("/team", "batteries", null),
+        },
+        {
+          id: "battery-health-forecast",
+          label: "Open Health Forecast",
+          detail: "Retirement projections stay blank until IR history exists — never DEMO EOL dates.",
+          href: hubHref("/build", "battery-health-forecast", null),
+        },
+        {
+          id: "pit",
+          label: "Open Pit Command",
+          detail: "Event-day rack status stays empty until packs are tracked — never DEMO volts.",
+          href: withOrgHref("/pit", null),
+        },
       ],
       orgId: null,
     };
