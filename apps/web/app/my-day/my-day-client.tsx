@@ -1,12 +1,64 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { CompetitionHubRelated } from "../../components/competition-hub-related";
-import { PageHeader } from "../../components/ui/page-header";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import type { MyDayMatch, MyDayView } from "../../lib/my-day";
+import {
+  MY_DAY_RELATED_INCLUDE,
+  classifyMyDayShell,
+  formatMyDayMatchCount,
+  myDayNextActions,
+  myDayRelatedLinks,
+  myDaySetupSteps,
+  myDayShellCopy,
+  type MyDayNextAction,
+  type MyDayShellKind,
+} from "../../lib/my-day-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 const POLL_MS = 45_000;
+
+function MyDayRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = myDayRelatedLinks(orgId, {
+    include: [...MY_DAY_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related myday-related" aria-label="Related live ops tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function MyDayNextActionsPanel({ actions }: { actions: MyDayNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <Panel className="myday-next-actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>Event Day, Schedule, and Strategy — never DEMO matches.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
 
 function ScoutChips({
   label,
@@ -33,6 +85,9 @@ function ScoutChips({
 }
 
 function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null }) {
+  const commandHref = hubHref("/competition", "command", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const scheduleHref = withOrgHref("/schedule", orgId);
   return (
     <section className={`myday-hero alliance-${match.alliance}`} aria-live="polite">
       <p className="myday-hero-kicker">Next match</p>
@@ -42,23 +97,20 @@ function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null 
       <ScoutChips label="With" chips={match.links.scoutPartners} />
       <ScoutChips label="Vs" chips={match.links.scoutOpponents} />
       <nav className="myday-hero-links" aria-label="Match links">
-        <a className="myday-link primary" href={match.links.command}>
-          Event Day Command
+        <a className="myday-link primary" href={commandHref}>
+          Event Day
         </a>
-        <a className="myday-link" href={hubHref("/competition", "strategy", orgId)}>
+        <a className="myday-link" href={scheduleHref}>
+          Schedule
+        </a>
+        <a className="myday-link" href={strategyHref}>
           Strategy
-        </a>
-        <a className="myday-link" href={hubHref("/competition", "scouting", orgId)}>
-          Scouting
         </a>
         <a className="myday-link" href={match.links.briefing}>
           Briefing
         </a>
         <a className="myday-link" href={match.links.checklist}>
           Checklist
-        </a>
-        <a className="myday-link" href={match.links.schedule}>
-          Full schedule
         </a>
       </nav>
     </section>
@@ -84,9 +136,116 @@ function MatchCard({ match }: { match: MyDayMatch }) {
   );
 }
 
+function MyDayShell({
+  orgId,
+  shell,
+  emptyReason,
+  hasActiveEvent,
+  error,
+  onRetry,
+  children,
+}: {
+  orgId?: string | null;
+  shell: MyDayShellKind;
+  emptyReason?: "no_schedule" | "no_upcoming" | null;
+  hasActiveEvent?: boolean;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = myDayNextActions({
+    orgId,
+    shell,
+    emptyReason,
+    hasActiveEvent,
+  });
+  const copy = myDayShellCopy(shell, { emptyReason });
+  const steps = shell === "setup" ? myDaySetupSteps(orgId) : [];
+  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const teamDataHref = withOrgHref("/team/data", orgId);
+  const commandHref = hubHref("/competition", "command", orgId);
+  const scheduleHref = withOrgHref("/schedule", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+
+  return (
+    <main className="module-page myday-page soft-gate">
+      <PageHeader
+        breadcrumbs="Competition / Live ops"
+        title="My Day"
+        description="Your next match, bumper color, partners, and opponents from real TBA rows — never DEMO matches."
+      >
+        <MyDayRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        className="myday-empty"
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? copy.badge
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? teamDataHref : workspaceHref}>
+            {orgId ? "Sync Team Data" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a
+              className="app-button"
+              href={emptyReason === "no_upcoming" ? scheduleHref : commandHref}
+            >
+              {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event Day"}
+            </a>
+            <a
+              className="app-button secondary"
+              href={emptyReason === "no_upcoming" ? commandHref : scheduleHref}
+            >
+              {emptyReason === "no_upcoming" ? "Open Event Day" : "Open Schedule"}
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+          </>
+        ) : null}
+        {shell === "setup" && steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </EmptyState>
+      {shell !== "loading" ? <MyDayNextActionsPanel actions={actions} /> : null}
+    </main>
+  );
+}
+
 export default function MyDayClient() {
   const [view, setView] = useState<MyDayView | null>(null);
   const [error, setError] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -98,12 +257,15 @@ export default function MyDayClient() {
       const data = (await response.json()) as MyDayView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load My Day.");
+        setFetchFailed(true);
         return;
       }
       setError("");
+      setFetchFailed(false);
       setView(data);
     } catch {
       setError("Could not load My Day.");
+      setFetchFailed(true);
     } finally {
       setLoading(false);
     }
@@ -117,100 +279,93 @@ export default function MyDayClient() {
 
   if (loading && !view) {
     return (
-      <main className="module-page myday-page">
-        <PageHeader navPath="/my-day" title="My Day" description="Loading your match schedule…" />
-      </main>
+      <MyDayShell
+        shell={classifyMyDayShell({ loading: true })}
+        error={undefined}
+      />
     );
   }
 
-  if (error && !view) {
+  if ((fetchFailed || error) && !view) {
     return (
-      <main className="module-page myday-page">
-        <PageHeader navPath="/my-day" title="My Day" description={error} />
-        <button type="button" className="myday-link primary" onClick={() => void load()}>
-          Retry
-        </button>
-      </main>
+      <MyDayShell
+        shell="error"
+        error={error || undefined}
+        onRetry={() => {
+          setLoading(true);
+          setFetchFailed(false);
+          void load();
+        }}
+      />
     );
   }
 
   if (!view || view.status === "setup_required") {
+    const orgId = view?.context.orgId ?? null;
     return (
-      <main className="module-page myday-page">
-        <PageHeader
-          navPath="/my-day"
-          title="My Day"
-          description={view?.message ?? "Select a team workspace to open My Day."}
-        />
-        <CompetitionHubRelated
-          orgId={view?.context.orgId ?? null}
-          active="my-day"
-          include={["command", "strategy", "scouting", "match-checklist"]}
-        />
-        <div className="myday-empty soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <p>
-            My Day fills in once your active event schedule is synced. Set the event and team number
-            in Workspace, then pull TBA data from Team → Data. No demo match times.
-          </p>
-          <a className="myday-link primary" href="/workspace">
-            Open Workspace
-          </a>
-        </div>
-      </main>
+      <MyDayShell
+        orgId={orgId}
+        shell="setup"
+        hasActiveEvent={Boolean(view?.context.eventKey)}
+        error={view?.status === "setup_required" ? view.message : undefined}
+      />
     );
   }
 
   const orgId = view.context.orgId;
-  const emptySchedule = view.emptyReason === "no_schedule" || view.freshness.matchCount === 0;
-  const noOurMatches = !emptySchedule && view.matches.length === 0;
+  const shell = classifyMyDayShell({
+    status: "ready",
+    emptyReason: view.emptyReason,
+    ourMatchCount: view.freshness.ourMatchCount,
+  });
+
+  if (shell === "empty") {
+    return (
+      <MyDayShell
+        orgId={orgId}
+        shell="empty"
+        emptyReason={view.emptyReason}
+        hasActiveEvent={Boolean(view.context.eventKey)}
+      >
+        <p className="myday-freshness" role="status">
+          {view.freshness.label}
+          {" · "}
+          {formatMyDayMatchCount(view.freshness.matchCount, true)} event matches
+        </p>
+      </MyDayShell>
+    );
+  }
+
+  const commandHref = hubHref("/competition", "command", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const scheduleHref = withOrgHref("/schedule", orgId);
+  const nextActions = myDayNextActions({ orgId, shell: "ready" });
 
   return (
     <main className="module-page myday-page">
       <PageHeader
-        navPath="/my-day"
+        breadcrumbs="Competition / Live ops"
         title="My Day"
         description={
           view.context.eventName
             ? `${view.context.eventName}${view.context.teamNumber != null ? ` · Team ${view.context.teamNumber}` : ""}`
-            : "Your matches at the active event."
+            : "Your matches at the active event — never DEMO times."
         }
-      />
-
-      <CompetitionHubRelated
-        orgId={orgId}
-        active="my-day"
-        include={["command", "strategy", "scouting", "match-checklist"]}
-      />
+      >
+        <MyDayRelatedStrip orgId={orgId} />
+      </PageHeader>
 
       <p className="myday-freshness" role="status">
         {view.freshness.label}
         {view.freshness.ourMatchCount > 0
-          ? ` · ${view.freshness.ourMatchCount} of our matches`
+          ? ` · ${formatMyDayMatchCount(view.freshness.ourMatchCount, true)} of our matches`
           : null}
       </p>
 
       {error ? (
         <p className="myday-warn" role="status">
-          {error} Showing last good load.
+          {error} Showing last good load — never DEMO matches.
         </p>
-      ) : null}
-
-      {emptySchedule ? (
-        <div className="myday-empty soft-panel">
-          <p>No match schedule for this event yet. Sync TBA from Team → Data after the event posts.</p>
-          {orgId ? (
-            <a className="myday-link primary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
-              Team data
-            </a>
-          ) : null}
-        </div>
-      ) : null}
-
-      {noOurMatches ? (
-        <div className="myday-empty soft-panel">
-          <p>Schedule is in, but your team is not on any matches yet. Check back after alliances post.</p>
-        </div>
       ) : null}
 
       {view.next ? <MatchHero match={view.next} orgId={orgId} /> : null}
@@ -226,22 +381,21 @@ export default function MyDayClient() {
         </section>
       ) : null}
 
-      {!view.next && view.matches.length > 0 && orgId ? (
-        <nav className="myday-hero-links" aria-label="Competition links">
-          <a className="myday-link primary" href={hubHref("/competition", "command", orgId)}>
-            Event Day Command
+      {!view.next && view.matches.length > 0 ? (
+        <nav className="myday-hero-links" aria-label="Live ops links">
+          <a className="myday-link primary" href={commandHref}>
+            Event Day
           </a>
-          <a className="myday-link" href={hubHref("/competition", "strategy", orgId)}>
+          <a className="myday-link" href={scheduleHref}>
+            Schedule
+          </a>
+          <a className="myday-link" href={strategyHref}>
             Strategy
-          </a>
-          <a className="myday-link" href={hubHref("/competition", "scouting", orgId)}>
-            Scouting
-          </a>
-          <a className="myday-link" href={`/schedule?orgId=${encodeURIComponent(orgId)}`}>
-            Full schedule
           </a>
         </nav>
       ) : null}
+
+      <MyDayNextActionsPanel actions={nextActions} />
     </main>
   );
 }
