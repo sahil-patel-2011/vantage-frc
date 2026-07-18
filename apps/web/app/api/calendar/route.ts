@@ -67,7 +67,8 @@ export async function GET(request: Request) {
 
       const milestones = await client.query<Milestone>(
         `SELECT s.id, s.title, s.kind, s.starts_on::text AS "startsOn", s.ends_on::text AS "endsOn",
-                s.notes, s.done, s.done_at::text AS "doneAt", db.name AS "doneByName", cb.name AS "createdByName"
+                s.notes, s.meeting_url AS "meetingUrl",
+                s.done, s.done_at::text AS "doneAt", db.name AS "doneByName", cb.name AS "createdByName"
          FROM season_milestones s
          LEFT JOIN users db ON db.id = s.done_by
          LEFT JOIN users cb ON cb.id = s.created_by
@@ -126,9 +127,9 @@ export async function POST(request: Request) {
 
         case "add_milestone": {
           const inserted = await client.query<{ id: string }>(
-            `INSERT INTO season_milestones (org_id, title, kind, starts_on, ends_on, notes, created_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-            [action.orgId, action.title, action.kind, action.startsOn, action.endsOn, action.notes, userId],
+            `INSERT INTO season_milestones (org_id, title, kind, starts_on, ends_on, notes, meeting_url, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+            [action.orgId, action.title, action.kind, action.startsOn, action.endsOn, action.notes, action.meetingUrl, userId],
           );
           return { id: inserted.rows[0]!.id };
         }
@@ -146,6 +147,7 @@ export async function POST(request: Request) {
           if (Object.prototype.hasOwnProperty.call(patch, "startsOn")) push("starts_on", patch.startsOn);
           if (Object.prototype.hasOwnProperty.call(patch, "endsOn")) push("ends_on", patch.endsOn);
           if (Object.prototype.hasOwnProperty.call(patch, "notes")) push("notes", patch.notes);
+          if (Object.prototype.hasOwnProperty.call(patch, "meetingUrl")) push("meeting_url", patch.meetingUrl);
           const updated = await client.query(
             `UPDATE season_milestones SET ${sets.join(", ")}, updated_at = now() WHERE id = $1 AND org_id = $2`,
             values,

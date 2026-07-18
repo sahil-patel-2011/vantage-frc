@@ -1,4 +1,52 @@
 import { describe, expect, it } from "vitest";
+import { meetingProvider, optionalMeetingUrl, parseCalendarAction as parseForLinks } from "./season-calendar";
+
+describe("meeting links", () => {
+  it("validates https meeting URLs and rejects junk", () => {
+    expect(optionalMeetingUrl("https://zoom.us/j/123456")).toBe("https://zoom.us/j/123456");
+    expect(optionalMeetingUrl("")).toBeNull();
+    expect(optionalMeetingUrl(null)).toBeNull();
+    expect(() => optionalMeetingUrl("http://zoom.us/j/1")).toThrow(/https/);
+    expect(() => optionalMeetingUrl("not a url")).toThrow(/https/);
+    expect(() => optionalMeetingUrl("https://localhost/x")).toThrow(/full https/);
+  });
+  it("labels known providers", () => {
+    expect(meetingProvider("https://us02web.zoom.us/j/1")).toBe("Zoom");
+    expect(meetingProvider("https://meet.google.com/abc-defg-hij")).toBe("Google Meet");
+    expect(meetingProvider("https://teams.microsoft.com/l/meetup/x")).toBe("Teams");
+    expect(meetingProvider("https://example.com/room")).toBe("Meeting");
+    expect(meetingProvider(null)).toBeNull();
+  });
+  it("threads meetingUrl through add and update actions", () => {
+    const ORG_ID = "11111111-1111-4111-8111-111111111111";
+    const added = parseForLinks({
+      action: "add_milestone",
+      orgId: ORG_ID,
+      title: "Remote strategy meeting",
+      kind: "meeting",
+      startsOn: "2026-02-03",
+      meetingUrl: "https://meet.google.com/abc-defg-hij",
+    });
+    expect(added).toMatchObject({ meetingUrl: "https://meet.google.com/abc-defg-hij" });
+    const updated = parseForLinks({
+      action: "update_milestone",
+      orgId: ORG_ID,
+      id: "22222222-2222-4222-8222-222222222222",
+      patch: { meetingUrl: null },
+    });
+    expect(updated).toMatchObject({ patch: { meetingUrl: null } });
+    expect(() =>
+      parseForLinks({
+        action: "add_milestone",
+        orgId: ORG_ID,
+        title: "x",
+        kind: "meeting",
+        startsOn: "2026-02-03",
+        meetingUrl: "ftp://bad",
+      }),
+    ).toThrow(/https/);
+  });
+});
 import {
   daysUntil,
   groupByMonth,

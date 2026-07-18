@@ -34,11 +34,44 @@ export type Milestone = {
   startsOn: string;
   endsOn: string | null;
   notes: string;
+  /** Remote-join link (Zoom / Google Meet / Teams / any https URL), if this entry is joinable. */
+  meetingUrl: string | null;
   done: boolean;
   doneAt: string | null;
   doneByName: string | null;
   createdByName: string | null;
 };
+
+/** Human label for a meeting link's provider, for Join buttons. */
+export function meetingProvider(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host === "zoom.us" || host.endsWith(".zoom.us")) return "Zoom";
+    if (host === "meet.google.com") return "Google Meet";
+    if (host === "teams.microsoft.com" || host === "teams.live.com") return "Teams";
+    if (host === "discord.gg" || host === "discord.com" || host.endsWith(".discord.com")) return "Discord";
+    return "Meeting";
+  } catch {
+    return null;
+  }
+}
+
+/** Validate an optional https meeting URL (max 500 chars); returns normalized string or null. */
+export function optionalMeetingUrl(value: unknown): string | null {
+  if (value == null || String(value).trim() === "") return null;
+  const text = String(value).trim();
+  if (text.length > 500) throw new Error("Meeting link must be 500 characters or fewer");
+  let parsed: URL;
+  try {
+    parsed = new URL(text);
+  } catch {
+    throw new Error("Meeting link must be a full https:// URL");
+  }
+  if (parsed.protocol !== "https:") throw new Error("Meeting link must use https");
+  if (!parsed.hostname.includes(".")) throw new Error("Meeting link must be a full https:// URL");
+  return parsed.toString();
+}
 
 export type CalendarContext = {
   orgId: string | null;
@@ -214,6 +247,7 @@ export type MilestonePatch = {
   startsOn?: string;
   endsOn?: string | null;
   notes?: string;
+  meetingUrl?: string | null;
 };
 
 export type CalendarAction =
@@ -226,6 +260,7 @@ export type CalendarAction =
       startsOn: string;
       endsOn: string | null;
       notes: string;
+      meetingUrl: string | null;
     }
   | { action: "update_milestone"; orgId: string; id: string; patch: MilestonePatch }
   | { action: "toggle_done"; orgId: string; id: string; done: boolean }
@@ -253,6 +288,7 @@ export function parseCalendarAction(input: unknown): CalendarAction {
         startsOn,
         endsOn,
         notes: optionalText(body.notes, 2000) ?? "",
+        meetingUrl: optionalMeetingUrl(body.meetingUrl),
       };
     }
 
@@ -277,6 +313,9 @@ export function parseCalendarAction(input: unknown): CalendarAction {
       }
       if (Object.prototype.hasOwnProperty.call(source, "notes")) {
         patch.notes = optionalText(source.notes, 2000) ?? "";
+      }
+      if (Object.prototype.hasOwnProperty.call(source, "meetingUrl")) {
+        patch.meetingUrl = optionalMeetingUrl(source.meetingUrl);
       }
       if (Object.keys(patch).length === 0) throw new Error("No changes provided");
       if (patch.startsOn && patch.endsOn && patch.endsOn < patch.startsOn) {

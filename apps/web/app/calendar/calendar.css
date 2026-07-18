@@ -64,3 +64,18 @@
   .cal-add-grid{grid-template-columns:1fr}
   .cal-countdown{font-size:26px}
 }
+
+/* Remote-join links (Zoom / Meet / Teams) */
+.cal-join{display:inline-flex;align-items:center;gap:6px;width:max-content;margin-top:6px;padding:7px 12px;border-radius:8px;background:var(--app-accent);color:var(--app-accent-ink);font-size:12px;font-weight:800;text-decoration:none}
+.cal-join:hover{filter:brightness(1.06)}
+.cal-join.hero{margin-top:10px;padding:10px 16px;font-size:13px}
+
+/* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
+.aii-panel{display:grid;gap:10px;margin-top:16px}
+.aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.aii-head h2{margin:0 0 4px;font-size:15px}
+.aii-head h2 span{color:var(--app-accent)}
+.aii-head p{margin:0;font-size:12px;max-width:520px}
+.aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
+.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:10px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-meta{color:var(--app-muted);font-size:10px}
