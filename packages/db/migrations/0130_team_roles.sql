@@ -1,7 +1,7 @@
 -- Roles & Responsibilities: the team's roles (leads and positions) by subteam, who holds each,
 -- and what they own. The app derives staffing coverage. Season-scoped, per-org RLS.
 
-CREATE TABLE team_roles (
+CREATE TABLE IF NOT EXISTS team_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   season_year integer NOT NULL,
@@ -16,10 +16,14 @@ CREATE TABLE team_roles (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX team_roles_org_season_idx ON team_roles(org_id, season_year, subteam);
+CREATE INDEX IF NOT EXISTS team_roles_org_season_idx ON team_roles(org_id, season_year, subteam);
 
 ALTER TABLE team_roles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS team_roles_member_read ON team_roles;
+DROP POLICY IF EXISTS team_roles_member_insert ON team_roles;
+DROP POLICY IF EXISTS team_roles_member_update ON team_roles;
+DROP POLICY IF EXISTS team_roles_member_delete ON team_roles;
 CREATE POLICY team_roles_member_read ON team_roles FOR SELECT TO vantage_app
   USING (is_org_member(org_id));
 CREATE POLICY team_roles_member_insert ON team_roles FOR INSERT TO vantage_app

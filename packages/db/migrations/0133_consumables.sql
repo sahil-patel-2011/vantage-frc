@@ -2,7 +2,7 @@
 -- reorder points. The app flags low/out items for reorder. Org-scoped, persistent across
 -- seasons, per-org RLS.
 
-CREATE TABLE consumables (
+CREATE TABLE IF NOT EXISTS consumables (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   name text NOT NULL,
@@ -17,10 +17,14 @@ CREATE TABLE consumables (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX consumables_org_idx ON consumables(org_id, category);
+CREATE INDEX IF NOT EXISTS consumables_org_idx ON consumables(org_id, category);
 
 ALTER TABLE consumables ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS consumables_member_read ON consumables;
+DROP POLICY IF EXISTS consumables_member_insert ON consumables;
+DROP POLICY IF EXISTS consumables_member_update ON consumables;
+DROP POLICY IF EXISTS consumables_member_delete ON consumables;
 CREATE POLICY consumables_member_read ON consumables FOR SELECT TO vantage_app
   USING (is_org_member(org_id));
 CREATE POLICY consumables_member_insert ON consumables FOR INSERT TO vantage_app
