@@ -5,7 +5,9 @@
 
 export const OFFLINE_SHELL_ROUTES = [
   "/offline",
+  "/offline-shell",
   "/scouting",
+  "/schedule",
   "/competition",
   "/calendar",
   "/team/calendar",
@@ -31,6 +33,8 @@ export function pathnameIsOfflineShell(pathname: string): boolean {
 export function offlineCapableLabel(pathname: string): string | null {
   const bare = pathname.split("?")[0] ?? pathname;
   if (bare.startsWith("/scouting")) return "Scouting";
+  if (bare.startsWith("/schedule")) return "Schedule";
+  if (bare.startsWith("/offline-shell")) return "Offline Shell";
   if (bare === "/competition") return "Competition";
   if (
     bare.startsWith("/team/calendar") ||

@@ -20,3 +20,13 @@
 .offline-banner span {
   color: var(--soft-muted, #5b6b66);
 }
+
+.offline-banner--syncing {
+  border-color: color-mix(in srgb, var(--soft-accent, #0f766e) 45%, var(--soft-line, #d5ddd9));
+  background: color-mix(in srgb, var(--soft-accent, #0f766e) 14%, var(--soft-card, #fff));
+}
+
+.offline-banner--degraded {
+  border-color: color-mix(in srgb, #b45309 40%, var(--soft-line, #d5ddd9));
+  background: color-mix(in srgb, #b45309 12%, var(--soft-card, #fff));
+}
