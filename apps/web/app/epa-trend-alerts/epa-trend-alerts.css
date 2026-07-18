@@ -1,0 +1,17 @@
+/* Soft-UI EPA Trend Alerts — .epa-trend-alerts-* + shared Soft-UI tokens. Never DEMO EPA metrics. */
+.epa-trend-alerts-page{display:grid;gap:16px}
+.epa-trend-alerts-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.epa-trend-alerts-related{display:flex;flex-wrap:wrap;gap:8px}
+.epa-trend-alerts-next-actions{margin:0}
+.epa-trend-alerts-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.epa-trend-alerts-stats strong{font-size:1.5rem}
+.epa-trend-alerts-layout{display:grid;gap:16px}
+.epa-trend-alerts-panel{display:grid;gap:12px}
+.epa-trend-alerts-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.epa-trend-alerts-card{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.epa-trend-alerts-tip{margin:0}
+@media(max-width:900px){
+  .epa-trend-alerts-header-actions{justify-content:flex-start}
+  .epa-trend-alerts-next-actions li{flex-direction:column;align-items:stretch}
+  .epa-trend-alerts-card{flex-direction:column}
+}

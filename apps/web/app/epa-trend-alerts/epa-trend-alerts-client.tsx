@@ -1,9 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { directionLabel, severityLabel } from "../../lib/epa-trend-alerts";
 import type { EpaTrendAlertsView } from "../../lib/epa-trend-alerts/compute-epa-trend-alerts";
+import {
+  EPA_TREND_ALERTS_RELATED_INCLUDE,
+  classifyEpaTrendAlertsShell,
+  epaTrendAlertsNextActions,
+  epaTrendAlertsRelatedLinks,
+  epaTrendAlertsShellCopy,
+  formatEpaTrendMetric,
+  shouldShowEpaTrendSummaryTiles,
+  type EpaTrendAlertsNextAction,
+  type EpaTrendAlertsShellKind,
+} from "../../lib/epa-trend-alerts/epa-trend-alerts-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./epa-trend-alerts.css";
 
 type LiveView = Extract<EpaTrendAlertsView, { status: "live" }>;
 
@@ -16,6 +30,131 @@ function pct(value: number): string {
   return `${sign}${Math.round(value * 1000) / 10}%`;
 }
 
+function EpaRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = epaTrendAlertsRelatedLinks(orgId, {
+    include: [...EPA_TREND_ALERTS_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related epa-trend-alerts-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function EpaNextActionsPanel({ actions }: { actions: EpaTrendAlertsNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions epa-trend-alerts-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy and Opponent Watchlist — never DEMO EPA forecasts.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function EpaShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: EpaTrendAlertsShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = epaTrendAlertsNextActions({ orgId, shell });
+  const copy = epaTrendAlertsShellCopy(shell);
+  const competitionHref = hubHref("/competition", "epa-trend-alerts", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const watchlistHref = hubHref("/competition", "opponent-watchlist", orgId);
+
+  return (
+    <main className="module-page epa-trend-alerts-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / EPA Trend Alerts"}
+          </>
+        }
+        title="EPA Trend Alerts"
+        description={description}
+      >
+        <EpaRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No teams watched"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#epa-trend-alerts-watch">
+              Watch a team
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={watchlistHref}>
+              Open Opponent Watchlist
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <EpaNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function EpaTrendAlertsClient() {
   const [view, setView] = useState<EpaTrendAlertsView | null>(null);
   const [error, setError] = useState("");
@@ -23,8 +162,6 @@ export default function EpaTrendAlertsClient() {
   const [busy, setBusy] = useState(false);
   const [teamNumber, setTeamNumber] = useState("");
   const [note, setNote] = useState("");
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -48,6 +185,32 @@ export default function EpaTrendAlertsClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const watchlistCount = view?.status === "live" ? view.watchlist.length : 0;
+  const alertCount = view?.status === "live" ? view.alerts.length : 0;
+  const summary = view?.status === "live" ? view.summary : null;
+
+  const shell = classifyEpaTrendAlertsShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    watchlistCount,
+  });
+  const shellCopy = epaTrendAlertsShellCopy(shell);
+  const nextActions = epaTrendAlertsNextActions({
+    orgId,
+    shell,
+    watchlistCount,
+    alertCount,
+  });
+  const relatedLinks = epaTrendAlertsRelatedLinks(orgId, {
+    include: [...EPA_TREND_ALERTS_RELATED_INCLUDE],
+  });
+  const competitionHref = hubHref("/competition", "epa-trend-alerts", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const watchlistHref = hubHref("/competition", "opponent-watchlist", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -75,23 +238,55 @@ export default function EpaTrendAlertsClient() {
     [orgId, busy],
   );
 
+  if (shell === "loading") {
+    return <EpaShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <EpaShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <EpaShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <EpaShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page epa-trend-alerts-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / EPA Trend Alerts"}
           </>
         }
         title="EPA Trend Alerts"
-        description="Watch teams you might face and get flagged the moment their EPA moves meaningfully between events — no fabricated forecasts, just the reference numbers you already trust."
+        description="Watch teams you might face and get flagged when their reference EPA moves meaningfully between events — never DEMO EPA forecasts. Cross-check Strategy and Opponent Watchlist."
       >
-        {orgId ? (
-          <a className="app-button secondary" href={`/competition?orgId=${encodeURIComponent(orgId)}`}>
-            Competition hub
-          </a>
-        ) : null}
+        <div className="epa-trend-alerts-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -100,70 +295,86 @@ export default function EpaTrendAlertsClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <EpaNextActionsPanel actions={nextActions} />
+
+      {shouldShowEpaTrendSummaryTiles(watchlistCount) && summary ? (
+        <SummaryTiles summary={summary} loaded />
+      ) : null}
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load EPA trend alerts"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No teams watched"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href="#epa-trend-alerts-watch">
+            Watch a team
+          </a>
+          <a className="app-button secondary" href={strategyHref}>
+            Open Strategy
+          </a>
+          <a className="app-button secondary" href={watchlistHref}>
+            Open Opponent Watchlist
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <WatchTeamForm
-            busy={busy}
-            teamNumber={teamNumber}
-            setTeamNumber={setTeamNumber}
-            note={note}
-            setNote={setNote}
-            mutate={mutate}
-          />
-          <AlertsPanel view={view} busy={busy} mutate={mutate} />
-          <WatchlistPanel view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      ) : null}
+
+      <div className="epa-trend-alerts-layout">
+        <WatchTeamForm
+          busy={busy}
+          teamNumber={teamNumber}
+          setTeamNumber={setTeamNumber}
+          note={note}
+          setNote={setNote}
+          mutate={mutate}
+        />
+        {shell === "ready" ? (
+          <>
+            <AlertsPanel view={view} busy={busy} mutate={mutate} />
+            <WatchlistPanel view={view} busy={busy} mutate={mutate} />
+          </>
+        ) : null}
+        <Panel className="epa-trend-alerts-tip" aria-label="EPA Trend Alerts tip">
+          <span className="eyebrow">Grounding path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Keep{" "}
+            <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, and pair
+            qualitative notes in <a href={watchlistHref}>Opponent Watchlist</a> — never invent DEMO EPA
+            forecasts.
+          </p>
+        </Panel>
+      </div>
     </main>
   );
 }
 
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
+function SummaryTiles({
+  summary,
+  loaded,
+}: {
+  summary: LiveView["summary"];
+  loaded: boolean;
+}) {
   const tiles = [
-    { label: "Watched teams", value: String(summary.watchlistCount) },
-    { label: "Active alerts", value: String(summary.alertCount) },
-    { label: "Rising", value: String(summary.risingCount) },
-    { label: "Falling", value: String(summary.fallingCount) },
-    { label: "High severity", value: String(summary.highSeverityCount) },
+    { label: "Watched teams", value: formatEpaTrendMetric(summary.watchlistCount, loaded) },
+    { label: "Active alerts", value: formatEpaTrendMetric(summary.alertCount, loaded) },
+    { label: "Rising", value: formatEpaTrendMetric(summary.risingCount, loaded) },
+    { label: "Falling", value: formatEpaTrendMetric(summary.fallingCount, loaded) },
+    { label: "High severity", value: formatEpaTrendMetric(summary.highSeverityCount, loaded) },
   ];
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <section className="epa-trend-alerts-stats" aria-label="EPA Trend Alerts counts">
+      {tiles.map((tile) => (
+        <div key={tile.label}>
+          <strong>{tile.value}</strong>
+          <span className="app-muted" style={{ display: "block" }}>
+            {tile.label}
+          </span>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -184,7 +395,9 @@ function WatchTeamForm({
 }) {
   return (
     <Panel
+      id="epa-trend-alerts-watch"
       as="form"
+      className="epa-trend-alerts-panel"
       onSubmit={(event) => {
         event.preventDefault();
         const parsed = Number(teamNumber);
@@ -193,9 +406,11 @@ function WatchTeamForm({
         setTeamNumber("");
         setNote("");
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add a team to the watchlist</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Alerts use only Neon reference EPA between events for teams you watch — never DEMO EPA forecasts.
+      </p>
       <FormGrid min={160}>
         <FormRow label="Team number">
           <input
@@ -232,22 +447,20 @@ function AlertsPanel({
   if (view.alerts.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No alerts"
         badgeTone="good"
         title="No meaningful EPA swings right now"
-        description="Alerts appear here once a watched team's EPA moves enough between two events to matter."
+        description="Alerts appear here once a watched team's reference EPA moves enough between two events — never DEMO forecasts."
       />
     );
   }
   return (
-    <Panel>
+    <Panel id="epa-trend-alerts-list" className="epa-trend-alerts-panel">
       <h2 style={{ marginTop: 0 }}>Trend alerts</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul className="epa-trend-alerts-list">
         {view.alerts.map((alert) => (
-          <li
-            key={alert.fingerprint}
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-          >
+          <li key={alert.fingerprint} className="epa-trend-alerts-card">
             <div>
               <span className={`app-badge ${severityTone(alert.severity)}`}>{severityLabel(alert.severity)}</span>{" "}
               <strong>
@@ -287,21 +500,14 @@ function WatchlistPanel({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   if (view.watchlist.length === 0) {
-    return (
-      <EmptyState
-        badge="Empty"
-        badgeTone="setup"
-        title="No teams on your watchlist yet"
-        description="Add teams by number above to start tracking their EPA trend between events."
-      />
-    );
+    return null;
   }
   return (
-    <Panel>
+    <Panel className="epa-trend-alerts-panel">
       <h2 style={{ marginTop: 0 }}>Watchlist</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul className="epa-trend-alerts-list">
         {view.watchlist.map((team) => (
-          <li key={team.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={team.id} className="epa-trend-alerts-card">
             <div>
               <strong>
                 {team.teamNumber ?? team.teamKey}

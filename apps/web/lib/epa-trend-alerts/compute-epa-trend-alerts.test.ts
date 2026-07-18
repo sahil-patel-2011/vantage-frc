@@ -23,7 +23,11 @@ describe("computeEpaTrendAlertsView", () => {
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
-      expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps.map((s) => s.id)).toEqual(["workspace", "strategy", "opponent-watchlist"]);
+      expect(view.steps[0]?.href).toBe("/workspace");
+      expect(view.steps.find((s) => s.id === "strategy")?.href).toBe("/competition?tab=strategy");
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
+      expect(view.steps.some((s) => /never DEMO/i.test(s.detail))).toBe(true);
     }
   });
 
