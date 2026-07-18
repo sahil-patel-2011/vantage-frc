@@ -2,6 +2,10 @@
 
 Organization identity is global, but organization access is policy-gated. Owners/admins may allow password, Google, and/or email OTP; at least one remains enabled. Membership stays invite-only. Required MFA causes a new step-up when entering a stricter organization.
 
+## Calendar ICS subscribe feeds
+
+Personal calendar sync (`/api/calendar/feed/<token>`) is public at the proxy only for that tokenized path. Session JSON APIs under `/api/calendar` and `/api/team/calendar` stay cookie-authenticated. Tokens live in `calendar_feed_tokens` (RLS: member manages own rows). `get_calendar_feed` is SECURITY DEFINER and returns NULL for unknown tokens or members who left the org — there is no anonymous org calendar dump. Timed events are emitted as UTC (`…Z`); season milestones use floating `VALUE=DATE` so dates do not shift by timezone. Treat subscribe URLs like secrets; rotate or disable from Team → Calendar → Sync.
+
 ## Secrets and scanning hygiene
 
 - Copy `.env.example` → `.env.local` for local work. `.env*` is gitignored (`!.env.example` only). Never commit real credentials, Neon URLs with passwords, provider keys, or bootstrap tokens.
