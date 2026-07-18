@@ -13,6 +13,12 @@ describe("CAD safety contracts",()=>{
   const implicit=planCadKnowledgeToolCalls("Design a 2-stage elevator within last year's weight budget");
   expect(implicit.some((call)=>call.name==="knowledge.search")).toBe(true);
  });
+ it("re-exports metered CAD brief factory used by CadRepository and strategy tools",async()=>{
+  const mod=await import("../src");
+  expect(typeof mod.createMeteredCadBriefJob).toBe("function");
+  expect(typeof mod.planCadStrategyToolCalls).toBe("function");
+  expect(mod.planCadStrategyToolCalls("intake",{seasonYear:2026}).some((c)=>c.name==="kickoff.intelligence")).toBe(true);
+ });
  it("verifies topology and render after deterministic mutations",async()=>{
   const adapter=new DeterministicMockCadAdapter(),action={operation:"create_extrude" as const,parameters:{depth:"25 mm"},requiresApproval:true,reason:"confirmed"};
   const first=await adapter.execute(action,{jobId:"job-a",idempotencyKey:"one"}),second=await adapter.execute(action,{jobId:"job-a",idempotencyKey:"two"});
