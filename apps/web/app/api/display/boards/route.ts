@@ -26,23 +26,33 @@ export async function GET(request: Request) {
     const session = await current();
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) throw new Error("orgId is required");
-    const data = await withRls({ userId: session.user.id, orgId }, async (client) => ({
-      boards: (
+    const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
+      const boards = (
         await client.query(
           `SELECT id, name, preset, widgets, updated_at AS "updatedAt"
            FROM display_boards WHERE org_id = $1 ORDER BY name`,
           [orgId],
         )
-      ).rows,
-      tokens: (
+      ).rows;
+      const tokens = (
         await client.query(
           `SELECT id, board_id AS "boardId", label, expires_at AS "expiresAt",
                   revoked_at AS "revokedAt", last_used_at AS "lastUsedAt", created_at AS "createdAt"
            FROM display_tokens WHERE org_id = $1 ORDER BY created_at DESC`,
           [orgId],
         )
-      ).rows,
-    }));
+      ).rows;
+      const ctx = await client.query<{ activeEventKey: string | null }>(
+        `SELECT active_event_key AS "activeEventKey"
+         FROM org_active_context WHERE org_id = $1::uuid LIMIT 1`,
+        [orgId],
+      );
+      return {
+        boards,
+        tokens,
+        activeEventKey: ctx.rows[0]?.activeEventKey ?? null,
+      };
+    });
     return Response.json(data);
   } catch (error) {
     return fail(error);
