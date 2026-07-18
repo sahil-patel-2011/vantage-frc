@@ -1,5 +1,5 @@
-import type { PoolClient } from "@neondatabase/serverless";
-import { auth } from "@vantage/core";
+import type { PoolClient, QueryResultRow } from "@neondatabase/serverless";
+import { auth, resolveAuthBaseURL, sendPracticeReminderEmail } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
@@ -34,7 +34,7 @@ async function membershipRole(client: PoolClient, orgId: string, userId: string)
 }
 
 /** Soft-fail when a linked Team module table is not migrated yet. */
-async function optionalQuery<T>(client: PoolClient, sql: string, params: unknown[]): Promise<T[]> {
+async function optionalQuery<T extends QueryResultRow>(client: PoolClient, sql: string, params: unknown[]): Promise<T[]> {
   try {
     const result = await client.query<T>(sql, params);
     return result.rows;
@@ -181,12 +181,12 @@ export async function POST(request: Request) {
 
       switch (action.action) {
         case "create_session": {
-          const inserted = await client.query<{ id: string }>(
+          const inserted = await client.query<{ id: string; sessionDate: string }>(
             `INSERT INTO driver_sessions
                (org_id, title, event_key, session_date, driver_user_id, driver_name, location, goal, notes,
                 attendance_event_id, build_task_id, created_by)
              VALUES ($1, $2, $3, COALESCE($4::date, current_date), $5::uuid, $6, $7, $8, $9, $10::uuid, $11::uuid, $12)
-             RETURNING id`,
+             RETURNING id, session_date::text AS "sessionDate"`,
             [
               action.orgId,
               action.title,
@@ -202,7 +202,21 @@ export async function POST(request: Request) {
               userId,
             ],
           );
-          return { id: inserted.rows[0]!.id };
+          const sessionId = inserted.rows[0]!.id;
+          if (action.driverUserId) {
+            const org = await client.query<{ name: string }>(`SELECT name FROM organizations WHERE id = $1`, [
+              action.orgId,
+            ]);
+            await sendPracticeReminderEmail(client, {
+              userId: action.driverUserId,
+              orgName: org.rows[0]?.name ?? "Your team",
+              sessionTitle: action.title,
+              sessionDate: inserted.rows[0]!.sessionDate,
+              location: action.location ?? undefined,
+              href: `${resolveAuthBaseURL()}/practice?orgId=${encodeURIComponent(action.orgId)}`,
+            });
+          }
+          return { id: sessionId };
         }
 
         case "update_session": {

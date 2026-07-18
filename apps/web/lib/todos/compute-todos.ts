@@ -1,4 +1,9 @@
-import { emitPreferredNotification } from "@vantage/core";
+import {
+  emitPreferredNotification,
+  resolveAuthBaseURL,
+  sendCoachAssignmentEmail,
+  sendCoachTodoEmail,
+} from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
 import { asOfUtcDate, computeMetrics, sortTodos, withFlags } from "./evaluate";
 import type { TeamTodo, TodoMember, TodoMetrics, TodoStatus, TodoSubteam } from "./types";
@@ -217,16 +222,35 @@ async function notifyAssigned(
   const actor = await client.query<{ name: string }>(`SELECT name FROM users WHERE id = $1`, [
     input.actorUserId,
   ]);
+  const org = await client.query<{ name: string }>(`SELECT name FROM organizations WHERE id = $1`, [
+    input.orgId,
+  ]);
+  const summary = `${actor.rows[0]?.name ?? "A teammate"} assigned “${input.title}”.`;
+  const relativeHref = todoHref(input.orgId, input.todoId);
   await emitPreferredNotification(client, {
     userId: input.assigneeUserId,
     orgId: input.orgId,
     type: "todo_assigned",
     payload: {
       title: "Todo assigned to you",
-      body: `${actor.rows[0]?.name ?? "A teammate"} assigned “${input.title}”.`,
+      body: summary,
       todoId: input.todoId,
-      href: todoHref(input.orgId, input.todoId),
+      href: relativeHref,
     },
+  });
+  // Consent-gated opt-in emails; skipped when the member has not opted in.
+  const absoluteHref = `${resolveAuthBaseURL()}${relativeHref}`;
+  await sendCoachAssignmentEmail(client, {
+    userId: input.assigneeUserId,
+    orgName: org.rows[0]?.name ?? "Your team",
+    summary,
+    href: absoluteHref,
+  });
+  await sendCoachTodoEmail(client, {
+    userId: input.assigneeUserId,
+    orgName: org.rows[0]?.name ?? "Your team",
+    summary,
+    href: absoluteHref,
   });
 }
 
