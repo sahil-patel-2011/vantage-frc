@@ -16,6 +16,8 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/todos")).toBe(true);
     expect(pathnameIsOfflineShell("/tasks")).toBe(true);
     expect(pathnameIsOfflineShell("/logistics")).toBe(true);
+    expect(pathnameIsOfflineShell("/schedule")).toBe(true);
+    expect(pathnameIsOfflineShell("/offline-shell")).toBe(true);
     expect(pathnameIsOfflineShell("/offline")).toBe(true);
     expect(pathnameIsOfflineShell("/competition")).toBe(true);
     expect(pathnameIsOfflineShell("/team")).toBe(true);

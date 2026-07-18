@@ -69,10 +69,22 @@ export default function ScoutHandoffPanel({
       `Merged QR (${result.mode}): +${result.accepted} new, ${result.replaced} updated, ${result.ignored} kept local.`,
     );
     if (navigator.onLine) {
-      const synced = await syncOutbox(orgId);
-      if (synced) {
-        tell(`Synced ${synced} handoff entries — open Conflicts + Lineup for disagreements/coverage.`);
+      try {
+        const synced = await syncOutbox(orgId);
+        if (synced.count) {
+          tell(
+            `Synced ${synced.count} handoff entries — open Conflicts + Lineup for disagreements/coverage.`,
+          );
+        } else {
+          tell("Handoff merged into the outbox — sync when the venue link stabilizes, or keep using QR.");
+        }
         onSynced?.();
+      } catch (error) {
+        tell(
+          error instanceof Error
+            ? `${error.message} Entries stay queued — retry Sync or QR handoff.`
+            : "Sync paused — entries stay in the outbox.",
+        );
       }
     }
   }

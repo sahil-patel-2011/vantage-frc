@@ -1,6 +1,8 @@
 "use client";
 
 import type { SyncEntry } from "@vantage/scouting";
+import { partitionByOrgId, wouldCrossOrgLeak } from "@vantage/scouting";
+import { lockScoutPayload } from "@vantage/scouting/identity";
 import {
   decodeScoutQrContent,
   encodeScoutQrPayload,
@@ -10,6 +12,7 @@ import {
   type OfflineMergeResult,
   type ScoutQrRecord,
 } from "@vantage/scouting/qr-handoff";
+import { withSyncBackoff } from "./scouting/sync-backoff";
 
 const DB_NAME = "vantage-scouting";
 const DB_VERSION = 2;
@@ -51,17 +54,62 @@ export function stableClientId(): string {
 }
 
 export async function queueEntry(entry: SyncEntry): Promise<void> {
+  // CD #4 — strip free-text scout identity keys before they land in IndexedDB.
+  const locked: SyncEntry = { ...entry, payload: lockScoutPayload(entry.payload).payload };
   const objectStore = await store("readwrite", OUTBOX);
-  await requestValue(objectStore.put(entry));
+  await requestValue(objectStore.put(locked));
 }
 
 export async function queueMedia(input: {
   clientId: string;
+  orgId: string;
   metadata: Record<string, unknown>;
   blob: Blob;
 }): Promise<void> {
+  if (!input.orgId) throw new Error("orgId is required to queue media");
   const objectStore = await store("readwrite", MEDIA);
-  await requestValue(objectStore.put(input));
+  await requestValue(
+    objectStore.put({
+      clientId: input.clientId,
+      orgId: input.orgId,
+      metadata: { ...input.metadata, orgId: input.orgId },
+      blob: input.blob,
+    }),
+  );
+}
+
+/** Queue a voice capture (audio blob + STT transcript) for bandwidth-safe sync when online. */
+export async function queueVoiceCapture(input: {
+  clientId: string;
+  orgId: string;
+  eventKey: string;
+  teamKey: string;
+  blob: Blob;
+  transcript: string;
+  fieldKey?: string | null;
+  schemaId?: string | null;
+  entryClientId?: string | null;
+}): Promise<void> {
+  if (!input.orgId) throw new Error("orgId is required to queue voice captures");
+  const tags = ["voice", "stt"];
+  if (input.fieldKey) tags.push(`field:${input.fieldKey}`);
+  await queueMedia({
+    clientId: input.clientId,
+    orgId: input.orgId,
+    metadata: {
+      eventKey: input.eventKey,
+      teamKey: input.teamKey,
+      kind: "audio",
+      contentType: input.blob.type || "audio/webm",
+      byteSize: input.blob.size,
+      transcript: input.transcript,
+      schemaId: input.schemaId ?? undefined,
+      entryClientId: input.entryClientId ?? undefined,
+      fieldKey: input.fieldKey ?? undefined,
+      tags,
+    },
+    blob: input.blob,
+  });
 }
 
 export async function rememberOrgId(orgId: string): Promise<void> {
@@ -202,40 +250,40 @@ export async function publishPendingShortCodeHandoff(
   };
 }
 
-export async function syncOutbox(orgId: string): Promise<{
+type SyncValidation = {
+  fieldKey: string;
+  status: string;
+  scoutValue: unknown;
+  officialValue: unknown;
+  officialSource: string;
+  detail: string;
+  soft?: boolean;
+};
+
+export type SyncOutboxResult = {
   count: number;
-  validations: Array<{
-    fieldKey: string;
-    status: string;
-    scoutValue: unknown;
-    officialValue: unknown;
-    officialSource: string;
-    detail: string;
-    soft?: boolean;
-  }>;
-}> {
-  if (!navigator.onLine) return { count: 0, validations: [] };
+  validations: SyncValidation[];
+  attempts: number;
+};
+
+async function syncOutboxOnce(orgId: string): Promise<Omit<SyncOutboxResult, "attempts">> {
   const objectStore = await store("readwrite", OUTBOX);
-  const entries = await requestValue<SyncEntry[]>(objectStore.getAll());
+  const all = await requestValue<SyncEntry[]>(objectStore.getAll());
+  const { allowed: entries } = partitionByOrgId(all, orgId);
   if (!entries.length) return { count: 0, validations: [] };
   const response = await fetch("/api/scouting/sync", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ orgId, entries }),
   });
-  if (!response.ok) throw new Error((await response.json()).error ?? "Sync failed");
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `Sync failed (${response.status})`);
+  }
   const result = (await response.json()) as {
     acknowledgements: Array<{
       clientId: string;
-      validations?: Array<{
-        fieldKey: string;
-        status: string;
-        scoutValue: unknown;
-        officialValue: unknown;
-        officialSource: string;
-        detail: string;
-        soft?: boolean;
-      }>;
+      validations?: SyncValidation[];
     }>;
   };
   const validations = result.acknowledgements.flatMap((ack) => ack.validations ?? []);
@@ -246,26 +294,76 @@ export async function syncOutbox(orgId: string): Promise<{
   return { count: result.acknowledgements.length, validations };
 }
 
-export async function syncMediaOutbox(orgId: string): Promise<number> {
+/**
+ * Push IndexedDB entry outbox with exponential backoff on flaky venue Wi-Fi.
+ * Rows stay queued until the server acknowledges each clientId.
+ */
+export async function syncOutbox(
+  orgId: string,
+  options?: { signal?: AbortSignal; maxAttempts?: number; onRetry?: (n: number, delayMs: number) => void },
+): Promise<SyncOutboxResult> {
+  if (!navigator.onLine) return { count: 0, validations: [], attempts: 0 };
+  let attempts = 0;
+  const result = await withSyncBackoff(
+    async () => {
+      attempts += 1;
+      return syncOutboxOnce(orgId);
+    },
+    {
+      maxAttempts: options?.maxAttempts,
+      signal: options?.signal,
+      onRetry: (failure, delayMs) => options?.onRetry?.(failure, delayMs),
+    },
+  );
+  return { ...result, attempts };
+}
+
+async function syncOneMedia(
+  orgId: string,
+  item: { clientId: string; orgId?: string; metadata: Record<string, unknown>; blob: Blob },
+): Promise<boolean> {
+  if (wouldCrossOrgLeak(item.orgId ?? (item.metadata.orgId as string | undefined), orgId)) {
+    throw new Error("Organization access denied");
+  }
+  const metadataResponse = await fetch("/api/scouting/media", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orgId, clientId: item.clientId, ...item.metadata, orgId }),
+  });
+  if (!metadataResponse.ok) throw new Error("Media metadata upload failed");
+  const { uploadUrl } = (await metadataResponse.json()) as { uploadUrl: string };
+  const upload = await fetch(uploadUrl, { method: "PUT", body: item.blob });
+  if (!upload.ok) throw new Error("Media blob upload failed");
+  const deleteStore = await store("readwrite", MEDIA);
+  await requestValue(deleteStore.delete(item.clientId));
+  return true;
+}
+
+/** Upload queued pit media with per-item backoff; leaves failures queued. */
+export async function syncMediaOutbox(
+  orgId: string,
+  options?: { signal?: AbortSignal; maxAttempts?: number },
+): Promise<number> {
   if (!navigator.onLine) return 0;
-  const objectStore = await store("readwrite", MEDIA);
+  const objectStore = await store("readonly", MEDIA);
   const items = await requestValue<
-    Array<{ clientId: string; metadata: Record<string, unknown>; blob: Blob }>
+    Array<{ clientId: string; orgId?: string; metadata: Record<string, unknown>; blob: Blob }>
   >(objectStore.getAll());
+  const scoped = items.filter(
+    (item) => !wouldCrossOrgLeak(item.orgId ?? (item.metadata.orgId as string | undefined), orgId),
+  );
   let synced = 0;
-  for (const item of items) {
-    const metadataResponse = await fetch("/api/scouting/media", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId, clientId: item.clientId, ...item.metadata }),
-    });
-    if (!metadataResponse.ok) continue;
-    const { uploadUrl } = (await metadataResponse.json()) as { uploadUrl: string };
-    const upload = await fetch(uploadUrl, { method: "PUT", body: item.blob });
-    if (!upload.ok) continue;
-    const deleteStore = await store("readwrite", MEDIA);
-    await requestValue(deleteStore.delete(item.clientId));
-    synced += 1;
+  for (const item of scoped) {
+    if (!navigator.onLine || options?.signal?.aborted) break;
+    try {
+      await withSyncBackoff(() => syncOneMedia(orgId, item), {
+        maxAttempts: options?.maxAttempts ?? 3,
+        signal: options?.signal,
+      });
+      synced += 1;
+    } catch {
+      /* leave item queued for a later reconnect */
+    }
   }
   return synced;
 }

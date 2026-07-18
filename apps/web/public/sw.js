@@ -11,17 +11,21 @@
  *
  * Route allowlist mirror: apps/web/lib/offline/shell-routes.ts
  */
-const ASSET_CACHE = "vantage-assets-v3";
-const SHELL_CACHE = "vantage-shell-v3";
+const ASSET_CACHE = "vantage-assets-v4";
+const SHELL_CACHE = "vantage-shell-v4";
 const SHELL_URL = "/offline";
 
 const PRECACHE = ["/manifest.webmanifest", "/icon.svg", SHELL_URL];
 
 const SHELL_ROUTES = [
   "/offline",
+  "/offline-shell",
   "/scouting",
+  "/schedule",
+  "/competition",
   "/calendar",
   "/team/calendar",
+  "/team",
   "/todos",
   "/tasks",
   "/logistics",

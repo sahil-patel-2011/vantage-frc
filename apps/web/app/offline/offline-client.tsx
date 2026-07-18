@@ -48,6 +48,11 @@ export default function OfflineClient() {
         : "Open once online from a workspace so the event cache is ready",
     },
     {
+      href: withOrg("/offline-shell"),
+      label: "Offline shell readiness",
+      detail: "Log which devices precached the scout shell for cold launches",
+    },
+    {
       href: withOrg("/team/calendar"),
       label: "Team calendar",
       detail: "Last schedule cached on this device",

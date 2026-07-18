@@ -5,7 +5,11 @@ import { useOnline } from "../../lib/offline/use-online";
 import { OfflineBanner } from "../../components/offline-banner";
 
 import type { SchemaDefinition, ScoutSchema, SyncEntry, ScoutIdentity } from "@vantage/scouting";
-import { isScoutIdentityField } from "@vantage/scouting/identity";
+import {
+  DEFAULT_DRIVETRAIN_OPTIONS,
+  normalizeRobotImageRefs,
+} from "@vantage/scouting";
+import { isScoutIdentityField, lockScoutPayload, SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import {
   fieldConfidenceHint,
   lintSchemaBudget,
@@ -26,6 +30,7 @@ import {
 } from "../../lib/scout-offline";
 import ScoutingTrustPanel from "./scouting-trust-panel";
 import ScoutHandoffPanel from "./scout-handoff-panel";
+import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import "./scouting-qr.css";
 
 type Bootstrap = {
@@ -59,13 +64,6 @@ type Bootstrap = {
   scoutIdentity?: ScoutIdentity;
 };
 
-type SpeechRecognitionLike = {
-  continuous: boolean;
-  interimResults: boolean;
-  onresult: (event: { results: ArrayLike<{ 0: { transcript: string } }> }) => void;
-  onend: () => void;
-  start(): void;
-};
 
 type ScoutTab = "match" | "pit" | "conflicts" | "handoff" | "trust";
 
@@ -107,12 +105,12 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   const [teamKey, setTeamKey] = useState("");
   const [payload, setPayload] = useState<Record<string, unknown>>({});
   const [confidence, setConfidence] = useState<"high" | "normal" | "low">("normal");
-  const [source, setSource] = useState<"manual" | "voice">("manual");
-  const [voiceDraft, setVoiceDraft] = useState("");
+  const [entryClientId, setEntryClientId] = useState(() => stableClientId());
   const online = useOnline();
   const [fromCache, setFromCache] = useState(false);
   const [counts, setCounts] = useState({ entries: 0, media: 0 });
   const [message, setMessage] = useState("");
+  const [syncState, setSyncState] = useState<"idle" | "syncing" | "degraded">("idle");
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
   const [selectedWinners, setSelectedWinners] = useState<Record<string, string>>({});
   const [officialFlags, setOfficialFlags] = useState<OfficialFlag[]>([]);
@@ -138,8 +136,14 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   }, [orgId]);
   const sync = useCallback(async () => {
     if (!orgId || !navigator.onLine) return;
+    setSyncState("syncing");
     try {
-      const entries = await syncOutbox(orgId);
+      const entries = await syncOutbox(orgId, {
+        onRetry: (n, delayMs) => {
+          setSyncState("degraded");
+          setMessage(`Sync retry ${n} in ${Math.round(delayMs / 1000)}s — entries stay queued`);
+        },
+      });
       const media = await syncMediaOutbox(orgId);
       if (entries.validations.length) setOfficialFlags(entries.validations);
       if (entries.count || media) {
@@ -150,9 +154,11 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
             : `Synced ${entries.count} entries and ${media} media files`,
         );
       }
+      setSyncState("idle");
       await refreshCounts();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Sync paused");
+      setSyncState(navigator.onLine ? "degraded" : "idle");
+      setMessage(error instanceof Error ? error.message : "Sync paused — outbox kept");
     }
   }, [orgId, refreshCounts]);
 
@@ -174,14 +180,20 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   useEffect(() => {
     void (async () => {
       const cached = await getCachedEvent<Bootstrap>(orgId);
-      if (cached) setData(cached);
+      if (cached) {
+        setData(cached);
+        setFromCache(true);
+      }
       try {
         const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`);
         if (response.ok) {
           const fresh = (await response.json()) as Bootstrap;
           setData(fresh);
+          setFromCache(false);
           await cacheEvent(orgId, fresh);
           await loadTrust(fresh.eventKey);
+        } else if (cached) {
+          setMessage("Using cached event data — bootstrap unavailable");
         }
       } catch {
         setMessage(cached ? "Using cached event data" : "No cached event data available");
@@ -286,7 +298,8 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
       return;
     }
     const entry: SyncEntry = {
-      clientId: stableClientId(),
+      clientId: entryClientId,
+      orgId,
       type,
       eventKey: data.eventKey,
       matchKey: type === "match" ? matchKey : undefined,
@@ -294,65 +307,43 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
       schemaId: schema.id,
       payload,
       confidence,
-      source,
+      source: "manual",
       updatedAt: new Date().toISOString(),
     };
     await queueEntry(entry);
     setPayload({});
-    setVoiceDraft("");
+    setEntryClientId(stableClientId());
     setMessage(online ? "Saved locally; syncing…" : "Saved offline; will sync on reconnect");
     await refreshCounts();
     await sync();
   }
 
-  function startVoiceDraft() {
-    const constructor = (
-      window as typeof window & {
-        SpeechRecognition?: new () => SpeechRecognitionLike;
-        webkitSpeechRecognition?: new () => SpeechRecognitionLike;
-      }
-    ).SpeechRecognition ?? (
-      window as typeof window & {
-        webkitSpeechRecognition?: new () => SpeechRecognitionLike;
-      }
-    ).webkitSpeechRecognition;
-    if (!constructor) {
-      setMessage("Voice recognition is unavailable in this browser; type the draft instead");
-      return;
-    }
-    const recognition = new constructor();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.onresult = (event) => {
-      const transcript = event.results[0]?.[0].transcript ?? "";
-      setVoiceDraft(transcript);
-      const draftField = schema?.definition.fields.find((field) => field.type === "text");
-      if (draftField) {
-        setPayload((current) => ({ ...current, [draftField.key]: transcript }));
-      }
-    };
-    recognition.onend = () => setSource("voice");
-    recognition.start();
-    setMessage("Listening — review the draft before saving");
-  }
-
-  async function attachMedia(file: File) {
-    if (!data?.eventKey || !teamKey) return;
+  async function attachMedia(file: File, options?: { fieldKey?: string; tags?: string[] }) {
+    if (!data?.eventKey || !teamKey) return null;
+    const clientId = stableClientId();
+    const tags = ["pit", ...(options?.tags ?? [])];
+    if (options?.fieldKey) tags.push(`field:${options.fieldKey}`, "robot_image");
     await queueMedia({
-      clientId: stableClientId(),
+      clientId,
+      orgId,
       metadata: {
         eventKey: data.eventKey,
         teamKey,
         kind: file.type.startsWith("video/") ? "video" : "photo",
-        contentType: file.type,
+        contentType: file.type || "image/jpeg",
         byteSize: file.size,
-        tags: ["pit"],
+        tags,
       },
       blob: file,
     });
-    setMessage("Media queued separately for bandwidth-safe upload");
+    setMessage(
+      options?.fieldKey
+        ? "Robot image queued for org-isolated upload"
+        : "Media queued separately for bandwidth-safe upload",
+    );
     await refreshCounts();
     await sync();
+    return clientId;
   }
 
   async function loadConflicts() {
@@ -461,17 +452,29 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
 
       <OfflineBanner
         feature="Scouting"
-        fromCache={fromCache || Boolean(data)}
+        fromCache={fromCache}
+        force={online && syncState !== "idle" && counts.entries + counts.media > 0}
+        variant={syncState === "degraded" ? "degraded" : syncState === "syncing" ? "syncing" : "offline"}
         detail={
           !online
-            ? `Forms keep working on this device. ${counts.entries + counts.media} item${counts.entries + counts.media === 1 ? "" : "s"} waiting to sync.`
-            : undefined
+            ? `Forms keep working on this device. ${counts.entries + counts.media} item${counts.entries + counts.media === 1 ? "" : "s"} waiting to sync. Use QR handoff if another device has signal.`
+            : syncState === "degraded"
+              ? `Outbox retrying with backoff · ${counts.entries} entries · ${counts.media} media queued. QR handoff works without the server.`
+              : syncState === "syncing"
+                ? `Uploading ${counts.entries + counts.media} queued item${counts.entries + counts.media === 1 ? "" : "s"}…`
+                : undefined
         }
       />
 
       <nav className="scout-related" aria-label="Related data tools" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        <a className="app-button secondary" href={`/scouting/forms?orgId=${encodeURIComponent(orgId)}`}>
+          Form builder
+        </a>
         <a className="app-button secondary" href={`/scouting/lineup?orgId=${encodeURIComponent(orgId)}`}>
           Lineup &amp; coverage
+        </a>
+        <a className="app-button secondary" href={`/offline-shell?orgId=${encodeURIComponent(orgId)}`}>
+          Offline shell
         </a>
         <a
           className="app-button secondary"
@@ -504,14 +507,19 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
           title={`No ${type} scouting form yet`}
           description={
             data.canManageSchemas
-              ? "Create starter match and pit forms for this season, or publish a custom schema from Team settings."
+              ? "Create starter match and pit forms for this season, or build a custom form and publish it."
               : "Ask an owner or admin to publish scouting forms for this event."
           }
         >
           {data.canManageSchemas ? (
-            <button className="app-button secondary" type="button" onClick={() => void createStarterForms()}>
-              Create starter forms
-            </button>
+            <div className="scout-empty-actions">
+              <button className="app-button secondary" type="button" onClick={() => void createStarterForms()}>
+                Create starter forms
+              </button>
+              <a className="app-button" href={`/scouting/forms?orgId=${encodeURIComponent(orgId)}`}>
+                Custom form builder
+              </a>
+            </div>
           ) : null}
         </EmptyState>
       ) : null}
@@ -695,12 +703,12 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
             </header>
 
             <div className="scout-identity-lock" role="status">
-              <span className="eyebrow">Scout identity locked</span>
+              <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
               <strong>{data?.scoutIdentity?.displayName ?? "Signed-in member"}</strong>
               <small className="app-muted">
-                Bound to membership userId
-                {data?.scoutIdentity?.userId ? ` · ${data.scoutIdentity.userId.slice(0, 8)}…` : ""}.
-                Free-text scout names are rejected.
+                {SCOUT_IDENTITY_LOCK_COPY.title}
+                {data?.scoutIdentity?.userId ? ` · ${data.scoutIdentity.userId.slice(0, 8)}…` : ""}.{" "}
+                {SCOUT_IDENTITY_LOCK_COPY.detail}
               </small>
             </div>
 
@@ -776,7 +784,13 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
                 flags={flagsByField.get(field.key) ?? []}
                 historyHint={fieldConfidenceHint(trustByField.get(field.key))}
                 disagreementRate={trustByField.get(field.key)?.disagreementRate ?? null}
+                orgId={orgId}
                 onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))}
+                onAttachRobotImage={
+                  field.type === "robot_image" || field.widget === "robot_image"
+                    ? (file) => attachMedia(file, { fieldKey: field.key, tags: ["robot"] })
+                    : undefined
+                }
               />
             ))}
 
@@ -791,26 +805,16 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
               </select>
             </FormRow>
 
-            <div className="scout-voice">
-              <div>
-                <strong>Voice draft</strong>
-                <small className="app-muted">Stays a draft until you confirm and save.</small>
-              </div>
-              <button type="button" className="app-button secondary" onClick={startVoiceDraft}>
-                Record
-              </button>
-              <textarea
-                value={voiceDraft}
-                onChange={(event) => {
-                  const transcript = event.target.value;
-                  setVoiceDraft(transcript);
-                  setSource("voice");
-                  const draftField = schema?.definition.fields.find((field) => field.type === "text");
-                  if (draftField) setPayload((current) => ({ ...current, [draftField.key]: transcript }));
-                }}
-                placeholder="Voice notes (copied into the first text field)…"
-              />
-            </div>
+            <ScoutVoiceNotesPanel
+              orgId={orgId}
+              eventKey={data.eventKey}
+              matchKey={matchKey}
+              teamKey={teamKey}
+              entryType={type}
+              pendingEntryClientId={entryClientId}
+              onStatus={setMessage}
+              onQueuedMedia={() => void refreshCounts()}
+            />
 
             {type === "pit" ? (
               <label className="scout-media">
@@ -939,14 +943,18 @@ function Field({
   flags,
   historyHint,
   disagreementRate,
+  orgId,
   onChange,
+  onAttachRobotImage,
 }: {
   field: SchemaDefinition["fields"][number];
   value: unknown;
   flags: OfficialFlag[];
   historyHint: string | null;
   disagreementRate: number | null;
+  orgId?: string;
   onChange(value: unknown): void;
+  onAttachRobotImage?: (file: File) => Promise<string | null>;
 }) {
   const conflict = flags.find((flag) => flag.status === "conflict");
   const soft = flags.find((flag) => flag.soft);
@@ -962,7 +970,7 @@ function Field({
           ? "history-warn"
           : undefined;
   const body = (() => {
-    if (field.type === "boolean") {
+    if (field.type === "boolean" || field.widget === "yesno") {
       return (
         <label className="soft-form-row check-field">
           <span className="app-muted">{field.label}</span>
@@ -970,7 +978,108 @@ function Field({
         </label>
       );
     }
-    if (field.type === "select") {
+    if (field.type === "drivetrain_type" || field.widget === "drivetrain") {
+      const options =
+        field.options?.length ? field.options : [...DEFAULT_DRIVETRAIN_OPTIONS];
+      return (
+        <FormRow label={field.label} hint={field.helpText}>
+          <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
+            <option value="">Select drivetrain…</option>
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option.replaceAll("_", " ")}
+              </option>
+            ))}
+          </select>
+        </FormRow>
+      );
+    }
+    if (field.type === "robot_image" || field.widget === "robot_image") {
+      const refs = normalizeRobotImageRefs(value);
+      return (
+        <FormRow
+          label={field.label}
+          hint={field.helpText ?? "Upload or capture — stored only for this organization"}
+        >
+          <div className="scout-robot-images">
+            {refs.length ? (
+              <ul className="scout-robot-image-list">
+                {refs.map((ref) => (
+                  <li key={ref}>
+                    {orgId ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- org-scoped media URL
+                      <img
+                        src={`/api/scouting/media/${encodeURIComponent(ref)}?orgId=${encodeURIComponent(orgId)}`}
+                        alt="Robot"
+                        width={72}
+                        height={72}
+                      />
+                    ) : (
+                      <span className="app-muted">{ref.slice(0, 8)}…</span>
+                    )}
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() =>
+                        onChange(refs.filter((item) => item !== ref).length ? refs.filter((item) => item !== ref) : undefined)
+                      }
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <label className="scout-media scout-robot-capture">
+              Upload or capture photo
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                onChange={(event) => {
+                  const files = event.target.files;
+                  if (!files?.length || !onAttachRobotImage) return;
+                  void (async () => {
+                    const next = [...refs];
+                    for (const file of Array.from(files)) {
+                      const clientId = await onAttachRobotImage(file);
+                      if (clientId) next.push(clientId);
+                    }
+                    onChange(next);
+                    event.target.value = "";
+                  })();
+                }}
+              />
+            </label>
+          </div>
+        </FormRow>
+      );
+    }
+    if (field.type === "select" && field.widget === "mc") {
+      return (
+        <FormRow label={field.label}>
+          <div className="scout-mc-row" role="radiogroup" aria-label={field.label}>
+            {(field.options ?? []).map((option) => (
+              <label key={option} className="scout-mc-option">
+                <input
+                  type="radio"
+                  name={field.key}
+                  checked={String(value ?? "") === option}
+                  onChange={() => onChange(option)}
+                />
+                {option}
+              </label>
+            ))}
+          </div>
+        </FormRow>
+      );
+    }
+    if (
+      field.type === "select" ||
+      field.type === "dropdown" ||
+      field.type === "multiple_choice"
+    ) {
       return (
         <FormRow label={field.label}>
           <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
@@ -979,6 +1088,17 @@ function Field({
               <option key={option}>{option}</option>
             ))}
           </select>
+        </FormRow>
+      );
+    }
+    if (field.widget === "free" || field.type === "long_text") {
+      return (
+        <FormRow label={field.label}>
+          <textarea
+            value={String(value ?? "")}
+            required={field.required}
+            onChange={(event) => onChange(event.target.value)}
+          />
         </FormRow>
       );
     }
