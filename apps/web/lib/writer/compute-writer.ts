@@ -1,4 +1,10 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import {
+  coerceAchievementList,
+  preferAchievements,
+  preferMission,
+  preferRegion,
+} from "../team-background";
 import type { DraftKind, DraftStatus, WriterDraft, WriterProfile, WriterTone } from "./types";
 
 export const DRAFT_KINDS: DraftKind[] = [
@@ -76,9 +82,24 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null; orgName: string | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null; orgName: string | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", o.name AS "orgName"
+): Promise<{
+  orgId: string;
+  teamNumber: number | null;
+  orgName: string | null;
+  city: string | null;
+  stateProv: string | null;
+  description: string | null;
+} | null> {
+  const membership = await client.query<{
+    orgId: string;
+    teamNumber: number | null;
+    orgName: string | null;
+    city: string | null;
+    stateProv: string | null;
+    description: string | null;
+  }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", o.name AS "orgName",
+            o.city, o.state_prov AS "stateProv", o.description
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -109,7 +130,7 @@ export async function computeWriterView(
     };
   }
 
-  const [profileResult, draftResult, seasonResult] = await Promise.all([
+  const [profileResult, draftResult, seasonResult, backgroundResult] = await Promise.all([
     client.query<ProfileRow>(
       `SELECT team_name AS "teamName", team_number AS "teamNumber", region, mission, achievements,
               funding_need AS "fundingNeed", funding_ask_usd AS "fundingAskUsd", tone
@@ -131,15 +152,24 @@ export async function computeWriterView(
        ) s ORDER BY season_year DESC`,
       [org.orgId],
     ),
+    // THIS org only — never join another team's background.
+    client.query<{ mission: string | null; achievements: unknown }>(
+      `SELECT mission, achievements FROM team_background_profile WHERE org_id = $1::uuid`,
+      [org.orgId],
+    ),
   ]);
 
   const row = profileResult.rows[0];
+  const background = backgroundResult.rows[0];
   const profile: WriterProfile = {
     teamName: row?.teamName ?? org.orgName ?? (org.teamNumber ? `Team ${org.teamNumber}` : "Our team"),
     teamNumber: row?.teamNumber ?? org.teamNumber ?? null,
-    region: row?.region ?? null,
-    mission: row?.mission ?? null,
-    achievements: coerceStrings(row?.achievements),
+    region: preferRegion(row?.region, org.city, org.stateProv),
+    mission: preferMission(background?.mission, org.description, row?.mission),
+    achievements: preferAchievements(
+      coerceAchievementList(background?.achievements),
+      coerceStrings(row?.achievements),
+    ),
     fundingNeed: row?.fundingNeed ?? null,
     fundingAskUsd: row ? num(row.fundingAskUsd) : null,
     tone: row?.tone ?? "warm",

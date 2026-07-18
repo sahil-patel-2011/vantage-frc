@@ -46,7 +46,12 @@ export async function POST(request: Request) {
     if (!body.year || !body.type || !body.definition?.fields.length) {
       return Response.json({ error: "Invalid schema" }, { status: 400 });
     }
-    const budget = lintSchemaBudget(body.definition);
+    const identityError = assertSchemaIdentityLock(body.definition);
+    if (identityError) {
+      return Response.json({ error: identityError }, { status: 422 });
+    }
+    const lockedDefinition = stripScoutIdentityFields(body.definition).definition;
+    const budget = lintSchemaBudget(lockedDefinition);
     if (budget.status === "over_budget" && body.acknowledgeBudget !== true) {
       return Response.json({ error: budget.message, budget, acknowledgeRequired: true }, { status: 422 });
     }

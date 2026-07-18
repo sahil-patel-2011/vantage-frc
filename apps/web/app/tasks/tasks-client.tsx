@@ -1,5 +1,9 @@
 "use client";
 
+import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
+
+import { OfflineBanner } from "../../components/offline-banner";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
@@ -33,6 +37,9 @@ function dueLabel(task: TaskWithFlags): { text: string; tone: string } | null {
 }
 
 export default function TasksClient() {
+  const online = useOnline();
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [view, setView] = useState<TasksView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -70,6 +77,10 @@ export default function TasksClient() {
   const mutate = useCallback<Mutate>(
     (payload) => {
       if (!orgId || busy) return;
+      if (!navigator.onLine) {
+        setError("You're offline — changes will save when you reconnect.");
+        return;
+      }
       setBusy(true);
       setError("");
       void fetch("/api/tasks", {
@@ -125,6 +136,7 @@ export default function TasksClient() {
         ) : null}
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="todos" />
+      <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -160,6 +172,9 @@ export default function TasksClient() {
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <MetricsTiles view={view} />
+          <MeetingOutput view={view} />
+          <NormsBenchmark view={view} busy={busy} mutate={mutate} />
+          <AvailableNow view={view} />
           {view.board.focus.length > 0 ? <FocusList view={view} /> : null}
           <CreateTaskForm view={view} busy={busy} mutate={mutate} />
           <Board view={view} busy={busy} mutate={mutate} />
@@ -168,6 +183,10 @@ export default function TasksClient() {
     </main>
   );
 }
+
+function MeetingOutput({view}:{view:LiveView}){const o=view.meetingOutput;return <Panel><h2 style={{marginTop:0}}>Meeting time vs. output</h2><p className="app-muted">Planning visibility—not a student score. Week of {o.weekStart}.</p><div style={{display:"flex",gap:24,flexWrap:"wrap"}}><span><strong>{o.loggedHours}</strong> hours</span><span><strong>{o.tasksCompleted}</strong> tasks completed</span><span><strong>{o.hoursPerCompletedTask??"—"}</strong> hours/completion</span></div></Panel>}
+function NormsBenchmark({view,busy,mutate}:{view:LiveView;busy:boolean;mutate:Mutate}){const b=view.benchmark;return <Panel><h2 style={{marginTop:0}}>Anonymous team norms</h2><p className="app-muted">{b.optedIn?(b.medianWeeklyHours==null?"Opted in; the median appears after five teams contribute.":`${b.medianWeeklyHours} hours/week median across ${b.teamCount} teams.`):"Disabled by default; no data contributes until an owner opts in."}</p>{view.canManage?<button type="button" className="app-button secondary" disabled={busy} onClick={()=>mutate({action:"set-benchmark-opt-in",optedIn:!b.optedIn})}>{b.optedIn?"Leave benchmark":"Opt in anonymously"}</button>:null}</Panel>}
+function AvailableNow({view}:{view:LiveView}){const available=view.memberWorkload.filter((member)=>member.availableNow);return <Panel><h2 style={{marginTop:0}}>Who has nothing to do right now?</h2><p className="app-muted">Based on open collaborative assignments.</p><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{available.length?available.map((member)=><span key={member.userId} className="app-badge demo">{member.name} · available</span>):<span className="app-muted">Everyone has open work.</span>}</div></Panel>}
 
 function MetricsTiles({ view }: { view: LiveView }) {
   const m = view.board.metrics;
@@ -248,7 +267,7 @@ function CreateTaskForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
           title: form.title,
           subsystem: form.subsystem || undefined,
           priority: form.priority,
-          assignee: form.assignee || undefined,
+          assignees: form.assignee || undefined,
           estimateHours: form.estimateHours || undefined,
           dueOn: form.dueOn || undefined,
         });
@@ -278,8 +297,8 @@ function CreateTaskForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             ))}
           </select>
         </FormRow>
-        <FormRow label="Owner">
-          <input value={form.assignee} onChange={set("assignee")} placeholder="Optional" />
+        <FormRow label="Collaborators" hint="Comma-separated">
+          <input value={form.assignee} onChange={set("assignee")} placeholder="Avery, Jordan, Sam" />
         </FormRow>
         <FormRow label="Est. hours">
           <input type="number" min={0} step="0.5" value={form.estimateHours} onChange={set("estimateHours")} />
@@ -351,8 +370,8 @@ function TaskCard({ task, busy, mutate }: { task: TaskWithFlags; busy: boolean; 
         <small style={{ color: "#c02626" }}>Blocked: {task.blockedReason}</small>
       ) : null}
       <input
-        defaultValue={task.assignee ?? ""}
-        placeholder="Owner"
+        defaultValue={(task.assignees??(task.assignee?[task.assignee]:[])).join(", ")}
+        placeholder="Collaborators (comma-separated)"
         disabled={busy}
         aria-label="Owner"
         onKeyDown={(event) => {
@@ -360,8 +379,9 @@ function TaskCard({ task, busy, mutate }: { task: TaskWithFlags; busy: boolean; 
         }}
         onBlur={(event) => {
           const next = event.target.value.trim();
-          if (next !== (task.assignee ?? "")) {
-            mutate({ action: "update-task", taskId: task.id, assignee: next });
+          const previous=(task.assignees??(task.assignee?[task.assignee]:[])).join(", ");
+          if (next !== previous) {
+            mutate({ action: "update-task", taskId: task.id, assignees: next });
           }
         }}
         style={{ fontSize: "0.85rem", padding: "4px 6px" }}

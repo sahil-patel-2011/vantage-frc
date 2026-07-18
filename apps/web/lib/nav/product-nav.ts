@@ -176,7 +176,6 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/packing", label: "Packing List", icon: "grid" },
       { href: "/duties", label: "Duty Roster", icon: "users" },
       { href: "/visit-invites", label: "Visit Invites", icon: "users" },
-      { href: "/travel", label: "Event Travel", icon: "pin", state: "planned" },
     ],
   },
   {

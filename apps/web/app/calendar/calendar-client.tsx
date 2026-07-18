@@ -1,5 +1,9 @@
 "use client";
 
+import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
+
+import { OfflineBanner } from "../../components/offline-banner";
+
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
@@ -257,6 +261,9 @@ function LinkedDeadlinesPanel({ items, orgId }: { items: LinkedDeadline[]; orgId
 }
 
 export default function CalendarClient() {
+  const online = useOnline();
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [view, setView] = useState<CalendarView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -296,6 +303,10 @@ export default function CalendarClient() {
 
   const run = useCallback(
     async (body: ActionBody, key: string) => {
+      if (!navigator.onLine) {
+        setError("You're offline — calendar edits will save when you reconnect.");
+        return;
+      }
       setBusyKey(key);
       setError("");
       try {
@@ -324,6 +335,7 @@ export default function CalendarClient() {
       <main className="module-page cal-page">
         <PageHeader breadcrumbs="Calendar / Season Calendar" title="Season Calendar" />
         <TeamOpsNav active="calendar" />
+      <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         {fetchFailed ? (
           <EmptyState
             soft
