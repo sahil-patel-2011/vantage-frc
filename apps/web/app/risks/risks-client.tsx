@@ -2,21 +2,87 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { TeamHubRelated } from "../../components/team-hub-related";
 import { riskCategoryLabel, riskLevelLabel, riskStatusLabel } from "../../lib/risks";
 import { RISK_CATEGORIES, RISK_STATUSES, type RisksView } from "../../lib/risks/compute-risks";
+import {
+  RISKS_TEAM_RELATED_INCLUDE,
+  formatLikelihoodImpact,
+  formatRiskScoreDisplay,
+  risksNextActions,
+  risksRelatedLinks,
+} from "../../lib/risks/risks-related";
 import type { MatrixCell, RiskCategory, RiskEvaluation, RiskLevel, RiskStatus } from "../../lib/risks/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./risks.css";
 
 type LiveView = Extract<RisksView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
 
-const LEVEL_COLOR: Record<RiskLevel, string> = {
-  low: "#2f9e57",
-  moderate: "#c9a900",
-  high: "#d9822b",
-  critical: "#c02626",
-};
-
 const SCALES = [1, 2, 3, 4, 5];
+
+function RisksRelated({ orgId }: { orgId: string }) {
+  const primary = risksRelatedLinks(orgId, { include: ["fmea", "knowledge", "batteries"] });
+  return (
+    <div className="risks-related">
+      <nav className="product-hub-related risks-hub-related" aria-label="Related reliability tools">
+        {primary.map((link) => (
+          <a key={link.id} className="app-button secondary" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
+      <TeamHubRelated orgId={orgId} include={[...RISKS_TEAM_RELATED_INCLUDE]} />
+    </div>
+  );
+}
+
+function NextActions({
+  orgId,
+  riskCount,
+  activeCount,
+  overdueCount,
+  highestScore,
+  topTitle,
+}: {
+  orgId?: string | null;
+  riskCount: number;
+  activeCount: number;
+  overdueCount: number;
+  highestScore: number;
+  topTitle?: string | null;
+}) {
+  const actions = risksNextActions({
+    orgId,
+    riskCount,
+    activeCount,
+    overdueCount,
+    highestScore,
+    topTitle,
+  });
+  return (
+    <section className="risks-next-actions app-card soft-panel" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>Prioritized from logged season risks — scores stay blank until you enter real L×I.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export default function RisksClient() {
   const [view, setView] = useState<RisksView | null>(null);
@@ -78,103 +144,175 @@ export default function RisksClient() {
     [orgId, season, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs="Team / Risk Register"
-        title="Risk Register"
-        description={
-          <>
-            Identify what could derail your season — mechanism failures, schedule slips, funding gaps, driver
-            availability — score each by likelihood and impact, assign a mitigation, and track it to closure.
-          </>
-        }
-      >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-      </PageHeader>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
+  if (fetchFailed || view == null) {
+    return (
+      <main className="module-page risks-page">
+        <PageHeader
+          breadcrumbs="Team / Risk Register"
+          title="Risk Register"
+          description="Proactive season risks scored with real likelihood × impact — never demo scores. Distinct from FMEA failure logging."
+        />
         <EmptyState
-          title="Could not load the risk register"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          title={fetchFailed ? "Could not load the risk register" : "Loading risk register…"}
+          description={
+            fetchFailed
+              ? "A network or server issue prevented loading. Try again."
+              : "Checking your workspace."
+          }
+          aria-busy={!fetchFailed}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          {fetchFailed ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
+      </main>
+    );
+  }
+
+  if (view.status === "setup_required") {
+    return (
+      <main className="module-page risks-page">
+        <PageHeader
+          breadcrumbs="Team / Risk Register"
+          title="Risk Register"
+          description="Identify what could derail the season — score likelihood × impact, assign mitigations, and track closure. Separate from FMEA’s O×S×D failure log."
+        />
+        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+          <ol className="risks-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
                 <div>
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a href={step.href}>Open</a>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
               </li>
             ))}
           </ol>
         </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <BatteryReliabilitySignals view={view} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, alignItems: "start" }}>
-            <RiskMatrix view={view} />
-            <TopRisks view={view} />
+        <NextActions
+          orgId={view.orgId}
+          riskCount={0}
+          activeCount={0}
+          overdueCount={0}
+          highestScore={0}
+        />
+      </main>
+    );
+  }
+
+  const hasRisks = view.evaluations.length > 0;
+  const topTitle = view.summary.topRisks[0]?.risk.title ?? null;
+
+  return (
+    <main className="module-page risks-page">
+      <PageHeader
+        breadcrumbs="Team / Risk Register"
+        title="Risk Register"
+        description={
+          <>
+            Identify what could derail your season — mechanism failures, schedule slips, funding gaps,
+            driver availability. Score each by likelihood × impact from real entries only — never demo
+            numbers. For things that already broke, use FMEA.
+          </>
+        }
+      >
+        <div className="risks-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <a className="app-button secondary" href={hubHref("/team", "fmea", orgId)}>
+            FMEA
+          </a>
+          <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
+            Knowledge
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/subsystems", orgId)}>
+            Subsystems
+          </a>
+        </div>
+      </PageHeader>
+
+      {orgId ? <RisksRelated orgId={orgId} /> : null}
+
+      {error ? (
+        <p className="risks-alert" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <NextActions
+        orgId={orgId}
+        riskCount={view.summary.total}
+        activeCount={view.summary.active}
+        overdueCount={view.summary.overdue.length}
+        highestScore={view.summary.highestScore}
+        topTitle={topTitle}
+      />
+
+      <SummaryTiles view={view} />
+      <BatteryReliabilitySignals view={view} />
+
+      {!hasRisks ? (
+        <EmptyState
+          soft
+          title="No season risks logged yet"
+          description="Add schedule, technical, funding, or people risks with real L×I scores. Top score stays blank until then — nothing is invented. FMEA is for failures that already happened."
+        >
+          <div className="risks-row-links">
+            <a href={hubHref("/team", "fmea", orgId)}>FMEA →</a>
+            <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
+            <a href={withOrgHref("/subsystems", orgId)}>Subsystems →</a>
           </div>
-          <AddRiskForm busy={busy} mutate={mutate} />
-          <RiskList view={view} busy={busy} mutate={mutate} />
+        </EmptyState>
+      ) : (
+        <div className="risks-layout">
+          <RiskMatrix view={view} />
+          <TopRisks view={view} />
         </div>
       )}
+
+      <AddRiskForm busy={busy} mutate={mutate} />
+      {hasRisks ? <RiskList view={view} busy={busy} mutate={mutate} orgId={orgId} /> : null}
     </main>
   );
 }
 
-
 function BatteryReliabilitySignals({ view }: { view: LiveView }) {
   if (!view.batterySignals?.length) return null;
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Battery reliability signals</h2>
-      <p className="app-muted" style={{ marginTop: 0 }}>
-        From the canonical battery fleet — add as a formal risk when the failure mode is season-relevant.
-      </p>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 10 }}>
+    <Panel className="risks-panel">
+      <h2>Battery reliability signals</h2>
+      <p>From the canonical battery fleet — promote into this register when the failure mode is season-relevant. Not invented rows.</p>
+      <ul className="risks-battery-signals">
         {view.batterySignals.map((signal) => (
-          <li key={signal.id} style={{ borderTop: "1px solid var(--app-border, #e5e7eb)", paddingTop: 10 }}>
+          <li key={signal.id}>
             <strong>{signal.title}</strong>
-            <span className="app-muted" style={{ display: "block" }}>
+            <span className="meta">
               L{signal.likelihood} × I{signal.impact} · {signal.category}
             </span>
-            <span style={{ display: "block" }}>{signal.detail}</span>
+            <span>{signal.detail}</span>
             <a href={signal.href}>Open Batteries</a>
           </li>
         ))}
@@ -185,81 +323,64 @@ function BatteryReliabilitySignals({ view }: { view: LiveView }) {
 
 function SummaryTiles({ view }: { view: LiveView }) {
   const s = view.summary;
+  const hasActive = s.active > 0;
+  const hot = s.byLevel.critical + s.byLevel.high;
   const tiles = [
-    { label: "Active risks", value: String(s.active) },
-    { label: "Critical + high", value: String(s.byLevel.critical + s.byLevel.high) },
-    { label: "Top score", value: String(s.highestScore) },
-    { label: "Overdue", value: String(s.overdue.length) },
+    { label: "Active risks", value: String(s.active), tone: s.active > 0 ? "warn" : "" },
+    { label: "Critical + high", value: String(hot), tone: hot > 0 ? "critical" : "" },
+    { label: "Top score", value: formatRiskScoreDisplay(s.highestScore, hasActive), tone: "" },
+    { label: "Overdue", value: String(s.overdue.length), tone: s.overdue.length > 0 ? "warn" : "" },
   ];
   return (
     <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
+      <section className="risks-summary" aria-label="Season risk summary">
         {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
+          <article key={tile.label} className={`risks-summary-tile${tile.tone ? ` ${tile.tone}` : ""}`}>
+            <strong>{tile.value}</strong>
+            <span>{tile.label}</span>
+          </article>
         ))}
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-        {(["critical", "high", "moderate", "low"] as RiskLevel[]).map((level) => (
-          <span
-            key={level}
-            className="app-badge"
-            style={{ background: LEVEL_COLOR[level], color: "#fff" }}
-            title={`${s.byLevel[level]} active`}
-          >
-            {riskLevelLabel(level)}: {s.byLevel[level]}
-          </span>
-        ))}
-      </div>
+      </section>
+      {hasActive ? (
+        <div className="risks-level-row">
+          {(["critical", "high", "moderate", "low"] as RiskLevel[]).map((level) => (
+            <span key={level} className={`risks-badge ${level}`} title={`${s.byLevel[level]} active`}>
+              {riskLevelLabel(level)}: {s.byLevel[level]}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </Panel>
   );
 }
 
 function RiskMatrix({ view }: { view: LiveView }) {
   return (
-    <Panel style={{ overflowX: "auto" }}>
-      <h2 style={{ marginTop: 0 }}>Risk matrix</h2>
-      <div style={{ display: "flex", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <span className="app-muted" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", fontSize: "0.75rem" }}>
-            Impact →
-          </span>
+    <Panel className="risks-panel" style={{ overflowX: "auto" }}>
+      <h2>Risk matrix</h2>
+      <p>Counts of active risks only — empty cells stay dim; no demo placements.</p>
+      <div className="risks-matrix-wrap">
+        <div className="risks-matrix-axis">
+          <span>Impact →</span>
         </div>
         <div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 44px)", gap: 4 }}>
+          <div className="risks-matrix" role="img" aria-label="5 by 5 likelihood by impact matrix">
             {view.matrix.map((cell: MatrixCell) => (
               <div
                 key={`${cell.likelihood}-${cell.impact}`}
                 title={`Likelihood ${cell.likelihood} × Impact ${cell.impact} = ${cell.score} (${riskLevelLabel(cell.level)})`}
-                style={{
-                  height: 44,
-                  borderRadius: 6,
-                  background: LEVEL_COLOR[cell.level],
-                  opacity: cell.count > 0 ? 1 : 0.28,
-                  color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 700,
-                  fontSize: "0.95rem",
-                }}
+                className={`risks-matrix-cell ${cell.level}${cell.count > 0 ? "" : " empty"}`}
               >
                 {cell.count > 0 ? cell.count : ""}
               </div>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 44px)", gap: 4, marginTop: 4 }}>
+          <div className="risks-matrix-labels">
             {SCALES.map((n) => (
-              <span key={n} className="app-muted" style={{ textAlign: "center", fontSize: "0.75rem" }}>
-                {n}
-              </span>
+              <span key={n}>{n}</span>
             ))}
           </div>
-          <div className="app-muted" style={{ textAlign: "center", fontSize: "0.75rem", marginTop: 2 }}>
-            Likelihood →
-          </div>
+          <div className="risks-matrix-caption">Likelihood →</div>
         </div>
       </div>
     </Panel>
@@ -269,27 +390,26 @@ function RiskMatrix({ view }: { view: LiveView }) {
 function TopRisks({ view }: { view: LiveView }) {
   if (view.summary.topRisks.length === 0) {
     return (
-      <Panel>
-        <h2 style={{ marginTop: 0 }}>Top risks</h2>
-        <p className="app-muted">No active risks logged yet.</p>
+      <Panel className="risks-panel">
+        <h2>Top risks</h2>
+        <p>No active risks — top score stays blank. No demo ranking is shown.</p>
       </Panel>
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Top risks</h2>
-      <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+    <Panel className="risks-panel">
+      <h2>Top risks</h2>
+      <ol className="risks-top-list">
         {view.summary.topRisks.map((evaluation) => (
           <li key={evaluation.risk.id}>
-            <strong>{evaluation.risk.title}</strong>{" "}
-            <span
-              className="app-badge"
-              style={{ background: LEVEL_COLOR[evaluation.level], color: "#fff" }}
-            >
-              {evaluation.score}
-            </span>
-            <small className="app-muted"> · {riskCategoryLabel(evaluation.risk.category)}</small>
-            {evaluation.overdue ? <small style={{ color: "#c02626" }}> · mitigation overdue</small> : null}
+            <div className="who">
+              <strong>{evaluation.risk.title}</strong>
+              <span className={`risks-badge ${evaluation.level}`}>{evaluation.score}</span>
+            </div>
+            <div className="meta">
+              {riskCategoryLabel(evaluation.risk.category)} · {formatLikelihoodImpact(evaluation.risk)}
+              {evaluation.overdue ? " · mitigation overdue" : ""}
+            </div>
           </li>
         ))}
       </ol>
@@ -306,9 +426,12 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
+  const previewScore = Number(form.likelihood) * Number(form.impact);
+
   return (
     <Panel
       as="form"
+      className="risks-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.title.trim()) return;
@@ -323,9 +446,9 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Add risk</h2>
+      <h2>Add risk</h2>
+      <p>Proactive season risk — not an FMEA failure. Score will be L×I from the values you set.</p>
       <FormGrid min={130}>
         <FormRow label="Risk" wide>
           <input value={form.title} onChange={set("title")} placeholder="Climber winch could fail under load" required />
@@ -364,61 +487,105 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
           <input value={form.mitigation} onChange={set("mitigation")} placeholder="Add a redundant ratchet; test to 1.5× load" />
         </FormRow>
       </FormGrid>
-      <div>
+      <div className="risks-form-actions">
         <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
           Add risk
         </button>
+        {form.title.trim() ? (
+          <span className="risks-preview">
+            Preview score <strong>{previewScore}</strong> ({formatLikelihoodImpact({ likelihood: Number(form.likelihood), impact: Number(form.impact) })})
+          </span>
+        ) : null}
       </div>
     </Panel>
   );
 }
 
-function RiskList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
-  if (view.evaluations.length === 0) {
-    return (
-      <EmptyState
-        badge="No risks yet"
-        badgeTone="setup"
-        title="Start your risk register"
-        description="Add the things that could go wrong this season — the earlier you name them, the cheaper they are to mitigate."
-      />
-    );
-  }
+function RiskList({
+  view,
+  busy,
+  mutate,
+  orgId,
+}: {
+  view: LiveView;
+  busy: boolean;
+  mutate: Mutate;
+  orgId: string | null;
+}) {
   return (
-    <section style={{ display: "grid", gap: 12 }}>
+    <section className="risks-list" aria-label="Season risks">
       {view.evaluations.map((evaluation) => (
-        <RiskCard key={evaluation.risk.id} evaluation={evaluation} busy={busy} mutate={mutate} />
+        <RiskCard key={evaluation.risk.id} evaluation={evaluation} busy={busy} mutate={mutate} orgId={orgId} />
       ))}
     </section>
   );
 }
 
-function RiskCard({ evaluation, busy, mutate }: { evaluation: RiskEvaluation; busy: boolean; mutate: Mutate }) {
+function RiskCard({
+  evaluation,
+  busy,
+  mutate,
+  orgId,
+}: {
+  evaluation: RiskEvaluation;
+  busy: boolean;
+  mutate: Mutate;
+  orgId: string | null;
+}) {
   const { risk, score, level, overdue, daysToDue } = evaluation;
-  const dimmed = risk.status === "closed";
+  const rowClass = [
+    "risks-row",
+    level,
+    risk.status === "closed" ? "closed" : "",
+    overdue ? "overdue" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <Panel as="article" style={{ opacity: dimmed ? 0.6 : 1 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-        <div>
-          <span className="app-badge" style={{ background: LEVEL_COLOR[level], color: "#fff" }}>
-            {riskLevelLabel(level)} · {score}
-          </span>{" "}
-          <small className="app-muted">
-            {riskCategoryLabel(risk.category)}
-            {risk.owner ? ` · ${risk.owner}` : ""}
-            {daysToDue != null
-              ? overdue
-                ? ` · ${Math.abs(daysToDue)}d overdue`
-                : ` · due in ${daysToDue}d`
-              : ""}
-          </small>
-          <h2 style={{ margin: "4px 0 0", fontSize: "1.1rem" }}>{risk.title}</h2>
-          {risk.mitigation ? <p className="app-muted" style={{ margin: "6px 0 0" }}>Mitigation: {risk.mitigation}</p> : null}
+    <article className={rowClass}>
+      <header className="risks-row-top">
+        <div className="risks-row-title">
+          <strong>{risk.title}</strong>
+          <div className="risks-row-meta">
+            <span className={`risks-badge ${level}`}>{riskLevelLabel(level)}</span>
+            <span>{riskCategoryLabel(risk.category)}</span>
+            {risk.owner ? <span>{risk.owner}</span> : null}
+            {daysToDue != null ? (
+              overdue ? (
+                <span className="risks-badge overdue">{Math.abs(daysToDue)}d overdue</span>
+              ) : (
+                <span>due in {daysToDue}d</span>
+              )
+            ) : null}
+          </div>
+        </div>
+        <div className="risks-row-scores">
+          <span className="risks-li">{formatLikelihoodImpact(risk)}</span>
+          <span className="risks-score">
+            <em>Score</em>
+            <strong>{score}</strong>
+          </span>
         </div>
       </header>
 
-      <footer style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 12 }}>
-        <label className="app-muted" style={{ display: "flex", gap: 4, alignItems: "center" }}>
+      <div className="risks-row-body">
+        {risk.mitigation ? (
+          <p>
+            <span className="label">Mitigation: </span>
+            {risk.mitigation}
+          </p>
+        ) : (
+          <p className="warn">No mitigation recorded yet.</p>
+        )}
+        <div className="risks-row-links">
+          <a href={hubHref("/team", "fmea", orgId)}>Log in FMEA if it fails →</a>
+          <a href={hubHref("/team", "knowledge", orgId)}>Document in Knowledge →</a>
+        </div>
+      </div>
+
+      <footer className="risks-row-actions">
+        <label>
           L
           <select
             value={String(risk.likelihood)}
@@ -433,7 +600,7 @@ function RiskCard({ evaluation, busy, mutate }: { evaluation: RiskEvaluation; bu
             ))}
           </select>
         </label>
-        <label className="app-muted" style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        <label>
           I
           <select
             value={String(risk.impact)}
@@ -448,12 +615,12 @@ function RiskCard({ evaluation, busy, mutate }: { evaluation: RiskEvaluation; bu
             ))}
           </select>
         </label>
-        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <label>
           Status
           <select
             value={risk.status}
             disabled={busy}
-            onChange={(event) => mutate({ action: "update-risk", riskId: risk.id, status: event.target.value })}
+            onChange={(event) => mutate({ action: "update-risk", riskId: risk.id, status: event.target.value as RiskStatus })}
           >
             {RISK_STATUSES.map((status) => (
               <option key={status} value={status}>
@@ -474,6 +641,6 @@ function RiskCard({ evaluation, busy, mutate }: { evaluation: RiskEvaluation; bu
           Delete
         </button>
       </footer>
-    </Panel>
+    </article>
   );
 }
