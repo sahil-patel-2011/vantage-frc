@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
 import { FinanceInAiPanel } from "./finance-in-ai-panel";
 import "../product-hub.css";
 import "../chat/chat.css";
@@ -20,7 +20,7 @@ export default function AiHub() {
             if (tab === "budgets") return <BudgetClient orgId={id} />;
             if (tab === "governance") return <AiPolicyClient orgId={id} />;
             if (tab === "finance") return <FinanceInAiPanel orgId={id} />;
-            return null;
+            return <HubLegacyRedirect hubId="ai" tab={tab} orgId={id} />;
           }}
         </HubOrgGate>
       )}

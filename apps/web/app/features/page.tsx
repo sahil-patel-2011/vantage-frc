@@ -27,6 +27,16 @@ const surfaces: {
     status: "Available",
   },
   {
+    title: "Custom scouting form builder",
+    copy: "Versioned match and pit schemas with drivetrain, robot photos, and free-text—published by owners, filled on the Competition hub.",
+    status: "Available",
+  },
+  {
+    title: "Scout voice notes",
+    copy: "Opt-in voice notes attach to entries without writing form fields. Browser STT is local; cloud STT is metered when configured.",
+    status: "Available",
+  },
+  {
     title: "Event Day + My Day",
     copy: "Shared command for next match and readiness, plus personal shifts, todos, and acknowledgements for what you own today.",
     status: "Available",

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
 import "../product-hub.css";
 import "../code/code.css";
 
@@ -32,7 +32,7 @@ export default function BuildHub() {
             </HubOrgGate>
           );
         }
-        return null;
+        return <HubLegacyRedirect hubId="build" tab={tab} orgId={orgId} />;
       }}
     </ProductHubShell>
   );

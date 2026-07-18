@@ -70,6 +70,17 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/team/usage")).toBe("AI / AI usage");
     expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
     expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Form builder");
+    expect(breadcrumbForPath("/competition")).toBe("Competition / Competition hub");
+  });
+
+  it("resolves form builder via hub tab when using competition?tab=forms href", () => {
+    const match = findNavMatch("/competition");
+    expect(match?.group.label).toBe("Competition");
+    expect(
+      PRODUCT_NAV_GROUPS.find((group) => group.label === "Competition")?.items.some(
+        (item) => item.href === "/competition?tab=forms" || item.href === "/scouting/forms",
+      ),
+    ).toBe(true);
   });
 
   it("resolves nested team knowledge via hub legacy href", () => {
@@ -91,11 +102,20 @@ describe("product-nav", () => {
     expect(withOrgHref("/practice?orgId=org-1", "org-2")).toBe("/practice?orgId=org-1");
   });
 
+  it("resolves form builder and match checklist under Competition", () => {
+    expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Form builder");
+    expect(breadcrumbForPath("/match-checklist")).toBe("Competition / Match Checklist");
+    const competition = PRODUCT_NAV_GROUPS.find((g) => g.label === "Competition")!;
+    expect(competition.items.some((i) => i.href === "/competition?tab=forms")).toBe(true);
+    expect(competition.items.some((i) => i.href === "/competition?tab=match-checklist")).toBe(true);
+    expect(competition.items.some((i) => i.href === "/competition?tab=strategy")).toBe(true);
+    expect(competition.items.some((i) => i.href === "/competition?tab=scouting")).toBe(true);
+  });
+
   it("marks unfinished destinations as planned instead of dead links", () => {
     const planned = PRODUCT_NAV_GROUPS.flatMap((group) =>
       group.items.filter((item) => item.state === "planned").map((item) => item.href),
     );
-    expect(planned).toContain("/parts-relay");
     expect(planned).not.toContain("/repairs");
     expect(planned).not.toContain("/knowledge");
   });

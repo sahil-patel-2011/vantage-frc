@@ -292,6 +292,18 @@ export default function FormsClient({ orgId }: { orgId: string }) {
           >
             Open scouting
           </a>
+          <a
+            className="app-button secondary"
+            href={`/competition?tab=strategy&orgId=${encodeURIComponent(orgId)}`}
+          >
+            Strategy
+          </a>
+          <a
+            className="app-button secondary"
+            href={`/competition?tab=match-checklist&orgId=${encodeURIComponent(orgId)}`}
+          >
+            Match checklist
+          </a>
           <button
             type="button"
             className="app-button"
