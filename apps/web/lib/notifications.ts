@@ -78,6 +78,10 @@ export function notificationHref(
       }
       return orgId ? `/orders${orgQuery}` : "/orders";
     }
+    case "scouting_disagreement_resolved":
+      return orgId
+        ? `/scouting?orgId=${encodeURIComponent(orgId)}&tab=conflicts`
+        : "/scouting";
     default:
       return null;
   }

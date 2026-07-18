@@ -14,6 +14,7 @@ import {
   syncMediaOutbox,
   syncOutbox,
 } from "../../lib/scout-offline";
+import ScoutingTrustPanel from "./scouting-trust-panel";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import "./scouting-qr.css";
 
@@ -54,7 +55,7 @@ type SpeechRecognitionLike = {
   start(): void;
 };
 
-type ScoutTab = "match" | "pit" | "conflicts" | "handoff";
+type ScoutTab = "match" | "pit" | "conflicts" | "handoff" | "trust";
 
 type ConflictCandidate = {
   entryId: string;
