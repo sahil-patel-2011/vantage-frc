@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import PartnerPlacement from "../../components/partner-placement"";
-import { EmptyState } from "../../components/ui"";
+import PartnerPlacement from "../../components/partner-placement";
+import { EmptyState } from "../../components/ui";
 
 type Program = {
   settings: { publicId: string; storefrontEnabled: boolean; paymentUrl: string | null; pitch: string } | null;
@@ -32,30 +32,35 @@ export function PartnerPlacementsPanel({ orgId, seasonYear, canManage }: { orgId
   const pending = useMemo(() => program?.submissions.filter((item) => item.status === "pending") ?? [], [program]);
   if (!program && !error) {
     return (
-      <section className="app-card soft-panel placement-loading">
-        <h2>Opening partner placements…</h2>
-        <p className="app-muted">Loading packages, artwork, and the public storefront settings.</p>
-      </section>
+      <EmptyState
+        soft
+        title="Opening partner placements..."
+        description="Loading packages, artwork, and the public storefront settings."
+        aria-busy
+      />
     );
   }
   if (!program) {
     return (
-      <section className="app-card soft-panel placement-loading">
-        <h2>Partner placements unavailable</h2>
-        <p role="alert">{error}</p>
+      <EmptyState
+        badge="Setup required"
+        badgeTone="setup"
+        title="Partner placements unavailable"
+        description={error || "Apply the partner storefront migration, then try again."}
+      >
         <button className="app-button" type="button" onClick={() => void load()}>
           Try again
         </button>
-      </section>
+      </EmptyState>
     );
   }
   return <div className="biz-stack placement-stack">
-    {error ? <div className="biz-alert danger"><strong>Couldn’t complete that.</strong><span>{error}</span></div> : null}
+    {error ? <div className="biz-alert danger"><strong>Couldn't complete that.</strong><span>{error}</span></div> : null}
     {notice ? <div className="biz-alert success"><strong>Done.</strong><span>{notice}</span></div> : null}
     {!canManage ? <section className="app-card soft-panel"><h2>Partner placement program</h2><p className="app-muted">Only a team owner or admin can publish sponsorship packages, accept payment records, or approve creative.</p></section> : null}
     <section className="app-card soft-panel placement-intro">
       <div><span className="biz-overline">Partner placements</span><h2>Recognition packages and live storefront</h2><p className="app-muted">Sell only the placements you choose, accept payment directly to the team, then approve every sponsor and every image before it appears anywhere. The public storefront stays a separate shareable page.</p></div>
-      {program.settings?.publicId ? <a className="app-button" href={`/support/${program.settings.publicId}`} target="_blank" rel="noreferrer">Open storefront ↗</a> : null}
+      {program.settings?.publicId ? <a className="app-button" href={`/support/${program.settings.publicId}`} target="_blank" rel="noreferrer">Open storefront Γåù</a> : null}
     </section>
     {canManage ? <section className="biz-grid two">
       <article className="app-card"><span className="biz-overline">Sponsor storefront</span><h2>One safe page to share.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-settings")}>
@@ -67,15 +72,15 @@ export function PartnerPlacementsPanel({ orgId, seasonYear, canManage }: { orgId
       <article className="app-card"><span className="biz-overline">Placement packages</span><h2>Make recognition clear, not cluttered.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-package")}>
         <label className="biz-field"><span>Package name</span><input name="name" required placeholder="Gold partner" /></label><label className="biz-field"><span>Price (USD)</span><input name="priceUsd" type="number" min="0" step="0.01" required /></label>
         <label className="biz-field"><span>Days live</span><input name="durationDays" type="number" min="1" max="730" defaultValue="365" required /></label><label className="biz-field"><span>Order</span><input name="sortOrder" type="number" defaultValue="0" /></label>
-        <label className="biz-field wide"><span>What they receive</span><textarea name="benefits" rows={2} placeholder="Thank-you post, logo placement, season recap…" /></label><SurfaceChecks />
+        <label className="biz-field wide"><span>What they receive</span><textarea name="benefits" rows={2} placeholder="Thank-you post, logo placement, season recapΓÇª" /></label><SurfaceChecks />
         <button className="app-button" disabled={busy}>Add package</button>
       </form>
-      <ul className="placement-package-list">{program.packages.map((item) => <li key={item.id}><strong>{item.name}</strong><span>${Number(item.priceUsd).toFixed(0)} · {item.durationDays} days · {item.surfaces.map((surface) => surfaceLabel[surface]).join(", ")}</span></li>)}{!program.packages.length ? <li className="empty">Add your first sponsorship package.</li> : null}</ul>
+      <ul className="placement-package-list">{program.packages.map((item) => <li key={item.id}><strong>{item.name}</strong><span>${Number(item.priceUsd).toFixed(0)} ┬╖ {item.durationDays} days ┬╖ {item.surfaces.map((surface) => surfaceLabel[surface]).join(", ")}</span></li>)}{!program.packages.length ? <li className="empty">Add your first sponsorship package.</li> : null}</ul>
       </article>
     </section> : null}
     {canManage ? <section className="biz-grid two">
       <article className="app-card"><span className="biz-overline">Creative approval</span><h2>Artwork library</h2><form className="biz-inline-form" onSubmit={(event) => void upload(event)}><select name="sponsorId" required defaultValue=""><option value="" disabled>Select sponsor</option>{program.sponsors.map((sponsor) => <option key={sponsor.id} value={sponsor.id}>{sponsor.name}</option>)}</select><input name="file" type="file" accept="image/png,image/jpeg,image/webp" required /><button disabled={busy}>Upload logo</button></form><p className="app-muted">PNG, JPEG, or WebP only. We strip metadata, resize, and re-encode every logo before review.</p>
-        <div className="placement-assets">{program.assets.map((asset) => <article key={asset.id}><img src={`/api/business/assets/${asset.id}?orgId=${encodeURIComponent(orgId)}`} alt="Sponsor artwork preview" /><div><strong>{asset.filename}</strong><span>{asset.width} × {asset.height} · {asset.status}</span><div className="placement-actions">{asset.status !== "approved" ? <button type="button" onClick={() => void mutate({ action: "asset-status", assetId: asset.id, status: "approved" })}>Approve</button> : null}{asset.status !== "archived" ? <button type="button" onClick={() => void mutate({ action: "asset-status", assetId: asset.id, status: "archived" })}>Archive</button> : <button type="button" onClick={() => { if (window.confirm("Delete this archived artwork permanently?")) void mutate({ action: "delete-asset", assetId: asset.id }); }}>Delete</button>}</div></div></article>)}{!program.assets.length ? <p className="biz-empty-inline">Upload a sponsor logo after their organization is in Sponsor CRM.</p> : null}</div>
+        <div className="placement-assets">{program.assets.map((asset) => <article key={asset.id}><img src={`/api/business/assets/${asset.id}?orgId=${encodeURIComponent(orgId)}`} alt="Sponsor artwork preview" /><div><strong>{asset.filename}</strong><span>{asset.width} ├ù {asset.height} ┬╖ {asset.status}</span><div className="placement-actions">{asset.status !== "approved" ? <button type="button" onClick={() => void mutate({ action: "asset-status", assetId: asset.id, status: "approved" })}>Approve</button> : null}{asset.status !== "archived" ? <button type="button" onClick={() => void mutate({ action: "asset-status", assetId: asset.id, status: "archived" })}>Archive</button> : <button type="button" onClick={() => { if (window.confirm("Delete this archived artwork permanently?")) void mutate({ action: "delete-asset", assetId: asset.id }); }}>Delete</button>}</div></div></article>)}{!program.assets.length ? <p className="biz-empty-inline">Upload a sponsor logo after their organization is in Sponsor CRM.</p> : null}</div>
       </article>
       <article className="app-card"><span className="biz-overline">Create placement</span><h2>Nothing goes live until payment and approval are recorded.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "create-campaign")}>
         <label className="biz-field"><span>Sponsor</span><select name="sponsorId" required defaultValue=""><option value="" disabled>Select sponsor</option>{program.sponsors.map((sponsor) => <option key={sponsor.id} value={sponsor.id}>{sponsor.name}</option>)}</select></label><label className="biz-field"><span>Package</span><select name="packageId" defaultValue=""><option value="">Custom placement</option>{program.packages.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -85,8 +90,8 @@ export function PartnerPlacementsPanel({ orgId, seasonYear, canManage }: { orgId
         <button className="app-button" disabled={busy}>Create draft placement</button>
       </form></article>
     </section> : null}
-    <section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Placement command</span><h2>Revenue only becomes recognition after two checks.</h2></div><span className="biz-count">{program.campaigns.length}</span></header><div className="placement-campaigns">{program.campaigns.map((campaign) => { const eligible = program.assets.filter((asset) => asset.sponsorId === campaign.sponsorId && asset.status === "approved"); return <article key={campaign.id}><div><strong>{campaign.sponsorName} — {campaign.name}</strong><span>{campaign.status} · {campaign.paymentStatus} · ${Number(campaign.amountUsd).toFixed(2)} · {campaign.startOn} to {campaign.endOn}</span></div>{canManage ? <div className="placement-actions">{campaign.paymentStatus === "pending" ? <><button type="button" onClick={() => void mutate({ action: "mark-paid", campaignId: campaign.id })}>Record payment</button><button type="button" onClick={() => void mutate({ action: "waive-payment", campaignId: campaign.id })}>Waive payment</button></> : null}<select value={campaign.assetId ?? ""} onChange={(event) => { if (event.target.value) void mutate({ action: "attach-asset", campaignId: campaign.id, assetId: event.target.value }); }}><option value="">Attach approved logo</option>{eligible.map((asset) => <option key={asset.id} value={asset.id}>{asset.filename}</option>)}</select>{campaign.status === "draft" ? <button type="button" onClick={() => void mutate({ action: "campaign-status", campaignId: campaign.id, status: "approved" })}>Approve placement</button> : null}{!["complete", "cancelled"].includes(campaign.status) ? <button type="button" onClick={() => void mutate({ action: "campaign-status", campaignId: campaign.id, status: "cancelled" })}>Cancel</button> : null}</div> : null}</article>; })}{!program.campaigns.length ? <p className="biz-empty-inline">Build a placement after a sponsor commits. It stays a draft until you record payment and approve it.</p> : null}</div></section>
-    {canManage ? <section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Public inquiry inbox</span><h2>Review before it becomes a relationship record.</h2></div><span className="biz-count">{pending.length}</span></header><div className="placement-submissions">{pending.map((item) => <article key={item.id}><div><strong>{item.companyName}</strong><span>{item.contactName} · {item.contactEmail}{item.packageName ? ` · ${item.packageName}` : ""}</span><p>{item.message || "No message provided."}</p>{item.logoUrl ? <small>External logo reference received privately; it is never displayed in the portal.</small> : null}</div><div className="placement-actions"><button type="button" onClick={() => void mutate({ action: "review-submission", submissionId: item.id, decision: "approved" })}>Approve & create draft</button><button type="button" onClick={() => void mutate({ action: "review-submission", submissionId: item.id, decision: "rejected" })}>Decline</button></div></article>)}{!pending.length ? <p className="biz-empty-inline">No sponsor inquiries waiting for review.</p> : null}</div></section> : null}
+    <section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Placement command</span><h2>Revenue only becomes recognition after two checks.</h2></div><span className="biz-count">{program.campaigns.length}</span></header><div className="placement-campaigns">{program.campaigns.map((campaign) => { const eligible = program.assets.filter((asset) => asset.sponsorId === campaign.sponsorId && asset.status === "approved"); return <article key={campaign.id}><div><strong>{campaign.sponsorName} ΓÇö {campaign.name}</strong><span>{campaign.status} ┬╖ {campaign.paymentStatus} ┬╖ ${Number(campaign.amountUsd).toFixed(2)} ┬╖ {campaign.startOn} to {campaign.endOn}</span></div>{canManage ? <div className="placement-actions">{campaign.paymentStatus === "pending" ? <><button type="button" onClick={() => void mutate({ action: "mark-paid", campaignId: campaign.id })}>Record payment</button><button type="button" onClick={() => void mutate({ action: "waive-payment", campaignId: campaign.id })}>Waive payment</button></> : null}<select value={campaign.assetId ?? ""} onChange={(event) => { if (event.target.value) void mutate({ action: "attach-asset", campaignId: campaign.id, assetId: event.target.value }); }}><option value="">Attach approved logo</option>{eligible.map((asset) => <option key={asset.id} value={asset.id}>{asset.filename}</option>)}</select>{campaign.status === "draft" ? <button type="button" onClick={() => void mutate({ action: "campaign-status", campaignId: campaign.id, status: "approved" })}>Approve placement</button> : null}{!["complete", "cancelled"].includes(campaign.status) ? <button type="button" onClick={() => void mutate({ action: "campaign-status", campaignId: campaign.id, status: "cancelled" })}>Cancel</button> : null}</div> : null}</article>; })}{!program.campaigns.length ? <p className="biz-empty-inline">Build a placement after a sponsor commits. It stays a draft until you record payment and approve it.</p> : null}</div></section>
+    {canManage ? <section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Public inquiry inbox</span><h2>Review before it becomes a relationship record.</h2></div><span className="biz-count">{pending.length}</span></header><div className="placement-submissions">{pending.map((item) => <article key={item.id}><div><strong>{item.companyName}</strong><span>{item.contactName} ┬╖ {item.contactEmail}{item.packageName ? ` ┬╖ ${item.packageName}` : ""}</span><p>{item.message || "No message provided."}</p>{item.logoUrl ? <small>External logo reference received privately; it is never displayed in the portal.</small> : null}</div><div className="placement-actions"><button type="button" onClick={() => void mutate({ action: "review-submission", submissionId: item.id, decision: "approved" })}>Approve & create draft</button><button type="button" onClick={() => void mutate({ action: "review-submission", submissionId: item.id, decision: "rejected" })}>Decline</button></div></article>)}{!pending.length ? <p className="biz-empty-inline">No sponsor inquiries waiting for review.</p> : null}</div></section> : null}
     <PartnerPlacement orgId={orgId} surface="business_wall" title="Partners powering this team" />
   </div>;
 }
