@@ -16,7 +16,7 @@ import {
   lintSchemaBudget,
   type FieldTrustSummary,
 } from "@vantage/scouting/trust";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
 import {
@@ -30,6 +30,21 @@ import {
   syncOutbox,
 } from "../../lib/scout-offline";
 import { scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
+import {
+  SCOUTING_RELATED_INCLUDE,
+  classifyScoutingShell,
+  formatScoutingMetric,
+  scoutingNextActions,
+  scoutingOfflineBannerDetail,
+  scoutingRelatedLinks,
+  scoutingSetupSteps,
+  scoutingShellCopy,
+  shouldShowScoutingRecentEntries,
+  type ScoutingNextAction,
+  type ScoutingShellKind,
+} from "../../lib/scouting/scouting-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import ScoutingTrustPanel from "./scouting-trust-panel";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
@@ -99,9 +114,150 @@ type OfficialFlag = {
   soft?: boolean;
 };
 
+function ScoutingRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = scoutingRelatedLinks(orgId, {
+    include: [...SCOUTING_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related scout-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function ScoutingNextActionsPanel({ actions }: { actions: ScoutingNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions scout-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Forms, Coverage, Strategy, and Offline — never DEMO entries.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ScoutingShell({
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  orgId?: string | null;
+  shell: ScoutingShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = scoutingNextActions({ orgId, shell });
+  const copy = scoutingShellCopy(shell);
+  const steps = shell === "setup" ? scoutingSetupSteps(orgId) : [];
+  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const commandHref = hubHref("/competition", "command", orgId);
+  const formsHref = hubHref("/competition", "forms", orgId);
+  const coverageHref = withOrgHref("/scouting/lineup", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const offlineHref = withOrgHref("/offline", orgId);
+
+  return (
+    <main className="module-page scout-page soft-gate">
+      <PageHeader
+        breadcrumbs="Competition / Scouting"
+        title="Scouting Hub"
+        description="Match and pit forms cache on this device. Coverage stays empty until real scout rows exist — never DEMO entries."
+      >
+        <ScoutingRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        className="scout-shell-empty"
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? copy.badge
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? commandHref : workspaceHref}>
+            {orgId ? "Set active event" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={formsHref}>
+              Open Form builder
+            </a>
+            <a className="app-button secondary" href={coverageHref}>
+              Open Coverage
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={offlineHref}>
+              Open Offline
+            </a>
+          </>
+        ) : null}
+        {shell === "setup" && steps.length > 0 ? (
+          <ol className="scout-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </EmptyState>
+      {shell !== "loading" ? <ScoutingNextActionsPanel actions={actions} /> : null}
+    </main>
+  );
+}
+
 export default function ScoutingClient({ orgId }: { orgId: string }) {
   const searchParams = useSearchParams();
   const [data, setData] = useState<Bootstrap | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchFailed, setFetchFailed] = useState(false);
   const [tab, setTab] = useState<ScoutTab>("match");
   const [matchKey, setMatchKey] = useState("");
   const [teamKey, setTeamKey] = useState("");
@@ -188,6 +344,8 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
 
   useEffect(() => {
     void (async () => {
+      setLoading(true);
+      setFetchFailed(false);
       const cached = await getCachedEvent<Bootstrap>(orgId);
       if (cached) {
         setData(cached);
@@ -199,13 +357,24 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
           const fresh = (await response.json()) as Bootstrap;
           setData(fresh);
           setFromCache(false);
+          setFetchFailed(false);
           await cacheEvent(orgId, fresh);
           await loadTrust(fresh.eventKey);
         } else if (cached) {
           setMessage("Using cached event data — bootstrap unavailable");
+        } else {
+          setFetchFailed(true);
+          setMessage("Could not load scouting bootstrap");
         }
       } catch {
-        setMessage(cached ? "Using cached event data" : "No cached event data available");
+        if (cached) {
+          setMessage("Using cached event data");
+        } else {
+          setFetchFailed(true);
+          setMessage("No cached event data available");
+        }
+      } finally {
+        setLoading(false);
       }
       await refreshCounts();
       await sync();
@@ -454,16 +623,87 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
     if (next === "conflicts") void loadConflicts();
   }
 
+  const shell = classifyScoutingShell({
+    loading: loading && !data,
+    fetchFailed: fetchFailed && !data?.eventKey,
+    orgId,
+    eventKey: data?.eventKey,
+    hasSchema: Boolean(schema),
+  });
+
+  const reloadBootstrap = useCallback(() => {
+    setLoading(true);
+    setFetchFailed(false);
+    void (async () => {
+      try {
+        const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`);
+        if (response.ok) {
+          const fresh = (await response.json()) as Bootstrap;
+          setData(fresh);
+          setFromCache(false);
+          setFetchFailed(false);
+          await cacheEvent(orgId, fresh);
+          await loadTrust(fresh.eventKey);
+        } else {
+          setFetchFailed(true);
+        }
+      } catch {
+        setFetchFailed(true);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [orgId, loadTrust]);
+
+  const offlineDetail = scoutingOfflineBannerDetail({
+    online,
+    syncState,
+    pendingEntries: counts.entries,
+    pendingMedia: counts.media,
+  });
+
+  const formEmptyActions =
+    shell === "empty"
+      ? scoutingNextActions({
+          orgId,
+          shell: "empty",
+          eventKey: data?.eventKey,
+          canManageSchemas: data?.canManageSchemas,
+          entryType: type,
+        })
+      : [];
+
+  if (shell === "loading" || shell === "error" || shell === "setup") {
+    return (
+      <ScoutingShell
+        orgId={orgId}
+        shell={shell}
+        error={message || undefined}
+        onRetry={reloadBootstrap}
+      >
+        <OfflineBanner
+          feature="Scouting"
+          fromCache={fromCache}
+          force={online && syncState !== "idle" && counts.entries + counts.media > 0}
+          variant={syncState === "degraded" ? "degraded" : syncState === "syncing" ? "syncing" : "offline"}
+          detail={offlineDetail}
+        />
+      </ScoutingShell>
+    );
+  }
+
   return (
     <main className="module-page scout-page">
       <PageHeader
         breadcrumbs="Competition / Scouting"
         title="Scouting Hub"
-        description="Match and pit forms cache on this device. Coverage stays empty until an active event and schema exist — nothing is fabricated."
+        description="Match and pit forms cache on this device. Coverage stays empty until real scout rows exist — never DEMO entries."
       >
         <div className="scout-header-meta">
+          <ScoutingRelatedStrip orgId={orgId} />
           <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
-            {online ? "Online" : "Offline"} · {counts.entries} entries · {counts.media} media
+            {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} entries ·{" "}
+            {formatScoutingMetric(counts.media, true)} media
           </span>
           <button type="button" className="app-button secondary" onClick={() => void sync()}>
             Sync now
@@ -476,97 +716,55 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
         fromCache={fromCache}
         force={online && syncState !== "idle" && counts.entries + counts.media > 0}
         variant={syncState === "degraded" ? "degraded" : syncState === "syncing" ? "syncing" : "offline"}
-        detail={
-          !online
-            ? `Forms keep working on this device. ${counts.entries + counts.media} item${counts.entries + counts.media === 1 ? "" : "s"} waiting to sync. Use QR handoff if another device has signal.`
-            : syncState === "degraded"
-              ? `Outbox retrying with backoff · ${counts.entries} entries · ${counts.media} media queued. QR handoff works without the server.`
-              : syncState === "syncing"
-                ? `Uploading ${counts.entries + counts.media} queued item${counts.entries + counts.media === 1 ? "" : "s"}…`
-                : undefined
-        }
+        detail={offlineDetail}
       />
 
-      <nav className="scout-related" aria-label="Related competition tools">
-        <a className="app-button secondary" href={`/competition?tab=forms&orgId=${encodeURIComponent(orgId)}`}>
-          Form builder
-        </a>
-        <a
-          className="app-button secondary"
-          href={`/competition?tab=strategy&orgId=${encodeURIComponent(orgId)}`}
-        >
-          Strategy
-        </a>
-        <a
-          className="app-button secondary"
-          href={`/competition?tab=match-checklist&orgId=${encodeURIComponent(orgId)}`}
-        >
-          Match checklist
-        </a>
-        <a className="app-button secondary" href="#scout-voice">
-          Voice notes
-        </a>
-        <a className="app-button secondary" href={`/scouting/lineup?orgId=${encodeURIComponent(orgId)}`}>
-          Lineup &amp; coverage
-        </a>
-        <a className="app-button secondary" href={`/offline-shell?orgId=${encodeURIComponent(orgId)}`}>
-          Offline shell
-        </a>
-        <a className="app-button secondary" href={`/ai?tab=budgets&orgId=${encodeURIComponent(orgId)}`}>
-          AI budgets
-        </a>
-        <a
-          className="app-button secondary"
-          href={`/exports?orgId=${encodeURIComponent(orgId)}&domains=scouting-match,scouting-pit,scouting-disagreements${data?.eventKey ? `&eventKey=${encodeURIComponent(data.eventKey)}` : ""}`}
-        >
-          Export scout CSVs
-        </a>
-        <a className="app-button secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
-          Data analytics
-        </a>
-      </nav>
-
-      {!data?.eventKey ? (
-        <EmptyState
-          badge="Setup required"
-          badgeTone="setup"
-          title="No active event"
-          description="Select an event in Event Day before assignments and forms can load. Offline queue still works once an event is cached."
-        >
-          <a className="app-button secondary" href={`/command?orgId=${encodeURIComponent(orgId)}`}>
-            Select event
-          </a>
-        </EmptyState>
-      ) : null}
-
-      {data?.eventKey && !schema && tab !== "conflicts" && tab !== "handoff" && tab !== "trust" ? (
-        <EmptyState
-          badge="Forms required"
-          badgeTone="setup"
-          title={`No ${type} scouting form yet`}
-          description={
-            data.canManageSchemas
-              ? "Create starter match and pit forms for this season, or build a custom form and publish it."
-              : "Ask an owner or admin to publish scouting forms for this event."
-          }
-        >
-          {data.canManageSchemas ? (
-            <div className="scout-empty-actions">
-              <button className="app-button secondary" type="button" onClick={() => void createStarterForms()}>
-                Create starter forms
-              </button>
-              <a className="app-button" href={`/competition?tab=forms&orgId=${encodeURIComponent(orgId)}`}>
-                Custom form builder
+      {shell === "empty" && tab !== "conflicts" && tab !== "handoff" && tab !== "trust" ? (
+        <>
+          <EmptyState
+            soft
+            className="scout-shell-empty"
+            badge="Forms required"
+            badgeTone="setup"
+            title={`No ${type} scouting form yet`}
+            description={
+              data?.canManageSchemas
+                ? "Create starter match and pit forms for this season, or build a custom form and publish it — never DEMO entries."
+                : "Ask an owner or admin to publish scouting forms for this event — never DEMO entries."
+            }
+          >
+            {data?.canManageSchemas ? (
+              <div className="scout-empty-actions">
+                <button className="app-button" type="button" onClick={() => void createStarterForms()}>
+                  Create starter forms
+                </button>
+                <a className="app-button secondary" href={hubHref("/competition", "forms", orgId)}>
+                  Custom form builder
+                </a>
+              </div>
+            ) : (
+              <a className="app-button" href={hubHref("/competition", "forms", orgId)}>
+                Open Form builder
               </a>
-            </div>
-          ) : null}
-        </EmptyState>
+            )}
+            <a className="app-button secondary" href={withOrgHref("/scouting/lineup", orgId)}>
+              Open Coverage
+            </a>
+            <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/offline", orgId)}>
+              Open Offline
+            </a>
+          </EmptyState>
+          <ScoutingNextActionsPanel actions={formEmptyActions} />
+        </>
       ) : null}
 
       {data?.eventKey ? (
         <Panel className="scout-event-strip" style={{ minHeight: "auto", marginBottom: 14 }}>
           <strong>{data.eventKey}</strong>
-          <span className="app-muted">Forms and assignments are cached on this device.</span>
+          <span className="app-muted">Forms and assignments are cached on this device — never DEMO entries.</span>
         </Panel>
       ) : null}
 
@@ -957,9 +1155,10 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
             <Panel className="scout-activity" style={{ minHeight: "auto" }}>
               <h2 style={{ marginTop: 0 }}>Recent entries</h2>
               <p className="app-muted">
-                Latest timestamp wins per entry. Scout identity, confidence, and source stay visible.
+                Latest timestamp wins per entry. Scout identity, confidence, and source stay visible —
+                never DEMO entries.
               </p>
-              {data?.recentEntries?.length ? (
+              {data?.recentEntries && shouldShowScoutingRecentEntries(data.recentEntries.length) ? (
                 <ul className="scout-entry-list">
                   {data.recentEntries.map((entry) => (
                     <li key={entry.id}>
@@ -976,7 +1175,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
                   ))}
                 </ul>
               ) : (
-                <p className="app-muted">No entries yet for this event.</p>
+                <p className="app-muted">No entries yet for this event — nothing is fabricated.</p>
               )}
             </Panel>
 

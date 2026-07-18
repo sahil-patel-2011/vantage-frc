@@ -13,6 +13,8 @@ import {
   type FieldWidget,
   type SchemaDefinition,
 } from "@vantage/scouting";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 
 export { SCOUT_IDENTITY_LOCK_COPY };
 export type AnswerKind = FieldWidget;
@@ -302,29 +304,32 @@ export function scoutingPostSaveNextSteps(
   orgId: string,
   options?: { eventKey?: string | null; entryType?: EntryType },
 ): PostSaveNextStep[] {
-  const q = new URLSearchParams({ orgId });
-  if (options?.eventKey) q.set("eventKey", options.eventKey);
-  const qs = q.toString();
   const entryHint =
     options?.entryType === "pit"
       ? "Pit notes feed pick strategy once synced."
       : "Match notes feed alliance strategy once synced.";
+  const coverage = withOrgHref("/scout-coverage-live", orgId);
+  const lineup = withOrgHref("/scouting/lineup", orgId);
+  const eventQs =
+    options?.eventKey != null && options.eventKey !== ""
+      ? `&eventKey=${encodeURIComponent(options.eventKey)}`
+      : "";
   return [
     {
       id: "strategy",
-      href: `/competition?tab=strategy&${qs}`,
+      href: hubHref("/competition", "strategy", orgId),
       label: "Open strategy",
       detail: entryHint,
     },
     {
       id: "coverage",
-      href: `/scout-coverage-live?${qs}`,
+      href: `${coverage}${eventQs}`,
       label: "Coverage live",
       detail: "See which matches and teams still need scouts.",
     },
     {
       id: "lineup",
-      href: `/scouting/lineup?${qs}`,
+      href: `${lineup}${eventQs}`,
       label: "Lineup & coverage",
       detail: "Assignments and gaps for this event.",
     },
