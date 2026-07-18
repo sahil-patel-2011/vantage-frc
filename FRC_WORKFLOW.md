@@ -21,11 +21,13 @@ The Team 254 / FIRST kickoff-worksheet flow: read rules → score the game → p
 | Rules Q&A with rule refs; score every action (points vs cycle time → pts/sec) | `/kickoff` ✦ |
 | Vote the design priority matrix (weight 1–5, commit/cut) | `/kickoff` ✦ |
 | Seed the 8-week milestone plan from kickoff date | `/calendar` ✦ |
+| Subscribe Google/Apple calendars (tokenized ICS feed) | `/team/calendar` → Sync |
 
 ## 3 · Build season (weeks 1–6)
 | Do | Where |
 |---|---|
 | Milestones: design freeze → drivetrain rolling → full robot; **remote meetings carry Zoom/Meet/Teams Join buttons** | `/calendar` ✦ |
+| Phone calendar sync (personal / subteam / whole-team ICS) | `/team/calendar` → Sync |
 | Tasks per subteam | `/tasks` |
 | CAD iterations & design review | `/cad` |
 | BOM per mechanism: can we build it from stock? | `/inventory` ✦ (BOM tab) |

@@ -15,6 +15,8 @@ const PUBLIC_PAGES = new Set([
   "/terms",
   "/signin",
   "/sign-in",
+  // Token-gated email unsubscribe (no session).
+  "/unsubscribe",
 ]);
 // Session cookie auth for product routes; Better Auth enforces CSRF/Origin on /api/auth.
 // Only intentionally public prefixes below — bootstrap-owner is token-gated + rate-limited.
@@ -29,8 +31,9 @@ const PUBLIC_PREFIXES = [
   "/api/partner-assets",
   "/api/support",
   "/support",
-  // Personal meeting calendar subscription feed (.ics), authorized by a per-member token.
-  "/api/calendar",
+  // Opt-in email one-click unsubscribe (token in body; no session).
+  "/api/notifications/unsubscribe",
+  // Calendar ICS subscribe URLs are allow-listed in isPublicCalendarFeed (token path only).
   "/api/parts-relay",
   "/parts-relay",
   "/showcase/present",
@@ -52,9 +55,15 @@ const PUBLIC_PREFIXES = [
 ];
 const PUBLIC_FILE = /\.(?:avif|css|gif|ico|jpe?g|js|json|map|png|svg|txt|webmanifest|webp|woff2?|xml)$/i;
 
+/** Tokenized ICS subscribe URLs only — never the session JSON calendar APIs. */
+function isPublicCalendarFeed(pathname: string) {
+  return /^\/api\/calendar\/feed\/[A-Za-z0-9_-]{16,100}$/.test(pathname);
+}
+
 function isPublic(pathname: string) {
   return (
     PUBLIC_PAGES.has(pathname) ||
+    isPublicCalendarFeed(pathname) ||
     PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
     PUBLIC_FILE.test(pathname)
   );

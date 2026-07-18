@@ -453,7 +453,8 @@ function ReadyCalendar({
             Milestone markers for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — kickoff, build, stop-build, events,
             ship deadlines, and outreach. Seed a template, then customize. For timed practices, open{" "}
-            <a href={orgId ? `/team/calendar?orgId=${encodeURIComponent(orgId)}` : "/team/calendar"}>Team Calendar</a>.
+            <a href={orgId ? `/team/calendar?orgId=${encodeURIComponent(orgId)}` : "/team/calendar"}>Team Calendar</a>
+            {" "}(Sync tab for Google/Apple ICS subscribe).
           </>
         }
       />
