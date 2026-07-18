@@ -19,6 +19,7 @@ const completeSchema = z.object({
   city: z.string().nullable().optional(),
   stateProv: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  termsAccepted: z.literal(true),
 });
 
 export async function GET() {

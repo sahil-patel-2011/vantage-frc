@@ -1,7 +1,8 @@
-﻿import { neon } from "@neondatabase/serverless";
+import { neon } from "@neondatabase/serverless";
 import { z } from "zod";
+import { LEGAL_DOC_VERSION } from "@vantage/core";
 
-export const DISCLOSURE_VERSION = "waitlist-2026-07-14";
+export const DISCLOSURE_VERSION = `waitlist-${LEGAL_DOC_VERSION}`;
 
 const email = z.string().trim().toLowerCase().email().max(254).refine(
   (value) => value.split("@")[1]?.includes("."),
@@ -16,6 +17,7 @@ export const waitlistSchema = z.object({
     "Use E.164 format, such as +12025550123",
   ),
   smsConsent: z.boolean().optional().default(false),
+  termsAccepted: z.literal(true),
   website: z.string().max(0).optional().default(""),
 }).superRefine((value, context) => {
   if (value.phone && !value.smsConsent) {
