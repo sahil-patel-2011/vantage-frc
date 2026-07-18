@@ -34,7 +34,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     if (memberships.rows.length === 1) {
       redirect(`/workspace?orgId=${encodeURIComponent(memberships.rows[0]!.orgId)}`);
     }
-        if (memberships.rows.length === 0) {
+    if (memberships.rows.length === 0) {
       const copy = workspaceJoinCopy("none");
       const actions = workspaceJoinNextActions("none");
       return (
@@ -97,7 +97,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
           <ul className="dash-checklist">
             {memberships.rows.map((row) => (
               <li key={row.orgId}>
-                <a href={/workspace?orgId=\}>
+                <a href={`/workspace?orgId=${encodeURIComponent(row.orgId)}`}>
                   {formatWorkspaceOrgLabel(row)}
                 </a>
               </li>
