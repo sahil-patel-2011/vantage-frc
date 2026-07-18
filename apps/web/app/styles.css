@@ -212,9 +212,25 @@ html[data-theme="light"] .auth-page .primary-action,html[data-theme="light"] .au
 @media(min-width:980px){.chat-page{height:calc(100vh - 56px - 40px - var(--soft-safe-bottom,0px))}}
 
 /* Team messages reuses chat layout without the AI memory column. */
-.messages-page{grid-template-columns:260px minmax(0,1fr)}
+.messages-page{
+  display:flex;
+  flex-direction:column;
+  height:auto;
+  min-height:calc(100vh - 56px - 96px - var(--soft-safe-bottom,0px));
+}
+.messages-page .messages-layout{
+  display:grid;
+  grid-template-columns:260px minmax(0,1fr);
+  flex:1;
+  min-height:min(68vh,720px);
+  border:1px solid var(--soft-line,#29363d);
+  border-radius:var(--soft-radius,16px);
+  overflow:hidden;
+  background:var(--soft-card,#10181d);
+}
 .messages-page .messages-preview{display:block;overflow:hidden;color:var(--soft-muted,#829198);font:10px/1.3 var(--font-source-sans),sans-serif;text-overflow:ellipsis;white-space:nowrap}
 .messages-page .messages-sidebar-empty{margin:12px 0;color:var(--soft-muted,#92a1a8);font-size:13px;line-height:1.45}
+.messages-page .chat-sidebar .soft-empty{padding:14px 10px;margin-top:8px}
 .messages-page .messages article.deleted{opacity:.65;border-color:#6a5429}
 .messages-page .messages article.pinned{border-color:var(--soft-accent,#16d9e8)}
 .messages-page .message-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -244,6 +260,12 @@ html[data-theme="light"] .auth-page .primary-action,html[data-theme="light"] .au
 .messages-page .messages-mention-menu button:hover{background:color-mix(in srgb,var(--soft-accent,#16d9e8) 14%,transparent)}
 .messages-page .messages-mention-menu strong{font:600 13px/1.3 var(--font-source-sans),sans-serif}
 .messages-page .messages-mention-menu small{color:var(--soft-muted,#829198);font:11px/1.3 var(--font-source-sans),sans-serif}
+.messages-page .messages-mention-hint{padding:6px 10px 2px;color:var(--soft-muted,#829198);font:10px/1.35 var(--font-source-sans),sans-serif}
+.messages-page .messages-mention-empty{position:absolute;left:0;right:0;bottom:calc(100% + 6px);z-index:5;display:grid;gap:8px;padding:12px;border:1px solid var(--soft-line,#29363d);border-radius:10px;background:var(--soft-card,#10181d);box-shadow:0 12px 28px rgba(0,0,0,.28)}
+.messages-page .messages-mention-empty p{margin:0;font:13px/1.4 var(--font-source-sans),sans-serif}
+.messages-page .messages-mention-empty small{color:var(--soft-muted,#829198);font:11px/1.35 var(--font-source-sans),sans-serif}
+.messages-page .messages-mention-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 8px}
+.messages-page .messages-mention-chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--soft-accent,#16d9e8) 35%,var(--soft-line,#29363d));background:color-mix(in srgb,var(--soft-accent,#16d9e8) 12%,transparent);color:var(--soft-accent,#16d9e8);font:700 12px/1.2 var(--font-source-sans),sans-serif}
 .messages-page .messages-composer-hint{font:11px/1.35 var(--font-source-sans),sans-serif;color:var(--soft-muted,#829198)}
 .messages-page .messages-link-chip-row{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 8px}
 .messages-page .messages-link-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid color-mix(in srgb,var(--soft-accent,#16d9e8) 35%,var(--soft-line,#29363d));border-radius:999px;background:color-mix(in srgb,var(--soft-accent,#16d9e8) 10%,transparent);font:12px/1.2 var(--font-source-sans),sans-serif}
@@ -264,12 +286,17 @@ html[data-theme="light"] .auth-page .primary-action,html[data-theme="light"] .au
 .messages-page .messages-link-picker-close{justify-self:start;padding:4px 8px;color:var(--soft-muted,#829198);background:transparent;border:0;cursor:pointer;font:10px var(--font-ibm-mono),monospace}
 .chat-composer{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}
 .dash-notif-preview{display:block;margin-top:2px;color:var(--soft-muted,#829198);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-theme="light"] .messages-page .messages-layout{background:#fff;border-color:#d5dad8}
 html[data-theme="light"] .messages-page .messages-pins{background:#eef5f8}
 html[data-theme="light"] .messages-page .messages-pins article{background:#fff;border-color:#d5dad8}
-html[data-theme="light"] .messages-page .messages-mention-menu{background:#fff;border-color:#d5dad8;box-shadow:0 12px 28px rgba(23,39,44,.12)}
+html[data-theme="light"] .messages-page .messages-mention-menu,
+html[data-theme="light"] .messages-page .messages-mention-empty{background:#fff;border-color:#d5dad8;box-shadow:0 12px 28px rgba(23,39,44,.12)}
 html[data-theme="light"] .messages-page .message-mention{color:#087f92}
-@media(max-width:950px){.messages-page{grid-template-columns:190px 1fr}}
-@media(max-width:620px){.messages-page{display:flex;flex-direction:column}}
+@media(max-width:950px){.messages-page .messages-layout{grid-template-columns:190px 1fr}}
+@media(max-width:620px){
+  .messages-page{min-height:calc(100dvh - 56px - 96px - var(--soft-safe-bottom,0px))}
+  .messages-page .messages-layout{display:flex;flex-direction:column;min-height:0}
+}
 
 /* CAD Builder soft-UI workbench (dashboard-aligned). */
 .cad-module{display:grid;gap:16px}

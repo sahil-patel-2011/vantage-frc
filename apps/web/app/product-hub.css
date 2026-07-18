@@ -82,6 +82,26 @@
 .product-hub-panel .att-page {
   padding-top: 0;
 }
+.product-hub-panel .batt-page {
+  padding-top: 0;
+}
+.product-hub-panel .batt-related .product-hub-related {
+  margin-bottom: 12px;
+}
+.product-hub-panel .messages-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 24px;
+  min-height: 0;
+  height: auto;
+}
+.product-hub-panel .messages-page .messages-layout {
+  min-height: min(62vh, 680px);
+}
+.product-hub-panel .messages-page .app-page-header {
+  display: none;
+}
 
 /* Nested Build surfaces: drop duplicate page chrome */
 .product-hub--build .kick-page,
