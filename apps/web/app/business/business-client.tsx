@@ -321,6 +321,7 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
   const submitted = view.purchases.filter((purchase) => purchase.status === "submitted");
   const followUps = view.sponsors.filter((sponsor) => sponsorHealth(sponsor) !== "healthy");
   const grantDeadlines = view.grants.filter((grant) => grant.deadline && !["awarded", "declined"].includes(grant.status)).slice(0, 5);
+  const reminders = view.sponsorReminders.slice(0, 5);
   const progress = view.fundraisingProgress;
   const pulse = view.ordersPulse;
   const ordersHref = `/orders?orgId=${encodeURIComponent(view.orgId)}`;
@@ -371,12 +372,24 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
           <a className="app-button secondary" href={ordersHref} style={{ marginLeft: 8 }}>Purchase orders</a>
         </article>
         <article className="app-card">
-          <header className="biz-card-head"><div><span className="biz-overline">Attention queue</span><h2>What needs a human next</h2></div><span className="biz-count">{submitted.length + followUps.length + grantDeadlines.length}</span></header>
+          <header className="biz-card-head"><div><span className="biz-overline">Attention queue</span><h2>What needs a human next</h2></div><span className="biz-count">{submitted.length + reminders.length + followUps.length + grantDeadlines.length}</span></header>
           <ul className="biz-action-list">
             {submitted.slice(0, 3).map((purchase) => <li key={purchase.id}><ToneBadge tone="warn">Purchase</ToneBadge><div><strong>{purchase.itemName}</strong><span>{money(purchase.totalCents)} requested by {purchase.requestedByName}</span></div><a href={`${ordersHref}&orderId=${encodeURIComponent(purchase.id)}`}>Review</a></li>)}
+            {reminders.map((reminder) => (
+              <li key={`${reminder.kind}-${reminder.sponsorId}`}>
+                <ToneBadge tone={reminder.kind === "thank_you" ? "good" : reminder.kind === "renewal" ? "blue" : "danger"}>
+                  {reminder.kind === "thank_you" ? "Thank-you" : reminder.kind === "renewal" ? "Renewal" : "Follow-up"}
+                </ToneBadge>
+                <div>
+                  <strong>{reminder.sponsorName}</strong>
+                  <span>{reminder.message} · due {reminder.dueOn}</span>
+                </div>
+                <button type="button" onClick={() => setTab("sponsors")}>Open</button>
+              </li>
+            ))}
             {followUps.slice(0, 3).map((sponsor) => <li key={sponsor.id}><ToneBadge tone={sponsorHealth(sponsor) === "due" ? "danger" : "warn"}>Sponsor</ToneBadge><div><strong>{sponsor.name}</strong><span>{sponsor.nextFollowUpOn ? `Follow-up ${sponsor.nextFollowUpOn}` : "Relationship needs a next step"}</span></div><button type="button" onClick={() => setTab("sponsors")}>Connect</button></li>)}
             {grantDeadlines.map((grant) => <li key={grant.id}><ToneBadge tone="blue">Grant</ToneBadge><div><strong>{grant.title}</strong><span>Due {grant.deadline}</span></div><button type="button" onClick={() => setTab("grants")}>Open</button></li>)}
-            {!submitted.length && !followUps.length && !grantDeadlines.length ? <li className="empty"><strong>Queue clear.</strong><span>Add a purchase, sponsor, or grant opportunity to start the operating rhythm.</span></li> : null}
+            {!submitted.length && !reminders.length && !followUps.length && !grantDeadlines.length ? <li className="empty"><strong>Queue clear.</strong><span>Add a purchase, sponsor, or grant opportunity to start the operating rhythm.</span></li> : null}
           </ul>
         </article>
       </section>

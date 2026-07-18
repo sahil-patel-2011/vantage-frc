@@ -19,6 +19,7 @@ type EmailPrefs = {
   coachAssignments: boolean;
   coachTodos: boolean;
   coachPracticeReminders: boolean;
+  sponsorReminders: boolean;
 };
 
 type Delivery = { status: "available" | "setup_required"; detail: string };
@@ -64,6 +65,11 @@ const IN_APP_PREF_LABELS: { key: keyof InAppPrefs; title: string; detail: string
     title: "In-app product notes",
     detail: "Occasional Vantage product notes in the inbox (off by default).",
   },
+  {
+    key: "sponsorReminders",
+    title: "Sponsor CRM reminders",
+    detail: "Thank-you, renewal, and overdue follow-up nudges for your team's sponsors.",
+  },
 ];
 
 const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string }[] = [
@@ -87,6 +93,11 @@ const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string 
     title: "Practice reminders",
     detail: "Email reminders for scheduled driver / team practice.",
   },
+  {
+    key: "sponsorReminders",
+    title: "Sponsor reminders",
+    detail: "Opt-in email for thank-you / renewal / overdue follow-up CRM nudges (never emails sponsors).",
+  },
 ];
 
 const DEFAULT_IN_APP: InAppPrefs = {
@@ -98,6 +109,7 @@ const DEFAULT_IN_APP: InAppPrefs = {
   todoCompleted: true,
   dutyAssigned: true,
   calendarEvents: true,
+  sponsorReminders: true,
 };
 
 const DEFAULT_EMAIL: EmailPrefs = {
@@ -105,6 +117,7 @@ const DEFAULT_EMAIL: EmailPrefs = {
   coachAssignments: false,
   coachTodos: false,
   coachPracticeReminders: false,
+  sponsorReminders: false,
 };
 
 export default function NotificationPreferencesClient() {

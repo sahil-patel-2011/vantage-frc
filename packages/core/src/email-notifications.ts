@@ -9,6 +9,7 @@ export const EMAIL_NOTIFICATION_CATEGORIES = [
   "coach_assignments",
   "coach_todos",
   "coach_practice_reminders",
+  "sponsor_reminders",
 ] as const;
 
 export type EmailNotificationCategory = (typeof EMAIL_NOTIFICATION_CATEGORIES)[number];
@@ -18,6 +19,7 @@ export type UserEmailPreferences = {
   coachAssignments: boolean;
   coachTodos: boolean;
   coachPracticeReminders: boolean;
+  sponsorReminders: boolean;
 };
 
 export const DEFAULT_EMAIL_PREFERENCES: UserEmailPreferences = {
@@ -25,6 +27,7 @@ export const DEFAULT_EMAIL_PREFERENCES: UserEmailPreferences = {
   coachAssignments: false,
   coachTodos: false,
   coachPracticeReminders: false,
+  sponsorReminders: false,
 };
 
 const CATEGORY_COLUMNS: Record<EmailNotificationCategory, keyof UserEmailPreferences> = {
@@ -32,6 +35,7 @@ const CATEGORY_COLUMNS: Record<EmailNotificationCategory, keyof UserEmailPrefere
   coach_assignments: "coachAssignments",
   coach_todos: "coachTodos",
   coach_practice_reminders: "coachPracticeReminders",
+  sponsor_reminders: "sponsorReminders",
 };
 
 export function isEmailNotificationCategory(value: string): value is EmailNotificationCategory {
@@ -48,6 +52,8 @@ export function categoryLabel(category: EmailNotificationCategory) {
       return "Coach todos";
     case "coach_practice_reminders":
       return "Practice reminders";
+    case "sponsor_reminders":
+      return "Sponsor reminders";
   }
 }
 
@@ -66,12 +72,14 @@ function mapPrefsRow(row: {
   coachAssignments: boolean;
   coachTodos: boolean;
   coachPracticeReminders: boolean;
+  sponsorReminders: boolean;
 }): UserEmailPreferences {
   return {
     productUpdates: Boolean(row.productUpdates),
     coachAssignments: Boolean(row.coachAssignments),
     coachTodos: Boolean(row.coachTodos),
     coachPracticeReminders: Boolean(row.coachPracticeReminders),
+    sponsorReminders: Boolean(row.sponsorReminders),
   };
 }
 
@@ -82,11 +90,13 @@ export async function ensureUserEmailPreferences(client: PoolClient, userId: str
     coachAssignments: boolean;
     coachTodos: boolean;
     coachPracticeReminders: boolean;
+    sponsorReminders: boolean;
   }>(
     `SELECT product_updates AS "productUpdates",
             coach_assignments AS "coachAssignments",
             coach_todos AS "coachTodos",
-            coach_practice_reminders AS "coachPracticeReminders"
+            coach_practice_reminders AS "coachPracticeReminders",
+            COALESCE(sponsor_reminders, false) AS "sponsorReminders"
      FROM user_email_preferences WHERE user_id = $1::uuid`,
     [userId],
   );
@@ -97,6 +107,7 @@ export async function ensureUserEmailPreferences(client: PoolClient, userId: str
     coachAssignments: boolean;
     coachTodos: boolean;
     coachPracticeReminders: boolean;
+    sponsorReminders: boolean;
   }>(
     `INSERT INTO user_email_preferences (user_id, unsubscribe_token)
      VALUES ($1::uuid, $2)
@@ -104,7 +115,8 @@ export async function ensureUserEmailPreferences(client: PoolClient, userId: str
      RETURNING product_updates AS "productUpdates",
                coach_assignments AS "coachAssignments",
                coach_todos AS "coachTodos",
-               coach_practice_reminders AS "coachPracticeReminders"`,
+               coach_practice_reminders AS "coachPracticeReminders",
+               COALESCE(sponsor_reminders, false) AS "sponsorReminders"`,
     [userId, newUnsubscribeToken()],
   );
   return mapPrefsRow(inserted.rows[0] ?? DEFAULT_EMAIL_PREFERENCES);
@@ -127,6 +139,7 @@ export async function updateUserEmailPreferences(
        coach_assignments = $3,
        coach_todos = $4,
        coach_practice_reminders = $5,
+       sponsor_reminders = $6,
        updated_at = now()
      WHERE user_id = $1::uuid`,
     [
@@ -135,6 +148,7 @@ export async function updateUserEmailPreferences(
       next.coachAssignments,
       next.coachTodos,
       next.coachPracticeReminders,
+      next.sponsorReminders,
     ],
   );
   return next;
@@ -262,6 +276,21 @@ export async function sendPracticeReminderEmail(
     category: "coach_practice_reminders",
     subject: `Practice reminder — ${input.sessionTitle}`,
     text: `${input.orgName} scheduled practice: ${input.sessionTitle}\nDate: ${input.sessionDate}${where}${link}`,
+  });
+}
+
+
+/** Team-facing sponsor CRM nudge (opt-in `sponsor_reminders`). Never emails external sponsors. */
+export async function sendSponsorReminderEmail(
+  client: PoolClient,
+  input: { userId: string; orgName: string; summary: string; href?: string },
+) {
+  const link = input.href ? `\n\nOpen in Vantage: ${input.href}` : "";
+  return sendOptInEmail(client, {
+    userId: input.userId,
+    category: "sponsor_reminders",
+    subject: `Sponsor reminder — ${input.orgName}`,
+    text: `${input.summary}${link}`,
   });
 }
 
