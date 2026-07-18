@@ -3,7 +3,6 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { notifyNextMatchReady } from "../../../../lib/notify-match";
 import { loadDataSourceHealth } from "../../../../lib/reference-health";
-import { notifyMatchScheduleAfterSync } from "../../../../lib/reference/notify-schedule";
 import { runTbaEventDaySync } from "../../../../lib/reference/run-ingest";
 
 async function current() {
@@ -133,15 +132,15 @@ export async function POST(request: Request) {
       } catch {
         matchNotify = null;
       }
+      // Prefer SQL fingerprint alerts when migration 0155 is applied; fall back is matchNotify above.
+      try {
+        await client.query(`SELECT emit_match_schedule_alerts(ARRAY[$1::text])`, [eventKey]);
+      } catch {
+        // Function missing until 0155_my_day_schedule_alerts migrates — inbox still got matchNotify.
+      }
       return { summary, matchNotify };
     });
-    const matchAlerts = await notifyMatchScheduleAfterSync(result.summary.eventKeys ?? []);
-    return Response.json({
-      success: true,
-      summary: result.summary,
-      matchNotify: result.matchNotify,
-      matchAlerts,
-    });
+    return Response.json({ success: true, ...result });
   } catch (error) {
     return responseError(error);
   }
