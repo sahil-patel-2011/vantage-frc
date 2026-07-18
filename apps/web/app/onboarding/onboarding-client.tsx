@@ -77,8 +77,17 @@ function pendingInviteDestination() {
 
 function approvedDestination(state: OnboardingState, nextParam: string | null) {
   if (nextParam) return safeRelativePath(nextParam);
+  // Build & code focus → deep-link Team GitHub connection for robot-code AI context.
+  if (state.workspaceOrgId && state.primaryFocus === "build") {
+    return `/team?orgId=${encodeURIComponent(state.workspaceOrgId)}#github-connection`;
+  }
   if (state.workspaceOrgId) return `/workspace?orgId=${encodeURIComponent(state.workspaceOrgId)}`;
   return state.platformAdmin ? "/admin" : "/workspace";
+}
+
+function githubConnectionHref(orgId: string | null | undefined) {
+  if (!orgId) return "/team#github-connection";
+  return `/team?orgId=${encodeURIComponent(orgId)}#github-connection`;
 }
 
 export default function OnboardingClient() {
@@ -303,6 +312,19 @@ export default function OnboardingClient() {
               <div><span>ROLE</span><strong>{ROLES.find((option) => option.value === teamRole)?.label ?? teamRole}</strong></div>
               <div><span>STARTING VIEW</span><strong>{FOCUS_OPTIONS.find((option) => option.value === primaryFocus)?.label}</strong></div>
             </section>
+            {primaryFocus === "build" ? (
+              <div className="onboarding-security-note" style={{ marginTop: 0 }}>
+                <b aria-hidden="true">↳</b>
+                <p>
+                  <strong>After approval: connect GitHub for AI code context.</strong>
+                  <span>
+                    {" "}
+                    Owners/admins link the robot-code repo under{" "}
+                    <a href={githubConnectionHref(state?.workspaceOrgId)}>Team → GitHub</a> (OAuth or encrypted PAT).
+                  </span>
+                </p>
+              </div>
+            ) : null}
             <label>
               Display name <small>Optional</small>
               <input maxLength={80} placeholder={`${firstName} ${lastName}`.trim()} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
