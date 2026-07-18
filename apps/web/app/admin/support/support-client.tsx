@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { adminRelatedLinks } from "../../../lib/admin";
 import {
   SUPPORT_TICKET_STATUSES,
   statusLabel,
   type SupportTicketAdminRow,
   type SupportTicketStatus,
 } from "../../../lib/support-tickets";
+import "../admin-flow.css";
 
 export default function AdminSupportClient() {
   const [tickets, setTickets] = useState<SupportTicketAdminRow[]>([]);
@@ -98,8 +100,19 @@ export default function AdminSupportClient() {
       <PageHeader
         breadcrumbs="Platform / Support"
         title="Support tickets"
-        description="Triage member-reported breakage. Replies show on the submitter’s Soft-UI Support page."
-      />
+        description="Triage member-reported breakage. Replies show on the submitter’s Soft-UI Support page. Empty until real tickets exist — never DEMO triage rows."
+      >
+        <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
+          {adminRelatedLinks({
+            active: "support",
+            include: ["teams", "plans", "releases", "waitlist"],
+          }).map((link) => (
+            <a key={link.id} href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      </PageHeader>
 
       <div className="cards">
         <article className="card">

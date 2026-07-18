@@ -1,0 +1,94 @@
+/* Platform admin Soft-UI — empty / setup / forbidden + Plans·Support·Releases. Never DEMO metrics. */
+
+.admin-flow-page .admin-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-flow-page .admin-shell-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  background: var(--soft-bg, #f8fafc);
+  color: var(--soft-muted, #6b7280);
+  font: 700 11px/1 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-next-actions {
+  margin: 18px 0 0;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--soft-card, #fff);
+  border: 1px solid color-mix(in srgb, var(--soft-line, #d5dde8) 85%, transparent);
+  box-shadow: var(--soft-shadow, 0 8px 24px rgba(21, 32, 51, 0.05));
+}
+
+.admin-next-actions > header h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.admin-next-actions > header p {
+  margin: 0 0 12px;
+  color: var(--soft-muted, #6b7280);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.admin-next-actions ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-next-actions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  background: var(--soft-bg, #f8fafc);
+}
+
+.admin-next-actions li.primary {
+  border-color: color-mix(in srgb, var(--soft-accent, #2563eb) 35%, var(--soft-line, #d5dde8));
+  background: color-mix(in srgb, var(--soft-accent, #2563eb) 6%, var(--soft-card, #fff));
+}
+
+.admin-next-actions li div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-next-actions li strong {
+  font-size: 14px;
+}
+
+.admin-next-actions li span {
+  color: var(--soft-muted, #6b7280);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.admin-next-actions li .app-button {
+  flex: none;
+}
+
+@media (max-width: 720px) {
+  .admin-next-actions li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
