@@ -1,16 +1,13 @@
 import { randomUUID } from "node:crypto";
 import {
   AIOrchestrator,
-  ChatProviderResolutionError,
   getOrgPromptCachingEnabled,
   resolveOrgChatAdapter,
-  type ChatAdapter,
 } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
-  WRITER_AI_MODEL,
   WRITER_USAGE_TAG,
   buildPitchBundle,
   parseAiPitchResponse,
@@ -83,23 +80,6 @@ function stringsFrom(value: unknown): string[] {
 function seasonFrom(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) && n > 2000 && n < 3000 ? Math.round(n) : currentSeasonYear();
-}
-
-function localPitchAdapter(localText: string): ChatAdapter {
-  return {
-    provider: "local",
-    model: WRITER_AI_MODEL,
-    complete: async () => ({
-      text: localText,
-      promptTokens: Math.ceil(localText.length / 4),
-      completionTokens: Math.ceil(localText.length / 4),
-      costUsd: 0,
-    }),
-  };
-}
-
-function formatLocalAdapterText(subject: string | null, body: string): string {
-  return subject ? `SUBJECT: ${subject}\n\nBODY:\n${body}` : body;
 }
 
 function sponsorFromBody(body: Record<string, unknown>): SponsorInput {
@@ -294,16 +274,10 @@ export async function POST(request: Request) {
             business,
           };
           const bundle = buildPitchBundle(pitchInput);
-          const localText = formatLocalAdapterText(bundle.localSubject, bundle.localBody);
 
           const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
-          let adapter: ChatAdapter;
-          try {
-            adapter = await resolveOrgChatAdapter(client, { orgId, promptCachingEnabled });
-          } catch (error) {
-            if (!(error instanceof ChatProviderResolutionError)) throw error;
-            adapter = localPitchAdapter(localText);
-          }
+          // Honest setup_required when no provider key — never invent AI text via local adapter.
+          const adapter = await resolveOrgChatAdapter(client, { orgId, promptCachingEnabled });
 
           const requestId = randomUUID();
           const run = await new AIOrchestrator(client).run({
@@ -325,11 +299,9 @@ export async function POST(request: Request) {
             body: bundle.localBody,
           });
 
-          // Prefer template fallback when the local adapter was used (already perfect format).
-          const usedLocal = run.provider === "local" && run.model === WRITER_AI_MODEL;
-          const subject = usedLocal ? bundle.localSubject : parsed.subject;
-          const draftBody = usedLocal ? bundle.localBody : parsed.body;
-          const source = usedLocal ? "template" : parsed.source;
+          const subject = parsed.subject;
+          const draftBody = parsed.body;
+          const source = parsed.source;
 
           const targetName =
             kind === "grant"

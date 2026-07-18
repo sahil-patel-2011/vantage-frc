@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
+import { AiHubRelated } from "../../components/ai-hub-related";
+import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
+import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type SourceRef = {
@@ -84,6 +88,10 @@ export default function ChatClient({
   const [promptCachingEnabled, setPromptCachingEnabled] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [providerSetup, setProviderSetup] = useState<{
+    message: string;
+    steps: Array<{ id: string; label: string; detail: string; href: string }>;
+  } | null>(null);
 
   async function load(threadId?: string) {
     const response = await fetch(`/api/agent?orgId=${orgId}${threadId ? `&threadId=${threadId}` : ""}`);
@@ -118,10 +126,17 @@ export default function ChatClient({
     if (!response.ok) {
       const cutoff = resolveCutoffErrorCode(response.status, data);
       if (cutoff) setCutoffCode(cutoff);
+      if (data.code === "setup_required" || data.status === "setup_required") {
+        setProviderSetup({
+          message: data.message ?? data.error ?? "Configure an AI provider key before chatting.",
+          steps: Array.isArray(data.steps) ? data.steps : [],
+        });
+      }
       setStatus(data.error ?? "Could not create channel.");
       return;
     }
     setCutoffCode(null);
+    setProviderSetup(null);
     const value = {
       id: data.threadId,
       title: nextScope === "team" ? "Team strategy channel" : "Private workspace",
@@ -138,6 +153,7 @@ export default function ChatClient({
     if (!thread || !text.trim()) return;
     setStatus("Looking up authorized tools…");
     setCutoffCode(null);
+    setProviderSetup(null);
     const response = await fetch("/api/agent", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -154,6 +170,12 @@ export default function ChatClient({
     if (!response.ok) {
       const cutoff = resolveCutoffErrorCode(response.status, data);
       if (cutoff) setCutoffCode(cutoff);
+      if (data.code === "setup_required" || data.status === "setup_required") {
+        setProviderSetup({
+          message: data.message ?? data.error ?? "Configure an AI provider key before chatting.",
+          steps: Array.isArray(data.steps) ? data.steps : [],
+        });
+      }
       setStatus(data.error ?? "Agent request failed.");
       return;
     }
@@ -262,7 +284,11 @@ export default function ChatClient({
     if (response.ok) await load(thread?.id);
   }
 
-  const q = `?orgId=${encodeURIComponent(orgId)}`;
+  const budgetsHref = hubHref("/ai", "budgets", orgId);
+  const memoryHref = hubHref("/ai", "memory", orgId);
+  const knowledgeHref = withOrgHref("/team?tab=knowledge", orgId);
+  const usageHref = withOrgHref("/team/usage", orgId);
+  const runsHref = withOrgHref("/team/ai-runs", orgId);
 
   return (
     <main className="module-page ch-page">
@@ -290,21 +316,47 @@ export default function ChatClient({
         </div>
       </header>
 
+      <AiHubRelated orgId={orgId} active="chat" />
+
       <nav className="ch-gov" aria-label="AI governance">
         <span className="ch-cache">
           Prompt caching{" "}
           <strong>{promptCachingEnabled ? "On" : "Off"}</strong>
         </span>
-        <a href={`/team/budgets${q}#prompt-caching`}>Manage caching</a>
-        <a href={`/team/ai-hub${q}`}>AI hub</a>
-        <a href={`/team/knowledge${q}`}>Knowledge</a>
-        <a href={`/team/ai-memory${q}`}>AI memory</a>
-        <a href={`/team/usage${q}`}>Usage</a>
-        <a href={`/team/ai-runs${q}`}>AI runs</a>
-        <a href={`/team/budgets${q}`}>API budgets</a>
+        <a href={`${budgetsHref}#prompt-caching`}>Manage caching</a>
+        <a href={knowledgeHref}>Knowledge</a>
+        <a href={memoryHref}>AI memory</a>
+        <a href={usageHref}>Usage</a>
+        <a href={runsHref}>AI runs</a>
+        <a href={budgetsHref}>API budgets</a>
       </nav>
 
-      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
+      <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
+
+      {providerSetup ? (
+        <section className="app-card soft-panel product-hub-setup" role="status">
+          <span className="app-badge setup">Setup required</span>
+          <h2>AI provider not configured</h2>
+          <p className="app-muted">{providerSetup.message}</p>
+          {providerSetup.steps.length > 0 ? (
+            <ol className="strategy-setup-steps">
+              {providerSetup.steps.map((step) => (
+                <li key={step.id}>
+                  <div>
+                    <strong>{step.label}</strong>
+                    <span>{step.detail}</span>
+                  </div>
+                  <a href={withOrgHref(step.href, orgId)}>Open</a>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <a className="app-button" href={withOrgHref("/team/admin", orgId)}>
+              Open Team Admin
+            </a>
+          )}
+        </section>
+      ) : null}
 
       <div className="ch-layout">
         <aside className="ch-sidebar" aria-label="Channels">
@@ -354,13 +406,16 @@ export default function ChatClient({
                 <button type="button" className="primary-action" onClick={() => void newThread("private")}>
                   New private chat
                 </button>
-                <a className="app-button secondary" href={`/scouting${q}`}>
-                  Scouting
+                <a className="app-button secondary" href={withOrgHref("/competition?tab=scouting", orgId)}>
+                  Competition · Scouting
                 </a>
-                <a className="app-button secondary" href={`/strategy${q}`}>
-                  Strategy
+                <a className="app-button secondary" href={withOrgHref("/competition?tab=strategy", orgId)}>
+                  Competition · Strategy
                 </a>
-                <a className="app-button secondary" href={`/team/knowledge${q}`}>
+                <a className="app-button secondary" href={withOrgHref("/build", orgId)}>
+                  Build
+                </a>
+                <a className="app-button secondary" href={knowledgeHref}>
                   Knowledge base
                 </a>
               </div>
@@ -554,7 +609,7 @@ export default function ChatClient({
                 Save team budget
               </button>
             </form>
-            <a href={`/team/ai-memory${q}`} style={{ fontSize: 12, fontWeight: 700, color: "var(--app-accent)" }}>
+            <a href={memoryHref} style={{ fontSize: 12, fontWeight: 700, color: "var(--app-accent)" }}>
               Open AI memory governance →
             </a>
           </div>
