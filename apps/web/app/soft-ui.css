@@ -2105,3 +2105,27 @@ html[data-theme="dark"] .usage-cutoff-banner.tone-at{
 @media(max-width:700px){
   .usage-cutoff-banner{flex-direction:column}
 }
+
+/* Grant & Sponsorship Writer (AI hub) */
+body.has-app-shell .writer-page .writer-workspace{display:grid;gap:16px}
+body.has-app-shell .writer-page .writer-cross-links{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+body.has-app-shell .writer-page .writer-cross-links a{
+  min-height:34px;padding:0 12px;display:inline-flex;align-items:center;
+  border-radius:10px;border:1px solid var(--soft-line);background:var(--soft-bg);
+  color:var(--soft-ink);font-size:12px;font-weight:700;text-decoration:none;
+}
+body.has-app-shell .writer-page .writer-cross-links a:hover{
+  border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));
+  background:color-mix(in srgb,var(--soft-accent-soft) 70%,var(--soft-card));
+}
+body.has-app-shell .writer-page .writer-next-actions{margin-bottom:0}
+body.has-app-shell .writer-page .writer-empty-hint,
+body.has-app-shell .writer-page .writer-template-empty,
+body.has-app-shell .writer-page .writer-drafts-empty,
+body.has-app-shell .writer-page .writer-provider-setup{
+  padding:14px 16px;border-radius:14px;border:1px dashed var(--soft-line);
+  background:color-mix(in srgb,var(--soft-bg) 80%,var(--soft-card));
+}
+body.has-app-shell .writer-page .writer-template-empty h3{letter-spacing:-.02em}
+body.has-app-shell .writer-page .writer-template-empty a{color:var(--soft-accent);font-weight:700}
+body.has-app-shell .writer-page .writer-draft-preview textarea{min-height:220px}
