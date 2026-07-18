@@ -13,6 +13,7 @@ import {
   type ProductNavIcon,
 } from "../lib/nav/product-nav";
 import { formatMyDayWhen, matchAlertTitle, type MyDayView } from "../lib/my-day";
+import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
 
 type Me = {
@@ -198,6 +199,8 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   const [signingOut, setSigningOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [myDayGlance, setMyDayGlance] = useState<MyDayView | null>(null);
+  const [online, setOnline] = useState(true);
+  const [focusCollapsed, setFocusCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const activeNav = findNavMatch(pathname);
@@ -235,15 +238,40 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   }, [orgId, pathname]);
 
   useEffect(() => {
-    if (!moreOpen || !orgId) {
+    if (!orgId) {
       setMyDayGlance(null);
       return;
     }
-    void fetch(withOrgHref("/api/my-day", orgId))
-      .then(async (response) => (response.ok ? ((await response.json()) as MyDayView) : null))
-      .then((view) => setMyDayGlance(view))
-      .catch(() => setMyDayGlance(null));
-  }, [moreOpen, orgId]);
+    let cancelled = false;
+    const load = () => {
+      if (document.visibilityState === "hidden") return;
+      void fetch(withOrgHref("/api/my-day", orgId), { cache: "no-store" })
+        .then(async (response) => (response.ok ? ((await response.json()) as MyDayView) : null))
+        .then((view) => {
+          if (!cancelled && view) setMyDayGlance(view);
+        })
+        .catch(() => undefined);
+    };
+    load();
+    const refresh = window.setInterval(load, 60_000);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      cancelled = true;
+      window.clearInterval(refresh);
+      document.removeEventListener("visibilitychange", load);
+    };
+  }, [orgId]);
+
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -302,6 +330,12 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
 
   const crumbHint = breadcrumbForPath(pathname);
   const moreBadgeTotal = unreadCount + unreadMessages;
+  const eventFocus = useMemo(() => buildEventFocus(myDayGlance, online), [myDayGlance, online]);
+
+  useEffect(() => {
+    document.body.classList.toggle("has-event-focus", Boolean(eventFocus && !focusCollapsed));
+    return () => document.body.classList.remove("has-event-focus");
+  }, [eventFocus, focusCollapsed]);
 
   const toggleGroup = useCallback((label: string) => {
     setExpandedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -468,6 +502,40 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
           <span className="soft-theme-slot">{themeControl}</span>
         </div>
       </header>
+      {eventFocus ? (
+        focusCollapsed ? (
+          <button
+            className={`soft-focus-reopen ${eventFocus.tone}`}
+            type="button"
+            onClick={() => setFocusCollapsed(false)}
+            aria-label={`Show event focus: ${eventFocus.title}`}
+          >
+            <span /> {eventFocus.title}
+          </button>
+        ) : (
+          <section className={`soft-focus-rail ${eventFocus.tone}`} aria-label="Event focus" aria-live="polite">
+            <span className="soft-focus-signal" aria-hidden="true" />
+            <div className="soft-focus-copy">
+              <strong>{eventFocus.title}</strong>
+              <span>{eventFocus.detail}</span>
+            </div>
+            <small>{eventFocus.freshness}</small>
+            <nav aria-label="Next match actions">
+              {eventFocus.actions.map((action) => (
+                <a className={action.emphasis} href={action.href} key={action.label}>{action.label}</a>
+              ))}
+            </nav>
+            <button
+              className="soft-focus-collapse"
+              type="button"
+              onClick={() => setFocusCollapsed(true)}
+              aria-label="Collapse event focus"
+            >
+              ×
+            </button>
+          </section>
+        )
+      ) : null}
       {accountMenuOpen ? (
         <button
           className="soft-account-scrim"
