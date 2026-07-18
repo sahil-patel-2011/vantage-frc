@@ -10,11 +10,20 @@ import {
   type ScoutSchema,
   type SyncEntry,
 } from "./index";
+import { crossValidateScoutPayload, type FieldValidation } from "./trust";
 
 type StoredEntry = {
   id: string;
   payload: Record<string, unknown>;
   confidence: "high" | "normal" | "low";
+};
+
+export type SyncAcknowledgement = {
+  clientId: string;
+  entryId: string;
+  duplicate: boolean;
+  table?: string;
+  validations: FieldValidation[];
 };
 
 export class ScoutingRepository {
@@ -134,7 +143,7 @@ export class ScoutingRepository {
     return schema;
   }
 
-  async syncEntry(orgId: string, userId: string, input: SyncEntry) {
+  async syncEntry(orgId: string, userId: string, input: SyncEntry): Promise<SyncAcknowledgement> {
     const hash = createHash("sha256")
       .update(JSON.stringify(input))
       .digest("hex");
@@ -149,7 +158,14 @@ export class ScoutingRepository {
     const existing = receipt.rows[0];
     if (existing) {
       if (existing.payloadHash === hash) {
-        return { clientId: input.clientId, entryId: existing.serverEntryId, duplicate: true };
+        return {
+          clientId: input.clientId,
+          entryId: existing.serverEntryId,
+          duplicate: true,
+          validations: input.type === "match"
+            ? await this.loadValidations(orgId, existing.serverEntryId)
+            : [],
+        };
       }
       const schema = await this.getSchema(orgId, input.schemaId);
       if (schema.type !== input.type) throw new Error("Schema type does not match entry type");
@@ -167,18 +183,30 @@ export class ScoutingRepository {
           input.schemaId, input.updatedAt, existing.serverEntryId, orgId, userId,
         ],
       );
+      let validations: FieldValidation[] = [];
       if (update.rowCount) {
         await this.client.query(
           `UPDATE scout_sync_receipts SET payload_hash=$1,acknowledged_at=now()
            WHERE org_id=$2 AND client_id=$3`,
           [hash, orgId, input.clientId],
         );
-        if (input.type === "match") await this.refreshDisagreements(orgId, input, schema);
+        if (input.type === "match") {
+          await this.refreshDisagreements(orgId, input, schema);
+          validations = await this.refreshOfficialValidations(
+            orgId,
+            existing.serverEntryId,
+            input,
+            schema,
+          );
+        }
+      } else if (input.type === "match") {
+        validations = await this.loadValidations(orgId, existing.serverEntryId);
       }
       return {
         clientId: input.clientId,
         entryId: existing.serverEntryId,
         duplicate: !update.rowCount,
+        validations,
       };
     }
 
@@ -221,10 +249,12 @@ export class ScoutingRepository {
        VALUES ($1,$2,$3,$4,$5)`,
       [orgId, input.clientId, input.type, entryId, hash],
     );
+    let validations: FieldValidation[] = [];
     if (input.type === "match") {
       await this.refreshDisagreements(orgId, input, schema);
+      validations = await this.refreshOfficialValidations(orgId, entryId, input, schema);
     }
-    return { clientId: input.clientId, entryId, duplicate: false, table };
+    return { clientId: input.clientId, entryId, duplicate: false, table, validations };
   }
 
   private async refreshDisagreements(
@@ -251,5 +281,112 @@ export class ScoutingRepository {
         ],
       );
     }
+  }
+
+  private async loadValidations(orgId: string, entryId: string): Promise<FieldValidation[]> {
+    const rows = await this.client.query<{
+      fieldKey: string;
+      status: FieldValidation["status"];
+      scoutValue: unknown;
+      officialValue: unknown;
+      officialSource: "tba" | "statbotics";
+      detail: string;
+    }>(
+      `SELECT field_key AS "fieldKey",status,scout_value AS "scoutValue",
+              official_value AS "officialValue",official_source AS "officialSource",detail
+       FROM scout_entry_validations WHERE org_id=$1 AND entry_id=$2
+       ORDER BY checked_at DESC`,
+      [orgId, entryId],
+    );
+    return rows.rows.map((row) => ({
+      fieldKey: row.fieldKey,
+      status: row.status,
+      scoutValue: row.scoutValue,
+      officialValue: row.officialValue,
+      officialSource: row.officialSource,
+      officialKey: null,
+      detail: row.detail,
+      soft: row.officialSource === "statbotics",
+    }));
+  }
+
+  private async refreshOfficialValidations(
+    orgId: string,
+    entryId: string,
+    input: SyncEntry,
+    schema: ScoutSchema,
+  ): Promise<FieldValidation[]> {
+    if (!input.matchKey) return [];
+    const [match, policies, epa] = await Promise.all([
+      this.client.query<{
+        redAlliance: { teamKeys?: string[] };
+        blueAlliance: { teamKeys?: string[] };
+        scoreBreakdown: Record<string, unknown> | null;
+      }>(
+        `SELECT red_alliance AS "redAlliance",blue_alliance AS "blueAlliance",
+                score_breakdown AS "scoreBreakdown"
+         FROM matches_ref WHERE match_key=$1 AND event_key=$2`,
+        [input.matchKey, input.eventKey],
+      ),
+      this.client.query<{
+        fieldKey: string;
+        officialKey: string | null;
+        teamIndexed: boolean;
+        enabled: boolean;
+      }>(
+        `SELECT field_key AS "fieldKey",official_key AS "officialKey",
+                team_indexed AS "teamIndexed",enabled
+         FROM scout_field_policies WHERE org_id=$1 AND schema_id=$2`,
+        [orgId, schema.id],
+      ),
+      this.client.query<{ epaEndgame: number | null }>(
+        `SELECT epa_endgame AS "epaEndgame"
+         FROM team_event_metrics
+         WHERE team_key=$1 AND event_key=$2 AND source='statbotics'
+         ORDER BY synced_at DESC NULLS LAST LIMIT 1`,
+        [input.teamKey, input.eventKey],
+      ),
+    ]);
+    const official = match.rows[0] ?? {
+      redAlliance: { teamKeys: [] },
+      blueAlliance: { teamKeys: [] },
+      scoreBreakdown: null,
+    };
+    const validations = crossValidateScoutPayload({
+      payload: input.payload,
+      fieldKeys: schema.definition.fields.map((field) => field.key),
+      teamKey: input.teamKey,
+      redAlliance: official.redAlliance,
+      blueAlliance: official.blueAlliance,
+      scoreBreakdown: official.scoreBreakdown,
+      policies: policies.rows.map((policy) => ({
+        fieldKey: policy.fieldKey,
+        officialKey: policy.officialKey,
+        teamIndexed: policy.teamIndexed,
+        enabled: policy.enabled,
+      })),
+      epaEndgame: epa.rows[0]?.epaEndgame ?? null,
+    });
+    for (const validation of validations) {
+      await this.client.query(
+        `INSERT INTO scout_entry_validations
+          (org_id,entry_id,field_key,scout_value,official_value,official_source,status,detail)
+         VALUES($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7,$8)
+         ON CONFLICT(entry_id,field_key,official_source) DO UPDATE SET
+           scout_value=excluded.scout_value,official_value=excluded.official_value,
+           status=excluded.status,detail=excluded.detail,checked_at=now()`,
+        [
+          orgId,
+          entryId,
+          validation.fieldKey,
+          JSON.stringify(validation.scoutValue ?? null),
+          JSON.stringify(validation.officialValue ?? null),
+          validation.officialSource,
+          validation.status,
+          validation.detail,
+        ],
+      );
+    }
+    return validations;
   }
 }

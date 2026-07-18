@@ -66,6 +66,24 @@ function makeClient(state: {
       if (sql.includes("INSERT INTO scout_disagreements")) {
         return { rows: [], rowCount: 1 };
       }
+      if (sql.includes("FROM matches_ref")) {
+        return {
+          rows: [
+            {
+              redAlliance: { teamKeys: ["frc254", "frc1", "frc2"] },
+              blueAlliance: { teamKeys: ["frc3", "frc4", "frc5"] },
+              scoreBreakdown: { red: { endGameRobot1: "High", foulCount: 0 } },
+            },
+          ],
+          rowCount: 1,
+        };
+      }
+      if (sql.includes("FROM scout_field_policies") || sql.includes("FROM team_event_metrics")) {
+        return { rows: [], rowCount: 0 };
+      }
+      if (sql.includes("INSERT INTO scout_entry_validations") || sql.includes("FROM scout_entry_validations")) {
+        return { rows: [], rowCount: 1 };
+      }
       return { rows: [], rowCount: 0 };
     },
   } as unknown as PoolClient;
@@ -95,6 +113,7 @@ describe("scouting sync upsert", () => {
     const result = await repository.syncEntry("org-1", "user-1", entry);
     expect(result.duplicate).toBe(false);
     expect(result.entryId).toBeTruthy();
+    expect(result.validations.some((flag) => flag.fieldKey === "climb")).toBe(true);
     expect(state.inserts).toHaveLength(1);
     expect(state.receipts.get(entry.clientId)?.payloadHash).toBe(
       createHash("sha256").update(JSON.stringify(entry)).digest("hex"),
