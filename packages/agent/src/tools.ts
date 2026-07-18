@@ -147,7 +147,7 @@ export function summarizeOpenPurchaseRequests(
   return { headline, recommendations, openCount: open.length, openTotalUsd };
 }
 
-export function createVantageToolRegistry() {
+export function createVantageToolRegistry(): AIToolRegistry {
   return new AIToolRegistry()
     .register(
       tool({
@@ -1145,7 +1145,7 @@ export function createVantageToolRegistry() {
           return { request, title, matchKey, seasonYear: season.seasonYear };
         },
         parseOutput: objectOutput,
-        async execute({ client, orgId, userId }, input) {
+        async execute({ client, orgId, userId }, input): Promise<Record<string, unknown>> {
           const { createMeteredCadBriefJob } = await import("./cad-brief");
           try {
             const created = await createMeteredCadBriefJob(client, {
@@ -1165,7 +1165,11 @@ export function createVantageToolRegistry() {
               summary: created.brief.summary,
               requirementCount: created.brief.requirements.length,
               riskCount: created.brief.risks.length,
-              tools: created.tools.map((t) => ({ name: t.name, status: t.status, summary: t.summary })),
+              tools: created.tools.map((t: { name: string; status: string; summary?: string }) => ({
+                name: t.name,
+                status: t.status,
+                summary: t.summary,
+              })),
             };
           } catch (error) {
             return {

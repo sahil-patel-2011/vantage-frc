@@ -2,8 +2,14 @@ import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { buildEngineeringBriefFromTools, type EngineeringBrief } from "./brief-from-tools";
 import { planChatToolCalls } from "./auto-tools";
-import { AIOrchestrator, type ContextSource } from "./orchestrator";
+import {
+  AIOrchestrator,
+  type AIToolRegistry,
+  type ContextSource,
+  type OrchestratorResult,
+} from "./orchestrator";
 import { createVantageToolRegistry } from "./tools";
+import type { AnnotatedToolOutput } from "./auto-tools";
 
 export type ChatAdapterLite = {
   readonly provider: string;
@@ -101,8 +107,20 @@ export type CreateMeteredCadBriefInput = {
   seasonYear?: number;
 };
 
+export type MeteredCadBriefJobResult = {
+  jobId: string;
+  brief: EngineeringBrief;
+  aiRunId: string;
+  aiArtifactId: string;
+  tools: AnnotatedToolOutput[];
+  status: "awaiting_brief_confirmation";
+};
+
 /** Metered CAD brief grounded in strategy / kickoff / FMEA / knowledge tools. */
-export async function createMeteredCadBriefJob(client: PoolClient, input: CreateMeteredCadBriefInput) {
+export async function createMeteredCadBriefJob(
+  client: PoolClient,
+  input: CreateMeteredCadBriefInput,
+): Promise<MeteredCadBriefJobResult> {
   const active =
     (
       await client.query<{ active_event_key: string | null }>(
@@ -110,7 +128,7 @@ export async function createMeteredCadBriefJob(client: PoolClient, input: Create
         [input.orgId],
       )
     ).rows[0]?.active_event_key ?? null;
-  const registry = createVantageToolRegistry();
+  const registry: AIToolRegistry = createVantageToolRegistry();
   const strategyToolCalls = planCadStrategyToolCalls(input.request, {
     matchKey: input.selected?.matchKey,
     seasonYear: input.seasonYear,
@@ -149,7 +167,7 @@ export async function createMeteredCadBriefJob(client: PoolClient, input: Create
     classification: source.classification,
   }));
   const requestId = input.requestId ?? `cad-brief-${randomUUID()}`;
-  const orchestrated = await new AIOrchestrator(client, registry).run({
+  const orchestrated: OrchestratorResult = await new AIOrchestrator(client, registry).run({
     orgId: input.orgId,
     userId: input.userId,
     threadId: input.threadId,

@@ -39,6 +39,23 @@ export type TasksView =
       board: TaskBoard;
       subsystems: string[];
       computedAt: string;
+      canManage: boolean;
+      meetingOutput: {
+        weekStart: string;
+        loggedHours: number;
+        tasksCompleted: number;
+        hoursPerCompletedTask: number | null;
+      };
+      benchmark: {
+        optedIn: boolean;
+        medianWeeklyHours: number | null;
+        teamCount: number;
+      };
+      memberWorkload: Array<{
+        userId: string;
+        name: string;
+        availableNow: boolean;
+      }>;
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
@@ -140,6 +157,12 @@ export async function computeTasksView(
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
+  const weekStart = new Date();
+  weekStart.setUTCHours(0, 0, 0, 0);
+  weekStart.setUTCDate(weekStart.getUTCDate() - ((weekStart.getUTCDay() + 6) % 7));
+  const tasksCompleted = board.metrics.done;
+  const loggedHours = board.metrics.estimatedOpenHours;
+
   return {
     status: "live",
     orgId: org.orgId,
@@ -149,6 +172,20 @@ export async function computeTasksView(
     board,
     subsystems,
     computedAt: new Date().toISOString(),
+    canManage: false,
+    meetingOutput: {
+      weekStart: weekStart.toISOString().slice(0, 10),
+      loggedHours,
+      tasksCompleted,
+      hoursPerCompletedTask:
+        tasksCompleted > 0 ? Math.round((loggedHours / tasksCompleted) * 10) / 10 : null,
+    },
+    benchmark: {
+      optedIn: false,
+      medianWeeklyHours: null,
+      teamCount: 0,
+    },
+    memberWorkload: [],
   };
 }
 
