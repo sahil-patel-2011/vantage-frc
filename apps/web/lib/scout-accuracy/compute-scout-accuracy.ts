@@ -2,13 +2,9 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { aggregateScoutStats, computeEntryAccuracy, summarizeScoutAccuracy } from ".";
 import type { ScoutAccuracyEntry, ScoutAccuracyScoutStat, ScoutAccuracySnapshotMeta, ScoutAccuracySummary } from "./types";
 import { resolveScoutOrg } from "../scout-org-access";
+import { scoutAccuracySetupSteps, type ScoutAccuracySetupStep } from "./scout-accuracy-related";
 
-export type ScoutAccuracySetupStep = {
-  id: string;
-  label: string;
-  detail: string;
-  href: string;
-};
+export type { ScoutAccuracySetupStep };
 
 export type ScoutAccuracyView =
   | {
@@ -73,9 +69,7 @@ export async function computeScoutAccuracyView(
     return {
       status: "setup_required",
       message: "Select a team workspace to score scout accuracy against official results.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: scoutAccuracySetupSteps(null),
       orgId: null,
     };
   }

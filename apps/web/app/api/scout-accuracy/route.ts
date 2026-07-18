@@ -9,6 +9,7 @@ import {
   setScoutAccuracyPromotion,
   type ScoutAccuracyView,
 } from "../../../lib/scout-accuracy/compute-scout-accuracy";
+import { scoutAccuracySetupSteps } from "../../../lib/scout-accuracy/scout-accuracy-related";
 
 export type { ScoutAccuracyView };
 
@@ -42,9 +43,7 @@ export async function GET(request: Request) {
       {
         status: "setup_required",
         message: "Could not load scout accuracy. Select a workspace and confirm database access.",
-        steps: [
-          { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-        ],
+        steps: scoutAccuracySetupSteps(null),
         orgId: null,
       } satisfies ScoutAccuracyView,
       { status: 200 },
