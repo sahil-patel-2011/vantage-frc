@@ -95,7 +95,7 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
     if (response.ok) await load();
   }
 
-  async function discordAction(action: "save" | "test" | "announce") {
+  async function discordAction(action: "save" | "test" | "announce" | "digest") {
     const payload: Record<string, unknown> = { orgId, action };
     if (action === "save") {
       payload.webhookUrl = webhookUrl;
@@ -115,7 +115,9 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
           ? "Discord connected."
           : action === "test"
             ? "Test message posted to Discord."
-            : "Announcement posted to Discord."
+            : action === "digest"
+              ? "Alumni digest posted to Discord."
+              : "Announcement posted to Discord."
         : data.error,
     );
     if (response.ok) {
@@ -275,6 +277,11 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
                 {discord?.configured && (
                   <button type="button" onClick={() => void discordAction("test")}>
                     Send test message
+                  </button>
+                )}
+                {discord?.configured && alumni.length > 0 && (
+                  <button type="button" onClick={() => void discordAction("digest")}>
+                    Post alumni digest
                   </button>
                 )}
               </div>
