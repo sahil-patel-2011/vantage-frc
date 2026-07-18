@@ -334,7 +334,14 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
   const grantDeadlines = view.grants.filter((grant) => grant.deadline && !["awarded", "declined"].includes(grant.status)).slice(0, 5);
   const reminders = view.sponsorReminders.slice(0, 5);
   const progress = view.fundraisingProgress;
-  const pulse = view.ordersPulse;
+  const pulse = view.ordersPulse ?? {
+    pendingCount: 0,
+    readyToBuyCount: 0,
+    openTotalCents: 0,
+    financeAiEnabled: false,
+    aiHeadline: null,
+    aiRecommendations: [] as string[],
+  };
   const ordersHref = `/business?orgId=${encodeURIComponent(view.orgId)}&tab=orders`;
   return (
     <div className="biz-stack">
