@@ -1,8 +1,38 @@
-/* FRC Assistant — Soft-UI, .ch-* prefixed + shared app tokens. */
+/* FRC Assistant — Soft-UI, .ch-* prefixed + shared app tokens. Avoid soft-ui.css. */
 .ch-page {
   display: grid;
   gap: 14px;
   min-width: 0;
+}
+.ch-page .ch-related {
+  margin: 0;
+}
+.ch-next-actions {
+  margin: 0;
+}
+.ch-scope {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.ch-scope-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 12px 14px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+}
+.ch-scope-card h2 {
+  margin: 0;
+  font-size: 14px;
+}
+.ch-scope-card p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 .ch-header-actions {
   display: flex;

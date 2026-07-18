@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
+import {
+  AI_CHAT_RELATED_INCLUDE,
+  AI_CHAT_SCOPE_CARDS,
+  aiChatNextActions,
+  aiChatRelatedLinks,
+  aiChatShellCopy,
+  classifyAiChatShell,
+  type AiChatShellKind,
+} from "../../lib/ai-chat/ai-chat-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 
@@ -56,6 +65,45 @@ function bridgeRefs(refs: SourceRef[] | null | undefined) {
   );
 }
 
+function ChatRelatedStrip({ orgId }: { orgId: string }) {
+  const links = aiChatRelatedLinks(orgId, { include: [...AI_CHAT_RELATED_INCLUDE] });
+  return (
+    <nav className="product-hub-related ch-related" aria-label="Related AI and competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActions({ orgId, shell }: { orgId: string; shell: AiChatShellKind }) {
+  const actions = aiChatNextActions({ orgId, shell });
+  if (!actions.length) return null;
+  return (
+    <section className="ch-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>From real channels and provider setup only — never DEMO replies.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function ChatClient({
   orgId,
   initialPrompt = "",
@@ -88,14 +136,28 @@ export default function ChatClient({
   const [promptCachingEnabled, setPromptCachingEnabled] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [httpStatus, setHttpStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [providerSetup, setProviderSetup] = useState<{
     message: string;
     steps: Array<{ id: string; label: string; detail: string; href: string }>;
   } | null>(null);
 
   async function load(threadId?: string) {
+    if (!threadId) {
+      setLoading(true);
+      setLoadError(null);
+    }
     const response = await fetch(`/api/agent?orgId=${orgId}${threadId ? `&threadId=${threadId}` : ""}`);
     const data = await response.json();
+    setHttpStatus(response.status);
+    if (!response.ok) {
+      setLoadError(data.error ?? "Unable to load assistant channels");
+      if (!threadId) setLoading(false);
+      return;
+    }
+    setLoadError(null);
     setThreads(data.threads ?? []);
     setMemories(data.memories ?? []);
     setPromptCachingEnabled(Boolean(data.promptCachingEnabled));
@@ -105,6 +167,7 @@ export default function ChatClient({
       setTeamBudget(data.memorySettings.team?.tokenBudget ?? 1600);
     }
     if (threadId) setMessages(data.messages ?? []);
+    if (!threadId) setLoading(false);
   }
 
   useEffect(() => {
@@ -286,9 +349,26 @@ export default function ChatClient({
 
   const budgetsHref = hubHref("/ai", "budgets", orgId);
   const memoryHref = hubHref("/ai", "memory", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
   const knowledgeHref = withOrgHref("/team?tab=knowledge", orgId);
-  const usageHref = withOrgHref("/team/usage", orgId);
+  const usageHref = hubHref("/ai", "usage", orgId);
   const runsHref = withOrgHref("/team/ai-runs", orgId);
+  const relatedExtra = aiChatRelatedLinks(orgId, {
+    include: ["usage", "scouting", "knowledge", "governance", "code"],
+  });
+
+  const shell = classifyAiChatShell({
+    loading,
+    status: httpStatus,
+    error: loadError,
+    providerSetup: Boolean(providerSetup),
+    threadCount: threads.length,
+    hasActiveThread: Boolean(thread),
+  });
+  const shellCopy = aiChatShellCopy(shell);
+  const blocked = shell === "auth_required" || shell === "error";
+  const showStatusShell =
+    shell === "setup" || shell === "loading" || shell === "auth_required" || shell === "error";
 
   return (
     <main className="module-page ch-page">
@@ -317,6 +397,7 @@ export default function ChatClient({
       </header>
 
       <AiHubRelated orgId={orgId} active="chat" />
+      <ChatRelatedStrip orgId={orgId} />
 
       <nav className="ch-gov" aria-label="AI governance">
         <span className="ch-cache">
@@ -324,21 +405,24 @@ export default function ChatClient({
           <strong>{promptCachingEnabled ? "On" : "Off"}</strong>
         </span>
         <a href={`${budgetsHref}#prompt-caching`}>Manage caching</a>
-        <a href={knowledgeHref}>Knowledge</a>
-        <a href={memoryHref}>AI memory</a>
+        <a href={budgetsHref}>Budgets</a>
+        <a href={memoryHref}>Memory</a>
+        <a href={strategyHref}>Strategy</a>
         <a href={usageHref}>Usage</a>
         <a href={runsHref}>AI runs</a>
-        <a href={budgetsHref}>API budgets</a>
+        <a href={knowledgeHref}>Knowledge</a>
       </nav>
 
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
 
-      {providerSetup ? (
-        <section className="app-card soft-panel product-hub-setup" role="status">
-          <span className="app-badge setup">Setup required</span>
-          <h2>AI provider not configured</h2>
-          <p className="app-muted">{providerSetup.message}</p>
-          {providerSetup.steps.length > 0 ? (
+      {showStatusShell ? (
+        <section className="app-card soft-panel product-hub-setup" role="status" aria-busy={shell === "loading"}>
+          {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
+          <h2>{shellCopy.title}</h2>
+          <p className="app-muted">
+            {providerSetup?.message && shell === "setup" ? providerSetup.message : shellCopy.description}
+          </p>
+          {shell === "setup" && providerSetup && providerSetup.steps.length > 0 ? (
             <ol className="strategy-setup-steps">
               {providerSetup.steps.map((step) => (
                 <li key={step.id}>
@@ -350,16 +434,33 @@ export default function ChatClient({
                 </li>
               ))}
             </ol>
-          ) : (
-            <a className="app-button" href={withOrgHref("/team/admin", orgId)}>
-              Open Team Admin
-            </a>
-          )}
+          ) : null}
+          {shell === "error" ? (
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+          {shell !== "loading" ? <NextActions orgId={orgId} shell={shell} /> : null}
         </section>
       ) : null}
 
+      {shell === "empty" ? (
+        <>
+          <NextActions orgId={orgId} shell={shell} />
+          <section className="ch-scope" aria-label="Private versus team-shared channels">
+            {AI_CHAT_SCOPE_CARDS.map((card) => (
+              <article key={card.id} className="ch-scope-card soft-panel">
+                <h2>{card.title}</h2>
+                <p>{card.body}</p>
+              </article>
+            ))}
+          </section>
+        </>
+      ) : null}
+
+      {!blocked ? (
       <div className="ch-layout">
-        <aside className="ch-sidebar" aria-label="Channels">
+        <aside className="ch-sidebar" id="ch-channels" aria-label="Channels">
           <div>
             <span className="eyebrow">Channels</span>
             <h2>Your threads</h2>
@@ -395,29 +496,33 @@ export default function ChatClient({
         <section className="ch-main">
           {!thread ? (
             <div className="ch-empty">
-              <span className="app-badge setup">Start here</span>
-              <h1>Pick or create a channel</h1>
+              <span className="app-badge setup">{shellCopy.badge ?? "Start here"}</span>
+              <h1>{shell === "empty" ? shellCopy.title : "Pick or create a channel"}</h1>
               <p>
-                Private chats stay yours. Team-shared channels are visible to members. Tools like{" "}
-                <code>scouting.team</code> and <code>strategy.match</code> only run when authorized — and never invent
-                rows.
+                {shell === "empty"
+                  ? shellCopy.description
+                  : "Private chats stay yours. Team-shared channels are visible to members. Authorized tools never invent rows."}
               </p>
               <div className="ch-empty-actions">
                 <button type="button" className="primary-action" onClick={() => void newThread("private")}>
                   New private chat
                 </button>
-                <a className="app-button secondary" href={withOrgHref("/competition?tab=scouting", orgId)}>
-                  Competition · Scouting
+                <a className="app-button secondary" href={budgetsHref}>
+                  Budgets
                 </a>
-                <a className="app-button secondary" href={withOrgHref("/competition?tab=strategy", orgId)}>
-                  Competition · Strategy
+                <a className="app-button secondary" href={memoryHref}>
+                  Memory
                 </a>
-                <a className="app-button secondary" href={withOrgHref("/build", orgId)}>
-                  Build
+                <a className="app-button secondary" href={strategyHref}>
+                  Strategy
                 </a>
-                <a className="app-button secondary" href={knowledgeHref}>
-                  Knowledge base
-                </a>
+                {relatedExtra
+                  .filter((link) => link.id === "scouting" || link.id === "knowledge")
+                  .map((link) => (
+                    <a key={link.id} className="app-button secondary" href={link.href}>
+                      {link.label}
+                    </a>
+                  ))}
               </div>
             </div>
           ) : (
@@ -643,6 +748,7 @@ export default function ChatClient({
           </div>
         </aside>
       </div>
+      ) : null}
     </main>
   );
 }
