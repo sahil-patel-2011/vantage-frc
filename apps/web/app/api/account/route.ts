@@ -1,7 +1,10 @@
 import {
   auth,
+  emailNotificationsSetupStatus,
   getUserEmailPreferences,
+  mergeInAppNotificationPrefs,
   updateUserEmailPreferences,
+  type InAppNotificationPrefs,
   type UserEmailPreferences,
 } from "@vantage/core";
 import { withRls } from "@vantage/db";
@@ -14,6 +17,10 @@ const prefsSchema = z.object({
   scoutReminders: z.boolean().optional(),
   syncFailures: z.boolean().optional(),
   productUpdates: z.boolean().optional(),
+  todoAssigned: z.boolean().optional(),
+  todoCompleted: z.boolean().optional(),
+  dutyAssigned: z.boolean().optional(),
+  calendarEvents: z.boolean().optional(),
 });
 
 const emailPrefsSchema = z.object({
@@ -29,23 +36,10 @@ const putSchema = z.object({
   emailPrefs: emailPrefsSchema.optional(),
 });
 
-export type NotificationPrefs = {
-  matchAlerts: boolean;
-  scoutReminders: boolean;
-  syncFailures: boolean;
-  productUpdates: boolean;
-};
-
-const DEFAULT_PREFS: NotificationPrefs = {
-  matchAlerts: true,
-  scoutReminders: true,
-  syncFailures: true,
-  productUpdates: false,
-};
+export type NotificationPrefs = InAppNotificationPrefs;
 
 function mergePrefs(raw: unknown): NotificationPrefs {
-  const parsed = prefsSchema.safeParse(raw ?? {});
-  return { ...DEFAULT_PREFS, ...(parsed.success ? parsed.data : {}) };
+  return mergeInAppNotificationPrefs(raw);
 }
 
 async function currentSession() {
@@ -93,6 +87,7 @@ export async function GET() {
       themePreference: profile.row?.themePreference === "dark" ? "dark" : "light",
       notificationPrefs: mergePrefs(profile.row?.notificationPrefs),
       emailPrefs: profile.emailPrefs,
+      emailDelivery: emailNotificationsSetupStatus(),
       unreadNotificationCount: profile.unreadCount,
       googleConnected: false,
       tbaConfigured: profile.tba.tbaConfigured,
