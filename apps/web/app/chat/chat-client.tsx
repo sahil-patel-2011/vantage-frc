@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { VantageLogo } from "../../components/brand";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type SourceRef = {
@@ -42,24 +41,54 @@ function memoryRefs(refs: SourceRef[] | null | undefined) {
   return (refs ?? []).filter((ref) => ref.type === "private_memory" || ref.type === "team_memory");
 }
 
-export default function ChatClient({ orgId }: { orgId: string }) {
+function bridgeRefs(refs: SourceRef[] | null | undefined) {
+  return (refs ?? []).filter(
+    (ref) =>
+      ref.type === "github_file" ||
+      ref.type === "vscode_selection" ||
+      ref.classification === "github_file" ||
+      ref.classification === "vscode_selection",
+  );
+}
+
+export default function ChatClient({
+  orgId,
+  initialPrompt = "",
+  source = "",
+  contextId = "",
+}: {
+  orgId: string;
+  initialPrompt?: string;
+  source?: string;
+  contextId?: string;
+}) {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [thread, setThread] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [memorySettings, setMemorySettings] = useState<MemorySettings | null>(null);
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialPrompt);
   const [memory, setMemory] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(
+    source === "vscode"
+      ? contextId
+        ? `Opened from VS Code with editor context ${contextId.slice(0, 8)}…`
+        : "Opened from VS Code"
+      : "",
+  );
   const [lastTools, setLastTools] = useState<ToolOutput[]>([]);
   const [privateBudget, setPrivateBudget] = useState(1200);
   const [teamBudget, setTeamBudget] = useState(1600);
+  const [pendingEditorContextId, setPendingEditorContextId] = useState(contextId);
+  const [promptCachingEnabled, setPromptCachingEnabled] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
 
   async function load(threadId?: string) {
     const response = await fetch(`/api/agent?orgId=${orgId}${threadId ? `&threadId=${threadId}` : ""}`);
     const data = await response.json();
     setThreads(data.threads ?? []);
     setMemories(data.memories ?? []);
+    setPromptCachingEnabled(Boolean(data.promptCachingEnabled));
     if (data.memorySettings) {
       setMemorySettings(data.memorySettings);
       setPrivateBudget(data.memorySettings.private?.tokenBudget ?? 1200);
@@ -109,6 +138,7 @@ export default function ChatClient({ orgId }: { orgId: string }) {
         threadId: thread.id,
         scope: thread.scope,
         message: text,
+        ...(pendingEditorContextId ? { editorContextId: pendingEditorContextId } : {}),
       }),
     });
     const data = await response.json();
@@ -122,7 +152,12 @@ export default function ChatClient({ orgId }: { orgId: string }) {
       ? `${tools.length} tool${tools.length === 1 ? "" : "s"} (${tools.map((t) => t.name).join(", ")})`
       : "no tools";
     const cites = data.contextSources?.length ?? 0;
-    setStatus(`Used ${toolLabel}; ${cites} provenance source${cites === 1 ? "" : "s"}.`);
+    const bridge = (data.bridgeProvenance ?? []) as Array<{ label?: string; type?: string }>;
+    const bridgeLabel = bridge.length
+      ? ` · ${bridge.map((b) => b.label ?? b.type).join("; ")}`
+      : "";
+    setStatus(`Used ${toolLabel}; ${cites} provenance source${cites === 1 ? "" : "s"}${bridgeLabel}.`);
+    if (pendingEditorContextId) setPendingEditorContextId("");
     setText("");
     await load(thread.id);
   }
@@ -216,208 +251,329 @@ export default function ChatClient({ orgId }: { orgId: string }) {
     if (response.ok) await load(thread?.id);
   }
 
+  const q = `?orgId=${encodeURIComponent(orgId)}`;
+
   return (
-    <main className="chat-page">
-      <header className="workspace-top">
-        <VantageLogo href={`/workspace?orgId=${orgId}`} />
-        <strong>FRC ASSISTANT</strong>
-        <span>{thread?.scope === "team" ? "TEAM SHARED" : "PRIVATE"}</span>
-      </header>
-      <aside className="chat-sidebar">
-        <span className="eyebrow">CHANNELS</span>
-        <button type="button" onClick={() => newThread("private")}>
-          + Private chat
-        </button>
-        <button type="button" onClick={() => newThread("team")}>
-          + Team-shared chat
-        </button>
-        {threads.map((item) => (
+    <main className="module-page ch-page">
+      <header className="app-page-header">
+        <div>
+          <span className="breadcrumbs">AI / Assistant</span>
+          <h1>FRC Assistant</h1>
+          <p>
+            Ask about teams, matchups, and scout evidence. Authorized tools run when you mention teams or matches.
+            Empty Neon/TBA/scout results stay empty — nothing is invented.
+          </p>
+        </div>
+        <div className="ch-header-actions">
+          <span className={`app-badge ${thread?.scope === "team" ? "setup" : "good"}`}>
+            {thread?.scope === "team" ? "Team shared" : thread ? "Private" : "No channel"}
+          </span>
           <button
-            className={thread?.id === item.id ? "active" : ""}
-            key={item.id}
             type="button"
-            onClick={() => {
-              setThread(item);
-              setLastTools([]);
-              void load(item.id);
-            }}
+            className="app-button secondary ch-context-toggle"
+            aria-expanded={contextOpen}
+            onClick={() => setContextOpen((v) => !v)}
           >
-            <span>{item.scope === "team" ? "SHARED" : "PRIVATE"}</span>
-            {item.title}
+            {contextOpen ? "Hide context" : "Context controls"}
           </button>
-        ))}
-      </aside>
-      <section className="chat-main">
-        {!thread ? (
-          <div className="empty-chat">
-            <h1>Ask about teams, matchups, and scout evidence.</h1>
-            <p>
-              FRC Assistant auto-invokes authorized tools like <code>scouting.team</code> and{" "}
-              <code>strategy.match</code> when you mention teams or matches. Empty Neon/TBA/scout results stay empty —
-              nothing is invented.
+        </div>
+      </header>
+
+      <nav className="ch-gov" aria-label="AI governance">
+        <span className="ch-cache">
+          Prompt caching{" "}
+          <strong>{promptCachingEnabled ? "On" : "Off"}</strong>
+        </span>
+        <a href={`/team/budgets${q}#prompt-caching`}>Manage caching</a>
+        <a href={`/team/knowledge${q}`}>Knowledge</a>
+        <a href={`/team/ai-memory${q}`}>AI memory</a>
+        <a href={`/team/usage${q}`}>Usage</a>
+        <a href={`/team/ai-runs${q}`}>AI runs</a>
+        <a href={`/team/budgets${q}`}>API budgets</a>
+      </nav>
+
+      <div className="ch-layout">
+        <aside className="ch-sidebar" aria-label="Channels">
+          <div>
+            <span className="eyebrow">Channels</span>
+            <h2>Your threads</h2>
+          </div>
+          <div className="ch-thread-actions">
+            <button type="button" onClick={() => void newThread("private")}>
+              + Private chat
+            </button>
+            <button type="button" onClick={() => void newThread("team")}>
+              + Team-shared chat
+            </button>
+          </div>
+          <ul className="ch-thread-list">
+            {threads.map((item) => (
+              <li key={item.id}>
+                <button
+                  className={thread?.id === item.id ? "active" : ""}
+                  type="button"
+                  onClick={() => {
+                    setThread(item);
+                    setLastTools([]);
+                    void load(item.id);
+                  }}
+                >
+                  <span>{item.scope === "team" ? "Shared" : "Private"}</span>
+                  {item.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        <section className="ch-main">
+          {!thread ? (
+            <div className="ch-empty">
+              <span className="app-badge setup">Start here</span>
+              <h1>Pick or create a channel</h1>
+              <p>
+                Private chats stay yours. Team-shared channels are visible to members. Tools like{" "}
+                <code>scouting.team</code> and <code>strategy.match</code> only run when authorized — and never invent
+                rows.
+              </p>
+              <div className="ch-empty-actions">
+                <button type="button" className="primary-action" onClick={() => void newThread("private")}>
+                  New private chat
+                </button>
+                <a className="app-button secondary" href={`/scouting${q}`}>
+                  Scouting
+                </a>
+                <a className="app-button secondary" href={`/strategy${q}`}>
+                  Strategy
+                </a>
+                <a className="app-button secondary" href={`/team/knowledge${q}`}>
+                  Knowledge base
+                </a>
+              </div>
+            </div>
+          ) : (
+            <>
+              <header className="ch-thread-head">
+                <div>
+                  <span className="eyebrow">
+                    {thread.scope === "team" ? "Team shared channel" : "Private channel"}
+                  </span>
+                  <h1>{thread.title}</h1>
+                </div>
+                {thread.scope === "team" ? (
+                  <strong className="ch-shared-banner">Every message in this channel is shared</strong>
+                ) : null}
+              </header>
+
+              <div className="ch-messages">
+                {messages.map((item) => {
+                  const tools = toolRefs(item.sourceRefs);
+                  const memoriesUsed = memoryRefs(item.sourceRefs);
+                  const bridgeUsed = bridgeRefs(item.sourceRefs);
+                  return (
+                    <article className={`ch-msg ${item.role}`} key={item.id}>
+                      <span>
+                        {item.role}
+                        {item.explicitlyShared ? " · shared" : " · private"}
+                      </span>
+                      <p className="ch-msg-body">{item.content}</p>
+                      {item.role === "assistant" && tools.length > 0 ? (
+                        <div className="ch-tools" aria-label="Tool results">
+                          {tools.map((ref) => (
+                            <div
+                              className={`ch-tool status-${ref.status ?? "ok"}`}
+                              key={`${item.id}-${ref.id}`}
+                            >
+                              <strong>{ref.toolName ?? ref.id}</strong>
+                              <span>{ref.classification ?? "tool"}</span>
+                              <em>{ref.status === "empty" ? "empty" : ref.status ?? "ok"}</em>
+                              {ref.summary ? <p>{ref.summary}</p> : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                      {item.role === "assistant" &&
+                      (tools.length > 0 || memoriesUsed.length > 0 || bridgeUsed.length > 0) ? (
+                        <ul className="ch-provenance" aria-label="Provenance citations">
+                          {bridgeUsed.map((ref) => (
+                            <li key={`cite-bridge-${item.id}-${ref.id}`}>
+                              {ref.summary ??
+                                (ref.type === "github_file"
+                                  ? `used GitHub path ${ref.id.replace(/^github:(?:tree:)?/, "")}`
+                                  : `used VS Code selection ${ref.id.replace(/^vscode:[^:]+:/, "")}`)}
+                            </li>
+                          ))}
+                          {tools.map((ref) => (
+                            <li key={`cite-tool-${item.id}-${ref.id}`}>
+                              {ref.toolName ?? ref.id}
+                              {ref.classification ? ` · ${ref.classification}` : ""}
+                              {ref.status === "empty" ? " · no rows" : ""}
+                            </li>
+                          ))}
+                          {memoriesUsed.map((ref) => (
+                            <li key={`cite-mem-${item.id}-${ref.id}`}>
+                              {ref.type.replace("_", " ")} · {ref.id.slice(0, 8)}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      {item.model ? (
+                        <small>
+                          {item.provider} / {item.model}
+                          {item.tokenCount != null ? ` · ~${item.tokenCount} ctx tokens` : ""}
+                        </small>
+                      ) : null}
+                      {item.role === "user" && thread.scope === "private" ? (
+                        <button type="button" className="ch-promote" onClick={() => void promote(item.id)}>
+                          Promote to team memory
+                        </button>
+                      ) : null}
+                    </article>
+                  );
+                })}
+              </div>
+
+              {lastTools.length > 0 ? (
+                <div className="ch-last-tools" aria-live="polite">
+                  <span className="eyebrow">Last turn tools</span>
+                  {lastTools.map((tool) => (
+                    <span key={`${tool.name}-${tool.summary}`} className={`ch-tool status-${tool.status}`}>
+                      <strong>{tool.name}</strong> · {tool.status}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
+              <form className="ch-composer" onSubmit={send}>
+                {thread.scope === "team" ? (
+                  <div className="ch-composer-note">Team shared · visible to members before send</div>
+                ) : null}
+                <textarea
+                  aria-label="Message"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Ask about team 254 scouting, qual 42 strategy…"
+                />
+                <div className="ch-composer-foot">
+                  <button type="submit" className="primary-action">
+                    Send
+                  </button>
+                  {status ? (
+                    <p className="ch-status" role="status">
+                      {status}
+                    </p>
+                  ) : null}
+                </div>
+              </form>
+            </>
+          )}
+        </section>
+
+        <aside className={`ch-context${contextOpen ? " open" : ""}`} aria-label="Context controls">
+          <div>
+            <span className="eyebrow">Context</span>
+            <h2>Injection & memory</h2>
+            <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
+              Private memory never enters team memory automatically. Admins set team policy under AI memory.
             </p>
           </div>
-        ) : (
-          <>
-            <header>
-              <div>
-                <span className="eyebrow">{thread.scope === "team" ? "TEAM SHARED CHANNEL" : "PRIVATE CHANNEL"}</span>
-                <h1>{thread.title}</h1>
-              </div>
-              {thread.scope === "team" && <strong className="shared-warning">EVERY MESSAGE IN THIS CHANNEL IS SHARED</strong>}
-            </header>
-            <div className="messages">
-              {messages.map((item) => {
-                const tools = toolRefs(item.sourceRefs);
-                const memoriesUsed = memoryRefs(item.sourceRefs);
-                return (
-                  <article className={item.role} key={item.id}>
-                    <span>
-                      {item.role}
-                      {item.explicitlyShared ? " · shared" : " · private"}
-                    </span>
-                    <p className="chat-message-body">{item.content}</p>
-                    {item.role === "assistant" && tools.length > 0 && (
-                      <div className="chat-tool-results" aria-label="Tool results">
-                        {tools.map((ref) => (
-                          <div className={`chat-tool-chip status-${ref.status ?? "ok"}`} key={`${item.id}-${ref.id}`}>
-                            <strong>{ref.toolName ?? ref.id}</strong>
-                            <span>{ref.classification ?? "tool"}</span>
-                            <em>{ref.status === "empty" ? "empty" : ref.status ?? "ok"}</em>
-                            {ref.summary && <p>{ref.summary}</p>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {item.role === "assistant" && (tools.length > 0 || memoriesUsed.length > 0) && (
-                      <ul className="chat-provenance" aria-label="Provenance citations">
-                        {tools.map((ref) => (
-                          <li key={`cite-tool-${item.id}-${ref.id}`}>
-                            {ref.toolName ?? ref.id}
-                            {ref.classification ? ` · ${ref.classification}` : ""}
-                            {ref.status === "empty" ? " · no rows" : ""}
-                          </li>
-                        ))}
-                        {memoriesUsed.map((ref) => (
-                          <li key={`cite-mem-${item.id}-${ref.id}`}>
-                            {ref.type.replace("_", " ")} · {ref.id.slice(0, 8)}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {item.model && (
-                      <small>
-                        {item.provider} / {item.model}
-                        {item.tokenCount != null ? ` · ~${item.tokenCount} ctx tokens` : ""}
-                      </small>
-                    )}
-                    {item.role === "user" && thread.scope === "private" && (
-                      <button type="button" className="chat-promote" onClick={() => void promote(item.id)}>
-                        Promote to team memory
-                      </button>
-                    )}
-                  </article>
-                );
-              })}
+
+          <div className="ch-context-block">
+            <div className="ch-row">
+              <strong>Private injection</strong>
+              <span className={`app-badge ${memorySettings?.private.enabled === false ? "setup" : "good"}`}>
+                {memorySettings?.private.enabled === false ? "Off" : "On"}
+              </span>
             </div>
-            {lastTools.length > 0 && (
-              <div className="chat-last-tools" aria-live="polite">
-                <span className="eyebrow">LAST TURN TOOLS</span>
-                {lastTools.map((tool) => (
-                  <span key={`${tool.name}-${tool.summary}`} className={`chat-tool-chip status-${tool.status}`}>
-                    <strong>{tool.name}</strong> · {tool.status}
-                  </span>
-                ))}
-              </div>
-            )}
-            <form className="chat-composer" onSubmit={send}>
-              {thread.scope === "team" && <div>TEAM SHARED · visible to members before send</div>}
-              <textarea
-                aria-label="Message"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Ask about team 254 scouting, qual 42 strategy…"
-              />
-              <button type="submit">Send</button>
+            <div className="ch-actions">
+              <button type="button" onClick={() => void setPrivateInjection(true)}>
+                Enable
+              </button>
+              <button type="button" className="secondary" onClick={() => void setPrivateInjection(false)}>
+                Disable
+              </button>
+            </div>
+            <form className="ch-budget" onSubmit={savePrivateBudget}>
+              <label>
+                Private token budget
+                <input
+                  type="number"
+                  min={200}
+                  max={8000}
+                  value={privateBudget}
+                  onChange={(e) => setPrivateBudget(Number(e.target.value))}
+                />
+              </label>
+              <button type="submit" className="app-button secondary">
+                Save budget
+              </button>
             </form>
-            {status && (
-              <p className="chat-status" role="status">
-                {status}
-              </p>
-            )}
-          </>
-        )}
-      </section>
-      <aside className="memory-panel">
-        <span className="eyebrow">CONTEXT CONTROLS</span>
-        <p>Inspect injection toggles and token budgets. Private memory never enters team memory automatically.</p>
-        <div className="memory-controls">
-          <div className="memory-control-row">
-            <strong>Private injection</strong>
-            <span>{memorySettings?.private.enabled === false ? "OFF" : "ON"}</span>
           </div>
-          <div className="memory-control-actions">
-            <button type="button" onClick={() => void setPrivateInjection(true)}>
-              Enable
-            </button>
-            <button type="button" className="memory-toggle" onClick={() => void setPrivateInjection(false)}>
-              Disable
-            </button>
+
+          <div className="ch-context-block">
+            <div className="ch-row">
+              <strong>Team injection</strong>
+              <span className={`app-badge ${memorySettings?.team?.enabled ? "good" : "setup"}`}>
+                {memorySettings?.team?.enabled ? "On" : "Off"}
+              </span>
+            </div>
+            <div className="ch-actions">
+              <button type="button" onClick={() => void setTeamInjection(true)}>
+                Enable team
+              </button>
+              <button type="button" className="secondary" onClick={() => void setTeamInjection(false)}>
+                Disable team
+              </button>
+            </div>
+            <form className="ch-budget" onSubmit={saveTeamBudget}>
+              <label>
+                Team token budget
+                <input
+                  type="number"
+                  min={200}
+                  max={8000}
+                  value={teamBudget}
+                  onChange={(e) => setTeamBudget(Number(e.target.value))}
+                />
+              </label>
+              <button type="submit" className="app-button secondary">
+                Save team budget
+              </button>
+            </form>
+            <a href={`/team/ai-memory${q}`} style={{ fontSize: 12, fontWeight: 700, color: "var(--app-accent)" }}>
+              Open AI memory governance →
+            </a>
           </div>
-          <form className="memory-budget-form" onSubmit={savePrivateBudget}>
-            <label>
-              Private token budget
-              <input
-                type="number"
-                min={200}
-                max={8000}
-                value={privateBudget}
-                onChange={(e) => setPrivateBudget(Number(e.target.value))}
+
+          <div className="ch-context-block">
+            <span className="eyebrow">Your private memory</span>
+            <form className="ch-budget" onSubmit={saveMemory}>
+              <textarea
+                value={memory}
+                onChange={(e) => setMemory(e.target.value)}
+                placeholder="Add a durable preference or fact"
+                rows={3}
               />
-            </label>
-            <button type="submit">Save budget</button>
-          </form>
-          <div className="memory-control-row">
-            <strong>Team injection</strong>
-            <span>{memorySettings?.team?.enabled ? "ON" : "OFF"}</span>
+              <button type="submit" className="app-button secondary">
+                Save private memory
+              </button>
+            </form>
+            <ul className="ch-memories">
+              {memories.map((item) => (
+                <li key={item.id}>
+                  <article>
+                    <small>{item.kind}</small>
+                    <p>{item.content}</p>
+                    <button type="button" className="ch-promote" onClick={() => void removeMemory(item.id)}>
+                      Delete
+                    </button>
+                  </article>
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="memory-control-actions">
-            <button type="button" onClick={() => void setTeamInjection(true)}>
-              Enable team
-            </button>
-            <button type="button" className="memory-toggle" onClick={() => void setTeamInjection(false)}>
-              Disable team
-            </button>
-          </div>
-          <form className="memory-budget-form" onSubmit={saveTeamBudget}>
-            <label>
-              Team token budget
-              <input
-                type="number"
-                min={200}
-                max={8000}
-                value={teamBudget}
-                onChange={(e) => setTeamBudget(Number(e.target.value))}
-              />
-            </label>
-            <button type="submit">Save team budget</button>
-          </form>
-        </div>
-        <span className="eyebrow">YOUR PRIVATE MEMORY</span>
-        <form onSubmit={saveMemory}>
-          <textarea value={memory} onChange={(e) => setMemory(e.target.value)} placeholder="Add a durable preference or fact" />
-          <button type="submit">Save private memory</button>
-        </form>
-        {memories.map((item) => (
-          <article key={item.id}>
-            <small>{item.kind}</small>
-            <p>{item.content}</p>
-            <button type="button" onClick={() => void removeMemory(item.id)}>
-              Delete
-            </button>
-          </article>
-        ))}
-      </aside>
+        </aside>
+      </div>
     </main>
   );
 }

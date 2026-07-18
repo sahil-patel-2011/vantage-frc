@@ -1,0 +1,119 @@
+{
+  "name": "vantage-vscode",
+  "displayName": "Vantage for FRC",
+  "description": "Connect VS Code to Vantage AI with opt-in editor context for robot code help.",
+  "version": "0.1.0",
+  "publisher": "vantage-frc",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sahiljpatel2011-wq/vantage-frc.git"
+  },
+  "homepage": "https://github.com/sahiljpatel2011-wq/vantage-frc/tree/main/packages/vantage-vscode",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "FRC",
+    "robotics",
+    "Vantage",
+    "WPILib"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vantage.signIn",
+        "title": "Vantage: Sign In / Pair"
+      },
+      {
+        "command": "vantage.signOut",
+        "title": "Vantage: Sign Out"
+      },
+      {
+        "command": "vantage.selectOrg",
+        "title": "Vantage: Show Connected Organization"
+      },
+      {
+        "command": "vantage.askSelection",
+        "title": "Vantage: Ask About Selection"
+      },
+      {
+        "command": "vantage.reviewFile",
+        "title": "Vantage: Review Current File"
+      },
+      {
+        "command": "vantage.openChat",
+        "title": "Vantage: Open Web Chat"
+      },
+      {
+        "command": "vantage.openCode",
+        "title": "Vantage: Open Web Code"
+      },
+      {
+        "command": "vantage.showPrivacy",
+        "title": "Vantage: Privacy & What Gets Shared"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "vantage.askSelection",
+          "when": "editorHasSelection",
+          "group": "vantage@1"
+        },
+        {
+          "command": "vantage.reviewFile",
+          "group": "vantage@2"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Vantage",
+      "properties": {
+        "vantage.baseUrl": {
+          "type": "string",
+          "default": "https://vantagefrc.com",
+          "description": "Vantage web app origin (no trailing slash). Use http://localhost:3001 for local dev."
+        },
+        "vantage.mockPairing": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use a local mock device session when the server pair APIs are unavailable."
+        },
+        "vantage.includeDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "When sharing context, offer Problems diagnostics for the current file (still requires opt-in per share)."
+        },
+        "vantage.maxContentChars": {
+          "type": "number",
+          "default": 48000,
+          "minimum": 1000,
+          "maximum": 48000,
+          "description": "Hard cap on characters of selection/file content sent in one share."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "typecheck": "tsc -p ./ --noEmit",
+    "package": "npm run compile && npx --yes @vscode/vsce package --no-dependencies --allow-missing-repository --out vantage-vscode.vsix",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.7.0"
+  }
+}

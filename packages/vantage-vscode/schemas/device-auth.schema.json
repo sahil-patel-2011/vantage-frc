@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vantage.frc/schemas/device-auth.schema.json",
+  "title": "VantageEditorDeviceAuth",
+  "description": "Auth token blob stored in VS Code SecretStorage after pair approval.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["deviceToken", "deviceId", "orgId", "userId", "scopes", "vantageUrl"],
+  "properties": {
+    "deviceToken": { "type": "string", "minLength": 16 },
+    "deviceId": { "type": "string", "format": "uuid" },
+    "orgId": { "type": "string", "format": "uuid" },
+    "orgName": { "type": "string" },
+    "userId": { "type": "string", "format": "uuid" },
+    "scopes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "vantageUrl": { "type": "string", "format": "uri" },
+    "mock": { "type": "boolean" }
+  }
+}

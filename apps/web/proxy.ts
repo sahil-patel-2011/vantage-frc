@@ -1,4 +1,4 @@
-import { auth, isEmail2faEnforced, isOnboardingComplete, sessionHasEmail2fa } from "@vantage/core";
+import { auth, getOnboardingGate, isEmail2faEnforced, sessionHasEmail2fa } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
@@ -41,6 +41,11 @@ const PUBLIC_PREFIXES = [
   "/api/cad/pair/poll",
   "/api/cad/relay",
   "/api/cad/compatibility",
+  // VS Code / editor connector: device-code pair + bearer context (no session cookie).
+  "/api/editor/pair/start",
+  "/api/editor/pair/poll",
+  "/api/editor/session",
+  "/api/editor/context",
   // Generated social/SEO images must be crawlable without auth.
   "/opengraph-image",
   "/twitter-image",
@@ -78,6 +83,12 @@ function onboardingRedirect(request: NextRequest) {
 function postOnboardingRedirect(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next");
   return NextResponse.redirect(new URL(safeRelativePath(next), request.url));
+}
+
+function approvalPendingRedirect(request: NextRequest) {
+  const onboarding = new URL("/onboarding", request.url);
+  onboarding.searchParams.set("state", "pending");
+  return NextResponse.redirect(onboarding);
 }
 
 export async function proxy(request: NextRequest) {
@@ -127,11 +138,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(verify);
   }
 
-  const onboardingDone = await withRls({ userId: session.user.id }, (client) =>
-    isOnboardingComplete(client, session.user.id),
-  ).catch(() => false);
+  const onboardingGate = await withRls({ userId: session.user.id }, (client) =>
+    getOnboardingGate(client, session.user.id),
+  ).catch(() => ({ onboardingComplete: false, workspaceApproved: false, accessStatus: "none" as const }));
 
-  if (!onboardingDone) {
+  if (!onboardingGate.onboardingComplete) {
     if (
       pathname === "/onboarding" ||
       pathname === "/invite" ||
@@ -143,6 +154,20 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next();
     }
     return onboardingRedirect(request);
+  }
+
+  if (!onboardingGate.workspaceApproved) {
+    if (
+      pathname === "/onboarding" ||
+      pathname === "/invite" ||
+      pathname.startsWith("/api/onboarding") ||
+      pathname.startsWith("/api/invites") ||
+      pathname.startsWith("/api/auth") ||
+      pathname.startsWith("/api/theme")
+    ) {
+      return NextResponse.next();
+    }
+    return approvalPendingRedirect(request);
   }
 
   if (pathname === "/signin" || pathname === "/sign-in" || pathname === "/onboarding") {

@@ -20,8 +20,10 @@
     "cad:package:linux": "bash scripts/cad/package-linux.sh",
     "cad:package:macos": "bash scripts/cad/package-macos.sh",
     "cad:bundle": "node scripts/cad/bundle-cli.mjs",
-    "cad:ci": "npm run typecheck --workspace=@vantage/cad && npm run typecheck --workspace=@vantage/cad-cli && npm run test:cad && npm run build --workspace=@vantage/cad-cli && npm run cad:package"
+    "cad:ci": "npm run typecheck --workspace=@vantage/cad && npm run typecheck --workspace=@vantage/cad-cli && npm run test:cad && npm run build --workspace=@vantage/cad-cli && npm run cad:package",
+    "vscode:package": "npm run package --workspace=vantage-vscode"
   },
+
   "devDependencies": {
     "@eslint/js": "latest",
     "@playwright/test": "latest",
