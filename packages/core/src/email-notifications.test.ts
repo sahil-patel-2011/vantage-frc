@@ -16,15 +16,19 @@ describe("email notification preferences", () => {
       coachAssignments: false,
       coachTodos: false,
       coachPracticeReminders: false,
+      sponsorReminders: false,
     });
-    expect(EMAIL_NOTIFICATION_CATEGORIES).toHaveLength(4);
+    expect(EMAIL_NOTIFICATION_CATEGORIES).toHaveLength(5);
   });
 
   it("validates categories and maps preference keys", () => {
     expect(isEmailNotificationCategory("product_updates")).toBe(true);
+    expect(isEmailNotificationCategory("sponsor_reminders")).toBe(true);
     expect(isEmailNotificationCategory("spam")).toBe(false);
     expect(preferenceKeyForCategory("coach_todos")).toBe("coachTodos");
+    expect(preferenceKeyForCategory("sponsor_reminders")).toBe("sponsorReminders");
     expect(categoryLabel("coach_practice_reminders")).toBe("Practice reminders");
+    expect(categoryLabel("sponsor_reminders")).toBe("Sponsor reminders");
   });
 
   it("builds unsubscribe URLs with token and category", () => {
