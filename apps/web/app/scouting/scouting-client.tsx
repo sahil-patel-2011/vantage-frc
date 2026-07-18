@@ -1063,8 +1063,7 @@ function Field({
   const label = `${field.label}${field.required ? " *" : ""}`;
   const isMc =
     field.widget === "mc" ||
-    field.type === "multiple_choice" ||
-    (field.type === "select" && field.widget === "mc");
+    field.type === "multiple_choice";
 
   async function attachFiles(files: FileList | null) {
     if (!files?.length || !onAttachRobotImage) return;
