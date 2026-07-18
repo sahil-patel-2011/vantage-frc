@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { formatClock, matchNoteCategoryLabel, matchNotePhaseLabel } from "../../lib/match-notes-timeline";
 import {
@@ -8,9 +8,152 @@ import {
   MATCH_NOTE_PHASES,
   type MatchNotesTimelineView,
 } from "../../lib/match-notes-timeline/compute-match-notes-timeline";
+import {
+  MATCH_NOTES_TIMELINE_RELATED_INCLUDE,
+  classifyMatchNotesTimelineShell,
+  formatMatchNotesMetric,
+  matchNotesTimelineNextActions,
+  matchNotesTimelineRelatedLinks,
+  matchNotesTimelineShellCopy,
+  shouldShowMatchNotesSummaryTiles,
+  type MatchNotesTimelineNextAction,
+  type MatchNotesTimelineShellKind,
+} from "../../lib/match-notes-timeline/match-notes-timeline-related";
 import type { MatchNoteCategory, MatchNotePhase } from "../../lib/match-notes-timeline/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./match-notes-timeline.css";
 
 type LiveView = Extract<MatchNotesTimelineView, { status: "live" }>;
+
+function MatchNotesRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = matchNotesTimelineRelatedLinks(orgId, {
+    include: [...MATCH_NOTES_TIMELINE_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related match-notes-timeline-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function MatchNotesNextActionsPanel({ actions }: { actions: MatchNotesTimelineNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions match-notes-timeline-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Schedule, Strategy, and Scouting — never DEMO match metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function MatchNotesShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: MatchNotesTimelineShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = matchNotesTimelineNextActions({ orgId, shell });
+  const copy = matchNotesTimelineShellCopy(shell);
+  const competitionHref = hubHref("/competition", "match-notes-timeline", orgId);
+  const scheduleHref = withOrgHref("/schedule", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+
+  return (
+    <main className="module-page match-notes-timeline-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Match Note Timeline"}
+          </>
+        }
+        title="Match Note Timeline"
+        description={description}
+      >
+        <MatchNotesRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No notes yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#match-notes-timeline-log">
+              Log a note
+            </a>
+            <a className="app-button secondary" href={scheduleHref}>
+              Open Schedule
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <MatchNotesNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function MatchNotesTimelineClient() {
   const [view, setView] = useState<MatchNotesTimelineView | null>(null);
@@ -18,8 +161,6 @@ export default function MatchNotesTimelineClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -46,6 +187,33 @@ export default function MatchNotesTimelineClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const entryCount = view?.status === "live" ? view.summary.totalEntries : 0;
+  const matchCount = view?.status === "live" ? view.summary.totalMatches : 0;
+  const summary = view?.status === "live" ? view.summary : null;
+
+  const shell = classifyMatchNotesTimelineShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    entryCount,
+  });
+  const shellCopy = matchNotesTimelineShellCopy(shell);
+  const nextActions = matchNotesTimelineNextActions({
+    orgId,
+    shell,
+    entryCount,
+    matchCount,
+  });
+  const relatedLinks = matchNotesTimelineRelatedLinks(orgId, {
+    include: [...MATCH_NOTES_TIMELINE_RELATED_INCLUDE],
+  });
+  const competitionHref = hubHref("/competition", "match-notes-timeline", orgId);
+  const scheduleHref = withOrgHref("/schedule", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -74,37 +242,74 @@ export default function MatchNotesTimelineClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <MatchNotesShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <MatchNotesShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <MatchNotesShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <MatchNotesShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page match-notes-timeline-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Match Note Timeline"}
           </>
         }
         title="Match Note Timeline"
-        description="Log timestamped notes synced to the match clock — auto, teleop, endgame — for film review and drive-coach debriefs."
+        description="Log timestamped notes synced to the match clock — auto, teleop, endgame — for film review and drive-coach debriefs. Never DEMO match metrics. Cross-check Schedule, Strategy, and Scouting."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="match-notes-timeline-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -113,61 +318,84 @@ export default function MatchNotesTimelineClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <MatchNotesNextActionsPanel actions={nextActions} />
+
+      {shouldShowMatchNotesSummaryTiles(entryCount) && summary ? (
+        <SummaryTiles summary={summary} loaded />
+      ) : null}
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load the match note timeline"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No notes yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href="#match-notes-timeline-log">
+            Log a note
+          </a>
+          <a className="app-button secondary" href={scheduleHref}>
+            Open Schedule
+          </a>
+          <a className="app-button secondary" href={strategyHref}>
+            Open Strategy
+          </a>
+          <a className="app-button secondary" href={scoutingHref}>
+            Open Scouting
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <LogNoteForm busy={busy} mutate={mutate} />
-          <Timelines view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      ) : null}
+
+      <div className="match-notes-timeline-layout">
+        <LogNoteForm busy={busy} mutate={mutate} />
+        {shell === "ready" ? <Timelines view={view} busy={busy} mutate={mutate} /> : null}
+        <Panel className="match-notes-timeline-tip" aria-label="Match Note Timeline tip">
+          <span className="eyebrow">Grounding path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Keep match labels aligned with <a href={scheduleHref}>Schedule</a>, ground debriefs in{" "}
+            <a href={strategyHref}>Strategy</a>, and pair clock notes with{" "}
+            <a href={scoutingHref}>Scouting</a> rows — never invent DEMO match metrics.
+          </p>
+        </Panel>
+      </div>
     </main>
   );
 }
 
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
+function SummaryTiles({
+  summary,
+  loaded,
+}: {
+  summary: LiveView["summary"];
+  loaded: boolean;
+}) {
   const tiles = [
-    { label: "Notes logged", value: String(summary.totalEntries) },
-    { label: "Matches covered", value: String(summary.totalMatches) },
-    { label: "Issues flagged", value: String(summary.byCategory.find((c) => c.category === "issue")?.count ?? 0) },
-    { label: "Highlights", value: String(summary.byCategory.find((c) => c.category === "highlight")?.count ?? 0) },
+    { label: "Notes logged", value: formatMatchNotesMetric(summary.totalEntries, loaded) },
+    { label: "Matches covered", value: formatMatchNotesMetric(summary.totalMatches, loaded) },
+    {
+      label: "Issues flagged",
+      value: formatMatchNotesMetric(summary.byCategory.find((c) => c.category === "issue")?.count ?? 0, loaded),
+    },
+    {
+      label: "Highlights",
+      value: formatMatchNotesMetric(
+        summary.byCategory.find((c) => c.category === "highlight")?.count ?? 0,
+        loaded,
+      ),
+    },
   ];
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <section className="match-notes-timeline-stats" aria-label="Match Note Timeline counts">
+      {tiles.map((tile) => (
+        <div key={tile.label}>
+          <strong>{tile.value}</strong>
+          <span className="app-muted" style={{ display: "block" }}>
+            {tile.label}
+          </span>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -181,19 +409,12 @@ function Timelines({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   if (view.summary.totalEntries === 0) {
-    return (
-      <EmptyState
-        badge="No notes yet"
-        badgeTone="setup"
-        title="Log your first match note"
-        description="Add a note with the match clock time — during or after a match — to build a replayable timeline."
-      />
-    );
+    return null;
   }
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div id="match-notes-timeline-list" className="match-notes-timeline-layout">
       {view.timelines.map((timeline) => (
-        <Panel key={timeline.matchLabel}>
+        <Panel key={timeline.matchLabel} className="match-notes-timeline-panel">
           <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
             <h2 style={{ margin: 0 }}>{timeline.matchLabel}</h2>
             <small className="app-muted">
@@ -201,16 +422,13 @@ function Timelines({
               {timeline.teamNumber ? ` · Team ${timeline.teamNumber}` : ""}
             </small>
           </header>
-          <ul style={{ listStyle: "none", padding: 0, margin: "10px 0 0", display: "grid", gap: 10 }}>
+          <ul className="match-notes-timeline-list">
             {timeline.entries.map((entry) => (
-              <li
-                key={entry.id}
-                style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-              >
+              <li key={entry.id} className="match-notes-timeline-card">
                 <div>
                   <strong style={{ fontFamily: "monospace" }}>{formatClock(entry.clockSeconds)}</strong>{" "}
-                  <span className="app-badge demo">{matchNotePhaseLabel(entry.phase)}</span>{" "}
-                  <span className="app-badge setup">{matchNoteCategoryLabel(entry.category)}</span>
+                  <span className="app-badge setup">{matchNotePhaseLabel(entry.phase)}</span>{" "}
+                  <span className="app-badge good">{matchNoteCategoryLabel(entry.category)}</span>
                   <div>{entry.note}</div>
                 </div>
                 <button
@@ -260,7 +478,9 @@ function LogNoteForm({
 
   return (
     <Panel
+      id="match-notes-timeline-log"
       as="form"
+      className="match-notes-timeline-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.matchLabel.trim() || !form.note.trim()) return;
@@ -277,9 +497,11 @@ function LogNoteForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Log a note</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Notes use only what you type against the match clock — never DEMO match metrics.
+      </p>
       <FormGrid min={160}>
         <FormRow label="Match label">
           <input value={form.matchLabel} onChange={set("matchLabel")} placeholder="Qualification 12" required />

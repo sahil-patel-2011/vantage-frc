@@ -26,7 +26,13 @@ describe("computeMatchNotesTimelineView", () => {
     expect(view.status).toBe("setup_required");
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
-      expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps.map((s) => s.id)).toEqual(["workspace", "schedule", "strategy", "scouting"]);
+      expect(view.steps[0]?.href).toBe("/workspace");
+      expect(view.steps.find((s) => s.id === "schedule")?.href).toBe("/schedule");
+      expect(view.steps.find((s) => s.id === "strategy")?.href).toBe("/competition?tab=strategy");
+      expect(view.steps.find((s) => s.id === "scouting")?.href).toBe("/competition?tab=scouting");
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
+      expect(view.steps.some((s) => /never DEMO/i.test(s.detail))).toBe(true);
     }
   });
 

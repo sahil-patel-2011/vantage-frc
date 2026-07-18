@@ -1,0 +1,17 @@
+/* Soft-UI Match Note Timeline — .match-notes-timeline-* + shared Soft-UI tokens. Never DEMO match metrics. */
+.match-notes-timeline-page{display:grid;gap:16px}
+.match-notes-timeline-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.match-notes-timeline-related{display:flex;flex-wrap:wrap;gap:8px}
+.match-notes-timeline-next-actions{margin:0}
+.match-notes-timeline-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.match-notes-timeline-stats strong{font-size:1.5rem}
+.match-notes-timeline-layout{display:grid;gap:16px}
+.match-notes-timeline-panel{display:grid;gap:12px}
+.match-notes-timeline-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.match-notes-timeline-card{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.match-notes-timeline-tip{margin:0}
+@media(max-width:900px){
+  .match-notes-timeline-header-actions{justify-content:flex-start}
+  .match-notes-timeline-next-actions li{flex-direction:column;align-items:stretch}
+  .match-notes-timeline-card{flex-direction:column}
+}
