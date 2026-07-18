@@ -9,7 +9,7 @@ import {
 } from "./auto-tools";
 
 export type ClaimClassification="hard_metric"|"scout_observation"|"researched_claim"|"model_inference";
-export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact";sourceUrl?:string;observedAt?:string};
+export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact"|"github_file"|"vscode_selection";sourceUrl?:string;observedAt?:string;label?:string};
 export type ToolExecutionContext={client:PoolClient;orgId:string;userId:string;activeEventKey:string|null};
 export type ToolDefinition<I,O>={name:string;description:string;parseInput(value:unknown):I;parseOutput(value:unknown):O;execute(context:ToolExecutionContext,input:I):Promise<O>};
 
@@ -55,7 +55,7 @@ export class AIOrchestrator{
         : []);
     let billingOwner=request.billingOwner;if(!billingOwner&&request.privacyScope==="private"){const personal=await this.client.query(`SELECT 1 FROM billing_accounts a JOIN billing_subscriptions s ON s.billing_account_id=a.id AND s.status IN ('active','trialing') WHERE a.owner_user_id=$1 AND s.current_period_start<=now() AND s.current_period_end>now()`,[request.userId]);if(personal.rowCount)billingOwner={type:"user",id:request.userId};}billingOwner??={type:"org",id:request.orgId};
     const toolUsesOrgData=plannedToolCalls.some((call)=>["scouting.team","strategy.match","artifacts.related"].includes(call.name));
-    const usesOrgData=request.usesOrgData??(toolUsesOrgData||request.contextSources.some(source=>["team_memory","hard_metric","scout_observation","researched_claim","artifact"].includes(source.classification)));if(billingOwner.type==="user"&&usesOrgData){const allowed=await this.client.query(`SELECT 1 FROM org_member_funding_policies WHERE org_id=$1 AND user_id=$2 AND allow_individual_funding=true`,[request.orgId,request.userId]);if(!allowed.rowCount)throw new Error("Organization admin approval is required to fund an org-data run with an individual plan");}
+    const usesOrgData=request.usesOrgData??(toolUsesOrgData||request.contextSources.some(source=>["team_memory","hard_metric","scout_observation","researched_claim","artifact","github_file","vscode_selection"].includes(source.classification)));if(billingOwner.type==="user"&&usesOrgData){const allowed=await this.client.query(`SELECT 1 FROM org_member_funding_policies WHERE org_id=$1 AND user_id=$2 AND allow_individual_funding=true`,[request.orgId,request.userId]);if(!allowed.rowCount)throw new Error("Organization admin approval is required to fund an org-data run with an individual plan");}
     if(request.privacyScope==="team"&&billingOwner.type!=="org")throw new Error("Team-shared AI must use the organization billing account");
     const usageFeature=request.capability;
     const run=await this.client.query<{id:string}>(`INSERT INTO ai_runs(org_id,user_id,thread_id,capability,privacy_scope,request_id,input,billing_owner_type,billing_owner_id) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9) RETURNING id`,[request.orgId,request.userId,request.threadId??null,request.capability,request.privacyScope,request.requestId,JSON.stringify({message:request.message,activeEventKey:active,selected:request.selected??{},toolCalls:plannedToolCalls}),billingOwner.type,billingOwner.id]);

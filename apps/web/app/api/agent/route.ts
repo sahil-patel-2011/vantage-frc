@@ -3,6 +3,11 @@ import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import {
+  loadEditorContextItems,
+  loadGitHubContextItems,
+  type GitHubContextRequest,
+} from "../../../lib/github";
 
 async function current() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -48,6 +53,10 @@ export async function POST(request: Request) {
       title?: string;
       message?: string;
       selected?: { teamKey?: string; matchKey?: string };
+      /** VS Code editor_context_submissions id from deep-link */
+      editorContextId?: string;
+      /** Optional GitHub file/tree request for this turn */
+      githubContext?: GitHubContextRequest;
     };
     if (!body.orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
     const orgId = body.orgId;
@@ -62,6 +71,16 @@ export async function POST(request: Request) {
       if (!body.threadId || !body.message?.trim() || !body.scope) throw new Error("Thread, scope, and message are required");
       const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
       const adapter = await resolveOrgChatAdapter(client, { orgId, promptCachingEnabled });
+
+      const bridgeContext = [
+        ...(body.editorContextId
+          ? await loadEditorContextItems(client, orgId, session.user.id, body.editorContextId)
+          : []),
+        ...(body.githubContext
+          ? await loadGitHubContextItems(client, orgId, body.githubContext)
+          : []),
+      ];
+
       return repository.sendMessage({
         userId: session.user.id,
         orgId: body.orgId!,
@@ -72,6 +91,7 @@ export async function POST(request: Request) {
         requestId: crypto.randomUUID(),
         selected: body.selected,
         promptCachingEnabled,
+        bridgeContext,
       });
     });
     return Response.json(data, { status: 201 });

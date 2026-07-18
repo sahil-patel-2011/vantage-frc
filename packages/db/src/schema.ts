@@ -170,6 +170,7 @@ export const profiles = pgTable("profiles", {
   gender: text("gender"),
   preferredTeamNumber: integer("preferred_team_number"),
   teamRole: text("team_role"),
+  primaryFocus: text("primary_focus").$type<"competition" | "build" | "business" | "leadership">(),
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
 });
 
@@ -265,6 +266,26 @@ export const memberships = pgTable(
   },
   (table) => [
     uniqueIndex("memberships_org_user_uq").on(table.orgId, table.userId),
+  ],
+);
+
+export const workspaceAccessRequests = pgTable(
+  "workspace_access_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    requestedTeamRole: text("requested_team_role"),
+    primaryFocus: text("primary_focus").notNull().$type<"competition" | "build" | "business" | "leadership">(),
+    status: text("status").notNull().default("pending").$type<"pending" | "approved" | "declined" | "withdrawn">(),
+    membershipRole: orgRole("membership_role"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index("workspace_access_requests_org_status_idx").on(table.orgId, table.status, table.createdAt),
+    index("workspace_access_requests_user_created_idx").on(table.userId, table.createdAt),
   ],
 );
 
@@ -1319,6 +1340,25 @@ export const cadConnections = pgTable("cad_connections", {
   disabledAt: timestamp("disabled_at", { withTimezone: true }),
   ...timestamps,
 }, (table) => [index("cad_connections_org_user_idx").on(table.orgId, table.userId)]);
+
+/** Org-scoped GitHub OAuth/PAT for AI robot-code context (read APIs only). */
+export const githubConnections = pgTable("github_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }).unique(),
+  connectedBy: uuid("connected_by").notNull().references(() => users.id),
+  authMethod: text("auth_method").$type<"oauth" | "pat">().notNull(),
+  label: text("label").notNull().default("GitHub"),
+  encryptedCredentials: text("encrypted_credentials").notNull(),
+  scopes: text("scopes").array().notNull().default([]),
+  status: text("status").$type<"connected" | "disconnected" | "error">().notNull().default("connected"),
+  githubLogin: text("github_login"),
+  githubUserId: text("github_user_id"),
+  defaultRepoFullName: text("default_repo_full_name"),
+  defaultRepoDefaultBranch: text("default_repo_default_branch"),
+  lastTestedAt: timestamp("last_tested_at", { withTimezone: true }),
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  ...timestamps,
+});
 
 export const cadJobs = pgTable("cad_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
