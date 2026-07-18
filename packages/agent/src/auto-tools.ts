@@ -202,7 +202,7 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
   }
 
   for (const matchKey of matchKeys) {
-    if (wantsStrategy || STRATEGY_RE.test(text) || matchKeys.length || isStrategySurface) {
+    if (wantsStrategy || STRATEGY_RE.test(text) || matchKeys.length || isStrategySurface || isCadSurface) {
       add("strategy.match", { matchKey });
     }
   }
@@ -224,7 +224,7 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
   }
 
   // Strategy questions without an explicit match still benefit from selected match context.
-  if (!matchKeys.length && options.selected?.matchKey && (wantsStrategy || isStrategySurface)) {
+  if (!matchKeys.length && options.selected?.matchKey && (wantsStrategy || isStrategySurface || isCadSurface)) {
     add("strategy.match", { matchKey: options.selected.matchKey });
   }
 
