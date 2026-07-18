@@ -282,6 +282,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/spare-robot-kit", label: "Spare Robot Kit Checklist", icon: "cube" },
       { href: "/tuning-autopilot", label: "Tuning Autopilot", icon: "cube" },
       { href: "/wiring-diagnoser", label: "Wiring / Power Fault Diagnoser", icon: "cube" },
+      { href: "/subsystem-signoff", label: "Subsystem Sign-off", icon: "cube" },
     ],
   },
   {
