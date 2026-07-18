@@ -12,6 +12,29 @@ import {
 import type { PoolClient } from "@neondatabase/serverless";
 import { CommitAndThrowError } from "@vantage/db";
 import Stripe from "stripe";
+import {
+  emitAbsoluteSpendAlerts,
+  enforceOrgAiGovernance,
+} from "./ai-governance";
+
+export {
+  ApprovalRequiredError,
+  AiPolicyDeniedError,
+  DEFAULT_ORG_AI_POLICY,
+  emitAbsoluteSpendAlerts,
+  enforceOrgAiGovernance,
+  isFeatureAllowed,
+  isToolAllowed,
+  knownAiFeatures,
+  knownAiTools,
+  loadOrgAiPolicy,
+  mapOrgAiPolicyRow,
+  needsAiApproval,
+  normalizeStringList,
+  normalizeThresholds,
+  parseOptionalUsd,
+  type OrgAiPolicy,
+} from "./ai-governance";
 
 export class CreditCapExceededError extends Error {
   constructor() {
@@ -357,6 +380,17 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   }
   const creditWallet = await lockCreditWallet(input, keySource);
   await enforceApiBudgets(input, account.tier, keySource);
+  await enforceOrgAiGovernance({
+    client: input.client,
+    orgId: input.orgId,
+    userId: input.userId,
+    feature: input.feature,
+    requestId: input.requestId,
+    estimatedCostUsd: input.estimatedCostUsd,
+    provider: input.provider,
+    model: input.model,
+    metadata: input.metadata,
+  });
   if (keySource !== "byo") {
     const totals = await input.client.query<{ used: string; grants: string }>(
       `SELECT
@@ -411,6 +445,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     );
   }
   await emitBudgetWarnings(input.client, input.orgId);
+  await emitAbsoluteSpendAlerts(input.client, input.orgId);
   return receipt.value;
 }
 

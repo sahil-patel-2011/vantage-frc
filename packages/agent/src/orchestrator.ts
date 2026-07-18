@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { meteredAI } from "@vantage/billing";
+import { isToolAllowed, loadOrgAiPolicy, meteredAI } from "@vantage/billing";
 import { boundedContext,type ChatAdapter,type ContextItem } from "./index";
 import {
   annotateToolOutput,
@@ -58,6 +58,12 @@ export class AIOrchestrator{
     const usesOrgData=request.usesOrgData??(toolUsesOrgData||request.contextSources.some(source=>["team_memory","hard_metric","scout_observation","researched_claim","artifact","github_file","vscode_selection"].includes(source.classification)));if(billingOwner.type==="user"&&usesOrgData){const allowed=await this.client.query(`SELECT 1 FROM org_member_funding_policies WHERE org_id=$1 AND user_id=$2 AND allow_individual_funding=true`,[request.orgId,request.userId]);if(!allowed.rowCount)throw new Error("Organization admin approval is required to fund an org-data run with an individual plan");}
     if(request.privacyScope==="team"&&billingOwner.type!=="org")throw new Error("Team-shared AI must use the organization billing account");
     const usageFeature=request.capability;
+    const aiPolicy=await loadOrgAiPolicy(this.client,request.orgId);
+    for(const call of plannedToolCalls){
+      if(!isToolAllowed(aiPolicy,call.name)){
+        throw new Error(`AI tool is not allowed by organization policy: ${call.name}`);
+      }
+    }
     const run=await this.client.query<{id:string}>(`INSERT INTO ai_runs(org_id,user_id,thread_id,capability,privacy_scope,request_id,input,billing_owner_type,billing_owner_id) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9) RETURNING id`,[request.orgId,request.userId,request.threadId??null,request.capability,request.privacyScope,request.requestId,JSON.stringify({message:request.message,activeEventKey:active,selected:request.selected??{},toolCalls:plannedToolCalls}),billingOwner.type,billingOwner.id]);
     const runId=run.rows[0]!.id;let sequence=0;
     try{

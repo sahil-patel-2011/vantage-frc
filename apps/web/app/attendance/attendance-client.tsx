@@ -329,7 +329,7 @@ export default function AttendanceClient() {
   if (fetchFailed || !view) {
     return (
       <main className="module-page att-page">
-        <PageHeader breadcrumbs="Team / Attendance" title="Attendance" />
+        <PageHeader breadcrumbs="Calendar / Attendance" title="Attendance" />
         <TeamOpsNav active="attendance" />
         <EmptyState
           title={fetchFailed ? "Could not load attendance" : "Loading attendance…"}
@@ -350,7 +350,7 @@ export default function AttendanceClient() {
     return (
       <main className="module-page att-page">
         <PageHeader
-          breadcrumbs="Team / Attendance"
+          breadcrumbs="Calendar / Attendance"
           title="Attendance"
           description="Log who showed up to practice and meetings — real marks only."
         />
@@ -375,7 +375,7 @@ export default function AttendanceClient() {
   return (
     <main className="module-page att-page">
       <PageHeader
-        breadcrumbs="Team / Attendance"
+        breadcrumbs="Calendar / Attendance"
         title="Attendance"
         description={
           <>

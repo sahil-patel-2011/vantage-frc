@@ -222,6 +222,9 @@ export default function BusinessClient() {
           <a className="app-button secondary" href={`/costs${q}`}>
             Season Costs
           </a>
+          <a className="app-button secondary" href={`/attendance${q}`}>
+            Attendance
+          </a>
           <a
             className="app-button secondary"
             href={`/impact?orgId=${encodeURIComponent(live.orgId)}&season=${live.seasonYear}`}
