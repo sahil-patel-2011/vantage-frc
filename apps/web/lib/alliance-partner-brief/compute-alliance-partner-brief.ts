@@ -1,10 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { buildEvidenceNote, buildPartnerStrengths, classifyPartnerRole, PARTNER_ROLE_LABEL } from ".";
 import type {
   AllianceBriefSummary,
   AllianceOption,
+  AlliancePartnerBriefSetupStep,
   AlliancePartnerBriefView,
   PartnerAnalysis,
   PartnerEpa,
@@ -52,19 +55,40 @@ async function resolveOrg(
   return membership.rows[0] ?? null;
 }
 
+function setupSteps(orgId: string | null): AlliancePartnerBriefSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Alliance-Partner Brief is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "alliance-board",
+      label: "Run alliance selection",
+      detail: "Build and finalize picks on an alliance board — never DEMO captains.",
+      href: withOrgHref("/strategy/draft", orgId),
+    },
+    {
+      id: "strategy",
+      label: "Open Strategy",
+      detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+      href: hubHref("/competition", "strategy", orgId),
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      href: hubHref("/competition", "scouting", orgId),
+    },
+  ];
+}
+
 function setupRequiredView(message: string, orgId: string | null, eventKey: string | null): AlliancePartnerBriefView {
   return {
     status: "setup_required",
     message,
-    steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      {
-        id: "alliance-board",
-        label: "Run alliance selection",
-        detail: "Build and finalize picks on an alliance board",
-        href: "/strategy/draft",
-      },
-    ],
+    steps: setupSteps(orgId),
     orgId,
     eventKey,
   };
