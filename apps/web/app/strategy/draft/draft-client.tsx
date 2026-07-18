@@ -3,6 +3,28 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AllianceBoardState, AllianceSlot } from "../../../lib/strategy/pick-desk";
 
+type DraftPickAssist = {
+  pickMode: "full" | "low_data_tba";
+  pickModeReason: string | null;
+  scoutedTeams: number;
+  teamCount: number;
+  recommendation: {
+    teamKey: string;
+    teamNumber: number | null;
+    nickname: string | null;
+    headline: string;
+    reasons: Array<{ label: string; tone: string }>;
+    epaDrift: { label: string; divergent: boolean } | null;
+  } | null;
+  alternates: Array<{
+    teamKey: string;
+    teamNumber: number | null;
+    nickname: string | null;
+    headline: string;
+  }>;
+  epaDrifts: Array<{ teamKey: string; label: string; delta: number; divergent: boolean }>;
+};
+
 type DraftPayload = {
   orgId: string;
   eventKey: string;
@@ -23,6 +45,7 @@ type DraftPayload = {
     revokedAt: string | null;
     lastUsedAt: string | null;
   }>;
+  pickAssist?: DraftPickAssist | null;
   message?: string;
 };
 
@@ -229,6 +252,9 @@ export default function DraftClient() {
           <a className="app-button secondary" href={`/strategy?tab=picks&orgId=${encodeURIComponent(data.orgId)}`}>
             Pick lists
           </a>
+          <a className="app-button secondary" href={`/pick-clock?orgId=${encodeURIComponent(data.orgId)}`}>
+            Pick clock
+          </a>
         </div>
       </header>
 
@@ -238,6 +264,81 @@ export default function DraftClient() {
         </section>
       ) : state ? (
         <>
+          {data.pickAssist ? (
+            <section className="app-card strategy-draft-assist" aria-label="Pick assist">
+              <header>
+                <div>
+                  {data.pickAssist.pickMode === "low_data_tba" ? (
+                    <span className="app-badge setup">Low-data TBA</span>
+                  ) : (
+                    <span className="app-badge good">Scout-weighted</span>
+                  )}
+                  <h2>Next pick assist</h2>
+                  <p className="app-muted">
+                    {data.pickAssist.pickModeReason ??
+                      `${data.pickAssist.scoutedTeams}/${data.pickAssist.teamCount} teams with scout depth · linked to pick clock`}
+                  </p>
+                </div>
+                <a className="app-button secondary" href={`/pick-clock?orgId=${encodeURIComponent(data.orgId)}`}>
+                  Open 45s clock
+                </a>
+              </header>
+              {data.pickAssist.recommendation ? (
+                <div className="strategy-draft-next">
+                  <strong>
+                    {teamNumber(data.pickAssist.recommendation.teamKey)}
+                    {data.pickAssist.recommendation.nickname
+                      ? ` · ${data.pickAssist.recommendation.nickname}`
+                      : ""}
+                  </strong>
+                  <span>{data.pickAssist.recommendation.headline}</span>
+                  {data.pickAssist.recommendation.epaDrift?.divergent ? (
+                    <p className="strategy-draft-drift">{data.pickAssist.recommendation.epaDrift.label}</p>
+                  ) : null}
+                  {data.canEdit ? (
+                    <button
+                      type="button"
+                      className="app-button"
+                      onClick={() => assignTeam(data.pickAssist!.recommendation!.teamKey)}
+                    >
+                      Draft this pick
+                    </button>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="app-muted">No remaining recommendations for available teams.</p>
+              )}
+              {data.pickAssist.alternates.length ? (
+                <ul className="strategy-draft-alts">
+                  {data.pickAssist.alternates.map((alt) => (
+                    <li key={alt.teamKey}>
+                      <strong>{teamNumber(alt.teamKey)}</strong>
+                      <span>{alt.headline}</span>
+                      {data.canEdit ? (
+                        <button type="button" className="text-button" onClick={() => assignTeam(alt.teamKey)}>
+                          Draft
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {data.pickAssist.epaDrifts.length ? (
+                <div className="strategy-draft-drifts">
+                  <h3>EPA-drift callouts</h3>
+                  <ul>
+                    {data.pickAssist.epaDrifts.map((drift) => (
+                      <li key={drift.teamKey}>
+                        <strong>{teamNumber(drift.teamKey)}</strong>
+                        <span>{drift.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           <section className="strategy-draft-toolbar app-card">
             <div>
               <span className="app-badge good">Live board</span>
@@ -349,19 +450,23 @@ export default function DraftClient() {
               <p className="app-muted">Pool empty — sync more event metrics or clear a slot.</p>
             ) : (
               <ul>
-                {available.map((teamKey) => (
-                  <li key={teamKey}>
-                    <strong>{teamNumber(teamKey)}</strong>
-                    <button
-                      type="button"
-                      className="app-button secondary"
-                      disabled={!data.canEdit}
-                      onClick={() => assignTeam(teamKey)}
-                    >
-                      Draft
-                    </button>
-                  </li>
-                ))}
+                {available.map((teamKey) => {
+                  const drift = data.pickAssist?.epaDrifts.find((row) => row.teamKey === teamKey);
+                  return (
+                    <li key={teamKey} title={drift?.label}>
+                      <strong>{teamNumber(teamKey)}</strong>
+                      {drift ? <span className="strategy-draft-pool-drift">EPA lag</span> : null}
+                      <button
+                        type="button"
+                        className="app-button secondary"
+                        disabled={!data.canEdit}
+                        onClick={() => assignTeam(teamKey)}
+                      >
+                        Draft
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

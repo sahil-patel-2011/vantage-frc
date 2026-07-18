@@ -428,9 +428,6 @@ export type PickCandidate = {
   scoutSample: number;
   reliability: number | null;
   foulRate: number | null;
-  /** Scout fields contradicted by TBA score breakdown (excluded from scoring). */
-  tbaConflictCount?: number;
-  tbaConflictFields?: string[];
   suggestedTier: PickTier | null;
 };
 

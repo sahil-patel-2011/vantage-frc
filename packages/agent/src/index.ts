@@ -147,6 +147,11 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
             classification?: "hard_metric" | "scout_observation" | "researched_claim" | "model_inference";
             summary?: string;
             input?: unknown;
+            dataSource?: {
+              mode?: "ok" | "degraded" | "unavailable" | "stale";
+              usingLastGoodCache?: boolean;
+              message?: string;
+            } | null;
           };
           return {
             name: parsed.tool ?? item.id,
@@ -155,6 +160,17 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
             summary: parsed.summary ?? "Tool result",
             output: parsed,
             input: parsed.input,
+            dataSource:
+              parsed.dataSource &&
+              parsed.dataSource.mode &&
+              parsed.dataSource.mode !== "ok" &&
+              typeof parsed.dataSource.message === "string"
+                ? {
+                    mode: parsed.dataSource.mode,
+                    usingLastGoodCache: Boolean(parsed.dataSource.usingLastGoodCache),
+                    message: parsed.dataSource.message,
+                  }
+                : undefined,
           };
         } catch {
           return {
@@ -199,3 +215,7 @@ export * from "./prompt-caching";
 export * from "./http-chat-adapter";
 export * from "./resolve-chat-adapter";
 export * from "./coding-assistant";
+export * from "./brief-from-tools";
+export * from "./cad-brief";
+export * from "./rule-compliance";
+export * from "./finance-redact";

@@ -169,7 +169,7 @@ export function buildPickReasons(
 
   if (pickMode === "full") {
     if (candidate.scoutSample === 0) {
-      reasons.push({ label: "No scout sample yet — EPA/rank only", tone: "caution" });
+      reasons.push({ label: "No scout sample yet — reference metrics only", tone: "caution" });
     } else if (candidate.scoutSample > 0 && candidate.scoutSample < 3) {
       reasons.push({ label: `Thin scout sample (${candidate.scoutSample})`, tone: "caution" });
     }

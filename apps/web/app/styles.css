@@ -135,6 +135,15 @@ body.has-app-shell{padding:64px 0 0 248px;background:var(--app-bg);overflow-x:hi
 .strategy-pick-row-actions button{min-height:32px;padding:5px 8px;border:1px solid var(--app-line);border-radius:6px;background:var(--app-soft);color:var(--app-ink);font-size:11px;font-weight:700;cursor:pointer}
 .strategy-suggest{display:inline-flex;margin-top:6px;padding:3px 7px;border-radius:999px;background:color-mix(in srgb,var(--app-accent) 12%,transparent);color:var(--app-accent);font-size:10px;font-style:normal;font-weight:700}
 .strategy-suggest.muted{background:var(--app-soft);color:var(--app-muted)}
+.strategy-draft-assist{display:grid;gap:12px;margin-bottom:14px}
+.strategy-draft-assist>header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px}
+.strategy-draft-assist h2{margin:6px 0 0;font-size:1.25rem}
+.strategy-draft-next{display:grid;gap:8px;justify-items:start}
+.strategy-draft-next strong{font-size:clamp(28px,5vw,40px);letter-spacing:-.03em;line-height:1}
+.strategy-draft-drift,.strategy-draft-pool-drift{color:var(--app-warning,#b45309);font-size:13px;font-weight:700}
+.strategy-draft-alts,.strategy-draft-drifts ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.strategy-draft-alts li,.strategy-draft-drifts li{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px;padding:8px 10px;border:1px solid var(--app-line);border-radius:8px}
+.strategy-draft-drifts h3{margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--app-muted)}
 .strategy-draft-toolbar{display:grid;gap:12px;margin-bottom:14px}
 .strategy-draft-toolbar>div:first-child{display:grid;gap:6px}
 .strategy-draft-toolbar label{display:grid;gap:6px;max-width:320px;color:var(--app-muted);font-size:11px;font-weight:700}

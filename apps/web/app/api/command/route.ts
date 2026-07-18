@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { loadEventDayCommand } from "../../../lib/command/load-command";
+import { loadDataSourceHealth } from "../../../lib/reference-health";
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -11,9 +12,11 @@ export async function GET(request: Request) {
   if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
 
   try {
-    const snapshot = await withRls({ userId: session.user.id, orgId }, async (client) =>
-      loadEventDayCommand(client, { orgId, userId: session.user.id }),
-    );
+    const snapshot = await withRls({ userId: session.user.id, orgId }, async (client) => {
+      const command = await loadEventDayCommand(client, { orgId, userId: session.user.id });
+      const dataSourceHealth = await loadDataSourceHealth(client, orgId);
+      return { ...command, dataSourceHealth };
+    });
     return Response.json(snapshot, {
       headers: { "Cache-Control": "no-store" },
     });

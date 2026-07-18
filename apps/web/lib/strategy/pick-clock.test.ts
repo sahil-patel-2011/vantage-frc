@@ -136,4 +136,46 @@ describe("pick-clock", () => {
     expect(clockUrgency(15)).toBe("warn");
     expect(clockUrgency(5)).toBe("critical");
   });
+
+  it("surfaces low-data TBA mode and EPA-drift callouts on the clock", () => {
+    const rising = candidate({
+      teamKey: "frc80",
+      teamNumber: 80,
+      epa: 60,
+      suggestedTier: "first",
+      scoutSample: 0,
+      rank: 4,
+    });
+    const { headline, reasons } = buildPickReasons(rising, null, {
+      pickMode: "low_data_tba",
+      epaDrift: {
+        teamKey: "frc80",
+        seasonEpa: 60,
+        recentAverage: 80,
+        delta: 20,
+        divergent: true,
+        label: "EPA may lag — last-3 share ~80 (+20.0) above EPA 60",
+      },
+    });
+    expect(headline).toMatch(/TBA quick pick/);
+    expect(reasons.some((r) => /EPA lag/.test(r.label))).toBe(true);
+    expect(reasons.some((r) => /Low scout coverage/.test(r.label))).toBe(true);
+
+    const result = recommendNextPick({
+      candidates: [rising],
+      pickMode: "low_data_tba",
+      epaDrifts: [
+        {
+          teamKey: "frc80",
+          seasonEpa: 60,
+          recentAverage: 80,
+          delta: 20,
+          divergent: true,
+          label: "EPA may lag",
+        },
+      ],
+    });
+    expect(result.recommendation?.epaDrift?.divergent).toBe(true);
+  });
+
 });
