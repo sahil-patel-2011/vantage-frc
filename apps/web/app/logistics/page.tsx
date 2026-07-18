@@ -1,4 +1,5 @@
-import LogisticsClient from "./logistics-client";
+﻿import LogisticsClient from "./logistics-client";
+import "./logistics.css";
 
 export const metadata = {
   title: "Logistics · Vantage",

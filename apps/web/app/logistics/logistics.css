@@ -71,3 +71,19 @@
 .log-trip-tabs button.active{background:#e8eefc;border-color:#c5d4f7;color:#1f4fd6}
 .log-link{border:0;background:transparent;color:#1f4fd6;font:600 12px var(--font-source-sans),ui-sans-serif;cursor:pointer}
 .log-link.danger{color:#b91c1c}
+
+.log-section-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:8px}
+.log-progress{display:grid;gap:4px;min-width:120px;text-align:right;font:600 12px var(--font-source-sans),ui-sans-serif;color:var(--soft-muted)}
+.log-progress-bar{height:8px;border-radius:999px;background:color-mix(in srgb,#1f4fd6 65%,#fff);border:1px solid #c5d4f7}
+.log-checklist-list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.log-checklist-list label{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;padding:10px 12px;border-radius:12px;border:1px solid var(--soft-line);background:color-mix(in srgb,var(--soft-card) 94%,#fff)}
+.log-checklist-list label.log-check-done{opacity:.85;background:#f0fdf4;border-color:#bbf7d0}
+.log-checklist-manage li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--soft-line)}
+.log-inline-actions{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.log-manage-row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--soft-line)}
+.log-trip-block{display:grid;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--soft-line)}
+.log-hotel-block{display:grid;gap:8px;padding:12px;border-radius:14px;border:1px solid var(--soft-line);background:color-mix(in srgb,var(--soft-card) 96%,#fff)}
+.log-hotel-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center}
+.log-contact-primary{border-color:color-mix(in srgb,#1f4fd6 35%,var(--soft-line))}
+.log-check-inline{display:flex;gap:8px;align-items:center;font-size:13px}
+.log-banner.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
