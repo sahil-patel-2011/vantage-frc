@@ -1,0 +1,359 @@
+/* Sign-in Soft-UI — .signin-* + onboarding Soft-UI tokens. Closed access, no DEMO auth. */
+
+.signin-page {
+  padding: 40px 18px;
+  background:
+    radial-gradient(circle at 12% 0, rgba(37, 99, 235, 0.12), transparent 36%),
+    linear-gradient(145deg, #f8fafc, #edf3fb);
+}
+
+.signin-card {
+  width: min(100%, 480px);
+  padding: 34px 30px 26px;
+  border-radius: 24px;
+  box-shadow: 0 28px 80px rgba(25, 46, 82, 0.12);
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.signin-brand {
+  margin-bottom: 14px;
+}
+
+.signin-eyebrow {
+  display: block;
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--soft-accent, #2563eb);
+  font: 700 9px var(--font-ibm-mono), monospace;
+  letter-spacing: 0.13em;
+}
+
+.signin-progress-label {
+  margin: 0 0 10px;
+  text-align: center;
+  color: var(--soft-accent, #2563eb);
+  font: 700 11px var(--font-ibm-mono), monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.signin-card h1 {
+  font-size: clamp(27px, 5vw, 34px);
+  letter-spacing: -0.035em;
+}
+
+.signin-sub {
+  max-width: 420px;
+  margin: 10px auto 18px;
+  line-height: 1.5;
+}
+
+.signin-method-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.signin-method-tabs button {
+  min-height: 42px;
+  border: 1px solid var(--soft-line, #dce3ec);
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #51647e;
+  font: 700 13px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.signin-method-tabs button:hover {
+  border-color: #a8bee4;
+}
+
+.signin-method-tabs button[aria-pressed="true"] {
+  border-color: var(--soft-accent, #2563eb);
+  background: #f5f8ff;
+  color: var(--soft-accent, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.signin-method-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.signin-method-heading {
+  display: grid;
+  gap: 3px;
+  margin: 0 0 2px;
+}
+
+.signin-method-heading span {
+  color: #536b8d;
+  font: 700 8px var(--font-ibm-mono), monospace;
+  letter-spacing: 0.1em;
+}
+
+.signin-method-heading strong {
+  font-size: 14px;
+}
+
+.signin-setup-shell {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 14px;
+  border: 1px dashed #f0c36d;
+  border-radius: 14px;
+  background: #fff8eb;
+}
+
+.signin-setup-shell > span {
+  justify-self: start;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid #f0c36d;
+  background: #fff;
+  color: #8a5a10;
+  font: 700 10px var(--font-ibm-mono), monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.signin-setup-shell strong {
+  font-size: 13px;
+  color: #6b4610;
+}
+
+.signin-setup-shell p {
+  margin: 0;
+  color: #8a6a2a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.signin-google {
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.signin-google:not(:disabled):hover {
+  transform: translateY(-1px);
+  border-color: #a8bee4;
+  box-shadow: 0 8px 20px rgba(25, 46, 82, 0.08);
+}
+
+.signin-access-note {
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  align-items: start;
+  border-color: #a8d4bf;
+  background: #eef9f4;
+  color: #46675b;
+}
+
+.signin-access-note > b.signin-access-mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #fff;
+  background: #16855b;
+  font-size: 12px;
+}
+
+.signin-access-note > span {
+  display: grid;
+  gap: 3px;
+}
+
+.signin-access-note > span > b {
+  color: #164b36;
+  font-size: 13px;
+}
+
+.signin-footer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.signin-footer-modes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.signin-cta-block {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--soft-line, #e5e7eb);
+}
+
+.signin-cta-block > p {
+  margin: 0;
+  color: var(--soft-muted, #6b7280);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.signin-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.signin-cta-row a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--soft-line, #dce3ec);
+  background: #fff;
+  color: #21477d;
+  font: 700 13px var(--font-source-sans), ui-sans-serif;
+  text-decoration: none;
+}
+
+.signin-cta-row a.primary {
+  border-color: var(--soft-accent, #2563eb);
+  background: var(--soft-accent, #2563eb);
+  color: #fff;
+}
+
+.signin-price-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--soft-line, #dce3ec);
+  border-radius: 12px;
+  background: var(--soft-line, #dce3ec);
+}
+
+.signin-price-strip li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 8px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.signin-price-strip span {
+  color: var(--soft-muted, #6b7280);
+  font: 700 8px var(--font-ibm-mono), monospace;
+  letter-spacing: 0.06em;
+}
+
+.signin-price-strip strong {
+  font: 700 12px var(--font-ibm-mono), ui-monospace, monospace;
+  color: #132033;
+}
+
+@media (max-width: 520px) {
+  .signin-page {
+    padding: 18px 10px;
+  }
+
+  .signin-card {
+    padding: 24px 17px;
+    border-radius: 18px;
+  }
+
+  .signin-price-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .signin-footer-modes {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signin-google,
+  .signin-method-tabs button {
+    transition: none;
+  }
+
+  .signin-google:not(:disabled):hover {
+    transform: none;
+  }
+}
+
+html[data-theme="dark"] .signin-page {
+  background:
+    radial-gradient(circle at 12% 0, rgba(110, 155, 255, 0.14), transparent 36%),
+    linear-gradient(145deg, #0f141a, #121820);
+}
+
+html[data-theme="dark"] .signin-card {
+  background: #171d25;
+  border-color: #2a3440;
+}
+
+html[data-theme="dark"] .signin-method-tabs button {
+  background: #0f141a;
+  border-color: #334155;
+  color: #b7c4d6;
+}
+
+html[data-theme="dark"] .signin-method-tabs button[aria-pressed="true"] {
+  background: #1a2740;
+  border-color: #6e9bff;
+  color: #9bbcff;
+}
+
+html[data-theme="dark"] .signin-setup-shell {
+  border-color: #8a6a2a;
+  background: #2a2110;
+}
+
+html[data-theme="dark"] .signin-setup-shell strong,
+html[data-theme="dark"] .signin-setup-shell p {
+  color: #f0d9a0;
+}
+
+html[data-theme="dark"] .signin-access-note {
+  border-color: #2d5a48;
+  background: #132821;
+  color: #a8d4bf;
+}
+
+html[data-theme="dark"] .signin-access-note > span > b {
+  color: #c8f0dc;
+}
+
+html[data-theme="dark"] .signin-cta-row a {
+  background: #0f141a;
+  border-color: #334155;
+  color: #9bbcff;
+}
+
+html[data-theme="dark"] .signin-cta-row a.primary {
+  background: #6e9bff;
+  border-color: #6e9bff;
+  color: #071014;
+}
+
+html[data-theme="dark"] .signin-price-strip {
+  background: #2a3440;
+  border-color: #2a3440;
+}
+
+html[data-theme="dark"] .signin-price-strip li {
+  background: #0f141a;
+}
+
+html[data-theme="dark"] .signin-price-strip strong {
+  color: #edf2f7;
+}
