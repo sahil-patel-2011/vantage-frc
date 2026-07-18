@@ -9,6 +9,10 @@ import {
   suggestBuddy,
   summarizeOnboardingBuddy,
 } from ".";
+import {
+  onboardingBuddySetupSteps,
+  type OnboardingBuddySetupStep,
+} from "./onboarding-buddy-related";
 import type {
   OnboardingBuddyMember,
   OnboardingBuddyPairing,
@@ -17,12 +21,7 @@ import type {
   OnboardingBuddySummary,
 } from "./types";
 
-export type OnboardingBuddySetupStep = {
-  id: string;
-  label: string;
-  detail: string;
-  href: string;
-};
+export type { OnboardingBuddySetupStep };
 
 export type OnboardingBuddyView =
   | {
@@ -179,9 +178,7 @@ export async function computeOnboardingBuddyView(
     return {
       status: "setup_required",
       message: "Select a team workspace to pair new members with a buddy.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: onboardingBuddySetupSteps(null),
       orgId: null,
     };
   }
