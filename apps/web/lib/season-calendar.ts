@@ -42,6 +42,32 @@ export type Milestone = {
   createdByName: string | null;
 };
 
+/** Read-only business / purchase dates surfaced beside the milestone plan (not seeded stats). */
+export type LinkedDeadline = {
+  id: string;
+  source: "grant" | "purchase";
+  title: string;
+  dueOn: string;
+  href: string;
+};
+
+export type CalendarContext = {
+  orgId: string | null;
+  orgName: string | null;
+  teamNumber: number | null;
+  role: string | null;
+};
+
+export type CalendarView =
+  | {
+      status: "ready";
+      context: CalendarContext;
+      milestones: Milestone[];
+      linkedDeadlines: LinkedDeadline[];
+      templates: Array<{ id: SeasonTemplateId; label: string; description: string; entryCount: number }>;
+    }
+  | { status: "setup_required"; context: CalendarContext; message: string };
+
 /** Human label for a meeting link's provider, for Join buttons. */
 export function meetingProvider(url: string | null): string | null {
   if (!url) return null;
@@ -73,19 +99,35 @@ export function optionalMeetingUrl(value: unknown): string | null {
   return parsed.toString();
 }
 
-export type CalendarContext = {
-  orgId: string | null;
-  orgName: string | null;
-  teamNumber: number | null;
-  role: string | null;
+// ---------------------------------------------------------------------------
+// Opt-in season templates (offsets relative to Kickoff day 0). Leads customize
+// after seeding — nothing is auto-inserted as live competition stats.
+// ---------------------------------------------------------------------------
+
+export type SeasonTemplateId =
+  | "build_season"
+  | "stop_build_ship"
+  | "competition_markers"
+  | "outreach"
+  | "full_season";
+
+export type TemplateEntry = {
+  offsetDays: number;
+  title: string;
+  kind: MilestoneKind;
+  notes?: string;
+  /** Optional inclusive span; endsOn = startsOn + spanDays when set. */
+  spanDays?: number;
 };
 
-export type CalendarView =
-  | { status: "ready"; context: CalendarContext; milestones: Milestone[] }
-  | { status: "setup_required"; context: CalendarContext; message: string };
+export type SeasonTemplate = {
+  id: SeasonTemplateId;
+  label: string;
+  description: string;
+  entries: TemplateEntry[];
+};
 
-/** Standard FRC build-season arc, offsets in days relative to Kickoff (day 0). */
-export const SEASON_TEMPLATE: Array<{ offsetDays: number; title: string; kind: MilestoneKind }> = [
+const BUILD_ENTRIES: TemplateEntry[] = [
   { offsetDays: 0, title: "Kickoff & game reveal", kind: "kickoff" },
   { offsetDays: 1, title: "Game analysis & scoring priorities", kind: "design" },
   { offsetDays: 7, title: "Architecture & priority list locked", kind: "design" },
@@ -97,6 +139,182 @@ export const SEASON_TEMPLATE: Array<{ offsetDays: number; title: string; kind: M
   { offsetDays: 45, title: "Drive practice begins", kind: "practice" },
   { offsetDays: 52, title: "Software & auto feature freeze", kind: "deadline" },
 ];
+
+const STOP_BUILD_ENTRIES: TemplateEntry[] = [
+  {
+    offsetDays: 45,
+    title: "Stop-build / bag day",
+    kind: "deadline",
+    notes: "Adjust to your district / regional stop-build rule. Customize after seeding.",
+  },
+  { offsetDays: 46, title: "Spare parts & tools crate packed", kind: "deadline" },
+  { offsetDays: 48, title: "Self-inspection & weigh-in ready", kind: "deadline" },
+  { offsetDays: 50, title: "Ship / load trailer for Week 1 event", kind: "deadline" },
+  { offsetDays: 51, title: "Pit binder & awards materials ready", kind: "deadline" },
+];
+
+const COMPETITION_ENTRIES: TemplateEntry[] = [
+  {
+    offsetDays: 56,
+    title: "Week 1 event",
+    kind: "event",
+    spanDays: 2,
+    notes: "Replace with your real event name and dates after seeding.",
+  },
+  {
+    offsetDays: 70,
+    title: "Week 2 / second event",
+    kind: "event",
+    spanDays: 2,
+    notes: "Optional — delete if you only play one event.",
+  },
+  {
+    offsetDays: 90,
+    title: "District / regional championships",
+    kind: "event",
+    spanDays: 2,
+    notes: "Placeholder — set real championship dates when published.",
+  },
+];
+
+const OUTREACH_ENTRIES: TemplateEntry[] = [
+  { offsetDays: -30, title: "Preseason recruitment open house", kind: "outreach" },
+  { offsetDays: 10, title: "Kickoff demo / community night", kind: "outreach" },
+  { offsetDays: 30, title: "School visit / STEM classroom demo", kind: "outreach" },
+  { offsetDays: 40, title: "Sponsor appreciation night", kind: "outreach" },
+  { offsetDays: 75, title: "Post-event impact write-up due", kind: "deadline" },
+];
+
+function mergeUnique(groups: TemplateEntry[][]): TemplateEntry[] {
+  const seen = new Set<string>();
+  const out: TemplateEntry[] = [];
+  for (const group of groups) {
+    for (const entry of group) {
+      if (seen.has(entry.title)) continue;
+      seen.add(entry.title);
+      out.push(entry);
+    }
+  }
+  return out.sort((a, b) => a.offsetDays - b.offsetDays || a.title.localeCompare(b.title));
+}
+
+export const SEASON_TEMPLATES: SeasonTemplate[] = [
+  {
+    id: "build_season",
+    label: "Build season arc",
+    description: "Classic ~8-week plan from kickoff through design freeze, drivetrain, integration, and feature freeze.",
+    entries: BUILD_ENTRIES,
+  },
+  {
+    id: "stop_build_ship",
+    label: "Stop-build & ship",
+    description: "Bag day, spare crate, self-inspection, trailer load, and pit/awards pack deadlines.",
+    entries: STOP_BUILD_ENTRIES,
+  },
+  {
+    id: "competition_markers",
+    label: "Competition markers",
+    description: "Placeholder Week 1 / Week 2 / championships event blocks — rename to your real events.",
+    entries: COMPETITION_ENTRIES,
+  },
+  {
+    id: "outreach",
+    label: "Outreach & impact",
+    description: "Recruitment, demos, sponsor night, and a post-event impact write-up marker.",
+    entries: OUTREACH_ENTRIES,
+  },
+  {
+    id: "full_season",
+    label: "Typical FRC season (all)",
+    description: "Build arc + stop-build/ship + competition placeholders + outreach — seed once, then customize.",
+    entries: mergeUnique([BUILD_ENTRIES, STOP_BUILD_ENTRIES, COMPETITION_ENTRIES, OUTREACH_ENTRIES]),
+  },
+];
+
+export const SEASON_TEMPLATE_IDS = SEASON_TEMPLATES.map((template) => template.id) as SeasonTemplateId[];
+
+/** @deprecated Prefer SEASON_TEMPLATES.find(t => t.id === "build_season") — kept for existing imports/tests. */
+export const SEASON_TEMPLATE: TemplateEntry[] = BUILD_ENTRIES;
+
+export function getSeasonTemplate(id: SeasonTemplateId): SeasonTemplate {
+  const found = SEASON_TEMPLATES.find((template) => template.id === id);
+  if (!found) throw new Error("Season template is invalid");
+  return found;
+}
+
+export function listSeasonTemplates(): Array<{
+  id: SeasonTemplateId;
+  label: string;
+  description: string;
+  entryCount: number;
+}> {
+  return SEASON_TEMPLATES.map((template) => ({
+    id: template.id,
+    label: template.label,
+    description: template.description,
+    entryCount: template.entries.length,
+  }));
+}
+
+export type SeededMilestone = {
+  title: string;
+  kind: MilestoneKind;
+  startsOn: string;
+  endsOn: string | null;
+  notes: string;
+};
+
+/** Date every template entry relative to the given kickoff date. */
+export function seedFromKickoff(
+  kickoffDate: string,
+  templateId: SeasonTemplateId = "build_season",
+): SeededMilestone[] {
+  const template = getSeasonTemplate(templateId);
+  return template.entries.map((entry) => {
+    const startsOn = addDays(kickoffDate, entry.offsetDays);
+    const endsOn =
+      entry.spanDays != null && entry.spanDays > 0 ? addDays(startsOn, entry.spanDays) : null;
+    return {
+      title: entry.title,
+      kind: entry.kind,
+      startsOn,
+      endsOn,
+      notes: entry.notes ?? "",
+    };
+  });
+}
+
+/** Soft deep-links from a milestone kind into related team surfaces. */
+export function milestoneWorkflowLinks(
+  milestone: Pick<Milestone, "kind">,
+  orgId: string,
+): Array<{ href: string; label: string }> {
+  const q = `?orgId=${encodeURIComponent(orgId)}`;
+  switch (milestone.kind) {
+    case "kickoff":
+    case "design":
+      return [{ href: `/kickoff${q}`, label: "Kickoff analysis" }];
+    case "practice":
+      return [{ href: `/practice${q}`, label: "Practice planner" }];
+    case "event":
+      return [
+        { href: `/event-readiness${q}`, label: "Event readiness" },
+        { href: `/packing${q}`, label: "Packing" },
+      ];
+    case "deadline":
+      return [
+        { href: `/business${q}`, label: "Business deadlines" },
+        { href: `/costs${q}`, label: "Season costs" },
+      ];
+    case "outreach":
+      return [
+        { href: `/impact${q}`, label: "Impact" },
+        { href: `/business${q}`, label: "Sponsors & grants" },
+      ];
+    default:
+      return [];
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Date helpers & derived views (pure, unit-tested).
@@ -116,15 +334,6 @@ function addDays(dateISO: string, days: number): string {
   const date = new Date(`${dateISO}T00:00:00`);
   date.setDate(date.getDate() + days);
   return formatDate(date);
-}
-
-/** Date every SEASON_TEMPLATE entry relative to the given kickoff date. */
-export function seedFromKickoff(kickoffDate: string): Array<{ title: string; kind: MilestoneKind; startsOn: string }> {
-  return SEASON_TEMPLATE.map((entry) => ({
-    title: entry.title,
-    kind: entry.kind,
-    startsOn: addDays(kickoffDate, entry.offsetDays),
-  }));
 }
 
 /** Whole days until the given date: 0 today, positive future, negative past. */
@@ -236,6 +445,13 @@ function milestoneKind(value: unknown): MilestoneKind {
   return text as MilestoneKind;
 }
 
+function seasonTemplateId(value: unknown): SeasonTemplateId {
+  if (value == null || String(value).trim() === "") return "build_season";
+  const text = requiredText(value, "Template", 40);
+  if (!(SEASON_TEMPLATE_IDS as readonly string[]).includes(text)) throw new Error("Season template is invalid");
+  return text as SeasonTemplateId;
+}
+
 function optionalEndDate(value: unknown): string | null {
   if (value == null || String(value).trim() === "") return null;
   return isoDate(value, "End date");
@@ -251,7 +467,7 @@ export type MilestonePatch = {
 };
 
 export type CalendarAction =
-  | { action: "seed_season"; orgId: string; kickoffDate: string }
+  | { action: "seed_season"; orgId: string; kickoffDate: string; templateId: SeasonTemplateId }
   | {
       action: "add_milestone";
       orgId: string;
@@ -274,7 +490,12 @@ export function parseCalendarAction(input: unknown): CalendarAction {
 
   switch (action) {
     case "seed_season":
-      return { action, orgId, kickoffDate: isoDate(body.kickoffDate, "Kickoff date") };
+      return {
+        action,
+        orgId,
+        kickoffDate: isoDate(body.kickoffDate, "Kickoff date"),
+        templateId: seasonTemplateId(body.templateId),
+      };
 
     case "add_milestone": {
       const startsOn = isoDate(body.startsOn, "Start date");
