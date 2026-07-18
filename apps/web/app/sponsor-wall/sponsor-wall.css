@@ -1,0 +1,13 @@
+/* Soft-UI Sponsor Wall — .sponsor-wall-* + shared Soft-UI tokens. Never DEMO sponsor counts. */
+.sponsor-wall-page{display:grid;gap:16px}
+.sponsor-wall-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.sponsor-wall-related{display:flex;flex-wrap:wrap;gap:8px}
+.sponsor-wall-next-actions{margin:0}
+.sponsor-wall-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.sponsor-wall-stats strong{font-size:1.5rem}
+.sponsor-wall-layout{display:grid;gap:16px}
+.sponsor-wall-tip{margin:0}
+@media(max-width:900px){
+  .sponsor-wall-header-actions{justify-content:flex-start}
+  .sponsor-wall-next-actions li{flex-direction:column;align-items:stretch}
+}

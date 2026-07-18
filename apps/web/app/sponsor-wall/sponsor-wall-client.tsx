@@ -1,10 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { SPONSOR_WALL_TIERS, sponsorWallTierLabel } from "../../lib/sponsor-wall";
 import type { SponsorWallView } from "../../lib/sponsor-wall/compute-sponsor-wall";
+import {
+  SPONSOR_WALL_RELATED_INCLUDE,
+  classifySponsorWallShell,
+  formatSponsorWallMetric,
+  sponsorWallNextActions,
+  sponsorWallRelatedLinks,
+  sponsorWallSetupSteps,
+  sponsorWallShellCopy,
+  shouldShowSponsorWallSummaryTiles,
+  type SponsorWallNextAction,
+  type SponsorWallShellKind,
+} from "../../lib/sponsor-wall/sponsor-wall-related";
 import type { SponsorWallTheme, SponsorWallTier } from "../../lib/sponsor-wall/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./sponsor-wall.css";
 
 const THEME_LABEL: Record<SponsorWallTheme, string> = {
   light: "Light",
@@ -14,13 +29,148 @@ const THEME_LABEL: Record<SponsorWallTheme, string> = {
 
 type LiveView = Extract<SponsorWallView, { status: "live" }>;
 
+function SponsorWallRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = sponsorWallRelatedLinks(orgId, {
+    include: [...SPONSOR_WALL_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related sponsor-wall-related" aria-label="Related business tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function SponsorWallNextActionsPanel({ actions }: { actions: SponsorWallNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions sponsor-wall-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Sponsor CRM and Sponsorship — never DEMO sponsor counts.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function SponsorWallShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: SponsorWallShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = sponsorWallNextActions({ orgId, shell });
+  const copy = sponsorWallShellCopy(shell);
+  const businessHref = hubHref("/business", "sponsor-wall", orgId);
+  const steps = shell === "setup" ? sponsorWallSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page sponsor-wall-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={businessHref}>Business</a>
+            {" / Sponsor Wall"}
+          </>
+        }
+        title="Sponsor Wall"
+        description={description}
+      >
+        <SponsorWallRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No sponsors yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={hubHref("/business", "sponsors", orgId)}>
+              Open Sponsor CRM
+            </a>
+            <a className="app-button secondary" href={hubHref("/business", "sponsorship", orgId)}>
+              Open Sponsorship
+            </a>
+            <a className="app-button secondary" href={hubHref("/business", "sponsor-suite", orgId)}>
+              Open Sponsor Suite
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {shell === "setup" && steps.length > 0 ? (
+        <ol className="strategy-setup-steps">
+          {steps.map((step) => (
+            <li key={step.id}>
+              <div>
+                <strong>{step.label}</strong>
+                <span>{step.detail}</span>
+              </div>
+              <a href={step.href}>Open</a>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+      <SponsorWallNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function SponsorWallClient() {
   const [view, setView] = useState<SponsorWallView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -44,6 +194,34 @@ export default function SponsorWallClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const entryCount = view?.status === "live" ? view.summary.totalEntries : 0;
+  const publishedCount = view?.status === "live" ? view.summary.publishedEntries : 0;
+  const tierCount = view?.status === "live" ? view.summary.byTier.length : 0;
+  const wallPublished = view?.status === "live" ? view.settings.published : false;
+
+  const shell = classifySponsorWallShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    entryCount,
+  });
+  const shellCopy = sponsorWallShellCopy(shell);
+  const nextActions = sponsorWallNextActions({
+    orgId,
+    shell,
+    entryCount,
+    publishedCount,
+  });
+  const relatedLinks = sponsorWallRelatedLinks(orgId, {
+    include: [...SPONSOR_WALL_RELATED_INCLUDE],
+  });
+  const businessHref = hubHref("/business", "sponsor-wall", orgId);
+  const sponsorsHref = hubHref("/business", "sponsors", orgId);
+  const sponsorshipHref = hubHref("/business", "sponsorship", orgId);
+  const suiteHref = hubHref("/business", "sponsor-suite", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -71,23 +249,55 @@ export default function SponsorWallClient() {
     [orgId, busy],
   );
 
+  if (shell === "loading") {
+    return <SponsorWallShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <SponsorWallShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <SponsorWallShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <SponsorWallShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page sponsor-wall-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
+            <a href={businessHref}>Business</a>
             {" / Sponsor Wall"}
           </>
         }
         title="Sponsor Wall"
-        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-out messages, ready to publish or embed."
+        description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only. Never DEMO sponsor counts. Cross-check Sponsor CRM and Sponsorship."
       >
-        {orgId ? (
-          <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}`}>
-            Business hub
-          </a>
-        ) : null}
+        <div className="sponsor-wall-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -96,62 +306,71 @@ export default function SponsorWallClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the Sponsor Wall"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <SettingsForm view={view} busy={busy} mutate={mutate} />
-          <AddEntryForm busy={busy} mutate={mutate} />
-          <WallPreview view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
+      <SponsorWallNextActionsPanel actions={nextActions} />
 
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Sponsors", value: String(summary.totalEntries) },
-    { label: "Published", value: String(summary.publishedEntries) },
-    { label: "Tiers represented", value: String(summary.byTier.length) },
-    { label: "Wall status", value: view.settings.published ? "Public" : "Draft" },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {shouldShowSponsorWallSummaryTiles(entryCount) ? (
+        <section className="sponsor-wall-stats" aria-label="Sponsor wall counts">
+          <div>
+            <strong>{formatSponsorWallMetric(entryCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Sponsors
+            </span>
           </div>
-        ))}
+          <div>
+            <strong>{formatSponsorWallMetric(publishedCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Published
+            </span>
+          </div>
+          <div>
+            <strong>{formatSponsorWallMetric(tierCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Tiers represented
+            </span>
+          </div>
+          <div>
+            <strong>{wallPublished ? "Public" : "Draft"}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Wall status
+            </span>
+          </div>
+        </section>
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No sponsors yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href="#sponsor-wall-add">
+            Add a sponsor
+          </a>
+          <a className="app-button secondary" href={sponsorsHref}>
+            Open Sponsor CRM
+          </a>
+          <a className="app-button secondary" href={sponsorshipHref}>
+            Open Sponsorship
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div className="sponsor-wall-layout">
+        <SettingsForm view={view} busy={busy} mutate={mutate} />
+        <AddEntryForm busy={busy} mutate={mutate} />
+        <WallPreview view={view} busy={busy} mutate={mutate} />
+        <Panel className="sponsor-wall-tip" aria-label="Sponsor Wall tip">
+          <span className="eyebrow">Grounding path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Pull names from <a href={sponsorsHref}>Sponsor CRM</a>, align tiers with{" "}
+            <a href={sponsorshipHref}>Sponsorship</a>, and pair assets in <a href={suiteHref}>Sponsor Suite</a> —
+            never invent DEMO logos or shout-outs.
+          </p>
+        </Panel>
       </div>
-    </Panel>
+    </main>
   );
 }
 
@@ -234,6 +453,7 @@ function AddEntryForm({
 
   return (
     <Panel
+      id="sponsor-wall-add"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -251,6 +471,9 @@ function AddEntryForm({
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add sponsor</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Published entries reflect sponsors you add — never DEMO logos or invent shout-outs.
+      </p>
       <FormGrid min={160}>
         <FormRow label="Sponsor name">
           <input value={form.sponsorName} onChange={set("sponsorName")} placeholder="Acme Robotics" required />
@@ -295,10 +518,11 @@ function WallPreview({
   if (view.entries.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No sponsors yet"
         badgeTone="setup"
         title="Add your first sponsor to build the wall"
-        description="Sponsor names, tiers, and thank-you messages appear here in the public order they'll render."
+        description="Sponsor names, tiers, and thank-you messages appear here only after real entries — never DEMO logos."
       />
     );
   }

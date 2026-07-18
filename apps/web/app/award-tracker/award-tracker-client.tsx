@@ -1,18 +1,36 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { AWARD_SUBMISSION_STATUSES, AWARD_TYPES, awardStatusLabel, awardTypeLabel, daysUntil } from "../../lib/award-tracker";
+import {
+  AWARD_SUBMISSION_STATUSES,
+  AWARD_TYPES,
+  awardStatusLabel,
+  awardTypeLabel,
+  daysUntil,
+} from "../../lib/award-tracker";
 import type { AwardTrackerView } from "../../lib/award-tracker/compute-award-tracker";
+import {
+  AWARD_TRACKER_RELATED_INCLUDE,
+  classifyAwardTrackerShell,
+  formatAwardTrackerMetric,
+  formatAwardTrackerProgress,
+  awardTrackerNextActions,
+  awardTrackerRelatedLinks,
+  awardTrackerSetupSteps,
+  awardTrackerShellCopy,
+  shouldShowAwardTrackerSummaryTiles,
+  type AwardTrackerNextAction,
+  type AwardTrackerShellKind,
+} from "../../lib/award-tracker/award-tracker-related";
 import type { AwardSubmission, AwardSubmissionStatus, AwardType } from "../../lib/award-tracker/types";
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./award-tracker.css";
 
 function statusTone(status: AwardSubmissionStatus): string {
   if (status === "won") return "good";
-  if (status === "not_won" || status === "withdrawn") return "demo";
+  if (status === "not_won" || status === "withdrawn") return "danger";
   if (status === "submitted" || status === "judging") return "setup";
   return "setup";
 }
@@ -31,14 +49,149 @@ function deadlineLabel(submission: AwardSubmission): string {
 
 type LiveView = Extract<AwardTrackerView, { status: "live" }>;
 
+function AwardTrackerRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = awardTrackerRelatedLinks(orgId, {
+    include: [...AWARD_TRACKER_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related award-tracker-related" aria-label="Related business tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function AwardTrackerNextActionsPanel({ actions }: { actions: AwardTrackerNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions award-tracker-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Awards and Impact Essay — never DEMO win rates.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function AwardTrackerShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: AwardTrackerShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = awardTrackerNextActions({ orgId, shell });
+  const copy = awardTrackerShellCopy(shell);
+  const businessHref = hubHref("/business", "award-tracker", orgId);
+  const steps = shell === "setup" ? awardTrackerSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page award-tracker-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={businessHref}>Business</a>
+            {" / Award Tracker"}
+          </>
+        }
+        title="Award Tracker"
+        description={description}
+      >
+        <AwardTrackerRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No submissions yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={hubHref("/business", "evidence", orgId)}>
+              Open Awards
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/team/awards", orgId)}>
+              Open Awards workbench
+            </a>
+            <a className="app-button secondary" href={hubHref("/business", "impact-essay", orgId)}>
+              Open Impact Essay
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {shell === "setup" && steps.length > 0 ? (
+        <ol className="strategy-setup-steps">
+          {steps.map((step) => (
+            <li key={step.id}>
+              <div>
+                <strong>{step.label}</strong>
+                <span>{step.detail}</span>
+              </div>
+              <a href={step.href}>Open</a>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+      <AwardTrackerNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function AwardTrackerClient() {
   const [view, setView] = useState<AwardTrackerView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -65,6 +218,36 @@ export default function AwardTrackerClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const submissionCount = view?.status === "live" ? view.summary.total : 0;
+  const dueSoonCount = view?.status === "live" ? view.summary.dueSoonCount : 0;
+  const overdueCount = view?.status === "live" ? view.summary.overdueCount : 0;
+  const submittedCount = view?.status === "live" ? view.summary.submittedCount : 0;
+  const wonCount = view?.status === "live" ? view.summary.wonCount : 0;
+  const progressSignal = view?.status === "live" ? view.summary.progressSignal : 0;
+
+  const shell = classifyAwardTrackerShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    submissionCount,
+  });
+  const shellCopy = awardTrackerShellCopy(shell);
+  const nextActions = awardTrackerNextActions({
+    orgId,
+    shell,
+    submissionCount,
+    dueSoonCount,
+  });
+  const relatedLinks = awardTrackerRelatedLinks(orgId, {
+    include: [...AWARD_TRACKER_RELATED_INCLUDE],
+  });
+  const businessHref = hubHref("/business", "award-tracker", orgId);
+  const evidenceHref = hubHref("/business", "evidence", orgId);
+  const awardsHref = withOrgHref("/team/awards", orgId);
+  const essayHref = hubHref("/business", "impact-essay", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -93,20 +276,50 @@ export default function AwardTrackerClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <AwardTrackerShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <AwardTrackerShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <AwardTrackerShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <AwardTrackerShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page award-tracker-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
+            <a href={businessHref}>Business</a>
             {" / Award Tracker"}
           </>
         }
         title="Award Tracker"
-        description="Track award submissions across events with deadlines — Chairman's, Impact, Engineering Inspiration, and more."
+        description="Track award submissions across events with deadlines — never DEMO win rates. Cross-check Awards and Impact Essay."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
+        <div className="award-tracker-header-actions">
+          {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
@@ -125,19 +338,11 @@ export default function AwardTrackerClient() {
               </select>
             </label>
           ) : null}
-          {orgId ? (
-            <nav className="intel-actions" aria-label="Related business tools" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>
-                Business · Awards
-              </a>
-              <a className="app-button secondary" href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>
-                Awards workbench
-              </a>
-              <a className="app-button secondary" href={`/impact-essay?orgId=${encodeURIComponent(orgId)}`}>
-                Impact essay
-              </a>
-            </nav>
-          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
       </PageHeader>
 
@@ -147,64 +352,83 @@ export default function AwardTrackerClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Award Tracker"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <UpcomingDeadlines view={view} />
-          <CreateSubmissionForm busy={busy} mutate={mutate} />
-          <SubmissionsList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
+      <AwardTrackerNextActionsPanel actions={nextActions} />
 
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Submissions", value: String(summary.total) },
-    { label: "Due within 7 days", value: String(summary.dueSoonCount) },
-    { label: "Overdue", value: String(summary.overdueCount) },
-    { label: "Submitted / in judging", value: String(summary.submittedCount) },
-    { label: "Won", value: String(summary.wonCount) },
-    { label: "Progress signal", value: pct(summary.progressSignal) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {shouldShowAwardTrackerSummaryTiles(submissionCount) ? (
+        <section className="award-tracker-stats" aria-label="Award submission counts">
+          <div>
+            <strong>{formatAwardTrackerMetric(submissionCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Submissions
+            </span>
           </div>
-        ))}
+          <div>
+            <strong>{formatAwardTrackerMetric(dueSoonCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Due within 7 days
+            </span>
+          </div>
+          <div>
+            <strong>{formatAwardTrackerMetric(overdueCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Overdue
+            </span>
+          </div>
+          <div>
+            <strong>{formatAwardTrackerMetric(submittedCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Submitted / in judging
+            </span>
+          </div>
+          <div>
+            <strong>{formatAwardTrackerMetric(wonCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Won
+            </span>
+          </div>
+          <div>
+            <strong>{formatAwardTrackerProgress(progressSignal, submissionCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Progress signal
+            </span>
+          </div>
+        </section>
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No submissions yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href="#award-tracker-create">
+            Track a submission
+          </a>
+          <a className="app-button secondary" href={evidenceHref}>
+            Open Awards
+          </a>
+          <a className="app-button secondary" href={essayHref}>
+            Open Impact Essay
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div className="award-tracker-layout">
+        <UpcomingDeadlines view={view} />
+        <CreateSubmissionForm busy={busy} mutate={mutate} />
+        <SubmissionsList view={view} busy={busy} mutate={mutate} />
+        <Panel className="award-tracker-tip" aria-label="Award Tracker tip">
+          <span className="eyebrow">Grounding path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Keep packets in <a href={evidenceHref}>Awards</a>, review workbench uploads in{" "}
+            <a href={awardsHref}>Awards workbench</a>, and draft narratives in{" "}
+            <a href={essayHref}>Impact Essay</a> — never invent DEMO win rates or award dollars.
+          </p>
+        </Panel>
       </div>
-    </Panel>
+    </main>
   );
 }
 
@@ -244,10 +468,11 @@ function SubmissionsList({
   if (view.summary.total === 0) {
     return (
       <EmptyState
+        soft
         badge="No submissions yet"
         badgeTone="setup"
         title="Track your first award submission"
-        description="Log an award, event, and deadline to start tracking status through submission and judging."
+        description="Log an award, event, and deadline to start tracking — never invent DEMO win rates."
       />
     );
   }
@@ -330,6 +555,7 @@ function CreateSubmissionForm({
 
   return (
     <Panel
+      id="award-tracker-create"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -349,6 +575,9 @@ function CreateSubmissionForm({
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Track a new submission</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Counts reflect submissions you start — never DEMO win rates or invented award dollars.
+      </p>
       <FormGrid min={160}>
         <FormRow label="Award">
           <input value={form.awardName} onChange={set("awardName")} placeholder="Chairman's Award" required />
