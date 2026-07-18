@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
+import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import { EmptyState } from "../../components/ui";
+import {
+  strategyCoverageLinks,
+  strategySetupNextActions,
+} from "../../lib/strategy/competition-related";
 import type { PickDeskEntry, PickDeskList, PickDeskView } from "../../lib/strategy/pick-desk";
 
 const TIERS: Array<{ id: PickTier; label: string; hint: string }> = [
@@ -43,6 +49,8 @@ export function PickListWorkbench({
 }) {
   const [desk, setDesk] = useState<PickDeskView | null>(null);
   const [setupMessage, setSetupMessage] = useState("");
+  const [setupOrgId, setSetupOrgId] = useState<string | null>(orgId);
+  const [setupEventKey, setSetupEventKey] = useState<string | null>(null);
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("Alliance picks");
   const [entries, setEntries] = useState<PickDeskEntry[]>([]);
@@ -59,11 +67,15 @@ export function PickListWorkbench({
         if (data.status === "setup_required") {
           setDesk(null);
           setSetupMessage(data.message ?? "Setup required");
+          setSetupOrgId(typeof data.orgId === "string" ? data.orgId : orgId);
+          setSetupEventKey(typeof data.eventKey === "string" ? data.eventKey : null);
           return;
         }
         const view = data as PickDeskView;
         setDesk(view);
         setSetupMessage("");
+        setSetupOrgId(view.orgId);
+        setSetupEventKey(view.eventKey);
         setActiveListId((currentId) => {
           const preferred = view.pickLists.find((list) => list.id === currentId) ?? view.pickLists[0];
           if (preferred) {
@@ -244,18 +256,35 @@ export function PickListWorkbench({
   }
 
   if (setupMessage) {
+    const nextActions = strategySetupNextActions({
+      orgId: setupOrgId ?? orgId,
+      eventKey: setupEventKey,
+      hasMetrics: false,
+    });
     return (
-      <section className={`app-card strategy-pick-desk${embedded ? " embedded" : ""}`}>
-        <header>
-          <div>
-            <span className="app-badge setup">Pick lists</span>
-            <h2>Event pick desk</h2>
-          </div>
-        </header>
-        <p className="app-muted">{setupMessage}</p>
-        <a className="app-button secondary" href="/workspace">
-          Open workspace
-        </a>
+      <section className={`strategy-pick-desk${embedded ? " embedded" : ""}`} aria-label="Pick list setup">
+        <EmptyState
+          badge="Setup required"
+          badgeTone="setup"
+          title="Event pick desk"
+          description={`${setupMessage} Pick ranks stay empty until real event metrics exist — no filler teams.`}
+        >
+          <ol className="strategy-setup-steps">
+            {nextActions.slice(0, 5).map((action) => (
+              <li key={action.id}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a href={action.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+          <CompetitionHubRelated
+            orgId={setupOrgId ?? orgId}
+            include={["strategy", "scouting", "forms", "match-checklist", "pick-clock", "draft"]}
+          />
+        </EmptyState>
       </section>
     );
   }
@@ -272,6 +301,19 @@ export function PickListWorkbench({
   return (
     <section className={`strategy-pick-desk${embedded ? " embedded" : ""}`} aria-label="Pick list workbench">
       <DataSourceDegradedBanner health={desk.dataSourceHealth} compact />
+      <CompetitionHubRelated
+        orgId={desk.orgId}
+        include={["scouting", "forms", "match-checklist", "pick-clock", "chemistry", "draft", "coverage"]}
+      />
+      {desk.pickMode === "low_data_tba" ? (
+        <p className="strategy-pick-coverage-hint app-muted" role="status">
+          Thin scout depth —{" "}
+          <a href={strategyCoverageLinks(desk.orgId, { eventKey: desk.eventKey }).find((l) => l.id === "coverage")?.href}>
+            open scout coverage
+          </a>{" "}
+          or add notes in Scouting / Form builder before trusting pick explainability.
+        </p>
+      ) : null}
       <header className="strategy-pick-header app-card">
         <div>
           {desk.pickMode === "low_data_tba" ? (
