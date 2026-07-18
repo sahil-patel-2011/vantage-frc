@@ -90,8 +90,8 @@ export default function WriterClient() {
           <span className="breadcrumbs">Team / Writing Assistant</span>
           <h1>Grant &amp; Sponsorship Writer</h1>
           <p>
-            Draft grant answers and sponsor emails in seconds — the assistant composes a tailored first draft from your
-            team profile in proven structures. You review and edit before sending; nothing is fabricated.
+            Draft grant answers and sponsor pitches from this team&apos;s profile and business data only — template or
+            metered FRC Assistant. Review and edit before sending; nothing is invented across orgs.
           </p>
         </div>
         {view?.status === "live" && view.seasons.length > 0 ? (
@@ -151,13 +151,27 @@ export default function WriterClient() {
           </ol>
         </section>
       ) : (
-        <WriterWorkspace view={view} busy={busy} mutate={mutate} />
+        <WriterWorkspace view={view} busy={busy} mutate={mutate} setView={setView} setError={setError} setBusy={setBusy} />
       )}
     </main>
   );
 }
 
-function WriterWorkspace({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
+function WriterWorkspace({
+  view,
+  busy,
+  mutate,
+  setView,
+  setError,
+  setBusy,
+}: {
+  view: LiveView;
+  busy: boolean;
+  mutate: Mutate;
+  setView: (view: WriterView) => void;
+  setError: (message: string) => void;
+  setBusy: (busy: boolean) => void;
+}) {
   const [profile, setProfile] = useState(() => toForm(view.profile));
   useEffect(() => {
     setProfile(toForm(view.profile));
@@ -180,7 +194,17 @@ function WriterWorkspace({ view, busy, mutate }: { view: LiveView; busy: boolean
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <ProfilePanel profile={profile} setProfile={setProfile} busy={busy} mutate={mutate} />
-      <Composer liveProfile={liveProfile} busy={busy} mutate={mutate} />
+      <Composer
+        liveProfile={liveProfile}
+        profileForm={profile}
+        orgId={view.orgId}
+        seasonYear={view.seasonYear}
+        busy={busy}
+        mutate={mutate}
+        setView={setView}
+        setError={setError}
+        setBusy={setBusy}
+      />
       <DraftLibrary view={view} busy={busy} mutate={mutate} />
     </div>
   );
@@ -296,7 +320,39 @@ function ProfilePanel({
   );
 }
 
-function Composer({ liveProfile, busy, mutate }: { liveProfile: WriterProfile; busy: boolean; mutate: Mutate }) {
+type PitchResponse = WriterView & {
+  pitch?: {
+    subject: string | null;
+    body: string;
+    source: string;
+    kind: DraftKind;
+    runId: string;
+    provider: string;
+    model: string;
+  };
+};
+
+function Composer({
+  liveProfile,
+  profileForm,
+  orgId,
+  seasonYear,
+  busy,
+  mutate,
+  setView,
+  setError,
+  setBusy,
+}: {
+  liveProfile: WriterProfile;
+  profileForm: ProfileForm;
+  orgId: string;
+  seasonYear: number;
+  busy: boolean;
+  mutate: Mutate;
+  setView: (view: WriterView) => void;
+  setError: (message: string) => void;
+  setBusy: (busy: boolean) => void;
+}) {
   const [kind, setKind] = useState<DraftKind>("sponsorship_ask");
   const [sponsorName, setSponsorName] = useState("");
   const [contactName, setContactName] = useState("");
@@ -311,6 +367,8 @@ function Composer({ liveProfile, busy, mutate }: { liveProfile: WriterProfile; b
 
   const [subject, setSubject] = useState("");
   const [draftBody, setDraftBody] = useState("");
+  const [draftSource, setDraftSource] = useState<"template" | "ai" | null>(null);
+  const [aiMeta, setAiMeta] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const isGrant = kind === "grant";
@@ -337,7 +395,65 @@ function Composer({ liveProfile, busy, mutate }: { liveProfile: WriterProfile; b
       setSubject(email.subject);
       setDraftBody(email.body);
     }
+    setDraftSource("template");
+    setAiMeta(null);
     setCopied(false);
+  };
+
+  const generateWithAssistant = () => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    void fetch("/api/writer", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        action: "ai-draft",
+        orgId,
+        seasonYear,
+        kind,
+        sponsorName: sponsorName || undefined,
+        contactName: contactName || undefined,
+        tier: tier || undefined,
+        askAmountUsd: askAmount || undefined,
+        priorAmountUsd: priorAmount || undefined,
+        senderName: senderName || undefined,
+        senderRole: senderRole || undefined,
+        prompt: prompt || undefined,
+        charLimit: charLimit || undefined,
+        focus,
+        teamName: profileForm.teamName || undefined,
+        teamNumber: profileForm.teamNumber || undefined,
+        region: profileForm.region || undefined,
+        mission: profileForm.mission || undefined,
+        achievements: profileForm.achievements || undefined,
+        fundingNeed: profileForm.fundingNeed || undefined,
+        fundingAskUsd: profileForm.fundingAskUsd || undefined,
+        tone: profileForm.tone,
+        save: true,
+      }),
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as PitchResponse | { error?: string };
+        if (!response.ok || !("status" in data)) {
+          setError("error" in data && data.error ? data.error : "FRC Assistant draft failed.");
+          return;
+        }
+        setView(data);
+        if (data.pitch) {
+          setSubject(data.pitch.subject ?? "");
+          setDraftBody(data.pitch.body);
+          setDraftSource(data.pitch.source === "ai" ? "ai" : "template");
+          setAiMeta(
+            data.pitch.source === "ai"
+              ? `Metered FRC Assistant · ${data.pitch.provider}/${data.pitch.model}`
+              : `Org-scoped template + business facts · usage logged (${data.pitch.provider})`,
+          );
+        }
+        setCopied(false);
+      })
+      .catch(() => setError("Network error — please try again."))
+      .finally(() => setBusy(false));
   };
 
   const copy = () => {
@@ -426,14 +542,24 @@ function Composer({ liveProfile, busy, mutate }: { liveProfile: WriterProfile; b
         </div>
       )}
 
-      <div>
-        <button type="button" className="app-button" onClick={generate}>
-          Generate draft
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <button type="button" className="app-button secondary" onClick={generate} disabled={busy}>
+          Template draft
         </button>
+        <button type="button" className="app-button" onClick={generateWithAssistant} disabled={busy}>
+          {busy ? "Drafting…" : "Draft with FRC Assistant"}
+        </button>
+        <small className="app-muted">Uses this org&apos;s profile + business data only · metered usage ledger</small>
       </div>
 
       {draftBody ? (
         <div style={{ display: "grid", gap: 8, borderTop: "1px solid rgba(128,128,128,0.2)", paddingTop: 12 }}>
+          {draftSource ? (
+            <span className={`app-badge ${draftSource === "ai" ? "good" : "demo"}`}>
+              {draftSource === "ai" ? "AI draft" : "Template draft"}
+              {aiMeta ? ` · ${aiMeta}` : ""}
+            </span>
+          ) : null}
           {!isGrant ? (
             <label style={{ display: "grid", gap: 4 }}>
               <span className="app-muted">Subject</span>
@@ -460,13 +586,14 @@ function Composer({ liveProfile, busy, mutate }: { liveProfile: WriterProfile; b
                   targetName: targetName || undefined,
                   subject: subject || undefined,
                   body: draftBody,
+                  source: draftSource ?? "template",
                 })
               }
             >
               Save draft
             </button>
             <small className="app-muted" style={{ alignSelf: "center" }}>
-              Template-based draft — review and edit before sending.
+              Org-scoped only — review before sending.
             </small>
           </div>
         </div>
@@ -513,6 +640,7 @@ function DraftCard({ draft, busy, mutate }: { draft: WriterDraft; busy: boolean;
       <header style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
         <div>
           <span className="app-badge demo">{kindLabel(draft.kind)}</span>{" "}
+          {draft.source === "ai" ? <span className="app-badge good">AI</span> : null}{" "}
           <small className="app-muted">{new Date(draft.createdAt).toLocaleDateString()}</small>
           <h3 style={{ margin: "4px 0 0", fontSize: "1.05rem" }}>{draft.title}</h3>
           {draft.subject ? <small className="app-muted">Subject: {draft.subject}</small> : null}

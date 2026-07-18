@@ -55,14 +55,22 @@ const KNOWN_FEATURES = [
   "coding",
   "maintenance",
   "chat",
+  "writer",
 ] as const;
 
 const KNOWN_TOOLS = [
   "reference.team",
   "scouting.team",
   "strategy.match",
+  "strategy.design",
   "research.findings",
   "artifacts.related",
+  "kickoff.intelligence",
+  "kickoff.rules",
+  "rules.compliance",
+  "cad.briefs",
+  "knowledge.search",
+  "knowledge.get_page",
 ] as const;
 
 export function knownAiFeatures() {

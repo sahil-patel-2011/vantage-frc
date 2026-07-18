@@ -264,8 +264,8 @@ SELECT jsonb_build_object(
     LIMIT 1
   ),
   'readiness', jsonb_build_object(
-    'batteriesActive', (SELECT count(*)::int FROM batteries bat WHERE bat.org_id = o.id AND bat.status = 'active'),
-    'batteriesService', (SELECT count(*)::int FROM batteries bat WHERE bat.org_id = o.id AND bat.status = 'service'),
+      'batteriesActive', (SELECT count(*)::int FROM battery_packs bat WHERE bat.org_id = o.id AND bat.status = 'active'),
+      'batteriesService', (SELECT count(*)::int FROM battery_packs bat WHERE bat.org_id = o.id AND bat.status = 'quarantine'),
     'openFailures', (
       SELECT count(*)::int FROM robot_failures rf
       WHERE rf.org_id = o.id AND rf.resolution IS NULL
