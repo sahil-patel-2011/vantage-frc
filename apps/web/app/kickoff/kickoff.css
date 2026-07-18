@@ -1,11 +1,24 @@
-/* Kickoff & Game Analysis — co-located so styling survives independently of the
-   shared global stylesheet. All selectors are .kick-* prefixed and theme-aware. */
-.kick-page input,.kick-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
-.kick-page textarea{min-height:52px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit;resize:vertical}
+/* Kickoff & Game Analysis — Soft-UI Build hub. .kick-* prefixed, theme-aware. */
+.kick-page{max-width:1100px;margin:0 auto}
+.kick-page input,.kick-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px;font:inherit}
+.kick-page textarea{min-height:52px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px;font:inherit;resize:vertical}
 .kick-year{display:flex;align-items:center;gap:8px;color:var(--app-muted);font-size:12px;font-weight:700}
 .kick-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .kick-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .kick-link.danger{color:var(--app-critical)}
+
+.kick-next-actions{display:grid;gap:10px;margin:0 0 16px;padding:16px 18px}
+.kick-next-actions>header{display:grid;gap:4px}
+.kick-next-actions h2{margin:0;font-size:15px;letter-spacing:-.01em}
+.kick-next-actions>header p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
+.kick-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.kick-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--app-line);background:var(--app-bg)}
+.kick-next-actions li.primary{border-color:color-mix(in srgb,var(--app-accent) 35%,var(--app-line));background:color-mix(in srgb,var(--app-accent) 8%,var(--app-bg))}
+.kick-next-actions li div{display:grid;gap:2px;min-width:0}
+.kick-next-actions li strong{font-size:14px}
+.kick-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
+.kick-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px;font-size:12px}
+
 .kick-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
 .kick-tile{display:grid;gap:4px;align-content:start;padding:16px}
 .kick-tile-value{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -37,26 +50,45 @@
 .kick-rule-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}
 .kick-rule-head strong{min-width:0;flex:1}
 .kick-rule-actions{display:flex;align-items:center;gap:12px;margin-left:auto}
-.kick-add{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
+.kick-add{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px;align-items:center}
 .kick-add input:first-child{flex:1;min-width:220px}
 .kick-ref-input{width:140px}
+
+.kick-intel-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.kick-intel-head>div{min-width:0;flex:1}
+.kick-intel-head h2{margin:0 0 6px}
+.kick-intel-head p{margin:0}
+.kick-pipeline-links{display:flex;gap:8px;flex-wrap:wrap}
+.kick-pipeline-links .app-button{min-height:36px;padding:0 12px;font-size:12px}
 .kick-intel-empty{display:grid;gap:6px;padding:14px;background:var(--app-bg);border:1px dashed var(--app-line);border-radius:10px}
 .kick-intel-form{display:grid;gap:12px}
 .kick-intel-form label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--app-muted)}
 .kick-intel-form textarea{min-height:120px;font-weight:400}
 .kick-intel-form input[type="file"]{font-weight:400;font-size:12px}
+.kick-intel-entry{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.kick-intel-submit{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.kick-intel-submit .app-muted{font-size:12px}
 .kick-intel-result{display:grid;gap:12px;padding:14px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px}
 .kick-intel-result-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
 .kick-intel-result-head h3{margin:6px 0 0;font-size:16px}
 .kick-intel-result-head p{margin:4px 0 0}
+.kick-intel-result-actions{display:grid;gap:10px;justify-items:end}
 .kick-intel-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .kick-intel-grid h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--app-muted)}
 .kick-intel-grid .kick-list li{padding:4px 0;font-size:13px}
 .kick-intel-advice{margin:0;padding:10px 12px;background:var(--app-soft);border-radius:8px;font-size:13px;line-height:1.45}
 .kick-intel-disclaimer{margin:0;font-size:11px}
+
+.kick-setup-steps{margin:0;padding:0;list-style:none;display:grid;gap:8px;width:100%}
+.kick-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--app-line);border-radius:10px;background:var(--app-bg)}
+.kick-setup-steps li div{display:grid;gap:2px;min-width:0}
+.kick-setup-steps strong{font-size:13px}
+.kick-setup-steps span{color:var(--app-muted);font-size:12px}
+.kick-setup-steps a{flex:none;font-size:12px;font-weight:700;color:var(--app-accent)}
+
 @media(max-width:900px){
 .kick-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
-.kick-intel-grid{grid-template-columns:1fr}
+.kick-intel-grid,.kick-intel-entry{grid-template-columns:1fr}
 }
 @media(max-width:760px){
 .kick-row{grid-template-columns:repeat(3,minmax(0,1fr)) 28px}
@@ -67,4 +99,6 @@
 .kick-priority .kick-weight{grid-column:1/-1}
 .kick-priority select{grid-column:1/-1}
 .kick-priority .kick-link{grid-row:1;grid-column:2;justify-self:end}
+.kick-next-actions li{flex-direction:column;align-items:stretch}
+.kick-intel-result-actions{justify-items:start;width:100%}
 }
