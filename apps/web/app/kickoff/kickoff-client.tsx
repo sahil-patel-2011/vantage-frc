@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { BuildHubRelated } from "../../components/build-hub-related";
 import {
   kickoffSummary,
   PHASES,
@@ -892,7 +893,9 @@ export default function KickoffClient() {
             <p>Break the new game into scoring actions, rank them by value, and lock the design priorities.</p>
           </div>
         </header>
-        <div className="app-card kick-empty">
+        <BuildHubRelated active="kickoff" />
+        <div className="app-card kick-empty soft-panel">
+          <span className="app-badge setup">Setup required</span>
           <strong>Select a team workspace</strong>
           <p className="app-muted">{view.message}</p>
           <a className="app-button" href="/workspace">
@@ -947,6 +950,8 @@ export default function KickoffClient() {
           </select>
         </label>
       </header>
+
+      <BuildHubRelated orgId={orgId} active="kickoff" />
 
       {error ? (
         <p className="telemetry-status" role="alert">

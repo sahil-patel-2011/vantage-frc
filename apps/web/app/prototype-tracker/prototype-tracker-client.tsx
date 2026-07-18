@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { BuildHubRelated } from "../../components/build-hub-related";
 import { decisionRecommendationLabel, testOutcomeLabel } from "../../lib/prototype-tracker";
 import {
   TEST_OUTCOMES,
@@ -128,6 +129,8 @@ export default function PrototypeTrackerClient() {
           </label>
         ) : null}
       </PageHeader>
+
+      {orgId ? <BuildHubRelated orgId={orgId} active="prototype" /> : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -91,7 +91,8 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/competition?tab=strategy", label: "Strategy", icon: "stats" },
       { href: "/competition?tab=scouting", label: "Scouting", icon: "scout" },
       { href: "/competition?tab=forms", label: "Form builder", icon: "clipboard" },
-      { href: "/scouting/forms", label: "Form builder", icon: "clipboard" },
+      { href: "/competition?tab=match-checklist", label: "Match checklist", icon: "clipboard" },
+      { href: "/competition?tab=scouting#scout-voice", label: "Voice notes", icon: "chat" },
       { href: "/scouting/lineup", label: "Lineup & Coverage", icon: "target" },
       { href: "/offline-shell", label: "Offline Shell", icon: "pin" },
       { href: "/ai?tab=budgets", label: "AI budgets", icon: "stats" },
@@ -104,7 +105,6 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/video", label: "Video Review", icon: "display" },
       { href: "/pit", label: "Pit Command", icon: "cube" },
       { href: "/incidents", label: "Incidents", icon: "gear" },
-      { href: "/competition?tab=match-checklist", label: "Match Checklist", icon: "clipboard" },
       { href: "/briefing", label: "Event Briefing", icon: "clipboard" },
       { href: "/match-debrief", label: "Match Debrief", icon: "chat" },
       { href: "/inspection", label: "Inspection", icon: "target" },
@@ -217,12 +217,14 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     items: [
       { href: "/business", label: "Business Hub", icon: "clipboard" },
       { href: "/business?tab=orders", label: "Orders", icon: "clipboard" },
-      { href: "/costs", label: "Season Costs", icon: "stats" },
-      { href: "/business?tab=budget", label: "Finance", icon: "stats" },
-      { href: "/team/sponsors", label: "Sponsors", icon: "users" },
+      { href: "/business?tab=budget", label: "Budget", icon: "stats" },
+      { href: "/business?tab=sponsors", label: "Sponsors", icon: "users" },
       { href: "/business?tab=sponsorship", label: "Sponsorship", icon: "clipboard" },
       { href: "/business?tab=grants", label: "Grants", icon: "clipboard" },
-      { href: "/team/awards", label: "Awards", icon: "target" },
+      { href: "/business?tab=evidence", label: "Awards evidence", icon: "target" },
+      { href: "/costs", label: "Season Costs", icon: "stats" },
+      { href: "/team/grants", label: "Grants workbench", icon: "clipboard" },
+      { href: "/team/awards", label: "Awards workbench", icon: "target" },
       { href: "/fundraisers", label: "Fundraisers", icon: "bolt" },
       { href: "/impact", label: "Community Impact", icon: "target" },
       { href: "/recognition", label: "Recognition", icon: "users" },
@@ -248,10 +250,11 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/build?tab=kickoff", label: "Kickoff", icon: "bolt" },
       { href: "/build?tab=cad", label: "CAD", icon: "cube", state: "setup" },
       { href: "/build?tab=code", label: "Code", icon: "code" },
+      { href: "/build?tab=fmea", label: "FMEA", icon: "gear" },
+      { href: "/build?tab=prototype", label: "Prototypes", icon: "cube" },
       { href: "/build?tab=batteries", label: "Batteries", icon: "bolt" },
       { href: "/robot", label: "Robot Blueprint", icon: "gear" },
       { href: "/subsystems", label: "Subsystems", icon: "grid" },
-      { href: "/build?tab=fmea", label: "FMEA", icon: "gear" },
       { href: "/display", label: "Displays", icon: "display" },
       { href: "/inventory", label: "Inventory & BOM", icon: "grid" },
       { href: "/vendors", label: "Vendors & Suppliers", icon: "clipboard" },
@@ -270,7 +273,6 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/failure-patterns", label: "Repeat Failure Patterns", icon: "cube" },
       { href: "/incident-heatmap", label: "Incident Heatmap", icon: "cube" },
       { href: "/inspection-copilot", label: "Inspection-Readiness Copilot", icon: "cube" },
-      { href: "/prototype-tracker", label: "Prototype-to-Decision Tracker", icon: "cube" },
       { href: "/readiness-score", label: "Robot Readiness Score", icon: "cube" },
       { href: "/reuse-advisor", label: "Reuse Advisor", icon: "cube" },
       { href: "/robot-weigh-in", label: "Robot Weigh-In Log", icon: "cube" },
@@ -324,11 +326,13 @@ export const PRIMARY_TABS: Array<{ href: string; label: string; icon: ProductNav
   { href: "/business", label: "Business", icon: "clipboard" },
 ];
 
-/** Quick destinations in the mobile More sheet (pillars, not a laundry list). */
+/** Quick destinations in the mobile More sheet (pillars + newly shipped event tools). */
 export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
+  { href: "/competition?tab=forms", label: "Form builder", icon: "clipboard" },
+  { href: "/competition?tab=match-checklist", label: "Match checklist", icon: "clipboard" },
+  { href: "/competition?tab=scouting#scout-voice", label: "Voice notes", icon: "chat" },
   { href: "/team?tab=messages", label: "Messages", icon: "chat" },
-  { href: "/team?tab=knowledge", label: "Knowledge", icon: "clipboard" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/ai", label: "AI", icon: "bolt" },
@@ -336,11 +340,32 @@ export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: Produc
 
 export function withOrgHref(href: string, orgId: string | null | undefined): string {
   if (!orgId) return href;
-  const pathOnly = href.split("?")[0] ?? href;
+  const hashIndex = href.indexOf("#");
+  const hash = hashIndex >= 0 ? href.slice(hashIndex) : "";
+  const withoutHash = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
+  const pathOnly = withoutHash.split("?")[0] ?? withoutHash;
   if (ORG_EXEMPT_HREFS.has(pathOnly) || pathOnly.startsWith("/admin")) return href;
-  if (href.includes("orgId=")) return href;
-  const join = href.includes("?") ? "&" : "?";
-  return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
+  if (withoutHash.includes("orgId=")) return href;
+  const join = withoutHash.includes("?") ? "&" : "?";
+  return `${withoutHash}${join}orgId=${encodeURIComponent(orgId)}${hash}`;
+}
+
+/**
+ * Keep the current path/query (tabs, filters) but force a selected workspace orgId.
+ * Used by the Soft-UI account menu when switching team workspaces.
+ */
+export function withSelectedOrgHref(href: string, orgId: string): string {
+  const hashIndex = href.indexOf("#");
+  const hash = hashIndex >= 0 ? href.slice(hashIndex) : "";
+  const withoutHash = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
+  const pathOnly = withoutHash.split("?")[0] ?? withoutHash;
+  if (ORG_EXEMPT_HREFS.has(pathOnly) || pathOnly.startsWith("/admin")) {
+    return `${pathOnly}${hash}`;
+  }
+  const query = withoutHash.includes("?") ? withoutHash.slice(withoutHash.indexOf("?") + 1) : "";
+  const params = new URLSearchParams(query);
+  params.set("orgId", orgId);
+  return `${pathOnly}?${params.toString()}${hash}`;
 }
 
 /** Path portion of a nav href (hubs use ?tab=). */

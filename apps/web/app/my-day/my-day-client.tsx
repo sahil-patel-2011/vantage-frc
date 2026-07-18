@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { PageHeader } from "../../components/ui/page-header";
 import type { MyDayMatch, MyDayView } from "../../lib/my-day";
+import { hubHref } from "../../lib/nav/hubs";
 
 const POLL_MS = 45_000;
 
@@ -30,7 +32,7 @@ function ScoutChips({
   );
 }
 
-function MatchHero({ match }: { match: MyDayMatch }) {
+function MatchHero({ match, orgId }: { match: MyDayMatch; orgId?: string | null }) {
   return (
     <section className={`myday-hero alliance-${match.alliance}`} aria-live="polite">
       <p className="myday-hero-kicker">Next match</p>
@@ -42,6 +44,12 @@ function MatchHero({ match }: { match: MyDayMatch }) {
       <nav className="myday-hero-links" aria-label="Match links">
         <a className="myday-link primary" href={match.links.command}>
           Event Day Command
+        </a>
+        <a className="myday-link" href={hubHref("/competition", "strategy", orgId)}>
+          Strategy
+        </a>
+        <a className="myday-link" href={hubHref("/competition", "scouting", orgId)}>
+          Scouting
         </a>
         <a className="myday-link" href={match.links.briefing}>
           Briefing
@@ -134,10 +142,16 @@ export default function MyDayClient() {
           title="My Day"
           description={view?.message ?? "Select a team workspace to open My Day."}
         />
+        <CompetitionHubRelated
+          orgId={view?.context.orgId ?? null}
+          active="my-day"
+          include={["command", "strategy", "scouting", "match-checklist"]}
+        />
         <div className="myday-empty soft-panel">
+          <span className="app-badge setup">Setup required</span>
           <p>
             My Day fills in once your active event schedule is synced. Set the event and team number
-            in Workspace, then pull TBA data from Team → Data.
+            in Workspace, then pull TBA data from Team → Data. No demo match times.
           </p>
           <a className="myday-link primary" href="/workspace">
             Open Workspace
@@ -161,6 +175,12 @@ export default function MyDayClient() {
             ? `${view.context.eventName}${view.context.teamNumber != null ? ` · Team ${view.context.teamNumber}` : ""}`
             : "Your matches at the active event."
         }
+      />
+
+      <CompetitionHubRelated
+        orgId={orgId}
+        active="my-day"
+        include={["command", "strategy", "scouting", "match-checklist"]}
       />
 
       <p className="myday-freshness" role="status">
@@ -193,7 +213,7 @@ export default function MyDayClient() {
         </div>
       ) : null}
 
-      {view.next ? <MatchHero match={view.next} /> : null}
+      {view.next ? <MatchHero match={view.next} orgId={orgId} /> : null}
 
       {view.matches.length > 0 ? (
         <section className="myday-list-section">
@@ -208,8 +228,14 @@ export default function MyDayClient() {
 
       {!view.next && view.matches.length > 0 && orgId ? (
         <nav className="myday-hero-links" aria-label="Competition links">
-          <a className="myday-link primary" href={`/command?orgId=${encodeURIComponent(orgId)}`}>
+          <a className="myday-link primary" href={hubHref("/competition", "command", orgId)}>
             Event Day Command
+          </a>
+          <a className="myday-link" href={hubHref("/competition", "strategy", orgId)}>
+            Strategy
+          </a>
+          <a className="myday-link" href={hubHref("/competition", "scouting", orgId)}>
+            Scouting
           </a>
           <a className="myday-link" href={`/schedule?orgId=${encodeURIComponent(orgId)}`}>
             Full schedule

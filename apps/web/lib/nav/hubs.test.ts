@@ -46,4 +46,31 @@ describe("product hubs", () => {
       "fmea",
     ]);
   });
+
+  it("surfaces Build shop tabs including prototypes", () => {
+    const build = hubById("build");
+    expect(hubPrimaryTabs(build).map((tab) => tab.id)).toEqual([
+      "kickoff",
+      "cad",
+      "code",
+      "fmea",
+      "prototype",
+      "batteries",
+    ]);
+    expect(hubMoreTabs(build).map((tab) => tab.id)).not.toContain("prototype");
+    expect(hubMoreTabs(build).map((tab) => tab.id)).not.toContain("prototype-tracker");
+  });
+
+  it("surfaces AI hub tabs for chat, budgets, governance, and finance", () => {
+    const ai = hubById("ai");
+    expect(hubPrimaryTabs(ai).map((tab) => tab.id)).toEqual([
+      "chat",
+      "budgets",
+      "governance",
+      "finance",
+    ]);
+    expect(hubMoreTabs(ai).map((tab) => tab.id)).toEqual(
+      expect.arrayContaining(["decision-search", "season-report"]),
+    );
+  });
 });

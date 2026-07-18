@@ -285,6 +285,22 @@ export default function SponsorshipClient() {
               ))}
             </select>
           </label>
+          {context.orgId ? (
+            <>
+              <a
+                className="app-button secondary"
+                href={`/business?orgId=${encodeURIComponent(context.orgId)}&tab=sponsors`}
+              >
+                Sponsor pipeline
+              </a>
+              <a className="app-button secondary" href={`/sponsor-suite?orgId=${encodeURIComponent(context.orgId)}`}>
+                Sponsor Suite
+              </a>
+              <a className="app-button secondary" href={`/media-kit?orgId=${encodeURIComponent(context.orgId)}`}>
+                Media kit
+              </a>
+            </>
+          ) : null}
           <button
             type="button"
             className="app-button"

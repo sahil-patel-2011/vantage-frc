@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { fmeaContextLabel, fmeaLevelLabel, fmeaStatusLabel } from "../../lib/fmea";
 import { FMEA_CONTEXTS, FMEA_STATUSES, type FmeaView } from "../../lib/fmea/compute-fmea";
@@ -128,6 +129,7 @@ export default function FmeaClient() {
           </a>
         </div>
       </PageHeader>
+      {orgId ? <BuildHubRelated orgId={orgId} active="fmea" /> : null}
       {orgId ? <TeamHubRelated orgId={orgId} active="fmea" /> : null}
 
       {error ? (

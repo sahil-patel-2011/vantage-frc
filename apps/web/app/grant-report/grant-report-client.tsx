@@ -102,9 +102,17 @@ export default function GrantReportClient() {
             </label>
           ) : null}
           {orgId ? (
-            <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}`}>
-              Business hub
-            </a>
+            <nav className="intel-actions" aria-label="Related business tools" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>
+                Business · Grants
+              </a>
+              <a className="app-button secondary" href={`/team/grants?orgId=${encodeURIComponent(orgId)}`}>
+                Grants workbench
+              </a>
+              <a className="app-button secondary" href={`/impact?orgId=${encodeURIComponent(orgId)}`}>
+                Community Impact
+              </a>
+            </nav>
           ) : null}
         </div>
       </PageHeader>

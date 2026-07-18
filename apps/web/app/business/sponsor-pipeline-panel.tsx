@@ -76,6 +76,12 @@ export function SponsorPipelinePanel({
 
   return (
     <div className="biz-stack">
+      <div className="biz-detail-link">
+        <span>Need tier math, media kits, walls, or outreach calendars?</span>
+        <a href={`/sponsor-suite?orgId=${encodeURIComponent(view.orgId)}`}>Open Sponsor Suite →</a>
+        <a href={`/media-kit?orgId=${encodeURIComponent(view.orgId)}`}>Media kit →</a>
+        <a href={`/business?orgId=${encodeURIComponent(view.orgId)}&tab=sponsorship`}>Sponsorship one-pager →</a>
+      </div>
       <section className="app-card soft-panel biz-pipeline-goal">
         <header className="biz-card-head">
           <div>

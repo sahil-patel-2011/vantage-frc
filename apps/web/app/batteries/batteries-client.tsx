@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { BATTERY_LOG_KINDS, type BatteryStatus, type HealthStatus } from "../../lib/battery";
@@ -267,6 +268,7 @@ export default function BatteriesClient() {
         </div>
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="batteries" />
+      <BuildHubRelated orgId={orgId} active="batteries" />
       <TeamHubRelated orgId={orgId} active="batteries" />
 
       {error ? (

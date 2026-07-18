@@ -82,3 +82,28 @@
 .product-hub-panel .att-page {
   padding-top: 0;
 }
+
+/* Nested Build surfaces: drop duplicate page chrome */
+.product-hub--build .kick-page,
+.product-hub--build .cad-module,
+.product-hub--build .cdc-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 24px;
+}
+.product-hub--build .kick-page .app-page-header,
+.product-hub--build .cad-module .app-page-header,
+.product-hub--build .cdc-page .app-page-header {
+  display: none;
+}
+.product-hub--competition .edc-page,
+.product-hub--competition .myday-page {
+  max-width: none;
+  margin: 0;
+  padding: 0 0 24px;
+}
+.product-hub--competition .edc-page .app-page-header,
+.product-hub--competition .myday-page .app-page-header {
+  display: none;
+}

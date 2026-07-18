@@ -9,6 +9,9 @@ const KickoffClient = dynamic(() => import("../kickoff/kickoff-client"), { ssr: 
 const CadWorkspace = dynamic(() => import("../cad/cad-client"), { ssr: false });
 const CodeClient = dynamic(() => import("../code/code-client").then((m) => m.CodeClient), { ssr: false });
 const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false });
+const PrototypeTrackerClient = dynamic(() => import("../prototype-tracker/prototype-tracker-client"), {
+  ssr: false,
+});
 const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false });
 
 export default function BuildHub() {
@@ -17,6 +20,7 @@ export default function BuildHub() {
       {({ tab, orgId }) => {
         if (tab === "kickoff") return <KickoffClient />;
         if (tab === "fmea") return <FmeaClient />;
+        if (tab === "prototype") return <PrototypeTrackerClient />;
         if (tab === "batteries") return <BatteriesClient />;
         if (tab === "code") {
           return (
