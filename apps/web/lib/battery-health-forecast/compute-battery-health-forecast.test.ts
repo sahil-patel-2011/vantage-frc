@@ -30,14 +30,21 @@ describe("computeBatteryHealthForecastView", () => {
     }
   });
 
-  it("returns setup_required when the org has no registered batteries", async () => {
-    const { client } = makeClient([{ rows: [{ orgId: "org-1", teamNumber: 254 }] }, { rows: [] }]);
+  it("returns live empty fleet when the org has no registered batteries", async () => {
+    const { client } = makeClient([
+      { rows: [{ orgId: "org-1", teamNumber: 254 }] },
+      { rows: [] },
+      { rows: [] },
+    ]);
 
     const view = await computeBatteryHealthForecastView(client, { userId: "user-1", requestedOrg: "org-1" });
 
-    expect(view.status).toBe("setup_required");
-    if (view.status === "setup_required") {
+    expect(view.status).toBe("live");
+    if (view.status === "live") {
       expect(view.orgId).toBe("org-1");
+      expect(view.batteries).toEqual([]);
+      expect(view.forecasts).toEqual([]);
+      expect(view.summary.totalBatteries).toBe(0);
     }
   });
 

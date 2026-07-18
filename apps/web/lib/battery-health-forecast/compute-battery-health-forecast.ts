@@ -1,5 +1,9 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeBatteryForecast, summarizeFleet } from ".";
+import {
+  batteryHealthForecastSetupSteps,
+  type BatteryHealthForecastSetupStep,
+} from "./battery-health-forecast-related";
 import type {
   BatteryForecast,
   BatteryHealthReading,
@@ -8,12 +12,7 @@ import type {
   FleetSummary,
 } from "./types";
 
-export type BatteryHealthForecastSetupStep = {
-  id: string;
-  label: string;
-  detail: string;
-  href: string;
-};
+export type { BatteryHealthForecastSetupStep };
 
 export type BatteryHealthForecastView =
   | {
@@ -106,9 +105,7 @@ export async function computeBatteryHealthForecastView(
     return {
       status: "setup_required",
       message: "Select a team workspace to forecast battery end-of-life.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: batteryHealthForecastSetupSteps(null),
       orgId: null,
     };
   }
@@ -133,22 +130,6 @@ export async function computeBatteryHealthForecastView(
       [org.orgId],
     ),
   ]);
-
-  if (batteryResult.rowCount === 0) {
-    return {
-      status: "setup_required",
-      message: "Add a battery pack to start forecasting its end-of-life.",
-      steps: [
-        {
-          id: "add-battery",
-          label: "Add a battery",
-          detail: "Register a pack by label and serial number",
-          href: "/battery-health-forecast",
-        },
-      ],
-      orgId: org.orgId,
-    };
-  }
 
   const batteries = batteryResult.rows.map(mapBattery);
   const readingsByBattery = new Map<string, BatteryHealthReading[]>();
