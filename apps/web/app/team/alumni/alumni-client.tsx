@@ -11,6 +11,8 @@ type Alum = {
   discordHandle: string | null;
   linkedinUrl: string | null;
   note: string | null;
+  isMentor: boolean;
+  mentorTopic: string | null;
   addedBy: string;
   createdAt: string;
 };
@@ -25,6 +27,8 @@ const blankForm = {
   discordHandle: "",
   linkedinUrl: "",
   note: "",
+  isMentor: false,
+  mentorTopic: "",
 };
 
 const rowStyle: React.CSSProperties = {
@@ -44,6 +48,7 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
   const [channelLabel, setChannelLabel] = useState("");
   const [announce, setAnnounce] = useState("");
   const [message, setMessage] = useState("");
+  const [mentorsOnly, setMentorsOnly] = useState(false);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -127,6 +132,9 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
     }
   }
 
+  const mentorCount = alumni.filter((a) => a.isMentor).length;
+  const shown = mentorsOnly ? alumni.filter((a) => a.isMentor) : alumni;
+
   return (
     <main className="intel-app">
       <header className="intel-header">
@@ -196,23 +204,65 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
               Note
               <input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
             </label>
+            <label className="state-control">
+              <input
+                type="checkbox"
+                checked={form.isMentor}
+                onChange={(e) => setForm({ ...form, isMentor: e.target.checked })}
+              />
+              <span>
+                <strong>Available to mentor students</strong>
+                <small>Show them in the mentors filter so current students can reach out.</small>
+              </span>
+            </label>
+            {form.isMentor && (
+              <label>
+                Can help with (optional)
+                <input
+                  placeholder="CAD, controls, business, college apps…"
+                  value={form.mentorTopic}
+                  onChange={(e) => setForm({ ...form, mentorTopic: e.target.value })}
+                />
+              </label>
+            )}
             <button className="primary-action" type="submit">
               Add to network
             </button>
           </form>
 
           <section className="intel-panel">
-            <span className="eyebrow">ALUMNI · {alumni.length}</span>
-            {!alumni.length && <p className="app-muted">No alumni yet. Add the first from the form.</p>}
-            {alumni.map((alum) => (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+              <span className="eyebrow">
+                ALUMNI · {alumni.length}
+                {mentorCount ? ` · ${mentorCount} mentor${mentorCount === 1 ? "" : "s"}` : ""}
+              </span>
+              {mentorCount > 0 && (
+                <label className="check-field" style={{ font: "12px monospace" }}>
+                  <input
+                    type="checkbox"
+                    checked={mentorsOnly}
+                    onChange={(e) => setMentorsOnly(e.target.checked)}
+                  />{" "}
+                  Mentors only
+                </label>
+              )}
+            </div>
+            {!shown.length && (
+              <p className="app-muted">
+                {mentorsOnly ? "No mentors yet." : "No alumni yet. Add the first from the form."}
+              </p>
+            )}
+            {shown.map((alum) => (
               <article className="admin-org" style={rowStyle} key={alum.id}>
                 <div>
                   <strong>
+                    {alum.isMentor ? "🎓 " : ""}
                     {alum.fullName}
                     {alum.gradYear ? ` · ’${String(alum.gradYear).slice(2)}` : ""}
                   </strong>
                   <small>
                     {[
+                      alum.isMentor ? `Mentor${alum.mentorTopic ? ` · ${alum.mentorTopic}` : ""}` : null,
                       alum.currentRole,
                       alum.discordHandle ? `Discord ${alum.discordHandle}` : null,
                       alum.email,
