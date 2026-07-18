@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "../../components/app-shell";
+import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { PageHeader } from "../../components/ui";
 import { countdownLabel } from "../dashboard/widgets";
+import { eventDayNextActions } from "../../lib/command/event-day-actions";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { formatMyDayWhen } from "../../lib/my-day";
 
@@ -162,6 +164,7 @@ export default function CommandClient() {
   const next = snap?.matches[0] ?? null;
   const after = snap?.matches[1] ?? null;
   const countdown = useMemo(() => countdownLabel(next?.scheduledTime), [next?.scheduledTime, tick]);
+  const nextActions = useMemo(() => eventDayNextActions(snap, { orgId: orgId || null }), [snap, orgId]);
 
   if (!orgId && !loading) {
     return (
@@ -175,6 +178,23 @@ export default function CommandClient() {
             Go to Home
           </a>
         </PageHeader>
+        <CompetitionHubRelated active="command" include={["my-day", "strategy", "scouting", "match-checklist"]} />
+        <section className="edc-next-actions soft-panel" aria-label="Next actions">
+          <h2>Next actions</h2>
+          <ol>
+            {nextActions.map((action) => (
+              <li key={action.id} className={action.primary ? "primary" : undefined}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
       </main>
     );
   }
@@ -212,6 +232,34 @@ export default function CommandClient() {
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
       <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
+
+      <CompetitionHubRelated
+        orgId={orgId}
+        active="command"
+        include={["my-day", "strategy", "scouting", "match-checklist", "coverage"]}
+      />
+
+      {nextActions.length ? (
+        <section className="edc-next-actions soft-panel" aria-label="Next actions">
+          <header>
+            <h2>Next actions</h2>
+            <p>Clear field-side steps from real schedule, scout gaps, and setup — never invents metrics.</p>
+          </header>
+          <ol>
+            {nextActions.slice(0, 5).map((action) => (
+              <li key={action.id} className={action.primary ? "primary" : undefined}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
       {snap?.status === "setup_required" || (!snap?.eventKey && snap) ? (
         <section className="edc-setup dash-setup-banner" aria-label="Setup required">

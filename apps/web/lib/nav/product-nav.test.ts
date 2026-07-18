@@ -6,6 +6,7 @@ import {
   PRIMARY_TABS,
   PRODUCT_NAV_GROUPS,
   withOrgHref,
+  withSelectedOrgHref,
 } from "./product-nav";
 
 describe("product-nav", () => {
@@ -34,8 +35,10 @@ describe("product-nav", () => {
   it("surfaces pillar shortcuts in the More sheet", () => {
     expect(MORE_SHEET_LINKS.map((link) => link.label)).toEqual([
       "My Day",
+      "Form builder",
+      "Match checklist",
+      "Voice notes",
       "Messages",
-      "Knowledge",
       "Logistics",
       "Build",
       "AI",
@@ -69,6 +72,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/strategy")).toBe("Competition / Strategy");
     expect(breadcrumbForPath("/writer")).toBe("AI / Award Writer");
     expect(breadcrumbForPath("/team/usage")).toBe("AI / AI usage");
+    expect(breadcrumbForPath("/code")).toBe("Build / Code");
     expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
     expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Form builder");
     expect(breadcrumbForPath("/competition")).toBe("Competition / Competition hub");
@@ -79,9 +83,14 @@ describe("product-nav", () => {
     expect(match?.group.label).toBe("Competition");
     expect(
       PRODUCT_NAV_GROUPS.find((group) => group.label === "Competition")?.items.some(
-        (item) => item.href === "/competition?tab=forms" || item.href === "/scouting/forms",
+        (item) => item.href === "/competition?tab=forms",
       ),
     ).toBe(true);
+    expect(
+      PRODUCT_NAV_GROUPS.find((group) => group.label === "Competition")?.items.some(
+        (item) => item.href === "/scouting/forms",
+      ),
+    ).toBe(false);
   });
 
   it("resolves nested team knowledge via hub legacy href", () => {
@@ -101,16 +110,31 @@ describe("product-nav", () => {
     expect(withOrgHref("/practice?tab=a", "org-1")).toBe("/practice?tab=a&orgId=org-1");
     expect(withOrgHref("/account", "org-1")).toBe("/account");
     expect(withOrgHref("/practice?orgId=org-1", "org-2")).toBe("/practice?orgId=org-1");
+    expect(withOrgHref("/competition?tab=scouting#scout-voice", "org-1")).toBe(
+      "/competition?tab=scouting&orgId=org-1#scout-voice",
+    );
+    expect(withSelectedOrgHref("/business?tab=orders&orgId=old", "org-2")).toBe(
+      "/business?tab=orders&orgId=org-2",
+    );
   });
 
   it("resolves form builder and match checklist under Competition", () => {
     expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Form builder");
-    expect(breadcrumbForPath("/match-checklist")).toBe("Competition / Match Checklist");
+    expect(breadcrumbForPath("/match-checklist")).toBe("Competition / Match checklist");
     const competition = PRODUCT_NAV_GROUPS.find((g) => g.label === "Competition")!;
     expect(competition.items.some((i) => i.href === "/competition?tab=forms")).toBe(true);
     expect(competition.items.some((i) => i.href === "/competition?tab=match-checklist")).toBe(true);
+    expect(competition.items.some((i) => i.href === "/competition?tab=scouting#scout-voice")).toBe(true);
     expect(competition.items.some((i) => i.href === "/competition?tab=strategy")).toBe(true);
     expect(competition.items.some((i) => i.href === "/competition?tab=scouting")).toBe(true);
+  });
+
+  it("keeps Business hub tabs and workbenches in the drawer", () => {
+    const business = PRODUCT_NAV_GROUPS.find((g) => g.label === "Business")!;
+    expect(business.items.some((i) => i.href === "/business?tab=sponsors")).toBe(true);
+    expect(business.items.some((i) => i.href === "/business?tab=grants")).toBe(true);
+    expect(business.items.some((i) => i.href === "/team/grants")).toBe(true);
+    expect(business.items.some((i) => i.href === "/team/sponsors")).toBe(false);
   });
 
   it("marks unfinished destinations as planned instead of dead links", () => {
