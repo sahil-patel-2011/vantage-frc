@@ -1,8 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AiHubRelated } from "../../../components/ai-hub-related";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
+import {
+  AI_USAGE_RELATED_INCLUDE,
+  aiBudgetsRelatedLinks,
+  aiUsageNextActions,
+  aiUsageShellCopy,
+  classifyAiUsageShell,
+  formatAiBudgetsCount,
+  formatAiBudgetsMoney,
+  type AiBudgetsShellKind,
+} from "../../../lib/billing/ai-budgets-related";
 import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
+import { hubHref } from "../../../lib/nav/hubs";
+import { withOrgHref } from "../../../lib/nav/product-nav";
+import "../budgets/ai-budgets.css";
 
 type UsageData = {
   members: Array<{ id: string; name: string | null; email: string | null; tokens: string; cost: string }>;
@@ -87,8 +101,6 @@ const FEATURE_LABELS: Record<string, string> = {
   chat: "Assistant chat",
 };
 
-const money = (value: unknown) => `$${Number(value ?? 0).toFixed(2)}`;
-const num = (value: unknown) => Number(value ?? 0).toLocaleString();
 const label = (map: Record<string, string>, key: string) => map[key] ?? key;
 
 // .admin-org is a 60px-badge grid; these rows are [content ... value], so flex-override it.
@@ -129,31 +141,105 @@ function denialReasonLabel(reason: string): string {
   return reason;
 }
 
+function UsageRelatedStrip({ orgId }: { orgId: string }) {
+  const budgetsHref = hubHref("/ai", "budgets", orgId);
+  const links = aiBudgetsRelatedLinks(orgId, { include: [...AI_USAGE_RELATED_INCLUDE] });
+  return (
+    <nav className="product-hub-related ai-budgets-related" aria-label="Related AI usage tools">
+      <a className="app-button secondary" href={budgetsHref}>
+        Budgets
+      </a>
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActions({ orgId, shell }: { orgId: string; shell: AiBudgetsShellKind }) {
+  const actions = aiUsageNextActions({ orgId, shell });
+  if (!actions.length) return null;
+  return (
+    <section
+      className="ai-budgets-next-actions app-card soft-panel edc-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p>From real Neon metered calls only — never DEMO activity.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function UsageClient({ orgId }: { orgId: string }) {
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [activity, setActivity] = useState<ActivityData | null>(null);
   const [denials, setDenials] = useState<DenialsData | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [httpStatus, setHttpStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const chatHref = hubHref("/ai", "chat", orgId);
+  const budgetsHref = hubHref("/ai", "budgets", orgId);
+  const pricingHref = withOrgHref("/pricing", orgId);
+  const accountHref = withOrgHref("/account", orgId);
+  const promptCachingHref = `${budgetsHref}#prompt-caching`;
 
   useEffect(() => {
     let active = true;
     async function load() {
       setLoading(true);
+      setLoadError(null);
       const [usageResponse, activityResponse, denialsResponse] = await Promise.all([
-        fetch(`/api/billing/usage?orgId=${orgId}`),
-        fetch(`/api/billing/activity?orgId=${orgId}`),
-        fetch(`/api/billing/denials?orgId=${orgId}`),
+        fetch(`/api/billing/usage?orgId=${encodeURIComponent(orgId)}`),
+        fetch(`/api/billing/activity?orgId=${encodeURIComponent(orgId)}`),
+        fetch(`/api/billing/denials?orgId=${encodeURIComponent(orgId)}`),
       ]);
       const usageData = await usageResponse.json();
       const activityData = await activityResponse.json();
       const denialsData = await denialsResponse.json();
       if (!active) return;
-      if (!usageResponse.ok) setMessage(usageData.error ?? "Unable to load usage");
-      else if (!activityResponse.ok) setMessage(activityData.error ?? "Unable to load activity");
-      else setMessage("");
-      if (usageResponse.ok) setUsage(usageData);
-      if (activityResponse.ok) setActivity(activityData);
+      const status = !usageResponse.ok
+        ? usageResponse.status
+        : !activityResponse.ok
+          ? activityResponse.status
+          : denialsResponse.ok
+            ? usageResponse.status
+            : denialsResponse.status;
+      setHttpStatus(status);
+      if (!usageResponse.ok) {
+        setLoadError(usageData.error ?? "Unable to load usage");
+        setMessage("");
+        setLoading(false);
+        return;
+      }
+      if (!activityResponse.ok) {
+        setLoadError(activityData.error ?? "Unable to load activity");
+        setMessage("");
+        setLoading(false);
+        return;
+      }
+      setLoadError(null);
+      setMessage(denialsResponse.ok ? "" : (denialsData.error ?? ""));
+      setUsage(usageData);
+      setActivity(activityData);
       if (denialsResponse.ok) setDenials(denialsData);
       setLoading(false);
     }
@@ -164,6 +250,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
   }, [orgId]);
 
   const windowDays = activity?.windowDays ?? 30;
+  const meteredCalls = Number(activity?.summary.calls ?? 0);
 
   const cutoffSnapshot = useMemo(() => {
     if (!usage) return null;
@@ -192,181 +279,291 @@ export default function UsageClient({ orgId }: { orgId: string }) {
     });
   }, [usage]);
 
+  const shell = classifyAiUsageShell({
+    loading,
+    status: httpStatus,
+    error: loadError,
+    orgId,
+    hasPlan: Boolean(usage?.entitlement?.planCode),
+    meteredCalls,
+  });
+  const shellCopy = aiUsageShellCopy(shell);
+  const blocked = shell === "forbidden" || shell === "auth_required" || shell === "error";
+  const showEmptyBanner = shell === "empty" || shell === "setup";
+  const metricsLoaded = !loading && !blocked && usage != null;
+
+  function retry() {
+    setLoading(true);
+    setLoadError(null);
+    void (async () => {
+      const [usageResponse, activityResponse, denialsResponse] = await Promise.all([
+        fetch(`/api/billing/usage?orgId=${encodeURIComponent(orgId)}`),
+        fetch(`/api/billing/activity?orgId=${encodeURIComponent(orgId)}`),
+        fetch(`/api/billing/denials?orgId=${encodeURIComponent(orgId)}`),
+      ]);
+      const usageData = await usageResponse.json();
+      const activityData = await activityResponse.json();
+      const denialsData = await denialsResponse.json();
+      setHttpStatus(usageResponse.status);
+      if (!usageResponse.ok) {
+        setLoadError(usageData.error ?? "Unable to load usage");
+        setLoading(false);
+        return;
+      }
+      if (!activityResponse.ok) {
+        setLoadError(activityData.error ?? "Unable to load activity");
+        setLoading(false);
+        return;
+      }
+      setLoadError(null);
+      setUsage(usageData);
+      setActivity(activityData);
+      if (denialsResponse.ok) setDenials(denialsData);
+      setMessage(denialsResponse.ok ? "" : (denialsData.error ?? ""));
+      setLoading(false);
+    })();
+  }
+
   return (
-    <main className="intel-app">
+    <main className="intel-app ai-budgets-page ai-usage-page">
       <header className="intel-header">
         <div>
-          <span className="eyebrow">VANTAGE / AI USAGE &amp; ACTIVITY</span>
+          <span className="eyebrow">AI / USAGE &amp; ACTIVITY</span>
           <h1>Where the team&apos;s AI spend goes</h1>
           <p className="app-muted">
-            A transparent record of every metered AI call — the model, the feature, the member, and which key
-            funded it. Set hard limits on the{" "}
-            <a href={`/team/budgets?orgId=${orgId}`}>API budgets</a> page.
+            A transparent record of every metered AI call — the model, the feature, the member, and which key funded it.
+            Set hard limits on{" "}
+            <a href={budgetsHref}>API budgets</a>. Resume cut-offs via{" "}
+            <a href={pricingHref}>Pricing</a> or <a href={accountHref}>Account</a>.
           </p>
         </div>
         <nav className="intel-actions" aria-label="Governance links">
-          <a href={`/chat?orgId=${orgId}`}>Assistant</a>
-          <a href={`/team/budgets?orgId=${orgId}#prompt-caching`}>Prompt caching</a>
-          <a href={`/team/budgets?orgId=${orgId}`}>API budgets</a>
-          <a href={`/team/ai-policy?orgId=${orgId}`}>AI governance</a>
-          <a href={`/team/ai-runs?orgId=${orgId}`}>AI runs</a>
-          <a href={`/team/ai-memory?orgId=${orgId}`}>AI memory</a>
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+          <a href={chatHref}>Chat</a>
+          <a href={budgetsHref}>Budgets</a>
+          <a href={promptCachingHref}>Prompt caching</a>
+          <a href={pricingHref}>Pricing</a>
+          <a href={accountHref}>Account</a>
+          <a href={hubHref("/ai", "governance", orgId)}>Governance</a>
+          <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
+          <a href={hubHref("/ai", "memory", orgId)}>Memory</a>
         </nav>
       </header>
 
-      {message && <p role="status" className="telemetry-status">{message}</p>}
-      {!loading && cutoffSnapshot ? <UsageCutoffBanner orgId={orgId} snapshot={cutoffSnapshot} /> : null}
-      {loading && <p className="app-muted">Loading usage…</p>}
+      <AiHubRelated orgId={orgId} />
+      <UsageRelatedStrip orgId={orgId} />
 
-      {!loading && activity && (
-        <section className="metric-grid">
-          <article>
-            <span>Calls · last {windowDays}d</span>
-            <strong>{num(activity.summary.calls)}</strong>
-          </article>
-          <article>
-            <span>Spend · last {windowDays}d</span>
-            <strong>{money(activity.summary.cost)}</strong>
-          </article>
-          <article>
-            <span>Tokens · last {windowDays}d</span>
-            <strong>{num(activity.summary.tokens)}</strong>
-          </article>
-          <article>
-            <span>Cache-read tokens</span>
-            <strong>{num(activity.summary.cacheReadTokens)}</strong>
-          </article>
+      {message ? (
+        <p role="status" className="telemetry-status">
+          {message}
+        </p>
+      ) : null}
+
+      {loading ? (
+        <section className="app-card soft-panel product-hub-setup" aria-busy>
+          <h2>{shellCopy.title}</h2>
+          <p className="app-muted">{shellCopy.description}</p>
         </section>
-      )}
+      ) : null}
 
-      {!loading && usage && (
-        <section className="admin-grid">
-          <section className="intel-panel">
-            <span className="eyebrow">FUNDING SOURCE · LAST {windowDays}D</span>
-            {!activity?.byKeySource.length && <p className="app-muted">No metered calls in this window.</p>}
-            {activity?.byKeySource.map((row) => (
-              <article className="admin-org" style={rowStyle} key={row.keySource}>
-                <div>
-                  <strong>{label(KEY_SOURCE_LABELS, row.keySource)}</strong>
-                  <small>{num(row.calls)} calls · {num(row.tokens)} tokens</small>
-                </div>
-                <b>{money(row.cost)}</b>
-              </article>
-            ))}
-          </section>
-          <section className="intel-panel">
-            <span className="eyebrow">SPEND BY FEATURE · LAST {windowDays}D</span>
-            {!activity?.byFeature.length && <p className="app-muted">No metered calls in this window.</p>}
-            {activity?.byFeature.map((row) => (
-              <article className="admin-org" style={rowStyle} key={row.feature}>
-                <div>
-                  <strong>{label(FEATURE_LABELS, row.feature)}</strong>
-                  <small>{num(row.calls)} calls · {num(row.tokens)} tokens</small>
-                </div>
-                <b>{money(row.cost)}</b>
-              </article>
-            ))}
-          </section>
+      {blocked ? (
+        <section className="app-card soft-panel product-hub-setup" role="status">
+          {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
+          <h2>{shellCopy.title}</h2>
+          <p className="app-muted">{shellCopy.description}</p>
+          <NextActions orgId={orgId} shell={shell} />
+          {shell === "error" ? (
+            <button type="button" className="app-button secondary" onClick={() => retry()}>
+              Retry
+            </button>
+          ) : null}
         </section>
-      )}
+      ) : null}
 
-      {!loading && usage && (
-        <section className="admin-grid">
-          <section className="intel-panel">
-            <span className="eyebrow">BY MEMBER · ALL TIME</span>
-            {!usage.members.length && <p className="app-muted">No members yet.</p>}
-            {usage.members
-              .slice()
-              .sort((a, b) => Number(b.cost) - Number(a.cost))
-              .map((member) => (
-                <article className="admin-org" style={rowStyle} key={member.id}>
+      {!loading && !blocked ? (
+        <>
+          {showEmptyBanner ? (
+            <section className="app-card soft-panel product-hub-setup" role="status">
+              {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
+              <h2>{shellCopy.title}</h2>
+              <p className="app-muted">{shellCopy.description}</p>
+              <NextActions orgId={orgId} shell={shell} />
+            </section>
+          ) : null}
+
+          {cutoffSnapshot ? <UsageCutoffBanner orgId={orgId} snapshot={cutoffSnapshot} /> : null}
+
+          {activity ? (
+            <section className="metric-grid">
+              <article>
+                <span>Calls · last {windowDays}d</span>
+                <strong>{formatAiBudgetsCount(activity.summary.calls, metricsLoaded)}</strong>
+              </article>
+              <article>
+                <span>Spend · last {windowDays}d</span>
+                <strong>{formatAiBudgetsMoney(activity.summary.cost, metricsLoaded)}</strong>
+              </article>
+              <article>
+                <span>Tokens · last {windowDays}d</span>
+                <strong>{formatAiBudgetsCount(activity.summary.tokens, metricsLoaded)}</strong>
+              </article>
+              <article>
+                <span>Cache-read tokens</span>
+                <strong>{formatAiBudgetsCount(activity.summary.cacheReadTokens, metricsLoaded)}</strong>
+              </article>
+            </section>
+          ) : null}
+
+          {usage ? (
+            <section className="admin-grid">
+              <section className="intel-panel">
+                <span className="eyebrow">FUNDING SOURCE · LAST {windowDays}D</span>
+                {!activity?.byKeySource.length && (
+                  <p className="app-muted">No metered calls in this window — never DEMO funding rows.</p>
+                )}
+                {activity?.byKeySource.map((row) => (
+                  <article className="admin-org" style={rowStyle} key={row.keySource}>
+                    <div>
+                      <strong>{label(KEY_SOURCE_LABELS, row.keySource)}</strong>
+                      <small>
+                        {formatAiBudgetsCount(row.calls, true)} calls ·{" "}
+                        {formatAiBudgetsCount(row.tokens, true)} tokens
+                      </small>
+                    </div>
+                    <b>{formatAiBudgetsMoney(row.cost, true)}</b>
+                  </article>
+                ))}
+              </section>
+              <section className="intel-panel">
+                <span className="eyebrow">SPEND BY FEATURE · LAST {windowDays}D</span>
+                {!activity?.byFeature.length && (
+                  <p className="app-muted">No metered calls in this window — never DEMO feature spend.</p>
+                )}
+                {activity?.byFeature.map((row) => (
+                  <article className="admin-org" style={rowStyle} key={row.feature}>
+                    <div>
+                      <strong>{label(FEATURE_LABELS, row.feature)}</strong>
+                      <small>
+                        {formatAiBudgetsCount(row.calls, true)} calls ·{" "}
+                        {formatAiBudgetsCount(row.tokens, true)} tokens
+                      </small>
+                    </div>
+                    <b>{formatAiBudgetsMoney(row.cost, true)}</b>
+                  </article>
+                ))}
+              </section>
+            </section>
+          ) : null}
+
+          {usage ? (
+            <section className="admin-grid">
+              <section className="intel-panel">
+                <span className="eyebrow">BY MEMBER · ALL TIME</span>
+                {!usage.members.length && <p className="app-muted">No members yet.</p>}
+                {usage.members
+                  .slice()
+                  .sort((a, b) => Number(b.cost) - Number(a.cost))
+                  .map((member) => (
+                    <article className="admin-org" style={rowStyle} key={member.id}>
+                      <div>
+                        <strong>{member.name ?? member.email ?? "Member"}</strong>
+                        <small>{formatAiBudgetsCount(member.tokens, true)} tokens</small>
+                      </div>
+                      <b>{formatAiBudgetsMoney(member.cost, true)}</b>
+                    </article>
+                  ))}
+              </section>
+              <section className="intel-panel">
+                <span className="eyebrow">BY MODEL · ALL TIME</span>
+                {!usage.models.length && (
+                  <p className="app-muted">No model usage recorded yet — never DEMO model rows.</p>
+                )}
+                {usage.models.map((row) => (
+                  <article className="admin-org" style={rowStyle} key={`${row.provider}/${row.model}`}>
+                    <div>
+                      <strong>{row.model}</strong>
+                      <small>
+                        {row.provider} · {formatAiBudgetsCount(row.calls, true)} calls ·{" "}
+                        {formatAiBudgetsCount(row.tokens, true)} tokens
+                      </small>
+                    </div>
+                    <b>{formatAiBudgetsMoney(row.cost, true)}</b>
+                  </article>
+                ))}
+              </section>
+            </section>
+          ) : null}
+
+          {denials ? (
+            <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
+              <span className="eyebrow">
+                BLOCKED REQUESTS · {denials.total} IN LAST {denials.windowDays}D
+              </span>
+              <h2>AI calls stopped by policy</h2>
+              <p className="app-muted">
+                When a budget limit, allowlist, or kill switch blocks a call, it is recorded here — so a feature that
+                suddenly stops working can be traced to the exact control that caught it. Adjust caps on{" "}
+                <a href={budgetsHref}>API budgets</a>.
+              </p>
+              {!!denials.byReason.length && (
+                <div className="tag-row" style={{ margin: "0.5rem 0 1rem" }}>
+                  {denials.byReason.map((row) => (
+                    <span key={row.reason}>
+                      {denialReasonLabel(row.reason)} · {formatAiBudgetsCount(row.count, true)}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {!denials.events.length && (
+                <p className="app-muted">No AI calls have been blocked — never DEMO denials.</p>
+              )}
+              {denials.events.map((event) => (
+                <article className="admin-org" style={rowStyle} key={event.id}>
                   <div>
-                    <strong>{member.name ?? member.email ?? "Member"}</strong>
-                    <small>{num(member.tokens)} tokens</small>
+                    <strong>{denialReasonLabel(event.reason)}</strong>
+                    <small>
+                      {label(FEATURE_LABELS, event.feature)} ·{" "}
+                      {event.actorName ?? event.actorEmail ?? "Member"}
+                      {event.model ? ` · ${event.provider ?? "?"}/${event.model}` : ""} · ~
+                      {formatAiBudgetsMoney(event.estimatedCostUsd, true)} /{" "}
+                      {formatAiBudgetsCount(event.estimatedTokens, true)} tokens ·{" "}
+                      {new Date(event.createdAt).toLocaleString()}
+                    </small>
                   </div>
-                  <b>{money(member.cost)}</b>
                 </article>
               ))}
-          </section>
-          <section className="intel-panel">
-            <span className="eyebrow">BY MODEL · ALL TIME</span>
-            {!usage.models.length && <p className="app-muted">No model usage recorded yet.</p>}
-            {usage.models.map((row) => (
-              <article className="admin-org" style={rowStyle} key={`${row.provider}/${row.model}`}>
-                <div>
-                  <strong>{row.model}</strong>
-                  <small>{row.provider} · {num(row.calls)} calls · {num(row.tokens)} tokens</small>
-                </div>
-                <b>{money(row.cost)}</b>
-              </article>
-            ))}
-          </section>
-        </section>
-      )}
+            </section>
+          ) : null}
 
-      {!loading && denials && (
-        <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
-          <span className="eyebrow">
-            BLOCKED REQUESTS · {denials.total} IN LAST {denials.windowDays}D
-          </span>
-          <h2>AI calls stopped by policy</h2>
-          <p className="app-muted">
-            When a budget limit, allowlist, or kill switch blocks a call, it is recorded here — so a feature
-            that suddenly stops working can be traced to the exact control that caught it.
-          </p>
-          {!!denials.byReason.length && (
-            <div className="tag-row" style={{ margin: "0.5rem 0 1rem" }}>
-              {denials.byReason.map((row) => (
-                <span key={row.reason}>
-                  {denialReasonLabel(row.reason)} · {num(row.count)}
-                </span>
+          {activity ? (
+            <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
+              <span className="eyebrow">RECENT ACTIVITY · LAST {activity.events.length} CALLS</span>
+              {!activity.events.length && (
+                <p className="app-muted">No AI calls have been metered for this team yet — never DEMO activity.</p>
+              )}
+              {activity.events.map((event) => (
+                <article className="admin-org" style={rowStyle} key={event.id}>
+                  <div>
+                    <strong>
+                      {label(FEATURE_LABELS, event.feature)}
+                      {event.usageTag && event.usageTag !== event.feature ? ` · ${event.usageTag}` : ""}
+                    </strong>
+                    <small>
+                      {event.actorName ?? event.actorEmail ?? "Member"} · {event.provider}/{event.model} ·{" "}
+                      {label(KEY_SOURCE_LABELS, event.keySource)} ·{" "}
+                      {formatAiBudgetsCount(event.totalTokens, true)} tokens
+                      {Number(event.cacheReadTokens) > 0
+                        ? ` (${formatAiBudgetsCount(event.cacheReadTokens, true)} cached)`
+                        : ""}{" "}
+                      · {new Date(event.createdAt).toLocaleString()}
+                    </small>
+                  </div>
+                  <b>{formatAiBudgetsMoney(event.costUsd, true)}</b>
+                </article>
               ))}
-            </div>
-          )}
-          {!denials.events.length && <p className="app-muted">No AI calls have been blocked. Nice and clear.</p>}
-          {denials.events.map((event) => (
-            <article className="admin-org" style={rowStyle} key={event.id}>
-              <div>
-                <strong>{denialReasonLabel(event.reason)}</strong>
-                <small>
-                  {label(FEATURE_LABELS, event.feature)} ·{" "}
-                  {event.actorName ?? event.actorEmail ?? "Member"}
-                  {event.model ? ` · ${event.provider ?? "?"}/${event.model}` : ""} ·{" "}
-                  ~{money(event.estimatedCostUsd)} / {num(event.estimatedTokens)} tokens ·{" "}
-                  {new Date(event.createdAt).toLocaleString()}
-                </small>
-              </div>
-            </article>
-          ))}
-        </section>
-      )}
-
-      {!loading && activity && (
-        <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
-          <span className="eyebrow">RECENT ACTIVITY · LAST {activity.events.length} CALLS</span>
-          {!activity.events.length && (
-            <p className="app-muted">No AI calls have been metered for this team yet.</p>
-          )}
-          {activity.events.map((event) => (
-            <article className="admin-org" style={rowStyle} key={event.id}>
-              <div>
-                <strong>
-                  {label(FEATURE_LABELS, event.feature)}
-                  {event.usageTag && event.usageTag !== event.feature ? ` · ${event.usageTag}` : ""}
-                </strong>
-                <small>
-                  {event.actorName ?? event.actorEmail ?? "Member"} · {event.provider}/{event.model} ·{" "}
-                  {label(KEY_SOURCE_LABELS, event.keySource)} · {num(event.totalTokens)} tokens
-                  {Number(event.cacheReadTokens) > 0 ? ` (${num(event.cacheReadTokens)} cached)` : ""} ·{" "}
-                  {new Date(event.createdAt).toLocaleString()}
-                </small>
-              </div>
-              <b>{money(event.costUsd)}</b>
-            </article>
-          ))}
-        </section>
-      )}
+            </section>
+          ) : null}
+        </>
+      ) : null}
     </main>
   );
 }
