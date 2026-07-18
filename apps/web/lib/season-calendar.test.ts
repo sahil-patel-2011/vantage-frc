@@ -204,6 +204,7 @@ describe("parseCalendarAction", () => {
       startsOn: "2027-02-20",
       endsOn: null,
       notes: "",
+      meetingUrl: null,
     });
     expect(() =>
       parseCalendarAction({
