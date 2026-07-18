@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { distinctValues, scoutDisagreementStatusLabel } from "../../lib/scout-disagreements";
-import { currentSeasonYear, type ScoutDisagreementsView } from "../../lib/scout-disagreements/compute-scout-disagreements";
+import { type ScoutDisagreementsView } from "../../lib/scout-disagreements/compute-scout-disagreements";
 import type { ScoutDisagreement } from "../../lib/scout-disagreements/types";
 
 function statusTone(status: ScoutDisagreement["status"]): string {
@@ -242,7 +242,11 @@ function QueueRow({
 
       {item.status === "open" ? (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <select value={choice} onChange={(event) => setChoice(event.target.value)}>
+          <select
+            value={choice}
+            aria-label="Authoritative value"
+            onChange={(event) => setChoice(event.target.value)}
+          >
             <option value="">Choose authoritative value…</option>
             {options.map((option) => (
               <option key={option} value={option}>

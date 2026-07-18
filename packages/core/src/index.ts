@@ -11,11 +11,11 @@ import {
   deterministicLocalOtp,
 } from "./email";
 import {
-  envOrFallback,
   getAuthCapabilities,
   isEmailProviderConfigured,
   isGoogleAuthConfigured,
   resolveAuthBaseURL,
+  resolveAuthSecret,
   resolveAuthTrustedOrigins,
 } from "./access-policy";
 import {
@@ -25,10 +25,7 @@ import {
 
 const authBaseURL = resolveAuthBaseURL();
 const authTrustedOrigins = resolveAuthTrustedOrigins(authBaseURL);
-const authSecret = envOrFallback(
-  process.env["BETTER_AUTH_SECRET"],
-  "local-development-secret-change-me",
-);
+const authSecret = resolveAuthSecret();
 
 function googleSocialProvider() {
   if (!isGoogleAuthConfigured()) return {};

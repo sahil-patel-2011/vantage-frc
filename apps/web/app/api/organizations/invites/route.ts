@@ -8,9 +8,20 @@ import {
 } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { z } from "zod";
 import { createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
+import { parseSecureJson, securityErrorResponse } from "../../../../lib/security/request";
 
 const mutateLimiter = createRateLimiter({ limit: 15, windowMs: 10 * 60_000, namespace: "org-invites" });
+const orgRole = z.enum(["owner", "admin", "scout", "viewer"]);
+const createSchema = z.object({ orgId: z.string().uuid(), email: z.string().trim().email().max(254), role: orgRole }).strict();
+const actionSchema = z.object({ orgId: z.string().uuid(), inviteId: z.string().uuid(), action: z.enum(["resend", "revoke"]) }).strict();
+
+function privateJson(value: unknown, init?: ResponseInit) {
+  const response = Response.json(value, init);
+  response.headers.set("cache-control", "private, no-store, max-age=0");
+  return response;
+}
 
 async function userId() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -19,17 +30,17 @@ async function userId() {
 }
 
 const failure = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "Request failed" }, { status: 400 });
+  securityErrorResponse(error, "Request failed");
 
 export async function GET(request: Request) {
   try {
     const actor = await userId();
     const orgId = new URL(request.url).searchParams.get("orgId");
-    if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
+    if (!orgId || !z.string().uuid().safeParse(orgId).success) return Response.json({ error: "A valid orgId is required" }, { status: 400 });
     const invites = await withRls({ userId: actor, orgId }, (client) =>
       listOrganizationInvites(client, orgId),
     );
-    return Response.json({ invites });
+    return privateJson({ invites });
   } catch (error) {
     return failure(error);
   }
@@ -41,17 +52,15 @@ export async function POST(request: Request) {
     if (!(await mutateLimiter.allow(actor))) {
       return rateLimitedResponse("Too many invite changes. Wait a few minutes and try again.");
     }
-    const body = (await request.json()) as { orgId?: string; email?: string; role?: OrgRole };
-    if (!body.orgId || !body.email || !body.role)
-      return Response.json({ error: "orgId, email, and role are required" }, { status: 400 });
+    const body = await parseSecureJson(request, createSchema);
     const invite = await withRls({ userId: actor, orgId: body.orgId }, (client) =>
       createOrganizationInvite(client, actor, {
-        orgId: body.orgId!,
-        email: body.email!,
-        role: body.role!,
+        orgId: body.orgId,
+        email: body.email,
+        role: body.role as OrgRole,
       }),
     );
-    return Response.json(invite, { status: 201 });
+    return privateJson(invite, { status: 201 });
   } catch (error) {
     return failure(error);
   }
@@ -63,19 +72,13 @@ export async function PATCH(request: Request) {
     if (!(await mutateLimiter.allow(actor))) {
       return rateLimitedResponse("Too many invite changes. Wait a few minutes and try again.");
     }
-    const body = (await request.json()) as {
-      orgId?: string;
-      inviteId?: string;
-      action?: "resend" | "revoke";
-    };
-    if (!body.orgId || !body.inviteId || !body.action)
-      return Response.json({ error: "Invalid invite action" }, { status: 400 });
+    const body = await parseSecureJson(request, actionSchema);
     await withRls({ userId: actor, orgId: body.orgId }, (client) =>
       body.action === "resend"
-        ? resendOrganizationInvite(client, actor, body.orgId!, body.inviteId!)
-        : revokeOrganizationInvite(client, actor, body.orgId!, body.inviteId!),
+        ? resendOrganizationInvite(client, actor, body.orgId, body.inviteId)
+        : revokeOrganizationInvite(client, actor, body.orgId, body.inviteId),
     );
-    return Response.json({ success: true });
+    return privateJson({ success: true });
   } catch (error) {
     return failure(error);
   }

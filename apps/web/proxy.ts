@@ -2,6 +2,7 @@ import { auth, getOnboardingGate, isEmail2faEnforced, sessionHasEmail2fa } from 
 import { withRls } from "@vantage/db";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
+import { safeAppPath } from "./lib/security/safe-navigation";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -93,11 +94,6 @@ function signInRedirect(request: NextRequest) {
   return NextResponse.redirect(signIn);
 }
 
-function safeRelativePath(value: string | null | undefined, fallback = "/dashboard") {
-  if (!value?.startsWith("/") || value.startsWith("//")) return fallback;
-  return value;
-}
-
 function onboardingRedirect(request: NextRequest) {
   const onboarding = new URL("/onboarding", request.url);
   const path = `${request.nextUrl.pathname}${request.nextUrl.search}`;
@@ -109,7 +105,7 @@ function onboardingRedirect(request: NextRequest) {
 
 function postOnboardingRedirect(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next");
-  return NextResponse.redirect(new URL(safeRelativePath(next), request.url));
+  return NextResponse.redirect(new URL(safeAppPath(next), request.url));
 }
 
 function approvalPendingRedirect(request: NextRequest) {

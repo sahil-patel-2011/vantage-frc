@@ -17,8 +17,12 @@ export const TEAM_ROLE_OPTIONS = [
   "other",
 ] as const;
 
+export const PRIMARY_FOCUS_OPTIONS = ["competition", "build", "business", "leadership"] as const;
+
 export type GenderOption = (typeof GENDER_OPTIONS)[number];
 export type TeamRoleOption = (typeof TEAM_ROLE_OPTIONS)[number];
+export type PrimaryFocusOption = (typeof PRIMARY_FOCUS_OPTIONS)[number];
+export type OnboardingStep = "profile" | "team" | "preferences" | "complete";
 
 export type OrgLocationInput = {
   city?: string | null;
@@ -40,6 +44,7 @@ export type OnboardingPayload = {
   gender: GenderOption;
   preferredTeamNumber: number;
   teamRole?: TeamRoleOption | null;
+  primaryFocus: PrimaryFocusOption;
   displayName?: string | null;
   themePreference?: "light" | "dark";
   city?: string | null;
@@ -56,6 +61,7 @@ export type OnboardingState = {
   gender: string | null;
   preferredTeamNumber: number | null;
   teamRole: string | null;
+  primaryFocus: PrimaryFocusOption;
   displayName: string | null;
   themePreference: "light" | "dark";
   lockedTeamNumber: number | null;
@@ -69,7 +75,20 @@ export type OnboardingState = {
   platformAdmin: boolean;
   termsAcceptedAt: string | null;
   termsVersion: string | null;
+  currentStep: OnboardingStep;
+  startedAt: string | null;
+  savedAt: string | null;
+  accessStatus: "approved" | "invited" | "pending" | "declined" | "withdrawn" | "none";
+  accessRequestId: string | null;
+  workspaceOrgId: string | null;
+  workspaceOrgName: string | null;
+  requestCreatedAt: string | null;
 };
+
+export type OnboardingDraftInput =
+  | Pick<OnboardingPayload, "firstName" | "lastName" | "dateOfBirth" | "gender"> & { step: "profile" }
+  | Pick<OnboardingPayload, "preferredTeamNumber" | "teamRole" | "primaryFocus"> & { step: "team" }
+  | Pick<OnboardingPayload, "displayName" | "themePreference"> & { step: "preferences" };
 
 function trimOrNull(value: unknown, max: number): string | null {
   if (typeof value !== "string") return null;
@@ -130,6 +149,9 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
   if (input.teamRole != null && !TEAM_ROLE_OPTIONS.includes(input.teamRole)) {
     throw new Error("Select a valid team role.");
   }
+  if (!PRIMARY_FOCUS_OPTIONS.includes(input.primaryFocus)) {
+    throw new Error("Select a valid primary focus.");
+  }
   const displayName = input.displayName?.trim() || `${firstName} ${lastName}`.trim();
   if (displayName.length > 80) throw new Error("Display name must be 80 characters or fewer.");
   const themePreference = input.themePreference === "dark" ? "dark" : "light";
@@ -142,6 +164,7 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
     gender: input.gender,
     preferredTeamNumber: teamNumber,
     teamRole: input.teamRole || null,
+    primaryFocus: input.primaryFocus,
     displayName,
     themePreference,
     city: location.city,
@@ -158,6 +181,9 @@ type LockedOrgRow = {
   city: string | null;
   stateProv: string | null;
   description: string | null;
+  accessStatus: OnboardingState["accessStatus"];
+  requestId: string | null;
+  requestCreatedAt: string | null;
 };
 
 function isTeamHeadRole(role: string | null | undefined): boolean {
@@ -172,11 +198,15 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     gender: string | null;
     preferredTeamNumber: number | null;
     teamRole: string | null;
+    primaryFocus: PrimaryFocusOption | null;
     displayName: string | null;
     themePreference: string | null;
     onboardingCompletedAt: string | null;
     termsAcceptedAt: string | null;
     termsVersion: string | null;
+    currentStep: OnboardingStep | null;
+    startedAt: string | null;
+    savedAt: string | null;
   }>(
     `SELECT first_name AS "firstName",
             last_name AS "lastName",
@@ -184,50 +214,27 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
             gender,
             preferred_team_number AS "preferredTeamNumber",
             team_role AS "teamRole",
+            primary_focus AS "primaryFocus",
             display_name AS "displayName",
             theme_preference AS "themePreference",
             onboarding_completed_at::text AS "onboardingCompletedAt",
             terms_accepted_at::text AS "termsAcceptedAt",
-            terms_version AS "termsVersion"
+            terms_version AS "termsVersion",
+            onboarding_current_step AS "currentStep",
+            onboarding_started_at::text AS "startedAt",
+            onboarding_saved_at::text AS "savedAt"
      FROM profiles WHERE user_id=$1`,
     [userId],
   );
   const admin = await client.query(`SELECT 1 FROM platform_admins WHERE user_id=$1`, [userId]);
-  const membership = await client.query<LockedOrgRow>(
-    `SELECT o.id AS "orgId",
-            o.team_number AS "teamNumber",
-            o.name AS "orgName",
-            m.role::text AS "role",
-            o.city,
-            o.state_prov AS "stateProv",
-            o.description
-     FROM memberships m
-     JOIN organizations o ON o.id = m.org_id
-     WHERE m.user_id=$1 AND o.team_number IS NOT NULL
-     ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END
-     LIMIT 1`,
-    [userId],
+  const workspace = await client.query<LockedOrgRow>(
+    `SELECT org_id AS "orgId",team_number AS "teamNumber",org_name AS "orgName",
+            member_role AS role,access_status AS "accessStatus",request_id AS "requestId",
+            request_created_at::text AS "requestCreatedAt",city,state_prov AS "stateProv",description
+       FROM onboarding_workspace_for_current_user()`,
   );
-  const pendingInvite = !membership.rows[0]
-    ? await client.query<LockedOrgRow>(
-        `SELECT o.id AS "orgId",
-                o.team_number AS "teamNumber",
-                o.name AS "orgName",
-                NULL::text AS "role",
-                o.city,
-                o.state_prov AS "stateProv",
-                o.description
-         FROM invites i
-         JOIN organizations o ON o.id = i.org_id
-         JOIN users u ON lower(u.email) = lower(i.email)
-         WHERE u.id=$1 AND i.status='pending' AND i.expires_at > now() AND o.team_number IS NOT NULL
-         ORDER BY i.created_at DESC
-         LIMIT 1`,
-        [userId],
-      )
-    : { rows: [] as LockedOrgRow[] };
-
-  const locked = membership.rows[0] ?? pendingInvite.rows[0] ?? null;
+  const locked = workspace.rows[0] ?? null;
+  const workspaceLocked = locked && ["approved", "invited", "pending"].includes(locked.accessStatus);
   const row = profile.rows[0];
   return {
     complete: Boolean(row?.onboardingCompletedAt),
@@ -237,12 +244,13 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     gender: row?.gender ?? null,
     preferredTeamNumber: row?.preferredTeamNumber ?? locked?.teamNumber ?? null,
     teamRole: row?.teamRole ?? null,
+    primaryFocus: row?.primaryFocus ?? "competition",
     displayName: row?.displayName ?? null,
     themePreference: row?.themePreference === "dark" ? "dark" : "light",
-    lockedTeamNumber: locked?.teamNumber ?? null,
-    lockedOrgName: locked?.orgName ?? null,
-    lockedOrgId: locked?.orgId ?? null,
-    isTeamHead: isTeamHeadRole(locked?.role),
+    lockedTeamNumber: workspaceLocked ? locked.teamNumber : null,
+    lockedOrgName: workspaceLocked ? locked.orgName : null,
+    lockedOrgId: workspaceLocked ? locked.orgId : null,
+    isTeamHead: workspaceLocked ? isTeamHeadRole(locked.role) : false,
     orgCity: locked?.city ?? null,
     orgStateProv: locked?.stateProv ?? null,
     orgDescription: locked?.description ?? null,
@@ -250,7 +258,65 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     platformAdmin: Boolean(admin.rowCount),
     termsAcceptedAt: row?.termsAcceptedAt ?? null,
     termsVersion: row?.termsVersion ?? null,
+    currentStep: row?.onboardingCompletedAt ? "complete" : (row?.currentStep ?? "profile"),
+    startedAt: row?.startedAt ?? null,
+    savedAt: row?.savedAt ?? null,
+    accessStatus: locked?.accessStatus ?? "none",
+    accessRequestId: locked?.requestId ?? null,
+    workspaceOrgId: locked?.orgId ?? null,
+    workspaceOrgName: locked?.orgName ?? null,
+    requestCreatedAt: locked?.requestCreatedAt ?? null,
   };
+}
+
+export async function saveOnboardingProgress(
+  client: PoolClient,
+  userId: string,
+  input: OnboardingDraftInput,
+): Promise<OnboardingState> {
+  const state = await getOnboardingState(client, userId);
+  if (state.complete && !["declined", "withdrawn"].includes(state.accessStatus)) return state;
+
+  if (input.step === "profile") {
+    const firstName = input.firstName.trim();
+    const lastName = input.lastName.trim();
+    if (!firstName || firstName.length > 60) throw new Error("First name is required (max 60 characters).");
+    if (!lastName || lastName.length > 60) throw new Error("Last name is required (max 60 characters).");
+    if (!GENDER_OPTIONS.includes(input.gender)) throw new Error("Select a gender option.");
+    parseDob(input.dateOfBirth);
+    await client.query(
+      `INSERT INTO profiles(user_id,first_name,last_name,date_of_birth,gender,onboarding_current_step,onboarding_started_at,onboarding_saved_at)
+       VALUES($1,$2,$3,$4::date,$5,'team',now(),now())
+       ON CONFLICT(user_id) DO UPDATE SET first_name=excluded.first_name,last_name=excluded.last_name,
+         date_of_birth=excluded.date_of_birth,gender=excluded.gender,onboarding_current_step='team',
+         onboarding_started_at=COALESCE(profiles.onboarding_started_at,now()),onboarding_saved_at=now()`,
+      [userId, firstName, lastName, input.dateOfBirth.trim(), input.gender],
+    );
+  } else if (input.step === "team") {
+    const teamNumber = state.lockedTeamNumber ?? Number(input.preferredTeamNumber);
+    if (!Number.isInteger(teamNumber) || teamNumber < 1 || teamNumber > 99999) throw new Error("FRC team number must be between 1 and 99999.");
+    if (input.teamRole != null && !TEAM_ROLE_OPTIONS.includes(input.teamRole)) throw new Error("Select a valid team role.");
+    if (!PRIMARY_FOCUS_OPTIONS.includes(input.primaryFocus)) throw new Error("Select a valid primary focus.");
+    await client.query(
+      `INSERT INTO profiles(user_id,preferred_team_number,team_role,primary_focus,onboarding_current_step,onboarding_started_at,onboarding_saved_at)
+       VALUES($1,$2,$3,$4,'preferences',now(),now())
+       ON CONFLICT(user_id) DO UPDATE SET preferred_team_number=excluded.preferred_team_number,
+         team_role=excluded.team_role,primary_focus=excluded.primary_focus,onboarding_current_step='preferences',
+         onboarding_started_at=COALESCE(profiles.onboarding_started_at,now()),onboarding_saved_at=now()`,
+      [userId, teamNumber, input.teamRole ?? null, input.primaryFocus],
+    );
+  } else {
+    const displayName = trimOrNull(input.displayName, 80);
+    const theme = input.themePreference === "dark" ? "dark" : "light";
+    await client.query(
+      `INSERT INTO profiles(user_id,display_name,theme_preference,onboarding_current_step,onboarding_started_at,onboarding_saved_at)
+       VALUES($1,$2,$3,'preferences',now(),now())
+       ON CONFLICT(user_id) DO UPDATE SET display_name=excluded.display_name,theme_preference=excluded.theme_preference,
+         onboarding_current_step='preferences',onboarding_started_at=COALESCE(profiles.onboarding_started_at,now()),onboarding_saved_at=now()`,
+      [userId, displayName, theme],
+    );
+  }
+  return getOnboardingState(client, userId);
 }
 
 export async function isOnboardingComplete(client: PoolClient, userId: string): Promise<boolean> {
@@ -267,7 +333,7 @@ export async function completeOnboarding(
   input: OnboardingPayload,
 ): Promise<OnboardingState> {
   const state = await getOnboardingState(client, userId);
-  if (state.complete) return state;
+  if (state.complete && !["declined", "withdrawn"].includes(state.accessStatus)) return state;
 
   const payload = validateOnboardingPayload(input);
   const teamNumber =
@@ -288,8 +354,9 @@ export async function completeOnboarding(
   await client.query(
     `INSERT INTO profiles(
        user_id, first_name, last_name, date_of_birth, gender,
-       preferred_team_number, team_role, display_name, theme_preference, onboarding_completed_at
-     ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,now())
+       preferred_team_number, team_role, primary_focus, display_name, theme_preference,
+       onboarding_current_step, onboarding_started_at, onboarding_saved_at, onboarding_completed_at
+     ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,'complete',COALESCE($11::timestamptz,now()),now(),now())
      ON CONFLICT (user_id) DO UPDATE SET
        first_name = excluded.first_name,
        last_name = excluded.last_name,
@@ -297,8 +364,12 @@ export async function completeOnboarding(
        gender = excluded.gender,
        preferred_team_number = excluded.preferred_team_number,
        team_role = excluded.team_role,
+       primary_focus = excluded.primary_focus,
        display_name = excluded.display_name,
        theme_preference = excluded.theme_preference,
+       onboarding_current_step = 'complete',
+       onboarding_started_at = COALESCE(profiles.onboarding_started_at, excluded.onboarding_started_at),
+       onboarding_saved_at = now(),
        onboarding_completed_at = COALESCE(profiles.onboarding_completed_at, now())`,
     [
       userId,
@@ -308,8 +379,10 @@ export async function completeOnboarding(
       payload.gender,
       teamNumber,
       payload.teamRole,
+      payload.primaryFocus,
       payload.displayName,
       payload.themePreference,
+      state.startedAt,
     ],
   );
 
@@ -320,6 +393,14 @@ export async function completeOnboarding(
     payload.displayName || `${payload.firstName} ${payload.lastName}`,
   ]);
 
+  if (!state.platformAdmin && ["none", "declined", "withdrawn"].includes(state.accessStatus)) {
+    await client.query(`SELECT request_workspace_access($1,$2,$3)`, [
+      teamNumber,
+      payload.teamRole,
+      payload.primaryFocus,
+    ]);
+  }
+
   return getOnboardingState(client, userId);
 }
 
@@ -327,7 +408,7 @@ export async function completeOnboarding(
 export async function getOnboardingGate(client: PoolClient, userId: string) {
   const complete = await isOnboardingComplete(client, userId);
   const membership = await client.query(
-    `SELECT 1 FROM organization_memberships WHERE user_id=$1::uuid LIMIT 1`,
+    `SELECT 1 FROM memberships WHERE user_id=$1::uuid LIMIT 1`,
     [userId],
   );
   const admin = await client.query(`SELECT 1 FROM platform_admins WHERE user_id=$1::uuid`, [userId]);

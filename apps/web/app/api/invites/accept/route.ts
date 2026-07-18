@@ -1,14 +1,26 @@
 import { acceptOrganizationInvite, assertTermsAccepted, auth, recordLegalAcceptance } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { z } from "zod";
 import {
   anonymizeIp,
   clientIp,
   createRateLimiter,
   rateLimitedResponse,
 } from "../../../../lib/rate-limit";
+import { parseSecureJson, securityErrorResponse } from "../../../../lib/security/request";
 
 const limiter = createRateLimiter({ limit: 20, windowMs: 10 * 60_000, namespace: "invite-accept" });
+const acceptSchema = z.object({
+  token: z.string().trim().length(43).regex(/^[A-Za-z0-9_-]+$/),
+  termsAccepted: z.literal(true),
+}).strict();
+
+function privateJson(value: unknown, init?: ResponseInit) {
+  const response = Response.json(value, init);
+  response.headers.set("cache-control", "private, no-store, max-age=0");
+  return response;
+}
 
 export async function POST(request: Request) {
   try {
@@ -20,15 +32,11 @@ export async function POST(request: Request) {
       return rateLimitedResponse("Too many invite attempts. Wait a few minutes and try again.");
     }
 
-    const body = (await request.json()) as { token?: string; termsAccepted?: boolean };
-    if (!body.token) return Response.json({ error: "Invite token is required" }, { status: 400 });
+    const body = await parseSecureJson(request, acceptSchema);
     assertTermsAccepted(body.termsAccepted);
-    const orgId = await withRls({ userId: session.user.id }, async (client) => { const acceptedOrgId = await acceptOrganizationInvite(client, session.user.id, body.token!); await recordLegalAcceptance(client, session.user.id); return acceptedOrgId; });
-    return Response.json({ orgId });
+    const orgId = await withRls({ userId: session.user.id }, async (client) => { const acceptedOrgId = await acceptOrganizationInvite(client, session.user.id, body.token); await recordLegalAcceptance(client, session.user.id); return acceptedOrgId; });
+    return privateJson({ orgId });
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Invite could not be accepted" },
-      { status: 400 },
-    );
+    return securityErrorResponse(error, "Invite could not be accepted");
   }
 }

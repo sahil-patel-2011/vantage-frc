@@ -61,6 +61,13 @@ describe("secure CSV exports", () => {
     expect(adapter?.columns).not.toContain("created_by");
   });
 
+  it("exports shared CAD standards but never private user preferences", () => {
+    const registry = createExportRegistry();
+    expect(registry.get("cad-team-profile")?.columns).toContain("manufacturing_processes_json");
+    expect(JSON.stringify([...registry.values()])).not.toContain("cad_user_preferences");
+    expect(JSON.stringify([...registry.values()])).not.toContain("custom_instructions");
+  });
+
   it("reads a versioned ZIP manifest with provenance metadata", () => {
     const manifest = {
       format: "Vantage Team Data Export",

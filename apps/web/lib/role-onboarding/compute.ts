@@ -39,7 +39,7 @@ async function loadContext(client: PoolClient, userId: string, orgId: string) {
   if (!org.rows[0]) return null;
 
   const member = await client.query(
-    `SELECT 1 FROM organization_members WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
+    `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
     [orgId, userId],
   );
   if (!member.rows[0]) return null;
@@ -202,6 +202,15 @@ export async function setCheckCompleted(
   if (!template || !template.checks.some((c) => c.key === input.checkKey)) {
     throw new Error("Unknown checklist item.");
   }
+  const context = await loadContext(client, input.userId, input.orgId);
+  const assigned = context ? assignOnboardingTracks({
+    teamRole: context.teamRole,
+    primaryFocus: context.primaryFocus,
+    subteamNames: context.subteamNames,
+  }) : [];
+  if (!assigned.some((item) => item.trackKey === input.trackKey)) {
+    throw new Error("That checklist is not assigned to your role or subteam.");
+  }
 
   if (input.done) {
     await client.query(
@@ -232,6 +241,15 @@ export async function setTrackDismissed(
   },
 ): Promise<RoleOnboardingView> {
   if (!TRACK_BY_KEY[input.trackKey]) throw new Error("Unknown track.");
+  const context = await loadContext(client, input.userId, input.orgId);
+  const assigned = context ? assignOnboardingTracks({
+    teamRole: context.teamRole,
+    primaryFocus: context.primaryFocus,
+    subteamNames: context.subteamNames,
+  }) : [];
+  if (!assigned.some((item) => item.trackKey === input.trackKey)) {
+    throw new Error("That path is not assigned to your role or subteam.");
+  }
 
   await client.query(
     `INSERT INTO member_onboarding_tracks (org_id, user_id, track_key, source, dismissed_at)

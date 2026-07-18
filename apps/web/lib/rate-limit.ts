@@ -5,6 +5,15 @@ export interface RateLimiter {
 }
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
+let memoryRequests = 0;
+
+function sweepExpiredBuckets(now: number) {
+  memoryRequests += 1;
+  if (memoryRequests % 1_000 !== 0 && buckets.size < 10_000) return;
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) buckets.delete(key);
+  }
+}
 
 export class MemoryRateLimiter implements RateLimiter {
   constructor(
@@ -14,6 +23,7 @@ export class MemoryRateLimiter implements RateLimiter {
 
   async allow(identifier: string) {
     const now = Date.now();
+    sweepExpiredBuckets(now);
     const bucket = buckets.get(identifier);
     if (!bucket || bucket.resetAt <= now) {
       buckets.set(identifier, { count: 1, resetAt: now + this.windowMs });
@@ -82,5 +92,8 @@ export function createRateLimiter(options: RateLimiterOptions = {}): RateLimiter
 }
 
 export function rateLimitedResponse(message = "Please wait before trying again.") {
-  return Response.json({ error: message }, { status: 429 });
+  const response = Response.json({ error: message }, { status: 429 });
+  response.headers.set("cache-control", "private, no-store, max-age=0");
+  response.headers.set("retry-after", "60");
+  return response;
 }

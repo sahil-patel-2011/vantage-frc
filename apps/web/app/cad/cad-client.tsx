@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
+import { CadAdaptivePanel, type CadAdaptiveView } from "./cad-adaptive-panel";
+import { CadOperationComposer } from "./cad-operation-composer";
 
 type Job = {
   id: string;
@@ -137,6 +139,7 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
     steps: Step[];
     artifacts: Array<{ id: string; type: string; title: string; content: Record<string, unknown> }>;
     checkpoints: Array<{ id: string; topology: Record<string, unknown>; humanEditDetected: boolean }>;
+    contextLinks: Array<{ sourceKind: string; sourceId: string; relation: string; metadata: Record<string, unknown> }>;
   } | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [usage, setUsage] = useState<UsageRow[]>([]);
@@ -164,6 +167,8 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
     steps: Array<{ order: number; name: string; featureType: string; plainEnglish: string; tip?: string }>;
     disclaimer: string;
   } | null>(null);
+  const [adaptive, setAdaptive] = useState<CadAdaptiveView | null>(null);
+  const adaptiveApplied = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -193,6 +198,18 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
           ? String(data.onshape.message ?? "Setup required — configure Onshape OAuth on the server.")
           : "",
       );
+      if (data.adaptive) {
+        const next = data.adaptive as CadAdaptiveView;
+        setAdaptive(next);
+        if (!adaptiveApplied.current) {
+          setPlatform(next.userPreferences.preferredPlatform ?? next.teamProfile.defaultPlatform);
+          setShowExplain(
+            next.userPreferences.responseStyle !== "concise" &&
+              next.userPreferences.explanationDepth !== "minimal",
+          );
+          adaptiveApplied.current = true;
+        }
+      }
     } else setMessage(data.error);
   }
 
@@ -341,6 +358,8 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
           {message}
         </p>
       ) : null}
+
+      {adaptive ? <CadAdaptivePanel value={adaptive} busy={busy} onSave={act} /> : null}
 
       {onshapeSetupMessage ? (
         <aside className="cad-setup-required" role="status">
@@ -583,10 +602,34 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
                   </button>
                 ) : null}
               </div>
+              <section className="cad-context-strip" aria-label="CAD grounding context">
+                <div>
+                  <span className="eyebrow">LIVE CONTEXT</span>
+                  <strong>{detail?.contextLinks?.length ?? 0} linked records</strong>
+                </div>
+                {detail?.contextLinks?.length ? (
+                  <ul>
+                    {detail.contextLinks.slice(0, 18).map((link) => (
+                      <li key={`${link.sourceKind}-${link.sourceId}-${link.relation}`} title={link.sourceId}>
+                        <span>{link.sourceKind.replaceAll("_", " ")}</span>
+                        <small>{link.relation}</small>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="app-muted">Create from Strategy or select a team/match to ground this job in shared evidence.</p>
+                )}
+              </section>
               <BriefEditor
                 job={job}
                 onConfirm={(brief) => act("confirm", { jobId: job.id, brief })}
                 onPlan={() => act("plan-default", { jobId: job.id, includeExport: job.platform === "onshape" ? "step" : false })}
+              />
+              <CadOperationComposer
+                key={`${job.id}-${job.platform}`}
+                platform={job.platform}
+                disabled={busy || !job.briefConfirmedAt}
+                onAppend={(payload) => act("append-step", { jobId: job.id, ...payload })}
               />
               {job.platform === "onshape" ? (
                 <form

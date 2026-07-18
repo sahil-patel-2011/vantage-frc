@@ -1,9 +1,6 @@
-import { getAuthCapabilities } from "@vantage/core";
+import { getPublicAuthCapabilities } from "@vantage/core";
 import SignInClient from "../sign-in/sign-in-client";
-
-function safeDestination(value: string | undefined) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
-}
+import { safeAppPath } from "../../lib/security/safe-navigation";
 
 export default async function SignInPage({
   searchParams,
@@ -11,11 +8,11 @@ export default async function SignInPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  const status = getAuthCapabilities();
+  const status = getPublicAuthCapabilities();
   return (
     <SignInClient
       googleEnabled={status.googleSignInAvailable}
-      nextPath={safeDestination(next)}
+      nextPath={safeAppPath(next, "/dashboard")}
       initialStatus={status}
     />
   );

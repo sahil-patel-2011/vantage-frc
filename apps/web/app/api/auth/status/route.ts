@@ -1,5 +1,7 @@
-import { getAuthCapabilities } from "@vantage/core";
+import { getPublicAuthCapabilities } from "@vantage/core";
 
 export async function GET() {
-  return Response.json(getAuthCapabilities());
+  const response = Response.json(getPublicAuthCapabilities());
+  response.headers.set("cache-control", "no-store, max-age=0");
+  return response;
 }
