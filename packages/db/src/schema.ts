@@ -15,6 +15,7 @@ import {
   primaryKey,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -172,6 +173,19 @@ export const profiles = pgTable("profiles", {
   teamRole: text("team_role"),
   primaryFocus: text("primary_focus").$type<"competition" | "build" | "business" | "leadership">(),
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
+});
+
+/** Opt-in email categories (all default false). Distinct from profiles.notification_prefs. */
+export const userEmailPreferences = pgTable("user_email_preferences", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  productUpdates: boolean("product_updates").notNull().default(false),
+  coachAssignments: boolean("coach_assignments").notNull().default(false),
+  coachTodos: boolean("coach_todos").notNull().default(false),
+  coachPracticeReminders: boolean("coach_practice_reminders").notNull().default(false),
+  unsubscribeToken: text("unsubscribe_token").notNull(),
+  ...timestamps,
 });
 
 export const platformAdmins = pgTable("platform_admins", {
@@ -1803,6 +1817,64 @@ export const budgetPolicyAudit = pgTable(
   (table) => [index("budget_policy_audit_org_created_idx").on(table.orgId, table.createdAt)],
 );
 
+export const orgAiPolicies = pgTable("org_ai_policies", {
+  orgId: uuid("org_id").primaryKey().references(() => organizations.id, { onDelete: "cascade" }),
+  featureAllowlistEnabled: boolean("feature_allowlist_enabled").notNull().default(false),
+  allowedFeatures: text("allowed_features").array().notNull().default([]),
+  toolAllowlistEnabled: boolean("tool_allowlist_enabled").notNull().default(false),
+  allowedTools: text("allowed_tools").array().notNull().default([]),
+  highCostThresholdUsd: numeric("high_cost_threshold_usd", { precision: 12, scale: 6 }),
+  requireApprovalAboveThreshold: boolean("require_approval_above_threshold").notNull().default(false),
+  requireApprovalForFeatures: text("require_approval_for_features").array().notNull().default([]),
+  adminBypassApproval: boolean("admin_bypass_approval").notNull().default(true),
+  dailySpendAlertUsd: numeric("daily_spend_alert_usd", { precision: 12, scale: 6 }),
+  monthlySpendAlertUsd: numeric("monthly_spend_alert_usd", { precision: 12, scale: 6 }),
+  spendAlertThresholds: integer("spend_alert_thresholds").array().notNull().default([50, 75, 90]),
+  updatedBy: uuid("updated_by").notNull().references(() => users.id),
+  ...timestamps,
+});
+
+export const aiRunApprovals = pgTable(
+  "ai_run_approvals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    runId: uuid("run_id").references(() => aiRuns.id, { onDelete: "set null" }),
+    requestId: text("request_id").notNull(),
+    requesterUserId: uuid("requester_user_id").notNull().references(() => users.id),
+    feature: text("feature").notNull(),
+    provider: text("provider"),
+    model: text("model"),
+    estimatedCostUsd: numeric("estimated_cost_usd", { precision: 12, scale: 6 }).notNull(),
+    tools: text("tools").array().notNull().default([]),
+    status: text("status").notNull().default("pending"),
+    reason: text("reason"),
+    resolutionNote: text("resolution_note"),
+    resolvedBy: uuid("resolved_by").references(() => users.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    index("ai_run_approvals_org_status_idx").on(table.orgId, table.status, table.createdAt),
+    uniqueIndex("ai_run_approvals_org_request_uidx").on(table.orgId, table.requestId),
+  ],
+);
+
+export const orgAiPolicyAudit = pgTable(
+  "org_ai_policy_audit",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+    action: text("action").notNull(),
+    before: jsonb("before").$type<Record<string, unknown> | null>(),
+    after: jsonb("after").$type<Record<string, unknown> | null>(),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("org_ai_policy_audit_org_created_idx").on(table.orgId, table.createdAt)],
+);
+
 export type DisplayWidget = {
   type:
     | "next_match"
@@ -2476,6 +2548,36 @@ export const sponsorProspects = pgTable(
   (table) => [index("sponsor_prospects_org_status_idx").on(table.orgId, table.status)],
 );
 
+export const vendors = pgTable(
+  "vendors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    category: text("category").notNull().default("other"),
+    website: text("website"),
+    contactName: text("contact_name"),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    leadTimeDays: integer("lead_time_days"),
+    rating: integer("rating"),
+    preferred: boolean("preferred").notNull().default(false),
+    accountNumber: text("account_number"),
+    notes: text("notes"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [
+    index("vendors_org_idx").on(table.orgId, table.category),
+    index("vendors_org_preferred_idx").on(table.orgId, table.preferred),
+    uniqueIndex("vendors_org_name_unique_idx").on(table.orgId, sql`lower(${table.name})`),
+  ],
+);
+
 export const purchaseRequests = pgTable(
   "purchase_requests",
   {
@@ -2756,4 +2858,31 @@ export const teamBusinessAuditEvents = pgTable(
     createdAt: timestamps.createdAt,
   },
   (table) => [index("team_business_audit_org_date_idx").on(table.orgId, table.createdAt)],
+);
+
+/** Duty roster slots (scouting / pit / drive / outreach) shown on team calendars. */
+export const dutyAssignments = pgTable(
+  "duty_assignments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    kind: text("kind").notNull().default("scouting"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    subteamId: uuid("subteam_id"),
+    assignedUserId: uuid("assigned_user_id").references(() => users.id, { onDelete: "set null" }),
+    calendarEventId: uuid("calendar_event_id"),
+    notes: text("notes").notNull().default(""),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [
+    index("duty_assignments_org_starts_idx").on(table.orgId, table.startsAt),
+    index("duty_assignments_assignee_idx").on(table.orgId, table.assignedUserId, table.startsAt),
+  ],
 );

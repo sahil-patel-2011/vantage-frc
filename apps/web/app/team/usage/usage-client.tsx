@@ -169,6 +169,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
           <a href={`/chat?orgId=${orgId}`}>Assistant</a>
           <a href={`/team/budgets?orgId=${orgId}#prompt-caching`}>Prompt caching</a>
           <a href={`/team/budgets?orgId=${orgId}`}>API budgets</a>
+          <a href={`/team/ai-policy?orgId=${orgId}`}>AI governance</a>
           <a href={`/team/ai-runs?orgId=${orgId}`}>AI runs</a>
           <a href={`/team/ai-memory?orgId=${orgId}`}>AI memory</a>
           <a href={`/team?orgId=${orgId}`}>Team admin</a>
