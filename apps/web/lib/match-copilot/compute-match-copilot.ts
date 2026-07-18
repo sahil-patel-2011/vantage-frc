@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import {
   allianceTeamKeys,
   batteryHealth,
@@ -23,6 +25,51 @@ export const MATCH_COPILOT_FEATURE = "match_copilot.brief";
 
 function setupRequired(message: string, steps: MatchCopilotSetupStep[], orgId: string | null): MatchCopilotView {
   return { status: "setup_required", message, steps, orgId };
+}
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO match metrics. */
+function setupStepsFor(orgId: string | null, focus: "workspace" | "team" | "event" | "schedule"): MatchCopilotSetupStep[] {
+  const workspace: MatchCopilotSetupStep = {
+    id: "workspace",
+    label: "Select workspace",
+    detail: "Choose your team organization — Match Copilot is org-scoped.",
+    href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+  };
+  const team: MatchCopilotSetupStep = {
+    id: "team",
+    label: "Confirm team number",
+    detail: "Your team number powers match filtering — never DEMO schedules.",
+    href: withOrgHref("/team", orgId),
+  };
+  const command: MatchCopilotSetupStep = {
+    id: "command",
+    label: "Select active event",
+    detail: "Choose the competition you are at today — never DEMO event keys.",
+    href: hubHref("/competition", "command", orgId),
+  };
+  const strategy: MatchCopilotSetupStep = {
+    id: "strategy",
+    label: "Open Strategy",
+    detail: "Match plans stay empty until real metrics exist — never DEMO rankings.",
+    href: hubHref("/competition", "strategy", orgId),
+  };
+  const schedule: MatchCopilotSetupStep = {
+    id: "schedule",
+    label: "Sync event schedule",
+    detail: "Confirm TBA sync has the qualification/playoff schedule loaded — never DEMO matches.",
+    href: withOrgHref("/team/data", orgId),
+  };
+  const fmea: MatchCopilotSetupStep = {
+    id: "fmea",
+    label: "Open FMEA",
+    detail: "Risk callouts stay blank until real open failures exist — never DEMO RPNs.",
+    href: hubHref("/team", "fmea", orgId),
+  };
+
+  if (focus === "workspace") return [workspace, strategy, command, fmea];
+  if (focus === "team") return [team, command, strategy, fmea];
+  if (focus === "event") return [command, strategy, fmea, workspace];
+  return [schedule, command, strategy, fmea];
 }
 
 async function resolveOrg(
@@ -289,7 +336,7 @@ async function buildContext(
     return {
       setup: setupRequired(
         "Select a team workspace to open Match Copilot.",
-        [{ id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" }],
+        setupStepsFor(null, "workspace"),
         null,
       ),
     };
@@ -298,7 +345,7 @@ async function buildContext(
     return {
       setup: setupRequired(
         "Set your organization's team number so Match Copilot can find your next match.",
-        [{ id: "team", label: "Confirm team number", detail: "Your team number powers match filtering.", href: "/team" }],
+        setupStepsFor(org.orgId, "team"),
         org.orgId,
       ),
     };
@@ -309,7 +356,7 @@ async function buildContext(
     return {
       setup: setupRequired(
         "Select an active event so Match Copilot can find your next match.",
-        [{ id: "event", label: "Select active event", detail: "Choose the competition you are at today.", href: "/command" }],
+        setupStepsFor(org.orgId, "event"),
         org.orgId,
       ),
     };
@@ -321,7 +368,7 @@ async function buildContext(
     return {
       setup: setupRequired(
         "No upcoming match found for your team at the active event yet.",
-        [{ id: "schedule", label: "Sync event schedule", detail: "Confirm TBA sync has the qualification/playoff schedule loaded.", href: "/team/data" }],
+        setupStepsFor(org.orgId, "schedule"),
         org.orgId,
       ),
     };

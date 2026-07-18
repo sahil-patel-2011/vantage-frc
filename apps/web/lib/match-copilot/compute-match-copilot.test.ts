@@ -26,6 +26,10 @@ describe("computeMatchCopilotView", () => {
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
       expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps[0]?.href).toBe("/workspace");
+      expect(view.steps.some((s) => s.href.includes("/competition?tab=strategy"))).toBe(true);
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
+      expect(view.steps.every((s) => /never DEMO|org-scoped|real|blank/i.test(s.detail))).toBe(true);
     }
   });
 
@@ -36,7 +40,12 @@ describe("computeMatchCopilotView", () => {
     ]);
     const view = await computeMatchCopilotView(client, { userId: USER, requestedOrg: ORG });
     expect(view.status).toBe("setup_required");
-    if (view.status === "setup_required") expect(view.orgId).toBe(ORG);
+    if (view.status === "setup_required") {
+      expect(view.orgId).toBe(ORG);
+      expect(view.steps[0]?.href).toBe(`/competition?tab=command&orgId=${ORG}`);
+      expect(view.steps.some((s) => s.href.includes("/competition?tab=strategy"))).toBe(true);
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
+    }
   });
 
   it("fuses opponent EPA, strategy plan, open FMEA risk, and battery health into a live brief", async () => {
