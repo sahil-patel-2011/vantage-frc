@@ -279,6 +279,7 @@ async function createCadBriefFor(
     sources,
     platform: "mock",
     executionMode: "hosted",
+    seasonYear: input.summary.seasonYear,
   });
   return { cadJobId: created.jobId, aiRunId: created.aiRunId, request: seed.request };
 }
