@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WaitlistForm } from "../../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { PricingCatalog } from "./pricing-catalog";
 
@@ -75,18 +76,18 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className="waitlist v2-final-waitlist pricing-waitlist" id="waitlist">
+        <section className="waitlist v2-final-waitlist pricing-waitlist soft-waitlist-band" id="waitlist">
           <div>
+            <p className="brand-hero-wordmark route-wordmark waitlist-wordmark">Vantage</p>
             <span className="section-id">EARLY ACCESS</span>
             <h2>Join the waitlist before checkout opens.</h2>
             <p>
-              Plans are published now; Stripe checkout activates when credentials and Price IDs are configured. Until
-              then, the waitlist is the path in.
+              Catalog: Access $55 · Individual Pro $79 / Max $119 · Team Pro $229 / Max $449. Stripe checkout activates
+              when credentials and Price IDs are configured—until then, the waitlist is the path in. Terms acceptance is
+              required.
             </p>
           </div>
-          <a className="button primary" href="/#waitlist">
-            Join the waitlist
-          </a>
+          <WaitlistForm idPrefix="pricing" />
         </section>
       </main>
       <SiteFooter />

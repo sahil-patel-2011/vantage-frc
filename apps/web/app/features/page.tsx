@@ -202,10 +202,23 @@ export default function FeaturesPage() {
             <span className="section-id">NEXT</span>
             <h2>Join the waitlist or review raised plans.</h2>
             <p>
-              Free competition core with BYOK. Access $55 · Individual Pro $79 / Max $119 · Team Pro $229 / Max
-              $449—managed API at list rates, then hard stop unless Credits or PAYG. Legal:{" "}
-              <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
+              Free competition core with BYOK. Managed API at list rates, then hard stop unless Credits or PAYG.
+              Legal: <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
             </p>
+            <ul className="pricing-price-strip" aria-label="Raised monthly plan prices">
+              <li>
+                <span>Access</span>
+                <strong>$55</strong>
+              </li>
+              <li>
+                <span>Individual Pro / Max</span>
+                <strong>$79 / $119</strong>
+              </li>
+              <li>
+                <span>Team Pro / Max</span>
+                <strong>$229 / $449</strong>
+              </li>
+            </ul>
           </div>
           <div className="pricing-preview-actions">
             <a className="button primary" href="/#waitlist">
