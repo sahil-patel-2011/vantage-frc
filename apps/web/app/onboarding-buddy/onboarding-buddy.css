@@ -1,0 +1,20 @@
+/* Soft-UI Onboarding Buddy — .onboarding-buddy-* + shared Soft-UI tokens. Never DEMO progress. */
+.onboarding-buddy-page{display:grid;gap:16px}
+.onboarding-buddy-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.onboarding-buddy-related{display:flex;flex-wrap:wrap;gap:8px}
+.onboarding-buddy-next-actions{margin:0}
+.onboarding-buddy-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.onboarding-buddy-stats strong{font-size:1.5rem;display:block}
+.onboarding-buddy-layout{display:grid;gap:16px}
+.onboarding-buddy-panel{display:grid;gap:12px}
+.onboarding-buddy-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.onboarding-buddy-row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.onboarding-buddy-tip{margin:0}
+.onboarding-buddy-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.onboarding-buddy-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.onboarding-buddy-plan{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.onboarding-buddy-plan li{display:flex;gap:8px;align-items:flex-start}
+@media(max-width:900px){
+  .onboarding-buddy-header-actions{justify-content:flex-start}
+  .onboarding-buddy-next-actions li,.onboarding-buddy-setup-steps li,.onboarding-buddy-row{flex-direction:column;align-items:stretch}
+}

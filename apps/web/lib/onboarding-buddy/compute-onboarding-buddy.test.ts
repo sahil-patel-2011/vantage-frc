@@ -26,6 +26,11 @@ describe("computeOnboardingBuddyView", () => {
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
       expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps.map((s) => s.id)).toEqual(
+        expect.arrayContaining(["workspace", "onboarding", "team-data"]),
+      );
+      expect(view.steps.find((s) => s.id === "workspace")?.href).toBe("/workspace");
+      expect(view.steps.every((s) => !/demo/i.test(s.href))).toBe(true);
     }
   });
 

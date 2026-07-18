@@ -1,15 +1,172 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { pairingStatusLabel } from "../../lib/onboarding-buddy";
 import type { OnboardingBuddyView } from "../../lib/onboarding-buddy/compute-onboarding-buddy";
+import {
+  ONBOARDING_BUDDY_RELATED_INCLUDE,
+  classifyOnboardingBuddyShell,
+  formatOnboardingBuddyCoverage,
+  formatOnboardingBuddyMetric,
+  onboardingBuddyNextActions,
+  onboardingBuddyRelatedLinks,
+  onboardingBuddySetupSteps,
+  onboardingBuddyShellCopy,
+  shouldShowOnboardingBuddySummaryTiles,
+  type OnboardingBuddyNextAction,
+  type OnboardingBuddyShellKind,
+} from "../../lib/onboarding-buddy/onboarding-buddy-related";
 import type { OnboardingBuddyPairing } from "../../lib/onboarding-buddy/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./onboarding-buddy.css";
 
 type LiveView = Extract<OnboardingBuddyView, { status: "live" }>;
 
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
+function BuddyRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = onboardingBuddyRelatedLinks(orgId, {
+    include: [...ONBOARDING_BUDDY_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related onboarding-buddy-related" aria-label="Related team tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function BuddyNextActionsPanel({ actions }: { actions: OnboardingBuddyNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions onboarding-buddy-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Workspace, Onboarding, and Team Data — never DEMO progress.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function BuddyShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: OnboardingBuddyShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = onboardingBuddyNextActions({ orgId, shell });
+  const copy = onboardingBuddyShellCopy(shell);
+  const teamHref = hubHref("/team", "onboarding-buddy", orgId);
+  const steps = shell === "setup" ? onboardingBuddySetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page onboarding-buddy-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Onboarding Buddy"}
+          </>
+        }
+        title="Onboarding Buddy"
+        description={description}
+      >
+        <BuddyRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No pairings yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#onboarding-buddy-unpaired">
+              Pair a member
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/onboarding", orgId)}>
+              Open Onboarding
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/team/data", orgId)}>
+              Open Team Data
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="onboarding-buddy-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Workspace, Onboarding, and Team Data — never DEMO progress.</p>
+          </header>
+          <ul className="onboarding-buddy-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted onboarding-buddy-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <BuddyNextActionsPanel actions={actions} />
+    </main>
+  );
 }
 
 export default function OnboardingBuddyClient() {
@@ -17,8 +174,6 @@ export default function OnboardingBuddyClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -42,6 +197,36 @@ export default function OnboardingBuddyClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const pairingCount = view?.status === "live" ? view.pairings.length : 0;
+  const unpairedCount = view?.status === "live" ? view.unpairedMembers.length : 0;
+  const memberCount = view?.status === "live" ? view.members.length : 0;
+
+  const shell = classifyOnboardingBuddyShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    pairingCount,
+  });
+  const shellCopy = onboardingBuddyShellCopy(shell);
+  const nextActions = onboardingBuddyNextActions({
+    orgId,
+    shell,
+    unpairedCount,
+    pairingCount,
+    memberCount,
+  });
+  const relatedLinks = onboardingBuddyRelatedLinks(orgId, {
+    include: [...ONBOARDING_BUDDY_RELATED_INCLUDE],
+  });
+  const teamHref = hubHref("/team", "onboarding-buddy", orgId);
+  const showTiles = shouldShowOnboardingBuddySummaryTiles({
+    memberCount,
+    pairingCount,
+    unpairedCount,
+  });
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -69,23 +254,55 @@ export default function OnboardingBuddyClient() {
     [orgId, busy],
   );
 
+  if (shell === "loading") {
+    return <BuddyShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <BuddyShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <BuddyShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <BuddyShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page onboarding-buddy-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
+            <a href={teamHref}>Team</a>
             {" / Onboarding Buddy"}
           </>
         }
         title="Onboarding Buddy"
-        description="Auto-pair new members with a tenured buddy and track a first-week plan. Suggestions use only real membership records."
+        description="Auto-pair new members with a tenured buddy and track a first-week plan. Suggestions use only real membership records. Cross-check Workspace, Onboarding, and Team Data — never DEMO progress."
       >
-        {orgId ? (
-          <a className="app-button secondary" href={`/team?orgId=${encodeURIComponent(orgId)}`}>
-            Team
-          </a>
-        ) : null}
+        <div className="onboarding-buddy-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -94,62 +311,61 @@ export default function OnboardingBuddyClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Onboarding Buddy"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <UnpairedMembers view={view} busy={busy} mutate={mutate} />
-          <Pairings view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
+      <BuddyNextActionsPanel actions={nextActions} />
 
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Members", value: String(summary.totalMembers) },
-    { label: "Unpaired new members", value: String(summary.unpairedCount) },
-    { label: "Active pairings", value: String(summary.activePairingCount) },
-    { label: "Completed pairings", value: String(summary.completedPairingCount) },
-    { label: "Pairing coverage", value: pct(summary.pairingCoverage) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {showTiles ? (
+        <Panel className="onboarding-buddy-panel" aria-label="Buddy pairing counts">
+          <div className="onboarding-buddy-stats">
+            <div>
+              <strong>{formatOnboardingBuddyMetric(view.summary.totalMembers, true)}</strong>
+              <span className="app-muted">Members</span>
+            </div>
+            <div>
+              <strong>{formatOnboardingBuddyMetric(view.summary.unpairedCount, true)}</strong>
+              <span className="app-muted">Unpaired new members</span>
+            </div>
+            <div>
+              <strong>{formatOnboardingBuddyMetric(view.summary.activePairingCount, true)}</strong>
+              <span className="app-muted">Active pairings</span>
+            </div>
+            <div>
+              <strong>{formatOnboardingBuddyMetric(view.summary.completedPairingCount, true)}</strong>
+              <span className="app-muted">Completed pairings</span>
+            </div>
+            <div>
+              <strong>{formatOnboardingBuddyCoverage(view.summary.pairingCoverage, true)}</strong>
+              <span className="app-muted">Pairing coverage</span>
+            </div>
           </div>
-        ))}
+        </Panel>
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No pairings yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+          className="product-hub-setup"
+        >
+          <a className="app-button" href="#onboarding-buddy-unpaired">
+            Pair a member
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/onboarding", orgId)}>
+            Open Onboarding
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/team/data", orgId)}>
+            Open Team Data
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div className="onboarding-buddy-layout">
+        <UnpairedMembers view={view} busy={busy} mutate={mutate} />
+        <Pairings view={view} busy={busy} mutate={mutate} />
       </div>
-    </Panel>
+    </main>
   );
 }
 
@@ -164,22 +380,28 @@ function UnpairedMembers({
 }) {
   if (view.unpairedMembers.length === 0) {
     return (
-      <EmptyState
-        badge="All caught up"
-        badgeTone="good"
-        title="No unpaired new members"
-        description="Every recently-joined member either has a buddy or has been on the team for a while."
-      />
+      <div id="onboarding-buddy-unpaired">
+        <EmptyState
+          soft
+          badge="All caught up"
+          badgeTone="good"
+          title="No unpaired new members"
+          description="Every recently-joined member either has a buddy or has been on the team for a while — never DEMO progress."
+        />
+      </div>
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>New members needing a buddy</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel className="onboarding-buddy-panel" id="onboarding-buddy-unpaired" aria-label="Unpaired members">
+      <header>
+        <h2>New members needing a buddy</h2>
+        <p className="app-muted">Suggestions use real tenure and active load — never DEMO progress.</p>
+      </header>
+      <ul className="onboarding-buddy-list">
         {view.unpairedMembers.map((member) => {
           const suggested = view.suggestedBuddyByMember[member.userId] ?? null;
           return (
-            <li key={member.userId} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+            <li key={member.userId} className="onboarding-buddy-row">
               <div>
                 <strong>{member.name}</strong>
                 <small className="app-muted" style={{ display: "block" }}>
@@ -218,17 +440,21 @@ function Pairings({
   if (view.pairings.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No pairings yet"
         badgeTone="setup"
         title="No buddy pairings logged"
-        description="Pair a new member above to generate a first-week plan."
+        description="Pair a new member above to generate a first-week plan — never DEMO progress."
       />
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Pairings</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 14 }}>
+    <Panel className="onboarding-buddy-panel" aria-label="Buddy pairings">
+      <header>
+        <h2>Pairings</h2>
+        <p className="app-muted">Real pairing rows only — plan checkboxes never invent DEMO progress.</p>
+      </header>
+      <ul className="onboarding-buddy-list">
         {view.pairings.map((pairing) => (
           <PairingCard key={pairing.id} pairing={pairing} busy={busy} mutate={mutate} />
         ))}
@@ -248,7 +474,7 @@ function PairingCard({
 }) {
   return (
     <li className="app-card soft-panel" style={{ padding: 12, display: "grid", gap: 8 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+      <div className="onboarding-buddy-row" style={{ alignItems: "flex-start" }}>
         <div>
           <strong>
             {pairing.newMemberName} <span className="app-muted">buddied with</span> {pairing.buddyName}
@@ -284,9 +510,9 @@ function PairingCard({
         </div>
       </div>
       {pairing.planItems.length > 0 ? (
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <ul className="onboarding-buddy-plan">
           {pairing.planItems.map((item) => (
-            <li key={item.id} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <li key={item.id}>
               <input
                 type="checkbox"
                 checked={item.done}

@@ -9,6 +9,7 @@ import {
   togglePlanItem,
   type OnboardingBuddyView,
 } from "../../../lib/onboarding-buddy/compute-onboarding-buddy";
+import { onboardingBuddySetupSteps } from "../../../lib/onboarding-buddy/onboarding-buddy-related";
 import type { OnboardingBuddyPairingStatus } from "../../../lib/onboarding-buddy/types";
 
 export type { OnboardingBuddyView };
@@ -42,9 +43,7 @@ export async function GET(request: Request) {
       {
         status: "setup_required",
         message: "Could not load Onboarding Buddy. Select a workspace and confirm database access.",
-        steps: [
-          { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-        ],
+        steps: onboardingBuddySetupSteps(null),
         orgId: null,
       } satisfies OnboardingBuddyView,
       { status: 200 },
