@@ -25,6 +25,7 @@
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Prototypes · Batteries (+ More tools) |
 | Code Coach Soft-UI | `/build?tab=code`, `/ai?tab=code` (also `/code`) | Local free pattern review + teach-not-do lessons; empty/setup + next actions; clear local-vs-metered strip; UsageCutoffBanner on AI hub (metered neighbors); cross-links to CAD / GitHub / AI chat — never invented review findings |
 | AI | `/ai` | Chat · Budgets · Writer · Code assist · Memory · Governance · Finance (+ More tools) |
+| AI Memory Soft-UI | `/ai?tab=memory` (also `/team/ai-memory`) | Admin opt-in team memory policy + real Neon counts; private vs team-shared clarity; empty/setup/forbidden shells; Chat/Budgets cross-links — never DEMO memories |
 
 Team admin: `/team/admin`. Redirects: `apps/web/next.config.ts`.
 

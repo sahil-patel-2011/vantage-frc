@@ -11,22 +11,34 @@ import { headers } from "next/headers";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
-  if (!value) throw new Error("Authentication required");
+  if (!value) throw Object.assign(new Error("Authentication required"), { status: 401 });
   return value;
 }
 
-const fail = (error: unknown) =>
-  Response.json(
-    { error: error instanceof Error ? error.message : "Team memory request failed" },
-    { status: 400 },
-  );
+const fail = (error: unknown) => {
+  const message = error instanceof Error ? error.message : "Team memory request failed";
+  const status =
+    typeof error === "object" &&
+    error &&
+    "status" in error &&
+    typeof (error as { status?: unknown }).status === "number"
+      ? (error as { status: number }).status
+      : /auth|sign.?in|session/i.test(message)
+        ? 401
+        : /admin|administrator|forbidden|permission/i.test(message)
+          ? 403
+          : 400;
+  return Response.json({ error: message }, { status });
+};
 
 async function assertAdmin(client: import("@neondatabase/serverless").PoolClient, orgId: string, userId: string) {
   const admin = await client.query(
     `SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2 AND role IN ('owner','admin')`,
     [orgId, userId],
   );
-  if (!admin.rowCount) throw new Error("Organization administrator access required");
+  if (!admin.rowCount) {
+    throw Object.assign(new Error("Organization administrator access required"), { status: 403 });
+  }
 }
 
 export async function GET(request: Request) {
