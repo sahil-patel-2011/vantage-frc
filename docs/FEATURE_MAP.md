@@ -25,6 +25,7 @@
 | Business Soft-UI impact & awards | `/impact` · `/team/awards` · Business · Awards | Soft-UI outreach log + readiness from recorded activities; award essays from catalog submissions; empty/setup + next actions; cross-links to Business hub / Grants / Sponsors — never DEMO hours or win rates |
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Prototypes · Batteries (+ More tools) |
 | Control Map Soft-UI | `/control-map` | Driver/operator button bindings; empty/setup + next actions; counts from saved rows only; cross-links to Subsystems / FMEA / Practice — never DEMO bindings |
+| Spare Forecast Soft-UI | `/spare-forecast` | Exhaustion forecast from real spare-category inventory × FMEA cadence; empty/setup + next actions; cross-links to Batteries / Orders / Subsystems — never DEMO spare counts |
 | Code Coach Soft-UI | `/build?tab=code`, `/ai?tab=code` (also `/code`) | Local free pattern review + teach-not-do lessons; empty/setup + next actions; clear local-vs-metered strip; UsageCutoffBanner on AI hub (metered neighbors); cross-links to CAD / GitHub / AI chat — never invented review findings |
 | AI | `/ai` | Chat · Budgets · Writer · Code assist · Memory · Governance · Finance (+ More tools) |
 | Season Report Soft-UI | `/ai` More tools · `/season-report` | Soft-UI retrospective from logged entries only; empty/setup + next actions; metered snapshot cutoff banner; cross-links to Strategy / Impact / Decision Search — never DEMO season stats |

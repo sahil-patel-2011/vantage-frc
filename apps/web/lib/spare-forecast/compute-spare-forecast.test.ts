@@ -64,11 +64,43 @@ describe("computeSpareForecastView", () => {
 
     expect(view.status).toBe("live");
     if (view.status !== "live") throw new Error("expected live view");
+    expect(view.spareBinCount).toBe(1);
     expect(view.forecastLines).toHaveLength(1);
     expect(view.forecastLines[0]?.itemName).toBe("Falcon 500 spare");
     expect(view.forecastLines[0]?.failureCount).toBe(6);
     expect(view.forecastLines[0]?.forecast.consumptionPerDay).toBeGreaterThan(0);
     expect(view.purchaseRequests).toHaveLength(0);
+  });
+
+  it("reports spareBinCount from real inventory even when no FMEA match yields forecast lines", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254 }] };
+      }
+      if (sql.includes("FROM inventory_items")) {
+        return {
+          rows: [
+            {
+              id: ITEM_ID,
+              name: "Unused spare",
+              category: "spare",
+              subsystem: null,
+              quantity: "1.00",
+              unitCost: null,
+              minQuantity: "0.00",
+            },
+          ],
+        };
+      }
+      if (sql.includes("FROM fmea_failures")) return { rows: [] };
+      return { rows: [] };
+    });
+
+    const view = await computeSpareForecastView(client, { userId: USER, requestedOrg: ORG, seasonYear: 2026 });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.spareBinCount).toBe(1);
+    expect(view.forecastLines).toHaveLength(0);
   });
 });
 
