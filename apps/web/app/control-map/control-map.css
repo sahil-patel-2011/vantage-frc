@@ -1,0 +1,21 @@
+/* Soft-UI Control Map — .control-map-* + shared Soft-UI tokens. Never DEMO bindings. */
+.control-map-page{display:grid;gap:16px}
+.control-map-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.control-map-related{display:flex;flex-wrap:wrap;gap:8px}
+.control-map-next-actions{margin:0}
+.control-map-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.control-map-stats strong{font-size:1.5rem}
+.control-map-form{display:grid;gap:10px}
+.control-map-layout{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}
+.control-map-list{display:grid;gap:12px;list-style:none;padding:0;margin:0}
+.control-map-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.control-map-card-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.control-map-card h3{margin:0;font-size:1.05rem}
+.control-map-card-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.control-map-controller{display:grid;gap:10px}
+.control-map-tip{margin:0}
+@media(max-width:900px){
+  .control-map-layout{grid-template-columns:1fr}
+  .control-map-header-actions{justify-content:flex-start}
+  .control-map-next-actions li{flex-direction:column;align-items:stretch}
+}
