@@ -29,6 +29,7 @@ import {
   syncMediaOutbox,
   syncOutbox,
 } from "../../lib/scout-offline";
+import { scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
 import ScoutingTrustPanel from "./scouting-trust-panel";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
@@ -112,6 +113,12 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   const [fromCache, setFromCache] = useState(false);
   const [counts, setCounts] = useState({ entries: 0, media: 0 });
   const [message, setMessage] = useState("");
+  const [saveReceipt, setSaveReceipt] = useState<{
+    teamKey: string;
+    matchKey?: string;
+    entryType: "match" | "pit";
+    offline: boolean;
+  } | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "degraded">("idle");
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
   const [selectedWinners, setSelectedWinners] = useState<Record<string, string>>({});
@@ -316,7 +323,17 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
     setPayload({});
     setSource("manual");
     setEntryClientId(stableClientId());
-    setMessage(online ? "Saved locally; syncing…" : "Saved offline; will sync on reconnect");
+    setSaveReceipt({
+      teamKey,
+      matchKey: type === "match" ? matchKey : undefined,
+      entryType: type,
+      offline: !online,
+    });
+    setMessage(
+      online
+        ? "Saved on this device — queued for org sync"
+        : "Saved offline — will sync when you reconnect",
+    );
     await refreshCounts();
     await sync();
   }
@@ -872,6 +889,43 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
                 {message}
               </p>
             ) : null}
+            {saveReceipt ? (
+              <div className="scout-save-receipt" role="status">
+                <div className="scout-save-receipt-head">
+                  <span className="eyebrow">Where your data went</span>
+                  <strong>
+                    {saveReceipt.entryType === "pit" ? "Pit" : "Match"} entry for{" "}
+                    {saveReceipt.teamKey}
+                    {saveReceipt.matchKey ? ` · ${saveReceipt.matchKey}` : ""}
+                  </strong>
+                  <small className="app-muted">
+                    {saveReceipt.offline
+                      ? "Stored in this device outbox (org-isolated). Identity stays locked to your membership."
+                      : "Queued for sync into your org’s scouting tables. Identity stays locked to your membership."}
+                  </small>
+                </div>
+                <ul className="scout-save-next">
+                  {scoutingPostSaveNextSteps(orgId, {
+                    eventKey: data?.eventKey,
+                    entryType: saveReceipt.entryType,
+                  }).map((step) => (
+                    <li key={step.id}>
+                      <a className="app-button secondary" href={step.href}>
+                        {step.label}
+                      </a>
+                      <small className="app-muted">{step.detail}</small>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => setSaveReceipt(null)}
+                >
+                  Dismiss
+                </button>
+              </div>
+            ) : null}
           </Panel>
 
           <aside className="scout-side">
@@ -1006,11 +1060,28 @@ function Field({
         : historyWarn
           ? "history-warn"
           : undefined;
+  const label = `${field.label}${field.required ? " *" : ""}`;
+  const isMc =
+    field.widget === "mc" ||
+    field.type === "multiple_choice" ||
+    (field.type === "select" && field.widget === "mc");
+
+  async function attachFiles(files: FileList | null) {
+    if (!files?.length || !onAttachRobotImage) return;
+    const refs = normalizeRobotImageRefs(value);
+    const next = [...refs];
+    for (const file of Array.from(files)) {
+      const clientId = await onAttachRobotImage(file);
+      if (clientId) next.push(clientId);
+    }
+    onChange(next);
+  }
+
   const body = (() => {
     if (field.type === "boolean" || field.widget === "yesno") {
       return (
         <label className="soft-form-row check-field">
-          <span className="app-muted">{field.label}</span>
+          <span className="app-muted">{label}</span>
           <input type="checkbox" checked={Boolean(value)} onChange={(event) => onChange(event.target.checked)} />
         </label>
       );
@@ -1019,7 +1090,7 @@ function Field({
       const options =
         field.options?.length ? field.options : [...DEFAULT_DRIVETRAIN_OPTIONS];
       return (
-        <FormRow label={field.label} hint={field.helpText}>
+        <FormRow label={label} hint={field.helpText ?? "Select the robot drivetrain"}>
           <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
             <option value="">Select drivetrain…</option>
             {options.map((option) => (
@@ -1035,8 +1106,8 @@ function Field({
       const refs = normalizeRobotImageRefs(value);
       return (
         <FormRow
-          label={field.label}
-          hint={field.helpText ?? "Upload or capture — stored only for this organization"}
+          label={label}
+          hint={field.helpText ?? "Camera or gallery — stored only for this organization"}
         >
           <div className="scout-robot-images">
             {refs.length ? (
@@ -1067,35 +1138,42 @@ function Field({
                 ))}
               </ul>
             ) : null}
-            <label className="scout-media scout-robot-capture">
-              Upload or capture photo
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                multiple
-                onChange={(event) => {
-                  const files = event.target.files;
-                  if (!files?.length || !onAttachRobotImage) return;
-                  void (async () => {
-                    const next = [...refs];
-                    for (const file of Array.from(files)) {
-                      const clientId = await onAttachRobotImage(file);
-                      if (clientId) next.push(clientId);
-                    }
-                    onChange(next);
-                    event.target.value = "";
-                  })();
-                }}
-              />
-            </label>
+            <div className="scout-robot-image-actions">
+              <label className="scout-media scout-robot-capture">
+                Camera
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) => {
+                    void attachFiles(event.target.files).then(() => {
+                      event.target.value = "";
+                    });
+                  }}
+                />
+              </label>
+              <label className="scout-media scout-robot-capture">
+                Gallery
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(event) => {
+                    void attachFiles(event.target.files).then(() => {
+                      event.target.value = "";
+                    });
+                  }}
+                />
+              </label>
+            </div>
+            <small className="app-muted">Works offline — photos queue on this device until sync.</small>
           </div>
         </FormRow>
       );
     }
-    if (field.type === "select" && field.widget === "mc") {
+    if (isMc) {
       return (
-        <FormRow label={field.label}>
+        <FormRow label={label} hint={field.helpText}>
           <div className="scout-mc-row" role="radiogroup" aria-label={field.label}>
             {(field.options ?? []).map((option) => (
               <label key={option} className="scout-mc-option">
@@ -1118,11 +1196,13 @@ function Field({
       field.type === "multiple_choice"
     ) {
       return (
-        <FormRow label={field.label}>
+        <FormRow label={label} hint={field.helpText}>
           <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
             <option value="">Select…</option>
             {field.options?.map((option) => (
-              <option key={option}>{option}</option>
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </FormRow>
@@ -1130,17 +1210,31 @@ function Field({
     }
     if (field.widget === "free" || field.type === "long_text") {
       return (
-        <FormRow label={field.label}>
+        <FormRow label={label} hint={field.helpText ?? "Long-form notes"}>
           <textarea
             value={String(value ?? "")}
             required={field.required}
+            placeholder="Notes…"
+            onChange={(event) => onChange(event.target.value)}
+          />
+        </FormRow>
+      );
+    }
+    if (field.widget === "short" || field.type === "short_answer" || field.type === "text") {
+      return (
+        <FormRow label={label} hint={field.helpText ?? "Short answer"}>
+          <input
+            type="text"
+            value={String(value ?? "")}
+            required={field.required}
+            placeholder="Short answer"
             onChange={(event) => onChange(event.target.value)}
           />
         </FormRow>
       );
     }
     return (
-      <FormRow label={field.label}>
+      <FormRow label={label} hint={field.helpText}>
         <input
           type={field.type === "number" ? "number" : "text"}
           value={String(value ?? "")}

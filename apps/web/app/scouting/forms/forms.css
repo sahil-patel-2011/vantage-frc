@@ -265,6 +265,201 @@
   min-height: 44px;
 }
 
+.sfb-robot-image-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sfb-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--soft-line);
+  background: var(--soft-card);
+}
+
+.sfb-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font: 700 11px / 1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid var(--soft-line);
+}
+
+.sfb-status-unpublished .sfb-status-pill,
+.sfb-status-inline.sfb-status-unpublished strong {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.sfb-status-draft_changes .sfb-status-pill,
+.sfb-status-inline.sfb-status-draft_changes strong {
+  color: #9a3412;
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.sfb-status-published .sfb-status-pill,
+.sfb-status-inline.sfb-status-published strong {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.sfb-status-inline {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 4px;
+}
+
+.sfb-status-inline strong {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font: 700 11px / 1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid var(--soft-line);
+}
+
+.sfb-question-order {
+  font-weight: 600;
+  color: var(--soft-muted);
+}
+
+.sfb-required-badge,
+.sfb-optional-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font: 700 10px / 1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--soft-line);
+}
+
+.sfb-required-badge {
+  color: var(--soft-accent);
+  background: var(--soft-accent-soft);
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+}
+
+.sfb-optional-badge {
+  color: var(--soft-muted);
+  background: var(--soft-bg);
+}
+
+.sfb-required-toggle {
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-line);
+  background: var(--soft-card);
+}
+
+.sfb-required-toggle.is-on {
+  border-color: color-mix(in srgb, var(--soft-accent) 40%, var(--soft-line));
+  background: var(--soft-accent-soft);
+}
+
+.sfb-required-toggle span {
+  display: grid;
+  gap: 2px;
+}
+
+.sfb-required-toggle strong {
+  color: var(--soft-ink);
+  font: 700 13px var(--font-source-sans), ui-sans-serif;
+}
+
+.sfb-option-editor {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--soft-line);
+  background: var(--soft-card);
+}
+
+.sfb-option-editor-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  font: 700 12px var(--font-source-sans), ui-sans-serif;
+  color: var(--soft-ink);
+}
+
+.sfb-option-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.sfb-option-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.sfb-option-list input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-ink);
+  font: inherit;
+}
+
+.sfb-option-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.sfb-option-actions button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid var(--soft-line);
+  background: var(--soft-bg);
+  color: var(--soft-ink);
+  font: 700 12px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+}
+
+.sfb-option-actions button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--soft-accent) 40%, var(--soft-line));
+  background: var(--soft-accent-soft);
+}
+
+.sfb-option-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 @media (max-width: 900px) {
   .sfb-layout,
   .sfb-question-grid {
