@@ -1,11 +1,14 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { isValidDiscordWebhook, postToDiscord } from "../../../../lib/discord";
-
-// Team Discord connection for the alumni network. The webhook URL is a bearer
-// secret: it is admin-only by RLS and never returned to the client (GET reports
-// only whether it is configured). Admins can post announcements to the channel.
+import {
+  discordSetupStatus,
+  formatDiscordAnnouncement,
+  formatDiscordBridgeMessage,
+  isValidDiscordSnowflake,
+  isValidDiscordWebhook,
+  postTeamDiscordMessage,
+} from "../../../../lib/discord";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -24,23 +27,103 @@ async function assertAdmin(client: import("@neondatabase/serverless").PoolClient
   if (!admin.rowCount) throw new Error("Organization administrator access required");
 }
 
+type DiscordRow = {
+  channelLabel: string | null;
+  enabled: boolean;
+  updatedAt: string;
+  guildId: string | null;
+  guildName: string | null;
+  channelId: string | null;
+  chatBridgeEnabled: boolean;
+  hasWebhook: boolean;
+};
+
+async function loadDiscordRow(
+  client: import("@neondatabase/serverless").PoolClient,
+  orgId: string,
+): Promise<DiscordRow | null> {
+  try {
+    const row = await client.query<{
+      channelLabel: string | null;
+      enabled: boolean;
+      updatedAt: string;
+      guildId: string | null;
+      guildName: string | null;
+      channelId: string | null;
+      chatBridgeEnabled: boolean;
+      webhookUrl: string | null;
+    }>(
+      `SELECT channel_label AS "channelLabel", enabled, updated_at AS "updatedAt",
+              guild_id AS "guildId", guild_name AS "guildName", channel_id AS "channelId",
+              chat_bridge_enabled AS "chatBridgeEnabled", webhook_url AS "webhookUrl"
+       FROM team_discord WHERE org_id=$1`,
+      [orgId],
+    );
+    if (!row.rowCount) return null;
+    const r = row.rows[0]!;
+    return {
+      channelLabel: r.channelLabel,
+      enabled: r.enabled,
+      updatedAt: r.updatedAt,
+      guildId: r.guildId,
+      guildName: r.guildName,
+      channelId: r.channelId,
+      chatBridgeEnabled: r.chatBridgeEnabled,
+      hasWebhook: Boolean(r.webhookUrl && isValidDiscordWebhook(r.webhookUrl)),
+    };
+  } catch {
+    const row = await client.query<{
+      channelLabel: string | null;
+      enabled: boolean;
+      updatedAt: string;
+      webhookUrl: string | null;
+    }>(
+      `SELECT channel_label AS "channelLabel", enabled, updated_at AS "updatedAt",
+              webhook_url AS "webhookUrl"
+       FROM team_discord WHERE org_id=$1`,
+      [orgId],
+    );
+    if (!row.rowCount) return null;
+    const r = row.rows[0]!;
+    return {
+      channelLabel: r.channelLabel,
+      enabled: r.enabled,
+      updatedAt: r.updatedAt,
+      guildId: null,
+      guildName: null,
+      channelId: null,
+      chatBridgeEnabled: false,
+      hasWebhook: Boolean(r.webhookUrl && isValidDiscordWebhook(r.webhookUrl)),
+    };
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const current = await session();
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) throw new Error("orgId is required");
+    const setup = discordSetupStatus();
     const data = await withRls({ userId: current.user.id, orgId }, async (client) => {
       await assertAdmin(client, orgId, current.user.id);
-      const row = await client.query<{ channelLabel: string | null; enabled: boolean; updatedAt: string }>(
-        `SELECT channel_label AS "channelLabel", enabled, updated_at AS "updatedAt"
-         FROM team_discord WHERE org_id=$1`,
-        [orgId],
-      );
+      const connection = await loadDiscordRow(client, orgId);
       return {
-        configured: (row.rowCount ?? 0) > 0,
-        channelLabel: row.rows[0]?.channelLabel ?? null,
-        enabled: row.rows[0]?.enabled ?? false,
-        updatedAt: row.rows[0]?.updatedAt ?? null,
+        ...setup,
+        configured: Boolean(connection),
+        platformConfigured: setup.configured,
+        setupRequired: setup.setupRequired,
+        channelLabel: connection?.channelLabel ?? null,
+        enabled: connection?.enabled ?? false,
+        updatedAt: connection?.updatedAt ?? null,
+        guildId: connection?.guildId ?? null,
+        guildName: connection?.guildName ?? null,
+        channelId: connection?.channelId ?? null,
+        chatBridgeEnabled: connection?.chatBridgeEnabled ?? false,
+        hasWebhook: connection?.hasWebhook ?? false,
+        empty: !connection,
+        emptyReason: connection
+          ? null
+          : "No Discord guild/channel linked yet. Paste a webhook or set guild + channel ids.",
       };
     });
     return Response.json(data);
@@ -54,47 +137,131 @@ export async function POST(request: Request) {
     const current = await session();
     const body = (await request.json()) as {
       orgId?: string;
-      action?: "save" | "test" | "announce" | "digest";
+      action?: "save" | "disconnect" | "test" | "announce" | "digest" | "set-bridge";
       webhookUrl?: string;
       channelLabel?: string;
       enabled?: boolean;
+      guildId?: string;
+      guildName?: string;
+      channelId?: string;
+      chatBridgeEnabled?: boolean;
       message?: string;
+      title?: string;
     };
     if (!body.orgId) throw new Error("orgId is required");
     const orgId = body.orgId;
+    const action = body.action ?? "save";
 
     const result = await withRls({ userId: current.user.id, orgId }, async (client) => {
       await assertAdmin(client, orgId, current.user.id);
 
-      if (body.action === "save") {
-        const webhookUrl = body.webhookUrl?.trim();
-        if (!webhookUrl || !isValidDiscordWebhook(webhookUrl)) {
-          throw new Error("Enter a valid Discord webhook URL (Server Settings → Integrations → Webhooks)");
-        }
+      if (action === "disconnect") {
+        await client.query(`DELETE FROM team_discord WHERE org_id=$1`, [orgId]);
+        return { disconnected: true };
+      }
+
+      if (action === "set-bridge") {
+        const existing = await client.query(`SELECT 1 FROM team_discord WHERE org_id=$1`, [orgId]);
+        if (!existing.rowCount) throw new Error("Connect Discord before enabling the chat bridge");
         await client.query(
-          `INSERT INTO team_discord(org_id, webhook_url, channel_label, enabled, updated_by, updated_at)
-           VALUES($1,$2,$3,$4,$5,now())
-           ON CONFLICT(org_id) DO UPDATE SET webhook_url=excluded.webhook_url,
-             channel_label=excluded.channel_label, enabled=excluded.enabled,
-             updated_by=excluded.updated_by, updated_at=now()`,
-          [orgId, webhookUrl, body.channelLabel?.trim() || null, body.enabled ?? true, current.user.id],
+          `UPDATE team_discord SET chat_bridge_enabled=$2, updated_by=$3, updated_at=now() WHERE org_id=$1`,
+          [orgId, Boolean(body.chatBridgeEnabled), current.user.id],
+        );
+        return { chatBridgeEnabled: Boolean(body.chatBridgeEnabled) };
+      }
+
+      if (action === "save") {
+        const guildId = body.guildId?.trim() || null;
+        const channelId = body.channelId?.trim() || null;
+        if (guildId && !isValidDiscordSnowflake(guildId)) {
+          throw new Error("Guild id must be a Discord snowflake (numeric)");
+        }
+        if (channelId && !isValidDiscordSnowflake(channelId)) {
+          throw new Error("Channel id must be a Discord snowflake (numeric)");
+        }
+
+        const existing = await client.query<{ webhookUrl: string | null }>(
+          `SELECT webhook_url AS "webhookUrl" FROM team_discord WHERE org_id=$1`,
+          [orgId],
+        );
+        const clearWebhook = body.webhookUrl === "";
+        let webhookUrl: string | null = null;
+        if (clearWebhook) webhookUrl = null;
+        else if (body.webhookUrl?.trim()) {
+          webhookUrl = body.webhookUrl.trim();
+          if (!isValidDiscordWebhook(webhookUrl)) {
+            throw new Error("Enter a valid Discord webhook URL (Server Settings → Integrations → Webhooks)");
+          }
+        } else if (existing.rowCount) {
+          webhookUrl = existing.rows[0]!.webhookUrl;
+        }
+
+        if (!webhookUrl && !channelId) {
+          throw new Error("Provide a channel webhook URL and/or a Discord channel id");
+        }
+
+        await client.query(
+          `INSERT INTO team_discord(
+             org_id, webhook_url, channel_label, enabled, updated_by, updated_at,
+             guild_id, guild_name, channel_id, chat_bridge_enabled
+           )
+           VALUES($1,$2,$3,$4,$5,now(),$6,$7,$8,$9)
+           ON CONFLICT(org_id) DO UPDATE SET
+             webhook_url=excluded.webhook_url,
+             channel_label=excluded.channel_label,
+             enabled=excluded.enabled,
+             updated_by=excluded.updated_by,
+             updated_at=now(),
+             guild_id=excluded.guild_id,
+             guild_name=excluded.guild_name,
+             channel_id=excluded.channel_id,
+             chat_bridge_enabled=excluded.chat_bridge_enabled`,
+          [
+            orgId,
+            webhookUrl,
+            body.channelLabel?.trim() || null,
+            body.enabled ?? true,
+            current.user.id,
+            guildId,
+            body.guildName?.trim() || null,
+            channelId,
+            body.chatBridgeEnabled ?? false,
+          ],
         );
         return { saved: true };
       }
 
-      // test / announce both post to the stored webhook.
-      const row = await client.query<{ webhookUrl: string; enabled: boolean }>(
-        `SELECT webhook_url AS "webhookUrl", enabled FROM team_discord WHERE org_id=$1`,
+      const row = await client.query<{
+        webhookUrl: string | null;
+        enabled: boolean;
+        channelId: string | null;
+      }>(
+        `SELECT webhook_url AS "webhookUrl", enabled, channel_id AS "channelId"
+         FROM team_discord WHERE org_id=$1`,
         [orgId],
+      ).catch(async () =>
+        client.query<{ webhookUrl: string | null; enabled: boolean; channelId: string | null }>(
+          `SELECT webhook_url AS "webhookUrl", enabled, NULL::text AS "channelId"
+           FROM team_discord WHERE org_id=$1`,
+          [orgId],
+        ),
       );
-      if (!row.rowCount) throw new Error("Connect a Discord webhook first");
+      if (!row.rowCount) throw new Error("Connect a Discord guild/channel first");
       if (!row.rows[0]!.enabled) throw new Error("Discord posting is turned off for this team");
 
+      const webhookUrl =
+        row.rows[0]!.webhookUrl && isValidDiscordWebhook(row.rows[0]!.webhookUrl)
+          ? row.rows[0]!.webhookUrl
+          : null;
+      const channelId = row.rows[0]!.channelId;
+
       let content: string;
-      if (body.action === "test") {
-        content = "✅ Vantage is connected to this channel. Alumni-network announcements will post here.";
-      } else if (body.action === "digest") {
-        // Summarize the alumni network. Admins can read team_alumni via RLS.
+      if (action === "test") {
+        content = formatDiscordBridgeMessage({
+          authorName: "Vantage",
+          body: "Connected. Announcements and optional object-linked chat bridges will post here.",
+        });
+      } else if (action === "digest") {
         const stats = await client.query<{ total: string }>(
           `SELECT count(*) AS total FROM team_alumni WHERE org_id=$1`,
           [orgId],
@@ -109,15 +276,20 @@ export async function POST(request: Request) {
         const names = recent.rows
           .map((r) => `• ${r.fullName}${r.gradYear ? ` ’${String(r.gradYear).slice(2)}` : ""}`)
           .join("\n");
-        content = `📇 **Alumni network update** — ${total} alum${total === 1 ? "" : "s"} in our directory.\nRecently added:\n${names}\n\nAlumni: help us keep it current!`;
+        content = `📇 **Alumni network update** — ${total} alum${total === 1 ? "" : "s"} in our directory.\nRecently added:\n${names}`;
+      } else if (action === "announce") {
+        const title = (body.title ?? "").trim() || "Announcement";
+        const message = (body.message ?? "").trim();
+        if (!message) throw new Error("Message is required");
+        content = formatDiscordAnnouncement(title, message);
       } else {
         content = (body.message ?? "").trim();
         if (!content) throw new Error("Message is required");
       }
 
-      const post = await postToDiscord(row.rows[0]!.webhookUrl, content);
+      const post = await postTeamDiscordMessage({ content, webhookUrl, channelId });
       if (!post.ok) throw new Error(post.error ?? "Discord rejected the message");
-      return { posted: true };
+      return { posted: true, messageId: post.messageId ?? null };
     });
     return Response.json({ success: true, ...result });
   } catch (error) {

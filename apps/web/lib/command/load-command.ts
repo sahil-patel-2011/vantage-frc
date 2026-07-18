@@ -1,14 +1,18 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { deriveReliability } from "@vantage/intel-research";
-import { buildCoverageBoard, summarizeCoverageBoard } from "@vantage/scouting/trust";
 import { batteryPitFlags } from "../battery-reliability";
+import { loadRepeatFailureAlerts } from "../fmea/repeat-failures";
 import { loadBatteryFleet } from "../load-battery-fleet";
+import { bumperCue, formatMyDayWhen } from "../my-day";
+import { loadMyDayLogistics } from "../my-day-load";
 import { computeStrategyView, resolveTbaAccess } from "../strategy/compute-strategy";
 import { emptyCommandCoverage } from "./empty-coverage";
+import { buildCoverageBoard, summarizeCoverageBoard } from "./match-coverage";
 import { maybeNotifyCoverageGaps } from "./notify-coverage-gaps";
 import { buildScoutQueue, teamNumberFromKey, withScoutFormHrefs } from "./scout-queue";
 import type {
   CommandMatch,
+  CommandMyDay,
   CommandSnapshot,
   DriveCoachBrief,
   PitFlag,
@@ -127,10 +131,7 @@ export async function loadEventDayCommand(
 
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const canSetEvent = ["owner", "admin"].includes(row.role);
-  const [tbaAccess, dataSourceHealth] = await Promise.all([
-    resolveTbaAccess(client, input.orgId),
-    loadDataSourceHealth(client, input.orgId),
-  ]);
+  const tbaAccess = await resolveTbaAccess(client, input.orgId);
   const links = {
     strategy: withOrg("/strategy", input.orgId),
     scouting: withOrg("/scouting", input.orgId),
@@ -142,6 +143,10 @@ export async function loadEventDayCommand(
     chemistry: withOrg("/chemistry", input.orgId),
     pit: withOrg("/pit", input.orgId),
     batteries: withOrg("/batteries", input.orgId),
+    myDay: withOrg("/my-day", input.orgId),
+    logistics: withOrg("/logistics", input.orgId),
+    schedule: withOrg("/schedule", input.orgId),
+    matchChecklist: withOrg("/match-checklist", input.orgId),
   };
 
   const setupSteps = [
@@ -186,9 +191,9 @@ export async function loadEventDayCommand(
     eventName: row.eventName,
     tbaConfigured: tbaAccess.tbaConfigured,
     tbaAccess,
-    dataSourceHealth,
     setupSteps,
     links,
+    myDay: null,
   };
 
   if (!row.eventKey || !teamKey) {
@@ -202,6 +207,15 @@ export async function loadEventDayCommand(
       scoutQueue: [],
       briefs: [],
       pitFlags: [],
+      myDay: {
+        bumperCue: null,
+        ourAlliance: null,
+        lodgingLabel: null,
+        nextTravelLabel: null,
+        onDutyLabel: null,
+        checklistPercent: null,
+        href: links.myDay,
+      },
       prediction: emptyPrediction("setup_required"),
       record: emptyRecord("setup_required"),
       coverage: emptyCommandCoverage(),
@@ -353,6 +367,23 @@ export async function loadEventDayCommand(
       detail: flag.detail,
       evidence: flag.evidence,
       source: "battery",
+    });
+  }
+
+
+  const repeatAlerts = await loadRepeatFailureAlerts(client, input.orgId, { limit: 6 });
+  for (const alert of repeatAlerts) {
+    pitFlags.push({
+      teamKey: teamKey ?? `org:${input.orgId}`,
+      teamNumber: row.teamNumber,
+      severity: alert.level === "critical" || alert.level === "high" ? "critical" : "warning",
+      title: alert.message,
+      detail:
+        alert.openCount > 0
+          ? `${alert.openCount} still open in the FMEA log${alert.recentTitles[0] ? ` · ${alert.recentTitles[0]}` : ""}`
+          : alert.recentTitles[0] ?? "Logged across events this season — confirm the root cause stuck.",
+      evidence: `FMEA / failure log · ${alert.failureCount} entries · ${alert.href}`,
+      source: "fmea_repeat",
     });
   }
 
@@ -613,6 +644,37 @@ export async function loadEventDayCommand(
     };
   }
 
+  const profile = await client.query<{ teamRole: string | null }>(
+    `SELECT team_role AS "teamRole" FROM profiles WHERE user_id = $1::uuid`,
+    [input.userId],
+  );
+  const logistics = await loadMyDayLogistics(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    teamRole: profile.rows[0]?.teamRole ?? null,
+    eventKey,
+  });
+  const focus = matches[0] ?? null;
+  const travelWhen = formatMyDayWhen(logistics.nextTravel?.startsAt);
+  const myDay: CommandMyDay = {
+    bumperCue: focus ? bumperCue(focus.ourAlliance) : null,
+    ourAlliance: focus?.ourAlliance ?? null,
+    lodgingLabel:
+      logistics.lodging?.hotelName && logistics.lodging.roomLabel
+        ? `${logistics.lodging.hotelName} · Room ${logistics.lodging.roomLabel}`
+        : logistics.lodging?.hotelName ?? null,
+    nextTravelLabel: logistics.nextTravel
+      ? [logistics.nextTravel.title, travelWhen, logistics.nextTravel.meetingPoint || null]
+          .filter(Boolean)
+          .join(" · ")
+      : null,
+    onDutyLabel: logistics.onDuty
+      ? [logistics.onDuty.mentorName || "Mentor", logistics.onDuty.phone || null].filter(Boolean).join(" · ")
+      : null,
+    checklistPercent: logistics.checklistPercent,
+    href: links.myDay,
+  };
+
   return {
     ...base,
     status: matches.length || metric || scoutQueue.length ? "live" : "empty",
@@ -624,6 +686,7 @@ export async function loadEventDayCommand(
     scoutQueue,
     briefs,
     pitFlags: uniqueFlags,
+    myDay,
     prediction,
     record,
     coverage: emptyCommandCoverage({
@@ -696,6 +759,7 @@ function emptySnapshot(input: {
     scoutQueue: [],
     briefs: [],
     pitFlags: [],
+    myDay: null,
     prediction: emptyPrediction("setup_required"),
     record: emptyRecord("setup_required"),
     coverage: emptyCommandCoverage(),
@@ -710,6 +774,10 @@ function emptySnapshot(input: {
       chemistry: "/chemistry",
       pit: "/pit",
       batteries: "/batteries",
+      myDay: "/my-day",
+      logistics: "/logistics",
+      schedule: "/schedule",
+      matchChecklist: "/match-checklist",
     },
   };
 }

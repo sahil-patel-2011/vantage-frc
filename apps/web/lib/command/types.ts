@@ -37,7 +37,7 @@ export type PitFlag = {
   title: string;
   detail: string;
   evidence: string;
-  source: "pit" | "match_scout" | "maintenance";
+  source: "pit" | "match_scout" | "maintenance" | "battery" | "fmea_repeat";
 };
 
 export type DriveCoachBrief = {
@@ -46,6 +46,16 @@ export type DriveCoachBrief = {
   labels: string[];
   evidence: string[];
   capabilities: string[];
+};
+
+export type CommandMyDay = {
+  bumperCue: string | null;
+  ourAlliance: "red" | "blue" | null;
+  lodgingLabel: string | null;
+  nextTravelLabel: string | null;
+  onDutyLabel: string | null;
+  checklistPercent: number | null;
+  href: string;
 };
 
 export type CommandSnapshot = {
@@ -67,6 +77,8 @@ export type CommandSnapshot = {
   scoutQueue: ScoutQueueItem[];
   briefs: DriveCoachBrief[];
   pitFlags: PitFlag[];
+  /** Personal next-match / bumper / travel strip. */
+  myDay: CommandMyDay | null;
   prediction: {
     status: "live" | "empty" | "setup_required";
     matchKey: string | null;
@@ -97,6 +109,26 @@ export type CommandSnapshot = {
     pitReports: number;
     openDisagreements: number;
     upcomingUnscouted: number;
+    /** Per-robot rows for now/next/after matches (CD #5 live board). */
+    missingRows: number;
+    assignedWaiting: number;
+    coveredRows: number;
+    doubleCovered: number;
+    liveBoard: Array<{
+      matchKey: string;
+      matchNumber: number;
+      compLevel: string;
+      teamKey: string;
+      teamNumber: number | null;
+      assignmentCount: number;
+      entryCount: number;
+      state: "missing" | "assigned" | "covered" | "double_covered";
+    }>;
+    coordinatorNudge: {
+      status: "skipped" | "sent" | "throttled" | "no_gaps" | "forbidden";
+      missingRows: number;
+      message?: string;
+    } | null;
   };
   links: {
     strategy: string;
@@ -107,5 +139,11 @@ export type CommandSnapshot = {
     teamData: string;
     display: string;
     chemistry: string;
+    pit: string;
+    batteries: string;
+    myDay: string;
+    logistics: string;
+    schedule: string;
+    matchChecklist: string;
   };
 };

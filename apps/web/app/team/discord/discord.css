@@ -1,0 +1,16 @@
+.team-discord-page{display:grid;gap:16px}
+.team-discord-banner{display:grid;gap:10px;padding:18px;border-color:color-mix(in srgb,var(--app-accent) 35%,var(--app-line))}
+.team-discord-banner h2{margin:0;font-size:18px}
+.team-discord-layout{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;align-items:start}
+.team-discord-panel{display:grid;gap:12px;padding:18px}
+.team-discord-panel h2{margin:0;font-size:17px}
+.team-discord-panel textarea{width:100%;min-height:96px;padding:10px 12px;border:1px solid var(--app-line);border-radius:12px;background:var(--app-bg);color:var(--app-ink);font:inherit;resize:vertical}
+.team-discord-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.team-discord-meta{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.team-discord-meta li{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--app-line);border-radius:10px;background:var(--app-bg);font-size:13px}
+.team-discord-meta span{color:var(--app-muted)}
+.team-discord-announce{display:grid;gap:10px;margin-top:8px;padding-top:14px;border-top:1px solid var(--app-line)}
+.team-discord-status{margin:0;font-size:13px;font-weight:600}
+.team-discord-status.ok{color:var(--app-accent)}
+.team-discord-status.err{color:#b42318}
+@media(max-width:900px){.team-discord-layout{grid-template-columns:1fr}}

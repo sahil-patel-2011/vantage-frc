@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { TeamProfilePanel } from "./team-profile-panel";
 import "./team-access-requests.css";
 
 type Invite = {
@@ -275,7 +276,13 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       />
       <TeamOpsNav orgId={orgId} active="admin" />
 
+      <TeamProfilePanel orgId={orgId} />
+
       <nav className="settings-hub" aria-label="Workspace settings">
+        <a href={`/team/background?orgId=${orgId}`}>
+          <strong>Team background</strong>
+          <span>Mission, history, demographics for sponsors</span>
+        </a>
         <a href={`/team/security?orgId=${orgId}`}>
           <strong>Security &amp; delegation</strong>
           <span>Auth policy and API-key powers</span>
@@ -303,6 +310,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <a href={`/team/data?orgId=${orgId}`}>
           <strong>Live data</strong>
           <span>TBA connectors</span>
+        </a>
+        <a href={`/team/discord?orgId=${orgId}`}>
+          <strong>Discord</strong>
+          <span>Guild, announcements, chat bridge</span>
         </a>
         <a href={`#github-connection`}>
           <strong>GitHub</strong>
