@@ -11,7 +11,8 @@ ALTER TABLE user_email_preferences
 UPDATE user_email_preferences SET product_updates = true, updated_at = now()
 WHERE product_updates = false;
 
-CREATE TABLE product_releases (
+-- Idempotent: tables may already exist from a prior partial apply without schema_migrations.
+CREATE TABLE IF NOT EXISTS product_releases (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   slug text NOT NULL,
   title text NOT NULL,
@@ -42,13 +43,13 @@ CREATE TABLE product_releases (
   )
 );
 
-CREATE UNIQUE INDEX product_releases_slug_uq ON product_releases (lower(btrim(slug)));
-CREATE INDEX product_releases_status_sched_idx ON product_releases (status, scheduled_at)
+CREATE UNIQUE INDEX IF NOT EXISTS product_releases_slug_uq ON product_releases (lower(btrim(slug)));
+CREATE INDEX IF NOT EXISTS product_releases_status_sched_idx ON product_releases (status, scheduled_at)
   WHERE status = 'scheduled';
-CREATE INDEX product_releases_published_idx ON product_releases (published_at DESC NULLS LAST)
+CREATE INDEX IF NOT EXISTS product_releases_published_idx ON product_releases (published_at DESC NULLS LAST)
   WHERE status = 'published';
 
-CREATE TABLE product_release_deliveries (
+CREATE TABLE IF NOT EXISTS product_release_deliveries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   release_id uuid NOT NULL REFERENCES product_releases(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -62,9 +63,9 @@ CREATE TABLE product_release_deliveries (
   UNIQUE (release_id, user_id)
 );
 
-CREATE INDEX product_release_deliveries_user_idx ON product_release_deliveries (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS product_release_deliveries_user_idx ON product_release_deliveries (user_id, created_at DESC);
 
-CREATE TABLE product_release_acks (
+CREATE TABLE IF NOT EXISTS product_release_acks (
   release_id uuid NOT NULL REFERENCES product_releases(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   seen_at timestamptz NOT NULL DEFAULT now(),
@@ -75,25 +76,30 @@ ALTER TABLE product_releases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE product_release_deliveries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE product_release_acks ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS product_releases_platform_admin ON product_releases;
 CREATE POLICY product_releases_platform_admin ON product_releases FOR ALL TO vantage_app
   USING (is_platform_admin()) WITH CHECK (is_platform_admin());
 
+DROP POLICY IF EXISTS product_releases_published_read ON product_releases;
 CREATE POLICY product_releases_published_read ON product_releases FOR SELECT TO vantage_app
   USING (status = 'published' AND current_app_user_id() IS NOT NULL);
 
+DROP POLICY IF EXISTS product_release_deliveries_platform ON product_release_deliveries;
 CREATE POLICY product_release_deliveries_platform ON product_release_deliveries FOR ALL TO vantage_app
   USING (is_platform_admin()) WITH CHECK (is_platform_admin());
 
+DROP POLICY IF EXISTS product_release_deliveries_self_read ON product_release_deliveries;
 CREATE POLICY product_release_deliveries_self_read ON product_release_deliveries FOR SELECT TO vantage_app
   USING (user_id = current_app_user_id());
 
+DROP POLICY IF EXISTS product_release_acks_self ON product_release_acks;
 CREATE POLICY product_release_acks_self ON product_release_acks FOR ALL TO vantage_app
   USING (user_id = current_app_user_id())
   WITH CHECK (user_id = current_app_user_id());
 
+DROP POLICY IF EXISTS product_release_acks_platform_read ON product_release_acks;
 CREATE POLICY product_release_acks_platform_read ON product_release_acks FOR SELECT TO vantage_app
   USING (is_platform_admin());
-
 -- Platform admin may fan out product_update inbox rows to any user.
 DROP POLICY IF EXISTS notifications_product_update_platform_insert ON notifications;
 CREATE POLICY notifications_product_update_platform_insert ON notifications FOR INSERT TO vantage_app
