@@ -13,6 +13,13 @@ type OfflineBannerProps = {
   /** Extra note (pending sync counts, read-only edits, etc.). */
   detail?: string;
   className?: string;
+  /**
+   * Show even while navigator.onLine — flaky venue Wi-Fi / outbox backoff.
+   * Pair with variant="syncing" | "degraded".
+   */
+  force?: boolean;
+  /** Visual/copy tone. Default offline (hidden when online unless force). */
+  variant?: "offline" | "syncing" | "degraded";
 };
 
 function formatCachedAt(iso: string | null | undefined): string | null {
@@ -28,7 +35,8 @@ function formatCachedAt(iso: string | null | undefined): string | null {
 }
 
 /**
- * Soft-UI banner for venue Wi-Fi drops. Hidden while online.
+ * Soft-UI banner for venue Wi-Fi drops and flaky sync.
+ * Hidden while online unless `force` (retry/backoff / degraded).
  * Place near PageHeader on offline-capable product pages.
  */
 export function OfflineBanner({
@@ -37,19 +45,37 @@ export function OfflineBanner({
   feature,
   detail,
   className = "",
+  force = false,
+  variant = "offline",
 }: OfflineBannerProps) {
   const online = useOnline();
-  if (online) return null;
+  const tone = force && variant !== "offline" ? variant : "offline";
+  if (online && !force) return null;
 
   const when = formatCachedAt(cachedAt);
-  const title = feature ? `${feature} · offline` : "You're offline";
-  const body = fromCache
-    ? `Showing the last copy saved on this device${when ? ` (${when})` : ""}. Edits that need the server stay paused until you reconnect.`
-    : "This page needs a prior online visit to load from cache. Open it once on venue Wi-Fi, then it will work without signal.";
+  let title: string;
+  let body: string;
+
+  if (tone === "syncing") {
+    title = feature ? `${feature} · syncing` : "Syncing outbox";
+    body =
+      detail ??
+      "Connection is back. Uploading queued scout entries with retry/backoff — keep this page open.";
+  } else if (tone === "degraded") {
+    title = feature ? `${feature} · flaky link` : "Connection flaky";
+    body =
+      detail ??
+      "Venue Wi-Fi is unstable. Entries stay in the on-device outbox; sync retries automatically, or use QR handoff.";
+  } else {
+    title = feature ? `${feature} · offline` : "You're offline";
+    body = fromCache
+      ? `Showing the last copy saved on this device${when ? ` (${when})` : ""}. Edits that need the server stay paused until you reconnect.`
+      : "This page needs a prior online visit to load from cache. Open it once on venue Wi-Fi, then it will work without signal.";
+  }
 
   return (
     <div
-      className={`offline-banner ${className}`.trim()}
+      className={`offline-banner offline-banner--${tone} ${className}`.trim()}
       role="status"
       aria-live="polite"
     >
