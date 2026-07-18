@@ -32,6 +32,26 @@
 .cal-seed-body{display:grid;gap:10px;padding-top:12px}
 .cal-seed-body p{margin:0;font-size:12px}
 .cal-seed-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cal-template-pick{display:grid;gap:6px;font-size:12px;font-weight:600;color:var(--app-muted)}
+.cal-template-pick select{font-weight:500}
+.cal-template-desc{max-width:52rem}
+
+/* Inline edit + workflow links. */
+.cal-item.editing{display:block;padding:14px}
+.cal-edit{display:grid;gap:10px;width:100%}
+.cal-edit-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cal-item-actions{display:grid;gap:6px;justify-items:end;padding-top:2px}
+.cal-workflow-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.cal-workflow-links a{font-size:11px;font-weight:700;color:var(--app-accent);text-decoration:none}
+.cal-workflow-links a:hover{text-decoration:underline}
+
+/* Business / purchase dates (read-only). */
+.cal-linked h2{margin:0 0 6px;font-size:15px}
+.cal-linked>p{margin:0 0 10px;font-size:12px}
+.cal-linked ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.cal-linked li{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 10px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px}
+.cal-linked li a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:inherit;text-decoration:none;min-width:0}
+.cal-linked li a strong{font-size:13px}
 
 /* Month timeline. */
 .cal-month{display:grid;gap:8px}

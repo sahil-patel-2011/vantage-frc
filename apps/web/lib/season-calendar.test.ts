@@ -1,58 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { meetingProvider, optionalMeetingUrl, parseCalendarAction as parseForLinks } from "./season-calendar";
-
-describe("meeting links", () => {
-  it("validates https meeting URLs and rejects junk", () => {
-    expect(optionalMeetingUrl("https://zoom.us/j/123456")).toBe("https://zoom.us/j/123456");
-    expect(optionalMeetingUrl("")).toBeNull();
-    expect(optionalMeetingUrl(null)).toBeNull();
-    expect(() => optionalMeetingUrl("http://zoom.us/j/1")).toThrow(/https/);
-    expect(() => optionalMeetingUrl("not a url")).toThrow(/https/);
-    expect(() => optionalMeetingUrl("https://localhost/x")).toThrow(/full https/);
-  });
-  it("labels known providers", () => {
-    expect(meetingProvider("https://us02web.zoom.us/j/1")).toBe("Zoom");
-    expect(meetingProvider("https://meet.google.com/abc-defg-hij")).toBe("Google Meet");
-    expect(meetingProvider("https://teams.microsoft.com/l/meetup/x")).toBe("Teams");
-    expect(meetingProvider("https://example.com/room")).toBe("Meeting");
-    expect(meetingProvider(null)).toBeNull();
-  });
-  it("threads meetingUrl through add and update actions", () => {
-    const ORG_ID = "11111111-1111-4111-8111-111111111111";
-    const added = parseForLinks({
-      action: "add_milestone",
-      orgId: ORG_ID,
-      title: "Remote strategy meeting",
-      kind: "meeting",
-      startsOn: "2026-02-03",
-      meetingUrl: "https://meet.google.com/abc-defg-hij",
-    });
-    expect(added).toMatchObject({ meetingUrl: "https://meet.google.com/abc-defg-hij" });
-    const updated = parseForLinks({
-      action: "update_milestone",
-      orgId: ORG_ID,
-      id: "22222222-2222-4222-8222-222222222222",
-      patch: { meetingUrl: null },
-    });
-    expect(updated).toMatchObject({ patch: { meetingUrl: null } });
-    expect(() =>
-      parseForLinks({
-        action: "add_milestone",
-        orgId: ORG_ID,
-        title: "x",
-        kind: "meeting",
-        startsOn: "2026-02-03",
-        meetingUrl: "ftp://bad",
-      }),
-    ).toThrow(/https/);
-  });
-});
 import {
   daysUntil,
+  getSeasonTemplate,
   groupByMonth,
+  listSeasonTemplates,
+  meetingProvider,
+  milestoneWorkflowLinks,
   nextUpcoming,
+  optionalMeetingUrl,
   parseCalendarAction,
   SEASON_TEMPLATE,
+  SEASON_TEMPLATES,
   seasonProgress,
   seedFromKickoff,
   type Milestone,
@@ -72,6 +30,7 @@ function milestone(overrides: Partial<Milestone>): Milestone {
     startsOn: "2027-01-30",
     endsOn: null,
     notes: "",
+    meetingUrl: null,
     done: false,
     doneAt: null,
     doneByName: null,
@@ -80,31 +39,125 @@ function milestone(overrides: Partial<Milestone>): Milestone {
   };
 }
 
-describe("SEASON_TEMPLATE", () => {
-  it("spans kickoff through feature freeze with unique ascending offsets", () => {
-    expect(SEASON_TEMPLATE.length).toBe(10);
-    expect(SEASON_TEMPLATE[0]).toMatchObject({ offsetDays: 0, kind: "kickoff" });
-    const offsets = SEASON_TEMPLATE.map((entry) => entry.offsetDays);
-    expect([...offsets].sort((a, b) => a - b)).toEqual(offsets);
-    const titles = SEASON_TEMPLATE.map((entry) => entry.title);
-    expect(new Set(titles).size).toBe(titles.length);
+describe("meeting links", () => {
+  it("validates https meeting URLs and rejects junk", () => {
+    expect(optionalMeetingUrl("https://zoom.us/j/123456")).toBe("https://zoom.us/j/123456");
+    expect(optionalMeetingUrl("")).toBeNull();
+    expect(optionalMeetingUrl(null)).toBeNull();
+    expect(() => optionalMeetingUrl("http://zoom.us/j/1")).toThrow(/https/);
+    expect(() => optionalMeetingUrl("not a url")).toThrow(/https/);
+    expect(() => optionalMeetingUrl("https://localhost/x")).toThrow(/full https/);
+  });
+  it("labels known providers", () => {
+    expect(meetingProvider("https://us02web.zoom.us/j/1")).toBe("Zoom");
+    expect(meetingProvider("https://meet.google.com/abc-defg-hij")).toBe("Google Meet");
+    expect(meetingProvider("https://teams.microsoft.com/l/meetup/x")).toBe("Teams");
+    expect(meetingProvider("https://example.com/room")).toBe("Meeting");
+    expect(meetingProvider(null)).toBeNull();
+  });
+  it("threads meetingUrl through add and update actions", () => {
+    const added = parseCalendarAction({
+      action: "add_milestone",
+      orgId: ORG,
+      title: "Remote strategy meeting",
+      kind: "meeting",
+      startsOn: "2026-02-03",
+      meetingUrl: "https://meet.google.com/abc-defg-hij",
+    });
+    expect(added).toMatchObject({ meetingUrl: "https://meet.google.com/abc-defg-hij" });
+    const updated = parseCalendarAction({
+      action: "update_milestone",
+      orgId: ORG,
+      id: ID,
+      patch: { meetingUrl: null },
+    });
+    expect(updated).toMatchObject({ patch: { meetingUrl: null } });
+    expect(() =>
+      parseCalendarAction({
+        action: "add_milestone",
+        orgId: ORG,
+        title: "x",
+        kind: "meeting",
+        startsOn: "2026-02-03",
+        meetingUrl: "ftp://bad",
+      }),
+    ).toThrow(/https/);
+  });
+});
+
+describe("SEASON_TEMPLATES", () => {
+  it("exposes opt-in packs with unique titles per template", () => {
+    expect(SEASON_TEMPLATES.map((template) => template.id)).toEqual([
+      "build_season",
+      "stop_build_ship",
+      "competition_markers",
+      "outreach",
+      "full_season",
+    ]);
+    for (const template of SEASON_TEMPLATES) {
+      const titles = template.entries.map((entry) => entry.title);
+      expect(new Set(titles).size).toBe(titles.length);
+      const offsets = template.entries.map((entry) => entry.offsetDays);
+      expect([...offsets].sort((a, b) => a - b)).toEqual(offsets);
+    }
+    expect(SEASON_TEMPLATE).toEqual(getSeasonTemplate("build_season").entries);
+    expect(listSeasonTemplates()[0]?.entryCount).toBe(10);
+  });
+
+  it("full_season merges packs without duplicate titles", () => {
+    const full = getSeasonTemplate("full_season");
+    expect(full.entries.length).toBeGreaterThan(10);
+    expect(full.entries.some((entry) => entry.title === "Stop-build / bag day")).toBe(true);
+    expect(full.entries.some((entry) => entry.title === "Week 1 event")).toBe(true);
+    expect(full.entries.some((entry) => entry.kind === "outreach")).toBe(true);
   });
 });
 
 describe("seedFromKickoff", () => {
-  it("dates day 0 on the kickoff date itself", () => {
+  it("dates day 0 on the kickoff date itself for the build template", () => {
     const seeds = seedFromKickoff("2027-01-09");
     expect(seeds.length).toBe(10);
-    expect(seeds[0]).toEqual({ title: "Kickoff & game reveal", kind: "kickoff", startsOn: "2027-01-09" });
+    expect(seeds[0]).toEqual({
+      title: "Kickoff & game reveal",
+      kind: "kickoff",
+      startsOn: "2027-01-09",
+      endsOn: null,
+      notes: "",
+    });
     expect(seeds[1]?.startsOn).toBe("2027-01-10");
   });
 
   it("carries offsets across month boundaries", () => {
     const seeds = seedFromKickoff("2027-01-09");
     const practice = seeds.find((seed) => seed.title === "Drive practice begins");
-    expect(practice?.startsOn).toBe("2027-02-23"); // day 45 crosses into February
+    expect(practice?.startsOn).toBe("2027-02-23");
     const freeze = seeds.find((seed) => seed.title === "Software & auto feature freeze");
-    expect(freeze?.startsOn).toBe("2027-03-02"); // day 52 crosses non-leap February
+    expect(freeze?.startsOn).toBe("2027-03-02");
+  });
+
+  it("applies spanDays and notes for competition markers", () => {
+    const seeds = seedFromKickoff("2027-01-09", "competition_markers");
+    const week1 = seeds.find((seed) => seed.title === "Week 1 event");
+    expect(week1).toMatchObject({
+      kind: "event",
+      startsOn: "2027-03-06",
+      endsOn: "2027-03-08",
+    });
+    expect(week1?.notes).toMatch(/real event/i);
+  });
+
+  it("supports negative offsets for preseason outreach", () => {
+    const seeds = seedFromKickoff("2027-01-09", "outreach");
+    const openHouse = seeds.find((seed) => seed.title === "Preseason recruitment open house");
+    expect(openHouse?.startsOn).toBe("2026-12-10");
+  });
+});
+
+describe("milestoneWorkflowLinks", () => {
+  it("links deadlines to business and costs", () => {
+    const links = milestoneWorkflowLinks({ kind: "deadline" }, ORG);
+    expect(links.some((link) => link.href.includes("/business"))).toBe(true);
+    expect(links.some((link) => link.href.includes("/costs"))).toBe(true);
   });
 });
 
@@ -122,8 +175,8 @@ describe("nextUpcoming", () => {
   it("skips done and past milestones and picks the earliest upcoming", () => {
     const next = nextUpcoming(
       [
-        milestone({ id: "a", startsOn: "2027-01-02" }), // past
-        milestone({ id: "b", startsOn: "2027-01-09", done: true }), // today but done
+        milestone({ id: "a", startsOn: "2027-01-02" }),
+        milestone({ id: "b", startsOn: "2027-01-09", done: true }),
         milestone({ id: "c", startsOn: "2027-01-23" }),
         milestone({ id: "d", startsOn: "2027-01-16" }),
       ],
@@ -180,12 +233,29 @@ describe("seasonProgress", () => {
 });
 
 describe("parseCalendarAction", () => {
-  it("parses seed_season and normalizes the kickoff date", () => {
+  it("parses seed_season with default and explicit template ids", () => {
     expect(parseCalendarAction({ action: "seed_season", orgId: ORG, kickoffDate: "2027-1-9" })).toEqual({
       action: "seed_season",
       orgId: ORG,
       kickoffDate: "2027-01-09",
+      templateId: "build_season",
     });
+    expect(
+      parseCalendarAction({
+        action: "seed_season",
+        orgId: ORG,
+        kickoffDate: "2027-01-09",
+        templateId: "full_season",
+      }),
+    ).toMatchObject({ templateId: "full_season" });
+    expect(() =>
+      parseCalendarAction({
+        action: "seed_season",
+        orgId: ORG,
+        kickoffDate: "2027-01-09",
+        templateId: "fake_pack",
+      }),
+    ).toThrow(/template/i);
   });
 
   it("rejects invalid calendar dates", () => {

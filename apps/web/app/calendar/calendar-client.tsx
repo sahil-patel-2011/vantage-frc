@@ -2,21 +2,26 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
   daysUntil,
   groupByMonth,
   KIND_LABELS,
   meetingProvider,
+  milestoneWorkflowLinks,
   MILESTONE_KINDS,
   nextUpcoming,
   seasonProgress,
   type CalendarView,
+  type LinkedDeadline,
   type Milestone,
   type MilestoneKind,
+  type SeasonTemplateId,
 } from "../../lib/season-calendar";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
+type ReadyView = Extract<CalendarView, { status: "ready" }>;
 
 function fmtDate(iso: string): string {
   const date = new Date(`${iso}T00:00:00`);
@@ -30,17 +35,105 @@ function countdownLabel(days: number): string {
   return `in ${days} days`;
 }
 
+function MilestoneEditor({
+  milestone,
+  orgId,
+  busy,
+  onCancel,
+  onSave,
+}: {
+  milestone: Milestone;
+  orgId: string;
+  busy: boolean;
+  onCancel: () => void;
+  onSave: (body: ActionBody) => Promise<void>;
+}) {
+  const [title, setTitle] = useState(milestone.title);
+  const [kind, setKind] = useState<MilestoneKind>(milestone.kind);
+  const [startsOn, setStartsOn] = useState(milestone.startsOn);
+  const [endsOn, setEndsOn] = useState(milestone.endsOn ?? "");
+  const [notes, setNotes] = useState(milestone.notes);
+  const [meetingUrl, setMeetingUrl] = useState(milestone.meetingUrl ?? "");
+
+  return (
+    <form
+      className="cal-edit"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void onSave({
+          action: "update_milestone",
+          orgId,
+          id: milestone.id,
+          patch: {
+            title: title.trim(),
+            kind,
+            startsOn,
+            endsOn: endsOn || null,
+            notes: notes.trim(),
+            meetingUrl: meetingUrl.trim() || null,
+          },
+        });
+      }}
+    >
+      <FormGrid>
+        <FormRow label="Title">
+          <input value={title} disabled={busy} required maxLength={160} onChange={(event) => setTitle(event.target.value)} />
+        </FormRow>
+        <FormRow label="Kind">
+          <select value={kind} disabled={busy} onChange={(event) => setKind(event.target.value as MilestoneKind)}>
+            {MILESTONE_KINDS.map((option) => (
+              <option key={option} value={option}>
+                {KIND_LABELS[option]}
+              </option>
+            ))}
+          </select>
+        </FormRow>
+        <FormRow label="Starts">
+          <input type="date" value={startsOn} disabled={busy} required onChange={(event) => setStartsOn(event.target.value)} />
+        </FormRow>
+        <FormRow label="Ends">
+          <input type="date" value={endsOn} disabled={busy} onChange={(event) => setEndsOn(event.target.value)} />
+        </FormRow>
+      </FormGrid>
+      <FormRow label="Notes">
+        <input value={notes} disabled={busy} placeholder="Optional notes" onChange={(event) => setNotes(event.target.value)} />
+      </FormRow>
+      <FormRow label="Meeting link">
+        <input
+          value={meetingUrl}
+          disabled={busy}
+          type="url"
+          placeholder="https://… Zoom / Meet / Teams"
+          onChange={(event) => setMeetingUrl(event.target.value)}
+        />
+      </FormRow>
+      <div className="cal-edit-actions">
+        <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsOn}>
+          Save milestone
+        </button>
+        <button type="button" className="app-button secondary" disabled={busy} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function MilestoneRow({
   milestone,
   orgId,
   now,
   busyKey,
+  editingId,
+  setEditingId,
   run,
 }: {
   milestone: Milestone;
   orgId: string;
   now: Date;
   busyKey: string | null;
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
   const busy = busyKey != null;
@@ -48,6 +141,24 @@ function MilestoneRow({
   const classes = ["cal-item"];
   if (milestone.done) classes.push("done");
   if (past) classes.push("past");
+  const links = milestoneWorkflowLinks(milestone, orgId);
+
+  if (editingId === milestone.id) {
+    return (
+      <li className="cal-item editing">
+        <MilestoneEditor
+          milestone={milestone}
+          orgId={orgId}
+          busy={busyKey === `edit:${milestone.id}`}
+          onCancel={() => setEditingId(null)}
+          onSave={async (body) => {
+            await run(body, `edit:${milestone.id}`);
+            setEditingId(null);
+          }}
+        />
+      </li>
+    );
+  }
 
   return (
     <li className={classes.join(" ")}>
@@ -80,21 +191,68 @@ function MilestoneRow({
             ▶ Join {meetingProvider(milestone.meetingUrl) ?? "meeting"}
           </a>
         ) : null}
+        {links.length > 0 ? (
+          <div className="cal-workflow-links">
+            {links.map((link) => (
+              <a key={link.href} href={link.href}>
+                {link.label}
+              </a>
+            ))}
+          </div>
+        ) : null}
       </div>
-      <button
-        type="button"
-        className="cal-link danger"
-        aria-label="Delete milestone"
-        disabled={busy}
-        onClick={() => {
-          if (confirm(`Delete milestone "${milestone.title}"?`)) {
-            void run({ action: "delete_milestone", orgId, id: milestone.id }, `delete:${milestone.id}`);
-          }
-        }}
-      >
-        ✕
-      </button>
+      <div className="cal-item-actions">
+        <button type="button" className="cal-link" disabled={busy} onClick={() => setEditingId(milestone.id)}>
+          Edit
+        </button>
+        <button
+          type="button"
+          className="cal-link danger"
+          aria-label="Delete milestone"
+          disabled={busy}
+          onClick={() => {
+            if (confirm(`Delete milestone "${milestone.title}"?`)) {
+              void run({ action: "delete_milestone", orgId, id: milestone.id }, `delete:${milestone.id}`);
+            }
+          }}
+        >
+          Delete
+        </button>
+      </div>
     </li>
+  );
+}
+
+function LinkedDeadlinesPanel({ items, orgId }: { items: LinkedDeadline[]; orgId: string }) {
+  if (items.length === 0) {
+    return (
+      <Panel className="cal-linked">
+        <h2>Business & purchase dates</h2>
+        <p className="app-muted">
+          Grant deadlines and purchase <em>needed by</em> dates from{" "}
+          <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a> appear here when set — not invented
+          markers. Season spend lives in <a href={`/costs?orgId=${encodeURIComponent(orgId)}`}>Costs</a>.
+        </p>
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel className="cal-linked">
+      <h2>Business & purchase dates</h2>
+      <p className="app-muted">Real dates from Business — open a row to edit there. Not part of the seed templates.</p>
+      <ul>
+        {items.map((item) => (
+          <li key={`${item.source}:${item.id}`}>
+            <a href={item.href}>
+              <strong>{item.title}</strong>
+              <span className="cal-chip kind-deadline">{item.source === "grant" ? "Grant" : "Purchase"}</span>
+            </a>
+            <span className="cal-item-date">{fmtDate(item.dueOn)}</span>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }
 
@@ -103,7 +261,9 @@ export default function CalendarClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [kickoff, setKickoff] = useState("");
+  const [templateId, setTemplateId] = useState<SeasonTemplateId>("build_season");
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<MilestoneKind>("build");
   const [startsOn, setStartsOn] = useState("");
@@ -162,26 +322,23 @@ export default function CalendarClient() {
   if (fetchFailed || !view) {
     return (
       <main className="module-page cal-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Team / Season Calendar</span>
-            <h1>Season Calendar</h1>
-          </div>
-        </header>
+        <PageHeader breadcrumbs="Calendar / Season Calendar" title="Season Calendar" />
         <TeamOpsNav active="calendar" />
-        <div className="app-card cal-empty">
-          {fetchFailed ? (
-            <>
-              <strong>Could not load the season calendar</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
-          ) : (
+        {fetchFailed ? (
+          <EmptyState
+            soft
+            title="Could not load the season calendar"
+            description={error || "Check your connection and try again."}
+          >
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          </EmptyState>
+        ) : (
+          <Panel className="cal-empty">
             <p className="app-muted">Loading season calendar…</p>
-          )}
-        </div>
+          </Panel>
+        )}
       </main>
     );
   }
@@ -189,25 +346,71 @@ export default function CalendarClient() {
   if (view.status === "setup_required") {
     return (
       <main className="module-page cal-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Team / Season Calendar</span>
-            <h1>Season Calendar</h1>
-            <p>Build-season milestones and countdowns from Kickoff through competition.</p>
-          </div>
-        </header>
+        <PageHeader
+          breadcrumbs="Calendar / Season Calendar"
+          title="Season Calendar"
+          description="Build-season milestones and countdowns from Kickoff through competition."
+        />
         <TeamOpsNav active="calendar" />
-        <div className="app-card cal-empty">
-          <strong>Select a team workspace</strong>
-          <p className="app-muted">{view.message}</p>
+        <EmptyState soft title="Select a team workspace" description={view.message}>
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
-        </div>
+        </EmptyState>
       </main>
     );
   }
 
+  return <ReadyCalendar view={view} error={error} busyKey={busyKey} editingId={editingId} setEditingId={setEditingId} run={run} kickoff={kickoff} setKickoff={setKickoff} templateId={templateId} setTemplateId={setTemplateId} title={title} setTitle={setTitle} kind={kind} setKind={setKind} startsOn={startsOn} setStartsOn={setStartsOn} endsOn={endsOn} setEndsOn={setEndsOn} notes={notes} setNotes={setNotes} meetingUrl={meetingUrl} setMeetingUrl={setMeetingUrl} />;
+}
+
+function ReadyCalendar({
+  view,
+  error,
+  busyKey,
+  editingId,
+  setEditingId,
+  run,
+  kickoff,
+  setKickoff,
+  templateId,
+  setTemplateId,
+  title,
+  setTitle,
+  kind,
+  setKind,
+  startsOn,
+  setStartsOn,
+  endsOn,
+  setEndsOn,
+  notes,
+  setNotes,
+  meetingUrl,
+  setMeetingUrl,
+}: {
+  view: ReadyView;
+  error: string;
+  busyKey: string | null;
+  editingId: string | null;
+  setEditingId: (id: string | null) => void;
+  run: (body: ActionBody, key: string) => Promise<void>;
+  kickoff: string;
+  setKickoff: (value: string) => void;
+  templateId: SeasonTemplateId;
+  setTemplateId: (value: SeasonTemplateId) => void;
+  title: string;
+  setTitle: (value: string) => void;
+  kind: MilestoneKind;
+  setKind: (value: MilestoneKind) => void;
+  startsOn: string;
+  setStartsOn: (value: string) => void;
+  endsOn: string;
+  setEndsOn: (value: string) => void;
+  notes: string;
+  setNotes: (value: string) => void;
+  meetingUrl: string;
+  setMeetingUrl: (value: string) => void;
+}) {
   const orgId = view.context.orgId ?? "";
   const milestones = view.milestones;
   const busy = busyKey != null;
@@ -215,6 +418,7 @@ export default function CalendarClient() {
   const next = nextUpcoming(milestones, now);
   const progress = seasonProgress(milestones);
   const months = groupByMonth(milestones);
+  const selectedTemplate = view.templates.find((template) => template.id === templateId) ?? view.templates[0];
 
   const addMilestone = () => {
     if (!title.trim() || !startsOn) return;
@@ -241,18 +445,18 @@ export default function CalendarClient() {
 
   return (
     <main className="module-page cal-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Team / Season Calendar</span>
-          <h1>Season Calendar</h1>
-          <p>
-            Build-season milestones for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — from Kickoff through competition.
-            For practices and subteam schedules, open{" "}
-            <a href={orgId ? `/team/calendar?orgId=${encodeURIComponent(orgId)}` : "/team/calendar"}>Calendar</a>.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        breadcrumbs="Calendar / Season Calendar"
+        title="Season Calendar"
+        description={
+          <>
+            Milestone markers for {view.context.orgName ?? "your team"}
+            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — kickoff, build, stop-build, events,
+            ship deadlines, and outreach. Seed a template, then customize. For timed practices, open{" "}
+            <a href={orgId ? `/team/calendar?orgId=${encodeURIComponent(orgId)}` : "/team/calendar"}>Team Calendar</a>.
+          </>
+        }
+      />
       <TeamOpsNav orgId={orgId} active="calendar" />
 
       {error ? (
@@ -261,7 +465,7 @@ export default function CalendarClient() {
         </p>
       ) : null}
 
-      <section className="app-card cal-hero">
+      <Panel className="cal-hero">
         <div className="cal-hero-next">
           <span className="cal-hero-kicker">Next milestone</span>
           {next ? (
@@ -281,7 +485,7 @@ export default function CalendarClient() {
           ) : (
             <>
               <strong>Nothing upcoming</strong>
-              <span className="app-muted">Seed the build-season template or add a milestone below.</span>
+              <span className="app-muted">Opt into a season template below, or add a milestone.</span>
             </>
           )}
         </div>
@@ -293,15 +497,30 @@ export default function CalendarClient() {
             <i style={{ width: `${progress.percent}%` }} className={progress.total > 0 && progress.done === progress.total ? "done" : undefined} />
           </div>
         </div>
-      </section>
+      </Panel>
 
-      <details className="app-card cal-seed">
-        <summary>Seed build-season template</summary>
+      <Panel as="details" className="cal-seed" open={milestones.length === 0}>
+        <summary>Seed a season template</summary>
         <div className="cal-seed-body">
           <p className="app-muted">
-            Pick your kickoff date — the standard build-season arc (game analysis, design freeze, drivetrain rolling,
-            drive practice, feature freeze) is added relative to it. Milestones that already exist are skipped.
+            Templates are opt-in plans dated from your kickoff — not live TBA stats. Existing titles are skipped so you
+            can layer packs (build + stop-build + outreach) safely.
           </p>
+          <label className="cal-template-pick">
+            <span>Template</span>
+            <select
+              value={templateId}
+              disabled={busy}
+              onChange={(event) => setTemplateId(event.target.value as SeasonTemplateId)}
+            >
+              {view.templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.label} ({template.entryCount})
+                </option>
+              ))}
+            </select>
+          </label>
+          {selectedTemplate ? <p className="app-muted cal-template-desc">{selectedTemplate.description}</p> : null}
           <div className="cal-seed-row">
             <input
               type="date"
@@ -314,19 +533,24 @@ export default function CalendarClient() {
               type="button"
               className="app-button"
               disabled={busy || !kickoff}
-              onClick={() => void run({ action: "seed_season", orgId, kickoffDate: kickoff }, "seed")}
+              onClick={() =>
+                void run({ action: "seed_season", orgId, kickoffDate: kickoff, templateId }, "seed")
+              }
             >
-              Seed build-season template
+              Seed template
             </button>
           </div>
         </div>
-      </details>
+      </Panel>
+
+      <LinkedDeadlinesPanel items={view.linkedDeadlines ?? []} orgId={orgId} />
 
       {months.length === 0 ? (
-        <div className="app-card cal-empty">
-          <strong>No milestones yet</strong>
-          <p className="app-muted">Seed the build-season template from your kickoff date, or add your first milestone below.</p>
-        </div>
+        <EmptyState
+          soft
+          title="No milestones yet"
+          description="Seed a template from your kickoff date, or add your first milestone below."
+        />
       ) : (
         months.map((group) => (
           <section key={group.month} className="cal-month">
@@ -336,50 +560,72 @@ export default function CalendarClient() {
             </h2>
             <ul>
               {group.items.map((milestone) => (
-                <MilestoneRow key={milestone.id} milestone={milestone} orgId={orgId} now={now} busyKey={busyKey} run={run} />
+                <MilestoneRow
+                  key={milestone.id}
+                  milestone={milestone}
+                  orgId={orgId}
+                  now={now}
+                  busyKey={busyKey}
+                  editingId={editingId}
+                  setEditingId={setEditingId}
+                  run={run}
+                />
               ))}
             </ul>
           </section>
         ))
       )}
 
-      <form
-        className="app-card cal-add"
+      <Panel
+        as="form"
+        className="cal-add"
         onSubmit={(event) => {
           event.preventDefault();
           addMilestone();
         }}
       >
         <h2>Add milestone</h2>
-        <div className="cal-add-grid">
+        <FormGrid>
+          <FormRow label="Title">
+            <input
+              value={title}
+              disabled={busy}
+              placeholder="e.g. Week 2 scrimmage"
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          </FormRow>
+          <FormRow label="Kind">
+            <select value={kind} disabled={busy} onChange={(event) => setKind(event.target.value as MilestoneKind)}>
+              {MILESTONE_KINDS.map((option) => (
+                <option key={option} value={option}>
+                  {KIND_LABELS[option]}
+                </option>
+              ))}
+            </select>
+          </FormRow>
+          <FormRow label="Starts">
+            <input type="date" value={startsOn} disabled={busy} onChange={(event) => setStartsOn(event.target.value)} />
+          </FormRow>
+          <FormRow label="Ends">
+            <input type="date" value={endsOn} disabled={busy} onChange={(event) => setEndsOn(event.target.value)} />
+          </FormRow>
+        </FormGrid>
+        <FormRow label="Notes">
+          <input value={notes} disabled={busy} placeholder="Optional" onChange={(event) => setNotes(event.target.value)} />
+        </FormRow>
+        <FormRow label="Meeting link">
           <input
-            value={title}
+            value={meetingUrl}
             disabled={busy}
-            placeholder="Milestone title (e.g. Week 2 scrimmage)"
-            onChange={(event) => setTitle(event.target.value)}
+            type="url"
+            placeholder="Optional Zoom / Meet / Teams URL"
+            onChange={(event) => setMeetingUrl(event.target.value)}
           />
-          <select value={kind} disabled={busy} aria-label="Kind" onChange={(event) => setKind(event.target.value as MilestoneKind)}>
-            {MILESTONE_KINDS.map((option) => (
-              <option key={option} value={option}>
-                {KIND_LABELS[option]}
-              </option>
-            ))}
-          </select>
-          <input type="date" value={startsOn} disabled={busy} aria-label="Start date" onChange={(event) => setStartsOn(event.target.value)} />
-          <input type="date" value={endsOn} disabled={busy} aria-label="End date (optional)" onChange={(event) => setEndsOn(event.target.value)} />
-        </div>
-        <input value={notes} disabled={busy} placeholder="Notes (optional)" onChange={(event) => setNotes(event.target.value)} />
-        <input
-          value={meetingUrl}
-          disabled={busy}
-          type="url"
-          placeholder="Remote join link — Zoom / Google Meet / Teams (optional)"
-          onChange={(event) => setMeetingUrl(event.target.value)}
-        />
+        </FormRow>
         <button type="submit" className="app-button" disabled={busy || !title.trim() || !startsOn}>
           Add milestone
         </button>
-      </form>
+      </Panel>
 
       <AiInsightPanel
         orgId={orgId}

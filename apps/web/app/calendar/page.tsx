@@ -3,7 +3,7 @@ import "./calendar.css";
 
 export const metadata = {
   title: "Season Calendar · Vantage",
-  description: "Build-season milestones, countdowns, and done-tracking from Kickoff through competition.",
+  description: "Opt-in FRC season milestone templates — kickoff, stop-build, events, ship deadlines, outreach — with editable markers.",
 };
 
 export default function CalendarPage() {

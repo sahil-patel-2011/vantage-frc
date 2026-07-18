@@ -3,9 +3,11 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
+  listSeasonTemplates,
   parseCalendarAction,
   seedFromKickoff,
   type CalendarView,
+  type LinkedDeadline,
   type Milestone,
 } from "../../../lib/season-calendar";
 
@@ -32,6 +34,48 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json({ error: error instanceof Error ? error.message : "Calendar request failed" }, { status });
+}
+
+/** Upcoming grant / purchase dates from business — read-only markers, never invented. */
+async function loadLinkedDeadlines(client: PoolClient, orgId: string): Promise<LinkedDeadline[]> {
+  const grants = await client.query<{ id: string; title: string; dueOn: string }>(
+    `SELECT id, name AS title, deadline::text AS "dueOn"
+     FROM grant_opportunities
+     WHERE org_id = $1 AND deadline IS NOT NULL AND deadline >= CURRENT_DATE
+     ORDER BY deadline ASC
+     LIMIT 12`,
+    [orgId],
+  );
+  const purchases = await client.query<{ id: string; title: string; dueOn: string }>(
+    `SELECT id, title, needed_by::text AS "dueOn"
+     FROM purchase_requests
+     WHERE org_id = $1
+       AND needed_by IS NOT NULL
+       AND needed_by >= CURRENT_DATE
+       AND status IS DISTINCT FROM 'rejected'
+     ORDER BY needed_by ASC
+     LIMIT 12`,
+    [orgId],
+  );
+
+  const linked: LinkedDeadline[] = [
+    ...grants.rows.map((row) => ({
+      id: row.id,
+      source: "grant" as const,
+      title: row.title,
+      dueOn: row.dueOn,
+      href: `/business?orgId=${encodeURIComponent(orgId)}`,
+    })),
+    ...purchases.rows.map((row) => ({
+      id: row.id,
+      source: "purchase" as const,
+      title: row.title,
+      dueOn: row.dueOn,
+      href: `/business?orgId=${encodeURIComponent(orgId)}`,
+    })),
+  ];
+  linked.sort((a, b) => a.dueOn.localeCompare(b.dueOn) || a.title.localeCompare(b.title));
+  return linked.slice(0, 16);
 }
 
 export async function GET(request: Request) {
@@ -78,6 +122,14 @@ export async function GET(request: Request) {
         [row.orgId],
       );
 
+      let linkedDeadlines: LinkedDeadline[] = [];
+      try {
+        linkedDeadlines = await loadLinkedDeadlines(client, row.orgId);
+      } catch {
+        // Business tables may be absent in partial local setups — calendar still works.
+        linkedDeadlines = [];
+      }
+
       return {
         status: "ready",
         context: {
@@ -87,6 +139,8 @@ export async function GET(request: Request) {
           role: row.role,
         },
         milestones: milestones.rows,
+        linkedDeadlines,
+        templates: listSeasonTemplates(),
       } satisfies CalendarView;
     });
 
@@ -113,16 +167,16 @@ export async function POST(request: Request) {
           );
           const taken = new Set(existing.rows.map((existingRow) => existingRow.title));
           let added = 0;
-          for (const seed of seedFromKickoff(action.kickoffDate)) {
+          for (const seed of seedFromKickoff(action.kickoffDate, action.templateId)) {
             if (taken.has(seed.title)) continue;
             await client.query(
-              `INSERT INTO season_milestones (org_id, title, kind, starts_on, created_by)
-               VALUES ($1, $2, $3, $4, $5)`,
-              [action.orgId, seed.title, seed.kind, seed.startsOn, userId],
+              `INSERT INTO season_milestones (org_id, title, kind, starts_on, ends_on, notes, created_by)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+              [action.orgId, seed.title, seed.kind, seed.startsOn, seed.endsOn, seed.notes, userId],
             );
             added += 1;
           }
-          return { added };
+          return { added, templateId: action.templateId };
         }
 
         case "add_milestone": {
