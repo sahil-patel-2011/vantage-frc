@@ -29,6 +29,7 @@ describe("cross-feature AI tool graph", () => {
         "cad.design_context",
         "inventory.availability",
         "scouting.team",
+        "scouting.schema",
         "knowledge.search",
         "knowledge.get_page",
         "my_day.summary",
@@ -44,6 +45,7 @@ describe("cross-feature AI tool graph", () => {
         "knowledge.get_page",
         "my_day.summary",
         "scouting.team",
+        "scouting.schema",
       ]),
     );
     expect(ORG_DATA_TOOLS).toEqual(
@@ -56,7 +58,7 @@ describe("cross-feature AI tool graph", () => {
 
   it("documents what each surface can call", () => {
     expect(CROSS_FEATURE_TOOL_GRAPH.chat).toEqual(
-      expect.arrayContaining(["cad.create_brief", "finance.summary", "my_day.summary", "scouting.team"]),
+      expect.arrayContaining(["cad.create_brief", "finance.summary", "my_day.summary", "scouting.team", "scouting.schema"]),
     );
     expect(CROSS_FEATURE_TOOL_GRAPH.cad).toEqual(
       expect.arrayContaining([
@@ -64,15 +66,16 @@ describe("cross-feature AI tool graph", () => {
         "kickoff.intelligence",
         "fmea.open_risks",
         "scouting.team",
+        "scouting.schema",
         "knowledge.search",
         "finance.create_purchase_request",
       ]),
     );
     expect(CROSS_FEATURE_TOOL_GRAPH.strategy).toEqual(
-      expect.arrayContaining(["cad.design_context", "scouting.team", "my_day.summary", "knowledge.search"]),
+      expect.arrayContaining(["cad.design_context", "scouting.team", "scouting.schema", "my_day.summary", "knowledge.search"]),
     );
     expect(CROSS_FEATURE_TOOL_GRAPH.cad_brief).toEqual(
-      expect.arrayContaining(["strategy.match", "scouting.team", "fmea.open_risks", "knowledge.search"]),
+      expect.arrayContaining(["strategy.match", "scouting.team", "scouting.schema", "fmea.open_risks", "knowledge.search"]),
     );
     expect(CROSS_FEATURE_TOOL_GRAPH.context_links["strategy_match→cad_job"]).toBe("informs");
     expect(CROSS_FEATURE_TOOL_GRAPH.context_links["fmea_failure→cad_job"]).toBe("blocks");
@@ -220,6 +223,10 @@ describe("cross-feature AI tool graph", () => {
                 conflictCount: 1,
                 excludedFields: ["climb"],
                 trustedPayload: { autoCoral: 3, teleopCycles: 8 },
+                trustedLabeled: [
+                  { key: "autoCoral", label: "Auto coral", value: 3 },
+                  { key: "teleopCycles", label: "Teleop cycles", value: 8 },
+                ],
               },
             ],
           }),
@@ -229,7 +236,7 @@ describe("cross-feature AI tool graph", () => {
     expect(brief.risks.some((risk) => risk.includes("Elevator"))).toBe(true);
     expect(brief.requirements.some((row) => row.includes("L4"))).toBe(true);
     expect(brief.risks.some((risk) => risk.includes("do not trust climb"))).toBe(true);
-    expect(brief.constraints.some((row) => row.includes("Trusted scout"))).toBe(true);
+    expect(brief.constraints.some((row) => row.includes("Trusted scout") && row.includes("Auto coral"))).toBe(true);
   });
 
   it("turns real inventory and BOM stock into CAD constraints and sourcing risks", () => {

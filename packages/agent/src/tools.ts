@@ -60,6 +60,7 @@ export const SHARED_STRATEGY_CAD_TOOLS = [
   "strategy.design",
   "strategy.match",
   "scouting.team",
+  "scouting.schema",
   "reference.team",
   "fmea.open_risks",
   "fmea.repeat",
@@ -165,7 +166,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
       tool({
         name: "scouting.team",
         description:
-          "Read organization-scoped match + pit scouting with TBA trust provenance. Contradicted climb/mobility/foul fields are stripped from trustedPayload — never treat them as facts.",
+          "Read organization-scoped match + pit scouting with TBA trust provenance and custom form field labels. Contradicted climb/mobility/foul fields are stripped from trustedPayload — never treat them as facts. Prefer trustedLabeled over raw keys when summarizing custom schemas.",
         parseInput: teamInput,
         parseOutput: rowsOutput,
         async execute({ client, orgId, activeEventKey }, input) {
@@ -175,6 +176,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
               entryType: string;
               teamKey: string;
               matchKey: string | null;
+              schemaId: string | null;
               payload: Record<string, unknown>;
               confidence: string | null;
               scoutUserId: string | null;
@@ -182,12 +184,14 @@ export function createVantageToolRegistry(): AIToolRegistry {
             }>(
               `SELECT * FROM (
                  SELECT id, 'match' AS "entryType", team_key AS "teamKey", match_key AS "matchKey",
+                        schema_id::text AS "schemaId",
                         payload, confidence, scout_user_id::text AS "scoutUserId",
                         updated_at AS "updatedAt"
                  FROM match_scout_entries
                  WHERE org_id=$1 AND event_key=$2 AND team_key=$3
                  UNION ALL
                  SELECT id, 'pit' AS "entryType", team_key AS "teamKey", NULL::text AS "matchKey",
+                        schema_id::text AS "schemaId",
                         payload, confidence, scout_user_id::text AS "scoutUserId",
                         updated_at AS "updatedAt"
                  FROM pit_scout_entries
@@ -198,6 +202,71 @@ export function createVantageToolRegistry(): AIToolRegistry {
               [orgId, activeEventKey, input.teamKey],
             )
           ).rows;
+          const schemaIds = [...new Set(entries.map((row) => row.schemaId).filter(Boolean))] as string[];
+          const schemaFields = new Map<string, Array<{ key: string; label: string; type: string }>>();
+          if (schemaIds.length) {
+            try {
+              const schemas = await client.query<{
+                id: string;
+                definition: { fields?: Array<{ key?: string; label?: string; type?: string }> };
+              }>(
+                `SELECT id, schema AS definition FROM scout_schemas
+                 WHERE org_id=$1 AND id = ANY($2::uuid[])`,
+                [orgId, schemaIds],
+              );
+              for (const schema of schemas.rows) {
+                const fields = Array.isArray(schema.definition?.fields)
+                  ? schema.definition.fields
+                      .map((field) => ({
+                        key: String(field.key ?? "").trim(),
+                        label: String(field.label ?? field.key ?? "").trim(),
+                        type: String(field.type ?? "text"),
+                      }))
+                      .filter((field) => field.key)
+                  : [];
+                schemaFields.set(schema.id, fields);
+              }
+            } catch {
+              // Schema table / column may be missing — degrade without labels.
+            }
+          }
+          // Latest published match/pit schemas (form builder) so empty teams still expose field catalog.
+          let publishedCatalog: Array<{
+            type: string;
+            schemaId: string;
+            title: string;
+            fields: Array<{ key: string; label: string; type: string }>;
+          }> = [];
+          try {
+            const published = await client.query<{
+              id: string;
+              type: string;
+              title: string;
+              fields: Array<{ key?: string; label?: string; type?: string }>;
+            }>(
+              `SELECT DISTINCT ON (type)
+                 id, type, COALESCE(schema->>'title', type) AS title,
+                 COALESCE(schema->'fields', '[]'::jsonb) AS fields
+               FROM scout_schemas
+               WHERE org_id=$1
+               ORDER BY type, version DESC`,
+              [orgId],
+            );
+            publishedCatalog = published.rows.map((row) => ({
+              type: row.type,
+              schemaId: row.id,
+              title: row.title,
+              fields: (Array.isArray(row.fields) ? row.fields : [])
+                .map((field) => ({
+                  key: String(field.key ?? "").trim(),
+                  label: String(field.label ?? field.key ?? "").trim(),
+                  type: String(field.type ?? "text"),
+                }))
+                .filter((field) => field.key),
+            }));
+          } catch {
+            publishedCatalog = [];
+          }
           const matchIds = entries.filter((row) => row.entryType === "match").map((row) => row.id);
           const validations = matchIds.length
             ? (
@@ -231,7 +300,13 @@ export function createVantageToolRegistry(): AIToolRegistry {
             const conflictKeys = new Set(
               entryValidations.filter((row) => row.status === "conflict").map((row) => row.fieldKey),
             );
+            const catalog =
+              (entry.schemaId ? schemaFields.get(entry.schemaId) : null) ??
+              publishedCatalog.find((row) => row.type === entry.entryType)?.fields ??
+              [];
+            const labelByKey = new Map(catalog.map((field) => [field.key, field.label || field.key]));
             const trustedPayload: Record<string, unknown> = {};
+            const trustedLabeled: Array<{ key: string; label: string; value: unknown }> = [];
             const excludedFields: string[] = [];
             for (const [key, value] of Object.entries(entry.payload ?? {})) {
               if (conflictKeys.has(key)) {
@@ -239,15 +314,23 @@ export function createVantageToolRegistry(): AIToolRegistry {
                 continue;
               }
               trustedPayload[key] = value;
+              trustedLabeled.push({
+                key,
+                label: labelByKey.get(key) ?? key,
+                value,
+              });
             }
             return {
               id: entry.id,
               entryType: entry.entryType,
               teamKey: entry.teamKey,
               matchKey: entry.matchKey,
+              schemaId: entry.schemaId,
+              fieldCatalog: catalog,
               /** Raw scout payload — may include TBA-contradicted fields; prefer trustedPayload. */
               payload: entry.payload,
               trustedPayload,
+              trustedLabeled,
               excludedFields: excludedFields.sort(),
               tbaValidations: entryValidations.map((row) => ({
                 fieldKey: row.fieldKey,
@@ -261,8 +344,74 @@ export function createVantageToolRegistry(): AIToolRegistry {
               confidence: entry.confidence,
               scoutUserId: entry.scoutUserId,
               updatedAt: entry.updatedAt,
+              publishedSchemas: publishedCatalog,
             };
           });
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "scouting.schema",
+        description:
+          "Read this org's latest published match/pit custom form schemas (form builder field keys, labels, types including drivetrain/robot_image). Empty when no forms are published — never invent DEMO fields.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query<{
+              id: string;
+              year: number;
+              type: string;
+              version: number;
+              title: string;
+              fields: Array<{ key?: string; label?: string; type?: string; options?: string[] }>;
+            }>(
+              `SELECT DISTINCT ON (type)
+                 id, year, type, version,
+                 COALESCE(schema->>'title', type) AS title,
+                 COALESCE(schema->'fields', '[]'::jsonb) AS fields
+               FROM scout_schemas
+               WHERE org_id=$1 AND ($2::int IS NULL OR year=$2)
+               ORDER BY type, version DESC`,
+              [orgId, seasonYear],
+            );
+            if (!rows.rows.length) {
+              return {
+                seasonYear,
+                schemas: [],
+                emptyReason: "No published scouting forms yet — open Form builder to create match/pit schemas.",
+              };
+            }
+            return {
+              seasonYear,
+              schemas: rows.rows.map((row) => ({
+                schemaId: row.id,
+                year: row.year,
+                type: row.type,
+                version: row.version,
+                title: row.title,
+                fields: (Array.isArray(row.fields) ? row.fields : [])
+                  .map((field) => ({
+                    key: String(field.key ?? "").trim(),
+                    label: String(field.label ?? field.key ?? "").trim(),
+                    type: String(field.type ?? "text"),
+                    options: Array.isArray(field.options)
+                      ? field.options.map((option) => String(option)).filter(Boolean)
+                      : undefined,
+                  }))
+                  .filter((field) => field.key),
+              })),
+            };
+          } catch {
+            return {
+              seasonYear,
+              schemas: [],
+              setup_required: true,
+              emptyReason: "Scouting form schemas are not available yet.",
+            };
+          }
         },
       }),
     )
@@ -1394,6 +1543,1114 @@ export function createVantageToolRegistry(): AIToolRegistry {
             )).rows;
           } catch {
             return [];
+          }
+        },
+      }),
+    )
+    // ---------------------------------------------------------------------------
+    // Feature-manifest grounded read-only tools (generated from
+    // apps/web/lib/manifests/*.manifest.ts aiTools). Each is org-scoped, uses only
+    // real columns, and degrades to an empty / setup_required state — never
+    // fabricates rows. Ordered by manifest slug for determinism.
+    // ---------------------------------------------------------------------------
+    .register(
+      tool({
+        name: "alliance_partner_brief.brief",
+        description:
+          "Read this org's generated alliance-partner brief (role, strengths, evidence) for a finalized alliance seed at an event.",
+        parseInput(value) {
+          const input = object(value);
+          const eventKey = String(input.eventKey ?? "").trim().slice(0, 40) || null;
+          const seedRaw = Number(input.allianceSeed ?? input.seed);
+          const allianceSeed =
+            Number.isInteger(seedRaw) && seedRaw > 0 && seedRaw <= 64 ? seedRaw : null;
+          return { eventKey, allianceSeed };
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const eventKey = input.eventKey ?? activeEventKey;
+          if (!eventKey) return { eventKey: null, briefs: [], emptyReason: "no_active_event" };
+          try {
+            const rows = await client.query(
+              `SELECT id, event_key AS "eventKey", alliance_seed AS "allianceSeed",
+                      our_team_key AS "ourTeamKey", partner_team_keys AS "partnerTeamKeys",
+                      partners, created_at AS "createdAt"
+               FROM alliance_partner_brief_briefs
+               WHERE org_id=$1 AND event_key=$2 AND ($3::int IS NULL OR alliance_seed=$3)
+               ORDER BY alliance_seed ASC, created_at DESC
+               LIMIT 20`,
+              [orgId, eventKey, input.allianceSeed],
+            );
+            return { eventKey, briefs: rows.rows };
+          } catch {
+            return { eventKey, briefs: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "budget_reconciler.reports",
+        description:
+          "Read this org's weight/power budget reconciliation runs for the active season — as-designed mass vs. weight limit, current draw vs. summed breaker budget, drift status, and the proposed subsystem to trim with amount and rationale.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, mass_total_lbs::text AS "massTotalLbs", mass_limit_lbs::text AS "massLimitLbs",
+                      mass_drift_lbs::text AS "massDriftLbs", mass_status AS "massStatus",
+                      current_total_amps::text AS "currentTotalAmps",
+                      current_breaker_amps::text AS "currentBreakerAmps",
+                      current_drift_amps::text AS "currentDriftAmps", current_status AS "currentStatus",
+                      trim_subsystem AS "trimSubsystem", trim_amount_lbs::text AS "trimAmountLbs",
+                      rationale, confidence::text AS confidence, created_at AS "createdAt"
+               FROM budget_reconciler_reports
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 20`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, reports: rows.rows };
+          } catch {
+            return { seasonYear, reports: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "code_perf.changes",
+        description:
+          "Read this org's logged commits/software-version/tuning changes for the active season, including the computed before/after match-window correlation (verdict, delta auto/teleop points, rationale).",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, occurred_on AS "occurredOn", change_type AS "changeType", subsystem,
+                      title, commit_sha AS "commitSha", verdict,
+                      delta_auto::text AS "deltaAuto", delta_teleop::text AS "deltaTeleop",
+                      delta_total::text AS "deltaTotal", matches_before AS "matchesBefore",
+                      matches_after AS "matchesAfter", rationale, analyzed_at AS "analyzedAt",
+                      created_at AS "createdAt"
+               FROM code_perf_changes
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY occurred_on DESC, created_at DESC
+               LIMIT 40`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, changes: rows.rows };
+          } catch {
+            return { seasonYear, changes: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "counter_book.reports",
+        description:
+          "Read this org's generated opponent counter-books (tendencies, failure triggers, counter plan) for a team key.",
+        parseInput(value) {
+          const input = object(value);
+          const raw = String(input.teamKey ?? "").trim();
+          const teamKey = raw && /^frc\d+$/.test(raw) ? raw : null;
+          return { teamKey };
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            return (
+              await client.query(
+                `SELECT id, team_key AS "teamKey", team_number AS "teamNumber",
+                        event_key AS "eventKey", title, matches_scouted AS "matchesScouted",
+                        tendencies, failure_triggers AS "failureTriggers",
+                        counter_plan AS "counterPlan", summary, created_at AS "createdAt"
+                 FROM counter_book_reports
+                 WHERE org_id=$1 AND ($2::text IS NULL OR team_key=$2)
+                 ORDER BY created_at DESC
+                 LIMIT 20`,
+                [orgId, input.teamKey],
+              )
+            ).rows;
+          } catch {
+            return [];
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "decision_critic.reviews",
+        description:
+          "Read this org's logged design-decision second opinions for the active season, including the verdict (proceed, proceed with caution, or reconsider), concerns grounded in weight/power headroom and FMEA failure history, confidence, and recorded outcome.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, subsystem_name AS "subsystemName", title, category, verdict,
+                      confidence::text AS confidence, concerns, recommendation, outcome,
+                      weight_added_lbs::text AS "weightAddedLbs",
+                      weight_margin_lbs::text AS "weightMarginLbs",
+                      power_added_amps::text AS "powerAddedAmps",
+                      power_headroom_amps::text AS "powerHeadroomAmps",
+                      chronic_failure_count AS "chronicFailureCount", created_at AS "createdAt"
+               FROM decision_critic_reviews
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 30`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, reviews: rows.rows };
+          } catch {
+            return { seasonYear, reviews: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "decision_search.search",
+        description:
+          "Grounded semantic search over the org's indexed decisions, design reviews, and notebook entries. Ranks by deterministic term overlap; never fabricates a match.",
+        parseInput(value) {
+          const input = object(value);
+          const query = String(input.query ?? "").trim();
+          if (!query) throw new Error("query is required");
+          const limit = Math.min(Math.max(Number(input.limit ?? 8) || 8, 1), 20);
+          return { query: query.slice(0, 200), limit };
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            return (
+              await client.query(
+                `SELECT id::text AS id, source_kind AS "sourceKind", source_id AS "sourceId",
+                        title, left(coalesce(body,''), 280) AS snippet,
+                        season_year AS "seasonYear", tags
+                 FROM decision_search_documents
+                 WHERE org_id=$1::uuid
+                   AND (
+                     to_tsvector('english', coalesce(title,'') || ' ' || coalesce(body,''))
+                       @@ plainto_tsquery('english', $2)
+                     OR title ILIKE '%' || $2 || '%'
+                     OR body ILIKE '%' || $2 || '%'
+                   )
+                 ORDER BY ts_rank(
+                            to_tsvector('english', coalesce(title,'') || ' ' || coalesce(body,'')),
+                            plainto_tsquery('english', $2)
+                          ) DESC, created_at DESC
+                 LIMIT $3`,
+                [orgId, input.query, input.limit],
+              )
+            ).rows;
+          } catch {
+            return [];
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "defense_planner.matchups",
+        description:
+          "Read this org's scouted defensive matchups (opponent mass/drivetrain/cycle path) and the computed play/stay-offense recommendation for the active season.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, opponent_team_number AS "opponentTeamNumber",
+                      opponent_team_name AS "opponentTeamName", event_key AS "eventKey",
+                      opponent_mass_lbs::text AS "opponentMassLbs",
+                      opponent_drivetrain_type AS "opponentDrivetrainType",
+                      opponent_cycle_time_sec::text AS "opponentCycleTimeSec",
+                      opponent_cycle_path AS "opponentCyclePath",
+                      recommendation, assigned_defender AS "assignedDefender",
+                      confidence::text AS confidence, rationale, updated_at AS "updatedAt"
+               FROM defense_planner_matchups
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY updated_at DESC
+               LIMIT 30`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, matchups: rows.rows };
+          } catch {
+            return { seasonYear, matchups: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "impact_essay.draft",
+        description:
+          "Read this org's grounded FIRST Impact / Engineering Inspiration essay drafts and the underlying record counts (outreach activities, build hours, sponsors, team events) each draft cites.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, award, prompt, essay_text AS "essayText",
+                      word_count AS "wordCount", citations, created_at AS "createdAt"
+               FROM impact_essay_drafts
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 10`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, drafts: rows.rows };
+          } catch {
+            return { seasonYear, drafts: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "inspection_copilot.checks",
+        description:
+          "Read this org's inspection-readiness checks for the active season, including predicted failures (weight/bumper/frame-perimeter/breaker/battery/wiring/radio faults) with risk score.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, robot_name AS "robotName", weight_budget AS "weightBudget",
+                      frame_bumper AS "frameBumper", wiring_power AS "wiringPower", flags,
+                      risk_score::text AS "riskScore", total_weight_lbs::text AS "totalWeightLbs",
+                      summary, updated_at AS "updatedAt"
+               FROM inspection_copilot_checks
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY updated_at DESC
+               LIMIT 20`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, checks: rows.rows };
+          } catch {
+            return { seasonYear, checks: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "judge_sim.sessions",
+        description:
+          "Read this org's graded judge Q&A practice sessions for the active season, including the question, category, verdict (well backed, partially backed, or unbacked), confidence, and any claims flagged as unbacked by logged evidence.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, category, question, answer_text AS "answerText", verdict,
+                      confidence::text AS confidence, backed_claims AS "backedClaims",
+                      flagged_claims AS "flaggedClaims", feedback, created_at AS "createdAt"
+               FROM judge_sim_sessions
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 30`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, sessions: rows.rows };
+          } catch {
+            return { seasonYear, sessions: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "judge_sim.evidence",
+        description:
+          "Read this org's logged judge-pitch evidence — the facts, numbers, and outcomes the team can point to when answering judging questions, grouped by category.",
+        parseInput(value) {
+          const input = object(value);
+          const category = String(input.category ?? "").trim().slice(0, 40) || null;
+          return { category };
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            return (
+              await client.query(
+                `SELECT id, title, claim, category, source_url AS "sourceUrl",
+                        occurred_on AS "occurredOn", tags, created_at AS "createdAt"
+                 FROM judge_sim_evidence
+                 WHERE org_id=$1 AND ($2::text IS NULL OR category=$2)
+                 ORDER BY category ASC, created_at DESC
+                 LIMIT 40`,
+                [orgId, input.category],
+              )
+            ).rows;
+          } catch {
+            return [];
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "knowledge_gap.scan_summary",
+        description:
+          "Grounded read of the latest knowledge-gap scan for the org's active season: coverage score and the list of undocumented subsystems/decisions/events, with no invented rows.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const scan = await client.query<{ id: string }>(
+              `SELECT id, subsystem_count AS "subsystemCount", decision_count AS "decisionCount",
+                      event_count AS "eventCount", page_count AS "pageCount",
+                      gap_count AS "gapCount", coverage_score::text AS "coverageScore",
+                      summary, created_at AS "createdAt"
+               FROM knowledge_gap_scans
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 1`,
+              [orgId, seasonYear],
+            );
+            const row = scan.rows[0];
+            if (!row) return { seasonYear, scan: null, gaps: [] };
+            const items = await client.query(
+              `SELECT id, subject_kind AS "subjectKind", subject_ref AS "subjectRef",
+                      reason, suggested_template AS "suggestedTemplate", status
+               FROM knowledge_gap_items
+               WHERE org_id=$1 AND scan_id=$2 AND status='open'
+               ORDER BY created_at ASC
+               LIMIT 60`,
+              [orgId, row.id],
+            );
+            return { seasonYear, scan: row, gaps: items.rows };
+          } catch {
+            return { seasonYear, scan: null, gaps: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "match_copilot.brief",
+        description:
+          "Grounded read of the next-match brief: opponent scouting/EPA, our stored strategy plan, open FMEA risks, and battery fleet health fused into prioritized do-this callouts.",
+        parseInput(value) {
+          const input = object(value);
+          const matchKey = String(input.matchKey ?? "").trim().slice(0, 100) || null;
+          return { matchKey };
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            const rows = await client.query(
+              `SELECT id, match_key AS "matchKey", alliance, callouts,
+                      generated_by AS "generatedBy", created_at AS "createdAt"
+               FROM match_copilot_briefs
+               WHERE org_id=$1 AND ($2::text IS NULL OR match_key=$2)
+               ORDER BY created_at DESC
+               LIMIT 10`,
+              [orgId, input.matchKey],
+            );
+            return { matchKey: input.matchKey, briefs: rows.rows };
+          } catch {
+            return { matchKey: input.matchKey, briefs: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "media_kit.profile",
+        description:
+          "Read this org's recorded media-kit team profile for a season — mission statement, bio, founded year, achievements, and contact info.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT mission_statement AS "missionStatement", team_bio AS "teamBio",
+                      founded_year AS "foundedYear", achievements,
+                      contact_email AS "contactEmail", website_url AS "websiteUrl",
+                      updated_at AS "updatedAt"
+               FROM media_kit_profiles
+               WHERE org_id=$1 AND season_year=$2
+               LIMIT 1`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, profile: rows.rows[0] ?? null };
+          } catch {
+            return { seasonYear, profile: null, setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "media_kit.one_pagers",
+        description:
+          "Read this org's generated media-kit one-pager documents for a season, built only from the recorded profile and asset library.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, title, sections, created_at AS "createdAt"
+               FROM media_kit_documents
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 20`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, documents: rows.rows };
+          } catch {
+            return { seasonYear, documents: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "meeting_autopilot.agenda",
+        description:
+          "Read-only: the ranked meeting agenda grounded in open blockers, overdue tasks, unresolved decisions, and open FMEA for the org's active season.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, title, meeting_on AS "meetingOn", agenda_items AS "agendaItems",
+                      blocker_count AS "blockerCount", overdue_task_count AS "overdueTaskCount",
+                      decision_count AS "decisionCount", fmea_count AS "fmeaCount",
+                      status, updated_at AS "updatedAt"
+               FROM meeting_autopilot_agendas
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 10`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, agendas: rows.rows };
+          } catch {
+            return { seasonYear, agendas: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "meeting_autopilot.action_items",
+        description: "Read-only: action items deterministically drafted from a meeting's post-meeting minutes.",
+        parseInput(value) {
+          const input = object(value);
+          const raw = String(input.agendaId ?? "").trim();
+          const agendaId = /^[0-9a-f-]{36}$/i.test(raw) ? raw : null;
+          return { agendaId };
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            return (
+              await client.query(
+                `SELECT id, agenda_id AS "agendaId", title, owner, due_on AS "dueOn",
+                        status, source_excerpt AS "sourceExcerpt", created_at AS "createdAt"
+                 FROM meeting_autopilot_action_items
+                 WHERE org_id=$1 AND ($2::uuid IS NULL OR agenda_id=$2::uuid)
+                 ORDER BY created_at DESC
+                 LIMIT 40`,
+                [orgId, input.agendaId],
+              )
+            ).rows;
+          } catch {
+            return [];
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "mock_judging.sessions",
+        description:
+          "Read this org's rubric-scored mock judging practice sessions for the active season, including the award category, question, answer, per-criterion scores, strengths, and improvement suggestions.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, award_category AS "awardCategory", question, answer_text AS "answerText",
+                      criteria_scores AS "criteriaScores", overall_score::text AS "overallScore",
+                      strengths, improvements, feedback, created_at AS "createdAt"
+               FROM mock_judging_sessions
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 30`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, sessions: rows.rows };
+          } catch {
+            return { seasonYear, sessions: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "mock_judging.prep_notes",
+        description:
+          "Read this org's logged mock-judging prep notes — the talking points and facts the team can point to for judges, grouped by award category.",
+        parseInput(value) {
+          const input = object(value);
+          const awardCategory = String(input.awardCategory ?? input.category ?? "").trim().slice(0, 40) || null;
+          return { awardCategory };
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            return (
+              await client.query(
+                `SELECT id, title, note, award_category AS "awardCategory", tags, created_at AS "createdAt"
+                 FROM mock_judging_prep_notes
+                 WHERE org_id=$1 AND ($2::text IS NULL OR award_category=$2)
+                 ORDER BY award_category ASC, created_at DESC
+                 LIMIT 40`,
+                [orgId, input.awardCategory],
+              )
+            ).rows;
+          } catch {
+            return [];
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "onboarding_buddy.pairings",
+        description:
+          "Read this org's onboarding buddy pairings: which new members are paired with which tenured buddy, pairing status, and first-week plan progress.",
+        parseInput(value) {
+          object(value);
+          return {};
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }) {
+          try {
+            return (
+              await client.query(
+                `SELECT p.id, p.new_member_id::text AS "newMemberId", nm.name AS "newMemberName",
+                        p.buddy_id::text AS "buddyId", bud.name AS "buddyName",
+                        p.status, p.paired_at AS "pairedAt",
+                        count(pi.id)::int AS "planItemCount",
+                        count(pi.id) FILTER (WHERE pi.done)::int AS "planItemsDone"
+                 FROM onboarding_buddy_pairings p
+                 LEFT JOIN users nm ON nm.id = p.new_member_id
+                 LEFT JOIN users bud ON bud.id = p.buddy_id
+                 LEFT JOIN onboarding_buddy_plan_items pi ON pi.pairing_id = p.id AND pi.org_id = p.org_id
+                 WHERE p.org_id=$1
+                 GROUP BY p.id, nm.name, bud.name
+                 ORDER BY p.paired_at DESC
+                 LIMIT 40`,
+                [orgId],
+              )
+            ).rows;
+          } catch {
+            return [];
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "overnight_intel.latest_brief",
+        description:
+          "Grounded read of the org's most recent overnight event-intel brief — new research findings, EPA movers, and new scouting for the active event.",
+        parseInput(value) {
+          const input = object(value);
+          const eventKey = String(input.eventKey ?? "").trim().slice(0, 40) || null;
+          return { eventKey };
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const eventKey = input.eventKey ?? activeEventKey;
+          if (!eventKey) return { eventKey: null, brief: null, emptyReason: "no_active_event" };
+          try {
+            const rows = await client.query(
+              `SELECT id, event_key AS "eventKey", season_year AS "seasonYear",
+                      brief_date AS "briefDate", summary,
+                      research_highlights AS "researchHighlights", epa_movers AS "epaMovers",
+                      scouting_highlights AS "scoutingHighlights", created_at AS "createdAt"
+               FROM overnight_intel_briefs
+               WHERE org_id=$1 AND event_key=$2
+               ORDER BY brief_date DESC, created_at DESC
+               LIMIT 1`,
+              [orgId, eventKey],
+            );
+            return { eventKey, brief: rows.rows[0] ?? null };
+          } catch {
+            return { eventKey, brief: null, setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "picklist_justifier.entries",
+        description:
+          "Read this org's generated pick-list justifications (source-cited rationale + TBA contradiction flags) for a pick list.",
+        parseInput(value) {
+          const input = object(value);
+          const raw = String(input.pickListId ?? "").trim();
+          const pickListId = /^[0-9a-f-]{36}$/i.test(raw) ? raw : null;
+          return { pickListId };
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            return (
+              await client.query(
+                `SELECT id, pick_list_id AS "pickListId", team_key AS "teamKey", rationale,
+                        sources, contradiction_flagged AS "contradictionFlagged",
+                        contradiction_reason AS "contradictionReason", created_at AS "createdAt"
+                 FROM picklist_justifier_justifications
+                 WHERE org_id=$1 AND ($2::uuid IS NULL OR pick_list_id=$2::uuid)
+                 ORDER BY created_at DESC
+                 LIMIT 40`,
+                [orgId, input.pickListId],
+              )
+            ).rows;
+          } catch {
+            return [];
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "pit_repair_triage.reports",
+        description:
+          "Read this org's logged pit-repair failures for the active season, including the FMEA-history + spares-inventory + remaining-match-time triage decision (fix, swap, or monitor), confidence, and pre-stage recommendation.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, subsystem_name AS "subsystemName", title, symptom_note AS "symptomNote",
+                      minutes_until_next_match AS "minutesUntilNextMatch", severity,
+                      prior_failure_count AS "priorFailureCount",
+                      spares_available::text AS "sparesAvailable", decision,
+                      confidence::text AS confidence, rationale,
+                      prestage_recommended AS "prestageRecommended", status,
+                      created_at AS "createdAt"
+               FROM pit_repair_triage_reports
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 30`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, reports: rows.rows };
+          } catch {
+            return { seasonYear, reports: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "prototype_tracker.decisions",
+        description:
+          "Read this org's logged prototype tests (hypothesis, outcome, metric vs. target) and the decision records + notebook entries drafted from them, including recommendation (adopt, iterate, reject, needs more data) and confidence.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT d.id, d.decision_title AS "decisionTitle", d.recommendation,
+                      d.confidence::text AS confidence, d.decision_record AS "decisionRecord",
+                      d.status, t.id AS "testId", t.subsystem_name AS "subsystemName",
+                      t.title AS "testTitle", t.hypothesis, t.outcome,
+                      t.metric_label AS "metricLabel", t.metric_value::text AS "metricValue",
+                      t.metric_target::text AS "metricTarget", d.created_at AS "createdAt"
+               FROM prototype_tracker_decisions d
+               JOIN prototype_tracker_tests t ON t.id = d.test_id AND t.org_id = d.org_id
+               WHERE d.org_id=$1 AND t.season_year=$2
+               ORDER BY d.created_at DESC
+               LIMIT 30`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, decisions: rows.rows };
+          } catch {
+            return { seasonYear, decisions: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "readiness_score.index",
+        description:
+          "Read this org's grounded ship-readiness index for the active season: subsystem wiring + code-version state, weight/power headroom against FRC budgets, bring-up checklist completion, open FMEA clearance, and the severity-ordered fix list.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const subsystems = await client.query(
+              `SELECT id, name, weight_lbs::text AS "weightLbs", power_draw_amps::text AS "powerDrawAmps",
+                      wiring_status AS "wiringStatus", code_version_status AS "codeVersionStatus",
+                      health_score::text AS "healthScore", updated_at AS "updatedAt"
+               FROM readiness_score_subsystems
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY health_score ASC, name ASC
+               LIMIT 60`,
+              [orgId, seasonYear],
+            );
+            const checklist = await client.query<{ total: string; done: string }>(
+              `SELECT count(*)::text AS total,
+                      count(*) FILTER (WHERE is_complete)::text AS done
+               FROM readiness_score_checklist_items
+               WHERE org_id=$1 AND season_year=$2`,
+              [orgId, seasonYear],
+            );
+            const c = checklist.rows[0];
+            return {
+              seasonYear,
+              subsystems: subsystems.rows,
+              checklist: {
+                total: Number(c?.total ?? 0) || 0,
+                complete: Number(c?.done ?? 0) || 0,
+              },
+            };
+          } catch {
+            return { seasonYear, subsystems: [], checklist: { total: 0, complete: 0 }, setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "retro.postmortem",
+        description:
+          "Read this org's auto-compiled season postmortem: counted decisions, risks, safety incidents, and FMEA failures, plus retro action-item follow-through, with a grounded narrative summary.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, narrative, counts, created_at AS "createdAt"
+               FROM retro_postmortems
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 1`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, postmortem: rows.rows[0] ?? null };
+          } catch {
+            return { seasonYear, postmortem: null, setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "reuse_advisor.assessments",
+        description:
+          "Read this org's cross-season subsystem reuse assessments for the active design season, including the prior-season FMEA-failure-history + design-review-track-record grounded recommendation (reuse, modify, or avoid), confidence, and rationale.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, subsystem_name AS "subsystemName", category,
+                      source_season_year AS "sourceSeasonYear",
+                      fmea_failure_count AS "fmeaFailureCount",
+                      fmea_high_severity_count AS "fmeaHighSeverityCount",
+                      design_review_count AS "designReviewCount",
+                      design_review_pass_count AS "designReviewPassCount",
+                      recommendation, confidence::text AS confidence, rationale, status,
+                      updated_at AS "updatedAt"
+               FROM reuse_advisor_assessments
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY updated_at DESC
+               LIMIT 30`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, assessments: rows.rows };
+          } catch {
+            return { seasonYear, assessments: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "rule_impact.assessments",
+        description:
+          "Read this org's kickoff rule-change log and the resulting still-legal/needs-rework/blocked impact assessments for prior-season subsystems in the active design season, grounded only in logged rule changes matched to the subsystem library.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const assessments = await client.query(
+              `SELECT id, subsystem_name AS "subsystemName", category,
+                      matched_rule_count AS "matchedRuleCount",
+                      blocking_rule_count AS "blockingRuleCount",
+                      major_rule_count AS "majorRuleCount",
+                      impact_status AS "impactStatus", confidence::text AS confidence,
+                      rationale, status, updated_at AS "updatedAt"
+               FROM rule_impact_assessments
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY updated_at DESC
+               LIMIT 30`,
+              [orgId, seasonYear],
+            );
+            const ruleChanges = await client.query(
+              `SELECT id, rule_code AS "ruleCode", title, category, severity,
+                      subsystem_category AS "subsystemCategory", summary, source_url AS "sourceUrl"
+               FROM rule_impact_rule_changes
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 40`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, assessments: assessments.rows, ruleChanges: ruleChanges.rows };
+          } catch {
+            return { seasonYear, assessments: [], ruleChanges: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "season_report.snapshots",
+        description:
+          "Read this org's generated season retrospective snapshots — narrative sections for build reliability, results, budget, and outreach synthesized only from logged entries, plus highlights, watchouts, and coverage completeness for the season.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, completeness::text AS completeness, narrative, highlights, watchouts,
+                      entry_count AS "entryCount", created_at AS "createdAt"
+               FROM season_report_snapshots
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY created_at DESC
+               LIMIT 10`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, snapshots: rows.rows };
+          } catch {
+            return { seasonYear, snapshots: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "sketch_to_brief.draft",
+        description:
+          "Grounded read of a transcribed kickoff whiteboard sketch fused with the org's own answered kickoff rule notes, open rule questions, design priorities, and scoring actions into a first-pass CAD brief with rule-compliance flags.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT b.id, b.title, b.brief, b.rule_flag_count AS "ruleFlagCount",
+                      b.generated_by AS "generatedBy", b.created_at AS "createdAt",
+                      s.id AS "sketchId", s.title AS "sketchTitle", s.category, s.notes,
+                      s.season_year AS "seasonYear"
+               FROM sketch_to_brief_briefs b
+               JOIN sketch_to_brief_sketches s ON s.id = b.sketch_id AND s.org_id = b.org_id
+               WHERE b.org_id=$1 AND s.season_year=$2
+               ORDER BY b.created_at DESC
+               LIMIT 20`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, briefs: rows.rows };
+          } catch {
+            return { seasonYear, briefs: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "skills_graph.mentor_matches",
+        description:
+          "Grounded read of declared team skills, completed-task evidence, and ranked mentor matches for open requests.",
+        parseInput(value) {
+          object(value);
+          return {};
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId }) {
+          try {
+            const requests = await client.query(
+              `SELECT r.id, r.requester_user_id::text AS "requesterUserId", req.name AS "requesterName",
+                      r.skill_category AS "skillCategory", r.note, r.status,
+                      r.matched_user_id::text AS "matchedUserId", m.name AS "matchedUserName",
+                      r.matched_rationale AS "matchedRationale", r.updated_at AS "updatedAt"
+               FROM skills_graph_mentor_requests r
+               LEFT JOIN users req ON req.id = r.requester_user_id
+               LEFT JOIN users m ON m.id = r.matched_user_id
+               WHERE r.org_id=$1
+               ORDER BY CASE r.status WHEN 'open' THEN 0 WHEN 'matched' THEN 1 ELSE 2 END,
+                        r.updated_at DESC
+               LIMIT 30`,
+              [orgId],
+            );
+            const skills = await client.query(
+              `SELECT e.id, e.user_id::text AS "userId", u.name AS "userName",
+                      e.skill_category AS "skillCategory", e.custom_label AS "customLabel",
+                      e.proficiency, e.evidence_note AS "evidenceNote"
+               FROM skills_graph_entries e
+               LEFT JOIN users u ON u.id = e.user_id
+               WHERE e.org_id=$1
+               ORDER BY e.created_at DESC
+               LIMIT 60`,
+              [orgId],
+            );
+            return { mentorRequests: requests.rows, skills: skills.rows };
+          } catch {
+            return { mentorRequests: [], skills: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "spare_robot_kit.checklists",
+        description:
+          "Read this org's competition spare-parts kit checklists for the active season — candidate items derived from crossing inventory spare bins against FMEA repeat-failure history, with pack priority, recommended quantity, and pack status.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, title, status, items, rationale,
+                      created_at AS "createdAt", updated_at AS "updatedAt"
+               FROM spare_robot_kit_checklists
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY updated_at DESC
+               LIMIT 20`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, checklists: rows.rows };
+          } catch {
+            return { seasonYear, checklists: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "standup_digest.brief",
+        description:
+          "Read this org's compiled morning standup digest for a given date: logged hours, task movement (completed/blocked/created), open blockers, attendance, and knowledge-page edits, grouped by subteam.",
+        parseInput(value) {
+          const input = object(value);
+          const raw = String(input.digestDate ?? input.date ?? "").trim();
+          const digestDate = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null;
+          return { digestDate };
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            const rows = await client.query(
+              `SELECT id, digest_date AS "digestDate", season_year AS "seasonYear",
+                      summary, headline, created_at AS "createdAt"
+               FROM standup_digest_runs
+               WHERE org_id=$1 AND ($2::date IS NULL OR digest_date=$2::date)
+               ORDER BY digest_date DESC
+               LIMIT 1`,
+              [orgId, input.digestDate],
+            );
+            return { digest: rows.rows[0] ?? null };
+          } catch {
+            return { digest: null, setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "tuning_autopilot.sessions",
+        description:
+          "Read this org's logged PID/feedforward tuning sessions for the active season, including each iteration's gain set, observed test result (overshoot, settling time, steady-state error, oscillation), and the deterministic next-gain suggestion derived from that session's own logged trend.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT s.id, s.subsystem, s.controller_type AS "controllerType", s.goal, s.status,
+                      s.updated_at AS "updatedAt",
+                      coalesce(it.iterations, '[]'::jsonb) AS iterations
+               FROM tuning_autopilot_sessions s
+               LEFT JOIN LATERAL (
+                 SELECT jsonb_agg(jsonb_build_object(
+                          'iterationIndex', i.iteration_index,
+                          'kP', i.k_p, 'kI', i.k_i, 'kD', i.k_d,
+                          'kS', i.k_s, 'kV', i.k_v, 'kG', i.k_g,
+                          'overshootPct', i.overshoot_pct,
+                          'settlingTimeSec', i.settling_time_sec,
+                          'steadyStateError', i.steady_state_error,
+                          'oscillating', i.oscillating, 'notes', i.notes
+                        ) ORDER BY i.iteration_index) AS iterations
+                 FROM tuning_autopilot_iterations i
+                 WHERE i.session_id = s.id AND i.org_id = s.org_id
+               ) it ON true
+               WHERE s.org_id=$1 AND s.season_year=$2
+               ORDER BY s.updated_at DESC
+               LIMIT 20`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, sessions: rows.rows };
+          } catch {
+            return { seasonYear, sessions: [], setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "wiring_diagnoser.checks",
+        description:
+          "Read this org's wiring-diagram vs board-observation checks for the active season, including flagged miswires, undersized breakers, wire-undersized-for-breaker faults, and over-spec channels with risk score.",
+        parseInput: seasonInput,
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
+          try {
+            const rows = await client.query(
+              `SELECT id, board_name AS "boardName", expected_circuits AS "expectedCircuits",
+                      observed_circuits AS "observedCircuits", flags,
+                      risk_score::text AS "riskScore", summary, updated_at AS "updatedAt"
+               FROM wiring_diagnoser_checks
+               WHERE org_id=$1 AND season_year=$2
+               ORDER BY updated_at DESC
+               LIMIT 20`,
+              [orgId, seasonYear],
+            );
+            return { seasonYear, checks: rows.rows };
+          } catch {
+            return { seasonYear, checks: [], setup_required: true };
           }
         },
       }),

@@ -74,6 +74,7 @@ const KNOWN_FEATURES = [
 const KNOWN_TOOLS = [
   "reference.team",
   "scouting.team",
+  "scouting.schema",
   "strategy.match",
   "strategy.design",
   "research.findings",
