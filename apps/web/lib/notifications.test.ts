@@ -18,6 +18,17 @@ describe("notification helpers", () => {
     expect(
       notificationHref("message_mention", { conversationId: "c1" }, "org-1"),
     ).toBe("/messages?orgId=org-1&conversationId=c1");
+    expect(notificationHref("todo_assigned", { todoId: "t-1" }, "org-1")).toBe(
+      "/todos?orgId=org-1&todoId=t-1",
+    );
+    expect(notificationHref("todo_completed", {}, "org-1")).toBe("/todos?orgId=org-1");
+    expect(notificationHref("duty_assigned", { dutyId: "d-1" }, "org-1")).toBe(
+      "/team/calendar?orgId=org-1&dutyId=d-1",
+    );
+    expect(notificationHref("calendar_event", { eventId: "e-1" }, "org-1")).toBe(
+      "/team/calendar?orgId=org-1&eventId=e-1",
+    );
+    expect(notificationHref("calendar_updated", {}, "org-1")).toBe("/team/calendar?orgId=org-1");
     expect(notificationHref("unknown", {})).toBeNull();
     expect(notificationHref("x", { href: "/custom" })).toBe("/custom");
   });
