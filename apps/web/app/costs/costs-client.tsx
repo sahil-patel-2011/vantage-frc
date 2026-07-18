@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BusinessRelated } from "../../components/business-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { COSTS_RELATED_INCLUDE } from "../../lib/business/business-related";
+import { costsNextActions } from "../../lib/business/costs-next-actions";
 import { costCategoryLabel, subscriptionCadenceLabel, usd } from "../../lib/costs";
 import {
   COST_CATEGORIES,
@@ -9,6 +12,11 @@ import {
   SUBSCRIPTION_CADENCES,
   type CostsView,
 } from "../../lib/costs/compute-costs";
+import {
+  costsRelatedLinks,
+  formatBudgetPctDisplay,
+  formatCostUsdDisplay,
+} from "../../lib/costs/costs-related";
 import type {
   BudgetStatus,
   CostCategory,
@@ -17,6 +25,9 @@ import type {
   SubscriptionCadence,
   SubscriptionWithAnnual,
 } from "../../lib/costs/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./costs.css";
 
 type LiveView = Extract<CostsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -32,6 +43,68 @@ function statusTone(status: BudgetStatus): string {
   if (status === "watch") return "#b26a00";
   if (status === "healthy") return "#1f7a3d";
   return "inherit";
+}
+
+function CostsRelated({ orgId }: { orgId: string }) {
+  const primary = costsRelatedLinks(orgId, { include: ["orders", "fundraisers", "budget"] });
+  return (
+    <div className="costs-related">
+      <nav className="product-hub-related costs-hub-related" aria-label="Related business tools">
+        {primary.map((link) => (
+          <a key={link.id} className="app-button secondary" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
+      <BusinessRelated orgId={orgId} include={[...COSTS_RELATED_INCLUDE]} />
+    </div>
+  );
+}
+
+function NextActions({
+  orgId,
+  seasonYear,
+  costCount,
+  subscriptionCount,
+  budgetUsd,
+  overBudget,
+}: {
+  orgId?: string | null;
+  seasonYear?: number;
+  costCount: number;
+  subscriptionCount: number;
+  budgetUsd: number | null;
+  overBudget: boolean;
+}) {
+  const actions = costsNextActions({
+    orgId,
+    seasonYear,
+    costCount,
+    subscriptionCount,
+    budgetUsd,
+    overBudget,
+  });
+  return (
+    <section className="costs-next-actions app-card soft-panel" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>From logged season costs and subscriptions only — remaining and % stay blank until a real budget exists. Never DEMO dollars.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
 }
 
 export default function CostsClient() {
@@ -94,8 +167,74 @@ export default function CostsClient() {
     [orgId, season, busy],
   );
 
+  if (fetchFailed || view == null) {
+    return (
+      <main className="module-page costs-page">
+        <PageHeader
+          breadcrumbs="Business / Season Costs"
+          title="Season Costs"
+          description="Real-world spend against a season budget — never DEMO dollars."
+        />
+        <EmptyState
+          soft
+          title={fetchFailed ? "Could not load season costs" : "Loading season costs…"}
+          description={
+            fetchFailed
+              ? "A network or server issue prevented loading. Try again."
+              : "Checking your workspace."
+          }
+          aria-busy={!fetchFailed}
+        >
+          {fetchFailed ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  if (view.status === "setup_required") {
+    return (
+      <main className="module-page costs-page">
+        <PageHeader
+          breadcrumbs="Business / Season Costs"
+          title="Season Costs"
+          description="Track real event spend, subscriptions, and live AI/API usage — separate from Business purchase approvals."
+        />
+        {view.orgId ? <CostsRelated orgId={view.orgId} /> : null}
+        <NextActions
+          orgId={view.orgId}
+          seasonYear={view.seasonYear}
+          costCount={0}
+          subscriptionCount={0}
+          budgetUsd={null}
+          overBudget={false}
+        />
+        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+          <ol className="costs-setup-steps">
+            {view.steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ol>
+        </EmptyState>
+      </main>
+    );
+  }
+
+  const hasSpend = view.costs.length > 0 || view.subscriptions.items.length > 0 || view.apiUsageUsd > 0;
+
   return (
-    <main className="module-page">
+    <main className="module-page costs-page">
       <PageHeader
         breadcrumbs={
           <>
@@ -104,10 +243,10 @@ export default function CostsClient() {
           </>
         }
         title="Season Costs"
-        description="Real-world spend, subscriptions, and live AI/API usage against one season budget — separate from Business purchase approvals."
+        description="Real-world spend, subscriptions, and live AI/API usage against one season budget — from logged rows only. Never DEMO dollars. Approved purchase requests live under Orders."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
+        <div className="costs-header-actions">
+          {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
@@ -126,102 +265,107 @@ export default function CostsClient() {
               </select>
             </label>
           ) : null}
-          {orgId ? (
-            <>
-              <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=budget`}>
-                Business budget
-              </a>
-              <a className="app-button secondary" href={`/impact?orgId=${encodeURIComponent(orgId)}`}>
-                Impact
-              </a>
-            </>
-          ) : null}
+          <a className="app-button secondary" href={hubHref("/business", "budget", orgId)}>
+            Business budget
+          </a>
+          <a className="app-button secondary" href={hubHref("/business", "orders", orgId)}>
+            Orders
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/fundraisers", orgId)}>
+            Fundraisers
+          </a>
         </div>
       </PageHeader>
 
+      {orgId ? <CostsRelated orgId={orgId} /> : null}
+
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p className="costs-alert" role="alert">
           {error}
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <NextActions
+        orgId={orgId}
+        seasonYear={view.seasonYear}
+        costCount={view.costs.length}
+        subscriptionCount={view.subscriptions.items.length}
+        budgetUsd={view.budget.totalBudgetUsd}
+        overBudget={view.summary.overBudget}
+      />
+
+      <AllInPanel view={view} hasSpend={hasSpend} />
+      <BudgetPanel view={view} busy={busy} mutate={mutate} />
+      {view.insight ? <AssistantPanel view={view} /> : null}
+      <SubscriptionsSection view={view} busy={busy} mutate={mutate} />
+      <AddCostForm busy={busy} mutate={mutate} />
+      {view.summary.byCategory.length > 0 ? <CategoryBreakdown view={view} /> : null}
+      {view.costs.length === 0 ? (
         <EmptyState
-          title="Could not load season costs"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          title="No season costs logged yet"
+          description="Start with registration and event fees, then add purchases as you go. Totals stay at real $0 until you record them — nothing is invented."
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          <div className="costs-row-links">
+            <a href={hubHref("/business", "orders", orgId)}>Orders →</a>
+            <a href={withOrgHref("/fundraisers", orgId)}>Fundraisers →</a>
+            <a href={hubHref("/business", "budget", orgId)}>Business budget →</a>
+          </div>
         </EmptyState>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <AllInPanel view={view} />
-          <BudgetPanel view={view} busy={busy} mutate={mutate} />
-          {view.insight ? <AssistantPanel view={view} /> : null}
-          <SubscriptionsSection view={view} busy={busy} mutate={mutate} />
-          <AddCostForm busy={busy} mutate={mutate} />
-          {view.summary.byCategory.length > 0 ? <CategoryBreakdown view={view} /> : null}
-          <CostLog view={view} busy={busy} mutate={mutate} />
-        </div>
+        <CostLog view={view} busy={busy} mutate={mutate} />
       )}
     </main>
   );
 }
 
-function AllInPanel({ view }: { view: LiveView }) {
+function AllInPanel({ view, hasSpend }: { view: LiveView; hasSpend: boolean }) {
   const all = view.allCosts;
   const max = Math.max(all.grandTotal, 1);
   return (
-    <Panel aria-label="Total season cost" style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+    <Panel className="costs-panel" aria-label="Total season cost">
+      <div className="costs-allin-head">
         <div>
           <span className="app-muted">All-in season cost ({view.seasonYear})</span>
-          <strong style={{ fontSize: "2.2rem", display: "block" }}>{usd(all.grandTotal)}</strong>
+          <strong>{formatCostUsdDisplay(all.grandTotal, hasSpend || all.grandTotal > 0)}</strong>
         </div>
-        <small className="app-muted" style={{ maxWidth: 280 }}>
-          Everything: logged season fees + annualized subscriptions + live AI/API usage. Approved purchase requests live under Orders / Business Budget — they are not invented here.
-        </small>
+        <p className="costs-allin-note">
+          Everything from logged season fees + annualized subscriptions + live AI/API usage. Approved purchase
+          requests live under Orders — they are not invented here.
+        </p>
       </div>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
-        {all.breakdown.map((row) => (
-          <li key={row.key} style={{ display: "grid", gridTemplateColumns: "180px 1fr auto", gap: 8, alignItems: "center" }}>
-            <span>
-              <span
-                aria-hidden="true"
-                style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: SOURCE_COLOR[row.key], marginRight: 6 }}
-              />
-              {row.label}
-            </span>
-            <span className="mini-probability" aria-hidden="true">
-              <i style={{ width: `${Math.max(1, (row.amount / max) * 100)}%`, background: SOURCE_COLOR[row.key] }} />
-            </span>
-            <small className="app-muted" style={{ textAlign: "right" }}>
-              {usd(row.amount)} · {Math.round(row.pct * 100)}%
-            </small>
-          </li>
-        ))}
-      </ul>
-      <small className="app-muted">
-        App AI/API usage ({usd(view.apiUsageUsd)}) is read live from your usage ledger for this season — separate from the
-        real-world budget below.
-      </small>
+      {hasSpend || all.grandTotal > 0 ? (
+        <ul className="costs-breakdown">
+          {all.breakdown.map((row) => (
+            <li key={row.key}>
+              <span>
+                <span
+                  className="costs-swatch"
+                  aria-hidden="true"
+                  style={{ background: SOURCE_COLOR[row.key] }}
+                />
+                {row.label}
+              </span>
+              <span className="mini-probability" aria-hidden="true">
+                <i style={{ width: `${Math.max(1, (row.amount / max) * 100)}%`, background: SOURCE_COLOR[row.key] }} />
+              </span>
+              <small className="app-muted" style={{ textAlign: "right" }}>
+                {usd(row.amount)} · {Math.round(row.pct * 100)}%
+              </small>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="app-muted" style={{ margin: 0 }}>
+          All-in stays blank until you log a cost, subscription, or have real AI/API usage this season.
+        </p>
+      )}
+      {view.apiUsageUsd > 0 ? (
+        <small className="app-muted">
+          App AI/API usage ({usd(view.apiUsageUsd)}) is read live from your usage ledger for this season — separate from
+          the real-world budget below.
+        </small>
+      ) : null}
     </Panel>
   );
 }
@@ -230,6 +374,7 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
   const { budget, summary } = view;
   const [budgetInput, setBudgetInput] = useState("");
   const [aiAssist, setAiAssist] = useState(false);
+  const hasBudget = budget.totalBudgetUsd != null;
 
   useEffect(() => {
     setBudgetInput(budget.totalBudgetUsd == null ? "" : String(budget.totalBudgetUsd));
@@ -246,56 +391,65 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
       aiAssistEnabled: nextAi ?? aiAssist,
     });
 
+  const tiles = [
+    {
+      label: "Season budget",
+      value: formatCostUsdDisplay(budget.totalBudgetUsd, hasBudget),
+      tone: "",
+    },
+    {
+      label: "Committed (real-world)",
+      value: usd(summary.totalCommitted),
+      tone: "",
+    },
+    {
+      label: "Remaining",
+      value: formatCostUsdDisplay(summary.remaining, hasBudget),
+      tone: summary.overBudget ? "critical" : "",
+    },
+    {
+      label: "Fixed fees",
+      value: usd(summary.feesTotal),
+      tone: "",
+    },
+  ];
+
   return (
-    <Panel style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        <div>
-          <strong style={{ fontSize: "1.6rem", display: "block" }}>
-            {budget.totalBudgetUsd == null ? "—" : usd(budget.totalBudgetUsd)}
-          </strong>
-          <span className="app-muted">Season budget</span>
+    <Panel className="costs-panel">
+      <section className="costs-summary" aria-label="Season budget summary">
+        {tiles.map((tile) => (
+          <article key={tile.label} className={`costs-summary-tile${tile.tone ? ` ${tile.tone}` : ""}`}>
+            <strong>{tile.value}</strong>
+            <span>{tile.label}</span>
+          </article>
+        ))}
+      </section>
+
+      <div className="costs-progress-wrap">
+        <div className={`costs-progress-bar${pct == null ? " empty" : ""}`} aria-hidden="true">
+          <i
+            style={{
+              width: pct == null ? "0%" : `${Math.max(2, (pct / 1.2) * 100)}%`,
+              background: barColor,
+            }}
+          />
         </div>
-        <div>
-          <strong style={{ fontSize: "1.6rem", display: "block" }}>{usd(summary.totalCommitted)}</strong>
-          <span className="app-muted">Committed (real-world)</span>
-        </div>
-        <div>
-          <strong style={{ fontSize: "1.6rem", display: "block", color: summary.overBudget ? "#c02626" : "inherit" }}>
-            {summary.remaining == null ? "—" : usd(summary.remaining)}
-          </strong>
-          <span className="app-muted">Remaining</span>
-        </div>
-        <div>
-          <strong style={{ fontSize: "1.6rem", display: "block" }}>{usd(summary.feesTotal)}</strong>
-          <span className="app-muted">Fixed fees</span>
-        </div>
+        <small className="app-muted">
+          {pct == null
+            ? "Set a season budget to track % committed — stays blank until then"
+            : `${formatBudgetPctDisplay(summary.pctUsed)} of budget committed${summary.overBudget ? " · over budget" : ""}`}
+        </small>
       </div>
 
-      {pct != null ? (
-        <div>
-          <div className="mini-probability" aria-hidden="true">
-            <i style={{ width: `${Math.max(2, (pct / 1.2) * 100)}%`, background: barColor }} />
-          </div>
-          <small className="app-muted">
-            {Math.round((summary.pctUsed ?? 0) * 100)}% of budget committed
-            {summary.overBudget ? " · over budget" : ""}
-          </small>
-        </div>
-      ) : (
-        <p className="app-muted" style={{ margin: 0 }}>
-          Set a season budget to track spend against it.
-        </p>
-      )}
-
       <form
+        className="costs-budget-form"
         onSubmit={(event) => {
           event.preventDefault();
           saveBudget();
         }}
-        style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap", borderTop: "1px solid rgba(128,128,128,0.2)", paddingTop: 12 }}
       >
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Season budget ($)</span>
+        <label>
+          <span>Season budget ($)</span>
           <input
             type="number"
             min={0}
@@ -309,7 +463,7 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
           Save budget
         </button>
         <label
-          style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto", maxWidth: 340 }}
+          className="costs-ai-toggle"
           title="Automated, rule-based analysis of your budget. Your data stays within your team; no external AI is called."
         >
           <input
@@ -323,9 +477,7 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
           />
           <span>
             <strong>AI finance assistant</strong>
-            <small className="app-muted" style={{ display: "block" }}>
-              Opt-in. Turns your budget into plain-language guidance to stay on track.
-            </small>
+            <small>Opt-in. Turns your budget into plain-language guidance to stay on track.</small>
           </span>
         </label>
       </form>
@@ -338,11 +490,11 @@ function AssistantPanel({ view }: { view: LiveView }) {
   if (!insight) return null;
   return (
     <section
-      className="app-card soft-panel"
+      className="costs-assistant app-card soft-panel"
       aria-label="Finance assistant"
       style={{ borderLeft: `3px solid ${statusTone(insight.status)}` }}
     >
-      <header style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <header>
         <span className="app-badge" style={{ background: statusTone(insight.status), color: "#fff" }}>
           {insight.status === "over"
             ? "Over budget"
@@ -352,17 +504,15 @@ function AssistantPanel({ view }: { view: LiveView }) {
                 ? "On track"
                 : "Set up"}
         </span>
-        <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Finance assistant</h2>
+        <h2>Finance assistant</h2>
       </header>
-      <p style={{ margin: "8px 0", fontWeight: 600 }}>{insight.headline}</p>
-      <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+      <p>{insight.headline}</p>
+      <ul>
         {insight.recommendations.map((rec) => (
           <li key={rec}>{rec}</li>
         ))}
       </ul>
-      <small className="app-muted" style={{ display: "block", marginTop: 8 }}>
-        Automated analysis of your own budget data — rule-based, kept within your team.
-      </small>
+      <small className="app-muted">Automated analysis of your own budget data — rule-based, kept within your team.</small>
     </section>
   );
 }
@@ -370,21 +520,18 @@ function AssistantPanel({ view }: { view: LiveView }) {
 function SubscriptionsSection({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
   const subs = view.subscriptions;
   return (
-    <section className="app-card soft-panel" style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0 }}>Subscriptions</h2>
+    <section className="app-card soft-panel costs-panel">
+      <div className="costs-subs-head">
+        <h2>Subscriptions</h2>
         <span className="app-muted">
           {subs.activeCount} active · <strong>{usd(subs.totalAnnual)}</strong>/yr
         </span>
       </div>
 
       {subs.items.length > 0 ? (
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
+        <ul className="costs-subs-list">
           {subs.items.map((sub: SubscriptionWithAnnual) => (
-            <li
-              key={sub.id}
-              style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", opacity: sub.active ? 1 : 0.55 }}
-            >
+            <li key={sub.id} className={sub.active ? undefined : "inactive"}>
               <div>
                 <strong>{sub.name}</strong>
                 {sub.provider ? <small className="app-muted"> · {sub.provider}</small> : null}
@@ -392,14 +539,13 @@ function SubscriptionsSection({ view, busy, mutate }: { view: LiveView; busy: bo
                   {usd(sub.amountUsd)} {subscriptionCadenceLabel(sub.cadence).toLowerCase()} · {usd(sub.annualUsd)}/yr
                 </small>
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <div className="costs-subs-actions">
                 <button
                   type="button"
-                  className={`app-badge ${sub.active ? "good" : "demo"}`}
+                  className={`costs-badge ${sub.active ? "good" : "inactive"}`}
                   disabled={busy}
                   title="Toggle active"
                   onClick={() => mutate({ action: "update-subscription", subscriptionId: sub.id, active: !sub.active })}
-                  style={{ cursor: "pointer", border: "none" }}
                 >
                   {sub.active ? "Active" : "Inactive"}
                 </button>
@@ -419,7 +565,7 @@ function SubscriptionsSection({ view, busy, mutate }: { view: LiveView; busy: bo
         </ul>
       ) : (
         <p className="app-muted" style={{ margin: 0 }}>
-          Add recurring costs — your Vantage plan, CAD licenses, hosting, software — to see the true all-in season total.
+          Add recurring costs — CAD licenses, hosting, software — to see the true all-in season total. Stays empty until you add one.
         </p>
       )}
 
@@ -439,6 +585,7 @@ function AddSubscriptionForm({ busy, mutate }: { busy: boolean; mutate: Mutate }
 
   return (
     <form
+      className="costs-sub-form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.name.trim()) return;
@@ -452,22 +599,21 @@ function AddSubscriptionForm({ busy, mutate }: { busy: boolean; mutate: Mutate }
         });
         setForm(empty);
       }}
-      style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap", borderTop: "1px solid rgba(128,128,128,0.2)", paddingTop: 12 }}
     >
-      <label style={{ display: "grid", gap: 4, flex: "2 1 160px" }}>
-        <span className="app-muted">Subscription</span>
+      <label style={{ flex: "2 1 160px" }}>
+        <span>Subscription</span>
         <input value={form.name} onChange={set("name")} placeholder="Onshape, Fusion, hosting…" required />
       </label>
-      <label style={{ display: "grid", gap: 4 }}>
-        <span className="app-muted">Provider (optional)</span>
+      <label>
+        <span>Provider (optional)</span>
         <input value={form.provider} onChange={set("provider")} />
       </label>
-      <label style={{ display: "grid", gap: 4, width: 110 }}>
-        <span className="app-muted">Amount ($)</span>
+      <label style={{ width: 110 }}>
+        <span>Amount ($)</span>
         <input type="number" min={0} step="0.01" value={form.amountUsd} onChange={set("amountUsd")} required />
       </label>
-      <label style={{ display: "grid", gap: 4 }}>
-        <span className="app-muted">Cadence</span>
+      <label>
+        <span>Cadence</span>
         <select value={form.cadence} onChange={set("cadence")}>
           {SUBSCRIPTION_CADENCES.map((cadence) => (
             <option key={cadence} value={cadence}>
@@ -502,6 +648,7 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
   return (
     <Panel
       as="form"
+      className="costs-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.label.trim() || !form.incurredOn) return;
@@ -516,9 +663,9 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Add cost</h2>
+      <h2>Add cost</h2>
+      <p>Amounts come from what you enter — never pre-filled DEMO spend.</p>
       <FormGrid min={140}>
         <FormRow label="What was it?" wide>
           <input value={form.label} onChange={set("label")} placeholder="Regional registration, swerve modules…" required />
@@ -551,7 +698,7 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
           </select>
         </FormRow>
       </FormGrid>
-      <div>
+      <div className="costs-form-actions">
         <button type="submit" className="app-button" disabled={busy || !form.label.trim() || !form.incurredOn}>
           Add cost
         </button>
@@ -564,11 +711,12 @@ function CategoryBreakdown({ view }: { view: LiveView }) {
   const { byCategory } = view.summary;
   const max = Math.max(...byCategory.map((c) => c.committed), 1);
   return (
-    <section className="app-card soft-panel">
-      <h2 style={{ marginTop: 0 }}>By category</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
+    <section className="app-card soft-panel costs-panel">
+      <h2>By category</h2>
+      <p>From logged cost rows only.</p>
+      <ul className="costs-cat-list">
         {byCategory.map((row) => (
-          <li key={row.category} style={{ display: "grid", gridTemplateColumns: "160px 1fr auto", gap: 8, alignItems: "center" }}>
+          <li key={row.category}>
             <span>{costCategoryLabel(row.category)}</span>
             <span className="mini-probability" aria-hidden="true">
               <i style={{ width: `${Math.max(2, (row.committed / max) * 100)}%` }} />
@@ -585,55 +733,44 @@ function CategoryBreakdown({ view }: { view: LiveView }) {
 }
 
 function CostLog({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
-  if (view.costs.length === 0) {
-    return (
-      <EmptyState
-        badge="No costs yet"
-        badgeTone="setup"
-        title="Log your first cost"
-        description="Start with your season registration and event fees, then add purchases as you go."
-      />
-    );
-  }
   return (
-    <Panel style={{ overflowX: "auto" }}>
-      <h2 style={{ marginTop: 0 }}>Cost log</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+    <Panel className="costs-panel costs-log">
+      <h2>Cost log</h2>
+      <table>
         <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid rgba(128,128,128,0.3)" }}>
-            <th style={{ padding: "6px 8px" }}>Date</th>
-            <th style={{ padding: "6px 8px" }}>Item</th>
-            <th style={{ padding: "6px 8px" }}>Category</th>
-            <th style={{ padding: "6px 8px", textAlign: "right" }}>Amount</th>
-            <th style={{ padding: "6px 8px" }}>Status</th>
-            <th style={{ padding: "6px 8px" }} aria-label="actions" />
+          <tr>
+            <th>Date</th>
+            <th>Item</th>
+            <th>Category</th>
+            <th style={{ textAlign: "right" }}>Amount</th>
+            <th>Status</th>
+            <th aria-label="actions" />
           </tr>
         </thead>
         <tbody>
           {view.costs.map((cost: SeasonCost) => (
-            <tr key={cost.id} style={{ borderBottom: "1px solid rgba(128,128,128,0.15)" }}>
-              <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{cost.incurredOn}</td>
-              <td style={{ padding: "6px 8px" }}>
+            <tr key={cost.id}>
+              <td style={{ whiteSpace: "nowrap" }}>{cost.incurredOn}</td>
+              <td>
                 <strong>{cost.label}</strong>
-                {cost.vendor ? <small className="app-muted" style={{ display: "block" }}>{cost.vendor}</small> : null}
+                {cost.vendor ? <span className="vendor">{cost.vendor}</span> : null}
               </td>
-              <td style={{ padding: "6px 8px" }}>{costCategoryLabel(cost.category)}</td>
-              <td style={{ padding: "6px 8px", textAlign: "right" }}>{usd(cost.amountUsd)}</td>
-              <td style={{ padding: "6px 8px" }}>
+              <td>{costCategoryLabel(cost.category)}</td>
+              <td className="amount">{usd(cost.amountUsd)}</td>
+              <td>
                 <button
                   type="button"
-                  className={`app-badge ${cost.status === "paid" ? "good" : "setup"}`}
+                  className={`costs-badge ${cost.status === "paid" ? "paid" : "planned"}`}
                   disabled={busy}
                   title="Toggle paid / planned"
                   onClick={() =>
                     mutate({ action: "update-cost", costId: cost.id, status: cost.status === "paid" ? "planned" : "paid" })
                   }
-                  style={{ cursor: "pointer", border: "none" }}
                 >
                   {cost.status === "paid" ? "Paid" : "Planned"}
                 </button>
               </td>
-              <td style={{ padding: "6px 8px", textAlign: "right" }}>
+              <td style={{ textAlign: "right" }}>
                 <button
                   type="button"
                   className="text-button"

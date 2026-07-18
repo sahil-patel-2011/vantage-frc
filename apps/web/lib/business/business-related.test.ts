@@ -3,6 +3,7 @@ import {
   businessRelatedLinks,
   AWARDS_RELATED_INCLUDE,
   BUSINESS_GRANTS_RELATED_INCLUDE,
+  COSTS_RELATED_INCLUDE,
   FUNDRAISERS_RELATED_INCLUDE,
   GRANTS_WRITING_RELATED_INCLUDE,
   IMPACT_RELATED_INCLUDE,
@@ -54,24 +55,37 @@ describe("business-related Soft-UI helpers", () => {
     expect(links.find((l) => l.id === "writer")?.href).toBe("/writer?orgId=org-1");
   });
 
-  it("builds fundraisers Soft-UI cross-links to sponsors, grants, and orders", () => {
+  it("builds fundraisers Soft-UI cross-links to sponsors, grants, orders, and season costs", () => {
     const links = businessRelatedLinks("org-1", {
       active: "fundraisers",
       include: FUNDRAISERS_RELATED_INCLUDE,
     });
-    expect(links.map((l) => l.id)).toEqual(["sponsors", "orders", "grants", "finance-ai", "budget"]);
+    expect(links.map((l) => l.id)).toEqual(["sponsors", "orders", "grants", "costs", "finance-ai", "budget"]);
     expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
     expect(links.find((l) => l.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
     expect(links.find((l) => l.id === "orders")?.href).toBe("/business?tab=orders&orgId=org-1");
+    expect(links.find((l) => l.id === "costs")?.href).toBe("/costs?orgId=org-1");
   });
 
-  it("builds orders Soft-UI cross-links to sponsors and fundraisers", () => {
+  it("builds orders Soft-UI cross-links to sponsors, fundraisers, and season costs", () => {
     const links = businessRelatedLinks("org-1", {
       active: "orders",
       include: ORDERS_RELATED_INCLUDE,
     });
-    expect(links.map((l) => l.id)).toEqual(["sponsors", "grants", "fundraisers", "finance-ai", "budget"]);
+    expect(links.map((l) => l.id)).toEqual(["sponsors", "grants", "fundraisers", "costs", "finance-ai", "budget"]);
     expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
+    expect(links.find((l) => l.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
+    expect(links.find((l) => l.id === "costs")?.href).toBe("/costs?orgId=org-1");
+    expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
+  });
+
+  it("builds Season Costs Soft-UI cross-links to Orders, Fundraisers, and Business budget", () => {
+    const links = businessRelatedLinks("org-1", {
+      active: "costs",
+      include: COSTS_RELATED_INCLUDE,
+    });
+    expect(links.map((l) => l.id)).toEqual(["orders", "fundraisers", "finance-ai", "budget"]);
+    expect(links.find((l) => l.id === "orders")?.href).toBe("/business?tab=orders&orgId=org-1");
     expect(links.find((l) => l.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
     expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
   });
