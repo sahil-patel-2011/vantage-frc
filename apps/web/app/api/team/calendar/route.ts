@@ -252,6 +252,7 @@ async function loadView(
       assignedUserName: duty.assignedUserName,
       calendarEventId: duty.calendarEventId,
       notes: duty.notes,
+      createdByName: duty.createdByName,
       mine: duty.mine,
     }));
   } catch {
