@@ -8,34 +8,111 @@ import {
   TEST_OUTCOMES,
   type PrototypeTrackerView,
 } from "../../lib/prototype-tracker/compute-prototype-tracker";
+import {
+  PROTOTYPE_BUILD_RELATED_INCLUDE,
+  decisionStatusLabel,
+  formatMetricEvidence,
+  outcomeBadgeTone,
+  prototypeNextActions,
+  prototypeStatusCounts,
+  recommendationBadgeTone,
+  shouldShowPrototypeSummaryTiles,
+} from "../../lib/prototype-tracker/prototype-related";
 import type { DecisionRecommendation, DecisionStatus, TestOutcome } from "../../lib/prototype-tracker/types";
+import { hubHref } from "../../lib/nav/hubs";
+import "./prototype-tracker.css";
 
-const OUTCOME_TONE: Record<TestOutcome, string> = {
-  success: "good",
-  partial: "setup",
-  inconclusive: "demo",
-  failure: "demo",
-};
+type LiveView = Extract<PrototypeTrackerView, { status: "live" }>;
+type Mutate = (payload: Record<string, unknown>) => Promise<void>;
 
-const RECOMMENDATION_TONE: Record<DecisionRecommendation, string> = {
-  adopt: "good",
-  iterate: "setup",
-  needs_more_data: "demo",
-  reject: "demo",
-};
-
-const STATUS_LABEL: Record<DecisionStatus, string> = {
-  draft: "Draft",
-  finalized: "Finalized",
-};
+function useHubEmbed(): "build" | null {
+  const [embed, setEmbed] = useState<"build" | null>(null);
+  useEffect(() => {
+    if (window.location.pathname.startsWith("/build")) setEmbed("build");
+    else setEmbed(null);
+  }, []);
+  return embed;
+}
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
-type LiveView = Extract<PrototypeTrackerView, { status: "live" }>;
+function badgeClass(tone: string): string {
+  return tone ? `app-badge ${tone}` : "app-badge";
+}
+
+function NextActionsPanel({
+  orgId,
+  seasonYear,
+  testCount,
+  decisionCount,
+  draftDecisionCount,
+  testsWithoutDecision,
+}: {
+  orgId?: string | null;
+  seasonYear: number;
+  testCount: number;
+  decisionCount: number;
+  draftDecisionCount: number;
+  testsWithoutDecision: number;
+}) {
+  const actions = prototypeNextActions({
+    orgId,
+    seasonYear,
+    testCount,
+    decisionCount,
+    draftDecisionCount,
+    testsWithoutDecision,
+  });
+  if (!actions.length) return null;
+  return (
+    <section className="prt-next-actions app-card soft-panel" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>Test → decision → CAD / FMEA. Metrics and confidence only from what you record — never DEMO.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function StatusTiles({ view }: { view: LiveView }) {
+  if (!shouldShowPrototypeSummaryTiles({ testCount: view.tests.length })) return null;
+  const draftDecisionCount = view.decisions.filter((d) => d.status === "draft").length;
+  const successCount = view.tests.filter((t) => t.outcome === "success").length;
+  const tiles = prototypeStatusCounts({
+    testCount: view.tests.length,
+    decisionCount: view.decisions.length,
+    draftDecisionCount,
+    successCount,
+  });
+  return (
+    <div className="prt-summary" aria-label="Prototype status">
+      {tiles.map((tile) => (
+        <div key={tile.id} className={["prt-summary-tile", tile.tone].filter(Boolean).join(" ")}>
+          <strong>{tile.value}</strong>
+          <span>{tile.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function PrototypeTrackerClient() {
+  const embed = useHubEmbed();
   const [view, setView] = useState<PrototypeTrackerView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -43,6 +120,12 @@ export default function PrototypeTrackerClient() {
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  const crumbs = embed === "build" ? "Build / Prototypes" : (
+    <>
+      <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
+      {" / Prototypes"}
+    </>
+  );
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -70,8 +153,8 @@ export default function PrototypeTrackerClient() {
     load();
   }, [load]);
 
-  const mutate = useCallback(
-    async (payload: Record<string, unknown>) => {
+  const mutate = useCallback<Mutate>(
+    async (payload) => {
       if (!orgId || busy) return;
       setBusy(true);
       setError("");
@@ -97,88 +180,162 @@ export default function PrototypeTrackerClient() {
     [orgId, season, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
-            {" / Prototype Tracker"}
-          </>
-        }
-        title="Prototype-to-Decision Tracker"
-        description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
-      >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-      </PageHeader>
-
-      {orgId ? <BuildHubRelated orgId={orgId} active="prototype" /> : null}
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
+  if (fetchFailed || view == null) {
+    return (
+      <main className="module-page prt-page">
+        <PageHeader
+          breadcrumbs={crumbs}
+          title="Prototype-to-Decision Tracker"
+          description="Log a real prototype test — hypothesis, outcome, metric vs. target — then draft the design decision it informs."
+        />
         <EmptyState
-          title="Could not load the prototype tracker"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          title={fetchFailed ? "Could not load the prototype tracker" : "Loading prototype tracker…"}
+          description={
+            fetchFailed
+              ? "A network or server issue prevented loading. Try again."
+              : "Checking your workspace."
+          }
+          aria-busy={!fetchFailed}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          {fetchFailed ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
+      </main>
+    );
+  }
+
+  if (view.status === "setup_required") {
+    return (
+      <main className="module-page prt-page">
+        <PageHeader
+          breadcrumbs={crumbs}
+          title="Prototype-to-Decision Tracker"
+          description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
+        />
+        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+          <ol className="prt-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
                 <div>
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a href={step.href}>Open</a>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
               </li>
             ))}
           </ol>
         </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <LogTestForm busy={busy} mutate={mutate} />
-          {view.tests.length > 0 ? (
-            <TestsList view={view} busy={busy} mutate={mutate} />
-          ) : (
-            <EmptyState
-              badge="No tests yet"
-              badgeTone="setup"
-              title="Log your first prototype test"
-              description="Once logged, you can draft the decision record and notebook entry it informs."
-            />
-          )}
-          <DecisionsList view={view} busy={busy} mutate={mutate} />
+        <NextActionsPanel
+          orgId={view.orgId}
+          seasonYear={view.seasonYear}
+          testCount={0}
+          decisionCount={0}
+          draftDecisionCount={0}
+          testsWithoutDecision={0}
+        />
+      </main>
+    );
+  }
+
+  const decidedTestIds = new Set(view.decisions.map((d) => d.testId));
+  const testsWithoutDecision = view.tests.filter((t) => !decidedTestIds.has(t.id)).length;
+  const draftDecisionCount = view.decisions.filter((d) => d.status === "draft").length;
+  const hasTests = view.tests.length > 0;
+
+  return (
+    <main className="module-page prt-page">
+      <PageHeader
+        breadcrumbs={crumbs}
+        title="Prototype-to-Decision Tracker"
+        description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
+      >
+        <div className="prt-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
+            FMEA
+          </a>
+          <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
+            CAD
+          </a>
+          <a className="app-button secondary" href={hubHref("/build", "kickoff", orgId)}>
+            Kickoff
+          </a>
         </div>
-      )}
+      </PageHeader>
+
+      {orgId ? (
+        <BuildHubRelated
+          orgId={orgId}
+          active="prototype"
+          include={[...PROTOTYPE_BUILD_RELATED_INCLUDE]}
+          ariaLabel="Related build tools"
+        />
+      ) : null}
+
+      {error ? (
+        <p className="prt-alert" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <NextActionsPanel
+        orgId={orgId}
+        seasonYear={view.seasonYear}
+        testCount={view.tests.length}
+        decisionCount={view.decisions.length}
+        draftDecisionCount={draftDecisionCount}
+        testsWithoutDecision={testsWithoutDecision}
+      />
+
+      <StatusTiles view={view} />
+
+      <div className="prt-stack">
+        <LogTestForm busy={busy} mutate={mutate} />
+
+        {!hasTests ? (
+          <EmptyState
+            soft
+            badge="No tests yet"
+            badgeTone="setup"
+            title="Log your first prototype test"
+            description="Outcomes, metrics, and decision confidence stay blank until you record a real test — nothing is pre-filled."
+          >
+            <div className="prt-empty-links">
+              <a href={hubHref("/build", "fmea", orgId)}>FMEA →</a>
+              <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
+              <a href={hubHref("/build", "kickoff", orgId)}>Kickoff →</a>
+            </div>
+          </EmptyState>
+        ) : (
+          <TestsList view={view} busy={busy} mutate={mutate} />
+        )}
+
+        <DecisionsList view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -190,50 +347,54 @@ function TestsList({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Prototype tests</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
-        {view.tests.map((test) => (
-          <li key={test.id} className="app-card soft-panel" style={{ display: "grid", gap: 6 }}>
-            <header style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
-              <div>
-                <span className={`app-badge ${OUTCOME_TONE[test.outcome]}`}>{testOutcomeLabel(test.outcome)}</span>
-                <strong style={{ display: "block", marginTop: 4 }}>{test.title}</strong>
-                <small className="app-muted">
-                  {test.subsystemName} · {test.testDate}
-                </small>
-              </div>
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${test.title}"?`)) {
-                    mutate({ action: "delete-test", testId: test.id });
-                  }
-                }}
-              >
-                Delete
-              </button>
-            </header>
-            {test.hypothesis ? (
-              <small className="app-muted">
-                <strong>Hypothesis:</strong> {test.hypothesis}
-              </small>
-            ) : null}
-            {test.resultSummary ? <p style={{ margin: 0 }}>{test.resultSummary}</p> : null}
-            {test.metricLabel && test.metricValue != null ? (
-              <small className="app-muted">
-                {test.metricLabel}: {test.metricValue}
-                {test.metricTarget != null ? ` (target ${test.metricTarget})` : ""}
-              </small>
-            ) : null}
-            <DraftDecisionForm test={test} busy={busy} mutate={mutate} />
-          </li>
-        ))}
+    <Panel className="prt-panel">
+      <h2>Prototype tests</h2>
+      <p className="lead app-muted">
+        Outcomes and metrics from logged shop tests only — never DEMO placeholders.
+      </p>
+      <ul className="prt-list">
+        {view.tests.map((test) => {
+          const metric = formatMetricEvidence(test);
+          const tone = outcomeBadgeTone(test.outcome);
+          return (
+            <li key={test.id} className="prt-card">
+              <header className="prt-card-top">
+                <div className="prt-card-title">
+                  <div className="prt-badges">
+                    <span className={badgeClass(tone)}>{testOutcomeLabel(test.outcome)}</span>
+                  </div>
+                  <strong>{test.title}</strong>
+                  <span className="prt-card-meta">
+                    {test.subsystemName} · {test.testDate}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => {
+                    if (window.confirm(`Delete "${test.title}"?`)) {
+                      void mutate({ action: "delete-test", testId: test.id });
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </header>
+              {test.hypothesis ? (
+                <p className="prt-hypothesis">
+                  <strong>Hypothesis:</strong> {test.hypothesis}
+                </p>
+              ) : null}
+              {test.resultSummary ? <p className="prt-result">{test.resultSummary}</p> : null}
+              {metric ? <span className="prt-metric">{metric}</span> : null}
+              <DraftDecisionForm test={test} busy={busy} mutate={mutate} />
+            </li>
+          );
+        })}
       </ul>
     </Panel>
   );
@@ -246,23 +407,22 @@ function DraftDecisionForm({
 }: {
   test: LiveView["tests"][number];
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   const [decisionTitle, setDecisionTitle] = useState(`Decide on ${test.title}`);
   return (
     <form
+      className="prt-draft-form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!decisionTitle.trim()) return;
-        mutate({ action: "draft-decision", testId: test.id, decisionTitle });
+        void mutate({ action: "draft-decision", testId: test.id, decisionTitle });
       }}
-      style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}
     >
       <input
         value={decisionTitle}
         onChange={(event) => setDecisionTitle(event.target.value)}
         placeholder="Decision title"
-        style={{ flex: 1, minWidth: 180 }}
       />
       <button type="submit" className="app-button secondary" disabled={busy || !decisionTitle.trim()}>
         Draft decision
@@ -278,68 +438,93 @@ function DecisionsList({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   if (view.decisions.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No decisions yet"
         badgeTone="setup"
         title="No decision records drafted yet"
-        description="Draft a decision from any logged test above to generate the decision record and notebook entry."
-      />
+        description="Draft a decision from any logged test above. Recommendation and confidence come only from that test’s recorded outcome and metric."
+      >
+        <div className="prt-empty-links">
+          <a href={hubHref("/build", "cad", view.orgId)}>CAD →</a>
+          <a href={hubHref("/build", "fmea", view.orgId)}>FMEA →</a>
+        </div>
+      </EmptyState>
     );
   }
   const testTitleById = new Map(view.tests.map((test) => [test.id, test.title]));
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Decision records</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
-        {view.decisions.map((decision) => (
-          <li key={decision.id} className="app-card soft-panel" style={{ display: "grid", gap: 6 }}>
-            <header style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
-              <div>
-                <span className={`app-badge ${RECOMMENDATION_TONE[decision.recommendation]}`}>
-                  {decisionRecommendationLabel(decision.recommendation)}
-                </span>
-                <strong style={{ display: "block", marginTop: 4 }}>{decision.decisionTitle}</strong>
-                <small className="app-muted">
-                  {testTitleById.get(decision.testId) ?? "Linked test"} · {STATUS_LABEL[decision.status]} ·
-                  confidence {pct(decision.confidence)}
-                </small>
-              </div>
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${decision.decisionTitle}"?`)) {
-                    mutate({ action: "delete-decision", decisionId: decision.id });
-                  }
-                }}
-              >
-                Delete
-              </button>
-            </header>
-            <p style={{ margin: 0 }}>{decision.decisionRecord}</p>
-            <details>
-              <summary className="app-muted">Notebook entry</summary>
-              <pre style={{ whiteSpace: "pre-wrap", margin: "8px 0 0" }}>{decision.notebookEntry}</pre>
-            </details>
-            {decision.status === "draft" ? (
-              <div>
+    <Panel className="prt-panel">
+      <h2>Decision records</h2>
+      <p className="lead app-muted">
+        Drafted from linked tests — confidence percentages are from recorded outcomes, not invented.
+      </p>
+      <ul className="prt-list">
+        {view.decisions.map((decision) => {
+          const recTone = recommendationBadgeTone(decision.recommendation);
+          const status = decision.status as DecisionStatus;
+          const recommendation = decision.recommendation as DecisionRecommendation;
+          return (
+            <li key={decision.id} className="prt-card">
+              <header className="prt-card-top">
+                <div className="prt-card-title">
+                  <div className="prt-badges">
+                    <span className={badgeClass(recTone)}>
+                      {decisionRecommendationLabel(recommendation)}
+                    </span>
+                    <span className={badgeClass(status === "finalized" ? "good" : "setup")}>
+                      {decisionStatusLabel(status)}
+                    </span>
+                  </div>
+                  <strong>{decision.decisionTitle}</strong>
+                  <span className="prt-card-meta">
+                    {testTitleById.get(decision.testId) ?? "Linked test"} · confidence{" "}
+                    {pct(decision.confidence)}
+                  </span>
+                </div>
                 <button
                   type="button"
-                  className="app-button secondary"
+                  className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "update-decision-status", decisionId: decision.id, status: "finalized" })}
+                  onClick={() => {
+                    if (window.confirm(`Delete "${decision.decisionTitle}"?`)) {
+                      void mutate({ action: "delete-decision", decisionId: decision.id });
+                    }
+                  }}
                 >
-                  Finalize
+                  Delete
                 </button>
-              </div>
-            ) : null}
-          </li>
-        ))}
+              </header>
+              <p className="prt-result">{decision.decisionRecord}</p>
+              <details>
+                <summary className="app-muted">Notebook entry</summary>
+                <pre className="prt-notebook">{decision.notebookEntry}</pre>
+              </details>
+              {status === "draft" ? (
+                <div>
+                  <button
+                    type="button"
+                    className="app-button secondary"
+                    disabled={busy}
+                    onClick={() =>
+                      void mutate({
+                        action: "update-decision-status",
+                        decisionId: decision.id,
+                        status: "finalized",
+                      })
+                    }
+                  >
+                    Finalize
+                  </button>
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </Panel>
   );
@@ -350,7 +535,7 @@ function LogTestForm({
   mutate,
 }: {
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   const empty = useMemo(
     () => ({
@@ -373,10 +558,11 @@ function LogTestForm({
   return (
     <Panel
       as="form"
+      className="prt-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.subsystemName.trim() || !form.title.trim() || !form.testDate) return;
-        mutate({
+        void mutate({
           action: "log-test",
           subsystemName: form.subsystemName,
           title: form.title,
@@ -390,9 +576,11 @@ function LogTestForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Log a prototype test</h2>
+      <h2>Log a prototype test</h2>
+      <p className="lead app-muted">
+        Optional metrics stay blank until you measure them — never invent DEMO attainment.
+      </p>
       <FormGrid min={180}>
         <FormRow label="Subsystem">
           <input value={form.subsystemName} onChange={set("subsystemName")} placeholder="Climber" required />
