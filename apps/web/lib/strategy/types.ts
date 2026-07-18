@@ -7,6 +7,9 @@ import type {
   ScoutProvenanceRef,
   TeamOperationalSignal,
 } from "@vantage/prediction-strategy";
+import type { DataSourceHealthView } from "../reference-health";
+
+export type { DataSourceHealthView };
 
 export type StrategySetupStep = {
   id: string;
@@ -62,6 +65,8 @@ export type StrategyView =
       tbaConfigured: boolean;
       tbaAccess?: TbaAccessInfo;
       referenceAccess?: ReferenceAccessInfo;
+      /** TBA/Statbotics ingest health — strategy still uses Neon last-good when degraded. */
+      dataSourceHealth?: DataSourceHealthView;
     }
   | {
       status: "live";
@@ -72,6 +77,8 @@ export type StrategyView =
       tbaConfigured: boolean;
       tbaAccess?: TbaAccessInfo;
       referenceAccess?: ReferenceAccessInfo;
+      /** TBA/Statbotics ingest health — strategy still uses Neon last-good when degraded. */
+      dataSourceHealth?: DataSourceHealthView;
       matchKey: string;
       compLevel: string;
       matchNumber: number;

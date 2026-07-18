@@ -2,6 +2,8 @@
 import { withRls } from "@vantage/db";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import { loadDataSourceHealth } from "../../lib/reference-health";
 import SyncIndicator from "./sync-indicator";
 import QuickActions from "./quick-actions";
 import { VantageLogo } from "../../components/brand";
@@ -114,11 +116,13 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         : `SELECT synced_at::text AS "syncedAt", last_error AS "lastError" FROM tba_cache_freshness LIMIT 1`,
       eventKey ? [eventKey] : [],
     );
+    const dataSourceHealth = await loadDataSourceHealth(client, orgId);
     return {
       role: membership.rows[0].role,
       context: context.rows[0] ?? { eventKey: null, eventName: null },
       next: next.rows,
       freshness: freshness.rows[0] ?? { syncedAt: null, lastError: null },
+      dataSourceHealth,
     };
   });
 
@@ -157,15 +161,18 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         </div>
       </section>
       <QuickActions orgId={orgId} />
+      <DataSourceDegradedBanner health={data.dataSourceHealth} />
       <aside className="freshness-marker" role="status">
         <strong>TBA reference cache</strong>
         <span>
           {data.freshness.syncedAt
             ? `Last updated ${new Date(data.freshness.syncedAt).toLocaleString()}`
-            : "Not yet synced ΓÇö connect TBA and run a sync before expecting live match times."}
+            : "Not yet synced — connect TBA and run a sync before expecting live match times."}
         </span>
-        {data.freshness.lastError ? (
-          <small>Using last-known-good data ┬╖ source temporarily unavailable</small>
+        {data.dataSourceHealth.usingLastGoodCache ? (
+          <small>Using last-known-good Neon cache · upstream temporarily degraded</small>
+        ) : data.freshness.lastError ? (
+          <small>Using last-known-good data · source temporarily unavailable</small>
         ) : null}
       </aside>
       <section className="now-next">

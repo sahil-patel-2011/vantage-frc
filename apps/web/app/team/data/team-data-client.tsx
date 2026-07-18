@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { DataSourceDegradedBanner } from "../../../components/data-source-degraded-banner";
+import type { DataSourceHealthView } from "../../../lib/reference-health";
 
 type InventoryRow = { label: string; count: number };
 type Credential = {
@@ -17,6 +19,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   const [activeEventKey, setActiveEventKey] = useState<string | null>(null);
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [health, setHealth] = useState<Record<string, unknown> | null>(null);
+  const [dataSourceHealth, setDataSourceHealth] = useState<DataSourceHealthView | null>(null);
   const [key, setKey] = useState("");
   const [message, setMessage] = useState("");
   const [ok, setOk] = useState(false);
@@ -33,6 +36,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       setActiveEventKey(data.activeEventKey ?? null);
       setCredentials(data.credentials ?? []);
       setHealth(data.health ?? null);
+      setDataSourceHealth((data.dataSourceHealth as DataSourceHealthView | undefined) ?? null);
       setOk(true);
       setMessage("");
     } else {
@@ -132,6 +136,8 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         </p>
       ) : null}
 
+      <DataSourceDegradedBanner health={dataSourceHealth} />
+
       <div className="team-data-layout">
         <section className="app-card soft-panel team-data-panel">
           <h2>Workspace inventory</h2>
@@ -212,6 +218,34 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
 
           <section className="app-card soft-panel team-data-panel">
             <h2>Ingestion health</h2>
+            {dataSourceHealth ? (
+              <ul className="team-data-inventory">
+                <li>
+                  <span>Mode</span>
+                  <strong>{dataSourceHealth.mode}</strong>
+                </li>
+                <li>
+                  <span>Last-good Neon cache</span>
+                  <strong>
+                    {dataSourceHealth.usingLastGoodCache
+                      ? "in use"
+                      : dataSourceHealth.cacheHasRows
+                        ? "ready"
+                        : "empty"}
+                  </strong>
+                </li>
+                {dataSourceHealth.sources.map((source) => (
+                  <li key={source.source}>
+                    <span>
+                      {source.source.toUpperCase()}
+                      {source.etagResources ? ` · ${source.etagResources} ETags` : ""}
+                      {source.erroredResources ? ` · ${source.erroredResources} cursor errors` : ""}
+                    </span>
+                    <strong>{source.status}</strong>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             <pre className="team-data-health">{health ? JSON.stringify(health, null, 2) : "No health telemetry yet."}</pre>
           </section>
         </aside>
