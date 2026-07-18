@@ -36,6 +36,8 @@ const LEGACY_REDIRECTS: Array<{ source: string; destination: string }> = [
   { source: "/chat", destination: "/ai?tab=chat" },
   { source: "/team/budgets", destination: "/ai?tab=budgets" },
   { source: "/team/ai-policy", destination: "/ai?tab=governance" },
+  { source: "/writer", destination: "/ai?tab=writer" },
+  { source: "/team/ai-memory", destination: "/ai?tab=memory" },
   { source: "/travel", destination: "/logistics" },
   { source: "/travel/:path*", destination: "/logistics" },
 ];

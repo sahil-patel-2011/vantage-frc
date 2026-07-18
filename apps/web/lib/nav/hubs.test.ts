@@ -61,16 +61,19 @@ describe("product hubs", () => {
     expect(hubMoreTabs(build).map((tab) => tab.id)).not.toContain("prototype-tracker");
   });
 
-  it("surfaces AI hub tabs for chat, budgets, governance, and finance", () => {
+  it("surfaces AI hub tabs for chat, budgets, writer, code, and memory", () => {
     const ai = hubById("ai");
     expect(hubPrimaryTabs(ai).map((tab) => tab.id)).toEqual([
       "chat",
       "budgets",
+      "writer",
+      "code",
+      "memory",
       "governance",
       "finance",
     ]);
     expect(hubMoreTabs(ai).map((tab) => tab.id)).toEqual(
-      expect.arrayContaining(["decision-search", "season-report"]),
+      expect.arrayContaining(["usage", "decision-search", "season-report"]),
     );
   });
 });

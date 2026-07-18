@@ -71,6 +71,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/chat")).toBe("AI / Chat");
     expect(breadcrumbForPath("/strategy")).toBe("Competition / Strategy");
     expect(breadcrumbForPath("/writer")).toBe("AI / Award Writer");
+    expect(breadcrumbForPath("/team/ai-memory")).toBe("AI / Memory");
     expect(breadcrumbForPath("/team/usage")).toBe("AI / AI usage");
     expect(breadcrumbForPath("/code")).toBe("Build / Code");
     expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
