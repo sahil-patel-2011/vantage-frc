@@ -697,6 +697,7 @@ export async function loadDashboardSnapshot(
       openedCadBrief = false;
     }
 
+    const knowsNextMatch = widgets.next_match?.status === "live";
     const steps = [
       ...buildOnboardingChecklistSteps({
         orgId: input.orgId,
@@ -708,6 +709,7 @@ export async function loadDashboardSnapshot(
         hasKnowledge,
         hasLogistics,
         kickoffReady,
+        knowsNextMatch,
       }),
       {
         key: "cad_brief",
@@ -866,10 +868,11 @@ export async function loadDashboardSnapshot(
     };
   }
 
+  // Next match first so onboarding can mark "Know your next match" from live bumper data.
+  await nextMatch();
   await Promise.all([
     onboardingChecklist(),
     homeStrip(),
-    nextMatch(),
     recentResult(),
     competitionSnapshot(),
     scoutingCoverage(),

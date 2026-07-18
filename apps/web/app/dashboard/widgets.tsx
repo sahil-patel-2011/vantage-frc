@@ -32,9 +32,9 @@ const WIDGET_ICON: Record<string, { icon: IconName; tone: string; toneBg: string
 const EMPTY_COPY: Record<string, EmptyHint> = {
   next_match: {
     title: "No upcoming match yet",
-    body: "Select a team workspace and active event to load the schedule from TBA.",
-    ctaHref: "/command",
-    ctaLabel: "Select event",
+    body: "Select a team workspace and active event, then open My Day for bumper color and travel cues.",
+    ctaHref: "/my-day",
+    ctaLabel: "Open My Day",
   },
   recent_result: {
     title: "No scored matches yet",
@@ -271,10 +271,20 @@ export function DashboardWidgetView({
   switch (type) {
     case "next_match": {
       const scheduled = data.scheduledTime as string | undefined;
+      const alliance = data.ourAlliance === "red" || data.ourAlliance === "blue" ? data.ourAlliance : null;
+      const myDayHref =
+        typeof data.href === "string" && data.href ? data.href : withOrg("/my-day");
       return (
-        <Shell type={type} title="Next match" payload={payload} href={withOrg("/intel")} emptyHint={hint} orgId={orgId}>
+        <Shell
+          type={type}
+          title="Next match / bumper"
+          payload={payload}
+          href={myDayHref}
+          emptyHint={hint}
+          orgId={orgId}
+        >
           {payload?.status === "live" ? (
-            <div className="dash-next-match">
+            <div className={`dash-next-match${alliance ? ` alliance-${alliance}` : ""}`}>
               <div>
                 <span>{String(data.compLevel ?? "Match")}</span>
                 <strong>{String(data.matchNumber ?? "—")}</strong>
@@ -283,6 +293,9 @@ export function DashboardWidgetView({
                 <span>Starts in</span>
                 <strong>{countdownLabel(scheduled)}</strong>
               </div>
+              {typeof data.bumperCue === "string" && data.bumperCue ? (
+                <p className="dash-bumper-cue">{data.bumperCue}</p>
+              ) : null}
               <footer>
                 <div>
                   <span>Red</span>

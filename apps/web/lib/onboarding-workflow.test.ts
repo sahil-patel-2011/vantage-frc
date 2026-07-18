@@ -37,6 +37,7 @@ describe("onboarding-workflow", () => {
       hasKnowledge: false,
       hasLogistics: false,
       kickoffReady: false,
+      knowsNextMatch: true,
     });
     expect(steps.map((s) => s.key)).toEqual([
       "workspace",
