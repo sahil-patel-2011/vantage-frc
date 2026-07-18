@@ -260,7 +260,10 @@ export default function CommandClient() {
                 <strong>
                   {next.compLevel.toUpperCase()} {next.matchNumber}
                 </strong>
-                <span>{next.ourAlliance ? `You are ${next.ourAlliance.toUpperCase()}` : "Alliance TBD"}</span>
+                <span>
+                  {snap?.myDay?.bumperCue ??
+                    (next.ourAlliance ? `You are ${next.ourAlliance.toUpperCase()}` : "Alliance TBD")}
+                </span>
               </div>
               <div className="edc-alliances">
                 <div>
@@ -272,12 +275,40 @@ export default function CommandClient() {
                   <AllianceChips keys={next.blue.teamKeys} ours={snap?.teamKey ?? null} highlight="blue" />
                 </div>
               </div>
-              {after ? (
-                <footer className="edc-after">
-                  After · {after.compLevel.toUpperCase()} {after.matchNumber}
-                  {after.scheduledTime ? ` · ${countdownLabel(after.scheduledTime)}` : ""}
-                </footer>
+              {snap?.myDay &&
+              (snap.myDay.nextTravelLabel || snap.myDay.lodgingLabel || snap.myDay.onDutyLabel) ? (
+                <ul className="edc-myday-strip">
+                  {snap.myDay.nextTravelLabel ? (
+                    <li>
+                      <span>Travel</span>
+                      <b>{snap.myDay.nextTravelLabel}</b>
+                    </li>
+                  ) : null}
+                  {snap.myDay.lodgingLabel ? (
+                    <li>
+                      <span>Room</span>
+                      <b>{snap.myDay.lodgingLabel}</b>
+                    </li>
+                  ) : null}
+                  {snap.myDay.onDutyLabel ? (
+                    <li>
+                      <span>On duty</span>
+                      <b>{snap.myDay.onDutyLabel}</b>
+                    </li>
+                  ) : null}
+                </ul>
               ) : null}
+              <footer className="edc-after edc-myday-links">
+                <a href={snap?.links.myDay ?? "/my-day"}>My Day</a>
+                <a href={snap?.links.matchChecklist ?? "/match-checklist"}>Checklist</a>
+                <a href={snap?.links.logistics ?? "/logistics"}>Logistics</a>
+                {after ? (
+                  <span>
+                    After · {after.compLevel.toUpperCase()} {after.matchNumber}
+                    {after.scheduledTime ? ` · ${countdownLabel(after.scheduledTime)}` : ""}
+                  </span>
+                ) : null}
+              </footer>
             </>
           ) : (
             <div className="dash-empty">
@@ -383,6 +414,63 @@ export default function CommandClient() {
               <a className="dash-empty-cta" href={snap?.links.strategy ?? "/strategy"}>
                 Open strategy
               </a>
+            </div>
+          )}
+        </article>
+      </section>
+
+      <section className="edc-coverage-section" aria-label="Live scout coverage">
+        <article className={`edc-card edc-coverage ${snap?.coverage.missingRows ? "gap" : ""}`}>
+          <header>
+            <div className="edc-card-title">
+              <span className="edc-icon" style={{ ["--tone" as string]: "#b45309", ["--tone-bg" as string]: "#ffedd5" }}>
+                <Icon name="users" />
+              </span>
+              <div>
+                <h2>Live coverage</h2>
+                <p>
+                  {snap?.coverage.liveBoard?.length
+                    ? `${snap.coverage.missingRows} uncovered · ${snap.coverage.doubleCovered} double-scouted on now/next`
+                    : "Double-scouted vs unscouted rows for now/next matches"}
+                </p>
+              </div>
+            </div>
+            {snap?.coverage.coordinatorNudge?.status === "sent" ? (
+              <span className="edc-pill warn">Coordinator nudged</span>
+            ) : snap?.coverage.coordinatorNudge?.status === "throttled" ? (
+              <span className="edc-pill">Nudge cooling down</span>
+            ) : null}
+          </header>
+          {snap?.coverage.liveBoard?.length ? (
+            <>
+              <div className="edc-coverage-board" role="list">
+                {snap.coverage.liveBoard.slice(0, 24).map((cell) => (
+                  <article key={`${cell.matchKey}-${cell.teamKey}`} className={cell.state} role="listitem">
+                    <b>
+                      {cell.compLevel.toUpperCase()} {cell.matchNumber}
+                    </b>
+                    <span>{cell.teamNumber ?? teamLabel(cell.teamKey)}</span>
+                    <small>
+                      {cell.state.replaceAll("_", " ")}
+                      {cell.entryCount > 1 ? ` · ${cell.entryCount}` : ""}
+                    </small>
+                  </article>
+                ))}
+              </div>
+              {snap.coverage.coordinatorNudge?.message ? (
+                <p className="edc-muted">{snap.coverage.coordinatorNudge.message}</p>
+              ) : null}
+              <a
+                className="edc-link"
+                href={orgId ? `/scouting?orgId=${encodeURIComponent(orgId)}` : "/scouting"}
+              >
+                Open scouting →
+              </a>
+            </>
+          ) : (
+            <div className="dash-empty calm">
+              <strong>No live match rows yet</strong>
+              <p>When TBA puts your next matches on the board, uncovered vs double-scouted robots appear here in real time.</p>
             </div>
           )}
         </article>
@@ -520,6 +608,16 @@ export default function CommandClient() {
           <Icon name="clipboard" />
           <strong>Scouting</strong>
           <span>Match & pit forms</span>
+        </a>
+        <a href={snap?.links.pit ?? (orgId ? `/pit?orgId=${encodeURIComponent(orgId)}` : "/pit")}>
+          <Icon name="cube" />
+          <strong>Pit</strong>
+          <span>Release gate & batteries</span>
+        </a>
+        <a href={snap?.links.batteries ?? (orgId ? `/batteries?orgId=${encodeURIComponent(orgId)}` : "/batteries")}>
+          <Icon name="bolt" />
+          <strong>Batteries</strong>
+          <span>Fleet readiness</span>
         </a>
         <a href={snap?.links.intel ?? "/intel"}>
           <Icon name="stats" />
