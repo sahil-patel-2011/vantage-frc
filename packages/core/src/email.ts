@@ -1,5 +1,6 @@
 import { createHash, createHmac } from "node:crypto";
 import { Pool } from "@neondatabase/serverless";
+import { runtimeEnv } from "./access-policy";
 
 export type OtpEmail = {
   email: string;
@@ -116,9 +117,10 @@ class UnconfiguredProductionEmailProvider implements EmailProvider {
 
 export function createEmailProvider(): EmailProvider {
   if (process.env.NODE_ENV === "production") {
-    if (!process.env.RESEND_API_KEY || !process.env.AUTH_EMAIL_FROM)
-      return new UnconfiguredProductionEmailProvider();
-    return new ResendEmailProvider(process.env.RESEND_API_KEY, process.env.AUTH_EMAIL_FROM);
+    const apiKey = runtimeEnv("RESEND_API_KEY");
+    const from = runtimeEnv("AUTH_EMAIL_FROM");
+    if (!apiKey || !from) return new UnconfiguredProductionEmailProvider();
+    return new ResendEmailProvider(apiKey, from);
   }
   return new LocalMailboxProvider();
 }

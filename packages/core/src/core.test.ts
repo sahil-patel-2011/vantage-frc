@@ -56,13 +56,17 @@ describe("waitlist-only auth access policy", () => {
       nodeEnv: process.env.NODE_ENV,
       resend: process.env.RESEND_API_KEY,
       from: process.env.AUTH_EMAIL_FROM,
+      bypass: process.env.ENABLE_EMAIL_2FA_BYPASS,
       db: process.env.DATABASE_AUTH_URL,
     };
     process.env.NODE_ENV = "production";
     delete process.env.RESEND_API_KEY;
     delete process.env.AUTH_EMAIL_FROM;
+    delete process.env.ENABLE_EMAIL_2FA_BYPASS;
     process.env.DATABASE_AUTH_URL = "postgresql://example";
-    const { getAuthCapabilities } = await import("./access-policy");
+    const { getAuthCapabilities, isEmailProviderConfigured, runtimeEnv } = await import("./access-policy");
+    expect(runtimeEnv("RESEND_API_KEY")).toBe("");
+    expect(isEmailProviderConfigured()).toBe(false);
     const report = getAuthCapabilities();
     expect(report.publicSignup).toBe(false);
     expect(report.waitlistOnly).toBe(true);
@@ -70,9 +74,19 @@ describe("waitlist-only auth access policy", () => {
     expect(report.email2faEnforced).toBe(false);
     expect(report.emailOtpReason).toMatch(/RESEND_API_KEY/);
     expect(report.passwordSignInAvailable).toBe(true);
+
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.AUTH_EMAIL_FROM = "Vantage <access@example.com>";
+    expect(isEmailProviderConfigured()).toBe(true);
+    expect(getAuthCapabilities().email2faEnforced).toBe(true);
+
+    process.env.ENABLE_EMAIL_2FA_BYPASS = "true";
+    expect(getAuthCapabilities().email2faEnforced).toBe(false);
+
     process.env.NODE_ENV = previous.nodeEnv;
     process.env.RESEND_API_KEY = previous.resend;
     process.env.AUTH_EMAIL_FROM = previous.from;
+    process.env.ENABLE_EMAIL_2FA_BYPASS = previous.bypass;
     process.env.DATABASE_AUTH_URL = previous.db;
   });
 

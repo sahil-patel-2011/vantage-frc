@@ -3,7 +3,7 @@ import { Pool } from "@neondatabase/serverless";
 import { authDb } from "@vantage/db/auth";
 import { sessions, verifications } from "@vantage/db/schema";
 import { and, eq, gt, lt } from "drizzle-orm";
-import { isEmailProviderConfigured } from "./access-policy";
+import { isEmailProviderConfigured, runtimeEnv } from "./access-policy";
 import {
   auditAuthEvent,
   createEmailProvider,
@@ -18,7 +18,7 @@ const POLICY = {
 } as const;
 
 export function isEmail2faBypassEnabled() {
-  return process.env.ENABLE_EMAIL_2FA_BYPASS?.trim() === "true";
+  return runtimeEnv("ENABLE_EMAIL_2FA_BYPASS") === "true";
 }
 
 /** Enforce email OTP second factor only when delivery works and bypass is off. */
