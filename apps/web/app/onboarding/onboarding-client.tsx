@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -58,6 +58,8 @@ function resolvePostOnboardingDestination(nextParam: string | null) {
 export default function OnboardingClient() {
   const searchParams = useSearchParams();
   const [state, setState] = useState<OnboardingState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("about");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -71,10 +73,22 @@ export default function OnboardingClient() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    try {
+      setPendingInviteToken(sessionStorage.getItem(PENDING_INVITE_KEY));
+    } catch {
+      setPendingInviteToken(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
     void fetch("/api/onboarding")
       .then(async (response) => (response.ok ? ((await response.json()) as OnboardingState) : null))
       .then((data) => {
-        if (!data) return;
+        if (!data) {
+          setMessage("Could not load onboarding.");
+          return;
+        }
         if (data.complete) {
           window.location.assign(resolvePostOnboardingDestination(searchParams.get("next")));
           return;
@@ -89,8 +103,9 @@ export default function OnboardingClient() {
         setDisplayName(data.displayName ?? "");
         setThemePreference(data.themePreference ?? "light");
       })
-      .catch(() => setMessage("Could not load onboarding."));
-  }, []);
+      .catch(() => setMessage("Could not load onboarding."))
+      .finally(() => setLoading(false));
+  }, [searchParams]);
 
   const locked = state?.lockedTeamNumber != null;
   const steps = useMemo(() => ["about", "team", "preferences", "done"] as const, []);
@@ -129,6 +144,20 @@ export default function OnboardingClient() {
     }
   }
 
+  if (loading && !state) {
+    return (
+      <main className="onboarding-page">
+        <section className="onboarding-card" aria-busy="true">
+          <div className="onboarding-brand">
+            <VantageLogo />
+          </div>
+          <h1>Welcome to Vantage</h1>
+          <p className="onboarding-sub">Loading your setup…</p>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="onboarding-page">
       <section className="onboarding-card" aria-labelledby="onboarding-title">
@@ -136,7 +165,28 @@ export default function OnboardingClient() {
           <VantageLogo />
         </div>
         <h1 id="onboarding-title">Welcome to Vantage</h1>
-        <p className="onboarding-sub">A short setup so your home dashboard greets you correctly. Date of birth stays private.</p>
+        <p className="onboarding-sub">
+          A short setup so your home dashboard greets you correctly. Date of birth stays private.
+        </p>
+
+        <div className="onboarding-callout">
+          <strong>How joining works</strong>
+          <p>
+            Vantage is closed membership. Finish this profile, then accept a team invite sent to your verified email to
+            unlock the workspace.
+          </p>
+        </div>
+
+        {pendingInviteToken ? (
+          <div className="onboarding-callout invite">
+            <strong>Pending team invite</strong>
+            <p>
+              We saved an invitation link for after setup.{" "}
+              <a href={`/invite?token=${encodeURIComponent(pendingInviteToken)}`}>Review and accept the invite</a> once
+              you finish onboarding.
+            </p>
+          </div>
+        ) : null}
 
         <ol className="onboarding-steps" aria-label="Onboarding progress">
           {["About you", "Team", "Preferences", "Done"].map((label, index) => (
@@ -216,9 +266,9 @@ export default function OnboardingClient() {
                   Locked to {state?.lockedOrgName ?? "your invite"} (team {state?.lockedTeamNumber}).
                 </small>
               ) : state?.canCreateOrg ? (
-                <small>As platform owner you can note a team number here; create the org from Admin when ready.</small>
+                <small>Platform admins note a team number here; create the org from Admin when ready.</small>
               ) : (
-                <small>Used to personalize setup. Joining a workspace still requires an invite.</small>
+                <small>Personalizes your dashboard. Workspace access still requires an invite from your team.</small>
               )}
             </label>
             <label>
