@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import {
   bomCoverage,
   categoryLabel,
@@ -14,6 +15,21 @@ import {
   type InventoryView,
   type TxReason,
 } from "../../lib/inventory";
+import {
+  INVENTORY_RELATED_INCLUDE,
+  classifyInventoryShell,
+  formatInventoryMetric,
+  formatInventoryMoney,
+  inventoryNextActions,
+  inventoryRelatedLinks,
+  inventorySetupSteps,
+  inventoryShellCopy,
+  shouldShowInventorySummaryTiles,
+  type InventoryNextAction,
+  type InventoryShellKind,
+} from "../../lib/inventory/inventory-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import InventoryLabelTools from "./inventory-label-tools";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
@@ -22,9 +38,6 @@ type InventoryTab = "stock" | "locations" | "bom";
 
 function fmtQty(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
-}
-function fmtMoney(value: number): string {
-  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -255,7 +268,8 @@ function AddItemForm({
 
   return (
     <form
-      className="inventory-new app-card"
+      id="inventory-add-item"
+      className="inventory-new app-card soft-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!name.trim()) return;
@@ -279,6 +293,9 @@ function AddItemForm({
           Cancel
         </button>
       </header>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Quantities and costs come from real parts — never DEMO stock rows.
+      </p>
       <div className="inventory-new-grid">
         <label className="inventory-field grow">
           <span>Name</span>
@@ -467,8 +484,162 @@ function BomPanel({ view, orgId, busyKey, run }: { view: ReadyView; orgId: strin
 }
 
 // ---------------------------------------------------------------------------
-// Root
+// Soft-UI shells + root
 // ---------------------------------------------------------------------------
+
+function InventoryRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = inventoryRelatedLinks(orgId, {
+    include: [...INVENTORY_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related inventory-related" aria-label="Related inventory tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function InventoryNextActionsPanel({ actions }: { actions: InventoryNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions inventory-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Vendors, Orders, and Spare Forecast — never DEMO stock metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function InventoryShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: InventoryShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = inventoryNextActions({ orgId, shell });
+  const copy = inventoryShellCopy(shell);
+  const buildHref = withOrgHref("/build", orgId);
+  const vendorsHref = withOrgHref("/vendors", orgId);
+  const ordersHref = hubHref("/business", "orders", orgId);
+  const spareForecastHref = hubHref("/build", "spare-forecast", orgId);
+
+  return (
+    <main className="module-page inventory-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Inventory"}
+          </>
+        }
+        title="Inventory & BOM"
+        description={description}
+      >
+        <InventoryRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No parts yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={vendorsHref}>
+              Open Vendors
+            </a>
+            <a className="app-button secondary" href={ordersHref}>
+              Open Orders
+            </a>
+            <a className="app-button secondary" href={spareForecastHref}>
+              Open Spare Forecast
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <InventoryNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
+function SummaryTiles({
+  totalItems,
+  lowStock,
+  outOfStock,
+  value,
+}: {
+  totalItems: number;
+  lowStock: number;
+  outOfStock: number;
+  value: number;
+}) {
+  const tiles = [
+    { label: "Tracked items", value: formatInventoryMetric(totalItems, true) },
+    { label: "At / below reorder", value: formatInventoryMetric(lowStock, true), warn: lowStock > 0 },
+    { label: "Out of stock", value: formatInventoryMetric(outOfStock, true), warn: outOfStock > 0 },
+    { label: "On-hand value", value: formatInventoryMoney(value, true) },
+  ];
+  return (
+    <section className="inventory-stats" aria-label="Real inventory counts">
+      {tiles.map((tile) => (
+        <div key={tile.label} className={tile.warn ? "warn" : undefined}>
+          <strong>{tile.value}</strong>
+          <span className="app-muted" style={{ display: "block" }}>
+            {tile.label}
+          </span>
+        </div>
+      ))}
+    </section>
+  );
+}
 
 export default function InventoryClient() {
   const [view, setView] = useState<InventoryView | null>(null);
@@ -485,6 +656,7 @@ export default function InventoryClient() {
 
   const load = useCallback(async () => {
     setFetchFailed(false);
+    setError("");
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
@@ -495,7 +667,6 @@ export default function InventoryClient() {
         setFetchFailed(true);
         return;
       }
-      setError("");
       setView(data);
     } catch {
       setFetchFailed(true);
@@ -532,66 +703,88 @@ export default function InventoryClient() {
     [load],
   );
 
-  if (fetchFailed) {
+  const orgId =
+    view?.status === "ready"
+      ? view.context.orgId
+      : view?.status === "setup_required"
+        ? view.context.orgId
+        : null;
+  const itemCount =
+    view?.status === "ready" ? view.items.filter((item) => !item.archived).length : 0;
+  const summary = view?.status === "ready" ? summarizeInventory(view.items) : null;
+
+  const shell = classifyInventoryShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    itemCount,
+  });
+  const shellCopy = inventoryShellCopy(shell);
+  const nextActions = inventoryNextActions({
+    orgId,
+    shell,
+    itemCount,
+    lowStockCount: summary?.lowStock ?? 0,
+    outOfStockCount: summary?.outOfStock ?? 0,
+  });
+  const relatedLinks = inventoryRelatedLinks(orgId, {
+    include: [...INVENTORY_RELATED_INCLUDE],
+  });
+  const buildHref = withOrgHref("/build", orgId);
+  const vendorsHref = withOrgHref("/vendors", orgId);
+  const ordersHref = hubHref("/business", "orders", orgId);
+  const spareForecastHref = hubHref("/build", "spare-forecast", orgId);
+  const setupSteps = inventorySetupSteps(orgId);
+
+  if (shell === "loading") {
+    return <InventoryShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
     return (
-      <main className="module-page inventory-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Build / Inventory</span>
-            <h1>Inventory &amp; BOM</h1>
-          </div>
-        </header>
-        <div className="app-card inventory-empty">
-          <strong>Could not load inventory</strong>
-          <p className="app-muted">{error || "Check your connection and try again."}</p>
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
-            Retry
-          </button>
-        </div>
-      </main>
+      <InventoryShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => void load()}
+      />
     );
   }
 
-  if (!view) {
+  if (shell === "setup") {
     return (
-      <main className="module-page inventory-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Build / Inventory</span>
-            <h1>Inventory &amp; BOM</h1>
-          </div>
-        </header>
-        <div className="app-card inventory-empty">
-          <p className="app-muted">Loading inventory…</p>
-        </div>
-      </main>
+      <InventoryShell
+        description={
+          view?.status === "setup_required" ? view.message : shellCopy.description
+        }
+        orgId={orgId}
+        shell="setup"
+      >
+        {setupSteps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {setupSteps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </InventoryShell>
     );
   }
 
-  if (view.status === "setup_required") {
-    return (
-      <main className="module-page inventory-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Build / Inventory</span>
-            <h1>Inventory &amp; BOM</h1>
-            <p>Track parts and materials, where they live, and what each mechanism needs.</p>
-          </div>
-        </header>
-        <div className="app-card inventory-empty">
-          <strong>Select a team workspace</strong>
-          <p className="app-muted">{view.message}</p>
-          <a className="app-button" href="/workspace">
-            Choose workspace
-          </a>
-        </div>
-      </main>
-    );
+  if (view?.status !== "ready") {
+    return <InventoryShell description={shellCopy.description} orgId={orgId} shell="setup" />;
   }
 
   const { context, items, locations } = view;
-  const orgId = context.orgId ?? "";
-  const summary = summarizeInventory(items);
+  const readyOrgId = context.orgId ?? "";
   const query = search.trim().toLowerCase();
   const visibleItems = items.filter((item) => {
     if (!showArchived && item.archived) return false;
@@ -606,18 +799,25 @@ export default function InventoryClient() {
 
   return (
     <main className="module-page inventory-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Build / Inventory</span>
-          <h1>Inventory &amp; BOM</h1>
-          <p>
-            Parts &amp; materials stock, storage locations, and per-mechanism bills of materials for{" "}
-            {context.orgName ?? "your team"}
-            {context.teamNumber ? ` (Team ${context.teamNumber})` : ""}.
-          </p>
-        </div>
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Inventory"}
+          </>
+        }
+        title="Inventory & BOM"
+        description={`Parts & materials stock, storage locations, and per-mechanism bills of materials for ${context.orgName ?? "your team"}${context.teamNumber ? ` (Team ${context.teamNumber})` : ""}. Cross-check Vendors, Orders, and Spare Forecast — never DEMO stock metrics.`}
+      >
         <div className="inventory-header-actions">
-          {summary.lowStock > 0 ? <span className="app-badge setup">{summary.lowStock} low</span> : null}
+          {summary && summary.lowStock > 0 ? (
+            <span className="app-badge setup">{formatInventoryMetric(summary.lowStock, true)} low</span>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
           <button type="button" className="app-button" onClick={() => setShowAdd((value) => !value)}>
             {showAdd ? "Close" : "Add item"}
           </button>
@@ -625,7 +825,7 @@ export default function InventoryClient() {
             Scan / labels
           </button>
         </div>
-      </header>
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -633,28 +833,43 @@ export default function InventoryClient() {
         </p>
       ) : null}
 
-      <div className="inventory-summary">
-        <div className="inventory-summary-tile">
-          <strong>{summary.totalItems}</strong>
-          <span>tracked items</span>
-        </div>
-        <div className={summary.lowStock > 0 ? "inventory-summary-tile warn" : "inventory-summary-tile"}>
-          <strong>{summary.lowStock}</strong>
-          <span>at / below reorder</span>
-        </div>
-        <div className={summary.outOfStock > 0 ? "inventory-summary-tile warn" : "inventory-summary-tile"}>
-          <strong>{summary.outOfStock}</strong>
-          <span>out of stock</span>
-        </div>
-        <div className="inventory-summary-tile">
-          <strong>{summary.value > 0 ? fmtMoney(summary.value) : "—"}</strong>
-          <span>on-hand value</span>
-        </div>
-      </div>
+      <InventoryNextActionsPanel actions={nextActions} />
+
+      {summary && shouldShowInventorySummaryTiles(summary.totalItems) ? (
+        <SummaryTiles
+          totalItems={summary.totalItems}
+          lowStock={summary.lowStock}
+          outOfStock={summary.outOfStock}
+          value={summary.value}
+        />
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No parts yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <button type="button" className="app-button" onClick={() => setShowAdd(true)}>
+            Add your first item
+          </button>
+          <a className="app-button secondary" href={vendorsHref}>
+            Open Vendors
+          </a>
+          <a className="app-button secondary" href={ordersHref}>
+            Open Orders
+          </a>
+          <a className="app-button secondary" href={spareForecastHref}>
+            Open Spare Forecast
+          </a>
+        </EmptyState>
+      ) : null}
 
       {showAdd ? (
         <AddItemForm
-          orgId={orgId}
+          orgId={readyOrgId}
           locations={locations}
           busy={busyKey === "create-item"}
           onCreate={(body) => void run(body, "create-item")}
@@ -664,7 +879,7 @@ export default function InventoryClient() {
 
       {showLabels ? (
         <InventoryLabelTools
-          orgId={orgId}
+          orgId={readyOrgId}
           locations={locations}
           onClose={() => setShowLabels(false)}
           onLocate={(location) => {
@@ -679,18 +894,18 @@ export default function InventoryClient() {
 
       <nav className="inventory-tabs" aria-label="Inventory sections">
         <button type="button" className={tab === "stock" ? "active" : undefined} onClick={() => setTab("stock")}>
-          Stock <b>{summary.totalItems}</b>
+          Stock <b>{formatInventoryMetric(summary?.totalItems ?? 0, true)}</b>
         </button>
         <button type="button" className={tab === "locations" ? "active" : undefined} onClick={() => setTab("locations")}>
-          Locations <b>{locations.length}</b>
+          Locations <b>{formatInventoryMetric(locations.length, true)}</b>
         </button>
         <button type="button" className={tab === "bom" ? "active" : undefined} onClick={() => setTab("bom")}>
-          BOM <b>{new Set(view.bom.map((b) => b.subsystem)).size}</b>
+          BOM <b>{formatInventoryMetric(new Set(view.bom.map((b) => b.subsystem)).size, true)}</b>
         </button>
       </nav>
 
       {tab === "stock" ? (
-        <div className="inventory-section">
+        <div id="inventory-stock" className="inventory-section">
           <div className="inventory-toolbar">
             <input
               className="inventory-search"
@@ -715,18 +930,10 @@ export default function InventoryClient() {
               <span>Show archived</span>
             </label>
           </div>
-          {items.length === 0 ? (
-            <div className="app-card inventory-empty">
-              <strong>No items yet</strong>
-              <p className="app-muted">Add motors, gearboxes, electronics, raw stock, and spares to start tracking stock.</p>
-              <button type="button" className="app-button" onClick={() => setShowAdd(true)}>
-                Add your first item
-              </button>
-            </div>
-          ) : (
+          {items.length === 0 ? null : (
             <ul className="inventory-items">
               {visibleItems.map((item) => (
-                <ItemRow key={item.id} item={item} locations={locations} orgId={orgId} busyKey={busyKey} run={run} />
+                <ItemRow key={item.id} item={item} locations={locations} orgId={readyOrgId} busyKey={busyKey} run={run} />
               ))}
               {visibleItems.length === 0 ? <p className="app-muted inventory-list-empty">No items match these filters.</p> : null}
             </ul>
@@ -734,14 +941,23 @@ export default function InventoryClient() {
         </div>
       ) : null}
 
-      {tab === "locations" ? <LocationsPanel view={view} orgId={orgId} busyKey={busyKey} run={run} /> : null}
-      {tab === "bom" ? <BomPanel view={view} orgId={orgId} busyKey={busyKey} run={run} /> : null}
+      {tab === "locations" ? <LocationsPanel view={view} orgId={readyOrgId} busyKey={busyKey} run={run} /> : null}
+      {tab === "bom" ? <BomPanel view={view} orgId={readyOrgId} busyKey={busyKey} run={run} /> : null}
+
+      <Panel className="inventory-tip" aria-label="Inventory tip">
+        <span className="eyebrow">Procurement path</span>
+        <p className="app-muted" style={{ marginTop: 8 }}>
+          Restock through <a href={ordersHref}>Orders</a>, keep suppliers in <a href={vendorsHref}>Vendors</a>, and
+          project spare exhaustion in <a href={spareForecastHref}>Spare Forecast</a> — never invent DEMO stock,
+          costs, or reorder totals.
+        </p>
+      </Panel>
 
       <AiInsightPanel
-        orgId={orgId}
+        orgId={readyOrgId}
         kind="stock_advisor"
         title="Stock advisor"
-        description="Reorder brief from low-stock thresholds and BOM shortfalls — what to buy before build hours are lost."
+        description="Reorder brief from low-stock thresholds and BOM shortfalls — what to buy before build hours are lost. Never DEMO stock metrics."
       />
     </main>
   );
