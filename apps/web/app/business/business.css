@@ -1344,3 +1344,107 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Soft-UI sponsor CRM reminder queue */
+.biz-reminder-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--soft-card, #fff);
+  border: 1px solid var(--soft-line, #d5dde8);
+  box-shadow: 0 8px 24px rgba(21, 32, 51, 0.05);
+}
+.biz-reminder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.biz-reminder-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--soft-card, #fff) 88%, #e8eef8);
+  border: 1px solid var(--soft-line, #e5e7eb);
+}
+.biz-reminder-list li > div {
+  display: grid;
+  gap: 2px;
+}
+.biz-reminder-list li strong {
+  font: 650 14px var(--font-source-sans), ui-sans-serif;
+}
+.biz-reminder-list li span {
+  color: var(--soft-muted, #6b7280);
+  font-size: 12px;
+}
+.biz-pipeline-goal {
+  display: grid;
+  gap: 14px;
+}
+.biz-pipeline-goal-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.biz-pipeline-goal-stats b {
+  display: grid;
+  gap: 4px;
+  font: 700 22px/1.1 var(--font-source-sans), ui-sans-serif;
+}
+.biz-pipeline-goal-stats small {
+  color: var(--soft-muted, #6b7280);
+  font: 500 12px var(--font-source-sans), ui-sans-serif;
+}
+.biz-sponsor-board {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(160px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+}
+.biz-sponsor-board > div {
+  min-width: 160px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.biz-sponsor-board > div > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font: 650 12px var(--font-source-sans), ui-sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--soft-muted, #6b7280);
+}
+.biz-sponsor-board article {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-line, #e5e7eb);
+  background: var(--soft-card, #fff);
+}
+.biz-pipeline-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+@media (max-width: 960px) {
+  .biz-pipeline-goal-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .biz-reminder-list li {
+    grid-template-columns: auto 1fr;
+  }
+  .biz-reminder-list li > button {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
