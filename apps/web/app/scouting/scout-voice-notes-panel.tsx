@@ -48,12 +48,8 @@ type Props = {
   matchKey: string;
   teamKey: string;
   entryType: "match" | "pit";
-  /** Notes attach to this client id; form fill is optional via onApplyToForm. */
+  /** Notes attach to this client id — never written into form fields. */
   pendingEntryClientId: string | null;
-  /** Published custom-form fields available for optional STT → form fill. */
-  formFields?: Array<{ key: string; label: string }>;
-  /** Apply a reviewed transcript onto the open custom form (caller owns payload merge). */
-  onApplyToForm?: (transcript: string, fieldKey: string | null) => void;
   onStatus?: (message: string) => void;
   onQueuedMedia?: () => void;
 };
@@ -65,8 +61,6 @@ export default function ScoutVoiceNotesPanel({
   teamKey,
   entryType,
   pendingEntryClientId,
-  formFields = [],
-  onApplyToForm,
   onStatus,
   onQueuedMedia,
 }: Props) {
@@ -75,7 +69,6 @@ export default function ScoutVoiceNotesPanel({
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [draft, setDraft] = useState("");
-  const [formFieldKey, setFormFieldKey] = useState("");
   const [sttSource, setSttSource] = useState<ScoutVoiceSttSource>("browser");
   const [consentChecked, setConsentChecked] = useState(false);
   const [browserStt, setBrowserStt] = useState(false);
@@ -191,12 +184,8 @@ export default function ScoutVoiceNotesPanel({
             }
             setDraft(parts.join(" ").trim());
           };
-          recognition.onerror = () => {
-            /* keep recording; may fall back to cloud on stop */
-          };
-          recognition.onend = () => {
-            /* continuous session ends when we stop */
-          };
+          recognition.onerror = () => {};
+          recognition.onend = () => {};
           recognitionRef.current = recognition;
           recognition.start();
         }
@@ -223,8 +212,7 @@ export default function ScoutVoiceNotesPanel({
           return;
         }
         recorder.onstop = () => {
-          const type = recorder.mimeType || "audio/webm";
-          resolve(new Blob(chunksRef.current, { type }));
+          resolve(new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" }));
         };
         recorder.stop();
       });
@@ -272,7 +260,6 @@ export default function ScoutVoiceNotesPanel({
         setError("No transcript captured. Try again or type a note manually.");
         return;
       }
-
       if (!eventKey || !teamKey) {
         setError("Select an event team before attaching a voice note.");
         return;
@@ -426,10 +413,9 @@ export default function ScoutVoiceNotesPanel({
     <div className="scout-voice">
       <div className="scout-voice-heading">
         <div>
-          <strong>Voice STT</strong>
+          <strong>Voice notes</strong>
           <small className="app-muted">
-            Record → transcript queues with audio in the offline outbox. Optionally apply speech into
-            this custom form, or attach as a note only.
+            Attached to this entry — never writes into form fields.
             {browserStt ? " Browser STT ready." : ""}
             {view.providers.cloudConfigured ? " Cloud STT available (metered)." : " Cloud STT not configured."}
           </small>
@@ -443,24 +429,6 @@ export default function ScoutVoiceNotesPanel({
           Turn off
         </button>
       </div>
-
-      {onApplyToForm && formFields.length ? (
-        <label className="scout-voice-form-target">
-          <span className="app-muted">Apply speech to form field</span>
-          <select
-            value={formFieldKey}
-            onChange={(event) => setFormFieldKey(event.target.value)}
-            disabled={recording || busy}
-          >
-            <option value="">Auto-fill labeled fields</option>
-            {formFields.map((field) => (
-              <option key={field.key} value={field.key}>
-                {field.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
 
       <div className="scout-voice-actions">
         {!recording ? (
@@ -485,25 +453,12 @@ export default function ScoutVoiceNotesPanel({
         >
           Attach typed note
         </button>
-        {onApplyToForm ? (
-          <button
-            type="button"
-            className="app-button secondary"
-            disabled={busy || !draft.trim()}
-            onClick={() => {
-              onApplyToForm(draft.trim(), formFieldKey || null);
-              onStatus?.("Transcript applied to the custom form — review before saving");
-            }}
-          >
-            Apply to form
-          </button>
-        ) : null}
       </div>
 
       <textarea
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        placeholder='Transcript appears here. Example: "Auto score 8, notes good defense"'
+        placeholder="Transcript appears here. Review before attaching — form fields stay untouched."
         disabled={recording && sttSource === "browser"}
       />
 
@@ -516,29 +471,14 @@ export default function ScoutVoiceNotesPanel({
                 <small className="app-muted"> · {new Date(note.createdAt).toLocaleString()}</small>
               </div>
               <p>{note.transcript}</p>
-              <div className="scout-voice-actions">
-                {onApplyToForm ? (
-                  <button
-                    type="button"
-                    className="app-button secondary"
-                    disabled={busy}
-                    onClick={() => {
-                      onApplyToForm(note.transcript, formFieldKey || null);
-                      onStatus?.("Voice note applied to the custom form");
-                    }}
-                  >
-                    Apply to form
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() => void mutate({ action: "delete-note", noteId: note.id })}
-                >
-                  Delete
-                </button>
-              </div>
+              <button
+                type="button"
+                className="app-button secondary"
+                disabled={busy}
+                onClick={() => void mutate({ action: "delete-note", noteId: note.id })}
+              >
+                Delete
+              </button>
             </li>
           ))}
         </ul>

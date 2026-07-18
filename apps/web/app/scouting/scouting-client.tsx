@@ -6,7 +6,6 @@ import { OfflineBanner } from "../../components/offline-banner";
 
 import type { SchemaDefinition, ScoutSchema, SyncEntry, ScoutIdentity } from "@vantage/scouting";
 import {
-  applyVoiceTranscriptToForm,
   DEFAULT_DRIVETRAIN_OPTIONS,
   normalizeRobotImageRefs,
 } from "@vantage/scouting";
@@ -815,18 +814,6 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
               teamKey={teamKey}
               entryType={type}
               pendingEntryClientId={entryClientId}
-              formFields={formFields
-                .filter((field) => field.type !== "robot_image" && field.widget !== "robot_image")
-                .map((field) => ({ key: field.key, label: field.label }))}
-              onApplyToForm={(transcript, fieldKey) => {
-                if (!schema) return;
-                setSource("voice");
-                setPayload((current) =>
-                  applyVoiceTranscriptToForm(schema.definition, current, transcript, {
-                    fieldKey,
-                  }).payload,
-                );
-              }}
               onStatus={setMessage}
               onQueuedMedia={() => {
                 void refreshCounts();
