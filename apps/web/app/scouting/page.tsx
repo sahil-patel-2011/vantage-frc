@@ -1,5 +1,6 @@
 import { EmptyState } from "../../components/ui";
 import ScoutingClient from "./scouting-client";
+import "./scouting.css";
 
 export default async function ScoutingPage({
   searchParams,

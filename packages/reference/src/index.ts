@@ -7,6 +7,7 @@ export * from "./source-registry";
 export * from "./tba-client";
 export * from "./platform-key";
 export * from "./types";
+export * from "./match-cross-validation";
 export {
   createGlobalReferenceJobs,
   syncGlobalReferenceSeason,

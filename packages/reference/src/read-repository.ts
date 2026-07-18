@@ -101,6 +101,36 @@ export class ReferenceReadRepository {
     return (result.rows[0] as MatchRecord | undefined) ?? null;
   }
 
+  /** Cached match snapshot for live scout ↔ TBA cross-validation. */
+  async getMatchOfficialSnapshot(matchKey: string, eventKey?: string): Promise<MatchRecord | null> {
+    const result = await this.client.query(
+      `SELECT match_key AS "matchKey", event_key AS "eventKey", comp_level AS "compLevel",
+        set_number AS "setNumber", match_number AS "matchNumber",
+        red_alliance AS "redAlliance", blue_alliance AS "blueAlliance",
+        winning_alliance AS "winningAlliance", event_time AS "eventTime",
+        predicted_time AS "predictedTime", actual_time AS "actualTime",
+        post_result_time AS "postResultTime", score_breakdown AS "scoreBreakdown",
+        videos, synced_at AS "syncedAt"
+       FROM matches_ref
+       WHERE match_key = $1 AND ($2::text IS NULL OR event_key = $2)`,
+      [matchKey, eventKey ?? null],
+    );
+    return (result.rows[0] as MatchRecord | undefined) ?? null;
+  }
+
+  async getTeamEventEpaEndgame(teamKey: string, eventKey: string): Promise<number | null> {
+    const result = await this.client.query<{ epaEndgame: number | null }>(
+      `SELECT epa_endgame AS "epaEndgame"
+       FROM team_event_metrics
+       WHERE team_key = $1 AND event_key = $2 AND source = 'statbotics'
+       ORDER BY synced_at DESC NULLS LAST
+       LIMIT 1`,
+      [teamKey, eventKey],
+    );
+    const value = result.rows[0]?.epaEndgame;
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }
+
   private async getTeamEventMetrics(
     teamKey: string,
     year?: number,
