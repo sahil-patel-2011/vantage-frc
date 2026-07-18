@@ -1,0 +1,143 @@
+/* CAD setup / pair — Soft-UI helpers. */
+.cad-setup-page .cad-setup-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.cad-setup-page .cad-setup-steps li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+.cad-setup-page .cad-setup-steps li.active,
+.cad-setup-page .cad-setup-steps li[aria-current="step"] {
+  border-color: color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
+  color: var(--app-ink);
+}
+.cad-setup-page .cad-setup-steps b {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  font-variant-numeric: tabular-nums;
+}
+.cad-setup-page .cad-setup-panel {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+}
+.cad-setup-page .cad-setup-panel h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.cad-choice {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.cad-choice:has(input:checked) {
+  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+}
+.cad-choice strong {
+  display: block;
+  font-size: 14px;
+}
+.cad-choice small {
+  display: block;
+  margin-top: 2px;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+.cad-setup-page .cad-setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.cad-setup-page .install-command {
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.cad-pair-page {
+  max-width: 560px;
+  margin: 0 auto;
+}
+.cad-pair-card {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+}
+.cad-pair-card h1 {
+  margin: 0;
+  font-size: 24px;
+}
+.cad-pair-card label {
+  display: grid;
+  gap: 4px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.cad-pair-card input,
+.cad-pair-card select {
+  min-height: 38px;
+  padding: 8px 10px;
+  color: var(--app-ink);
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font: inherit;
+}
+.cad-pair-card fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+}
+.cad-pair-card legend {
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+@media (max-width: 720px) {
+  .cad-setup-page .cad-setup-steps {
+    grid-template-columns: 1fr 1fr;
+  }
+}

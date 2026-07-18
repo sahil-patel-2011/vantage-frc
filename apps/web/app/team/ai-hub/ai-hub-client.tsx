@@ -67,6 +67,25 @@ function cards(data: Data, orgId: string): Card[] {
       adminOnly: true,
     },
     {
+      title: "Prompt caching",
+      blurb: "Reuse stable system and context blocks to lower input cost.",
+      href: `/team/budgets${q}#prompt-caching`,
+      status: "Manage",
+      adminOnly: true,
+    },
+    {
+      title: "Code Coach",
+      blurb: "Flag risky robot-code patterns, teach safer habits — proposal-only diffs.",
+      href: `/code${q}`,
+      status: "Coach",
+    },
+    {
+      title: "CAD Builder",
+      blurb: "Cited briefs, allowlisted plans, human-approved geometry.",
+      href: `/cad${q}`,
+      status: "Open",
+    },
+    {
       title: "Getting Started",
       blurb: "A checklist to finish setting up your workspace.",
       href: `/team/getting-started${q}`,

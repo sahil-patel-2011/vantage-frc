@@ -128,7 +128,9 @@ export default function AiRunsClient({ orgId }: { orgId: string }) {
           </p>
         </div>
         <nav className="intel-actions" aria-label="Governance links">
+          <a href={`/chat?orgId=${orgId}`}>Assistant</a>
           <a href={`/team/usage?orgId=${orgId}`}>AI usage</a>
+          <a href={`/team/budgets?orgId=${orgId}#prompt-caching`}>Prompt caching</a>
           <a href={`/team/ai-memory?orgId=${orgId}`}>AI memory</a>
           <a href={`/team?orgId=${orgId}`}>Team admin</a>
         </nav>

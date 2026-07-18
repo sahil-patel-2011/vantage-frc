@@ -1,4 +1,10 @@
 import CadSetupWizard from "./setup-client";
+import "../cad-setup.css";
+
+export const metadata = {
+  title: "CAD Setup · Vantage",
+  description: "Connect CAD platforms and AI execution modes — allowlisted, approval-gated geometry.",
+};
 
 export default async function CadSetupPage({
   searchParams,
@@ -8,11 +14,17 @@ export default async function CadSetupPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="content">
-        <h1>Select an organization</h1>
-        <p>
-          <a href="/dashboard">Go to your dashboard to choose a team</a>
-        </p>
+      <main className="module-page">
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">CAD / Setup</span>
+            <h1>Select a workspace</h1>
+            <p className="app-muted">Open the setup wizard from a team workspace so connections stay org-scoped.</p>
+          </div>
+          <a className="primary-action" href="/workspace">
+            Choose workspace →
+          </a>
+        </header>
       </main>
     );
   }

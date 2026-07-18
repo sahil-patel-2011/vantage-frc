@@ -1,5 +1,17 @@
 import { CodeClient } from "./code-client";
+import "./code.css";
 
-export default function CodePage() {
-  return <CodeClient />;
+export const metadata = {
+  title: "FRC Code Coach · Vantage",
+  description:
+    "Flag risky robot-code patterns, explain why they matter, and propose human-approved diffs — not autonomous robot code.",
+};
+
+export default async function CodePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ orgId?: string }>;
+}) {
+  const { orgId } = await searchParams;
+  return <CodeClient orgId={orgId ?? ""} />;
 }

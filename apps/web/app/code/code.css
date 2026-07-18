@@ -1,0 +1,241 @@
+/* FRC Code Coach — Soft-UI, .cdc-* prefixed + shared app tokens. */
+.cdc-page {
+  display: grid;
+  gap: 14px;
+}
+.cdc-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cdc-gov {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+  font-size: 12px;
+}
+.cdc-gov a {
+  color: var(--app-accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+.cdc-gov a:hover {
+  text-decoration: underline;
+}
+.cdc-flow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.cdc-flow article {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+}
+.cdc-flow b {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--app-muted);
+}
+.cdc-flow h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.cdc-flow p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+.cdc-workbench {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.cdc-source,
+.cdc-side {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.cdc-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+}
+.cdc-panel header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.cdc-panel h2 {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+.cdc-panel label {
+  display: grid;
+  gap: 4px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.cdc-panel input,
+.cdc-panel textarea {
+  min-height: 38px;
+  padding: 8px 10px;
+  color: var(--app-ink);
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font: inherit;
+}
+.cdc-panel textarea {
+  min-height: 220px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.cdc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cdc-findings {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cdc-finding {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+}
+.cdc-finding-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cdc-finding-head b {
+  font-size: 13px;
+}
+.cdc-severity {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--app-soft, #f3f4f6);
+  color: var(--app-muted);
+}
+.cdc-severity.high {
+  background: color-mix(in srgb, var(--app-critical) 14%, var(--app-surface));
+  color: var(--app-critical);
+}
+.cdc-severity.medium {
+  background: color-mix(in srgb, #d97706 14%, var(--app-surface));
+  color: #92400e;
+}
+.cdc-lesson {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  background: var(--app-surface);
+  border: 1px dashed var(--app-line);
+  border-radius: 10px;
+}
+.cdc-lesson span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+.cdc-lesson p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.cdc-finding code {
+  display: block;
+  padding: 8px 10px;
+  overflow-x: auto;
+  background: var(--app-surface);
+  border-radius: 8px;
+  font-size: 11px;
+}
+.cdc-checks {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cdc-checks li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.cdc-checks b {
+  color: var(--app-muted);
+  font-variant-numeric: tabular-nums;
+}
+.cdc-proposal {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+}
+.cdc-proposal > span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+.cdc-proposal pre {
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  background: var(--app-surface);
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+@media (max-width: 900px) {
+  .cdc-flow {
+    grid-template-columns: 1fr;
+  }
+  .cdc-workbench {
+    grid-template-columns: 1fr;
+  }
+}
