@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { withOrgHref } from "../lib/nav/product-nav";
 
 export type TeamOpsKey =
-  | "start" | "practice" | "todos" | "messages" | "calendar" | "attendance" | "knowledge" | "logistics" | "goals" | "batteries" | "admin";
+  | "start" | "practice" | "todos" | "messages" | "calendar" | "attendance" | "knowledge" | "logistics" | "goals" | "batteries" | "fmea" | "admin";
 
 const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path: string) => boolean }> = [
   { key: "start", href: "/start", label: "Your path", match: (p) => p === "/start" || p.startsWith("/start/") },
@@ -16,7 +16,8 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
   { key: "knowledge", href: "/team?tab=knowledge", label: "Knowledge", match: (p) => p.startsWith("/team/knowledge") || p.startsWith("/knowledge") },
   { key: "logistics", href: "/logistics", label: "Logistics", match: (p) => p.startsWith("/logistics") || p.startsWith("/travel") },
   { key: "goals", href: "/goals", label: "Goals", match: (p) => p.startsWith("/goals") },
-  { key: "batteries", href: "/build?tab=batteries", label: "Batteries", match: (p) => p === "/build" || p.startsWith("/batteries") },
+  { key: "batteries", href: "/team?tab=batteries", label: "Batteries", match: (p) => p.startsWith("/batteries") },
+  { key: "fmea", href: "/team?tab=fmea", label: "FMEA", match: (p) => p.startsWith("/fmea") },
   { key: "admin", href: "/team/admin", label: "Admin", match: (p) => p === "/team/admin" || p.startsWith("/team/admin/") },
 ];
 

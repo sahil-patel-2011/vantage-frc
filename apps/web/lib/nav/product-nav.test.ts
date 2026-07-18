@@ -63,7 +63,8 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/duties")).toBe("Logistics / Duty Roster");
     expect(breadcrumbForPath("/visit-invites")).toBe("Logistics / Visit Invites");
     expect(breadcrumbForPath("/pick-clock")).toBe("Competition / Pick clock");
-    expect(breadcrumbForPath("/fmea")).toBe("Build / FMEA");
+    expect(breadcrumbForPath("/fmea")).toBe("Team / FMEA");
+    expect(breadcrumbForPath("/batteries")).toBe("Team / Batteries");
     expect(breadcrumbForPath("/chat")).toBe("AI / Chat");
     expect(breadcrumbForPath("/strategy")).toBe("Competition / Strategy");
     expect(breadcrumbForPath("/writer")).toBe("AI / Award Writer");

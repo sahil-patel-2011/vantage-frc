@@ -6,7 +6,7 @@
 | Scouting forms | `/scouting/forms` (also `/competition?tab=forms`) | Soft-UI custom form builder (MC / short / free / dropdown / drivetrain / robot image) → `POST /api/scouting/schemas` |
 | Scout voice notes | `/competition?tab=scouting` (`#scout-voice`) | Opt-in voice STT notes + optional Apply-to-form; cloud STT metered with UsageCutoffBanner |
 | Match checklist | `/match-checklist` (also `/competition?tab=match-checklist`) | Pre-match timed pit checklist |
-| Team | `/team` | Calendar · Todos · Messages · Practice · Knowledge · Attendance (+ More tools) |
+| Team | `/team` | Calendar · Todos · Messages · Practice · Knowledge · Attendance · Batteries · FMEA (+ More tools) |
 | Business | `/business` | Overview · Budget · Orders · Sponsors · Sponsorship · Grants · … |
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Batteries (+ More tools) |
 | AI | `/ai` | Chat · Budgets · Governance · Finance toggle (+ More tools) |

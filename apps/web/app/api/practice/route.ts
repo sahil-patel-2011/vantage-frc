@@ -112,10 +112,10 @@ export async function GET(request: Request) {
         ),
         optionalQuery<LinkableAttendance>(
           client,
-          `SELECT id, title, starts_at::text AS "startsAt", kind
+          `SELECT id, title, occurred_on::text AS "startsAt", kind
            FROM attendance_events
-           WHERE org_id = $1 AND starts_at >= now() - interval '60 days'
-           ORDER BY starts_at DESC
+           WHERE org_id = $1 AND occurred_on >= (current_date - interval '60 days')
+           ORDER BY occurred_on DESC, created_at DESC
            LIMIT 40`,
           [row.orgId],
         ),
@@ -213,7 +213,7 @@ export async function POST(request: Request) {
               sessionTitle: action.title,
               sessionDate: inserted.rows[0]!.sessionDate,
               location: action.location ?? undefined,
-              href: `${resolveAuthBaseURL()}/practice?orgId=${encodeURIComponent(action.orgId)}`,
+          href: `${resolveAuthBaseURL()}/team?tab=practice&orgId=${encodeURIComponent(action.orgId)}`,
             });
           }
           return { id: sessionId };
