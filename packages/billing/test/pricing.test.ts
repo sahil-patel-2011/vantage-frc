@@ -128,6 +128,16 @@ describe("table-driven entitlement boundaries", () => {
         keySource: "local",
       }),
     ).toMatchObject({ allowed: false, reason: "feature_not_in_plan" });
+    expect(
+      evaluateEntitlement({
+        entitlement: free,
+        feature: "advanced_strategy",
+        managedProviderCostUsedUsd: 0,
+        estimatedManagedCostUsd: 0,
+        keySource: "local",
+        releaseFeatureFlags: { advanced_strategy: true },
+      }),
+    ).toMatchObject({ allowed: true, bucket: "external_provider" });
   });
   it("stops managed usage at the snapshotted period allowance", () => {
     const pro = {

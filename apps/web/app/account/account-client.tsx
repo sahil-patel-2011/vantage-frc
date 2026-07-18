@@ -67,7 +67,7 @@ const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail: string
   { key: "matchAlerts", title: "Match alerts", detail: "Upcoming match reminders when live TBA data is available." },
   { key: "scoutReminders", title: "Scout reminders", detail: "Assigned scouting form nudges for your workspace." },
   { key: "syncFailures", title: "Sync failures", detail: "Notify when TBA/reference ingest health degrades." },
-  { key: "productUpdates", title: "In-app product notes", detail: "Occasional Vantage product notes in the inbox (off by default)." },
+  { key: "productUpdates", title: "In-app product notes", detail: "Release notes and product updates in the inbox (on by default)." },
   {
     key: "sponsorReminders",
     title: "Sponsor CRM reminders",
@@ -79,7 +79,7 @@ const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string 
   {
     key: "productUpdates",
     title: "Product updates / changelog",
-    detail: "Occasional Vantage product notes by email. Off until you opt in.",
+    detail: "Release-note emails when a staged release targets your plan. On by default — opt out anytime.",
   },
   {
     key: "coachAssignments",
@@ -117,7 +117,7 @@ export default function AccountClient() {
     matchAlerts: true,
     scoutReminders: true,
     syncFailures: true,
-    productUpdates: false,
+    productUpdates: true,
     todoAssigned: true,
     todoCompleted: true,
     dutyAssigned: true,
@@ -125,7 +125,7 @@ export default function AccountClient() {
     sponsorReminders: true,
   });
   const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>({
-    productUpdates: false,
+    productUpdates: true,
     coachAssignments: false,
     coachTodos: false,
     coachPracticeReminders: false,

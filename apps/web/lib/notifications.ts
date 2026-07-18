@@ -82,6 +82,8 @@ export function notificationHref(
       }
       return orgId ? `/orders${orgQuery}` : "/orders";
     }
+    case "product_update":
+      return "/whats-new";
     case "scouting_disagreement_resolved":
       return orgId
         ? `/competition?tab=scouting&orgId=${encodeURIComponent(orgId)}&scoutTab=conflicts`

@@ -664,8 +664,13 @@ export function evaluateFreeManagedUsage(input:FreeManagedPolicy&{estimatedCostU
   if(input.activeRequests>=input.concurrencyLimit)return{allowed:false as const,reason:"low_priority_capacity_busy" as const,...fallback};
   return{allowed:true as const,bucket:"sponsored" as const,priority:"low" as const,remainingAllowanceUsd:input.monthlyAllowanceUsd-input.monthlyUsedUsd-input.estimatedCostUsd};
 }
-export function evaluateEntitlement(input:{entitlement:PlanEntitlement;feature:string;managedProviderCostUsedUsd:number;estimatedManagedCostUsd:number;keySource:"platform"|"byo"|"local"|"local_cli"|"sponsored"}){
-  if(!input.entitlement.featureFlags[input.feature])return{allowed:false as const,reason:"feature_not_in_plan" as const,remainingAllowanceUsd:Math.max(0,input.entitlement.managedAllowanceUsd-input.managedProviderCostUsedUsd)};
+/**
+ * Entitlement gate. `releaseFeatureFlags` unlocks staged-release flags for the org's plan
+ * (from published product_releases matching audience + min_plan) without rewriting plan snapshots.
+ */
+export function evaluateEntitlement(input:{entitlement:PlanEntitlement;feature:string;managedProviderCostUsedUsd:number;estimatedManagedCostUsd:number;keySource:"platform"|"byo"|"local"|"local_cli"|"sponsored";releaseFeatureFlags?:Record<string,boolean>}){
+  const unlocked=Boolean(input.entitlement.featureFlags[input.feature])||Boolean(input.releaseFeatureFlags?.[input.feature]);
+  if(!unlocked)return{allowed:false as const,reason:"feature_not_in_plan" as const,remainingAllowanceUsd:Math.max(0,input.entitlement.managedAllowanceUsd-input.managedProviderCostUsedUsd)};
   const remaining=Math.max(0,input.entitlement.managedAllowanceUsd-input.managedProviderCostUsedUsd);
   if(input.keySource==="byo"||input.keySource==="local"||input.keySource==="local_cli")return{allowed:true as const,bucket:"external_provider" as const,remainingAllowanceUsd:remaining};
   if(input.keySource==="sponsored")return input.estimatedManagedCostUsd<=remaining
@@ -673,6 +678,25 @@ export function evaluateEntitlement(input:{entitlement:PlanEntitlement;feature:s
     :{allowed:false as const,reason:"managed_allowance_exhausted" as const,remainingAllowanceUsd:remaining};
   if(input.estimatedManagedCostUsd>remaining)return{allowed:false as const,reason:"managed_allowance_exhausted" as const,remainingAllowanceUsd:remaining};
   return{allowed:true as const,bucket:"managed_allowance" as const,remainingAllowanceUsd:remaining-input.estimatedManagedCostUsd};
+}
+
+/** Plan rank for min_plan release gates (mirrors SQL product_plan_rank). */
+export const PLAN_RANK:Record<string,number>={
+  free:0,access:10,individual_pro:20,team_pro:20,team_trial:20,managed_20:20,
+  individual_max:30,team_max:30,managed_50:30,
+};
+
+export function planMeetsMinPlan(planCode:string,minPlan:string|null|undefined){
+  if(!minPlan)return true;
+  return (PLAN_RANK[planCode]??0)>=(PLAN_RANK[minPlan]??0);
+}
+
+export function mergeReleaseFeatureFlags(base:Record<string,boolean>,releaseFlags:Record<string,boolean>){
+  const merged={...base};
+  for(const [key,value] of Object.entries(releaseFlags)){
+    if(value)merged[key]=true;
+  }
+  return merged;
 }
 export function isPlanPeriodActive(period:{periodStart:Date;periodEnd:Date;status:string},now=new Date()){return period.status==="active"&&period.periodStart<=now&&period.periodEnd>now;}
 

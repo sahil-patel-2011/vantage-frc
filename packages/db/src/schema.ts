@@ -192,6 +192,60 @@ export const userEmailPreferences = pgTable("user_email_preferences", {
   ...timestamps,
 });
 
+/** Platform product releases (What's new / staged feature flags). Uncommitted WIP restored after support-tickets commit. */
+export const productReleases = pgTable("product_releases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull(),
+  title: text("title").notNull(),
+  versionLabel: text("version_label"),
+  notesMarkdown: text("notes_markdown").notNull().default(""),
+  audienceType: text("audience_type").notNull().default("all"),
+  audiencePlanCodes: text("audience_plan_codes").array().notNull().default([]),
+  minPlan: text("min_plan"),
+  featureFlags: jsonb("feature_flags").notNull().default({}),
+  status: text("status").notNull().default("draft"),
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  notifyEmail: boolean("notify_email").notNull().default(true),
+  notifyInApp: boolean("notify_in_app").notNull().default(true),
+  createdBy: uuid("created_by").references(() => users.id),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  ...timestamps,
+});
+
+export const productReleaseDeliveries = pgTable(
+  "product_release_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    releaseId: uuid("release_id")
+      .notNull()
+      .references(() => productReleases.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    emailStatus: text("email_status").notNull().default("pending"),
+    inAppStatus: text("in_app_status").notNull().default("pending"),
+    emailError: text("email_error"),
+    notifiedAt: timestamp("notified_at", { withTimezone: true }),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [uniqueIndex("product_release_deliveries_release_user_uq").on(table.releaseId, table.userId)],
+);
+
+export const productReleaseAcks = pgTable(
+  "product_release_acks",
+  {
+    releaseId: uuid("release_id")
+      .notNull()
+      .references(() => productReleases.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    seenAt: timestamp("seen_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.releaseId, table.userId] })],
+);
+
 export const platformAdmins = pgTable("platform_admins", {
   userId: uuid("user_id")
     .primaryKey()
