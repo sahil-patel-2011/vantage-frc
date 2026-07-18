@@ -535,9 +535,20 @@ export default function StrategyClient() {
       >
         <div className="strategy-header-actions">
           {orgId ? (
-            <a className="app-button secondary" href={`/strategy/draft?orgId=${encodeURIComponent(orgId)}`}>
-              Draft day board
-            </a>
+            <>
+              <a className="app-button secondary" href={`/strategy/draft?orgId=${encodeURIComponent(orgId)}`}>
+                Draft day board
+              </a>
+              <a
+                className="app-button secondary"
+                href={`/exports?orgId=${encodeURIComponent(orgId)}&domains=pick-lists,reference-metrics,research`}
+              >
+                Export strategy data
+              </a>
+              <a className="app-button secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
+                Data provenance
+              </a>
+            </>
           ) : null}
           {demo ? (
             <span className="app-badge demo">Demo mode</span>
