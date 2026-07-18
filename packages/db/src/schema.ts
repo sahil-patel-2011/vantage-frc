@@ -46,6 +46,20 @@ export const billingTier = pgEnum("billing_tier", [
 ]);
 export const keySource = pgEnum("key_source", ["platform", "byo", "local", "local_cli"]);
 export const scoutSchemaType = pgEnum("scout_schema_type", ["match", "pit"]);
+export const scoutFormFieldType = pgEnum("scout_form_field_type", [
+  "dropdown",
+  "multiple_choice",
+  "short_answer",
+  "long_text",
+  "number",
+  "drivetrain_type",
+  "robot_image",
+]);
+export const scoutFormVersionStatus = pgEnum("scout_form_version_status", [
+  "draft",
+  "published",
+  "retired",
+]);
 export const scoutConfidence = pgEnum("scout_confidence", [
   "high",
   "normal",
@@ -57,7 +71,7 @@ export const scoutSource = pgEnum("scout_source", [
   "import",
   "video",
 ]);
-export const scoutMediaKind = pgEnum("scout_media_kind", ["photo", "video"]);
+export const scoutMediaKind = pgEnum("scout_media_kind", ["photo", "video", "audio"]);
 export const scoutMediaStatus = pgEnum("scout_media_status", [
   "pending",
   "uploaded",
@@ -2081,19 +2095,43 @@ export const exportAuditEvents = pgTable("export_audit_events", {
   createdAt: timestamps.createdAt,
 }, (table) => [index("export_audit_org_created_idx").on(table.orgId, table.createdAt)]);
 
+export type ScoutFormFieldType =
+  | "dropdown"
+  | "multiple_choice"
+  | "short_answer"
+  | "long_text"
+  | "number"
+  | "drivetrain_type"
+  | "robot_image";
+
 export type ScoutFieldDefinition = {
   key: string;
   label: string;
-  type: "number" | "boolean" | "text" | "select";
+  type:
+    | "number"
+    | "boolean"
+    | "text"
+    | "select"
+    | ScoutFormFieldType;
   required?: boolean;
   options?: string[];
   disagreementThreshold?: number;
+  helpText?: string;
+  config?: Record<string, unknown>;
 };
 
 export type ScoutSchemaDefinition = {
   title: string;
   fields: ScoutFieldDefinition[];
 };
+
+export const DEFAULT_DRIVETRAIN_OPTIONS = [
+  "swerve",
+  "west_coast",
+  "tank",
+  "mecanum",
+  "other",
+] as const;
 
 export const scoutSchemas = pgTable(
   "scout_schemas",
@@ -2118,6 +2156,124 @@ export const scoutSchemas = pgTable(
       table.type,
       table.version,
     ),
+  ],
+);
+
+/** Per-org scouting form builder identity (design-time). */
+export const scoutForms = pgTable(
+  "scout_forms",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    formKind: scoutSchemaType("form_kind").notNull(),
+    seasonYear: integer("season_year").notNull(),
+    description: text("description").notNull().default(""),
+    isArchived: boolean("is_archived").notNull().default(false),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("scout_forms_org_season_kind_slug_uq").on(
+      table.orgId,
+      table.seasonYear,
+      table.formKind,
+      table.slug,
+    ),
+    index("scout_forms_org_season_idx").on(
+      table.orgId,
+      table.seasonYear,
+      table.formKind,
+    ),
+  ],
+);
+
+/** Immutable versioned snapshots of a builder form. */
+export const scoutFormVersions = pgTable(
+  "scout_form_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    formId: uuid("form_id")
+      .notNull()
+      .references(() => scoutForms.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    status: scoutFormVersionStatus("status").notNull().default("draft"),
+    title: text("title").notNull(),
+    notes: text("notes").notNull().default(""),
+    publishedSchemaId: uuid("published_schema_id").references(
+      () => scoutSchemas.id,
+      { onDelete: "set null" },
+    ),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    uniqueIndex("scout_form_versions_form_version_uq").on(
+      table.formId,
+      table.version,
+    ),
+    index("scout_form_versions_org_form_idx").on(
+      table.orgId,
+      table.formId,
+      table.version,
+    ),
+    index("scout_form_versions_org_status_idx").on(table.orgId, table.status),
+  ],
+);
+
+export type ScoutFormFieldConfig = {
+  min?: number;
+  max?: number;
+  step?: number;
+  allowMultiple?: boolean;
+  maxBytes?: number;
+  contentTypes?: string[];
+  [key: string]: unknown;
+};
+
+/** Typed fields belonging to a form schema version. */
+export const scoutFormFields = pgTable(
+  "scout_form_fields",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    versionId: uuid("version_id")
+      .notNull()
+      .references(() => scoutFormVersions.id, { onDelete: "cascade" }),
+    fieldKey: text("field_key").notNull(),
+    label: text("label").notNull(),
+    fieldType: scoutFormFieldType("field_type").notNull(),
+    required: boolean("required").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    options: jsonb("options").$type<string[]>().notNull().default([]),
+    config: jsonb("config").$type<ScoutFormFieldConfig>().notNull().default({}),
+    helpText: text("help_text").notNull().default(""),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    uniqueIndex("scout_form_fields_version_key_uq").on(
+      table.versionId,
+      table.fieldKey,
+    ),
+    index("scout_form_fields_version_sort_idx").on(
+      table.versionId,
+      table.sortOrder,
+      table.fieldKey,
+    ),
+    index("scout_form_fields_org_idx").on(table.orgId),
   ],
 );
 
@@ -2210,6 +2366,8 @@ export const scoutMedia = pgTable(
     storageKey: text("storage_key"),
     contentType: text("content_type").notNull(),
     byteSize: integer("byte_size").notNull(),
+    /** Browser/cloud STT text captured with audio; synced from the offline media outbox. */
+    transcript: text("transcript"),
     tags: text("tags").array().notNull().default([]),
     capturedBy: uuid("captured_by")
       .notNull()
@@ -2218,6 +2376,67 @@ export const scoutMedia = pgTable(
   },
   (table) => [
     uniqueIndex("scout_media_org_client_uq").on(table.orgId, table.clientId),
+  ],
+);
+
+/** Org opt-in for optional scouting voice notes (privacy consent versioned). */
+export const scoutVoiceOrgSettings = pgTable("scout_voice_org_settings", {
+  orgId: uuid("org_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  enabled: boolean("enabled").notNull().default(false),
+  consentAckVersion: text("consent_ack_version"),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  acceptedBy: uuid("accepted_by").references(() => users.id),
+  updatedBy: uuid("updated_by")
+    .notNull()
+    .references(() => users.id),
+  ...timestamps,
+});
+
+/** Per-user opt-in for scouting voice notes within an org. */
+export const scoutVoiceUserPrefs = pgTable(
+  "scout_voice_user_prefs",
+  {
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    enabled: boolean("enabled").notNull().default(false),
+    consentAckVersion: text("consent_ack_version"),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.orgId, table.userId] })],
+);
+
+/** STT transcripts attached to scout entries — never written into form payloads. */
+export const scoutVoiceNotes = pgTable(
+  "scout_voice_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    eventKey: text("event_key").notNull(),
+    matchKey: text("match_key"),
+    teamKey: text("team_key").notNull(),
+    entryType: text("entry_type").notNull().default("match"),
+    entryClientId: text("entry_client_id"),
+    entryId: uuid("entry_id"),
+    mediaClientId: text("media_client_id"),
+    transcript: text("transcript").notNull(),
+    sttSource: text("stt_source").notNull().default("browser"),
+    consentAckVersion: text("consent_ack_version").notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [
+    index("scout_voice_notes_org_event_idx").on(table.orgId, table.eventKey),
   ],
 );
 
