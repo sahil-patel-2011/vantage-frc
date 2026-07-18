@@ -1,0 +1,90 @@
+-- Expanded product catalog defaults: modest plan price + included API bumps.
+-- Keep 1.0× pass-through (no Vantage markup). Stripe Price IDs stay null until Connect/Checkout is wired.
+-- Active paid periods keep snapshotted entitlement versions; new periods pick the latest version.
+
+UPDATE pricing_plans SET
+  monthly_price_usd = v.monthly_price_usd,
+  included_allowance_usd = v.included_allowance_usd,
+  features = v.features::jsonb,
+  active = v.active,
+  updated_at = now()
+FROM (VALUES
+  ('free', 0::numeric, 0::numeric,
+   '["Complete non-AI competition core","BYOK or local OpenAI-compatible relay","No managed API allowance","Managed routing stronger via integrated tools/context — not BYOK sabotage"]',
+   true),
+  ('access', 25::numeric, 0::numeric,
+   '["$25/mo light access","Unlocks Vantage managed routing at provider list rates","No large included API bucket — use Usage Credits or PAYG","Clarify vs Free BYOK"]',
+   true),
+  ('individual_pro', 35::numeric, 30::numeric,
+   '["Private only","$30 included managed API allowance then hard cut-off","Priority access to new features","Usage Credit = $1 provider API at list rates"]',
+   true),
+  ('individual_max', 60::numeric, 52::numeric,
+   '["Private only","$52 included managed API allowance then hard cut-off","~2× Individual Pro rate/concurrency limits","Priority access to new features"]',
+   true),
+  ('team_pro', 120::numeric, 105::numeric,
+   '["Organization-wide","$105 pooled managed API allowance then hard cut-off","Shared AI and automations","Org budget/member/feature controls"]',
+   true),
+  ('team_max', 240::numeric, 220::numeric,
+   '["Organization-wide","$220 pooled managed API allowance then hard cut-off","~2× Team Pro rate limits","Advanced CAD, strategy, code, and admin"]',
+   true),
+  ('team_trial', 0::numeric, 20::numeric,
+   '["7-day admin-granted team trial","$20 included managed API allowance","No surprise auto-charge unless they subscribe"]',
+   false)
+) AS v(code, monthly_price_usd, included_allowance_usd, features, active)
+WHERE pricing_plans.code = v.code;
+
+INSERT INTO plan_entitlement_versions(
+  plan_code, version, effective_at, managed_allowance_usd, billing_owner_type, included_credits,
+  service_multiplier, fair_use, context_token_limit, agent_step_limit, cad_iteration_limit,
+  cad_concurrent_jobs, code_analysis_mb, job_priority, feature_flags, change_notice
+) VALUES
+('free', 3, '2026-07-18', 0, 'org', 0, 1.0,
+ '{"maxConcurrentPrivateJobs":1}',
+ 4000, 6, 3, 1, 5, 0,
+ '{"private_managed_ai":false,"team_automations":false,"advanced_strategy":false,"cad_design_review":false,"priority_features":false}',
+ 'Expanded Free: BYOK/local OK; $0 managed allowance.'),
+('access', 2, '2026-07-18', 0, 'user', 0, 1.0,
+ '{"maxConcurrentPrivateJobs":2}',
+ 16000, 24, 20, 2, 50, 8,
+ '{"private_managed_ai":true,"team_automations":false,"advanced_strategy":true,"cad_design_review":true,"priority_features":false,"payg_managed_routing":true}',
+ 'Access $25/mo unlocks managed routing at list rates without a large included bucket.'),
+('individual_pro', 3, '2026-07-18', 30, 'user', 30, 1.0,
+ '{"maxConcurrentPrivateJobs":2,"maxHourlyJobs":60}',
+ 16000, 24, 20, 2, 50, 10,
+ '{"private_managed_ai":true,"team_automations":false,"advanced_strategy":true,"cad_design_review":true,"priority_features":true}',
+ 'Expanded Individual Pro: $35/mo, $30 API hard cut-off; 1.0× provider list rates; priority features.'),
+('individual_max', 3, '2026-07-18', 52, 'user', 52, 1.0,
+ '{"maxConcurrentPrivateJobs":4,"maxHourlyJobs":120}',
+ 32000, 48, 40, 4, 100, 18,
+ '{"private_managed_ai":true,"team_automations":false,"advanced_strategy":true,"cad_design_review":true,"scenario_sweeps":true,"priority_features":true}',
+ 'Expanded Individual Max: $60/mo, $52 API; ~2× Individual Pro hourly/rate/concurrency; priority features.'),
+('team_pro', 3, '2026-07-18', 105, 'org', 105, 1.0,
+ '{"maxConcurrentTeamJobs":5,"maxHourlyJobs":200}',
+ 64000, 100, 100, 5, 500, 25,
+ '{"private_managed_ai":true,"team_automations":true,"shared_memory":true,"advanced_strategy":true,"cad_design_review":true,"priority_features":true}',
+ 'Expanded Team Pro: $120/mo, $105 pooled API hard cut-off; org controls; priority features.'),
+('team_max', 3, '2026-07-18', 220, 'org', 220, 1.0,
+ '{"maxConcurrentTeamJobs":10,"maxHourlyJobs":400}',
+ 128000, 200, 200, 10, 1000, 40,
+ '{"private_managed_ai":true,"team_automations":true,"shared_memory":true,"advanced_strategy":true,"cad_design_review":true,"scenario_sweeps":true,"advanced_team_admin":true,"priority_features":true}',
+ 'Expanded Team Max: $240/mo, $220 pooled API; ~2× Team Pro rate limits; advanced CAD/strategy/code/admin.'),
+('team_trial', 2, '2026-07-18', 20, 'org', 20, 1.0,
+ '{"maxConcurrentTeamJobs":5,"maxHourlyJobs":200,"trialDays":7,"autoCharge":false}',
+ 64000, 100, 100, 5, 500, 25,
+ '{"private_managed_ai":true,"team_automations":true,"shared_memory":true,"advanced_strategy":true,"cad_design_review":true,"priority_features":true,"trial":true}',
+ 'Week team trial unchanged: 7 days, $20 included API; no auto-charge unless they subscribe.')
+ON CONFLICT(plan_code, version) DO UPDATE SET
+  effective_at = excluded.effective_at,
+  managed_allowance_usd = excluded.managed_allowance_usd,
+  billing_owner_type = excluded.billing_owner_type,
+  included_credits = excluded.included_credits,
+  service_multiplier = excluded.service_multiplier,
+  fair_use = excluded.fair_use,
+  context_token_limit = excluded.context_token_limit,
+  agent_step_limit = excluded.agent_step_limit,
+  cad_iteration_limit = excluded.cad_iteration_limit,
+  cad_concurrent_jobs = excluded.cad_concurrent_jobs,
+  code_analysis_mb = excluded.code_analysis_mb,
+  job_priority = excluded.job_priority,
+  feature_flags = excluded.feature_flags,
+  change_notice = excluded.change_notice;
