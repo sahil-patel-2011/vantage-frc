@@ -37,9 +37,9 @@ FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access i
 
 ## Pricing
 - Free: complete non-AI competition core, BYOK/local AI, $0 managed API allowance.
-- Access ($25/mo): managed routing at provider list rates without a large included bucket (Usage Credits or PAYG).
-- Individual Pro ($35/mo, $30 included API) and Individual Max ($60/mo, $52 included API): private workspace; priority features; Max ≈2× Pro rate limits.
-- Team Pro ($120/mo, $105 pooled API) and Team Max ($240/mo, $220 pooled API): organization plans; Max ≈2× Pro rate limits.
+- Access ($35/mo): managed routing at provider list rates without a large included bucket (Usage Credits or PAYG).
+- Individual Pro ($49/mo, $40 included API) and Individual Max ($79/mo, $68 included API): private workspace; priority features; Max ≈2× Pro rate limits.
+- Team Pro ($149/mo, $130 pooled API) and Team Max ($299/mo, $260 pooled API): organization plans; Max ≈2× Pro rate limits.
 - No Vantage markup on model spend: 1 Usage Credit = $1 provider API at list rates (1.0× debit). Hard stop after included allowance unless Usage Credits or explicit PAYG + spend cap. Week team trial: 7 days / $20 API, no surprise auto-charge. No per-seat student pricing.
 
 ## Data sources
