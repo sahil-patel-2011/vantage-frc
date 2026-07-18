@@ -44,6 +44,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/tasks")).toBe("Team / Todos");
     expect(breadcrumbForPath("/command")).toBe("Competition / Event Day");
     expect(breadcrumbForPath("/my-day")).toBe("Competition / My Day");
+    expect(breadcrumbForPath("/start")).toBe("Home / Your path");
     expect(breadcrumbForPath("/business")).toBe("Business / Business Hub");
     expect(breadcrumbForPath("/sponsorship")).toBe("Business / Sponsorship One-Pagers");
     expect(breadcrumbForPath("/orders")).toBe("Business / Orders");
