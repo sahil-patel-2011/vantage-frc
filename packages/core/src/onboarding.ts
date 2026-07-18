@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { assertTermsAccepted, recordLegalAcceptance } from "./legal";
 
 export const GENDER_OPTIONS = [
   "female",
@@ -23,6 +24,7 @@ export type OrgLocationInput = {
   city?: string | null;
   stateProv?: string | null;
   description?: string | null;
+  termsAccepted?: boolean;
 };
 
 export type NormalizedOrgLocation = {
@@ -43,6 +45,7 @@ export type OnboardingPayload = {
   city?: string | null;
   stateProv?: string | null;
   description?: string | null;
+  termsAccepted?: boolean;
 };
 
 export type OnboardingState = {
@@ -64,6 +67,8 @@ export type OnboardingState = {
   orgDescription: string | null;
   canCreateOrg: boolean;
   platformAdmin: boolean;
+  termsAcceptedAt: string | null;
+  termsVersion: string | null;
 };
 
 function trimOrNull(value: unknown, max: number): string | null {
@@ -170,6 +175,8 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     displayName: string | null;
     themePreference: string | null;
     onboardingCompletedAt: string | null;
+    termsAcceptedAt: string | null;
+    termsVersion: string | null;
   }>(
     `SELECT first_name AS "firstName",
             last_name AS "lastName",
@@ -179,7 +186,9 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
             team_role AS "teamRole",
             display_name AS "displayName",
             theme_preference AS "themePreference",
-            onboarding_completed_at::text AS "onboardingCompletedAt"
+            onboarding_completed_at::text AS "onboardingCompletedAt",
+            terms_accepted_at::text AS "termsAcceptedAt",
+            terms_version AS "termsVersion"
      FROM profiles WHERE user_id=$1`,
     [userId],
   );
@@ -239,6 +248,8 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     orgDescription: locked?.description ?? null,
     canCreateOrg: Boolean(admin.rowCount),
     platformAdmin: Boolean(admin.rowCount),
+    termsAcceptedAt: row?.termsAcceptedAt ?? null,
+    termsVersion: row?.termsVersion ?? null,
   };
 }
 
@@ -301,6 +312,8 @@ export async function completeOnboarding(
       payload.themePreference,
     ],
   );
+
+  await recordLegalAcceptance(client, userId);
 
   await client.query(`UPDATE users SET name=$2 WHERE id=$1`, [
     userId,

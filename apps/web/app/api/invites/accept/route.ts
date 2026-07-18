@@ -1,4 +1,4 @@
-import { acceptOrganizationInvite, auth } from "@vantage/core";
+import { acceptOrganizationInvite, assertTermsAccepted, auth, recordLegalAcceptance } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
@@ -20,8 +20,9 @@ export async function POST(request: Request) {
       return rateLimitedResponse("Too many invite attempts. Wait a few minutes and try again.");
     }
 
-    const body = (await request.json()) as { token?: string };
+    const body = (await request.json()) as { token?: string; termsAccepted?: boolean };
     if (!body.token) return Response.json({ error: "Invite token is required" }, { status: 400 });
+    assertTermsAccepted(body.termsAccepted);
     const orgId = await withRls({ userId: session.user.id }, async (client) => { const acceptedOrgId = await acceptOrganizationInvite(client, session.user.id, body.token!); await recordLegalAcceptance(client, session.user.id); return acceptedOrgId; });
     return Response.json({ orgId });
   } catch (error) {
