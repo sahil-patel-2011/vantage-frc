@@ -1,9 +1,13 @@
-/* Inventory & BOM — co-located so styling survives independently of the shared
-   global stylesheet. All selectors are .inventory-* prefixed (plus reuse of the
-   app design-system classes) and use theme-aware CSS variables. */
+/* Soft-UI Inventory & BOM — .inventory-* + shared Soft-UI tokens. Never DEMO stock metrics. */
+.inventory-page{display:grid;gap:16px}
 .inventory-page input,.inventory-page select,.inventory-page textarea{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
-.inventory-header-actions{display:flex;align-items:center;gap:10px}
+.inventory-header-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:flex-end}
 .app-button.sm{min-height:32px;padding:5px 10px;font-size:11px}
+.inventory-related{display:flex;flex-wrap:wrap;gap:8px}
+.inventory-next-actions{margin:0}
+.inventory-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.inventory-stats strong{font-size:1.5rem}
+.inventory-stats .warn strong{color:var(--app-critical)}
 .inventory-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .inventory-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .inventory-link.danger{color:var(--app-critical)}
@@ -80,6 +84,11 @@
 .inventory-bom li.short b{color:var(--app-critical)}
 .inventory-bom li em{font-style:normal;font-size:11px;font-weight:700}
 .inventory-bom li button{color:var(--app-muted)}
+.inventory-tip{margin:0}
+@media(max-width:900px){
+  .inventory-header-actions{justify-content:flex-start}
+  .inventory-next-actions li{flex-direction:column;align-items:stretch}
+}
 @media(max-width:760px){
   .inventory-summary{grid-template-columns:1fr 1fr}
   .inventory-item-main{grid-template-columns:1fr auto;grid-template-areas:"id qty" "actions actions"}
