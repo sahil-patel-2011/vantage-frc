@@ -172,7 +172,6 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   );
 
   useEffect(() => {
-    setOnline(navigator.onLine);
     void (async () => {
       const cached = await getCachedEvent<Bootstrap>(orgId);
       if (cached) setData(cached);
@@ -191,17 +190,13 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
       await sync();
     })();
     const handleOnline = () => {
-      setOnline(true);
       void sync();
     };
-    const handleOffline = () => setOnline(false);
     window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
     return () => {
       window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
     };
-  }, [orgId, refreshCounts, sync]);
+  }, [orgId, refreshCounts, sync, loadTrust]);
 
   useEffect(() => {
     const deepMatch = searchParams.get("matchKey");
