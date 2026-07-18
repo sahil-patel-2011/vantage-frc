@@ -18,14 +18,23 @@ export default async function TeamDiscordPage({
         />
         <TeamOpsNav active="admin" />
         <EmptyState
+          soft
           title="Select a workspace"
-          description="Open a team workspace to connect Discord."
-          badge="Setup"
+          description="Open a team workspace to connect Discord and the object-linked Messages bridge."
+          badge="Setup required"
           badgeTone="setup"
         >
           <a className="app-button" href="/workspace">
             Select workspace
           </a>
+          <nav className="product-hub-related" aria-label="Related team tools" style={{ marginTop: 12 }}>
+            <a className="app-button secondary" href="/team?tab=messages">
+              Messages
+            </a>
+            <a className="app-button secondary" href="/team">
+              Team
+            </a>
+          </nav>
         </EmptyState>
       </main>
     );
