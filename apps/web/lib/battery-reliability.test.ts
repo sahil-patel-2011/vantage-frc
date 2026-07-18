@@ -65,7 +65,9 @@ describe("battery reliability bridge", () => {
         status: "quarantine",
         measuredAt: new Date(now).toISOString(),
         voltage: 12.1,
-        resistanceMilliohms: 24,
+        // Aging band (15–19 mΩ) so quarantine contributes serviceCount without
+        // also counting as retire; C3 alone is past RESISTANCE_RETIRE_MOHM (20).
+        resistanceMilliohms: 18,
         now,
       },
       {
