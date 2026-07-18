@@ -795,7 +795,10 @@ html[data-theme="dark"] .signin-submit{background:#6e9bff;color:#071014}
 .edc-pulse strong{font-size:28px;letter-spacing:-.03em;line-height:1}
 .edc-pulse span{color:var(--soft-muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
 .edc-pulse .edc-muted{grid-column:1/-1}
-.edc-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:4px}
+.edc-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:4px}
+.edc-page .app-page-header{margin-bottom:18px}
+.edc-page .app-page-header h1{margin:6px 0 8px;font-size:clamp(26px,3.2vw,36px);letter-spacing:-.035em;line-height:1.05}
+.edc-page .app-page-header p{margin:0;color:var(--soft-muted);font-size:14px;line-height:1.45;max-width:56ch}
 .edc-actions a{
   display:grid;gap:4px;padding:16px 14px;min-height:96px;border-radius:16px;text-decoration:none;color:var(--soft-ink);
   background:var(--soft-card);border:1px solid var(--soft-line);box-shadow:0 8px 20px rgba(19,32,51,.05);
@@ -1497,6 +1500,60 @@ body.has-app-shell .admin-control .intel-panel small{display:block;margin-top:6p
   body.has-app-shell .admin-waitlist-search{flex-direction:column;align-items:stretch}
 }
 
+/* Team ops cross-nav (Practice / Todos / Messages / Calendar…) */
+.team-ops-nav{
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  margin:0 0 14px;padding:0;max-width:100%;
+}
+.team-ops-nav a{
+  min-height:34px;padding:0 12px;display:inline-flex;align-items:center;
+  border:1px solid var(--soft-line,#d5dde8);border-radius:999px;
+  background:var(--soft-card,#fff);color:var(--soft-muted,#6b7280);
+  font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;
+}
+.team-ops-nav a:hover{color:var(--soft-ink,#0f172a);border-color:color-mix(in srgb,var(--soft-accent,#2563eb) 35%,var(--soft-line,#d5dde8))}
+.team-ops-nav a.active, .team-ops-nav a[aria-current="page"]{
+  color:#fff;background:var(--soft-accent,#2563eb);border-color:var(--soft-accent,#2563eb);
+}
+.team-ops-nav.on-dark a{
+  color:rgba(255,255,255,.88);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);
+}
+.team-ops-nav.on-dark a:hover{background:rgba(255,255,255,.18);color:#fff}
+.team-ops-nav.on-dark a.active,.team-ops-nav.on-dark a[aria-current="page"]{
+  color:#0d3d46;background:#fff;border-color:#fff;
+}
+body.has-app-shell .messages-page .team-ops-header{
+  display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;
+  margin-bottom:12px;padding:0 clamp(14px,2vw,28px);
+}
+body.has-app-shell .messages-page .team-ops-header h1{margin:4px 0 0;font-size:clamp(22px,3vw,32px);letter-spacing:-.03em}
+body.has-app-shell .messages-page .team-ops-header .breadcrumbs{color:var(--soft-muted);font:700 11px var(--font-source-sans),ui-sans-serif;letter-spacing:.04em;text-transform:uppercase}
+body.has-app-shell .messages-page .messages-live{
+  display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;
+  border-radius:999px;border:1px solid var(--soft-line);background:var(--soft-card);
+  color:var(--soft-muted);font:700 11px var(--font-source-sans),ui-sans-serif;
+}
+body.has-app-shell .messages-page .messages-live.on{color:var(--soft-accent);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line))}
+body.has-app-shell .messages-page .messages-live i{
+  width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;
+}
+body.has-app-shell .team-admin-page .admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+body.has-app-shell .team-admin-page .intel-panel,
+body.has-app-shell .team-admin-page .compare-panel{
+  border-radius:var(--soft-radius);border:1px solid var(--soft-line);background:var(--soft-card);box-shadow:var(--soft-shadow);
+}
+body.has-app-shell .team-admin-page .team-admin-links{
+  display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;
+}
+body.has-app-shell .team-admin-page .team-admin-links a{
+  min-height:36px;padding:0 12px;display:inline-flex;align-items:center;
+  border:1px solid var(--soft-line);border-radius:10px;background:var(--soft-bg);
+  color:var(--soft-ink);font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;
+}
+@media(max-width:700px){
+  body.has-app-shell .team-admin-page .admin-grid{grid-template-columns:1fr}
+}
+
 /* Shared Soft-UI primitives (components/ui) */
 .soft-form-row{display:grid;gap:4px;min-width:0}
 .soft-form-row.wide{grid-column:1/-1}
@@ -1535,4 +1592,102 @@ body.has-app-shell .strategy-empty-panel,
 body.has-app-shell .strategy-demo-optin{
   min-height:200px;border-radius:var(--soft-radius);border:1px dashed var(--soft-line);
   background:var(--soft-card);box-shadow:none;
+}
+
+/* Settings findability hub */
+.settings-hub{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px;margin:0 0 16px;
+}
+.settings-hub a,.settings-hub button{
+  display:grid;gap:4px;align-content:start;min-height:76px;padding:12px 14px;text-align:left;
+  border:1px solid color-mix(in srgb,var(--soft-line) 90%,transparent);border-radius:var(--soft-radius);
+  background:var(--soft-card);box-shadow:var(--soft-shadow);color:inherit;text-decoration:none;cursor:pointer;
+  font:inherit;
+}
+.settings-hub a:hover,.settings-hub button:hover{
+  border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line));
+  background:color-mix(in srgb,var(--soft-accent-soft) 45%,var(--soft-card));
+}
+.settings-hub strong{font-size:13px;letter-spacing:-.01em}
+.settings-hub span{color:var(--soft-muted);font-size:12px;line-height:1.35}
+.settings-inline-links{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.settings-inline-links a,.settings-secondary-links a{
+  min-height:36px;padding:0 12px;display:inline-flex;align-items:center;border-radius:10px;
+  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-accent);
+  font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;
+}
+.settings-secondary-links{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.account-prefs-heading{margin:22px 0 0;font-size:16px;letter-spacing:-.02em}
+.account-page .account-panel a{color:var(--soft-accent);font-weight:700;text-decoration:none}
+.security-page .admin-grid,.budget-page .admin-grid,.team-security-page .auth-policy-form{margin-top:4px}
+.security-page label,.budget-page label,.team-security-page label{display:grid;gap:6px;margin:10px 0}
+.security-page .status-good{display:block;margin:8px 0;color:#1f7a3d;font-weight:700}
+.security-page .recovery-codes code{
+  display:inline-block;margin:4px 6px 4px 0;padding:6px 8px;border-radius:8px;
+  background:var(--soft-bg);border:1px solid var(--soft-line);font:600 12px var(--font-ibm-mono),ui-monospace;
+}
+.team-security-capabilities{max-width:1120px;margin:0 auto;padding:0 clamp(14px,3vw,28px) 28px}
+
+/* Competition hub Soft-UI (scout / intel / dossier) */
+.scout-page .scout-header-meta,.intel-page .intel-primary-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end}
+.scout-sync-pill{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--soft-line);font:700 11px var(--font-source-sans),ui-sans-serif}
+.scout-sync-pill.online{color:var(--soft-accent);background:var(--soft-accent-soft);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line))}
+.scout-sync-pill.offline{color:#a16207;background:#fff8e8;border-color:#f1dfb0}
+.scout-event-strip{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.scout-workbench{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px}
+.scout-form-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
+.scout-form-heading h2{margin:0 0 4px}
+.scout-form-panel .soft-form-row{margin:10px 0}
+.scout-form-panel input,.scout-form-panel select,.scout-form-panel textarea,
+.intel-lookup input,.dossier-search-row input,.chem-form input{
+  width:100%;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--soft-line);
+  background:var(--soft-bg);color:var(--soft-ink);font:inherit;
+}
+.scout-form-panel textarea{min-height:96px;padding:12px;resize:vertical}
+.scout-voice{display:grid;gap:10px;padding:14px;margin:12px 0;border:1px solid var(--soft-line);border-radius:14px;background:var(--soft-bg)}
+.scout-voice small{display:block;margin-top:2px}
+.scout-media{display:grid;gap:6px;margin:12px 0;color:var(--soft-muted);font:600 12px var(--font-source-sans),ui-sans-serif}
+.scout-media input{padding:10px}
+.scout-side{display:grid;gap:12px;align-content:start}
+.scout-entry-list,.scout-conflict-list,.intel-findings,.intel-similar,.intel-trajectory,.intel-h2h{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.scout-entry-list li,.scout-conflict-list li,.intel-findings li{display:grid;gap:4px;padding-top:10px;border-top:1px solid var(--soft-line)}
+.scout-entry-list li:first-child,.scout-conflict-list li:first-child,.intel-findings li:first-child{border-top:0;padding-top:0}
+.scout-conflict-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.scout-formula{display:grid;gap:10px;margin-top:10px}
+.intel-lookup-row,.dossier-search-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+.intel-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0 0 16px}
+.intel-results button{display:grid;gap:4px;padding:14px;text-align:left;cursor:pointer;color:var(--soft-ink);background:var(--soft-card);border:1px solid var(--soft-line);border-radius:14px;box-shadow:var(--soft-shadow)}
+.intel-results button:hover{border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));background:var(--soft-accent-soft)}
+.intel-results em{color:var(--soft-accent);font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.04em;text-transform:uppercase}
+.intel-detail{display:grid;gap:14px}
+.intel-hero-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px}
+.intel-hero-head h2{margin:8px 0 4px;font-size:clamp(24px,3vw,34px);letter-spacing:-.03em}
+.intel-metric-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.intel-panels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.intel-tag-row{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.intel-trajectory li{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center}
+.intel-trajectory i{display:block;height:8px;border-radius:999px;background:var(--soft-accent)}
+.intel-similar button{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:10px 0;border:0;border-top:1px solid var(--soft-line);background:transparent;cursor:pointer;color:inherit;text-align:left}
+.intel-similar li:first-child button{border-top:0}
+.intel-tools{display:grid;gap:14px;margin-top:12px}
+.intel-pick-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+.intel-h2h li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--soft-line);font-size:13px}
+.intel-h2h li:first-child{border-top:0}
+.dossier-search-panel{margin-bottom:14px}
+.dossier-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0}
+.dossier-hero h2{margin:8px 0 4px;font-size:clamp(26px,3vw,36px);letter-spacing:-.03em}
+.dossier-fact-card.soft-panel{display:grid;gap:6px;padding:16px;border:1px solid var(--soft-line);border-radius:var(--soft-radius);background:var(--soft-card);box-shadow:var(--soft-shadow)}
+.strategy-provenance-details{margin-top:12px;padding-top:10px;border-top:1px solid var(--soft-line)}
+.strategy-provenance-details summary{cursor:pointer;font:700 13px var(--font-source-sans),ui-sans-serif;color:var(--soft-accent)}
+.strategy-deep{margin-top:12px;display:grid;gap:10px}
+.chem-page .chem-compose{margin-bottom:14px}
+@media(max-width:980px){
+  .scout-workbench,.intel-panels{grid-template-columns:1fr 1fr}
+  .intel-metric-grid{grid-template-columns:repeat(3,1fr)}
+  .intel-pick-row{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .scout-workbench,.intel-panels,.intel-metric-grid{grid-template-columns:1fr}
+  .intel-lookup-row,.dossier-search-row{grid-template-columns:1fr}
+  .dossier-hero{flex-direction:column;align-items:flex-start}
 }
