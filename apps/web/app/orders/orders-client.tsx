@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { EmptyState } from "../../components/ui/empty-state";
 import { PageHeader } from "../../components/ui/page-header";
 import { showBuyPanel, statusLabel } from "../../lib/orders/evaluate";
 import type { OrdersView } from "../../lib/orders/compute-orders";
@@ -106,12 +107,14 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
       ) : null}
 
       {!view ? (
-        <section className="soft-panel">
-          <p className="app-muted">Loading purchase requests…</p>
-        </section>
+        <EmptyState soft title="Opening orders…" description="Loading this season’s purchase requests." aria-busy />
       ) : view.status === "setup_required" ? (
-        <section className="soft-panel">
-          <p>{view.message}</p>
+        <EmptyState
+          badge="Setup required"
+          badgeTone="setup"
+          title={view.message}
+          description="Choose a workspace, then return here to submit and approve purchases."
+        >
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -123,7 +126,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
               </li>
             ))}
           </ol>
-        </section>
+        </EmptyState>
       ) : (
         <>
           {!embedded ? (
@@ -147,13 +150,11 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
           ) : null}
           <MetricsPanel view={live!} />
           {live!.orders.length === 0 ? (
-            <section className="soft-panel">
-              <h2>No purchase requests yet</h2>
-              <p className="app-muted">
-                Submit what the team needs below. Mentors approve here, then the buyer opens the vendor
-                link and pays outside Vantage — card and bank details are never stored.
-              </p>
-            </section>
+            <EmptyState
+              soft
+              title="No purchase requests yet"
+              description="Submit what the team needs below. Mentors approve here, then the buyer opens the vendor link and pays outside Vantage — card and bank details are never stored."
+            />
           ) : null}
           {live!.financeAiEnabled && live!.aiSummary ? <AiSummaryPanel summary={live!.aiSummary} /> : null}
           {live!.metrics.mineToBuy > 0 ? (
@@ -181,14 +182,31 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
         description="Tell mentors what the team needs, get approval, then buy on the vendor site. Vantage never stores card or bank details."
       >
         {live ? (
-          <div className="orders-links">
-            <a className="app-button secondary" href={`/business${orgQ}`}>
-              Business portal
+          <nav className="orders-links" aria-label="Related business tools">
+            <a
+              className="app-button secondary"
+              href={
+                live.orgId
+                  ? `/business?orgId=${encodeURIComponent(live.orgId)}&tab=orders`
+                  : "/business?tab=orders"
+              }
+            >
+              Business · Orders
+            </a>
+            <a
+              className="app-button secondary"
+              href={
+                live.orgId
+                  ? `/business?orgId=${encodeURIComponent(live.orgId)}&tab=budget`
+                  : "/business?tab=budget"
+              }
+            >
+              Budget
             </a>
             <a className="app-button secondary" href={`/costs${orgQ}`}>
               Season costs
             </a>
-          </div>
+          </nav>
         ) : null}
       </PageHeader>
       {body}

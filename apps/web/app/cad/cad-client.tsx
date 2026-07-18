@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { BuildHubRelated } from "../../components/build-hub-related";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
 import { CadAdaptivePanel, type CadAdaptiveView } from "./cad-adaptive-panel";
 import { CadOperationComposer } from "./cad-operation-composer";
@@ -336,6 +337,8 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
           </button>
         </div>
       </header>
+
+      <BuildHubRelated orgId={orgId} active="cad" />
 
       <nav className="intel-actions" aria-label="AI governance" style={{ marginBottom: 12 }}>
         <a href={`/chat?orgId=${encodeURIComponent(orgId)}`}>Assistant</a>

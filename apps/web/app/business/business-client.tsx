@@ -14,6 +14,13 @@ import {
   type PurchaseRequest,
   type Sponsor,
 } from "../../lib/business-portal";
+import {
+  hubById,
+  hubLegacyHref,
+  hubMoreTabs,
+  hubPrimaryTabs,
+  isHubTab,
+} from "../../lib/nav/hubs";
 import { FundraisingGlance } from "./fundraising-glance";
 import { PartnerPlacementsPanel } from "./partner-placements-panel";
 import { SponsorPipelinePanel } from "./sponsor-pipeline-panel";
@@ -21,27 +28,49 @@ import "../product-hub.css";
 const OrdersClient = dynamic(() => import("../orders/orders-client"), { ssr: false });
 const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-client"), { ssr: false });
 
-type Tab = "overview" | "budget" | "orders" | "sponsors" | "sponsorship" | "placements" | "grants" | "evidence";
+const BUSINESS_HUB = hubById("business");
+const PRIMARY_TABS = hubPrimaryTabs(BUSINESS_HUB);
+const MORE_TABS = hubMoreTabs(BUSINESS_HUB);
 
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "overview", label: "Overview" },
-  { id: "budget", label: "Budget" },
-  { id: "orders", label: "Orders" },
-  { id: "sponsors", label: "Sponsors" },
-  { id: "sponsorship", label: "Sponsorship" },
-  { id: "placements", label: "Partners" },
-  { id: "grants", label: "Grants" },
-  { id: "evidence", label: "Awards" },
-];
+type Tab =
+  | "overview"
+  | "budget"
+  | "orders"
+  | "sponsors"
+  | "sponsorship"
+  | "placements"
+  | "grants"
+  | "evidence";
+
+const TABS: Array<{ id: Tab; label: string }> = PRIMARY_TABS.map((tab) => ({
+  id: tab.id as Tab,
+  label: tab.label,
+}));
 
 function isTab(value: string | null): value is Tab {
   return TABS.some((tab) => tab.id === value);
+}
+
+function readOrgIdFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("orgId");
 }
 
 function readTabFromUrl(): Tab {
   if (typeof window === "undefined") return "overview";
   const tab = new URLSearchParams(window.location.search).get("tab");
   return isTab(tab) ? tab : "overview";
+}
+
+/** More-tools tabs live as standalone pages — jump there instead of a blank panel. */
+function redirectMoreToolTab(): boolean {
+  if (typeof window === "undefined") return false;
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  if (!tab || isTab(tab) || !isHubTab(BUSINESS_HUB, tab)) return false;
+  const more = MORE_TABS.find((entry) => entry.id === tab);
+  if (!more?.legacyHref) return false;
+  window.location.replace(hubLegacyHref(more, readOrgIdFromUrl()));
+  return true;
 }
 
 function writeTabToUrl(tab: Tab) {
@@ -116,6 +145,7 @@ export default function BusinessClient() {
   }, []);
 
   useEffect(() => {
+    if (redirectMoreToolTab()) return;
     setTab(readTabFromUrl());
     void load();
   }, [load]);
@@ -227,14 +257,11 @@ export default function BusinessClient() {
 
       {live ? (
         <nav className="biz-related" aria-label="Related finance tools">
-          <button type="button" className="app-button secondary" onClick={() => selectTab("orders")}>Orders</button>
-          <button type="button" className="app-button secondary" onClick={() => selectTab("sponsorship")}>Sponsorship</button>
-          <button type="button" className="app-button secondary" onClick={() => selectTab("grants")}>Grants</button>
           <a className="app-button secondary" href={`/costs${q}`}>
             Season Costs
           </a>
-          <a className="app-button secondary" href={`/attendance${q}`}>
-            Attendance
+          <a className="app-button secondary" href={`/fundraisers${q}`}>
+            Fundraisers
           </a>
           <a
             className="app-button secondary"
@@ -248,17 +275,20 @@ export default function BusinessClient() {
           <a className="app-button secondary" href={`/team/awards${q}`}>
             Awards workbench
           </a>
-          <a className="app-button secondary" href={`/team/sponsors${q}`}>
-            Sponsors CRM
+          <a className="app-button secondary" href={`/award-tracker${q}`}>
+            Award tracker
           </a>
-          <a className="app-button secondary" href={`/exports?orgId=${encodeURIComponent(live.orgId)}&domains=usage,wallet,membership`}>
+          <a
+            className="app-button secondary"
+            href={orgId ? `/ai?tab=finance&orgId=${encodeURIComponent(orgId)}` : "/ai?tab=finance"}
+          >
+            Finance-in-AI
+          </a>
+          <a
+            className="app-button secondary"
+            href={`/exports?orgId=${encodeURIComponent(live.orgId)}&domains=usage,wallet,membership`}
+          >
             Exports
-          </a>
-          <a className="app-button secondary" href={`/team/data${q}`}>
-            Data analytics
-          </a>
-          <a className="app-button secondary" href={`/team/usage${q}`}>
-            AI usage
           </a>
         </nav>
       ) : null}
@@ -300,7 +330,20 @@ export default function BusinessClient() {
             value={tab}
             onChange={(id) => selectTab(id as Tab)}
             tabs={TABS}
+            className="product-hub-tabs"
           />
+          {MORE_TABS.length ? (
+            <details className="product-hub-more">
+              <summary>More tools ({MORE_TABS.length})</summary>
+              <div className="product-hub-more-links">
+                {MORE_TABS.map((entry) => (
+                  <a key={entry.id} href={hubLegacyHref(entry, live.orgId)}>
+                    {entry.label}
+                  </a>
+                ))}
+              </div>
+            </details>
+          ) : null}
 
           {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
           {tab === "budget" ? <Budget view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
@@ -518,9 +561,13 @@ function PurchaseRow({ purchase, canManage, busy, mutate }: { purchase: Purchase
 function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const [selectedDraft, setSelectedDraft] = useState(view.drafts[0]?.id ?? "");
   const draft = view.drafts.find((item) => item.id === selectedDraft) ?? view.drafts[0];
-  return <div className="biz-stack">
-    <div className="biz-detail-link"><span>Need prompt-by-prompt essays, character limits, attachments, assignees, and due dates?</span><a href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>Open the full application workbench →</a></div>
-    <section className="biz-grid two">
+  return     <div className="biz-stack">
+      <div className="biz-detail-link">
+        <span>Need prompt-by-prompt essays, character limits, attachments, assignees, and due dates?</span>
+        <a href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>Open the full application workbench →</a>
+        <a href={`/grant-report?orgId=${encodeURIComponent(view.orgId)}`}>Grant report →</a>
+      </div>
+      <section className="biz-grid two">
       <article className="app-card"><span className="biz-overline">Grant pipeline</span><h2>Turn a deadline into an owned plan.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-grant", ["requested"])}><Field label="Funder"><input name="funder" required placeholder="Community Foundation" /></Field><Field label="Opportunity"><input name="title" required placeholder="Youth STEM Innovation Grant" /></Field><Field label="Source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Deadline"><input name="deadline" type="date" /></Field><Field label="Request amount"><input name="requestedDollars" type="number" min="0" step="0.01" /></Field><Field label="Owner"><input name="ownerName" placeholder="Student + mentor pair" /></Field><Field label="Purpose / project" wide><textarea name="purpose" required rows={3} placeholder="Exactly what this funding would make possible…" /></Field><Field label="Eligibility" wide><textarea name="eligibility" rows={2} placeholder="501(c)(3), geography, grade levels…" /></Field><Field label="Requirements" wide><textarea name="requirements" rows={2} placeholder="Prompts, attachments, character limits, reporting…" /></Field><button className="app-button" disabled={busy}>Add to pipeline</button></form></article>
       <article className="app-card biz-writer"><span className="biz-overline">Evidence-grounded writing studio</span><h2>Draft faster without inventing a single metric.</h2><p>The writer pulls only from this team’s Impact log and award history, then attaches its evidence list for review.</p><form className="biz-form-grid" onSubmit={(event) => void submit(event, "generate-draft")}><Field label="Document"><select name="documentType" defaultValue="sponsor_email"><option value="sponsor_email">Sponsor introduction</option><option value="grant_narrative">Grant narrative</option><option value="thank_you">Sponsor thank-you</option><option value="renewal">Renewal request</option></select></Field><Field label="Audience"><input name="audience" required placeholder="Foundation review committee" /></Field><Field label="Sponsor (optional)"><select name="sponsorName" defaultValue=""><option value="">No specific sponsor</option>{view.sponsors.map((sponsor) => <option key={sponsor.id}>{sponsor.name}</option>)}</select></Field><Field label="Goal" wide><textarea name="goal" rows={3} required placeholder="Fund 12 new student tool certifications and safety equipment…" /></Field><button className="app-button" disabled={busy}>Create sourced draft</button></form></article>
     </section>
@@ -545,7 +592,11 @@ function Evidence({ view, busy, submit }: { view: BusinessView; busy: boolean; s
     return byYear;
   }, [view.awards]);
   return <div className="biz-stack">
-    <div className="biz-detail-link"><span>Need FIRST catalog prompts, essay drafts, character limits, and submission status?</span><a href={`/team/awards?orgId=${encodeURIComponent(view.orgId)}`}>Open the full awards workbench →</a></div>
+    <div className="biz-detail-link">
+      <span>Need FIRST catalog prompts, essay drafts, character limits, and submission status?</span>
+      <a href={`/team/awards?orgId=${encodeURIComponent(view.orgId)}`}>Open the full awards workbench →</a>
+      <a href={`/award-tracker?orgId=${encodeURIComponent(view.orgId)}`}>Award tracker →</a>
+    </div>
     <section className="biz-grid two"><article className="app-card"><span className="biz-overline">Verified achievement record</span><h2>Add an award once. Reuse it for years.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-award")}><Field label="Award"><input name="awardName" required placeholder="Engineering Inspiration Award" /></Field><Field label="Event"><input name="eventName" placeholder="District Championship" /></Field><Field label="Level"><input name="awardLevel" placeholder="Winner, finalist, district…" /></Field><Field label="Official source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Why it mattered" hint="Capture the story future students would otherwise lose." wide><textarea name="story" rows={4} placeholder="What the team did, who led it, and what changed…" /></Field><button className="app-button" disabled={busy}>Add award to {view.seasonYear}</button></form></article><article className="app-card biz-impact-link"><span className="biz-overline">Live impact evidence</span><h2>Your grant facts are only as strong as this log.</h2><div className="biz-evidence-stats"><b>{view.impact.activities}<small>activities</small></b><b>{view.impact.hours}<small>hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><p>These figures flow directly into sourced writing drafts. Add outreach, mentoring, demos, and service in Community Impact.</p><a className="app-button" href={`/impact?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`}>Open Community Impact</a></article></section><section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Team history</span><h2>The proof that graduates with the team—not with a person.</h2></div><span className="biz-count">{view.awards.length}</span></header><div className="biz-award-years">{[...grouped.entries()].sort(([a], [b]) => b - a).map(([year, awards]) => <section key={year}><h3>{year}</h3><div>{awards.map((award) => <article key={award.id}><ToneBadge tone="good">Achievement</ToneBadge><strong>{award.awardName}</strong><span>{[award.eventName, award.awardLevel].filter(Boolean).join(" · ") || "Team record"}</span>{award.story ? <p>{award.story}</p> : null}{award.sourceUrl ? <a href={award.sourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a> : null}</article>)}</div></section>)}{!view.awards.length ? <p className="biz-empty-inline">Start with the team’s most recent judged or competition award.</p> : null}</div></section>
   </div>;
 }

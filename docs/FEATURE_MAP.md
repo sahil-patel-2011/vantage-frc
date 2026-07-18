@@ -10,7 +10,7 @@
 | Team | `/team` | Calendar · Todos · Messages · Practice · Knowledge · Attendance · Batteries · FMEA (+ More tools) |
 | Business | `/business` | Overview · Budget · Orders · Sponsors · Sponsorship · Grants · … |
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Prototypes · Batteries (+ More tools) |
-| AI | `/ai` | Chat · Budgets · Governance · Finance toggle (+ More tools) |
+| AI | `/ai` | Chat · Budgets · Writer · Code assist · Memory · Governance · Finance (+ More tools) |
 
 Team admin: `/team/admin`. Redirects: `apps/web/next.config.ts`.
 

@@ -31,6 +31,7 @@ const LEGACY_REDIRECTS: Array<{ source: string; destination: string }> = [
   { source: "/cad", destination: "/build?tab=cad" },
   { source: "/code", destination: "/build?tab=code" },
   { source: "/fmea", destination: "/build?tab=fmea" },
+  { source: "/prototype-tracker", destination: "/build?tab=prototype" },
   { source: "/batteries", destination: "/build?tab=batteries" },
   { source: "/chat", destination: "/ai?tab=chat" },
   { source: "/team/budgets", destination: "/ai?tab=budgets" },

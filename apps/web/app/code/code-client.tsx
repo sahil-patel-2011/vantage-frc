@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { buildDiffProposal, reviewFrcCode } from "@vantage/agent/coding-assistant";
+import { AiHubRelated } from "../../components/ai-hub-related";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import { hubHref } from "../../lib/nav/hubs";
+import { BuildHubRelated } from "../../components/build-hub-related";
 
 const SAMPLE = `public void periodic() {
   Timer.delay(0.02);
@@ -40,7 +44,14 @@ const COACH_LESSONS: Record<string, { flag: string; explain: string; habit: stri
 type Review = ReturnType<typeof reviewFrcCode>;
 type Proposal = ReturnType<typeof buildDiffProposal>;
 
-export function CodeClient({ orgId = "" }: { orgId?: string }) {
+export function CodeClient({
+  orgId = "",
+  related = "build",
+}: {
+  orgId?: string;
+  /** Soft-UI related strip: Build hub vs AI hub embedding. */
+  related?: "build" | "ai";
+}) {
   const [path, setPath] = useState("src/main/java/frc/robot/subsystems/DriveSubsystem.java");
   const [content, setContent] = useState(SAMPLE);
   const [review, setReview] = useState<Review | null>(null);
@@ -49,6 +60,11 @@ export function CodeClient({ orgId = "" }: { orgId?: string }) {
   const [busy, setBusy] = useState(false);
 
   const q = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+  const budgetsHref = orgId ? hubHref("/ai", "budgets", orgId) : "/ai?tab=budgets";
+  const chatHref = orgId ? hubHref("/ai", "chat", orgId) : "/ai?tab=chat";
+  const usageHref = withOrgHref("/team/usage", orgId);
+  const buildCadHref = withOrgHref("/build?tab=cad", orgId);
+  const competitionHref = withOrgHref("/competition", orgId);
 
   function runReview() {
     setBusy(true);
@@ -120,12 +136,12 @@ export function CodeClient({ orgId = "" }: { orgId?: string }) {
     <main className="module-page cdc-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Build / Code Coach</span>
+          <span className="breadcrumbs">{related === "ai" ? "AI / Code assist" : "Build / Code Coach"}</span>
           <h1>FRC Code Coach</h1>
           <p>
             Flag risky robot-code patterns, explain why they fail under match pressure, then suggest a safer habit.
             Proposed changes stay human-approved unified diffs. It does not write your whole robot for you — and never
-            deploys to a robot.
+            deploys to a robot. Pattern review runs locally — no invented AI output and no provider key required.
           </p>
         </div>
         <div className="cdc-header-actions">
@@ -138,15 +154,33 @@ export function CodeClient({ orgId = "" }: { orgId?: string }) {
         </div>
       </header>
 
+      {related === "ai" ? (
+        orgId ? <AiHubRelated orgId={orgId} active="code" /> : null
+      ) : (
+        <BuildHubRelated orgId={orgId} active="code" />
+      )}
+
       {orgId ? (
-        <nav className="cdc-gov" aria-label="AI governance">
-          <a href={`/chat${q}`}>Assistant</a>
-          <a href={`/team/budgets${q}#prompt-caching`}>Prompt caching</a>
-          <a href={`/team/usage${q}`}>AI usage</a>
-          <a href={`/team${q}#github-connection`}>GitHub context</a>
-          <a href={`/cad${q}`}>CAD Builder</a>
+        <nav className="cdc-gov" aria-label="AI and build links">
+          <a href={chatHref}>Assistant</a>
+          <a href={`${budgetsHref}#prompt-caching`}>Prompt caching</a>
+          <a href={usageHref}>AI usage</a>
+          <a href={withOrgHref("/team/admin", orgId)}>GitHub context</a>
+          <a href={buildCadHref}>Build · CAD</a>
+          <a href={competitionHref}>Competition</a>
         </nav>
-      ) : null}
+      ) : (
+        <section className="app-card soft-panel product-hub-setup">
+          <span className="app-badge setup">Select workspace</span>
+          <h2>Choose a team to coach code</h2>
+          <p className="app-muted">
+            Local pattern review works without a model key. Pairing VS Code and GitHub context need a workspace.
+          </p>
+          <a className="app-button" href="/workspace">
+            Choose workspace
+          </a>
+        </section>
+      )}
 
       <section className="cdc-flow" aria-label="Teach, don't just do">
         <article>

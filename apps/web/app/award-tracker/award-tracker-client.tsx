@@ -125,6 +125,19 @@ export default function AwardTrackerClient() {
               </select>
             </label>
           ) : null}
+          {orgId ? (
+            <nav className="intel-actions" aria-label="Related business tools" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>
+                Business · Awards
+              </a>
+              <a className="app-button secondary" href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>
+                Awards workbench
+              </a>
+              <a className="app-button secondary" href={`/impact-essay?orgId=${encodeURIComponent(orgId)}`}>
+                Impact essay
+              </a>
+            </nav>
+          ) : null}
         </div>
       </PageHeader>
 
