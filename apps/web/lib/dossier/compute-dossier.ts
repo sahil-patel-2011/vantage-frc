@@ -11,6 +11,8 @@ import {
 import { resolveReferenceAccess } from "../strategy/compute-strategy";
 import type { DataSourceHealthView } from "../reference-health";
 import type { ReferenceAccessInfo } from "../strategy/types";
+import { dossierSetupSteps } from "./dossier-related";
+import { withOrgHref } from "../nav/product-nav";
 
 export type DossierSetupStep = {
   id: string;
@@ -105,24 +107,23 @@ export async function computeTeamDossier(
 
   const row = membership.rows[0];
   const access = await resolveReferenceAccess(client, row?.orgId ?? null);
-  const dataHref = row?.orgId ? `/team/data?orgId=${encodeURIComponent(row.orgId)}` : "/team/data";
+  const orgId = row?.orgId ?? null;
   const teamNumber = input.teamNumber ?? row?.teamNumber ?? null;
 
+  /** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO stats. */
+  const baseSteps = dossierSetupSteps(orgId);
   const steps: DossierSetupStep[] = [
     {
-      id: "workspace",
-      label: "Select workspace",
-      detail: "Choose your team organization",
-      href: "/workspace",
-      done: Boolean(row?.orgId),
+      ...baseSteps.find((s) => s.id === "workspace")!,
+      done: Boolean(orgId),
     },
     {
       id: "tba",
       label: "Sync TBA identity + schedule",
       detail: access.tbaConfigured
         ? "TBA credential or cache available"
-        : "Set TBA_AUTH_KEY or save a TBA credential, then sync",
-      href: dataHref,
+        : "Set TBA_AUTH_KEY or save a TBA credential, then sync — never invent DEMO identity.",
+      href: withOrgHref("/team/data", orgId),
       done: access.tbaConfigured,
     },
     {
@@ -130,9 +131,21 @@ export async function computeTeamDossier(
       label: "Cache Statbotics season EPA",
       detail: access.statbotics.cacheHasMetrics
         ? `Neon has ${access.statbotics.yearMetricRows} year + ${access.statbotics.eventMetricRows} event Statbotics rows`
-        : "No Statbotics EPA cached yet — run reference sync (public API)",
-      href: dataHref,
+        : "No Statbotics EPA cached yet — run reference sync (public API). Never invent DEMO EPA.",
+      href: withOrgHref("/team/data", orgId),
       done: access.statbotics.cacheHasMetrics,
+    },
+    {
+      ...baseSteps.find((s) => s.id === "strategy")!,
+      done: false,
+    },
+    {
+      ...baseSteps.find((s) => s.id === "scouting")!,
+      done: false,
+    },
+    {
+      ...baseSteps.find((s) => s.id === "pick-desk")!,
+      done: false,
     },
   ];
 

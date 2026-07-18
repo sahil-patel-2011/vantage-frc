@@ -1,0 +1,92 @@
+/* Soft-UI Team Dossier — .dossier-* + shared Soft-UI tokens. Never DEMO stats. */
+.dossier-workbench{
+  display:grid;
+  gap:16px;
+}
+.dossier-heading{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:4px;
+}
+.dossier-related{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:flex-end;
+}
+.dossier-next-actions{margin:0}
+.dossier-setup-steps{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  gap:10px;
+}
+.dossier-setup-steps li{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px solid var(--soft-line,#d7dde3);
+}
+.dossier-setup-steps li:last-child{border-bottom:0}
+.dossier-setup-steps p{margin:4px 0 0}
+.dossier-empty{
+  margin:0;
+  padding:14px;
+  border-radius:14px;
+  border:1px dashed var(--soft-line,#d7dde3);
+}
+.dossier-kpis{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.dossier-kpis article{
+  display:grid;
+  gap:4px;
+  padding:14px 16px;
+  border:1px solid var(--soft-line,#d5dde8);
+  border-radius:var(--soft-radius-sm,12px);
+  background:var(--soft-card,#fff);
+  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+}
+.dossier-kpis strong{
+  font:700 22px/1.1 var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
+  color:var(--soft-ink,#132033);
+  letter-spacing:-.02em;
+}
+.dossier-kpis small{
+  color:var(--soft-muted,#5a6578);
+  font:600 12px var(--font-source-sans),ui-sans-serif;
+}
+.dossier-panel{min-height:auto}
+.dossier-live{
+  display:grid;
+  gap:16px;
+}
+.dossier-group h3{
+  margin:0 0 10px;
+  font-size:13px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:var(--soft-muted,#5a6578);
+}
+.dossier-fact-grid{
+  margin:0;
+  padding:0;
+  list-style:none;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:12px;
+}
+@media (max-width:800px){
+  .dossier-heading{flex-direction:column}
+  .dossier-related{justify-content:flex-start}
+  .dossier-kpis{grid-template-columns:1fr}
+}

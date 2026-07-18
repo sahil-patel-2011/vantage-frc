@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { computeTeamDossier } from "../../../lib/dossier/compute-dossier";
 import type { DossierView } from "../../../lib/dossier/compute-dossier";
+import { dossierSetupSteps } from "../../../lib/dossier/dossier-related";
 import { loadDataSourceHealth } from "../../../lib/reference-health";
 
 export type { DossierView };
@@ -35,26 +36,7 @@ export async function GET(request: Request) {
       {
         status: "setup_required",
         message: "Could not load dossier context. Select a workspace and confirm database access.",
-        steps: [
-          {
-            id: "workspace",
-            label: "Select workspace",
-            detail: "Choose your team organization",
-            href: "/workspace",
-          },
-          {
-            id: "tba",
-            label: "Sync TBA",
-            detail: "Team identity from TBA cache",
-            href: "/team/data",
-          },
-          {
-            id: "statbotics",
-            label: "Cache Statbotics EPA",
-            detail: "Season EPA from Statbotics (public API)",
-            href: "/team/data",
-          },
-        ],
+        steps: dossierSetupSteps(null),
         orgId: null,
         teamNumber: null,
         referenceAccess: {
