@@ -2,15 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   confidenceAdjustmentsForResolution,
   confidenceWeight,
+  conflictCountByTeam,
   coverageState,
   crossValidateScoutPayload,
   epaDrift,
   fatigueAwareAssignments,
+  fieldConfidenceHint,
   lintSchemaBudget,
+  rankScoutsByAccuracy,
   observationsForStrategyTrust,
   officialValueForTeam,
   rankScoutsForStrategySeats,
   selectPickInfluencingEntries,
+  stripContradictedFields,
   summarizeFieldTrust,
   valuesAgree,
 } from "../src/trust";
@@ -19,6 +23,26 @@ describe("scouting trust", () => {
   it("warns when forms exceed the collection budget", () => {
     const fields = Array.from({ length: 26 }, (_, index) => ({ key: `f${index}`, label: `F${index}`, type: "number" as const }));
     expect(lintSchemaBudget({ title: "Heavy", fields }).status).toBe("over_budget");
+  });
+
+
+  it("ranks scouts by TBA accuracy, not entry volume", () => {
+    const ranked = rankScoutsByAccuracy([
+      { userId: "volume", name: "Volume", entries: 40, checks: 10, matches: 4, conflicts: 6 },
+      { userId: "accurate", name: "Accurate", entries: 8, checks: 8, matches: 7, conflicts: 1 },
+      { userId: "untested", name: "Untested", entries: 12, checks: 0, matches: 0, conflicts: 0 },
+    ]);
+    expect(ranked.map((row) => row.userId)).toEqual(["accurate", "volume", "untested"]);
+    expect(ranked[0]?.accuracy).toBeCloseTo(0.875);
+  });
+
+  it("surfaces disagreement hints once a field has enough history", () => {
+    expect(fieldConfidenceHint({
+      fieldKey: "climb", checks: 2, matches: 1, conflicts: 1, disagreementRate: 0.5, confidenceScore: 0.5,
+    })).toBeNull();
+    expect(fieldConfidenceHint({
+      fieldKey: "climb", checks: 10, matches: 7, conflicts: 3, disagreementRate: 0.3, confidenceScore: 0.7,
+    })).toMatch(/30% disagreement/);
   });
 
   it("summarizes comparable validation history", () => {
@@ -153,5 +177,24 @@ describe("scouting trust", () => {
     });
     expect(seats.map((seat) => seat.userId)).toEqual(["perfect", "accurate"]);
     expect(seats[0]?.accuracy).toBe(1);
+  });
+
+  it("strips TBA-contradicted fields so strategy never trusts them blindly", () => {
+    const result = stripContradictedFields(
+      { climb: "none", mobility: true, notes: "ok", fouls: 2 },
+      [
+        { fieldKey: "climb", status: "conflict" },
+        { fieldKey: "mobility", status: "match" },
+        { fieldKey: "fouls", status: "unavailable" },
+      ],
+    );
+    expect(result.excludedFields).toEqual(["climb"]);
+    expect(result.trustedPayload).toEqual({ mobility: true, notes: "ok", fouls: 2 });
+    expect(
+      conflictCountByTeam([
+        { teamKey: "frc254", fieldKey: "climb", status: "conflict" },
+        { teamKey: "frc254", fieldKey: "mobility", status: "conflict" },
+      ]).get("frc254"),
+    ).toEqual({ conflictCount: 2, conflictFields: ["climb", "mobility"] });
   });
 });

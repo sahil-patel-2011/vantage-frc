@@ -33,10 +33,10 @@ export function lintSchemaBudget(
     hardWarningAt,
     status,
     message: status === "healthy"
-      ? `${fieldCount} fields — within the accuracy budget.`
+      ? `${fieldCount} fields — within the accuracy budget (~${recommendedMaximum}).`
       : status === "caution"
-        ? `${fieldCount} fields — simplify toward ${recommendedMaximum} before publishing.`
-        : `${fieldCount} fields — high collection load; remove or defer at least ${fieldCount - hardWarningAt} fields.`,
+        ? `${fieldCount} fields — CD studies show more columns often mean worse accuracy; aim for ≤${recommendedMaximum}.`
+        : `${fieldCount} fields — over the ~${hardWarningAt} hard warning; remove or defer at least ${fieldCount - hardWarningAt} before relying on this form.`,
   };
 }
 
@@ -91,6 +91,23 @@ export function rankScoutsByAccuracy(
     if (b.checks !== a.checks) return b.checks - a.checks;
     return a.name.localeCompare(b.name);
   });
+}
+
+
+/** Scout-facing copy for a field with enough official history. */
+export function fieldConfidenceHint(
+  summary: FieldTrustSummary | undefined,
+  minimumChecks = 3,
+): string | null {
+  if (!summary || summary.checks < minimumChecks || summary.disagreementRate == null) return null;
+  const pct = Math.round(summary.disagreementRate * 100);
+  if (pct <= 5) {
+    return `Team history: ${pct}% disagreement vs TBA across ${summary.checks} checks — usually solid.`;
+  }
+  if (pct < 18) {
+    return `Team history: ${pct}% disagreement vs TBA across ${summary.checks} checks — double-check.`;
+  }
+  return `Team history: ${pct}% disagreement vs TBA across ${summary.checks} checks — slow down on this field.`;
 }
 
 export type OfficialFieldPolicy = ReferenceOfficialFieldPolicy & {

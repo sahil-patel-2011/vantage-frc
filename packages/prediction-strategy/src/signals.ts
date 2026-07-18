@@ -51,6 +51,7 @@ export type AllianceTeamBrief = {
   defenseLikely: boolean;
   pitNotes: string[];
   scoutEntryIds: string[];
+  videoRescoutCount: number;
 };
 
 export type AllianceMatchup = {
@@ -190,6 +191,7 @@ export function allianceTeamBrief(
     defenseLikely: Boolean(op?.defenseLikely),
     pitNotes: op?.pitNotes ?? [],
     scoutEntryIds: op?.scoutEntryIds ?? [],
+    videoRescoutCount: op?.videoRescoutCount ?? 0,
   };
 }
 
@@ -274,6 +276,14 @@ export function buildAllianceMatchup(input: {
     considerations.push(
       `Scout quality downweights applied: ${qualityWarned
         .map((t) => `${t.teamKey} (mean ${Math.round((t.qualityWeight ?? 1) * 100)}%)`)
+        .join(", ")}.`,
+    );
+  }
+  const videoRescored = [...red, ...blue].filter((team) => team.videoRescoutCount > 0);
+  if (videoRescored.length) {
+    considerations.push(
+      `Video-rescored scout entries: ${videoRescored
+        .map((t) => `${t.teamKey} (${t.videoRescoutCount})`)
         .join(", ")}.`,
     );
   }
@@ -368,6 +378,14 @@ export function opponentTendencies(input: {
           }.`,
         );
       }
+      if ((op.videoRescoutCount ?? 0) > 0) {
+        labels.push("video-rescored");
+        evidence.push(
+          `${op.videoRescoutCount} video-rescored ${op.videoRescoutCount === 1 ? "entry" : "entries"} committed from match footage${
+            op.videoReviewIds?.length ? ` (review ${op.videoReviewIds[0]!.slice(0, 8)})` : ""
+          }.`,
+        );
+      }
       if (scoutEntryIds.length) {
         evidence.push(
           `Influenced by scout entries: ${scoutEntryIds
@@ -394,6 +412,9 @@ export type PickListHint = {
 
 export type PickTier = "first" | "second" | "third" | "watch";
 
+/** full = scout reliability can demote tiers; low_data_tba = TBA/Statbotics EPA-first quick pick. */
+export type PickDataMode = "full" | "low_data_tba";
+
 export type PickCandidate = {
   teamKey: string;
   teamNumber: number | null;
@@ -407,7 +428,18 @@ export type PickCandidate = {
   scoutSample: number;
   reliability: number | null;
   foulRate: number | null;
+  /** Scout fields contradicted by TBA score breakdown (excluded from scoring). */
+  tbaConflictCount?: number;
+  tbaConflictFields?: string[];
   suggestedTier: PickTier | null;
+};
+
+export type PickDataModeInfo = {
+  mode: PickDataMode;
+  scoutedTeams: number;
+  teamCount: number;
+  /** Human-readable reason when mode is low_data_tba; null in full mode. */
+  reason: string | null;
 };
 
 const TIER_ORDER: Record<PickTier, number> = {
@@ -418,13 +450,50 @@ const TIER_ORDER: Record<PickTier, number> = {
 };
 
 /**
+ * Under-resourced desks (Chief Delphi "quick pick") when most event teams lack scout depth.
+ * Threshold: fewer than 25% of teams have >=2 scout observations.
+ */
+export function detectPickDataMode(
+  candidates: Array<{ scoutSample: number }>,
+  options?: { minCoverage?: number; minSample?: number },
+): PickDataModeInfo {
+  const minCoverage = options?.minCoverage ?? 0.25;
+  const minSample = options?.minSample ?? 2;
+  const teamCount = candidates.length;
+  const scoutedTeams = candidates.filter((row) => row.scoutSample >= minSample).length;
+  if (teamCount === 0) {
+    return {
+      mode: "low_data_tba",
+      scoutedTeams: 0,
+      teamCount: 0,
+      reason: "No event teams loaded — waiting on TBA/Statbotics sync.",
+    };
+  }
+  const coverage = scoutedTeams / teamCount;
+  if (coverage < minCoverage) {
+    return {
+      mode: "low_data_tba",
+      scoutedTeams,
+      teamCount,
+      reason: `Only ${scoutedTeams}/${teamCount} teams have >=${minSample} scout entries — ranking from TBA/Statbotics EPA.`,
+    };
+  }
+  return { mode: "full", scoutedTeams, teamCount, reason: null };
+}
+
+/**
  * Rank event teams for pick-list desks using only real EPA/rank/scout signals.
  * Suggested tiers are relative percentiles of known EPA at the event — teams without
  * EPA stay unsorted with suggestedTier null (never invent metrics).
+ *
+ * `mode: "low_data_tba"` skips scout-reliability demotion so thin-scout events still
+ * get a usable TBA/Statbotics-driven quick pick order.
  */
 export function rankPickCandidates(
   candidates: Array<Omit<PickCandidate, "suggestedTier">>,
+  options?: { mode?: PickDataMode },
 ): PickCandidate[] {
+  const mode = options?.mode ?? "full";
   const withEpa = candidates
     .map((candidate) => candidate.epa)
     .filter((epa): epa is number => epa != null && Number.isFinite(epa))
@@ -443,13 +512,29 @@ export function rankPickCandidates(
     let suggestedTier: PickTier | null = null;
     if (hasEpa) {
       suggestedTier = percentileTier(candidate.epa as number);
-      if ((candidate.reliability ?? 100) < 65 && suggestedTier === "first") {
+      if (
+        mode === "full" &&
+        (candidate.reliability ?? 100) < 65 &&
+        suggestedTier === "first"
+      ) {
         suggestedTier = "second";
       }
     }
     return { ...candidate, suggestedTier };
   });
   return scored.sort((a, b) => {
+    if (mode === "low_data_tba") {
+      const epaA = a.epa ?? -Infinity;
+      const epaB = b.epa ?? -Infinity;
+      if (epaA !== epaB) return epaB - epaA;
+      const rankA = a.rank ?? 9999;
+      const rankB = b.rank ?? 9999;
+      if (rankA !== rankB) return rankA - rankB;
+      const tierA = a.suggestedTier ? TIER_ORDER[a.suggestedTier] : 99;
+      const tierB = b.suggestedTier ? TIER_ORDER[b.suggestedTier] : 99;
+      if (tierA !== tierB) return tierA - tierB;
+      return a.teamKey.localeCompare(b.teamKey);
+    }
     const tierA = a.suggestedTier ? TIER_ORDER[a.suggestedTier] : 99;
     const tierB = b.suggestedTier ? TIER_ORDER[b.suggestedTier] : 99;
     if (tierA !== tierB) return tierA - tierB;

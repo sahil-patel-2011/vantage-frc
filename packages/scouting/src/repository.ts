@@ -10,6 +10,7 @@ import {
   type ScoutSchema,
   type SyncEntry,
 } from "./index";
+import { bindScoutIdentity, lockScoutPayload, stripScoutIdentityFields } from "./identity";
 import { crossValidateScoutPayload, type FieldValidation } from "./trust";
 
 type StoredEntry = {
@@ -169,20 +170,47 @@ export class ScoutingRepository {
       }
       const schema = await this.getSchema(orgId, input.schemaId);
       if (schema.type !== input.type) throw new Error("Schema type does not match entry type");
-      const validationErrors = validatePayload(schema.definition, input.payload);
+      const validationErrors = validatePayload(schema.definition, locked.payload);
       if (validationErrors.length) throw new Error(validationErrors.join("; "));
       const table = input.type === "match" ? "match_scout_entries" : "pit_scout_entries";
-      const update = await this.client.query(
-        `UPDATE ${table} SET payload=$1::jsonb,confidence=$2,source=$3,
-          schema_id=$4,updated_at=$5::timestamptz,synced_at=now()
-         WHERE id=$6 AND org_id=$7 AND scout_user_id=$8
-           AND updated_at <= $5::timestamptz
-         RETURNING id`,
-        [
-          JSON.stringify(input.payload), input.confidence, input.source,
-          input.schemaId, input.updatedAt, existing.serverEntryId, orgId, userId,
-        ],
-      );
+      const update =
+        input.type === "match"
+          ? await this.client.query(
+              `UPDATE match_scout_entries SET payload=$1::jsonb,confidence=$2,source=$3,
+                schema_id=$4,updated_at=$5::timestamptz,video_review_id=$9,video_at_seconds=$10,synced_at=now()
+               WHERE id=$6 AND org_id=$7 AND scout_user_id=$8
+                 AND updated_at <= $5::timestamptz
+               RETURNING id`,
+              [
+                JSON.stringify(locked.payload),
+                input.confidence,
+                input.source,
+                input.schemaId,
+                input.updatedAt,
+                existing.serverEntryId,
+                orgId,
+                userId,
+                input.videoReviewId ?? null,
+                input.videoAtSeconds ?? null,
+              ],
+            )
+          : await this.client.query(
+              `UPDATE ${table} SET payload=$1::jsonb,confidence=$2,source=$3,
+                schema_id=$4,updated_at=$5::timestamptz,synced_at=now()
+               WHERE id=$6 AND org_id=$7 AND scout_user_id=$8
+                 AND updated_at <= $5::timestamptz
+               RETURNING id`,
+              [
+                JSON.stringify(locked.payload),
+                input.confidence,
+                input.source,
+                input.schemaId,
+                input.updatedAt,
+                existing.serverEntryId,
+                orgId,
+                userId,
+              ],
+            );
       let validations: FieldValidation[] = [];
       if (update.rowCount) {
         await this.client.query(
@@ -191,7 +219,7 @@ export class ScoutingRepository {
           [hash, orgId, input.clientId],
         );
         if (input.type === "match") {
-          await this.refreshDisagreements(orgId, input, schema);
+          await this.refreshDisagreements(orgId, locked, schema);
           validations = await this.refreshOfficialValidations(
             orgId,
             existing.serverEntryId,
@@ -212,7 +240,7 @@ export class ScoutingRepository {
 
     const schema = await this.getSchema(orgId, input.schemaId);
     if (schema.type !== input.type) throw new Error("Schema type does not match entry type");
-    const validationErrors = validatePayload(schema.definition, input.payload);
+    const validationErrors = validatePayload(schema.definition, locked.payload);
     if (validationErrors.length) throw new Error(validationErrors.join("; "));
     if (input.type === "match" && !input.matchKey) throw new Error("Match key is required");
 
@@ -222,12 +250,13 @@ export class ScoutingRepository {
       await this.client.query(
         `INSERT INTO match_scout_entries
           (id, org_id, event_key, match_key, team_key, scout_user_id, schema_id,
-           payload, confidence, source, client_id, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12::timestamptz)`,
+           payload, confidence, source, client_id, updated_at, video_review_id, video_at_seconds)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12::timestamptz,$13,$14)`,
         [
           entryId, orgId, input.eventKey, input.matchKey, input.teamKey, userId,
-          input.schemaId, JSON.stringify(input.payload), input.confidence,
+          input.schemaId, JSON.stringify(locked.payload), input.confidence,
           input.source, input.clientId, input.updatedAt,
+          input.videoReviewId ?? null, input.videoAtSeconds ?? null,
         ],
       );
     } else {
@@ -238,7 +267,7 @@ export class ScoutingRepository {
          VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11::timestamptz)`,
         [
           entryId, orgId, input.eventKey, input.teamKey, userId, input.schemaId,
-          JSON.stringify(input.payload), input.confidence, input.source,
+          JSON.stringify(locked.payload), input.confidence, input.source,
           input.clientId, input.updatedAt,
         ],
       );
@@ -251,8 +280,8 @@ export class ScoutingRepository {
     );
     let validations: FieldValidation[] = [];
     if (input.type === "match") {
-      await this.refreshDisagreements(orgId, input, schema);
-      validations = await this.refreshOfficialValidations(orgId, entryId, input, schema);
+      await this.refreshDisagreements(orgId, locked, schema);
+      validations = await this.refreshOfficialValidations(orgId, entryId, locked, schema);
     }
     return { clientId: input.clientId, entryId, duplicate: false, table, validations };
   }
@@ -368,6 +397,14 @@ export class ScoutingRepository {
       epaEndgame: epa.rows[0]?.epaEndgame ?? null,
     });
     for (const validation of validations) {
+      const detail =
+        input.source === "video" && validation.detail
+          ? validation.detail.startsWith("Video re-scout: ")
+            ? validation.detail
+            : `Video re-scout: ${validation.detail}`
+          : input.source === "video"
+            ? "Video re-scout: compared against official match data."
+            : validation.detail;
       await this.client.query(
         `INSERT INTO scout_entry_validations
           (org_id,entry_id,field_key,scout_value,official_value,official_source,status,detail)
@@ -383,7 +420,7 @@ export class ScoutingRepository {
           JSON.stringify(validation.officialValue ?? null),
           validation.officialSource,
           validation.status,
-          validation.detail,
+          detail,
         ],
       );
     }
