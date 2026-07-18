@@ -9,6 +9,7 @@ import {
   buildKickoffStrategistInsight,
   buildModelAccuracyInsight,
   buildPracticeCoachInsight,
+  buildRobotBlueprintInsight,
   buildScheduleRiskInsight,
   buildStockAdvisorInsight,
   buildVideoScoutSummaryInsight,
@@ -17,6 +18,8 @@ import {
   type BuiltInsight,
   type InsightRequest,
 } from "../../../lib/ai-insights";
+import { bomCoverage as bomCoverageFor } from "../../../lib/inventory";
+import type { EnrichedSubsystem, RobotSubsystem } from "../../../lib/robot-blueprint";
 import type { HourLog, HourMember } from "../../../lib/build-hours";
 import type { DriverCycle, DriverSession } from "../../../lib/driver-practice";
 import { DEFAULT_WEIGHT_LIMIT_LBS, type InspectionItem, type RobotWeight } from "../../../lib/inspection";
@@ -243,6 +246,84 @@ async function loadInsight(client: PoolClient, request: InsightRequest): Promise
         members: members.rows,
         goalHours: policy.rows[0]?.seasonGoalHours ?? 0,
       });
+    }
+
+    case "robot_blueprint": {
+      const [subsystems, practiceStats, bomItems, bomEntries, failures, maintenance] = await Promise.all([
+        client.query<RobotSubsystem>(
+          `SELECT s.id, s.robot_label AS "robotLabel", s.name, s.description, s.status,
+                  s.cad_url AS "cadUrl", s.code_ref AS "codeRef", s.priority_id AS "priorityId",
+                  p.capability AS "priorityCapability", p.status AS "priorityStatus",
+                  s.practice_action AS "practiceAction", s.bom_subsystem AS "bomSubsystem", s.sort_order AS "sortOrder"
+           FROM robot_subsystems s
+           LEFT JOIN design_priorities p ON p.id = s.priority_id
+           WHERE s.org_id = $1 AND s.robot_label = $2
+           ORDER BY s.sort_order, s.name`,
+          [request.orgId, request.robotLabel],
+        ),
+        client.query<{ action: string; reps: number; successes: number; avgSeconds: number | null }>(
+          `SELECT c.action, count(*)::int AS reps,
+                  count(*) FILTER (WHERE c.success)::int AS successes,
+                  AVG(c.seconds)::float8 AS "avgSeconds"
+           FROM driver_cycles c WHERE c.org_id = $1 GROUP BY c.action`,
+          [request.orgId],
+        ),
+        client.query<InventoryItem>(
+          `SELECT i.id, i.name, i.category, i.part_number AS "partNumber", i.vendor, i.unit,
+                  i.quantity::float8 AS quantity, i.min_quantity::float8 AS "minQuantity",
+                  i.unit_cost::float8 AS "unitCost", i.location_id AS "locationId", NULL AS "locationName",
+                  i.subsystem, i.notes, i.archived, i.updated_at::text AS "updatedAt"
+           FROM inventory_items i WHERE i.org_id = $1`,
+          [request.orgId],
+        ),
+        client.query<BomEntry>(
+          `SELECT id, subsystem, item_id AS "itemId", quantity_needed::float8 AS "quantityNeeded", notes
+           FROM bom_entries WHERE org_id = $1`,
+          [request.orgId],
+        ),
+        client.query<{ subsystem: string; count: number }>(
+          `SELECT lower(subsystem) AS subsystem, count(*)::int AS count
+           FROM robot_failures WHERE org_id = $1 AND occurred_at > now() - interval '7 days'
+           GROUP BY lower(subsystem)`,
+          [request.orgId],
+        ),
+        client.query<{ subsystem: string; count: number }>(
+          `SELECT lower(subsystem) AS subsystem, count(*)::int AS count
+           FROM maintenance_items WHERE org_id = $1 AND completed_at IS NULL
+           GROUP BY lower(subsystem)`,
+          [request.orgId],
+        ),
+      ]);
+      const practiceByAction = new Map(
+        practiceStats.rows.map((stat) => [
+          stat.action,
+          {
+            reps: stat.reps,
+            successRate: stat.reps ? Math.round((stat.successes / stat.reps) * 100) : null,
+            avgSeconds: stat.avgSeconds == null ? null : Math.round(stat.avgSeconds * 100) / 100,
+          },
+        ]),
+      );
+      const coverage = bomCoverageFor(bomEntries.rows, bomItems.rows);
+      const bomBySubsystem = new Map(coverage.map((entry) => [entry.subsystem.toLowerCase(), entry]));
+      const failuresBySubsystem = new Map(failures.rows.map((entry) => [entry.subsystem, entry.count]));
+      const maintenanceBySubsystem = new Map(maintenance.rows.map((entry) => [entry.subsystem, entry.count]));
+      const enriched: EnrichedSubsystem[] = subsystems.rows.map((subsystem) => {
+        const bomEntry = bomBySubsystem.get((subsystem.bomSubsystem || subsystem.name).toLowerCase());
+        const nameKey = subsystem.name.toLowerCase();
+        return {
+          ...subsystem,
+          ops: {
+            practice: subsystem.practiceAction
+              ? (practiceByAction.get(subsystem.practiceAction) ?? { reps: 0, successRate: null, avgSeconds: null })
+              : null,
+            bom: bomEntry ? { buildable: bomEntry.buildable, shortCount: bomEntry.shortCount } : null,
+            failures7d: failuresBySubsystem.get(nameKey) ?? 0,
+            openMaintenance: maintenanceBySubsystem.get(nameKey) ?? 0,
+          },
+        };
+      });
+      return buildRobotBlueprintInsight(enriched, request.robotLabel);
     }
 
     case "model_accuracy": {
