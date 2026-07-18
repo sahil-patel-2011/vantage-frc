@@ -3,7 +3,7 @@
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It brings scouting, live match data, win/loss prediction, an FRC Assistant, strategy, CAD, and robot-code review into one shared, source-attributed event context.",
+    a: "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It brings scouting (with trust signals), live match data, win/loss prediction, an FRC Assistant, strategy, CAD↔strategy workflows, Event Day / My Day, knowledge, logistics, sponsorship, and robot-code review into one shared, source-attributed event context.",
   },
   {
     q: "What is the FRC Assistant?",
@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     q: "How much does Vantage cost?",
-    a: "The complete non-AI competition core is free, with bring-your-own-key or local AI. Paid plans: Individual Pro $30/mo ($27 API), Individual Max $50/mo ($45 API), Team Pro $100/mo ($90 pooled API), Team Max $200/mo ($185 pooled API). Usage is debited at provider list rates with no Vantage markup; after the included allowance, usage hard-stops unless you buy Usage Credits or enable PAYG. Access ($20/mo) unlocks managed routing without a large included bucket. There is no per-seat student pricing.",
+    a: "The complete non-AI competition core is free, with bring-your-own-key or local AI. Paid plans: Individual Pro $35/mo ($30 API), Individual Max $60/mo ($52 API), Team Pro $120/mo ($105 pooled API), Team Max $240/mo ($220 pooled API). Usage is debited at provider list rates with no Vantage markup; after the included allowance, usage hard-stops unless you buy Usage Credits or enable PAYG. Access ($25/mo) unlocks managed routing without a large included bucket. There is no per-seat student pricing.",
   },
   {
     q: "Is our team's data private?",

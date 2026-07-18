@@ -110,6 +110,33 @@ const capIcons: Record<string, ReactNode> = {
       <path d="M3 13h18" />
     </>
   ),
+  book: (
+    <>
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z" />
+      <path d="M4 5.5V21.5" />
+      <path d="M8 7h8M8 11h8" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
+      <path d="m9.5 12 1.8 1.8 3.7-3.8" />
+    </>
+  ),
+  truck: (
+    <>
+      <path d="M3 7h11v9H3z" />
+      <path d="M14 10h4l3 3v3h-7z" />
+      <circle cx="7.5" cy="17.5" r="1.5" />
+      <circle cx="17.5" cy="17.5" r="1.5" />
+    </>
+  ),
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="3.5" />
+      <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8" />
+    </>
+  ),
 };
 
 function CapIcon({ name }: { name: string }) {
@@ -185,6 +212,51 @@ const capabilities = [
   },
 ];
 
+const expandedSurface = [
+  {
+    icon: "flag",
+    status: "Available",
+    title: "Event Day command",
+    copy: "One active-event board for next match, readiness, duties, and pit signals—so the whole crew shares the same day-of picture.",
+  },
+  {
+    icon: "sun",
+    status: "Available",
+    title: "My Day",
+    copy: "Personal shifts, todos, and acknowledgements for what you own today—without hunting the group chat.",
+  },
+  {
+    icon: "book",
+    status: "Available",
+    title: "Team knowledge & wiki",
+    copy: "Durable procedures and season notes the Assistant can read—kept in the org, not a lost Google Doc.",
+  },
+  {
+    icon: "shield",
+    status: "Shipping",
+    title: "Scouting trust layer",
+    copy: "Disagreement review, coverage gaps, and scout reliability signals so pick lists weight evidence—not volume alone.",
+  },
+  {
+    icon: "link",
+    status: "Available",
+    title: "CAD ↔ strategy link",
+    copy: "Strategy constraints can become approval-gated CAD work so build changes keep the match reason that created them.",
+  },
+  {
+    icon: "truck",
+    status: "Shipping",
+    title: "Event logistics",
+    copy: "Travel legs, lodging, and packing context beside the competition calendar—not a separate spreadsheet season.",
+  },
+  {
+    icon: "briefcase",
+    status: "Shipping",
+    title: "Sponsorship pipeline",
+    copy: "Sponsor CRM, ask drafts, and value props in the same workspace as impact proof—honest labels when AI assists.",
+  },
+];
+
 const seasonHighlights = [
   {
     icon: "clock",
@@ -207,6 +279,12 @@ const seasonHighlights = [
     copy: "Owned checklists with ready / watch / blocked risk.",
   },
 ];
+
+function statusBadgeClass(status: string) {
+  if (status === "Available") return "good";
+  if (status === "Shipping") return "demo";
+  return "setup";
+}
 
 export default function Home() {
   return (
@@ -255,6 +333,7 @@ export default function Home() {
             </p>
             <div className="status-legend">
               <span className="app-badge good">Available</span>
+              <span className="app-badge demo">Shipping</span>
               <span className="app-badge setup">Setup required</span>
               <span className="status-legend-note">Status labels stay honest; setup paths are explicit.</span>
             </div>
@@ -265,7 +344,28 @@ export default function Home() {
                 <CapIcon name={item.icon} />
                 <h3>{item.title}</h3>
                 <p>{item.copy}</p>
-                <span className={`app-badge ${item.status === "Available" ? "good" : "setup"}`}>{item.status}</span>
+                <span className={`app-badge ${statusBadgeClass(item.status)}`}>{item.status}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="capability-overview" id="expanded-surface" aria-labelledby="expanded-title">
+          <header>
+            <span className="section-id">EXPANDED PRODUCT SURFACE</span>
+            <h2 id="expanded-title">Day-of ops, knowledge, trust, and team business.</h2>
+            <p>
+              Newer surfaces for Event Day, My Day, knowledge, scouting trust, CAD↔strategy, logistics, and sponsorship—labeled
+              Available when ready to use, Shipping when still landing in the product.
+            </p>
+          </header>
+          <div className="capability-grid">
+            {expandedSurface.map((item) => (
+              <article className="capability-card" key={item.title}>
+                <CapIcon name={item.icon} />
+                <h3>{item.title}</h3>
+                <p>{item.copy}</p>
+                <span className={`app-badge ${statusBadgeClass(item.status)}`}>{item.status}</span>
               </article>
             ))}
           </div>

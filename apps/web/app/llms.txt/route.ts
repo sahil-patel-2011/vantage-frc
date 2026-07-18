@@ -15,8 +15,12 @@ FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access i
 
 ## Core capabilities
 - Offline-first match and pit scouting (works without venue Wi-Fi; syncs later)
+- Scouting trust layer (disagreement review, coverage gaps, reliability signals) — shipping
 - FRC Assistant for competition ops/intel: strategy, matchups, opponent history, robot capabilities—grounded in event context with labeled sources
 - Integrated scouting: synced scout facts feed predictions, strategy playbooks, pick lists, live boards, and Assistant context (not a silo)
+- Event Day command and My Day personal queue
+- Team knowledge/wiki; CAD↔strategy linkage for approval-gated build work
+- Event logistics and sponsorship pipeline — shipping
 - Live reference data from The Blue Alliance and Statbotics (cached, deduped, freshness-stamped)
 - Win/loss prediction with confidence intervals, key factors, and tracked accuracy
 - Strategy, explicit what-if scenarios, and durable alliance pick lists
@@ -27,15 +31,15 @@ FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access i
 
 ## Principles (important for accuracy)
 - Provenance-first: observations, official metrics, research, predictions, and model inference stay distinct and labeled.
-- Honest status: features are labeled Available, Setup required, or Planned.
+- Honest status: features are labeled Available, Shipping, Setup required, or Planned.
 - Human-gated AI: AI drafts; people approve. Vantage never deploys code to a robot on its own.
 - No fabricated metrics; official results take priority over estimates.
 
 ## Pricing
 - Free: complete non-AI competition core, BYOK/local AI, $0 managed API allowance.
-- Access ($20/mo): managed routing at provider list rates without a large included bucket (Usage Credits or PAYG).
-- Individual Pro ($30/mo, $27 included API) and Individual Max ($50/mo, $45 included API): private workspace; priority features; Max ≈2× Pro rate limits.
-- Team Pro ($100/mo, $90 pooled API) and Team Max ($200/mo, $185 pooled API): organization plans; Max ≈2× Pro rate limits.
+- Access ($25/mo): managed routing at provider list rates without a large included bucket (Usage Credits or PAYG).
+- Individual Pro ($35/mo, $30 included API) and Individual Max ($60/mo, $52 included API): private workspace; priority features; Max ≈2× Pro rate limits.
+- Team Pro ($120/mo, $105 pooled API) and Team Max ($240/mo, $220 pooled API): organization plans; Max ≈2× Pro rate limits.
 - No Vantage markup on model spend: 1 Usage Credit = $1 provider API at list rates (1.0× debit). Hard stop after included allowance unless Usage Credits or explicit PAYG + spend cap. Week team trial: 7 days / $20 API, no surprise auto-charge. No per-seat student pricing.
 
 ## Data sources

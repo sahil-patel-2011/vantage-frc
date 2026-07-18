@@ -30,12 +30,12 @@ const individualPlans: PlanCard[] = [
   {
     code: "individual_pro",
     name: "Individual Pro",
-    price: "$30",
-    signal: "PRIVATE · $27 API INCLUDED",
+    price: "$35",
+    signal: "PRIVATE · $30 API INCLUDED",
     featured: true,
     flag: "Popular starting point",
     features: [
-      "$27 included managed API allowance per month, then hard cut-off",
+      "$30 included managed API allowance per month, then hard cut-off",
       "Debited at published provider list rates (1 Usage Credit = $1 API cost)",
       "Private workspace only; priority access to new features",
       "After allowance: buy Usage Credits or enable PAYG with a spend cap",
@@ -44,10 +44,10 @@ const individualPlans: PlanCard[] = [
   {
     code: "individual_max",
     name: "Individual Max",
-    price: "$50",
-    signal: "PRIVATE · $45 API · ~2× PRO LIMITS",
+    price: "$60",
+    signal: "PRIVATE · $52 API · ~2× PRO LIMITS",
     features: [
-      "$45 included managed API allowance per month, then hard cut-off",
+      "$52 included managed API allowance per month, then hard cut-off",
       "~2× Individual Pro hourly, rate, and concurrency limits",
       "Private workspace only; priority access to new features",
       "After allowance: Usage Credits or explicit PAYG + spend cap",
@@ -59,12 +59,12 @@ const teamPlans: PlanCard[] = [
   {
     code: "team_pro",
     name: "Team Pro",
-    price: "$100",
-    signal: "ORG · $90 API POOLED",
+    price: "$120",
+    signal: "ORG · $105 API POOLED",
     featured: true,
     flag: "Most teams start here",
     features: [
-      "$90 pooled managed API allowance per month, then hard cut-off",
+      "$105 pooled managed API allowance per month, then hard cut-off",
       "Shared AI, automations, and org budget/member/feature controls",
       "Priority access to new features",
       "After allowance: pooled Usage Credits or PAYG with a hard monthly cap",
@@ -73,10 +73,10 @@ const teamPlans: PlanCard[] = [
   {
     code: "team_max",
     name: "Team Max",
-    price: "$200",
-    signal: "ORG · $185 API · ~2× PRO LIMITS",
+    price: "$240",
+    signal: "ORG · $220 API · ~2× PRO LIMITS",
     features: [
-      "$185 pooled managed API allowance per month, then hard cut-off",
+      "$220 pooled managed API allowance per month, then hard cut-off",
       "~2× Team Pro rate, hourly, and concurrency limits",
       "Advanced CAD, strategy, code review, and admin workflows",
       "Explore higher credit packs below when you need more pooled API",
@@ -85,7 +85,7 @@ const teamPlans: PlanCard[] = [
 ];
 
 const creditPackOptions = [
-  { value: "team_max", label: "$200/mo subscription ($185 included API)" },
+  { value: "team_max", label: "$240/mo subscription ($220 included API)" },
   { value: "credits_100", label: "Add Usage Credits pack · $100 (= $100 API)" },
   { value: "credits_250", label: "Add Usage Credits pack · $250 (= $250 API)" },
   { value: "credits_500", label: "Add Usage Credits pack · $500 (= $500 API)" },
@@ -102,16 +102,16 @@ const alternatePaths: PlanCard[] = [
       "No included API bucket — enroll PAYG with a payment method and hard monthly spend cap",
       "Usage debited at provider list rates (1 credit = $1 API)",
       "Hard stop when prepaid credits and/or the spend cap are exhausted",
-      "Best when you want managed routing without a $100–$200 commit",
+      "Best when you want managed routing without a $120–$240 commit",
     ],
   },
   {
     code: "access",
     name: "Access + PAYG",
-    price: "$20",
+    price: "$25",
     signal: "LIGHT PLAN · MANAGED ROUTING",
     features: [
-      "$20/mo unlocks Vantage managed routing, tools, and context at API list rates",
+      "$25/mo unlocks Vantage managed routing, tools, and context at API list rates",
       "No large included allowance — add Usage Credits or enable PAYG with a spend cap",
       "Clearer vs Free: Free is BYOK/local; Access is managed platform routing without a big included bucket",
       "Optional path for individuals and small teams avoiding Team Pro/Max commit",
@@ -228,7 +228,7 @@ export function PricingCatalog() {
         <span className="section-id">ALTERNATE PATHS</span>
         <h2>Skip the big team commit.</h2>
         <p>
-          Prefer no $100–$200 subscription? Use pure PAYG, or Access ($20/mo) plus Usage Credits / PAYG for managed
+          Prefer no $120–$240 subscription? Use pure PAYG, or Access ($25/mo) plus Usage Credits / PAYG for managed
           routing without a large included allowance.
         </p>
         <div className="pricing-grid pricing-grid-team">
