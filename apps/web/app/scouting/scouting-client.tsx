@@ -166,9 +166,20 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   useEffect(() => {
     const deepMatch = searchParams.get("matchKey");
     const deepTeam = searchParams.get("teamKey");
+    const deepTab = searchParams.get("tab");
     if (deepMatch) setMatchKey(deepMatch);
     if (deepTeam) setTeamKey(deepTeam);
     if (searchParams.get("handoff") || searchParams.get("code")) setTab("handoff");
+    else if (
+      deepTab === "match" ||
+      deepTab === "pit" ||
+      deepTab === "conflicts" ||
+      deepTab === "handoff" ||
+      deepTab === "trust" ||
+      deepTab === "impact"
+    ) {
+      setTab(deepTab === "impact" ? "trust" : deepTab);
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -418,7 +429,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
         </EmptyState>
       ) : null}
 
-      {data?.eventKey && !schema && tab !== "conflicts" && tab !== "handoff" ? (
+      {data?.eventKey && !schema && tab !== "conflicts" && tab !== "handoff" && tab !== "trust" ? (
         <EmptyState
           badge="Forms required"
           badgeTone="setup"
