@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { composeGrantAnswer, composeSponsorEmail, emailKindLabel, grantFocusLabel } from "../../lib/writer";
+import {
+  composeGrantAnswer,
+  composeSponsorEmail,
+  emailKindLabel,
+  grantFocusLabel,
+  writerRelatedLinks,
+  writerShellCopy,
+  WRITER_RELATED_INCLUDE,
+} from "../../lib/writer";
 import { DRAFT_STATUSES, WRITER_TONES, type WriterView } from "../../lib/writer/compute-writer";
 import type {
   DraftKind,
@@ -66,16 +74,20 @@ function WriterNextActions({
 }
 
 function WriterCrossLinks({ orgId }: { orgId: string }) {
+  const links = writerRelatedLinks(orgId, { include: WRITER_RELATED_INCLUDE });
+  if (!links.length) return null;
   return (
     <nav className="writer-cross-links intel-actions" aria-label="Related writing tools">
-      <a href={withOrgHref("/team/grants", orgId)}>Grants</a>
-      <a href={withOrgHref("/team/awards", orgId)}>Awards</a>
-      <a href={withOrgHref("/team/knowledge", orgId)}>Knowledge</a>
+      {links.map((link) => (
+        <a key={link.id} href={link.href}>
+          {link.label}
+        </a>
+      ))}
     </nav>
   );
 }
 
-export default function WriterClient() {
+export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | null } = {}) {
   const [view, setView] = useState<WriterView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -83,30 +95,33 @@ export default function WriterClient() {
   const [season, setSeason] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
+  const orgId = (view && "orgId" in view ? view.orgId : null) ?? orgIdProp ?? null;
 
-  const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    setCutoffCode(null);
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/writer${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as WriterView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setFetchFailed(true);
-          return;
-        }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
-  }, []);
+  const load = useCallback(
+    (seasonOverride?: number) => {
+      setFetchFailed(false);
+      setError("");
+      setCutoffCode(null);
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = params.get("orgId") ?? orgIdProp ?? null;
+      const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      void fetch(`/api/writer${query.toString() ? `?${query.toString()}` : ""}`)
+        .then(async (response) => {
+          const data = (await response.json()) as WriterView | { error?: string };
+          if (!response.ok || !("status" in data)) {
+            setFetchFailed(true);
+            return;
+          }
+          setView(data);
+          setSeason(data.seasonYear);
+        })
+        .catch(() => setFetchFailed(true));
+    },
+    [orgIdProp],
+  );
 
   useEffect(() => {
     load();
@@ -140,6 +155,12 @@ export default function WriterClient() {
   const setupOrg =
     view?.status === "setup_required" ? view.orgId : orgId;
   const live = view?.status === "live" ? view : null;
+  const loadingCopy = writerShellCopy("loading");
+  const errorCopy = writerShellCopy("error");
+  const setupCopy = writerShellCopy("setup");
+  const neighborLinks = orgId
+    ? writerRelatedLinks(orgId, { include: ["chat", "budgets", "usage"] })
+    : [];
 
   return (
     <main className="module-page writer-page">
@@ -175,6 +196,15 @@ export default function WriterClient() {
 
       {orgId ? <AiHubRelated orgId={orgId} active="writer" /> : null}
       {orgId ? <WriterCrossLinks orgId={orgId} /> : null}
+      {neighborLinks.length ? (
+        <nav className="writer-cross-links writer-ai-neighbors" aria-label="Related AI tools">
+          {neighborLinks.map((link) => (
+            <a key={link.id} href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      ) : null}
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -185,26 +215,25 @@ export default function WriterClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load the writing assistant</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
+        <section className="app-card soft-panel writer-setup" role="status">
+          {errorCopy.badge ? <span className="app-badge setup">{errorCopy.badge}</span> : null}
+          <h2>{errorCopy.title}</h2>
+          <p className="app-muted">{errorCopy.description}</p>
           <button type="button" className="app-button secondary" onClick={() => load()}>
             Retry
           </button>
+          <WriterNextActions orgId={orgId} draftCount={0} hasMission={false} hasAchievements={false} />
         </section>
       ) : view == null ? (
-        <section className="app-card soft-panel">
-          <h2>Loading…</h2>
-          <p className="app-muted">Checking your workspace.</p>
+        <section className="app-card soft-panel" aria-busy>
+          <h2>{loadingCopy.title}</h2>
+          <p className="app-muted">{loadingCopy.description}</p>
         </section>
       ) : view.status === "setup_required" ? (
         <section className="app-card soft-panel writer-setup">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
-          <p className="app-muted">
-            Select a workspace before composing. FRC Assistant never invents essays when a provider key is missing —
-            use templates once a team is selected.
-          </p>
+          <span className="app-badge setup">{setupCopy.badge ?? "Setup required"}</span>
+          <h2>{view.message || setupCopy.title}</h2>
+          <p className="app-muted">{setupCopy.description}</p>
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -212,7 +241,7 @@ export default function WriterClient() {
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a href={step.href}>Open</a>
+                <a href={withOrgHref(step.href, setupOrg ?? orgId)}>Open</a>
               </li>
             ))}
           </ol>
@@ -634,13 +663,12 @@ function Composer({
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
       {providerSetup ? (
         <div className="product-hub-setup writer-provider-setup" role="status">
-          <span className="app-badge setup">Setup required</span>
+          <span className="app-badge setup">{writerShellCopy("provider_setup").badge ?? "Setup required"}</span>
           <p className="app-muted" style={{ margin: "8px 0" }}>
             {providerSetup.message}
           </p>
           <p className="app-muted" style={{ marginTop: 0 }}>
-            Use <strong>Compose from template</strong> for org-scoped drafts without a model key — FRC Assistant never
-            invents text when providers are missing.
+            {writerShellCopy("provider_setup").description}
           </p>
           {providerSetup.steps.length > 0 ? (
             <ol className="strategy-setup-steps">
@@ -662,7 +690,7 @@ function Composer({
           <button
             key={k}
             type="button"
-            className={`app-badge ${kind === k ? "good" : "demo"}`}
+            className={`app-badge ${kind === k ? "good" : "muted"}`}
             style={{ cursor: "pointer", border: "none" }}
             onClick={() => setKind(k)}
           >
@@ -740,7 +768,7 @@ function Composer({
       {draftBody ? (
         <div className="writer-draft-preview" style={{ display: "grid", gap: 8, borderTop: "1px solid rgba(128,128,128,0.2)", paddingTop: 12 }}>
           {draftSource ? (
-            <span className={`app-badge ${draftSource === "ai" ? "good" : "demo"}`}>
+            <span className={`app-badge ${draftSource === "ai" ? "good" : "muted"}`}>
               {draftSource === "ai" ? "AI draft" : "Template draft"}
               {aiMeta ? ` · ${aiMeta}` : ""}
             </span>
@@ -790,9 +818,13 @@ function Composer({
             Pick a grant or sponsor template above, then <strong>Compose from template</strong> for org-scoped text from
             your profile only. FRC Assistant requires a configured provider key and shows setup — it never invents essays
             when keys are missing. Pair with{" "}
-            <a href={withOrgHref("/team/grants", orgId)}>Grants</a>,{" "}
-            <a href={withOrgHref("/team/awards", orgId)}>Awards</a>, or{" "}
-            <a href={withOrgHref("/team/knowledge", orgId)}>Knowledge</a> for longer narratives.
+            {writerRelatedLinks(orgId, { include: WRITER_RELATED_INCLUDE }).map((link, index, arr) => (
+              <span key={link.id}>
+                <a href={link.href}>{link.label}</a>
+                {index < arr.length - 1 ? (index === arr.length - 2 ? ", or " : ", ") : ""}
+              </span>
+            ))}{" "}
+            for longer narratives.
           </p>
         </div>
       )}
@@ -802,14 +834,12 @@ function Composer({
 
 function DraftLibrary({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
   if (view.drafts.length === 0) {
+    const emptyCopy = writerShellCopy("empty");
     return (
       <section className="app-card soft-panel writer-drafts-empty">
-        <span className="app-badge setup">No saved drafts</span>
-        <h2>Your draft library</h2>
-        <p className="app-muted">
-          Generate a grant answer or sponsor email above and save it here to reuse and refine. Saved drafts are
-          org-scoped for this season — nothing is seeded with DEMO essays.
-        </p>
+        <span className="app-badge setup">{emptyCopy.badge ?? "No saved drafts"}</span>
+        <h2>{emptyCopy.title}</h2>
+        <p className="app-muted">{emptyCopy.description}</p>
         <WriterCrossLinks orgId={view.orgId} />
       </section>
     );
