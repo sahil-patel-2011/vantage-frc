@@ -1,0 +1,182 @@
+/* Notifications inbox — Soft-UI. Real rows only; never DEMO alerts. */
+.notif-page {
+  display: grid;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.notif-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.notif-related {
+  margin: 0 0 4px;
+}
+
+.notif-next-actions {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 16px 18px;
+}
+
+.notif-next-actions > header {
+  display: grid;
+  gap: 4px;
+}
+
+.notif-next-actions h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.notif-next-actions > header p {
+  margin: 0;
+  color: var(--app-muted, var(--soft-muted));
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.notif-next-actions ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.notif-next-actions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--app-line, var(--soft-line));
+  background: var(--app-bg, var(--soft-bg));
+}
+
+.notif-next-actions li.primary {
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--app-line, var(--soft-line)));
+  background: color-mix(in srgb, var(--soft-accent) 8%, var(--app-bg, var(--soft-bg)));
+}
+
+.notif-next-actions li div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.notif-next-actions li strong {
+  font-size: 14px;
+}
+
+.notif-next-actions li span {
+  color: var(--app-muted, var(--soft-muted));
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.notif-next-actions li .app-button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.notif-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.notif-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  scroll-margin-top: 88px;
+}
+
+.notif-list li {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: var(--soft-radius, 16px);
+  background: var(--soft-card);
+  border: 1px solid color-mix(in srgb, var(--soft-line) 85%, transparent);
+  box-shadow: var(--soft-shadow);
+}
+
+.notif-list li.unread {
+  border-color: color-mix(in srgb, var(--soft-accent) 35%, var(--soft-line));
+  background: color-mix(in srgb, var(--soft-accent-soft) 55%, var(--soft-card));
+}
+
+.notif-list header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notif-list strong {
+  display: block;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.notif-list small {
+  display: block;
+  margin-top: 3px;
+  color: var(--soft-muted);
+  font-size: 12px;
+}
+
+.notif-list p {
+  margin: 0;
+  color: var(--soft-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.notif-list footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.notif-list footer .app-button {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.notif-read-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notif-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .notif-next-actions li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

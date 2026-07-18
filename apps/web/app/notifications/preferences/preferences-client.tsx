@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import {
+  NOTIFICATION_RELATED_INCLUDE,
+  notificationRelatedLinks,
+} from "../../../lib/notifications";
+import "../../product-hub.css";
+import "../notifications.css";
 
 type InAppPrefs = {
   matchAlerts: boolean;
@@ -121,6 +127,22 @@ const DEFAULT_EMAIL: EmailPrefs = {
   sponsorReminders: false,
 };
 
+function PrefsRelated() {
+  const links = notificationRelatedLinks({
+    include: [...NOTIFICATION_RELATED_INCLUDE],
+    active: "preferences",
+  });
+  return (
+    <nav className="product-hub-related notif-related" aria-label="Related account tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 export default function NotificationPreferencesClient() {
   const [inAppPrefs, setInAppPrefs] = useState<InAppPrefs>(DEFAULT_IN_APP);
   const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>(DEFAULT_EMAIL);
@@ -187,19 +209,29 @@ export default function NotificationPreferencesClient() {
   }
 
   return (
-    <main className="module-page notif-prefs-page">
+    <main className="module-page notif-prefs-page notif-page">
       <PageHeader
         breadcrumbs="Account / Notifications"
         title="Notification preferences"
-        description="Choose which coach→member events land in your inbox, plus optional email opt-ins. Auth codes and security notices are separate."
+        description="Choose which coach→member events land in your inbox, plus optional email opt-ins. Auth codes and security notices are separate — and nothing invents DEMO alerts."
       >
-        <a className="app-button secondary" href="/notifications">
-          Open inbox
-        </a>
-        <a className="app-button secondary" href="/account?tab=notifications">
-          Account settings
-        </a>
+        <div className="notif-header-actions">
+          <a className="app-button secondary" href="/notifications">
+            Open inbox
+          </a>
+          <a className="app-button secondary" href="/whats-new">
+            What’s new
+          </a>
+          <a className="app-button secondary" href="/support">
+            Help & Support
+          </a>
+          <a className="app-button secondary" href="/account?tab=notifications">
+            Account
+          </a>
+        </div>
       </PageHeader>
+
+      <PrefsRelated />
 
       {delivery ? (
         <p className="telemetry-status" role="status">
