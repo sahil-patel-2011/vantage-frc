@@ -1291,6 +1291,5 @@ export function createVantageToolRegistry() {
           }
         },
       }),
-    )
     );
 }
