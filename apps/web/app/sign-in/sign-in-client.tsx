@@ -35,6 +35,15 @@ function oauthErrorMessage(code: string | null) {
   return "Google sign-in could not be completed. If you already have access, try again or use email and password.";
 }
 
+async function destinationAfterAuth(nextPath: string) {
+  const onboarding = await fetch("/api/onboarding");
+  if (onboarding.ok) {
+    const state = (await onboarding.json()) as { complete?: boolean; accessStatus?: string };
+    return state.complete && state.accessStatus === "approved" ? nextPath : "/onboarding";
+  }
+  return nextPath;
+}
+
 export default function SignInClient({
   googleEnabled,
   nextPath = "/dashboard",
@@ -49,7 +58,9 @@ export default function SignInClient({
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const [showReset, setShowReset] = useState(false);
+  /** password | email-otp (first factor) | reset */
+  const [mode, setMode] = useState<"password" | "email-otp" | "reset">("password");
+  const [otpSent, setOtpSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [code, setCode] = useState("");
   const [verifyStep, setVerifyStep] = useState(false);
@@ -72,10 +83,10 @@ export default function SignInClient({
       setVerifyStep(true);
       void fetch("/api/auth/email-2fa")
         .then(async (response) => (response.ok ? await response.json() : null))
-        .then((data) => {
+        .then(async (data) => {
           if (!data) return;
           if (!data.requiresVerification) {
-            window.location.assign(nextPath);
+            window.location.assign(await destinationAfterAuth(nextPath));
             return;
           }
           setEmailHint(data.emailHint ?? "");
@@ -116,13 +127,7 @@ export default function SignInClient({
       setMessage("Enter the code we emailed you to finish signing in.");
       return;
     }
-    const onboarding = await fetch("/api/onboarding");
-    if (onboarding.ok) {
-      const state = await onboarding.json();
-      window.location.assign(state.complete ? nextPath : "/onboarding");
-      return;
-    }
-    window.location.assign(nextPath);
+    window.location.assign(await destinationAfterAuth(nextPath));
   }
 
   async function passwordSignIn(event: React.FormEvent) {
@@ -141,6 +146,53 @@ export default function SignInClient({
       });
       if (response.ok) {
         await continueAfterFirstFactor();
+        return;
+      }
+      setMessage(WAITLIST_ONLY_MESSAGE);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function emailOtpSignIn(event: React.FormEvent) {
+    event.preventDefault();
+    if (!status.emailOtpAvailable) {
+      setMessage(
+        status.emailOtpReason ??
+          "Email code sign-in requires RESEND_API_KEY and AUTH_EMAIL_FROM on the Vercel project.",
+      );
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      if (!otpSent) {
+        const response = await fetch("/api/auth/email-otp/send-verification-otp", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email, type: "sign-in" }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setMessage(
+            typeof payload.message === "string"
+              ? payload.message
+              : status.emailOtpReason ?? "Could not send a sign-in code.",
+          );
+          return;
+        }
+        setOtpSent(true);
+        setMessage("If that email is authorized, a 6-digit sign-in code is on the way.");
+        return;
+      }
+      const response = await fetch("/api/auth/sign-in/email-otp", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, otp: code }),
+      });
+      if (response.ok) {
+        // First-factor email OTP already proves mailbox control — skip second-factor step.
+        window.location.assign(await destinationAfterAuth(nextPath));
         return;
       }
       setMessage(WAITLIST_ONLY_MESSAGE);
@@ -192,13 +244,7 @@ export default function SignInClient({
         setMessage(data.error ?? "That code is incorrect or expired.");
         return;
       }
-      const onboarding = await fetch("/api/onboarding");
-      if (onboarding.ok) {
-        const state = await onboarding.json();
-        window.location.assign(state.complete ? nextPath : "/onboarding");
-        return;
-      }
-      window.location.assign(nextPath);
+      window.location.assign(await destinationAfterAuth(nextPath));
     } finally {
       setBusy(false);
     }
@@ -249,12 +295,21 @@ export default function SignInClient({
           : "That reset code is invalid, expired, or has reached its attempt limit.",
       );
       if (response.ok) {
-        setShowReset(false);
+        setMode("password");
         setResetSent(false);
+        setCode("");
       }
     } finally {
       setBusy(false);
     }
+  }
+
+  function switchMode(next: "password" | "email-otp" | "reset") {
+    setMode(next);
+    setMessage("");
+    setOtpSent(false);
+    setResetSent(false);
+    setCode("");
   }
 
   const googleReady = status.googleSignInAvailable || googleEnabled;
@@ -334,8 +389,10 @@ export default function SignInClient({
         <h1 id="signin-title">Welcome to Vantage</h1>
         <p className="signin-sub">
           {status.email2faEnforced
-            ? "Sign in with password or Google, then confirm the email code we send."
-            : "Sign in to continue"}
+            ? "Password or Google, then an email code. Or sign in with an email code alone."
+            : status.emailOtpAvailable
+              ? "Sign in with password, Google, or an email code."
+              : "Sign in to continue"}
         </p>
 
         {googleReady ? (
@@ -355,8 +412,8 @@ export default function SignInClient({
           <span>OR</span>
         </div>
 
-        {!showReset ? (
-          <form className="signin-form" onSubmit={passwordSignIn}>
+        {mode === "password" ? (
+          <form className="signin-form" onSubmit={(event) => void passwordSignIn(event)}>
             <label>
               Email
               <span className="signin-field">
@@ -388,8 +445,56 @@ export default function SignInClient({
               {busy ? "Signing in…" : "Sign in"}
             </button>
           </form>
-        ) : (
-          <form className="signin-form" onSubmit={resetPassword}>
+        ) : null}
+
+        {mode === "email-otp" ? (
+          <form className="signin-form" onSubmit={(event) => void emailOtpSignIn(event)}>
+            <label>
+              Email
+              <span className="signin-field">
+                <MailIcon />
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </span>
+            </label>
+            {otpSent ? (
+              <label>
+                Sign-in code
+                <span className="signin-field">
+                  <LockIcon />
+                  <input
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    required
+                    autoComplete="one-time-code"
+                    autoFocus
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  />
+                </span>
+              </label>
+            ) : null}
+            {!status.emailOtpAvailable ? (
+              <p className="signin-status" role="status">
+                {status.emailOtpReason ??
+                  "Email code sign-in requires RESEND_API_KEY and AUTH_EMAIL_FROM on the Vercel project."}
+              </p>
+            ) : null}
+            <button className="signin-submit" disabled={busy || !status.emailOtpAvailable}>
+              {busy ? "Working…" : otpSent ? "Verify code" : "Email me a code"}
+            </button>
+          </form>
+        ) : null}
+
+        {mode === "reset" ? (
+          <form className="signin-form" onSubmit={(event) => void resetPassword(event)}>
             <label>
               Email
               <span className="signin-field">
@@ -429,45 +534,48 @@ export default function SignInClient({
                 </label>
               </>
             )}
+            {!status.emailOtpAvailable ? (
+              <p className="signin-status" role="status">
+                {status.emailOtpReason}
+              </p>
+            ) : null}
             <button className="signin-submit" disabled={busy || !status.emailOtpAvailable}>
               {resetSent ? "Reset password" : "Send reset code"}
             </button>
           </form>
-        )}
+        ) : null}
 
-        {!status.passwordSignInAvailable && (
+        {!status.passwordSignInAvailable && mode === "password" ? (
           <p className="signin-status" role="status">
             {status.passwordReason}
           </p>
-        )}
-        {status.email2faEnforced === false && status.emailOtpReason && (
+        ) : null}
+        {status.email2faEnforced === false && status.emailOtpReason && mode === "password" ? (
           <p className="signin-status" role="status">
             Email 2FA not enforced yet: {status.emailOtpReason}
           </p>
-        )}
-        {showReset && !status.emailOtpAvailable && (
-          <p className="signin-status" role="status">
-            {status.emailOtpReason}
-          </p>
-        )}
-        {message && (
+        ) : null}
+        {message ? (
           <p className="signin-status" role="status">
             {message}
           </p>
-        )}
+        ) : null}
 
         <div className="signin-footer">
-          <button
-            type="button"
-            className="signin-link"
-            onClick={() => {
-              setShowReset((value) => !value);
-              setMessage("");
-              setResetSent(false);
-            }}
-          >
-            {showReset ? "Back to sign in" : "Forgot password?"}
-          </button>
+          {mode === "password" ? (
+            <>
+              <button type="button" className="signin-link" onClick={() => switchMode("email-otp")}>
+                Sign in with email code
+              </button>
+              <button type="button" className="signin-link" onClick={() => switchMode("reset")}>
+                Forgot password?
+              </button>
+            </>
+          ) : (
+            <button type="button" className="signin-link" onClick={() => switchMode("password")}>
+              Back to password sign in
+            </button>
+          )}
           <a className="signin-link" href="/#waitlist">
             Need access? <strong>Join waitlist</strong>
           </a>
