@@ -6,6 +6,14 @@ import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { BATTERY_LOG_KINDS, type BatteryStatus, type HealthStatus } from "../../lib/battery";
+import {
+  BATTERIES_BUILD_RELATED_INCLUDE,
+  BATTERIES_TEAM_RELATED_INCLUDE,
+  batteryNextActions,
+  formatPackEvidence,
+  packHasMeasurement,
+} from "../../lib/battery/battery-related";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import "./batteries.css";
 
 type Pack = {
@@ -72,6 +80,17 @@ function fmtWhen(iso: string | null): string {
   return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+function useHubEmbed(): "team" | "build" | null {
+  const [embed, setEmbed] = useState<"team" | "build" | null>(null);
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith("/team")) setEmbed("team");
+    else if (path.startsWith("/build")) setEmbed("build");
+    else setEmbed(null);
+  }, []);
+  return embed;
+}
+
 function AssignRow({
   pack,
   orgId,
@@ -112,7 +131,17 @@ function AssignRow({
   );
 }
 
+function BatteriesRelated({ orgId }: { orgId: string }) {
+  return (
+    <div className="batt-related">
+      <TeamHubRelated orgId={orgId} active="batteries" include={[...BATTERIES_TEAM_RELATED_INCLUDE]} />
+      <BuildHubRelated orgId={orgId} active="batteries" include={[...BATTERIES_BUILD_RELATED_INCLUDE]} />
+    </div>
+  );
+}
+
 export default function BatteriesClient() {
+  const embed = useHubEmbed();
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
   const [okMessage, setOkMessage] = useState("");
@@ -200,11 +229,13 @@ export default function BatteriesClient() {
     [load],
   );
 
+  const crumbs = embed === "build" ? "Build / Batteries" : "Team / Batteries";
+
   if (fetchFailed || !view) {
     return (
       <main className="module-page batt-page">
-        <PageHeader breadcrumbs="Team / Batteries" title="Batteries" />
-        <TeamOpsNav active="batteries" />
+        <PageHeader breadcrumbs={crumbs} title="Batteries" />
+        {!embed ? <TeamOpsNav active="batteries" /> : null}
         <EmptyState
           title={fetchFailed ? "Could not load batteries" : "Loading batteries…"}
           description={fetchFailed ? error || "Check your connection and try again." : undefined}
@@ -222,19 +253,36 @@ export default function BatteriesClient() {
   }
 
   if (view.status === "setup_required") {
+    const setupActions = batteryNextActions({ packs: [], logCount: 0 });
     return (
       <main className="module-page batt-page">
         <PageHeader
-          breadcrumbs="Team / Batteries"
+          breadcrumbs={crumbs}
           title="Batteries"
-          description="Track charge cycles, assignment, and competition readiness for every pack."
+          description="Track charge cycles, assignment, and competition readiness for every pack — from real logs only."
         />
-        <TeamOpsNav active="batteries" />
+        {!embed ? <TeamOpsNav active="batteries" /> : null}
         <EmptyState title="Select a team workspace" description={view.message} badge="Setup" badgeTone="setup" soft>
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
         </EmptyState>
+        <section className="batt-next-actions app-card soft-panel" aria-label="Next actions">
+          <h2>Next actions</h2>
+          <ol>
+            {setupActions.map((action) => (
+              <li key={action.id} className={action.primary ? "primary" : undefined}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a className="app-button secondary" href={action.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
       </main>
     );
   }
@@ -245,31 +293,44 @@ export default function BatteriesClient() {
     .map((id) => view.packs.find((pack) => pack.id === id))
     .filter((pack): pack is Pack => Boolean(pack));
   const canDelete = view.context.role === "owner" || view.context.role === "admin";
+  const nextActions = batteryNextActions({
+    orgId,
+    packs: view.packs,
+    logCount: view.logs.length,
+    nextRotationLabel: rotationPacks[0]?.label ?? null,
+  });
+  const measuredCount = view.packs.filter((p) => packHasMeasurement(p)).length;
 
   return (
     <main className="module-page batt-page">
       <PageHeader
-        breadcrumbs="Team / Batteries"
+        breadcrumbs={crumbs}
         title="Batteries"
         description={
           <>
             Charge cycles, assignment, and event readiness for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}.
+            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}. IR and cycles only from logged
+            events — never demo metrics.
           </>
         }
       >
         <div className="batt-header-actions">
-          <a className="app-button secondary" href={orgId ? `/pit?orgId=${encodeURIComponent(orgId)}` : "/pit"}>
+          <a className="app-button secondary" href={withOrgHref("/pit", orgId)}>
             Pit Command
           </a>
-          <a className="app-button secondary" href={orgId ? `/inventory?orgId=${encodeURIComponent(orgId)}` : "/inventory"}>
+          <a className="app-button secondary" href={withOrgHref("/battery-rotation", orgId)}>
+            Rotation
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/battery-health-forecast", orgId)}>
+            Health forecast
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/inventory", orgId)}>
             Inventory
           </a>
         </div>
       </PageHeader>
-      <TeamOpsNav orgId={orgId} active="batteries" />
-      <BuildHubRelated orgId={orgId} active="batteries" />
-      <TeamHubRelated orgId={orgId} active="batteries" />
+      {!embed ? <TeamOpsNav orgId={orgId} active="batteries" /> : null}
+      <BatteriesRelated orgId={orgId} />
 
       {error ? (
         <p className="batt-alert" role="alert">
@@ -281,6 +342,26 @@ export default function BatteriesClient() {
           {okMessage}
         </p>
       ) : null}
+
+      <section className="batt-next-actions app-card soft-panel" aria-label="Next actions">
+        <header>
+          <h2>Next actions</h2>
+          <p>Prioritized from your fleet — empty until packs and measurements exist.</p>
+        </header>
+        <ol>
+          {nextActions.map((action) => (
+            <li key={action.id} className={action.primary ? "primary" : undefined}>
+              <div>
+                <strong>{action.label}</strong>
+                <span>{action.detail}</span>
+              </div>
+              <a className="app-button secondary" href={action.href}>
+                Open
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <section className="batt-summary" aria-label="Fleet summary">
         <article className="batt-summary-tile">
@@ -296,25 +377,37 @@ export default function BatteriesClient() {
           <span>Need attention</span>
         </article>
         <article className="batt-summary-tile">
-          <strong>{rotationPacks[0]?.label ?? "—"}</strong>
-          <span>Next up</span>
+          <strong>{measuredCount}</strong>
+          <span>With real readings</span>
         </article>
       </section>
 
       {view.packs.length === 0 ? (
         <EmptyState
           title="No batteries yet"
-          description="Add your first pack to start tracking cycles, resistance, and match rotation."
+          description="Add a pack label to start. Resistance, voltage, and cycles stay blank until someone logs them — nothing is invented."
           soft
-        />
+        >
+          <BatteriesRelated orgId={orgId} />
+        </EmptyState>
       ) : null}
 
       <div className="batt-layout">
         <div className="batt-panel">
+          {view.packs.length > 0 && rotationPacks.length === 0 ? (
+            <EmptyState
+              soft
+              title="No rotation candidates"
+              description="Active packs need a real IR or voltage log before they can rank for match rotation. Log a Battery Beak test below."
+            />
+          ) : null}
+
           {rotationPacks.length > 0 ? (
             <section className="app-card soft-panel">
               <h2>Recommended rotation</h2>
-              <p className="app-muted">Healthiest packs, least-recently-used first — grab these for the next matches.</p>
+              <p className="app-muted">
+                Healthiest packs with logged evidence, least-recently-used first — grab these for the next matches.
+              </p>
               <ol className="batt-rotation">
                 {rotationPacks.map((pack, index) => (
                   <li key={pack.id} className={index === 0 ? "next" : undefined}>
@@ -322,125 +415,218 @@ export default function BatteriesClient() {
                     <span className="meta">
                       <strong>{pack.label}</strong>
                       <small>
-                        {pack.cycleCount} cycles
+                        {pack.cycleCount > 0 ? `${pack.cycleCount} cycles logged` : "No cycles logged"}
                         {pack.assignment ? ` · ${pack.assignment}` : ""}
-                        {pack.lastUsedAt ? ` · last used ${fmtWhen(pack.lastUsedAt)}` : " · never used"}
+                        {pack.lastUsedAt ? ` · last used ${fmtWhen(pack.lastUsedAt)}` : " · never used in a match/practice log"}
+                        {pack.lastInternalResistanceMohm != null
+                          ? ` · ${pack.lastInternalResistanceMohm} mΩ`
+                          : " · no IR yet"}
                       </small>
                     </span>
-                    <span className="score">{pack.health.score}</span>
+                    {packHasMeasurement(pack) ? <span className="score">{pack.health.score}</span> : <span className="score muted">—</span>}
                   </li>
                 ))}
               </ol>
             </section>
           ) : null}
 
-          <section className="app-card soft-panel">
-            <h2>Fleet</h2>
-            <ul className="batt-fleet">
-              {view.packs.map((pack) => (
-                <li key={pack.id} className={pack.health.status === "good" ? undefined : pack.health.status}>
-                  <div className="batt-fleet-top">
-                    <div className="who">
-                      <strong>
-                        {pack.label}
-                        {pack.brand ? ` · ${pack.brand}` : ""}
-                      </strong>
-                      <small>
-                        {pack.cycleCount} cycles
-                        {pack.nominalAh != null ? ` · ${pack.nominalAh} Ah` : ""}
-                        {pack.lastInternalResistanceMohm != null ? ` · ${pack.lastInternalResistanceMohm} mΩ` : ""}
-                        {pack.lastRestingVoltage != null ? ` · ${pack.lastRestingVoltage} V` : ""}
-                        {pack.ageMonths != null ? ` · ${pack.ageMonths} mo` : ""}
-                        {" · charged "}
-                        {fmtWhen(pack.lastChargedAt)}
-                      </small>
-                    </div>
-                    <div className="batt-badges">
-                      <span className={`batt-badge ${pack.health.status}`}>{HEALTH_LABEL[pack.health.status]}</span>
-                      <span className={`batt-badge ${pack.readiness.ready ? "ready" : "block"}`}>
-                        {pack.readiness.ready ? "Event ready" : "Not ready"}
-                      </span>
-                      {pack.status !== "active" ? <span className="batt-badge">{pack.status}</span> : null}
-                      {pack.assignment ? <span className="batt-badge">{pack.assignment}</span> : null}
-                    </div>
-                  </div>
-                  {(pack.health.reasons.length > 0 || pack.readiness.reasons.length > 0) && (
-                    <small className="app-muted">
-                      {[...pack.health.reasons, ...pack.readiness.reasons.filter((r) => !pack.health.reasons.includes(r))].join("; ")}
-                    </small>
-                  )}
-                  <AssignRow pack={pack} orgId={orgId} busy={busy} run={run} />
-                  <div className="batt-actions">
-                    {pack.status === "active" ? (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() =>
-                          void run({ action: "log_event", orgId, batteryId: pack.id, kind: "charge" }, `charge:${pack.id}`)
-                        }
-                      >
-                        Mark charged
-                      </button>
-                    ) : null}
-                    {pack.status === "active" ? (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() =>
-                          void run({ action: "set_status", orgId, id: pack.id, status: "quarantine", note: "Quarantined from UI" }, `q:${pack.id}`)
-                        }
-                      >
-                        Quarantine
-                      </button>
-                    ) : null}
-                    {pack.status === "active" ? (
-                      <button
-                        type="button"
-                        className="danger"
-                        disabled={busy}
-                        onClick={() => {
-                          if (confirm(`Retire ${pack.label}?`)) {
-                            void run({ action: "set_status", orgId, id: pack.id, status: "retired", note: "Retired from UI" }, `retire:${pack.id}`);
-                          }
-                        }}
-                      >
-                        Retire
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() =>
-                          void run({ action: "set_status", orgId, id: pack.id, status: "active", note: "Returned to service" }, `act:${pack.id}`)
-                        }
-                      >
-                        Activate
-                      </button>
-                    )}
-                    {canDelete ? (
-                      <button
-                        type="button"
-                        className="danger"
-                        disabled={busy}
-                        onClick={() => {
-                          if (confirm(`Delete ${pack.label}? This removes its log.`)) {
-                            void run({ action: "delete_pack", orgId, id: pack.id }, `del:${pack.id}`);
-                          }
-                        }}
-                      >
-                        Delete
-                      </button>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {view.packs.length > 0 ? (
+            <section className="app-card soft-panel">
+              <header className="batt-section-head">
+                <h2>Fleet</h2>
+                <p className="app-muted">
+                  {measuredCount}/{view.packs.length} packs have IR or voltage logs.
+                </p>
+              </header>
+              <ul className="batt-fleet">
+                {view.packs.map((pack) => {
+                  const measured = packHasMeasurement(pack);
+                  return (
+                    <li
+                      key={pack.id}
+                      className={
+                        !measured ? "unmeasured" : pack.health.status === "good" ? undefined : pack.health.status
+                      }
+                    >
+                      <div className="batt-fleet-top">
+                        <div className="who">
+                          <strong>
+                            {pack.label}
+                            {pack.brand ? ` · ${pack.brand}` : ""}
+                          </strong>
+                          <small>
+                            {formatPackEvidence({
+                              cycleCount: pack.cycleCount,
+                              nominalAh: pack.nominalAh,
+                              lastInternalResistanceMohm: pack.lastInternalResistanceMohm,
+                              lastRestingVoltage: pack.lastRestingVoltage,
+                              ageMonths: pack.ageMonths,
+                              lastChargedAt: pack.lastChargedAt,
+                              formatWhen: fmtWhen,
+                            })}
+                          </small>
+                        </div>
+                        <div className="batt-badges">
+                          {!measured ? (
+                            <span className="batt-badge unmeasured">Needs reading</span>
+                          ) : (
+                            <span className={`batt-badge ${pack.health.status}`}>{HEALTH_LABEL[pack.health.status]}</span>
+                          )}
+                          <span className={`batt-badge ${pack.readiness.ready ? "ready" : "block"}`}>
+                            {pack.readiness.ready ? "Event ready" : "Not ready"}
+                          </span>
+                          {pack.status !== "active" ? <span className="batt-badge">{pack.status}</span> : null}
+                          {pack.assignment ? <span className="batt-badge">{pack.assignment}</span> : null}
+                        </div>
+                      </div>
+                      {!measured ? (
+                        <small className="app-muted">
+                          Log a resistance test or voltage so health is evidence-based — Vantage will not invent IR.
+                        </small>
+                      ) : pack.health.reasons.length > 0 || pack.readiness.reasons.length > 0 ? (
+                        <small className="app-muted">
+                          {[
+                            ...pack.health.reasons,
+                            ...pack.readiness.reasons.filter((r) => !pack.health.reasons.includes(r)),
+                          ].join("; ")}
+                        </small>
+                      ) : null}
+                      <AssignRow pack={pack} orgId={orgId} busy={busy} run={run} />
+                      <div className="batt-actions">
+                        {pack.status === "active" ? (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() =>
+                              void run(
+                                { action: "log_event", orgId, batteryId: pack.id, kind: "charge" },
+                                `charge:${pack.id}`,
+                              )
+                            }
+                          >
+                            Mark charged
+                          </button>
+                        ) : null}
+                        {pack.status === "active" ? (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                              setLogForm((prev) => ({
+                                ...prev,
+                                batteryId: pack.id,
+                                kind: "resistance_test",
+                              }));
+                              document.getElementById("batt-log-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            }}
+                          >
+                            Log IR test
+                          </button>
+                        ) : null}
+                        {pack.status === "active" ? (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() =>
+                              void run(
+                                {
+                                  action: "set_status",
+                                  orgId,
+                                  id: pack.id,
+                                  status: "quarantine",
+                                  note: "Quarantined from UI",
+                                },
+                                `q:${pack.id}`,
+                              )
+                            }
+                          >
+                            Quarantine
+                          </button>
+                        ) : null}
+                        {pack.status === "active" ? (
+                          <button
+                            type="button"
+                            className="danger"
+                            disabled={busy}
+                            onClick={() => {
+                              if (confirm(`Retire ${pack.label}?`)) {
+                                void run(
+                                  {
+                                    action: "set_status",
+                                    orgId,
+                                    id: pack.id,
+                                    status: "retired",
+                                    note: "Retired from UI",
+                                  },
+                                  `retire:${pack.id}`,
+                                );
+                              }
+                            }}
+                          >
+                            Retire
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() =>
+                              void run(
+                                {
+                                  action: "set_status",
+                                  orgId,
+                                  id: pack.id,
+                                  status: "active",
+                                  note: "Returned to service",
+                                },
+                                `act:${pack.id}`,
+                              )
+                            }
+                          >
+                            Activate
+                          </button>
+                        )}
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            className="danger"
+                            disabled={busy}
+                            onClick={() => {
+                              if (confirm(`Delete ${pack.label}? This removes its log.`)) {
+                                void run({ action: "delete_pack", orgId, id: pack.id }, `del:${pack.id}`);
+                              }
+                            }}
+                          >
+                            Delete
+                          </button>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
 
           <section className="app-card soft-panel">
             <h2>Recent activity</h2>
             {view.logs.length === 0 ? (
-              <p className="app-muted">No activity logged yet.</p>
+              <EmptyState
+                soft
+                title="No activity logged yet"
+                description="Charge, match, practice, and resistance tests show up here. The feed stays empty until someone logs a real event."
+              >
+                {view.packs.length > 0 ? (
+                  <button
+                    type="button"
+                    className="app-button secondary"
+                    onClick={() =>
+                      document.getElementById("batt-log-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }
+                  >
+                    Log an event
+                  </button>
+                ) : null}
+              </EmptyState>
             ) : (
               <ul className="batt-log">
                 {view.logs.slice(0, 30).map((log) => (
@@ -496,6 +682,9 @@ export default function BatteriesClient() {
             }}
           >
             <h3>Add a battery</h3>
+            <p className="app-muted batt-form-hint">
+              Optional initial IR/voltage become the first log entries. Leave them blank if you have not measured yet.
+            </p>
             <div className="batt-form-grid">
               <label className="batt-field">
                 <span>Label</span>
@@ -553,6 +742,7 @@ export default function BatteriesClient() {
                   step="0.1"
                   value={packForm.initialResistanceMohm}
                   disabled={busy}
+                  placeholder="Optional"
                   onChange={(e) => setPackForm({ ...packForm, initialResistanceMohm: e.target.value })}
                 />
               </label>
@@ -564,6 +754,7 @@ export default function BatteriesClient() {
                   step="0.1"
                   value={packForm.initialVoltage}
                   disabled={busy}
+                  placeholder="Optional"
                   onChange={(e) => setPackForm({ ...packForm, initialVoltage: e.target.value })}
                 />
               </label>
@@ -574,6 +765,7 @@ export default function BatteriesClient() {
           </form>
 
           <form
+            id="batt-log-form"
             className="batt-form app-card soft-panel"
             onSubmit={(event) => {
               event.preventDefault();
@@ -603,9 +795,13 @@ export default function BatteriesClient() {
           >
             <h3>Log an event</h3>
             {view.packs.length === 0 ? (
-              <p className="app-muted">Add a pack before logging events.</p>
+              <EmptyState soft title="Add a pack first" description="Events attach to a labeled pack in this workspace." />
             ) : (
               <>
+                <p className="app-muted batt-form-hint">
+                  Match/practice logs increment cycle count. Resistance tests store IR for health — leave blanks when you
+                  did not measure.
+                </p>
                 <div className="batt-form-grid">
                   <label className="batt-field">
                     <span>Battery</span>
@@ -623,7 +819,11 @@ export default function BatteriesClient() {
                   </label>
                   <label className="batt-field">
                     <span>Event</span>
-                    <select value={logForm.kind} disabled={busy} onChange={(e) => setLogForm({ ...logForm, kind: e.target.value })}>
+                    <select
+                      value={logForm.kind}
+                      disabled={busy}
+                      onChange={(e) => setLogForm({ ...logForm, kind: e.target.value })}
+                    >
                       {BATTERY_LOG_KINDS.filter((kind) => !["retire", "return_to_service"].includes(kind)).map((kind) => (
                         <option key={kind} value={kind}>
                           {LOG_KIND_LABEL[kind]}
@@ -639,6 +839,7 @@ export default function BatteriesClient() {
                       step="0.1"
                       value={logForm.restingVoltage}
                       disabled={busy}
+                      placeholder="Optional"
                       onChange={(e) => setLogForm({ ...logForm, restingVoltage: e.target.value })}
                     />
                   </label>
@@ -650,6 +851,7 @@ export default function BatteriesClient() {
                       step="0.1"
                       value={logForm.internalResistanceMohm}
                       disabled={busy}
+                      placeholder="Optional"
                       onChange={(e) => setLogForm({ ...logForm, internalResistanceMohm: e.target.value })}
                     />
                   </label>
@@ -666,7 +868,11 @@ export default function BatteriesClient() {
                   )}
                   <label className="batt-field">
                     <span>Note</span>
-                    <input value={logForm.note} disabled={busy} onChange={(e) => setLogForm({ ...logForm, note: e.target.value })} />
+                    <input
+                      value={logForm.note}
+                      disabled={busy}
+                      onChange={(e) => setLogForm({ ...logForm, note: e.target.value })}
+                    />
                   </label>
                 </div>
                 <button type="submit" className="app-button secondary" disabled={busy || !logForm.batteryId}>
