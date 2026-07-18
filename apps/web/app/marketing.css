@@ -770,3 +770,5 @@
   .pricing-preview-actions{width:100%}
   .pricing-preview-actions .button{flex:1;justify-content:center}
 }
+
+.legal-content{max-width:800px;margin:0 auto;padding:clamp(72px,10vw,128px) clamp(20px,5vw,40px)}.legal-content h1{font-size:clamp(38px,6vw,64px)}.legal-content h2{margin-top:44px}.legal-content p,.legal-content li{font-size:16px;line-height:1.7}.legal-meta{margin:0 0 30px;color:var(--m-muted);font:600 11px var(--m-mono);letter-spacing:.1em;text-transform:uppercase}.invite-legal,.onboarding-legal-accept{display:flex;gap:9px;align-items:flex-start;margin:18px 0;font-size:13px;line-height:1.45}.invite-legal input,.onboarding-legal-accept input{margin-top:3px}

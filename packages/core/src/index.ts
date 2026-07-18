@@ -274,3 +274,5 @@ export * from "./in-app-notifications";
 export * from "./membership";
 export * from "./capabilities";
 export * from "./platform-admin";
+
+export * from "./legal";

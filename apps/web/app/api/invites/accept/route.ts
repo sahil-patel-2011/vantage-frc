@@ -22,9 +22,7 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as { token?: string };
     if (!body.token) return Response.json({ error: "Invite token is required" }, { status: 400 });
-    const orgId = await withRls({ userId: session.user.id }, (client) =>
-      acceptOrganizationInvite(client, session.user.id, body.token!),
-    );
+    const orgId = await withRls({ userId: session.user.id }, async (client) => { const acceptedOrgId = await acceptOrganizationInvite(client, session.user.id, body.token!); await recordLegalAcceptance(client, session.user.id); return acceptedOrgId; });
     return Response.json({ orgId });
   } catch (error) {
     return Response.json(

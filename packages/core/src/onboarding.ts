@@ -112,6 +112,7 @@ export function parseDob(value: string): Date {
 }
 
 export function validateOnboardingPayload(input: OnboardingPayload): OnboardingPayload {
+  assertTermsAccepted(input.termsAccepted);
   const firstName = input.firstName.trim();
   const lastName = input.lastName.trim();
   if (firstName.length < 1 || firstName.length > 60) throw new Error("First name is required (max 60 characters).");
