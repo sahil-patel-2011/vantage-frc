@@ -1,11 +1,11 @@
-import VideoClient from "./video-client";
-import "./video.css";
+﻿import VideoRescoutClient from "./video-rescout-client";
+import "./video-rescout.css";
 
 export const metadata = {
   title: "Match Video Review · Vantage",
-  description: "Re-watch match footage with timestamped team notes that seek the player.",
+  description: "Post-match video re-scout: pause, rewind, 2x playback, and stamp scores on the YouTube timeline.",
 };
 
 export default function VideoPage() {
-  return <VideoClient />;
+  return <VideoRescoutClient />;
 }
