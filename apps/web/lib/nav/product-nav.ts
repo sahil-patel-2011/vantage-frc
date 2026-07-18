@@ -115,6 +115,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     icon: "calendar",
     items: [
       { href: "/team/calendar", label: "Team Calendar", icon: "calendar" },
+      { href: "/my-day", label: "My Day", icon: "calendar" },
       { href: "/calendar", label: "Season Calendar", icon: "calendar" },
       { href: "/practice", label: "Practice Planner", icon: "target" },
       { href: "/shifts", label: "Shifts", icon: "users" },
@@ -156,7 +157,6 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/team/knowledge", label: "Knowledge Base", icon: "clipboard" },
       { href: "/team/alumni", label: "Alumni", icon: "users" },
       { href: "/team", label: "Admin", icon: "gear" },
-      { href: "/team/background", label: "Team background", icon: "users" },
       { href: "/team/discord", label: "Discord", icon: "chat" },
       { href: "/team/data", label: "Data analytics", icon: "stats" },
       { href: "/team/usage", label: "AI usage", icon: "stats" },
@@ -176,7 +176,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/packing", label: "Packing List", icon: "grid" },
       { href: "/duties", label: "Duty Roster", icon: "users" },
       { href: "/visit-invites", label: "Visit Invites", icon: "users" },
-      { href: "/logistics", label: "Event Travel", icon: "pin" },
+      { href: "/travel", label: "Event Travel", icon: "pin", state: "planned" },
     ],
   },
   {

@@ -7,14 +7,22 @@ import {
   DRAFT_TYPES,
   GRANT_STATUSES,
   PURCHASE_STATUSES,
+  SPONSOR_PIPELINE_STAGES,
   SPONSOR_STATUSES,
   generateEvidenceDraft,
   type BusinessView,
   type DraftType,
   type GrantStatus,
   type PurchaseStatus,
+  type SponsorPipelineStage,
   type SponsorStatus,
 } from "../../../lib/business-portal";
+import {
+  defaultRenewalDueOn,
+  defaultThankYouDueOn,
+  isPipelineStage,
+  statusForPipelineStage,
+} from "../../../lib/sponsor-pipeline";
 
 type JsonBody = Record<string, unknown>;
 
@@ -112,7 +120,7 @@ export async function GET(request: Request) {
     if (error instanceof Error && /access denied/i.test(error.message)) {
       return Response.json({ error: error.message }, { status: 403 });
     }
-    const message = error instanceof Error && /finance_season_settings|shipping_cost_usd|document_type/.test(error.message)
+    const message = error instanceof Error && /finance_season_settings|shipping_cost_usd|document_type|pipeline_stage|ask_amount_usd/.test(error.message)
       ? "The Team Business Portal database migration has not been applied yet."
       : "Could not load the Team Business Portal.";
     return Response.json({ error: message }, { status: 500 });
@@ -264,22 +272,42 @@ export async function POST(request: Request) {
           requireAdmin(member);
           const name = text(body.name, 200);
           if (!name) throw new Error("Sponsor name is required");
-          const status = choice<SponsorStatus>(SPONSOR_STATUSES, body.status) ?? "prospect";
+          const pipelineStage =
+            choice<SponsorPipelineStage>(SPONSOR_PIPELINE_STAGES, body.pipelineStage) ??
+            choice<SponsorPipelineStage>(SPONSOR_PIPELINE_STAGES, body.status) ??
+            "prospect";
+          const status =
+            choice<SponsorStatus>(SPONSOR_STATUSES, body.status) ?? statusForPipelineStage(pipelineStage);
           const allowedTiers = ["in_kind", "bronze", "silver", "gold", "platinum", "custom"];
           const tier = allowedTiers.includes(String(body.tier)) ? String(body.tier) : "custom";
+          const askUsd = dollars(body.askCents ?? body.askAmountCents);
+          const pledgedUsd = dollars(body.pledgedCents ?? body.pledgedAmountCents);
           const inserted = await client.query<{ id: string }>(
             `INSERT INTO sponsors(
-               org_id, name, status, tier, website, industry, relationship_owner, next_follow_up_on, notes, created_by
-             ) VALUES ($1,$2,$3::sponsor_status,$4::sponsor_tier,$5,$6,$7,$8::date,$9,$10)
+               org_id, name, status, pipeline_stage, tier, website, industry, relationship_owner,
+               next_follow_up_on, ask_amount_usd, pledged_amount_usd, renewal_due_on, notes, created_by
+             ) VALUES (
+               $1,$2,$3::sponsor_status,$4::sponsor_pipeline_stage,$5::sponsor_tier,$6,$7,$8,
+               $9::date, NULLIF($10, 0), NULLIF($11, 0), $12::date, $13, $14
+             )
              ON CONFLICT (org_id, name) DO UPDATE SET
-               status = EXCLUDED.status, tier = EXCLUDED.tier,
+               status = EXCLUDED.status,
+               pipeline_stage = EXCLUDED.pipeline_stage,
+               tier = EXCLUDED.tier,
                website = COALESCE(EXCLUDED.website, sponsors.website),
                industry = COALESCE(EXCLUDED.industry, sponsors.industry),
                relationship_owner = COALESCE(EXCLUDED.relationship_owner, sponsors.relationship_owner),
                next_follow_up_on = COALESCE(EXCLUDED.next_follow_up_on, sponsors.next_follow_up_on),
+               ask_amount_usd = COALESCE(EXCLUDED.ask_amount_usd, sponsors.ask_amount_usd),
+               pledged_amount_usd = COALESCE(EXCLUDED.pledged_amount_usd, sponsors.pledged_amount_usd),
                notes = COALESCE(EXCLUDED.notes, sponsors.notes), updated_at = now()
              RETURNING id`,
-            [orgId, name, status, tier, webUrl(body.website), text(body.industry, 120), text(body.relationshipOwner, 160), date(body.nextFollowUpOn), text(body.notes, 4_000), session.user.id],
+            [
+              orgId, name, status, pipelineStage, tier, webUrl(body.website), text(body.industry, 120),
+              text(body.relationshipOwner, 160), date(body.nextFollowUpOn), askUsd, pledgedUsd,
+              date(body.renewalDueOn) ?? (pipelineStage === "active" || pipelineStage === "renewal" ? defaultRenewalDueOn(seasonYear) : null),
+              text(body.notes, 4_000), session.user.id,
+            ],
           );
           entityId = inserted.rows[0]?.id ?? null;
           const contactName = text(body.contactName, 160);
@@ -309,16 +337,56 @@ export async function POST(request: Request) {
         case "update-sponsor": {
           requireAdmin(member);
           const sponsorId = text(body.sponsorId, 64);
-          const status = choice<SponsorStatus>(SPONSOR_STATUSES, body.status);
-          if (!sponsorId || !status) throw new Error("Sponsor and status are required");
+          if (!sponsorId) throw new Error("Sponsor is required");
+          const pipelineStage = choice<SponsorPipelineStage>(SPONSOR_PIPELINE_STAGES, body.pipelineStage);
+          const status =
+            choice<SponsorStatus>(SPONSOR_STATUSES, body.status) ??
+            (pipelineStage ? statusForPipelineStage(pipelineStage) : null);
+          if (!status && !pipelineStage) throw new Error("Sponsor stage or status is required");
+          const askUsd = body.askCents != null || body.askAmountCents != null
+            ? dollars(body.askCents ?? body.askAmountCents) : null;
+          const pledgedUsd = body.pledgedCents != null || body.pledgedAmountCents != null
+            ? dollars(body.pledgedCents ?? body.pledgedAmountCents) : null;
           const updated = await client.query(
-            `UPDATE sponsors SET status = $3::sponsor_status,
-               next_follow_up_on = COALESCE($4::date, next_follow_up_on), updated_at = now()
+            `UPDATE sponsors SET
+               status = COALESCE($3::sponsor_status, status),
+               pipeline_stage = COALESCE($4::sponsor_pipeline_stage, pipeline_stage),
+               next_follow_up_on = COALESCE($5::date, next_follow_up_on),
+               ask_amount_usd = COALESCE($6::numeric, ask_amount_usd),
+               pledged_amount_usd = COALESCE($7::numeric, pledged_amount_usd),
+               renewal_due_on = COALESCE($8::date, renewal_due_on),
+               thank_you_due_on = COALESCE($9::date, thank_you_due_on),
+               updated_at = now()
              WHERE id = $1 AND org_id = $2`,
-            [sponsorId, orgId, status, date(body.nextFollowUpOn)],
+            [sponsorId, orgId, status, pipelineStage, date(body.nextFollowUpOn), askUsd, pledgedUsd, date(body.renewalDueOn), date(body.thankYouDueOn)],
           );
           if (!updated.rowCount) throw new Error("Sponsor not found");
-          await audit(client, { orgId, userId: session.user.id, action, entityType: "sponsor", entityId: sponsorId, metadata: { status } });
+          await audit(client, { orgId, userId: session.user.id, action, entityType: "sponsor", entityId: sponsorId, metadata: { status, pipelineStage } });
+          break;
+        }
+        case "set-pipeline-stage": {
+          requireAdmin(member);
+          const sponsorId = text(body.sponsorId, 64);
+          const pipelineStage = choice<SponsorPipelineStage>(SPONSOR_PIPELINE_STAGES, body.pipelineStage);
+          if (!sponsorId || !pipelineStage || !isPipelineStage(pipelineStage)) {
+            throw new Error("Sponsor and pipeline stage are required");
+          }
+          const status = statusForPipelineStage(pipelineStage);
+          const renewalDue =
+            pipelineStage === "active" || pipelineStage === "renewal"
+              ? date(body.renewalDueOn) ?? defaultRenewalDueOn(seasonYear)
+              : null;
+          const updated = await client.query(
+            `UPDATE sponsors SET
+               pipeline_stage = $3::sponsor_pipeline_stage,
+               status = CASE WHEN status = 'declined' THEN status ELSE $4::sponsor_status END,
+               renewal_due_on = COALESCE($5::date, renewal_due_on),
+               updated_at = now()
+             WHERE id = $1 AND org_id = $2`,
+            [sponsorId, orgId, pipelineStage, status, renewalDue],
+          );
+          if (!updated.rowCount) throw new Error("Sponsor not found");
+          await audit(client, { orgId, userId: session.user.id, action, entityType: "sponsor", entityId: sponsorId, metadata: { pipelineStage, status } });
           break;
         }
         case "add-contribution": {
@@ -351,10 +419,19 @@ export async function POST(request: Request) {
               [orgId, seasonYear, amountUsd, receivedOn, entityId, text(body.description, 1_000) ?? "Sponsor contribution", session.user.id],
             );
           }
+          const thankYouDue = defaultThankYouDueOn(receivedOn);
           await client.query(
-            `UPDATE sponsors SET status = 'active', updated_at = now()
-             WHERE id = $1 AND org_id = $2 AND status = 'prospect'`,
-            [sponsorId, orgId],
+            `UPDATE sponsors SET
+               status = CASE WHEN status = 'declined' THEN status ELSE 'active' END,
+               pipeline_stage = CASE
+                 WHEN pipeline_stage IN ('active', 'renewal') THEN pipeline_stage
+                 ELSE 'active'::sponsor_pipeline_stage
+               END,
+               thank_you_due_on = COALESCE(thank_you_due_on, $3::date),
+               renewal_due_on = COALESCE(renewal_due_on, $4::date),
+               updated_at = now()
+             WHERE id = $1 AND org_id = $2`,
+            [sponsorId, orgId, thankYouDue, defaultRenewalDueOn(seasonYear)],
           );
           await audit(client, { orgId, userId: session.user.id, action, entityType: "sponsor_contribution", entityId });
           break;
@@ -376,6 +453,34 @@ export async function POST(request: Request) {
           );
           if (!inserted.rows[0]) throw new Error("Sponsor not found");
           entityId = inserted.rows[0].id;
+          if (requestedType === "visit") {
+            await client.query(
+              `UPDATE sponsors SET
+                 pipeline_stage = CASE
+                   WHEN pipeline_stage IN ('prospect', 'ask') THEN 'visit'::sponsor_pipeline_stage
+                   ELSE pipeline_stage
+                 END,
+                 next_follow_up_on = COALESCE($3::date, next_follow_up_on),
+                 updated_at = now()
+               WHERE id = $1 AND org_id = $2`,
+              [sponsorId, orgId, date(body.nextFollowUpOn)],
+            );
+          } else if (requestedType === "thank_you") {
+            await client.query(
+              `UPDATE sponsors SET thank_you_due_on = NULL, updated_at = now() WHERE id = $1 AND org_id = $2`,
+              [sponsorId, orgId],
+            );
+            await client.query(
+              `UPDATE sponsor_contributions SET thank_you_sent_at = COALESCE(thank_you_sent_at, now())
+               WHERE org_id = $1 AND sponsor_id = $2 AND thank_you_sent_at IS NULL`,
+              [orgId, sponsorId],
+            );
+          } else if (date(body.nextFollowUpOn)) {
+            await client.query(
+              `UPDATE sponsors SET next_follow_up_on = $3::date, updated_at = now() WHERE id = $1 AND org_id = $2`,
+              [sponsorId, orgId, date(body.nextFollowUpOn)],
+            );
+          }
           await audit(client, { orgId, userId: session.user.id, action, entityType: "sponsor_interaction", entityId });
           break;
         }
@@ -408,11 +513,13 @@ export async function POST(request: Request) {
             `WITH prospect AS (
                UPDATE sponsor_prospects SET status = 'contacted'
                WHERE id = $1 AND org_id = $2 RETURNING *
-             ) INSERT INTO sponsors(org_id, name, status, website, notes, created_by)
-               SELECT org_id, company_name, 'prospect', website,
+             ) INSERT INTO sponsors(org_id, name, status, pipeline_stage, website, notes, created_by)
+               SELECT org_id, company_name, 'prospect', 'prospect', website,
                       COALESCE(rationale, '') || E'\nSource: ' || COALESCE(website, 'not recorded'), $3 FROM prospect
              ON CONFLICT (org_id, name) DO UPDATE SET
-               website = COALESCE(sponsors.website, EXCLUDED.website), updated_at = now()
+               website = COALESCE(sponsors.website, EXCLUDED.website),
+               pipeline_stage = COALESCE(sponsors.pipeline_stage, 'prospect'::sponsor_pipeline_stage),
+               updated_at = now()
              RETURNING id`,
             [prospectId, orgId, session.user.id],
           );

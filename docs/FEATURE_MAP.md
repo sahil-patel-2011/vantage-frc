@@ -10,7 +10,7 @@ Single map of product surfaces for humans and agents. Nav labels come from
 | **Home** | Daily landing + workspace switcher + AI | `/dashboard`, `/start` (role/subteam onboarding path), `/workspace`, `/chat`, `/announcements` |
 | **Competition** | Event-day ops, pit, match flow | `/command`, `/my-day`, `/pit`, `/batteries`, `/incidents`, `/match-checklist`, `/intel`, `/schedule`, `/briefing`, `/match-debrief`, `/inspection` |
 | **Scouting** | Collect + use match intel | `/scouting`, `/scouting/lineup`, `/strategy`, `/pick-clock`, `/chemistry`, `/dossier`, `/rankings`, `/video` |
-| **Calendar** | Time: team calendar, season milestones, practice, shifts, attendance, hours | `/team/calendar`, `/calendar`, `/practice`, `/shifts`, `/attendance`, `/hours` |
+| **Calendar** | Time: team calendar, season milestones, practice, shifts, attendance, hours | `/team/calendar`, `/my-day`, `/calendar`, `/practice`, `/shifts`, `/attendance`, `/hours` |
 | **Build** | Robot design/build tooling | `/cad`, `/code`, `/robot`, `/subsystems`, `/fmea`, `/display`, `/inventory`, `/vendors`, `/control-map`, `/software-versions` |
 | **Team** | People ops, todos, knowledge, admin | `/tasks` (Todos), `/messages`, `/goals`, `/risks`, `/roles`, `/team/knowledge`, `/team/alumni`, `/team`, `/team/discord`, `/team/data`, `/team/usage` |
 | **Logistics** | Get-there-and-back trip times, lodging, packing, duties, visit invites | `/logistics`, `/packing`, `/duties`, `/visit-invites` (+ Team Calendar → My trip) |
