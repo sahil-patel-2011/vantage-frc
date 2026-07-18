@@ -330,19 +330,13 @@ export function isCutoffError(codeOrMessage: unknown): boolean {
 }
 
 /** Extract a Soft-UI banner code from a metered AI / agent JSON error body. */
-export function resolveCutoffErrorCode(
-  status: number,
-  body: {
-    code?: unknown;
-    reason?: unknown;
-    error?: unknown;
-    hardCutoff?: unknown;
-  } | null | undefined,
-): string | null {
-  const code = body?.code != null ? String(body.code) : "";
-  const reason = body?.reason != null ? String(body.reason) : "";
-  const error = body?.error != null ? String(body.error) : "";
-  const hardCutoff = body?.hardCutoff === true;
+export function resolveCutoffErrorCode(status: number, body?: unknown): string | null {
+  const record =
+    body && typeof body === "object" ? (body as Record<string, unknown>) : null;
+  const code = record?.code != null ? String(record.code) : "";
+  const reason = record?.reason != null ? String(record.reason) : "";
+  const error = record?.error != null ? String(record.error) : "";
+  const hardCutoff = record?.hardCutoff === true;
   if (status === 402 || hardCutoff || isCutoffError(code) || isCutoffError(reason) || isCutoffError(error)) {
     return code || reason || error || "usage_hard_cutoff";
   }
