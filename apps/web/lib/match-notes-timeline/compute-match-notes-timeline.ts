@@ -1,5 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { groupIntoTimelines, MATCH_NOTE_CATEGORIES, MATCH_NOTE_PHASES, summarizeMatchNotes } from ".";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import type {
   MatchNoteCategory,
   MatchNoteEntry,
@@ -86,6 +88,45 @@ async function resolveOrg(
   return membership.rows[0] ?? null;
 }
 
+function setupSteps(orgId: string | null): MatchNotesTimelineSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Match Note Timeline is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "schedule",
+      label: "Open Schedule",
+      detail: "Match rows stay empty until real TBA/event data exists — never DEMO matches.",
+      href: withOrgHref("/schedule", orgId),
+    },
+    {
+      id: "strategy",
+      label: "Open Strategy",
+      detail: "Pick lists stay empty until real metrics exist — never DEMO win rates.",
+      href: hubHref("/competition", "strategy", orgId),
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      href: hubHref("/competition", "scouting", orgId),
+    },
+  ];
+}
+
+function setupRequiredView(seasonYear: number, orgId: string | null = null): MatchNotesTimelineView {
+  return {
+    status: "setup_required",
+    message: "Select a team workspace to log in-match notes synced to the match clock.",
+    steps: setupSteps(orgId),
+    orgId,
+    seasonYear,
+  };
+}
+
 export async function computeMatchNotesTimelineView(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null; seasonYear?: number | null },
@@ -94,15 +135,7 @@ export async function computeMatchNotesTimelineView(
   const seasonYear = input.seasonYear && input.seasonYear > 2000 ? input.seasonYear : currentSeasonYear();
 
   if (!org) {
-    return {
-      status: "setup_required",
-      message: "Select a team workspace to log in-match notes synced to the match clock.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
-      orgId: null,
-      seasonYear,
-    };
+    return setupRequiredView(seasonYear);
   }
 
   const [entryResult, seasonResult] = await Promise.all([
