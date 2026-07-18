@@ -139,6 +139,12 @@ export default function LogisticsClient() {
         >
           Team calendar
         </a>
+        <a
+          className="app-button secondary"
+          href={orgId ? `/visit-invites?orgId=${encodeURIComponent(orgId)}` : "/visit-invites"}
+        >
+          Visit invites
+        </a>
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="calendar" />
       <OfflineBanner feature="Logistics" fromCache={fromCache} cachedAt={cachedAt} />
