@@ -39,6 +39,8 @@
 | Decision Search Soft-UI | `/ai` More tools · `/decision-search` | Soft-UI semantic search over indexed decisions / design reviews / notebook entries; empty/setup + next actions; metered search cutoff banner; cross-links to Season Report / Knowledge / Strategy — never DEMO decisions |
 | AI Memory Soft-UI | `/ai?tab=memory` (also `/team/ai-memory`) | Admin opt-in team memory policy + real Neon counts; private vs team-shared clarity; empty/setup/forbidden shells; Chat/Budgets cross-links — never DEMO memories |
 | AI Governance Soft-UI | `/ai?tab=governance` (also `/team/ai-policy`) | Feature/tool allowlists, high-cost approvals, spend alerts, Finance-in-AI consent; empty/setup/forbidden shells; Memory/Budgets/Chat cross-links — never DEMO policy stats |
+| AI Budgets Soft-UI | `/ai?tab=budgets` (also `/team/budgets`) | Hard spend/token caps, allowlists, kill switch, prompt caching; empty/setup/forbidden shells; UsageCutoffBanner CTAs via hubHref; Chat/Pricing/Account cross-links — never DEMO $ |
+| AI Usage Soft-UI | `/ai?tab=usage` (also `/team/usage`) | Metered calls, funding source, denials, member/model breakdown; empty/setup shells; UsageCutoffBanner consistency; Chat/Budgets/Pricing/Account via hubHref/withOrgHref — never DEMO activity |
 | Finance-in-AI Soft-UI | `/ai?tab=finance` | Admin redaction consent toggle + honest empty/off; cross-links to Governance / Chat / Budgets / Memory — never DEMO ledger totals |
 | Connections Soft-UI | `/account?tab=integrations` (also `/cad/connections`) | TBA / Onshape / Google / Discord / GitHub setup_required + empty shells; Connected only from real rows; cross-links to Account / CAD / Discord — never DEMO connected status |
 
