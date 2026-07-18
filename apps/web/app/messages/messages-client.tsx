@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { VantageLogo } from "../../components/brand";
+import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
   LONG_POLL_MAX_MS,
   mergeMessages,
@@ -368,18 +368,23 @@ export default function MessagesClient({
 
   return (
     <main className="chat-page messages-page">
-      <header className="workspace-top">
-        <VantageLogo href={`/workspace?orgId=${orgId}`} />
-        <strong>TEAM MESSAGES</strong>
+      <header className="team-ops-header">
+        <div>
+          <span className="breadcrumbs">Team / Messages</span>
+          <h1>Messages</h1>
+        </div>
         <span className={`messages-live ${live ? "on" : "off"}`}>
           <i aria-hidden="true" />
-          {live ? "LIVE" : "PAUSED"}
+          {live ? "Live" : "Paused"}
           {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
         </span>
       </header>
+      <div style={{ padding: "0 clamp(14px,2vw,28px)" }}>
+        <TeamOpsNav orgId={orgId} active="messages" />
+      </div>
 
       <aside className="chat-sidebar">
-        <span className="eyebrow">INBOX</span>
+        <span className="eyebrow">Inbox</span>
         <button type="button" className="messages-new-dm" onClick={() => void openMemberPicker()} disabled={sending}>
           + Private message
         </button>
@@ -392,7 +397,7 @@ export default function MessagesClient({
             onClick={() => void selectConversation(item.id)}
           >
             <span>
-              {item.kind === "team" ? "TEAM" : "PRIVATE"}
+              {item.kind === "team" ? "Team" : "Private"}
               {item.unreadCount > 0 ? (
                 <b className="messages-unread" aria-label={`${item.unreadCount} unread`}>
                   {item.unreadCount > 99 ? "99+" : item.unreadCount}
@@ -411,27 +416,27 @@ export default function MessagesClient({
       <section className="chat-main">
         {!active ? (
           <div className="empty-chat">
-            <h1>Keep ops inside Vantage.</h1>
+            <h1>Team messages</h1>
             <p>
               Use the org team channel for shared updates, or message a teammate privately. Conversations stay
-              organization-scoped—no Discord or Slack silo required.
+              organization-scoped.
             </p>
           </div>
         ) : (
           <>
             <header>
               <div>
-                <span className="eyebrow">{active.kind === "team" ? "TEAM CHANNEL" : "PRIVATE CHAT"}</span>
+                <span className="eyebrow">{active.kind === "team" ? "Team channel" : "Private chat"}</span>
                 <h1>{labelFor(active)}</h1>
               </div>
               {active.kind === "team" ? (
-                <strong className="shared-warning">VISIBLE TO ALL ORG MEMBERS</strong>
+                <strong className="shared-warning">Visible to all org members</strong>
               ) : null}
             </header>
 
             {active.kind === "team" && pinned.length > 0 ? (
               <div className="messages-pins" aria-label="Pinned match-day notes">
-                <span className="eyebrow">PINNED NOTES</span>
+                <span className="eyebrow">Pinned notes</span>
                 {pinned.map((item) => (
                   <article key={item.id}>
                     <p>{item.body}</p>
@@ -502,7 +507,7 @@ export default function MessagesClient({
             </div>
 
             <form className="chat-composer" onSubmit={send}>
-              {active.kind === "team" ? <div>TEAM CHANNEL · all org members can read this</div> : null}
+              {active.kind === "team" ? <div>Team channel · all org members can read this</div> : null}
               <textarea
                 aria-label="Message"
                 value={text}
@@ -532,7 +537,7 @@ export default function MessagesClient({
           <button type="button" className="memory-panel-close" onClick={() => setPickerOpen(false)}>
             Close
           </button>
-          <span className="eyebrow">TEAM MEMBERS</span>
+          <span className="eyebrow">Team members</span>
           <p>Private chats stay inside this organization. Only you and the other member can read them.</p>
           {members.length === 0 ? (
             <p className="messages-sidebar-empty">Invite teammates under Team Admin, then message them here.</p>
