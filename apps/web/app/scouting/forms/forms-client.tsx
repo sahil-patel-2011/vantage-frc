@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_DRIVETRAIN_OPTIONS,
   type EntryType,
@@ -11,9 +11,17 @@ import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../../compone
 import {
   ANSWER_KIND_OPTIONS,
   DRIVETRAIN_OPTIONS_TEXT,
+  FORM_BUILDER_RELATED_INCLUDE,
   addOption,
+  classifyFormBuilderShell,
   definitionFromDraft,
   draftFromDefinition,
+  formBuilderNextActions,
+  formBuilderPublishBlockedReason,
+  formBuilderPublishLabel,
+  formBuilderRelatedLinks,
+  formBuilderSetupSteps,
+  formBuilderShellCopy,
   moveOption,
   moveQuestion,
   needsOptionEditor,
@@ -27,7 +35,11 @@ import {
   validateDraft,
   type AnswerKind,
   type DraftQuestion,
+  type FormBuilderNextAction,
+  type FormBuilderShellKind,
 } from "../../../lib/scouting/form-builder";
+import { hubHref } from "../../../lib/nav/hubs";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 
 type SchemasPayload = {
   eventKey: string | null;
@@ -133,6 +145,137 @@ function OptionEditor({
         Add option
       </button>
     </div>
+  );
+}
+
+function FormBuilderRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = formBuilderRelatedLinks(orgId, {
+    include: [...FORM_BUILDER_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function FormBuilderNextActionsPanel({ actions }: { actions: FormBuilderNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions sfb-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Scouting and Coverage — never DEMO fields.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function FormBuilderShell({
+  orgId,
+  shell,
+  entryType,
+  error,
+  onRetry,
+  children,
+}: {
+  orgId?: string | null;
+  shell: FormBuilderShellKind;
+  entryType?: EntryType;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = formBuilderNextActions({ orgId, shell, entryType });
+  const copy = formBuilderShellCopy(shell, { entryType });
+  const steps = shell === "setup" ? formBuilderSetupSteps(orgId) : [];
+  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const commandHref = hubHref("/competition", "command", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const coverageHref = withOrgHref("/scouting/lineup", orgId);
+
+  return (
+    <main className="module-page sfb-page soft-gate">
+      <PageHeader
+        breadcrumbs="Competition / Form builder"
+        title="Scouting form builder"
+        description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists — never DEMO fields."
+      >
+        <FormBuilderRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        className="sfb-shell-empty"
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? commandHref : workspaceHref}>
+            {orgId ? "Set active event" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+            <a className="app-button secondary" href={coverageHref}>
+              Open Coverage
+            </a>
+          </>
+        ) : null}
+        {shell === "setup" && steps.length > 0 ? (
+          <ol className="sfb-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </EmptyState>
+      {shell !== "loading" ? <FormBuilderNextActionsPanel actions={actions} /> : null}
+    </main>
   );
 }
 
@@ -297,20 +440,15 @@ export default function FormsClient({ orgId }: { orgId: string }) {
 
   async function publish() {
     setMessage("");
-    if (!payload?.canManageSchemas) {
-      setMessage("Owner or admin role is required to publish forms.");
-      return;
-    }
-    if (!validation.ok) {
-      setMessage(validation.errors[0] ?? "Fix the form before publishing.");
-      return;
-    }
-    if (year == null) {
-      setMessage("Select an active event so the season year is known.");
-      return;
-    }
-    if (validation.budget.status === "over_budget" && !acknowledgeBudget) {
-      setMessage("This form is over the field budget — acknowledge to publish anyway.");
+    const blocked = formBuilderPublishBlockedReason({
+      canManageSchemas: Boolean(payload?.canManageSchemas),
+      year,
+      eventKey: payload?.eventKey,
+      validation,
+      acknowledgeBudget,
+    });
+    if (blocked) {
+      setMessage(blocked);
       return;
     }
     setBusy(true);
@@ -343,7 +481,9 @@ export default function FormsClient({ orgId }: { orgId: string }) {
         return;
       }
       setPublished({ id: String(body.id), version: Number(body.version) });
-      setMessage(`Published ${type} form v${body.version}. Scouts will see it on next sync.`);
+      setMessage(
+        `Published ${type} form v${body.version}. Open Scouting after sync — Coverage stays blank until real entries exist.`,
+      );
       await load();
     } catch {
       setMessage("Network error — try again.");
@@ -354,22 +494,18 @@ export default function FormsClient({ orgId }: { orgId: string }) {
 
   if (loadError && !payload) {
     return (
-      <main className="module-page sfb-page">
-        <EmptyState title="Form builder unavailable" description={loadError} badge="Error" badgeTone="">
-          <button type="button" className="app-button" onClick={() => void load()}>
-            Retry
-          </button>
-        </EmptyState>
-      </main>
+      <FormBuilderShell
+        orgId={orgId}
+        shell="error"
+        entryType={type}
+        error={loadError}
+        onRetry={() => void load()}
+      />
     );
   }
 
   if (!payload) {
-    return (
-      <main className="module-page sfb-page">
-        <EmptyState title="Loading form builder…" soft aria-busy />
-      </main>
-    );
+    return <FormBuilderShell orgId={orgId} shell="loading" entryType={type} />;
   }
 
   const currentSchema = payload.schemas.find((schema) => schema.type === type);
@@ -380,53 +516,85 @@ export default function FormsClient({ orgId }: { orgId: string }) {
     draftTitle: title,
     draftQuestions: questions,
   });
+  const shell = classifyFormBuilderShell({
+    orgId,
+    eventKey: payload.eventKey,
+    year: payload.year ?? year,
+    hasPublishedSchema: Boolean(currentSchema),
+  });
+  const publishBlocked = formBuilderPublishBlockedReason({
+    canManageSchemas: payload.canManageSchemas,
+    year,
+    eventKey: payload.eventKey,
+    validation,
+    acknowledgeBudget,
+  });
+  const publishLabel = formBuilderPublishLabel({
+    busy,
+    entryType: type,
+    status: publishStatus,
+  });
+  const readyActions = formBuilderNextActions({
+    orgId,
+    shell: "ready",
+    eventKey: payload.eventKey,
+    canManageSchemas: payload.canManageSchemas,
+    entryType: type,
+  });
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const coverageHref = withOrgHref("/scouting/lineup", orgId);
+  const commandHref = hubHref("/competition", "command", orgId);
+
+  if (shell === "setup") {
+    return (
+      <FormBuilderShell orgId={orgId} shell="setup" entryType={type}>
+        {!payload.canManageSchemas ? (
+          <EmptyState
+            badge="Coach role"
+            badgeTone="setup"
+            title="View only"
+            description="Owners and admins publish scouting forms. You can still preview drafts after an event is set."
+          />
+        ) : null}
+      </FormBuilderShell>
+    );
+  }
 
   return (
     <main className="module-page sfb-page">
       <PageHeader
-        navPath="/scouting/forms"
+        breadcrumbs="Competition / Form builder"
         title="Scouting form builder"
-        description="Configure required fields, MC/dropdown options, and publish versioned match or pit schemas for Soft-UI live entry."
+        description="Configure required fields, preview, and publish versioned match or pit schemas — never DEMO fields."
       >
         <div className="sfb-toolbar">
-          <a
-            className="app-button secondary"
-            href={`/competition?tab=scouting&orgId=${encodeURIComponent(orgId)}`}
-          >
-            Open scouting
-          </a>
-          <a
-            className="app-button secondary"
-            href={`/competition?tab=strategy&orgId=${encodeURIComponent(orgId)}`}
-          >
-            Strategy
-          </a>
-          <a
-            className="app-button secondary"
-            href={`/competition?tab=match-checklist&orgId=${encodeURIComponent(orgId)}`}
-          >
-            Match checklist
-          </a>
+          <FormBuilderRelatedStrip orgId={orgId} />
           <button
             type="button"
             className="app-button"
-            disabled={busy || !payload.canManageSchemas}
+            disabled={busy || Boolean(publishBlocked)}
+            title={publishBlocked ?? publishStatus.detail}
             onClick={() => void publish()}
           >
-            {busy ? "Publishing…" : "Publish"}
+            {publishLabel}
           </button>
         </div>
       </PageHeader>
 
-      {!payload.eventKey ? (
+      {shell === "empty" ? (
         <EmptyState
-          badge="Setup required"
+          soft
+          className="sfb-shell-empty"
+          badge="Not published"
           badgeTone="setup"
-          title="No active event"
-          description="Pick an active event so the season year is known before publishing custom forms."
+          title={formBuilderShellCopy("empty", { entryType: type }).title}
+          description={formBuilderShellCopy("empty", { entryType: type }).description}
         >
-          <a className="app-button secondary" href={`/command?orgId=${encodeURIComponent(orgId)}`}>
-            Select event
+          <a className="app-button secondary" href={scoutingHref}>
+            Open Scouting
+          </a>
+          <a className="app-button secondary" href={coverageHref}>
+            Open Coverage
           </a>
         </EmptyState>
       ) : null}
@@ -458,6 +626,18 @@ export default function FormsClient({ orgId }: { orgId: string }) {
         <span className="sfb-status-pill">{publishStatus.label}</span>
         <small className="app-muted">{publishStatus.detail}</small>
       </div>
+
+      {publishBlocked && payload.canManageSchemas ? (
+        <p className="sfb-publish-blocked" role="status">
+          {publishBlocked}
+          {!payload.eventKey || year == null ? (
+            <>
+              {" "}
+              <a href={commandHref}>Set active event</a>
+            </>
+          ) : null}
+        </p>
+      ) : null}
 
       <div className="sfb-identity-lock" role="status">
         <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
@@ -708,8 +888,11 @@ export default function FormsClient({ orgId }: { orgId: string }) {
               <span className="app-muted">{publishStatus.detail}</span>
             </p>
             <p className="app-muted" style={{ margin: "8px 0" }}>
-              Latest schema for this season. Publish creates a new version; entries stay pinned to the
-              version they used.
+              {publishStatus.kind === "unpublished"
+                ? "Scouts will not see this form until you publish. Then open Scouting or Coverage."
+                : publishStatus.kind === "draft_changes"
+                  ? "Live scouting keeps the published version until you publish these edits."
+                  : "This draft matches the live form. Republish only if you need a new version pin."}
             </p>
             {currentSchema ? (
               <ul className="sfb-published">
@@ -739,6 +922,23 @@ export default function FormsClient({ orgId }: { orgId: string }) {
                 Just published v{published.version}
               </p>
             ) : null}
+            <div className="sfb-publish-actions">
+              <button
+                type="button"
+                className="app-button"
+                disabled={busy || Boolean(publishBlocked)}
+                title={publishBlocked ?? publishStatus.detail}
+                onClick={() => void publish()}
+              >
+                {publishLabel}
+              </button>
+              <a className="app-button secondary" href={scoutingHref}>
+                Open Scouting
+              </a>
+              <a className="app-button secondary" href={coverageHref}>
+                Open Coverage
+              </a>
+            </div>
           </Panel>
           <Panel>
             <h2>Answer types</h2>
@@ -754,6 +954,7 @@ export default function FormsClient({ orgId }: { orgId: string }) {
               ))}
             </ul>
           </Panel>
+          <FormBuilderNextActionsPanel actions={readyActions} />
         </aside>
       </div>
     </main>
