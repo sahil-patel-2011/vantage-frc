@@ -1,0 +1,54 @@
+/* Soft-UI AI Memory — scoped to .ai-memory-page */
+
+.ai-memory-page .ai-memory-related {
+  margin: 0 0 16px;
+}
+
+.ai-memory-scope {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.ai-memory-scope-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.ai-memory-scope-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.ai-memory-scope-card .app-button {
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.ai-memory-next-actions {
+  margin: 0 0 16px;
+}
+
+.ai-memory-policy {
+  margin-top: 1.5rem;
+  scroll-margin-top: 88px;
+}
+
+.ai-memory-policy-lead {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ai-memory-policy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
