@@ -360,6 +360,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
                     <strong>{ref.teamKey.replace(/^frc/, "")}</strong>
                     <span>
                       {ref.entryType} · {ref.influence}
+                      {ref.influence === "tba_conflict_excluded" ? " (TBA contradicted — excluded)" : ""}
                     </span>
                   </li>
                 ))}
@@ -536,6 +537,9 @@ export default function StrategyClient() {
         <div className="strategy-header-actions">
           {orgId ? (
             <>
+              <a className="app-button secondary" href={`/pick-clock?orgId=${encodeURIComponent(orgId)}`}>
+                Pick clock (45s)
+              </a>
               <a className="app-button secondary" href={`/strategy/draft?orgId=${encodeURIComponent(orgId)}`}>
                 Draft day board
               </a>
