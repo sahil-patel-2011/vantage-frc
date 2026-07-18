@@ -69,6 +69,7 @@ function session(id: string, cycles: DriverCycle[]): DriverSession {
     notes: "",
     attendanceEventId: null,
     attendanceEventTitle: null,
+    attendanceOccurredOn: null,
     buildTaskId: null,
     buildTaskTitle: null,
     createdAt: "2026-03-01T00:00:00Z",

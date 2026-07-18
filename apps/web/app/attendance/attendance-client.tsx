@@ -324,6 +324,8 @@ export default function AttendanceClient() {
     setFetchFailed(false);
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
+    const focusEventId = params.get("eventId");
+    const focusOccurredOn = params.get("occurredOn");
     try {
       const query = new URLSearchParams();
       if (orgId) query.set("orgId", orgId);
@@ -339,7 +341,16 @@ export default function AttendanceClient() {
       setView(data);
       if (data.status === "ready") {
         setSeasonYear(data.seasonYear);
-        if (data.events.length) setSelectedId((current) => current ?? data.events[0]!.id);
+        if (data.events.length) {
+          setSelectedId((current) => {
+            if (focusEventId && data.events.some((event) => event.id === focusEventId)) return focusEventId;
+            if (focusOccurredOn) {
+              const byDate = data.events.find((event) => event.occurredOn === focusOccurredOn);
+              if (byDate) return byDate.id;
+            }
+            return current ?? data.events[0]!.id;
+          });
+        }
       }
     } catch {
       setFetchFailed(true);

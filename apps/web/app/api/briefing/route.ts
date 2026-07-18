@@ -324,6 +324,11 @@ export async function GET(request: Request) {
       }
       const practiceSessions: DriverSession[] = sessions.rows.map((sessionRow) => ({
         ...sessionRow,
+        attendanceEventId: null,
+        attendanceEventTitle: null,
+        attendanceOccurredOn: null,
+        buildTaskId: null,
+        buildTaskTitle: null,
         cycles: bySession.get(sessionRow.id) ?? [],
       }));
 

@@ -85,7 +85,9 @@ export async function GET(request: Request) {
       }
 
       const [sessionRows, cycles, members, attendanceEvents, buildTasks] = await Promise.all([
-        client.query<Omit<DriverSession, "cycles" | "attendanceEventTitle" | "buildTaskTitle">>(
+        client.query<
+          Omit<DriverSession, "cycles" | "attendanceEventTitle" | "attendanceOccurredOn" | "buildTaskTitle">
+        >(
           `SELECT s.id, s.title, s.event_key AS "eventKey", s.session_date::text AS "sessionDate",
                   s.driver_user_id AS "driverUserId", s.driver_name AS "driverName",
                   s.location, s.goal, s.notes,
@@ -112,7 +114,7 @@ export async function GET(request: Request) {
         ),
         optionalQuery<LinkableAttendance>(
           client,
-          `SELECT id, title, occurred_on::text AS "startsAt", kind
+          `SELECT id, title, occurred_on::text AS "occurredOn", kind
            FROM attendance_events
            WHERE org_id = $1 AND occurred_on >= (current_date - interval '60 days')
            ORDER BY occurred_on DESC, created_at DESC
@@ -132,13 +134,36 @@ export async function GET(request: Request) {
         ),
       ]);
 
+      const linkedAttendanceIds = [
+        ...new Set(
+          sessionRows.rows
+            .map((sessionRow) => sessionRow.attendanceEventId)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      const linkedAttendance = linkedAttendanceIds.length
+        ? await optionalQuery<{ id: string; title: string; occurredOn: string }>(
+            client,
+            `SELECT id, title, occurred_on::text AS "occurredOn"
+             FROM attendance_events
+             WHERE org_id = $1 AND id = ANY($2::uuid[])`,
+            [row.orgId, linkedAttendanceIds],
+          )
+        : [];
+
       const bySession = new Map<string, DriverCycle[]>();
       for (const cycle of cycles.rows) {
         const list = bySession.get(cycle.sessionId) ?? [];
         list.push(cycle);
         bySession.set(cycle.sessionId, list);
       }
-      const attendanceTitle = new Map(attendanceEvents.map((event) => [event.id, event.title]));
+      const attendanceById = new Map(linkedAttendance.map((event) => [event.id, event]));
+      // Prefer picker rows (includes kind) when present; fall back to linked lookup for older events.
+      for (const event of attendanceEvents) {
+        if (!attendanceById.has(event.id)) {
+          attendanceById.set(event.id, { id: event.id, title: event.title, occurredOn: event.occurredOn });
+        }
+      }
       const taskTitle = new Map(buildTasks.map((task) => [task.id, task.title]));
 
       return {
@@ -150,14 +175,18 @@ export async function GET(request: Request) {
           role: row.role,
           eventKey: row.eventKey,
         },
-        sessions: sessionRows.rows.map((sessionRow) => ({
-          ...sessionRow,
-          attendanceEventTitle: sessionRow.attendanceEventId
-            ? (attendanceTitle.get(sessionRow.attendanceEventId) ?? null)
-            : null,
-          buildTaskTitle: sessionRow.buildTaskId ? (taskTitle.get(sessionRow.buildTaskId) ?? null) : null,
-          cycles: bySession.get(sessionRow.id) ?? [],
-        })),
+        sessions: sessionRows.rows.map((sessionRow) => {
+          const linked = sessionRow.attendanceEventId
+            ? attendanceById.get(sessionRow.attendanceEventId)
+            : undefined;
+          return {
+            ...sessionRow,
+            attendanceEventTitle: linked?.title ?? null,
+            attendanceOccurredOn: linked?.occurredOn ?? null,
+            buildTaskTitle: sessionRow.buildTaskId ? (taskTitle.get(sessionRow.buildTaskId) ?? null) : null,
+            cycles: bySession.get(sessionRow.id) ?? [],
+          };
+        }),
         members: members.rows,
         attendanceEvents,
         buildTasks,
