@@ -29,6 +29,11 @@ describe("notification helpers", () => {
       "/team/calendar?orgId=org-1&eventId=e-1",
     );
     expect(notificationHref("calendar_updated", {}, "org-1")).toBe("/team/calendar?orgId=org-1");
+    expect(notificationHref("scouting_coverage_gap", {}, "org-1")).toBe("/command?orgId=org-1");
+    expect(notificationHref("purchase_request_submitted", { orderId: "o-1" }, "org-1")).toBe(
+      "/orders?orgId=org-1&orderId=o-1",
+    );
+    expect(notificationHref("purchase_request_approved", {}, "org-1")).toBe("/orders?orgId=org-1");
     expect(notificationHref("unknown", {})).toBeNull();
     expect(notificationHref("x", { href: "/custom" })).toBe("/custom");
   });

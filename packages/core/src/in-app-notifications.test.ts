@@ -10,6 +10,7 @@ describe("in-app notification prefs", () => {
     expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.todoAssigned).toBe(true);
     expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.dutyAssigned).toBe(true);
     expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.calendarEvents).toBe(true);
+    expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.sponsorReminders).toBe(true);
     expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.productUpdates).toBe(false);
   });
 
@@ -29,6 +30,11 @@ describe("in-app notification prefs", () => {
     expect(prefKeyForNotificationType("duty_assigned")).toBe("dutyAssigned");
     expect(prefKeyForNotificationType("calendar_event")).toBe("calendarEvents");
     expect(prefKeyForNotificationType("calendar_updated")).toBe("calendarEvents");
+    expect(prefKeyForNotificationType("scout_reminder")).toBe("scoutReminders");
+    expect(prefKeyForNotificationType("scouting_coverage_gap")).toBe("scoutReminders");
+    expect(prefKeyForNotificationType("sponsor_thank_you_due")).toBe("sponsorReminders");
+    expect(prefKeyForNotificationType("sponsor_renewal_due")).toBe("sponsorReminders");
+    expect(prefKeyForNotificationType("sponsor_followup_overdue")).toBe("sponsorReminders");
     expect(prefKeyForNotificationType("direct_message")).toBeNull();
   });
 });

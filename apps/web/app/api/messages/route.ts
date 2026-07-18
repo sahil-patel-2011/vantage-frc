@@ -1,8 +1,16 @@
-﻿import { auth, emitNotification } from "@vantage/core";
+import { auth, emitNotification } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
 import { type MentionRef, resolveMentionedUserIds } from "../../../lib/messages/mentions";
+import { maybeBridgeObjectLinkedMessage } from "../../../lib/messages/discord-bridge";
+import {
+  COMPOSER_OBJECT_TYPES,
+  normalizeObjectType,
+  objectAppHref,
+  parseObjectLinkInput,
+  type MessageObjectLink,
+} from "../../../lib/messages/object-links";
 import { clampWaitMs, LONG_POLL_TICK_MS } from "../../../lib/messages/sync";
 import { createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
 
@@ -39,12 +47,265 @@ type MessageRow = {
   pinnedBy: string | null;
   mine: boolean;
   mentions: MentionRef[];
+  objectLink: MessageObjectLink | null;
 };
 
 type MemberRow = { id: string; name: string; email: string; role: string };
 
 let pinsSupportedCache: boolean | null = null;
 let mentionsSupportedCache: boolean | null = null;
+let objectLinksSupportedCache: boolean | null = null;
+
+async function supportsObjectLinks(client: PoolClient): Promise<boolean> {
+  if (objectLinksSupportedCache != null) return objectLinksSupportedCache;
+  try {
+    const row = await client.query(
+      `SELECT 1
+       FROM information_schema.tables
+       WHERE table_schema = 'public'
+         AND table_name = 'org_message_object_links'
+       LIMIT 1`,
+    );
+    objectLinksSupportedCache = Boolean(row.rowCount);
+  } catch {
+    objectLinksSupportedCache = false;
+  }
+  return objectLinksSupportedCache;
+}
+
+async function attachObjectLinks(client: PoolClient, orgId: string, messages: MessageRow[]) {
+  for (const message of messages) {
+    message.objectLink = null;
+  }
+  if (!messages.length || !(await supportsObjectLinks(client))) return;
+
+  const rows = await client.query<{
+    messageId: string;
+    objectType: MessageObjectLink["objectType"];
+    objectId: string;
+    label: string;
+    href: string | null;
+  }>(
+    `SELECT
+       message_id AS "messageId",
+       object_type AS "objectType",
+       object_id AS "objectId",
+       label,
+       href
+     FROM org_message_object_links
+     WHERE org_id = $1
+       AND message_id = ANY($2::uuid[])
+     ORDER BY created_at ASC`,
+    [orgId, messages.map((message) => message.id)],
+  );
+  const byMessage = new Map<string, MessageObjectLink>();
+  for (const row of rows.rows) {
+    if (byMessage.has(row.messageId)) continue;
+    byMessage.set(row.messageId, {
+      objectType: row.objectType,
+      objectId: row.objectId,
+      label: row.label,
+      href: row.href,
+    });
+  }
+  for (const message of messages) {
+    message.objectLink = byMessage.get(message.id) ?? null;
+  }
+}
+
+async function enrichObjectLink(
+  client: PoolClient,
+  orgId: string,
+  link: MessageObjectLink,
+): Promise<MessageObjectLink> {
+  const href = link.href?.trim() || objectAppHref(orgId, link.objectType, link.objectId);
+  let label = link.label.trim();
+
+  if (link.objectType === "task") {
+    const row = await client.query<{ title: string }>(
+      `SELECT title FROM team_todos WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+      [link.objectId, orgId],
+    );
+    if (!row.rowCount) throw new Error("Linked task was not found");
+    if (!label) label = row.rows[0]!.title;
+  } else if (link.objectType === "cad_checkpoint") {
+    const row = await client.query<{ title: string }>(
+      `SELECT COALESCE(j.title, c.id::text) AS title
+       FROM cad_checkpoints c
+       INNER JOIN cad_jobs j ON j.id = c.job_id
+       WHERE c.id = $1::uuid AND c.org_id = $2::uuid
+       LIMIT 1`,
+      [link.objectId, orgId],
+    );
+    if (!row.rowCount) throw new Error("Linked CAD checkpoint was not found");
+    if (!label) label = row.rows[0]!.title;
+  } else if (link.objectType === "inventory_item") {
+    const row = await client.query<{ name: string }>(
+      `SELECT name FROM inventory_items WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+      [link.objectId, orgId],
+    );
+    if (!row.rowCount) throw new Error("Linked inventory item was not found");
+    if (!label) label = row.rows[0]!.name;
+  } else if (link.objectType === "event") {
+    const row = await client.query<{ title: string }>(
+      `SELECT title FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+      [link.objectId, orgId],
+    );
+    if (!row.rowCount) throw new Error("Linked calendar event was not found");
+    if (!label) label = row.rows[0]!.title;
+  } else if (link.objectType === "announcement") {
+    const row = await client.query<{ title: string }>(
+      `SELECT title FROM team_announcements WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+      [link.objectId, orgId],
+    );
+    if (!row.rowCount) throw new Error("Linked announcement was not found");
+    if (!label) label = row.rows[0]!.title;
+  } else if (link.objectType === "goal") {
+    const row = await client.query<{ title: string }>(
+      `SELECT title FROM season_goals WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+      [link.objectId, orgId],
+    );
+    if (!row.rowCount) throw new Error("Linked goal was not found");
+    if (!label) label = row.rows[0]!.title;
+  } else if (link.objectType === "risk") {
+    const row = await client.query<{ title: string }>(
+      `SELECT title FROM risk_register WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+      [link.objectId, orgId],
+    );
+    if (!row.rowCount) throw new Error("Linked risk was not found");
+    if (!label) label = row.rows[0]!.title;
+  } else if (link.objectType === "knowledge") {
+    const row = await client.query<{ title: string }>(
+      `SELECT COALESCE(title, 'Knowledge') AS title FROM team_knowledge WHERE org_id = $1::uuid LIMIT 1`,
+      [orgId],
+    );
+    if (!row.rowCount) throw new Error("Linked knowledge doc was not found");
+    if (!label) label = row.rows[0]!.title;
+  }
+
+  if (!label) throw new Error("Object link label is required");
+  return { ...link, label, href };
+}
+
+type LinkTargetRow = MessageObjectLink & { subtitle?: string | null };
+
+async function listLinkTargets(
+  client: PoolClient,
+  orgId: string,
+  objectType: MessageObjectLink["objectType"],
+  query: string,
+): Promise<LinkTargetRow[]> {
+  const q = query.trim().toLowerCase();
+  const like = q ? `%${q.replace(/[%_\\]/g, "\\$&")}%` : "%";
+  const limit = 24;
+
+  if (objectType === "task") {
+    const rows = await client
+      .query<{ id: string; title: string; status: string }>(
+        `SELECT id::text, title, status
+         FROM team_todos
+         WHERE org_id = $1::uuid
+           AND lower(title) LIKE lower($2)
+         ORDER BY updated_at DESC
+         LIMIT ${limit}`,
+        [orgId, like],
+      )
+      .catch(() => ({ rows: [] as { id: string; title: string; status: string }[] }));
+    return rows.rows.map((row) => ({
+      objectType,
+      objectId: row.id,
+      label: row.title,
+      href: objectAppHref(orgId, objectType, row.id),
+      subtitle: row.status,
+    }));
+  }
+
+  if (objectType === "cad_checkpoint") {
+    const rows = await client
+      .query<{ id: string; title: string }>(
+        `SELECT c.id::text, COALESCE(j.title, c.id::text) AS title
+         FROM cad_checkpoints c
+         INNER JOIN cad_jobs j ON j.id = c.job_id
+         WHERE c.org_id = $1::uuid
+           AND lower(COALESCE(j.title, c.id::text)) LIKE lower($2)
+         ORDER BY c.created_at DESC
+         LIMIT ${limit}`,
+        [orgId, like],
+      )
+      .catch(() => ({ rows: [] as { id: string; title: string }[] }));
+    return rows.rows.map((row) => ({
+      objectType,
+      objectId: row.id,
+      label: row.title,
+      href: objectAppHref(orgId, objectType, row.id),
+    }));
+  }
+
+  if (objectType === "inventory_item") {
+    const rows = await client
+      .query<{ id: string; name: string; category: string | null }>(
+        `SELECT id::text, name, category
+         FROM inventory_items
+         WHERE org_id = $1::uuid
+           AND archived = false
+           AND lower(name) LIKE lower($2)
+         ORDER BY updated_at DESC
+         LIMIT ${limit}`,
+        [orgId, like],
+      )
+      .catch(() => ({ rows: [] as { id: string; name: string; category: string | null }[] }));
+    return rows.rows.map((row) => ({
+      objectType,
+      objectId: row.id,
+      label: row.name,
+      href: objectAppHref(orgId, objectType, row.id),
+      subtitle: row.category,
+    }));
+  }
+
+  if (objectType === "event") {
+    const rows = await client
+      .query<{ id: string; title: string; kind: string }>(
+        `SELECT id::text, title, kind
+         FROM subteam_calendar_events
+         WHERE org_id = $1::uuid
+           AND lower(title) LIKE lower($2)
+         ORDER BY starts_at DESC
+         LIMIT ${limit}`,
+        [orgId, like],
+      )
+      .catch(() => ({ rows: [] as { id: string; title: string; kind: string }[] }));
+    return rows.rows.map((row) => ({
+      objectType,
+      objectId: row.id,
+      label: row.title,
+      href: objectAppHref(orgId, objectType, row.id),
+      subtitle: row.kind,
+    }));
+  }
+
+  if (objectType === "announcement") {
+    const rows = await client
+      .query<{ id: string; title: string }>(
+        `SELECT id::text, title
+         FROM team_announcements
+         WHERE org_id = $1::uuid
+           AND lower(title) LIKE lower($2)
+         ORDER BY created_at DESC
+         LIMIT ${limit}`,
+        [orgId, like],
+      )
+      .catch(() => ({ rows: [] as { id: string; title: string }[] }));
+    return rows.rows.map((row) => ({
+      objectType,
+      objectId: row.id,
+      label: row.title,
+      href: objectAppHref(orgId, objectType, row.id),
+    }));
+  }
+
+  return [];
+}
 
 async function supportsMessageMentions(client: PoolClient): Promise<boolean> {
   if (mentionsSupportedCache != null) return mentionsSupportedCache;
@@ -404,6 +665,7 @@ async function listMessages(
       message.mentions = [];
     }
   }
+  await attachObjectLinks(client, orgId, [...messageList, ...pinned]);
 
   if (options?.markRead !== false) {
     await client.query(
@@ -506,6 +768,7 @@ async function sendMessage(
   conversationId: string,
   body: string,
   claimedMentionIds: string[] = [],
+  objectLink: MessageObjectLink | null = null,
 ) {
   const trimmed = body.trim();
   if (!trimmed) throw new Error("Message body is required");
@@ -519,6 +782,20 @@ async function sendMessage(
 
   const kind = conversation.rows[0]!.kind;
   const mentionsSupported = await supportsMessageMentions(client);
+
+  if (objectLink && kind !== "team") {
+    throw new Error("Object links are only supported on the team channel");
+  }
+  if (objectLink) {
+    const linksTable = await client.query(
+      `SELECT 1 FROM information_schema.tables
+       WHERE table_schema = 'public' AND table_name = 'org_message_object_links' LIMIT 1`,
+    );
+    if (!linksTable.rowCount) {
+      throw new Error("Object-linked messages require migration 0164_team_discord_object_links");
+    }
+    objectLink = await enrichObjectLink(client, orgId, objectLink);
+  }
 
   const inserted = await client.query<{ id: string; createdAt: string; updatedAt: string }>(
     `INSERT INTO org_messages (conversation_id, org_id, author_user_id, body)
@@ -537,6 +814,14 @@ async function sendMessage(
   );
 
   const messageId = inserted.rows[0]!.id;
+
+  if (objectLink) {
+    await client.query(
+      `INSERT INTO org_message_object_links (message_id, org_id, object_type, object_id, label, href)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [messageId, orgId, objectLink.objectType, objectLink.objectId, objectLink.label, objectLink.href ?? null],
+    );
+  }
 
   if (kind === "dm") {
     const peers = await client.query<{ userId: string }>(
@@ -601,7 +886,18 @@ async function sendMessage(
     }
   }
 
-  return inserted.rows[0]!;
+  if (kind === "team" && objectLink) {
+    await maybeBridgeObjectLinkedMessage(client, {
+      orgId,
+      userId,
+      messageId,
+      conversationId,
+      body: trimmed,
+      objectLink,
+    });
+  }
+
+  return { ...inserted.rows[0]!, objectLink };
 }
 
 async function setPinned(
@@ -725,6 +1021,7 @@ export async function POST(request: Request) {
       body?: string;
       messageId?: string;
       mentionedUserIds?: unknown;
+      objectLink?: unknown;
     };
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
@@ -779,6 +1076,7 @@ export async function POST(request: Request) {
 
       const conversationId = String(body.conversationId ?? "");
       if (!conversationId) throw new Error("conversationId is required");
+      const objectLink = parseObjectLinkInput(body.objectLink);
       const message = await sendMessage(
         client,
         orgId,
@@ -786,6 +1084,7 @@ export async function POST(request: Request) {
         conversationId,
         String(body.body ?? ""),
         normalizeClaimedMentionIds(body.mentionedUserIds),
+        objectLink,
       );
       return { message };
     });

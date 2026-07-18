@@ -63,6 +63,21 @@ export function notificationHref(
       }
       return orgId ? `/team/calendar${orgQuery}` : "/team/calendar";
     }
+    case "scouting_coverage_gap":
+    case "scout_reminder":
+      return orgId ? `/command${orgQuery}` : "/command";
+    case "match_alert":
+      return orgId ? `/my-day${orgQuery}` : "/my-day";
+    case "purchase_request_submitted":
+    case "purchase_request_approved":
+    case "purchase_request_rejected":
+    case "purchase_request_assigned": {
+      const orderId = payload.orderId;
+      if (orgId && typeof orderId === "string" && orderId) {
+        return `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(orderId)}`;
+      }
+      return orgId ? `/orders${orgQuery}` : "/orders";
+    }
     default:
       return null;
   }
