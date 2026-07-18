@@ -100,7 +100,18 @@ export async function computeMatchChecklistView(
       status: "setup_required",
       message: "Select a team workspace to start pre-match checklists.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        {
+          id: "workspace",
+          label: "Select workspace",
+          detail: "Choose your team organization — checklist history stays org-scoped.",
+          href: "/workspace",
+        },
+        {
+          id: "command",
+          label: "Open Event Day",
+          detail: "Pick the active event so match labels stay aligned with the schedule.",
+          href: "/competition?tab=command",
+        },
       ],
       orgId: null,
     };

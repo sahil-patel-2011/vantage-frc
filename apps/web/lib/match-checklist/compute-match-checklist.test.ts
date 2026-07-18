@@ -27,6 +27,8 @@ describe("computeMatchChecklistView", () => {
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
       expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps.map((s) => s.id)).toContain("workspace");
+      expect(view.message.toLowerCase()).not.toContain("demo");
     }
   });
 

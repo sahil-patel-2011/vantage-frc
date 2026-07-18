@@ -1,10 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { checklistItemLabel, formatElapsed } from "../../lib/match-checklist";
 import type { MatchChecklistView } from "../../lib/match-checklist/compute-match-checklist";
-import type { ChecklistItemKey, MatchChecklistRun } from "../../lib/match-checklist/types";
+import {
+  MATCH_CHECKLIST_RELATED_INCLUDE,
+  formatItemProgress,
+  matchChecklistNextActions,
+  shouldShowSummaryTiles,
+  summaryHasTimingEvidence,
+} from "../../lib/match-checklist/match-checklist-related";
+import type { ChecklistItem, ChecklistItemKey, MatchChecklistRun } from "../../lib/match-checklist/types";
+import "./match-checklist.css";
 
 type LiveView = Extract<MatchChecklistView, { status: "live" }>;
 
@@ -72,8 +81,14 @@ export default function MatchChecklistClient() {
     [orgId, busy],
   );
 
+  const relatedOrg = orgId ?? undefined;
+  const nextActions = matchChecklistNextActions({
+    orgId,
+    runs: view?.status === "live" ? view.runs : [],
+  });
+
   return (
-    <main className="module-page">
+    <main className="module-page mcl-page">
       <PageHeader
         breadcrumbs={
           <>
@@ -84,50 +99,28 @@ export default function MatchChecklistClient() {
           </>
         }
         title="Pre-Match Checklist"
-        description="One-tap timed checklist per match — bumpers, battery, tether, code — so pit crews know exactly when the robot is ready."
-      >
-        {orgId ? (
-          <nav
-            className="intel-actions"
-            aria-label="Related competition tools"
-            style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
-          >
-            <a
-              className="app-button secondary"
-              href={`/competition?tab=scouting&orgId=${encodeURIComponent(orgId)}`}
-            >
-              Scouting
-            </a>
-            <a
-              className="app-button secondary"
-              href={`/competition?tab=forms&orgId=${encodeURIComponent(orgId)}`}
-            >
-              Form builder
-            </a>
-            <a
-              className="app-button secondary"
-              href={`/competition?tab=strategy&orgId=${encodeURIComponent(orgId)}`}
-            >
-              Strategy
-            </a>
-            <a
-              className="app-button secondary"
-              href={`/competition?tab=command&orgId=${encodeURIComponent(orgId)}`}
-            >
-              Command
-            </a>
-          </nav>
-        ) : null}
-      </PageHeader>
+        description="One-tap timed checklist per match — bumpers, battery, tether, code — so pit crews know exactly when the robot is ready. Progress comes only from real checks."
+      />
+
+      {orgId ? (
+        <div className="mcl-related">
+          <CompetitionHubRelated
+            orgId={relatedOrg}
+            active="match-checklist"
+            include={[...MATCH_CHECKLIST_RELATED_INCLUDE]}
+          />
+        </div>
+      ) : null}
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p className="mcl-alert" role="alert">
           {error}
         </p>
       ) : null}
 
       {fetchFailed ? (
         <EmptyState
+          soft
           title="Could not load the checklist"
           description="A network or server issue prevented loading. Try again."
         >
@@ -136,25 +129,29 @@ export default function MatchChecklistClient() {
           </button>
         </EmptyState>
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
+        <EmptyState soft title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
+        <div className="mcl-stack">
+          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+            <ol className="strategy-setup-steps">
+              {view.steps.map((step) => (
+                <li key={step.id}>
+                  <div>
+                    <strong>{step.label}</strong>
+                    <span>{step.detail}</span>
+                  </div>
+                  <a href={step.href}>Open</a>
+                </li>
+              ))}
+            </ol>
+          </EmptyState>
+          <NextActionsPanel actions={nextActions} />
+        </div>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <StartRunForm busy={busy} mutate={mutate} />
+        <div className="mcl-stack">
+          {shouldShowSummaryTiles(view.summary) ? <SummaryTiles view={view} /> : null}
+          <NextActionsPanel actions={nextActions} />
+          <StartRunForm busy={busy} mutate={mutate} teamNumber={view.teamNumber} />
           <RunList view={view} busy={busy} mutate={mutate} />
         </div>
       )}
@@ -162,35 +159,73 @@ export default function MatchChecklistClient() {
   );
 }
 
+function NextActionsPanel({
+  actions,
+}: {
+  actions: ReturnType<typeof matchChecklistNextActions>;
+}) {
+  if (actions.length === 0) return null;
+  return (
+    <Panel className="mcl-next-actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>Real event paths only — checklist progress stays blank until you check items.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
+
 function SummaryTiles({ view }: { view: LiveView }) {
   const { summary } = view;
+  const showTiming = summaryHasTimingEvidence(summary);
   const tiles = [
-    { label: "Total runs", value: String(summary.totalRuns) },
-    { label: "Completed", value: String(summary.completedRuns) },
-    { label: "In progress", value: String(summary.openRuns) },
-    { label: "Avg time", value: formatElapsed(summary.averageElapsedSeconds) },
-    { label: "Fastest", value: formatElapsed(summary.fastestElapsedSeconds) },
+    { label: "Total runs", value: String(summary.totalRuns), tone: "" },
+    { label: "Ready", value: String(summary.completedRuns), tone: "ready" },
+    { label: "In progress", value: String(summary.openRuns), tone: summary.openRuns > 0 ? "open" : "" },
+    {
+      label: "Avg ready time",
+      value: showTiming ? formatElapsed(summary.averageElapsedSeconds) : "—",
+      tone: "",
+    },
+    {
+      label: "Fastest",
+      value: showTiming ? formatElapsed(summary.fastestElapsedSeconds) : "—",
+      tone: "",
+    },
   ];
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <div className="mcl-summary" aria-label="Checklist summary from real runs">
+      {tiles.map((tile) => (
+        <div key={tile.label} className={["mcl-summary-tile", tile.tone].filter(Boolean).join(" ")}>
+          <strong>{tile.value}</strong>
+          <span>{tile.label}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
 function StartRunForm({
   busy,
   mutate,
+  teamNumber,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  teamNumber: number | null;
 }) {
   const empty = useMemo(() => ({ matchLabel: "", eventKey: "", teamNumber: "" }), []);
   const [form, setForm] = useState(empty);
@@ -200,6 +235,7 @@ function StartRunForm({
   return (
     <Panel
       as="form"
+      className="mcl-start"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.matchLabel.trim()) return;
@@ -207,13 +243,17 @@ function StartRunForm({
           action: "start-run",
           matchLabel: form.matchLabel,
           eventKey: form.eventKey || undefined,
-          teamNumber: form.teamNumber ? Number(form.teamNumber) : undefined,
+          teamNumber: form.teamNumber ? Number(form.teamNumber) : teamNumber ?? undefined,
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Start checklist</h2>
+      <div>
+        <h2>Start checklist</h2>
+        <p className="mcl-start-hint">
+          Labels start empty — item progress and elapsed time appear only after you tap real pit checks.
+        </p>
+      </div>
       <FormGrid min={160}>
         <FormRow label="Match">
           <input value={form.matchLabel} onChange={set("matchLabel")} placeholder="Qualification 12" required />
@@ -222,12 +262,18 @@ function StartRunForm({
           <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
         </FormRow>
         <FormRow label="Team # (optional)">
-          <input type="number" min={1} value={form.teamNumber} onChange={set("teamNumber")} />
+          <input
+            type="number"
+            min={1}
+            value={form.teamNumber}
+            onChange={set("teamNumber")}
+            placeholder={teamNumber != null ? String(teamNumber) : ""}
+          />
         </FormRow>
       </FormGrid>
-      <div>
+      <div className="mcl-start-actions">
         <button type="submit" className="app-button" disabled={busy || !form.matchLabel.trim()}>
-          Start
+          {busy ? "Working…" : "Start checklist"}
         </button>
       </div>
     </Panel>
@@ -245,21 +291,41 @@ function RunList({
 }) {
   if (view.runs.length === 0) {
     return (
-      <EmptyState
-        badge="No checklists yet"
-        badgeTone="setup"
-        title="Start your first pre-match checklist"
-        description="Tap through bumper, battery, tether, and code before every match to track readiness time."
-      />
+      <div className="mcl-empty">
+        <EmptyState
+          soft
+          badge="No checklists yet"
+          badgeTone="setup"
+          title="Start your first pre-match checklist"
+          description="Tap through bumper, battery, tether, and code before every match. Timing and readiness stay blank until you check items — nothing is invented."
+        />
+      </div>
     );
   }
+
+  const openCount = view.runs.filter((run) => !run.allDone).length;
+
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <section className="mcl-runs" aria-label="Checklist runs">
+      <header className="mcl-runs-head">
+        <h2>Match runs</h2>
+        <p>
+          {view.runs.length} recorded
+          {openCount > 0 ? ` · ${openCount} still open` : " · all ready"}
+        </p>
+      </header>
       {view.runs.map((run) => (
         <RunCard key={run.id} run={run} busy={busy} mutate={mutate} />
       ))}
-    </div>
+    </section>
   );
+}
+
+function formatCheckedAt(iso: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
 }
 
 function RunCard({
@@ -283,19 +349,33 @@ function RunCard({
         )
       : null;
 
+  const progress = formatItemProgress(run.items);
+
   return (
-    <Panel>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-        <div>
-          <span className={`app-badge ${run.allDone ? "good" : "setup"}`}>
-            {run.allDone ? "READY" : "IN PROGRESS"}
-          </span>
-          <h2 style={{ margin: "6px 0 0" }}>{run.matchLabel}</h2>
-          <small className="app-muted">
+    <article className={["mcl-run", run.allDone ? "is-ready" : "is-open"].join(" ")}>
+      <header className="mcl-run-top">
+        <div className="mcl-run-who">
+          <div className="mcl-badges">
+            <span className={`mcl-badge ${run.allDone ? "ready" : "open"}`}>
+              {run.allDone ? "Ready" : "In progress"}
+            </span>
+            <span className="mcl-badge progress">{progress}</span>
+            <span className="mcl-timer" aria-label="Elapsed time">
+              {formatElapsed(elapsed)}
+            </span>
+          </div>
+          <h3>{run.matchLabel}</h3>
+          <span className="mcl-run-meta">
             {run.eventKey ? `${run.eventKey} · ` : ""}
             {run.teamNumber ? `Team ${run.teamNumber} · ` : ""}
-            {formatElapsed(elapsed)}
-          </small>
+            Started{" "}
+            {new Date(run.startedAt).toLocaleString(undefined, {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </span>
         </div>
         <button
           type="button"
@@ -310,27 +390,44 @@ function RunCard({
           Delete
         </button>
       </header>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: 8,
-          marginTop: 12,
-        }}
-      >
+      <ul className="mcl-items">
         {run.items.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className={`app-button ${item.done ? "" : "secondary"}`}
-            disabled={busy}
-            onClick={() => mutate({ action: "toggle-item", runId: run.id, itemKey: item.key as ChecklistItemKey })}
-          >
-            {item.done ? "✓ " : ""}
-            {checklistItemLabel(item.key)}
-          </button>
+          <ItemToggle key={item.key} item={item} busy={busy} runId={run.id} mutate={mutate} />
         ))}
-      </div>
-    </Panel>
+      </ul>
+    </article>
+  );
+}
+
+function ItemToggle({
+  item,
+  busy,
+  runId,
+  mutate,
+}: {
+  item: ChecklistItem;
+  busy: boolean;
+  runId: string;
+  mutate: (payload: Record<string, unknown>) => void;
+}) {
+  const checkedLabel = formatCheckedAt(item.checkedAt);
+  return (
+    <li>
+      <button
+        type="button"
+        className={["mcl-item", item.done ? "is-done" : ""].filter(Boolean).join(" ")}
+        disabled={busy}
+        aria-pressed={item.done}
+        onClick={() => mutate({ action: "toggle-item", runId, itemKey: item.key as ChecklistItemKey })}
+      >
+        <span className="mcl-item-main">
+          <strong>{checklistItemLabel(item.key)}</strong>
+          <small>{item.done ? (checkedLabel ? `Checked ${checkedLabel}` : "Checked") : "Tap when done"}</small>
+        </span>
+        <span className="mcl-item-mark" aria-hidden>
+          {item.done ? "✓" : ""}
+        </span>
+      </button>
+    </li>
   );
 }
