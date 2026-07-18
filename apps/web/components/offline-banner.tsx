@@ -38,6 +38,7 @@ function formatCachedAt(iso: string | null | undefined): string | null {
  * Soft-UI banner for venue Wi-Fi drops and flaky sync.
  * Hidden while online unless `force` (retry/backoff / degraded).
  * Place near PageHeader on offline-capable product pages.
+ * Copy never invents DEMO sync counts — only caller-supplied detail may mention real queues.
  */
 export function OfflineBanner({
   fromCache = false,
@@ -78,6 +79,7 @@ export function OfflineBanner({
       className={`offline-banner offline-banner--${tone} ${className}`.trim()}
       role="status"
       aria-live="polite"
+      data-soft-ui="offline-banner"
     >
       <strong>{title}</strong>
       <span>{detail ?? body}</span>

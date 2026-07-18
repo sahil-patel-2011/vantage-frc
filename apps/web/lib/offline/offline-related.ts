@@ -1,0 +1,371 @@
+import { withOrgHref } from "../nav/product-nav";
+import type { OfflineShellTier } from "../offline-shell/types";
+
+/** Soft-UI shell kinds for `/offline` + `/offline-shell` — never DEMO sync counts. */
+export type OfflineShellKind =
+  | "loading"
+  | "ready"
+  | "empty"
+  | "setup"
+  | "partial"
+  | "error"
+  | "offline_cold";
+
+export type OfflineRelatedId =
+  | "scouting"
+  | "offline-shell"
+  | "offline"
+  | "schedule"
+  | "calendar"
+  | "todos"
+  | "logistics"
+  | "competition";
+
+export type OfflineRelatedLink = {
+  id: OfflineRelatedId;
+  label: string;
+  href: string;
+};
+
+/**
+ * Soft-UI cross-links — Scouting first.
+ * Build with withOrgHref so orgId survives venue Wi-Fi drops.
+ */
+export function offlineRelatedLinks(
+  orgId?: string | null,
+  options?: { active?: OfflineRelatedId; include?: OfflineRelatedId[] },
+): OfflineRelatedLink[] {
+  const include = options?.include ? new Set(options.include) : null;
+  const all: OfflineRelatedLink[] = [
+    { id: "scouting", label: "Scouting", href: withOrgHref("/scouting", orgId) },
+    { id: "offline-shell", label: "Offline Shell", href: withOrgHref("/offline-shell", orgId) },
+    { id: "schedule", label: "Schedule", href: withOrgHref("/schedule", orgId) },
+    { id: "offline", label: "Cold offline boot", href: withOrgHref("/offline", orgId) },
+    { id: "calendar", label: "Team calendar", href: withOrgHref("/team/calendar", orgId) },
+    { id: "todos", label: "Todos", href: withOrgHref("/todos", orgId) },
+    { id: "logistics", label: "Logistics", href: withOrgHref("/logistics", orgId) },
+    { id: "competition", label: "Competition hub", href: withOrgHref("/competition", orgId) },
+  ];
+  return all.filter((link) => {
+    if (link.id === options?.active) return false;
+    if (include && !include.has(link.id)) return false;
+    return true;
+  });
+}
+
+/** Primary Soft-UI strip for Offline Shell readiness. */
+export const OFFLINE_SHELL_RELATED_INCLUDE: OfflineRelatedId[] = [
+  "scouting",
+  "schedule",
+  "offline",
+  "calendar",
+  "competition",
+];
+
+/** Soft-UI strip on the cold `/offline` boot page. */
+export const OFFLINE_BOOT_RELATED_INCLUDE: OfflineRelatedId[] = [
+  "scouting",
+  "offline-shell",
+  "schedule",
+  "todos",
+  "logistics",
+];
+
+export type OfflineNextAction = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+  primary?: boolean;
+};
+
+export type OfflineShellCopy = {
+  kind: OfflineShellKind;
+  badge?: string;
+  title: string;
+  description: string;
+};
+
+/** Real outbox / sync counts only — blank until loaded; never invent DEMO totals. */
+export function formatOfflineCount(value: unknown, loaded: boolean): string {
+  if (!loaded) return "…";
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n) || n < 0) return "0";
+  return Math.floor(n).toLocaleString();
+}
+
+/** Status line for cold offline boot — only real IndexedDB outbox counts. */
+export function offlineBootStatusLine(input: {
+  online: boolean;
+  loaded: boolean;
+  entries: number;
+  media: number;
+  orgRemembered: boolean;
+}): string {
+  const net = input.online ? "Online" : "Offline";
+  if (!input.loaded) return `${net} · checking this device…`;
+  const queued = input.entries + input.media;
+  const outbox =
+    queued > 0
+      ? `${formatOfflineCount(input.entries, true)} scout entries · ${formatOfflineCount(input.media, true)} media queued`
+      : "scout outbox empty";
+  const workspace = input.orgRemembered ? " · workspace remembered" : "";
+  return `${net} · ${outbox}${workspace}`;
+}
+
+/** Classify Offline Shell Soft-UI from API + readiness tier. */
+export function classifyOfflineShell(input: {
+  loading: boolean;
+  fetchFailed?: boolean;
+  status?: "setup_required" | "live" | null;
+  tier?: OfflineShellTier | null;
+  totalEvents?: number;
+}): OfflineShellKind {
+  if (input.loading) return "loading";
+  if (input.fetchFailed) return "error";
+  if (input.status === "setup_required") return "setup";
+  if (input.status !== "live") return "error";
+  if ((input.totalEvents ?? 0) === 0) return "empty";
+  if (input.tier === "ready") return "ready";
+  // partial + not_ready both need more real sync evidence — never invent progress.
+  return "partial";
+}
+
+/** Soft-UI empty / setup / readiness copy — never DEMO sync counts. */
+export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
+  switch (kind) {
+    case "loading":
+      return {
+        kind,
+        title: "Loading Offline Shell…",
+        description: "Checking logged precache syncs for this workspace — counts stay blank until Neon answers.",
+      };
+    case "setup":
+      return {
+        kind,
+        badge: "Setup",
+        title: "Select a team workspace",
+        description:
+          "Offline-shell readiness is org-scoped. Pick a workspace first — never DEMO device or sync totals.",
+      };
+    case "empty":
+      return {
+        kind,
+        badge: "Not ready",
+        title: "No precache syncs logged yet",
+        description:
+          "Open Scouting once online, verify a cold launch offline, then log the device here. Empty stays empty — never DEMO sync counts.",
+      };
+    case "partial":
+      return {
+        kind,
+        badge: "Partial",
+        title: "Shell partially ready",
+        description:
+          "Some devices or routes are covered. Finish missing routes and offline verification from real logs only.",
+      };
+    case "error":
+      return {
+        kind,
+        badge: "Unavailable",
+        title: "Could not load Offline Shell",
+        description: "A network or server issue blocked status. Retry, or open Scouting if this device already cached forms.",
+      };
+    case "offline_cold":
+      return {
+        kind,
+        badge: "Offline",
+        title: "You're offline",
+        description:
+          "Venue Wi-Fi dropped. Pages you've already visited load from the app shell. Scouting keeps saving to this device until sync returns.",
+      };
+    default:
+      return {
+        kind: "ready",
+        badge: "Ready",
+        title: "Offline shell ready",
+        description:
+          "Precache syncs show recent coverage. Keep opening Scouting after deploys so a cold no-signal load still works.",
+      };
+  }
+}
+
+/**
+ * Next actions for Offline Shell readiness UI.
+ * Always surfaces Scouting — never invents DEMO sync counts.
+ */
+export function offlineShellNextActions(input: {
+  orgId?: string | null;
+  shell: OfflineShellKind;
+  recommendations?: string[];
+}): OfflineNextAction[] {
+  const orgId = input.orgId ?? null;
+  const scoutHref = withOrgHref("/scouting", orgId);
+  const shellHref = withOrgHref("/offline-shell", orgId);
+  const offlineHref = withOrgHref("/offline", orgId);
+  const actions: OfflineNextAction[] = [];
+
+  if (!orgId || input.shell === "setup") {
+    return [
+      {
+        id: "workspace",
+        label: "Select workspace",
+        detail: "Readiness and sync logs are saved per team — pick an org first.",
+        href: "/workspace",
+        primary: true,
+      },
+      {
+        id: "scouting",
+        label: "Open Scouting",
+        detail: "Match and pit forms + IndexedDB outbox work once a workspace caches an event.",
+        href: "/scouting",
+      },
+    ];
+  }
+
+  if (input.shell === "error") {
+    return [
+      {
+        id: "retry",
+        label: "Retry Offline Shell",
+        detail: "Reload real sync events from Neon — nothing is pre-seeded while this fails.",
+        href: shellHref,
+        primary: true,
+      },
+      {
+        id: "scouting",
+        label: "Open Scouting",
+        detail: "Forms may still work from this device's cache and outbox.",
+        href: scoutHref,
+      },
+    ];
+  }
+
+  if (input.shell === "empty") {
+    actions.push({
+      id: "scouting",
+      label: "Open Scouting once online",
+      detail: "Warm the shell and event cache on this device before you need a cold no-signal load.",
+      href: scoutHref,
+      primary: true,
+    });
+    actions.push({
+      id: "log-sync",
+      label: "Log a precache sync",
+      detail: "After verification, record the device below — scores stay 0 until a real event exists.",
+      href: "#offline-shell-log",
+    });
+  } else if (input.shell === "partial") {
+    actions.push({
+      id: "scouting",
+      label: "Finish Scouting precache",
+      detail: input.recommendations?.[0] ?? "Cover missing shell routes and verify offline on another scout tablet.",
+      href: scoutHref,
+      primary: true,
+    });
+    actions.push({
+      id: "verify",
+      label: "Verify cold offline boot",
+      detail: "Toggle airplane mode and reopen /offline — then log network status as Offline.",
+      href: offlineHref,
+    });
+  } else if (input.shell === "ready") {
+    actions.push({
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Shell looks ready from logged syncs — use Scouting at the venue; outbox holds entries without signal.",
+      href: scoutHref,
+      primary: true,
+    });
+  } else {
+    actions.push({
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Primary offline-capable surface — forms + outbox on this device.",
+      href: scoutHref,
+      primary: true,
+    });
+  }
+
+  actions.push(
+    {
+      id: "schedule",
+      label: "Open Schedule",
+      detail: "Match board shell loads from cache after one online visit.",
+      href: withOrgHref("/schedule", orgId),
+      primary: !actions.some((a) => a.primary),
+    },
+    {
+      id: "offline",
+      label: "Cold offline boot",
+      detail: "Precached fallback when navigation fails with no signal.",
+      href: offlineHref,
+    },
+  );
+
+  return actions.slice(0, 5);
+}
+
+/**
+ * Next actions for the public `/offline` cold-boot Soft-UI.
+ * Uses real outbox counts only — never DEMO sync totals.
+ */
+export function offlineBootNextActions(input: {
+  orgId?: string | null;
+  online: boolean;
+  loaded: boolean;
+  pendingEntries: number;
+  pendingMedia: number;
+}): OfflineNextAction[] {
+  const orgId = input.orgId ?? null;
+  const scoutHref = withOrgHref("/scouting", orgId);
+  const shellHref = withOrgHref("/offline-shell", orgId);
+  const queued = input.pendingEntries + input.pendingMedia;
+  const actions: OfflineNextAction[] = [];
+
+  actions.push({
+    id: "scouting",
+    label: input.online ? "Open Scouting" : "Continue Scouting offline",
+    detail: orgId
+      ? queued > 0 && input.loaded
+        ? `${formatOfflineCount(queued, true)} item(s) waiting in this device's outbox — sync when Wi-Fi returns.`
+        : "Match and pit forms + IndexedDB outbox on this device."
+      : "Open once online from a workspace so the event cache is ready — never DEMO scout totals.",
+    href: scoutHref,
+    primary: true,
+  });
+
+  if (!input.online && queued > 0 && input.loaded) {
+    actions.push({
+      id: "stay",
+      label: "Keep this page open when sync returns",
+      detail: "Queued entries upload with retry/backoff. Counts come from IndexedDB — never invented.",
+      href: scoutHref,
+    });
+  }
+
+  actions.push(
+    {
+      id: "offline-shell",
+      label: "Check Offline Shell readiness",
+      detail: "See which devices logged a real precache sync for cold launches.",
+      href: shellHref,
+    },
+    {
+      id: "schedule",
+      label: "Open Schedule",
+      detail: "Last match board cached after an online visit.",
+      href: withOrgHref("/schedule", orgId),
+    },
+  );
+
+  return actions.slice(0, 4);
+}
+
+/** Soft-UI badge tone for readiness tier — empty until real events exist. */
+export function offlineReadinessTone(tier: OfflineShellTier | null | undefined): "good" | "setup" | "demo" | "" {
+  if (!tier) return "";
+  if (tier === "ready") return "good";
+  if (tier === "partial") return "setup";
+  return "demo";
+}

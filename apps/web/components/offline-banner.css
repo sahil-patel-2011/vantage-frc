@@ -7,18 +7,25 @@
   border-radius: 12px;
   background: color-mix(in srgb, var(--soft-accent, #0f766e) 10%, var(--soft-card, #fff));
   color: var(--soft-ink, #14201c);
-  font-size: 14px;
-  line-height: 1.4;
+  font: 600 14px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  box-shadow: 0 1px 0 color-mix(in srgb, #000 4%, transparent);
 }
 
 .offline-banner strong {
-  font-size: 13px;
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--soft-ink, #14201c);
 }
 
 .offline-banner span {
   color: var(--soft-muted, #5b6b66);
+  font-weight: 500;
+}
+
+.offline-banner--offline {
+  border-color: color-mix(in srgb, var(--soft-accent, #0f766e) 35%, var(--soft-line, #d5ddd9));
 }
 
 .offline-banner--syncing {

@@ -1,0 +1,106 @@
+.offline-shell-page .offline-shell-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.offline-shell-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.offline-shell-readiness-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.offline-shell-readiness-header h2 {
+  margin: 6px 0 0;
+}
+
+.offline-shell-score {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.offline-shell-meters {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.offline-shell-meter {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr 48px;
+  gap: 8px;
+  align-items: center;
+}
+
+.offline-shell-meter small {
+  text-align: right;
+}
+
+.offline-shell-recs {
+  margin-top: 12px;
+}
+
+.offline-shell-recs ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.offline-shell-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.offline-shell-tiles strong {
+  font-size: 1.4rem;
+  display: block;
+}
+
+.offline-shell-tiles-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+
+.offline-shell-panel-title {
+  margin: 0 0 8px;
+}
+
+.offline-shell-log-form {
+  display: grid;
+  gap: 10px;
+}
+
+.offline-shell-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.offline-shell-events li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.offline-shell-events small {
+  display: block;
+}
+
+@media (max-width: 560px) {
+  .offline-shell-meter {
+    grid-template-columns: 1fr 48px;
+  }
+
+  .offline-shell-meter > .app-muted:first-child {
+    grid-column: 1 / -1;
+  }
+}

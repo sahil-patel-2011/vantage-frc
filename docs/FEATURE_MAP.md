@@ -6,6 +6,7 @@
 | Strategy Soft-UI | `/strategy`, `/strategy/draft`, `/pick-clock`, `/chemistry` | Pick desk / draft board / explainability + coverage links to Scouting, Form builder, Match checklist; empty/setup never invents DEMO metrics |
 | Scouting forms | `/scouting/forms` (also `/competition?tab=forms`) | Soft-UI custom form builder (MC / short / free / dropdown / drivetrain / robot image) → `POST /api/scouting/schemas` |
 | Scout voice notes | `/competition?tab=scouting` (`#scout-voice`) | Opt-in voice STT notes + optional Apply-to-form; cloud STT metered with UsageCutoffBanner |
+| Offline Shell Soft-UI | `/offline`, `/offline-shell` | Cold SW fallover + precache readiness; next actions + Scouting links; Soft-UI banners on Schedule / Scouting / Calendar / Todos / Logistics — never DEMO sync counts |
 | Match checklist Soft-UI | `/match-checklist` (also `/competition?tab=match-checklist`) | Timed pit runs/items, empty/setup + next actions; cross-links to Event Day / My Day / Scouting / Strategy — never DEMO checklist progress |
 | Displays Soft-UI | `/display`, `/display/kiosk` | Pit TV board setup + kiosk; empty/setup + next actions; cross-links to Event Day / Strategy / Scouting; TBA/prediction widgets stay blank until real rows — never DEMO ranks or coverage zeros |
 | Team | `/team` | Calendar · Todos · Messages · Practice · Knowledge · Attendance · Batteries · FMEA (+ More tools) |
