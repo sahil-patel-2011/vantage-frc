@@ -25,6 +25,8 @@ const WIDGET_ICON: Record<string, { icon: IconName; tone: string; toneBg: string
   notifications: { icon: "bell", tone: "#1f4fd6", toneBg: "#e4ecfc" },
   alerts: { icon: "bell", tone: "#b91c1c", toneBg: "#fee2e2" },
   onboarding_checklist: { icon: "pin", tone: "#1f4fd6", toneBg: "#e4ecfc" },
+  team_todos: { icon: "clipboard", tone: "#1f4fd6", toneBg: "#e4ecfc" },
+  subteam_upcoming: { icon: "calendar", tone: "#0f766e", toneBg: "#ccfbf1" },
 };
 
 const EMPTY_COPY: Record<string, EmptyHint> = {
@@ -89,6 +91,18 @@ const EMPTY_COPY: Record<string, EmptyHint> = {
   alerts: {
     title: "No new alerts",
     body: "Live org alerts and open scouting disagreements will list here when they exist.",
+  },
+  team_todos: {
+    title: "No open todos",
+    body: "Shared team todos appear here after your org adds real action items — nothing is invented.",
+    ctaHref: "/todos",
+    ctaLabel: "Open todos",
+  },
+  subteam_upcoming: {
+    title: "Nothing upcoming for your subteams",
+    body: "Create a subteam and schedule a practice — the next session shows here.",
+    ctaHref: "/team/calendar",
+    ctaLabel: "Open calendar",
   },
   quick_actions: {
     title: "Get set up",
@@ -531,16 +545,18 @@ export function DashboardWidgetView({
                 </li>
               ) : null}
               {items.slice(0, 4).map((item) => {
+                const isMessageNotif =
+                  item.type === "direct_message" || item.type === "message_mention";
                 const conversationId =
-                  item.type === "direct_message" && typeof item.payload?.conversationId === "string"
+                  isMessageNotif && typeof item.payload?.conversationId === "string"
                     ? item.payload.conversationId
                     : null;
                 const fromName =
-                  item.type === "direct_message" && typeof item.payload?.fromName === "string"
+                  isMessageNotif && typeof item.payload?.fromName === "string"
                     ? item.payload.fromName
                     : null;
                 const preview =
-                  item.type === "direct_message" && typeof item.payload?.preview === "string"
+                  isMessageNotif && typeof item.payload?.preview === "string"
                     ? item.payload.preview
                     : null;
                 const label =
@@ -548,10 +564,14 @@ export function DashboardWidgetView({
                     ? fromName
                       ? `DM from ${fromName}`
                       : "Direct message"
-                    : item.type.replaceAll("_", " ");
+                    : item.type === "message_mention"
+                      ? fromName
+                        ? `${fromName} mentioned you`
+                        : "Mentioned in Team Messages"
+                      : item.type.replaceAll("_", " ");
                 const href = conversationId
                   ? withOrg(`/messages?conversationId=${encodeURIComponent(conversationId)}`)
-                  : item.type === "direct_message"
+                  : isMessageNotif
                     ? withOrg("/messages")
                     : null;
                 return (
@@ -568,6 +588,112 @@ export function DashboardWidgetView({
                   </li>
                 );
               })}
+            </ul>
+          ) : null}
+        </Shell>
+      );
+    }
+    case "subteam_upcoming": {
+      const items =
+        (data.items as Array<{
+          id: string;
+          title: string;
+          kind: string;
+          startsAt: string;
+          subteamName: string | null;
+          subteamColor: string | null;
+        }> | undefined) ?? [];
+      const calendarHref = withOrg(String(data.href ?? "/team/calendar"));
+      const fmt = (iso: string) => {
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) return iso;
+        return date.toLocaleString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      };
+      return (
+        <Shell
+          type={type}
+          title="What's next for my subteam"
+          payload={payload}
+          href={calendarHref}
+          emptyHint={{
+            ...hint,
+            ctaHref: calendarHref,
+            ctaLabel: String(data.ctaLabel ?? hint.ctaLabel ?? "Open calendar"),
+            body: payload?.message ?? hint.body,
+          }}
+          orgId={orgId}
+          preferChildren
+        >
+          {payload?.status === "live" && items.length > 0 ? (
+            <ul className="dash-checklist dash-subteam-strip">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <span>
+                    <i
+                      className="dash-subteam-dot"
+                      style={{ background: item.subteamColor ?? "var(--app-accent, #0f766e)" }}
+                      aria-hidden
+                    />
+                    <a href={calendarHref}>{item.title}</a>
+                  </span>
+                  <b>
+                    {fmt(item.startsAt)}
+                    {item.subteamName ? ` · ${item.subteamName}` : " · Whole team"}
+                  </b>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Shell>
+      );
+    }
+    case "team_todos": {
+      const items =
+        (data.items as Array<{
+          id: string;
+          title: string;
+          status: string;
+          dueOn: string | null;
+          assigneeName: string | null;
+        }> | undefined) ?? [];
+      return (
+        <Shell type={type} title="Team todos" payload={payload} href={withOrg("/todos")} emptyHint={hint} orgId={orgId} preferChildren>
+          {payload?.status === "live" ? (
+            <div className="dash-metric-grid" style={{ marginBottom: items.length ? 10 : 0 }}>
+              <div>
+                <strong>{String(data.open ?? 0)}</strong>
+                <span>open</span>
+              </div>
+              <div>
+                <strong>{String(data.mineOpen ?? 0)}</strong>
+                <span>mine</span>
+              </div>
+              <div>
+                <strong>{String(data.overdue ?? 0)}</strong>
+                <span>overdue</span>
+              </div>
+            </div>
+          ) : null}
+          {payload?.status === "live" && items.length > 0 ? (
+            <ul className="dash-checklist">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <a href={withOrg(`/todos?todoId=${encodeURIComponent(item.id)}`)}>
+                    <span>{item.title}</span>
+                    <small className="dash-notif-preview">
+                      {item.status}
+                      {item.assigneeName ? ` · ${item.assigneeName}` : ""}
+                      {item.dueOn ? ` · ${item.dueOn}` : ""}
+                    </small>
+                  </a>
+                </li>
+              ))}
             </ul>
           ) : null}
         </Shell>

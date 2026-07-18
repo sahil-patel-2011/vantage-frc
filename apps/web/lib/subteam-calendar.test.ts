@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildMonthCells,
+  buildWeekCells,
+  eventWorkflowLinks,
+  eventsForMySubteams,
   filterEventsBySubteam,
   groupEventsByDay,
+  localDayKey,
   parseSubteamCalendarAction,
   sortEvents,
   upcomingEvents,
@@ -27,6 +32,10 @@ function event(partial: Partial<CalendarEvent> & Pick<CalendarEvent, "id" | "tit
     milestoneId: null,
     driverSessionId: null,
     createdByName: null,
+    myRsvp: null,
+    rsvpGoing: 0,
+    rsvpMaybe: 0,
+    rsvpNo: 0,
     ...partial,
   };
 }
@@ -150,5 +159,80 @@ describe("parseSubteamCalendarAction", () => {
         endsAt: "2026-02-10T19:00:00.000Z",
       }),
     ).toThrow(/End/);
+  });
+
+  it("parses set_rsvp including clear (null)", () => {
+    expect(
+      parseSubteamCalendarAction({
+        action: "set_rsvp",
+        orgId: ORG,
+        id: SUB_A,
+        response: "going",
+      }),
+    ).toMatchObject({ action: "set_rsvp", response: "going" });
+    expect(
+      parseSubteamCalendarAction({
+        action: "set_rsvp",
+        orgId: ORG,
+        id: SUB_A,
+        response: null,
+      }),
+    ).toMatchObject({ response: null });
+  });
+});
+
+describe("my-subteam strip + workflow deep links", () => {
+  it("keeps whole-team rows and the member's subteams", () => {
+    const events = [
+      event({ id: "1", title: "All hands", startsAt: "2026-02-01T18:00:00.000Z", subteamId: null }),
+      event({ id: "2", title: "Mech", startsAt: "2026-02-02T18:00:00.000Z", subteamId: SUB_A }),
+      event({ id: "3", title: "Code", startsAt: "2026-02-03T18:00:00.000Z", subteamId: SUB_B }),
+    ];
+    expect(eventsForMySubteams(events, [SUB_A]).map((e) => e.id)).toEqual(["1", "2"]);
+    expect(eventsForMySubteams(events, []).map((e) => e.id)).toEqual(["1"]);
+  });
+
+  it("maps kinds to practice / Event Day / scouting / business", () => {
+    const practice = eventWorkflowLinks(
+      event({ id: "p", title: "P", startsAt: "2026-02-01T18:00:00.000Z", kind: "practice" }),
+      ORG,
+    );
+    expect(practice.some((l) => l.href.includes("/practice"))).toBe(true);
+
+    const competition = eventWorkflowLinks(
+      event({ id: "e", title: "E", startsAt: "2026-02-01T18:00:00.000Z", kind: "event" }),
+      ORG,
+    );
+    expect(competition.map((l) => l.label)).toEqual(
+      expect.arrayContaining(["Event Day Command", "Scouting duty"]),
+    );
+
+    const deadline = eventWorkflowLinks(
+      event({ id: "d", title: "D", startsAt: "2026-02-01T18:00:00.000Z", kind: "deadline" }),
+      ORG,
+    );
+    expect(deadline.some((l) => l.href.includes("/business"))).toBe(true);
+  });
+});
+
+describe("week / month grids", () => {
+  it("builds a 7-day week and 42-cell month", () => {
+    const anchor = new Date(2026, 2, 11); // Wed Mar 11 2026
+    const today = new Date(2026, 2, 11);
+    const events = [
+      event({
+        id: "1",
+        title: "Shop",
+        startsAt: new Date(2026, 2, 11, 16, 0).toISOString(),
+      }),
+    ];
+    const week = buildWeekCells(anchor, events, today);
+    expect(week).toHaveLength(7);
+    expect(week[0]!.day).toBe(localDayKey(new Date(2026, 2, 8))); // Sunday
+    expect(week.find((c) => c.isToday)?.items.map((i) => i.id)).toEqual(["1"]);
+
+    const month = buildMonthCells(anchor, events, today);
+    expect(month).toHaveLength(42);
+    expect(month.filter((c) => c.inMonth).length).toBeGreaterThanOrEqual(28);
   });
 });

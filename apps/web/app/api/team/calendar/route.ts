@@ -1,18 +1,33 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { randomBytes } from "node:crypto";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { buildCalendar, type CalendarIcsEvent } from "../../../../lib/calendar-ics";
+import { listDutiesForOrg } from "../../../../lib/duty-roster";
+import { notifyCalendarEvent } from "../../../../lib/notify-calendar";
 import {
   attendanceDateFromStart,
+  CALENDAR_FEED_SCOPES,
   defaultSeasonYear,
+  eventsForMySubteams,
+  filterEventsBySubteam,
   parseSubteamCalendarAction,
+  type CalendarFeedInfo,
+  type CalendarFeedScope,
   type CalendarEvent,
+  type DutyOnCalendar,
   type LinkableAttendance,
   type LinkablePractice,
+  type RsvpResponse,
   type Subteam,
   type SubteamCalendarView,
   type SubteamMemberLite,
 } from "../../../../lib/subteam-calendar";
+
+function newFeedToken() {
+  return randomBytes(32).toString("base64url");
+}
 
 class HttpError extends Error {
   constructor(
@@ -52,7 +67,35 @@ function fail(error: unknown) {
   return Response.json({ error: message }, { status });
 }
 
-async function loadView(client: PoolClient, orgId: string, userId: string, role: string): Promise<SubteamCalendarView> {
+async function loadCalendarFeed(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+  scope: CalendarFeedScope,
+  subteamId: string | null,
+): Promise<CalendarFeedInfo> {
+  try {
+    const row = await client.query<{ token: string }>(
+      `SELECT token FROM calendar_feed_tokens
+       WHERE org_id = $1 AND user_id = $2 AND scope = $3
+         AND (($4::uuid IS NULL AND subteam_id IS NULL) OR subteam_id = $4::uuid)
+       LIMIT 1`,
+      [orgId, userId, scope, subteamId],
+    );
+    return { token: row.rows[0]?.token ?? null, scope, subteamId };
+  } catch {
+    return { token: null, scope, subteamId };
+  }
+}
+
+async function loadView(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+  role: string,
+  feedScope: CalendarFeedScope = "personal",
+  feedSubteamId: string | null = null,
+): Promise<SubteamCalendarView> {
   const org = await client.query<{ orgName: string; teamNumber: number | null }>(
     `SELECT name AS "orgName", team_number AS "teamNumber" FROM organizations WHERE id = $1`,
     [orgId],
@@ -79,7 +122,7 @@ async function loadView(client: PoolClient, orgId: string, userId: string, role:
       [orgId],
     ),
     client.query<
-      Omit<CalendarEvent, "attendanceEventTitle"> & { attendanceEventTitle: string | null }
+      Omit<CalendarEvent, "myRsvp" | "rsvpGoing" | "rsvpMaybe" | "rsvpNo">
     >(
       `SELECT e.id, e.title, e.kind, e.starts_at::text AS "startsAt", e.ends_at::text AS "endsAt",
               e.location, e.notes, e.subteam_id AS "subteamId",
@@ -118,6 +161,49 @@ async function loadView(client: PoolClient, orgId: string, userId: string, role:
     subteamIds: membershipsByUser.get(member.userId) ?? [],
   }));
 
+  const rsvpByEvent = new Map<
+    string,
+    { myRsvp: RsvpResponse | null; rsvpGoing: number; rsvpMaybe: number; rsvpNo: number }
+  >();
+  try {
+    const rsvps = await client.query<{
+      eventId: string;
+      userId: string;
+      response: RsvpResponse;
+    }>(
+      `SELECT event_id AS "eventId", user_id AS "userId", response
+       FROM subteam_calendar_rsvps
+       WHERE org_id = $1`,
+      [orgId],
+    );
+    for (const row of rsvps.rows) {
+      const bucket = rsvpByEvent.get(row.eventId) ?? {
+        myRsvp: null,
+        rsvpGoing: 0,
+        rsvpMaybe: 0,
+        rsvpNo: 0,
+      };
+      if (row.response === "going") bucket.rsvpGoing += 1;
+      else if (row.response === "maybe") bucket.rsvpMaybe += 1;
+      else bucket.rsvpNo += 1;
+      if (row.userId === userId) bucket.myRsvp = row.response;
+      rsvpByEvent.set(row.eventId, bucket);
+    }
+  } catch {
+    // Migration 0141 may not be applied yet — calendar still works without RSVPs.
+  }
+
+  const eventRows: CalendarEvent[] = events.rows.map((row) => {
+    const rsvp = rsvpByEvent.get(row.id);
+    return {
+      ...row,
+      myRsvp: rsvp?.myRsvp ?? null,
+      rsvpGoing: rsvp?.rsvpGoing ?? 0,
+      rsvpMaybe: rsvp?.rsvpMaybe ?? 0,
+      rsvpNo: rsvp?.rsvpNo ?? 0,
+    };
+  });
+
   let attendanceEvents: LinkableAttendance[] = [];
   try {
     const attendance = await client.query<LinkableAttendance>(
@@ -148,6 +234,30 @@ async function loadView(client: PoolClient, orgId: string, userId: string, role:
     practiceSessions = [];
   }
 
+  const calendarFeed = await loadCalendarFeed(client, orgId, userId, feedScope, feedSubteamId);
+
+  let duties: DutyOnCalendar[] = [];
+  try {
+    const roster = await listDutiesForOrg(client, orgId, userId);
+    duties = roster.map((duty) => ({
+      id: duty.id,
+      title: duty.title,
+      kind: duty.kind,
+      startsAt: duty.startsAt,
+      endsAt: duty.endsAt,
+      subteamId: duty.subteamId,
+      subteamName: duty.subteamName,
+      subteamColor: duty.subteamColor,
+      assignedUserId: duty.assignedUserId,
+      assignedUserName: duty.assignedUserName,
+      calendarEventId: duty.calendarEventId,
+      notes: duty.notes,
+      mine: duty.mine,
+    }));
+  } catch {
+    duties = [];
+  }
+
   return {
     status: "ready",
     context: {
@@ -160,11 +270,70 @@ async function loadView(client: PoolClient, orgId: string, userId: string, role:
     },
     subteams: subteams.rows,
     members: memberRows,
-    events: events.rows,
+    events: eventRows,
+    duties,
     mySubteamIds: membershipsByUser.get(userId) ?? [],
     attendanceEvents,
     practiceSessions,
+    calendarFeed,
   };
+}
+
+function eventsToIcs(view: Extract<SubteamCalendarView, { status: "ready" }>, scope: CalendarFeedScope, subteamId: string | null) {
+  let events = view.events;
+  if (scope === "personal") events = eventsForMySubteams(events, view.mySubteamIds);
+  else if (scope === "subteam") events = filterEventsBySubteam(events, subteamId);
+
+  const icsEvents: CalendarIcsEvent[] = events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    kind: event.kind,
+    location: event.location,
+    description: event.notes,
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+    updatedAt: event.startsAt,
+    allDay: false,
+  }));
+
+  // Duties without a linked calendar row still appear on personal / org feeds.
+  const userId = view.context.userId;
+  for (const duty of view.duties ?? []) {
+    if (duty.calendarEventId && events.some((event) => event.id === duty.calendarEventId)) continue;
+    if (scope === "personal" && userId) {
+      const onMySubteam =
+        duty.assignedUserId == null &&
+        duty.subteamId != null &&
+        view.mySubteamIds.includes(duty.subteamId);
+      if (duty.assignedUserId !== userId && !onMySubteam) continue;
+    } else if (scope === "subteam" && subteamId && duty.subteamId !== subteamId) {
+      continue;
+    }
+    icsEvents.push({
+      id: `duty-${duty.id}`,
+      title: duty.title,
+      kind: duty.kind === "outreach" ? "outreach" : "event",
+      location: "",
+      description: [duty.assignedUserName ? `Assigned: ${duty.assignedUserName}` : null, duty.notes]
+        .filter(Boolean)
+        .join("\n"),
+      startsAt: duty.startsAt,
+      endsAt: duty.endsAt,
+      updatedAt: duty.startsAt,
+      allDay: false,
+    });
+  }
+
+  return buildCalendar(
+    {
+      orgName: view.context.orgName,
+      teamNumber: view.context.teamNumber,
+      scope,
+      timezone: "UTC",
+      events: icsEvents,
+    },
+    { domain: "vantagefrc.com" },
+  );
 }
 
 export async function GET(request: Request) {
@@ -172,6 +341,12 @@ export async function GET(request: Request) {
     const session = await requireSession();
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
+    const format = url.searchParams.get("format");
+    const scopeRaw = url.searchParams.get("scope") ?? "personal";
+    const scope = (CALENDAR_FEED_SCOPES as readonly string[]).includes(scopeRaw)
+      ? (scopeRaw as CalendarFeedScope)
+      : "personal";
+    const feedSubteamId = url.searchParams.get("subteamId");
 
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const membership = await client.query<{ orgId: string; role: string }>(
@@ -197,8 +372,37 @@ export async function GET(request: Request) {
           },
         } satisfies SubteamCalendarView;
       }
-      return loadView(client, row.orgId, session.user.id, row.role);
+      if (scope === "subteam" && feedSubteamId) {
+        const st = await client.query(
+          `SELECT 1 FROM team_subteams WHERE id = $1 AND org_id = $2 LIMIT 1`,
+          [feedSubteamId, row.orgId],
+        );
+        if (!st.rowCount) throw new HttpError(400, "Subteam not found");
+      }
+      return loadView(
+        client,
+        row.orgId,
+        session.user.id,
+        row.role,
+        scope,
+        scope === "subteam" ? feedSubteamId : null,
+      );
     });
+
+    if (format === "ics") {
+      if (view.status !== "ready") {
+        return Response.json({ error: view.message }, { status: 400 });
+      }
+      const ics = eventsToIcs(view, scope, scope === "subteam" ? feedSubteamId : null);
+      return new Response(ics, {
+        status: 200,
+        headers: {
+          "content-type": "text/calendar; charset=utf-8",
+          "content-disposition": 'attachment; filename="vantage-calendar.ics"',
+          "cache-control": "private, no-store",
+        },
+      });
+    }
 
     return Response.json(view);
   } catch (error) {
@@ -372,7 +576,20 @@ export async function POST(request: Request) {
               userId,
             ],
           );
-          return { id: inserted.rows[0]!.id, attendanceEventId };
+          const eventId = inserted.rows[0]!.id;
+          try {
+            await notifyCalendarEvent(client, {
+              orgId: action.orgId,
+              actorUserId: userId,
+              eventId,
+              title: action.title,
+              subteamId: action.subteamId,
+              mode: "created",
+            });
+          } catch {
+            // Inbox notify is best-effort; event creation still succeeds.
+          }
+          return { id: eventId, attendanceEventId };
         }
 
         case "update_event": {
@@ -399,12 +616,27 @@ export async function POST(request: Request) {
           if (Object.prototype.hasOwnProperty.call(patch, "milestoneId")) {
             push("milestone_id", patch.milestoneId);
           }
-          const updated = await client.query(
+          if (sets.length < 1) throw new HttpError(400, "No event fields to update");
+          const updated = await client.query<{ title: string; subteamId: string | null }>(
             `UPDATE subteam_calendar_events SET ${sets.join(", ")}, updated_at = now()
-             WHERE id = $1 AND org_id = $2`,
+             WHERE id = $1 AND org_id = $2
+             RETURNING title, subteam_id AS "subteamId"`,
             values,
           );
           if (!updated.rowCount) throw new HttpError(404, "Event not found");
+          const row = updated.rows[0]!;
+          try {
+            await notifyCalendarEvent(client, {
+              orgId: action.orgId,
+              actorUserId: userId,
+              eventId: action.id,
+              title: row.title,
+              subteamId: row.subteamId,
+              mode: "updated",
+            });
+          } catch {
+            // Inbox notify is best-effort; event update still succeeds.
+          }
           return { ok: true };
         }
 
@@ -414,6 +646,100 @@ export async function POST(request: Request) {
             [action.id, action.orgId],
           );
           if (!deleted.rowCount) throw new HttpError(404, "Event not found");
+          return { ok: true };
+        }
+
+        case "set_rsvp": {
+          const exists = await client.query(
+            `SELECT 1 FROM subteam_calendar_events WHERE id = $1 AND org_id = $2 LIMIT 1`,
+            [action.id, action.orgId],
+          );
+          if (!exists.rowCount) throw new HttpError(404, "Event not found");
+          try {
+            if (action.response == null) {
+              await client.query(
+                `DELETE FROM subteam_calendar_rsvps
+                 WHERE org_id = $1 AND event_id = $2 AND user_id = $3`,
+                [action.orgId, action.id, userId],
+              );
+            } else {
+              await client.query(
+                `INSERT INTO subteam_calendar_rsvps (org_id, event_id, user_id, response, note, responded_at)
+                 VALUES ($1, $2, $3, $4, $5, now())
+                 ON CONFLICT (event_id, user_id) DO UPDATE
+                   SET response = EXCLUDED.response,
+                       note = EXCLUDED.note,
+                       responded_at = now()`,
+                [action.orgId, action.id, userId, action.response, action.note],
+              );
+            }
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "";
+            if (/subteam_calendar_rsvps|does not exist/i.test(message)) {
+              throw new HttpError(503, "Apply the RSVP migration first (0147_subteam_calendar_rsvps).");
+            }
+            throw error;
+          }
+          return { ok: true, response: action.response };
+        }
+
+        case "ensure_calendar_feed":
+        case "rotate_calendar_feed": {
+          if (action.scope === "subteam" && action.subteamId) {
+            const st = await client.query(
+              `SELECT 1 FROM team_subteams WHERE id = $1 AND org_id = $2 LIMIT 1`,
+              [action.subteamId, action.orgId],
+            );
+            if (!st.rowCount) throw new HttpError(400, "Subteam not found");
+          }
+          try {
+            if (action.action === "ensure_calendar_feed") {
+              const existing = await client.query<{ token: string }>(
+                `SELECT token FROM calendar_feed_tokens
+                 WHERE org_id = $1 AND user_id = $2 AND scope = $3
+                   AND (($4::uuid IS NULL AND subteam_id IS NULL) OR subteam_id = $4::uuid)`,
+                [action.orgId, userId, action.scope, action.subteamId],
+              );
+              if (existing.rows[0]) return { token: existing.rows[0].token, scope: action.scope };
+            } else {
+              await client.query(
+                `DELETE FROM calendar_feed_tokens
+                 WHERE org_id = $1 AND user_id = $2 AND scope = $3
+                   AND (($4::uuid IS NULL AND subteam_id IS NULL) OR subteam_id = $4::uuid)`,
+                [action.orgId, userId, action.scope, action.subteamId],
+              );
+            }
+            const token = newFeedToken();
+            await client.query(
+              `INSERT INTO calendar_feed_tokens (token, org_id, user_id, scope, subteam_id)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [token, action.orgId, userId, action.scope, action.subteamId],
+            );
+            return { token, scope: action.scope };
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "";
+            if (/calendar_feed_tokens|does not exist/i.test(message)) {
+              throw new HttpError(503, "Apply the calendar feed migration first (0144_calendar_feed).");
+            }
+            throw error;
+          }
+        }
+
+        case "disable_calendar_feed": {
+          try {
+            await client.query(
+              `DELETE FROM calendar_feed_tokens
+               WHERE org_id = $1 AND user_id = $2 AND scope = $3
+                 AND (($4::uuid IS NULL AND subteam_id IS NULL) OR subteam_id = $4::uuid)`,
+              [action.orgId, userId, action.scope, action.subteamId],
+            );
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "";
+            if (/calendar_feed_tokens|does not exist/i.test(message)) {
+              throw new HttpError(503, "Apply the calendar feed migration first (0144_calendar_feed).");
+            }
+            throw error;
+          }
           return { ok: true };
         }
 
