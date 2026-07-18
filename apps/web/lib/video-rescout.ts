@@ -35,6 +35,8 @@ export type RescoutReview = {
   scores: TimelineScore[];
 };
 
+export type RescoutSchemaField = Pick<FieldDefinition, "key" | "label" | "type" | "options">;
+
 export type RescoutView =
   | {
       status: "ready";
@@ -43,7 +45,7 @@ export type RescoutView =
       matchSchema: {
         id: string;
         title: string;
-        fields: Array<{ key: string; label: string; type: string; options?: string[] }>;
+        fields: RescoutSchemaField[];
       } | null;
       reviews: RescoutReview[];
     }
@@ -52,8 +54,6 @@ export type RescoutView =
       context: { orgId: null; orgName: null; teamNumber: null; role: null };
       message: string;
     };
-
-export type RescoutSchemaField = Pick<FieldDefinition, "key" | "label" | "type" | "options">;
 
 export function normalizeTeamKey(raw: string): string {
   const text = String(raw ?? "").trim().toLowerCase();
@@ -130,7 +130,8 @@ export function scoreCountByTeam(scores: TimelineScore[], teamKeys: string[]): R
   const counts: Record<string, number> = {};
   for (const key of teamKeys) counts[key] = 0;
   for (const score of scores) {
-    if (counts[score.teamKey] != null) counts[score.teamKey] += 1;
+    const current = counts[score.teamKey];
+    if (current != null) counts[score.teamKey] = current + 1;
   }
   return counts;
 }

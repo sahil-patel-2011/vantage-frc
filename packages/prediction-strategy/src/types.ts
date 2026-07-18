@@ -35,6 +35,10 @@ export type TeamOperationalSignal = {
   qualityNotes?: string[];
   researchConfidence?: number;
   researchAdjustment?: number;
+  /** Count of scout entries committed from video re-scout. */
+  videoRescoutCount?: number;
+  /** Distinct video review ids that contributed video-rescored entries. */
+  videoReviewIds?: string[];
 };
 
 /** TBA-shaped completed (or scored) match row for FACT citations. */

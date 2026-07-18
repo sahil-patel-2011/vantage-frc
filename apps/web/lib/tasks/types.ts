@@ -14,6 +14,8 @@ export type BuildTask = {
   priority: TaskPriority;
   /** Free-text owner name (students may not be platform users). */
   assignee: string | null;
+  /** Optional multi-assignee list; when unset, UI falls back to `assignee`. */
+  assignees?: string[];
   estimateHours: number | null;
   /** ISO date (YYYY-MM-DD) or null. */
   dueOn: string | null;
