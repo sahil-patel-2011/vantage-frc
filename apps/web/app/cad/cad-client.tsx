@@ -2,9 +2,23 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
+import { CompetitionHubRelated } from "../../components/competition-hub-related";
+import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import {
+  resolveCutoffErrorCode,
+  UsageCutoffBanner,
+} from "../../components/usage-cutoff-banner";
+import {
+  CAD_BUILD_RELATED_INCLUDE,
+  CAD_COMPETITION_RELATED_INCLUDE,
+  cadNextActions,
+  formatTopologyEvidence,
+} from "../../lib/cad/cad-related";
+import { hubHref } from "../../lib/nav/hubs";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
 import { CadAdaptivePanel, type CadAdaptiveView } from "./cad-adaptive-panel";
 import { CadOperationComposer } from "./cad-operation-composer";
+import "./cad-setup.css";
 
 type Job = {
   id: string;
@@ -169,6 +183,8 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
     disclaimer: string;
   } | null>(null);
   const [adaptive, setAdaptive] = useState<CadAdaptiveView | null>(null);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const adaptiveApplied = useRef(false);
 
   useEffect(() => {
@@ -211,7 +227,11 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
           adaptiveApplied.current = true;
         }
       }
-    } else setMessage(data.error);
+      setLoaded(true);
+    } else {
+      setMessage(data.error);
+      setLoaded(true);
+    }
   }
 
   useEffect(() => {
@@ -222,6 +242,7 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
 
   async function act(action: string, extra: Record<string, unknown> = {}) {
     setBusy(true);
+    setCutoffCode(null);
     try {
       const response = await fetch("/api/cad", {
         method: "POST",
@@ -229,21 +250,28 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
         body: JSON.stringify({ orgId, action, brainMode, autoRunVerify, ...extra }),
       });
       const data = await response.json();
-      setMessage(
-        response.ok
-          ? action === "brief"
-            ? "Engineering brief created. Confirm assumptions before geometry."
-            : action === "cancel"
-              ? "Job cancelled. Pending steps will not run."
-              : action === "retry"
-                ? "Step reset for retry — re-approve if required, then run again."
-                : "CAD workspace updated."
-          : data.error,
-      );
-      if (response.ok) {
-        if (data.jobId) setSelected(data.jobId);
-        await load(data.jobId ?? selected);
+      if (!response.ok) {
+        const cutoff = resolveCutoffErrorCode(response.status, {
+          code: data.code,
+          reason: data.reason,
+          error: data.error,
+          hardCutoff: data.hardCutoff,
+        });
+        if (cutoff) setCutoffCode(cutoff);
+        setMessage(typeof data.error === "string" ? data.error : "CAD request failed.");
+        return data;
       }
+      setMessage(
+        action === "brief"
+          ? "Engineering brief created. Confirm assumptions before geometry."
+          : action === "cancel"
+            ? "Job cancelled. Pending steps will not run."
+            : action === "retry"
+              ? "Step reset for retry — re-approve if required, then run again."
+              : "CAD workspace updated.",
+      );
+      if (data.jobId) setSelected(data.jobId);
+      await load(data.jobId ?? selected);
       return data;
     } finally {
       setBusy(false);
@@ -305,18 +333,27 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
 
   const canCancel = job && !["cancelled", "completed"].includes(job.status);
   const failedSteps = detail?.steps.filter((s) => s.status === "failed" || s.status === "cancelled") ?? [];
+  const nextActions = cadNextActions({
+    orgId,
+    jobCount: jobs.length,
+    onshapeConfigured,
+    onshapeConnected,
+    fusionRelayOnline: fusionReady,
+  });
+  const onshapeSetupRequired = Boolean(onshapeSetupMessage) || !onshapeConfigured;
 
   return (
     <main className="module-page cad-module">
-      <header className="app-page-header">
-        <div>
-          <p className="breadcrumbs">Workspace / CAD Builder</p>
-          <h1>CAD Builder</h1>
-          <p>
-            Strategy → cited brief → allowlisted plan → human approval → geometry checkpoints. Not certified engineering
-            software. Fusion stays local — never hosted on Vercel.
-          </p>
-        </div>
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={hubHref("/build", "cad", orgId)}>Build</a>
+            {" / CAD"}
+          </>
+        }
+        title="CAD Builder"
+        description="Strategy → cited brief → allowlisted plan → human approval → geometry checkpoints. Not certified engineering software. Fusion stays local — never hosted on Vercel. No DEMO geometry metrics."
+      >
         <div className="cad-header-actions">
           <a className="app-button secondary" href={`/cad/setup?orgId=${orgId}`}>
             Setup wizard
@@ -336,9 +373,21 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
             {showExplain ? "Hide student panel" : "Show student panel"}
           </button>
         </div>
-      </header>
+      </PageHeader>
 
-      <BuildHubRelated orgId={orgId} active="cad" />
+      <div className="cad-related">
+        <BuildHubRelated
+          orgId={orgId}
+          active="cad"
+          include={[...CAD_BUILD_RELATED_INCLUDE]}
+          ariaLabel="Related build tools"
+        />
+        <CompetitionHubRelated
+          orgId={orgId}
+          include={[...CAD_COMPETITION_RELATED_INCLUDE]}
+          ariaLabel="Related strategy tools"
+        />
+      </div>
 
       <nav className="intel-actions" aria-label="AI governance" style={{ marginBottom: 12 }}>
         <a href={`/chat?orgId=${encodeURIComponent(orgId)}`}>Assistant</a>
@@ -356,6 +405,8 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
         onSubmitted={(msg) => setMessage(msg)}
       />
 
+      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} /> : null}
+
       {message ? (
         <p className="telemetry-status" role="status">
           {message}
@@ -364,13 +415,31 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
 
       {adaptive ? <CadAdaptivePanel value={adaptive} busy={busy} onSave={act} /> : null}
 
-      {onshapeSetupMessage ? (
-        <aside className="cad-setup-required" role="status">
-          <strong>Setup required · Onshape hosted</strong>
-          <p>
-            {onshapeSetupMessage} Mock jobs and Fusion local relay still work. Fusion is never hosted on Vercel.
-          </p>
-        </aside>
+      {!loaded ? (
+        <EmptyState soft title="Loading CAD workspace…" description="Checking briefs and connector status." aria-busy />
+      ) : null}
+
+      {loaded && onshapeSetupRequired ? (
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title="Onshape hosted path needs OAuth"
+          description={
+            onshapeSetupMessage ||
+            "Setup required — set ONSHAPE_OAUTH_CLIENT_ID and ONSHAPE_OAUTH_CLIENT_SECRET, then redeploy. Mock jobs and Fusion local relay still work."
+          }
+          className="cad-setup-required"
+        >
+          <div className="cad-empty-actions">
+            <a className="app-button secondary" href={`/cad/connections?orgId=${orgId}`}>
+              Open Connections
+            </a>
+            <a className="app-button secondary" href={`/cad/setup?orgId=${orgId}`}>
+              Setup wizard
+            </a>
+          </div>
+        </EmptyState>
       ) : null}
 
       <section className="cad-connection-strip" aria-label="CAD connection status">
@@ -394,14 +463,37 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
         ))}
       </section>
 
+      {loaded && nextActions.length ? (
+        <Panel className="cad-next-actions">
+          <header>
+            <h2>Next actions</h2>
+            <p>Kickoff, FMEA, and Strategy ground briefs — no invented CAD geometry metrics.</p>
+          </header>
+          <ol>
+            {nextActions.map((action) => (
+              <li key={action.id} className={action.primary ? "primary" : undefined}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a className="app-button secondary" href={action.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ol>
+        </Panel>
+      ) : null}
+
       {needsSetup ? (
-        <section className="app-empty cad-empty-setup">
-          <span className="app-badge setup">First-run</span>
-          <h2>Start with mock, then connect a real CAD path</h2>
-          <p>
-            Create a mock job to learn the brief → plan → approve loop. When you are ready for live geometry, connect
-            Onshape OAuth (hosted) or pair a Fusion desktop relay (local only — never claimed as cloud-hosted).
-          </p>
+        <EmptyState
+          soft
+          badge="First-run"
+          badgeTone="setup"
+          title="Start with mock, then connect a real CAD path"
+          description="Create a mock job to learn the brief → plan → approve loop. When you are ready for live geometry, connect Onshape OAuth (hosted) or pair a Fusion desktop relay (local only — never claimed as cloud-hosted)."
+          className="cad-empty-setup"
+        >
           <div className="cad-empty-actions">
             <button type="button" className="primary-action" onClick={() => setCreating(true)}>
               New mock brief
@@ -410,7 +502,7 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
               Open setup wizard
             </a>
           </div>
-        </section>
+        </EmptyState>
       ) : null}
 
       <div className={`cad-workbench ${showExplain ? "with-explain" : ""}`}>
@@ -418,14 +510,23 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
           <div className="cad-queue-head">
             <div>
               <span className="eyebrow">JOB QUEUE</span>
-              <h2>History</h2>
+              <h2>Briefs</h2>
             </div>
             <button type="button" className="app-button secondary" onClick={() => { setSelected(""); setCreating(true); }}>
               New
             </button>
           </div>
           {!jobs.length ? (
-            <p className="app-muted">No jobs yet. Create a brief to start an engineering thread.</p>
+            <EmptyState
+              soft
+              title="No engineering briefs yet"
+              description="Create a cited brief to start an approval-gated thread. Checkpoints stay blank until geometry runs."
+              className="cad-empty-briefs"
+            >
+              <button type="button" className="primary-action" onClick={() => setCreating(true)}>
+                Build first brief
+              </button>
+            </EmptyState>
           ) : (
             <ul className="cad-job-list">
               {jobs.map((item) => (
@@ -833,9 +934,11 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
                   <div>
                     <strong>Topology verified</strong>
                     <small>
-                      {checkpoint.humanEditDetected
-                        ? "Human edit detected · review before resume"
-                        : JSON.stringify(checkpoint.topology)}
+                      {formatTopologyEvidence({
+                        topology: checkpoint.topology,
+                        humanEditDetected: checkpoint.humanEditDetected,
+                        platform: job?.platform,
+                      })}
                     </small>
                   </div>
                 </article>

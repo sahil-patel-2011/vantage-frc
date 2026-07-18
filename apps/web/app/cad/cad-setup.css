@@ -16,21 +16,94 @@
 }
 .cad-setup-required {
   display: grid;
-  gap: 6px;
+  gap: 10px;
   margin: 0 0 12px;
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--app-warning, #b8860b) 40%, var(--app-line));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--app-warning, #b8860b) 8%, var(--app-surface));
+  justify-items: start;
 }
-.cad-setup-required strong {
-  font-size: 13px;
+.cad-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 4px;
 }
-.cad-setup-required p {
+.cad-related .product-hub-related {
+  margin: 0;
+}
+.cad-next-actions {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 16px 18px;
+}
+.cad-next-actions > header {
+  display: grid;
+  gap: 4px;
+}
+.cad-next-actions h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.cad-next-actions > header p {
   margin: 0;
   color: var(--app-muted);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.cad-next-actions ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.cad-next-actions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--app-line);
+  background: var(--app-bg);
+}
+.cad-next-actions li.primary {
+  border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-bg));
+}
+.cad-next-actions li div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cad-next-actions li strong {
+  font-size: 14px;
+}
+.cad-next-actions li span {
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.cad-next-actions li .app-button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+.cad-empty-briefs {
+  margin: 0;
+  padding: 16px;
+  justify-items: start;
+}
+.cad-empty-briefs h2 {
+  margin: 0;
+  font-size: 15px;
+}
+@media (max-width: 560px) {
+  .cad-next-actions li {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 .cad-setup-page .cad-setup-steps {
   display: grid;

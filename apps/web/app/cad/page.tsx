@@ -9,15 +9,15 @@ export default async function CadPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="module-page">
+      <main className="module-page cad-module">
         <header className="app-page-header">
           <div>
-            <p className="breadcrumbs">Workspace / CAD Builder</p>
+            <p className="breadcrumbs">Build / CAD</p>
             <h1>Select an organization</h1>
             <p>Open CAD Builder from your team workspace so jobs stay scoped to the right org.</p>
           </div>
-          <a className="app-button secondary" href="/dashboard">
-            Back to dashboard
+          <a className="app-button secondary" href="/workspace">
+            Choose workspace
           </a>
         </header>
       </main>
