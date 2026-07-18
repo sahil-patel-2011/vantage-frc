@@ -159,7 +159,30 @@ export async function computeInspectionCopilotView(
       status: "setup_required",
       message: "Select a team workspace to predict inspection failures before you travel.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        {
+          id: "workspace",
+          label: "Select workspace",
+          detail: "Inspection Copilot is org-scoped — pick a team before logging readiness checks.",
+          href: "/workspace",
+        },
+        {
+          id: "batteries",
+          label: "Open Batteries",
+          detail: "Pack health stays blank until logged — never DEMO IR or cycles.",
+          href: "/team?tab=batteries",
+        },
+        {
+          id: "fmea",
+          label: "Open FMEA",
+          detail: "Failure modes stay blank until scored — never DEMO RPN.",
+          href: "/build?tab=fmea",
+        },
+        {
+          id: "subsystems",
+          label: "Open Subsystems",
+          detail: "Subsystem names stay empty until you author them — never DEMO systems.",
+          href: "/subsystems",
+        },
       ],
       orgId: null,
       seasonYear,
