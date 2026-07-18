@@ -9,6 +9,7 @@
     "./billing": "./src/billing.ts",
     "./display": "./src/display.ts",
     "./cad-relay": "./src/cad-relay.ts",
+    "./editor-relay": "./src/editor-relay.ts",
     "./showcase": "./src/showcase.ts",
     "./alliance-board": "./src/alliance-board.ts",
     "./schema": "./src/schema.ts"

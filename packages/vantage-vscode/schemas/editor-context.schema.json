@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vantage.frc/schemas/editor-context.schema.json",
+  "title": "VantageEditorContext",
+  "description": "Opt-in VS Code / editor context blob submitted to POST /api/editor/context. Never a whole-repo archive.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["optIn"],
+  "properties": {
+    "intent": {
+      "type": "string",
+      "enum": ["ask_selection", "review_file", "share_context"]
+    },
+    "optIn": {
+      "type": "boolean",
+      "const": true,
+      "description": "Must be true — server rejects otherwise."
+    },
+    "workspaceRoot": { "type": "string", "maxLength": 500 },
+    "relativePath": { "type": "string", "maxLength": 500 },
+    "languageId": { "type": "string", "maxLength": 64 },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "startLine": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "text": { "type": "string", "maxLength": 48000 }
+      }
+    },
+    "fileContent": { "type": "string", "maxLength": 48000 },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "severity": { "type": "string", "maxLength": 32 },
+          "message": { "type": "string", "maxLength": 500 },
+          "line": { "type": "integer" }
+        }
+      }
+    },
+    "prompt": { "type": "string", "maxLength": 4000 }
+  }
+}
