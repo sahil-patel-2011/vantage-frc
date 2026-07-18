@@ -285,6 +285,7 @@ export default function ChatClient({
           <strong>{promptCachingEnabled ? "On" : "Off"}</strong>
         </span>
         <a href={`/team/budgets${q}#prompt-caching`}>Manage caching</a>
+        <a href={`/team/ai-hub${q}`}>AI hub</a>
         <a href={`/team/knowledge${q}`}>Knowledge</a>
         <a href={`/team/ai-memory${q}`}>AI memory</a>
         <a href={`/team/usage${q}`}>Usage</a>

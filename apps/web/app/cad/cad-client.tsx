@@ -273,7 +273,7 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
           <h1>CAD Builder</h1>
           <p>
             Strategy → cited brief → allowlisted plan → human approval → geometry checkpoints. Not certified engineering
-            software.
+            software. Fusion stays local — never hosted on Vercel.
           </p>
         </div>
         <div className="cad-header-actions">
@@ -282,6 +282,9 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
           </a>
           <a className="app-button secondary" href={`/cad/connections?orgId=${orgId}`}>
             Connections
+          </a>
+          <a className="app-button secondary" href={`/cad/pair?orgId=${orgId}`}>
+            Pair desktop
           </a>
           <button
             type="button"
@@ -294,6 +297,14 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
         </div>
       </header>
 
+      <nav className="intel-actions" aria-label="AI governance" style={{ marginBottom: 12 }}>
+        <a href={`/chat?orgId=${encodeURIComponent(orgId)}`}>Assistant</a>
+        <a href={`/code?orgId=${encodeURIComponent(orgId)}`}>Code Coach</a>
+        <a href={`/team/budgets?orgId=${encodeURIComponent(orgId)}#prompt-caching`}>Prompt caching</a>
+        <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
+        <a href={`/team/ai-runs?orgId=${encodeURIComponent(orgId)}`}>AI runs</a>
+      </nav>
+
       {message ? (
         <p className="telemetry-status" role="status">
           {message}
@@ -302,15 +313,15 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
 
       <section className="cad-connection-strip" aria-label="CAD connection status">
         {connectionTiles.map((tile) => (
-          <article key={tile.id} className="app-card cad-connection-tile">
+          <article key={tile.id} className={`app-card cad-connection-tile${tile.ready ? " ready" : " needs-setup"}`}>
             <div>
               <span className={`app-badge ${tile.badge}`}>{tile.badgeText}</span>
               <h2>{tile.title}</h2>
               <p className="app-muted">{tile.body}</p>
             </div>
             {"href" in tile && tile.href && !tile.ready ? (
-              <a className="app-button secondary" href={tile.href}>
-                Configure
+              <a className="primary-action" href={tile.href}>
+                Connect / setup
               </a>
             ) : (
               <span className={`cad-ready-dot ${tile.ready ? "on" : "off"}`}>

@@ -106,8 +106,17 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           <a className="app-button secondary" href={`/cad/setup?orgId=${orgId}`}>
             Setup wizard
           </a>
+          <a className="app-button secondary" href={`/cad/pair?orgId=${orgId}`}>
+            Pair desktop
+          </a>
         </nav>
       </header>
+      <nav className="intel-actions" aria-label="Connect paths" style={{ marginBottom: 12 }}>
+        <a href={`/cad/setup?orgId=${orgId}`}>Guided setup</a>
+        <a href={`#onshape`}>Onshape OAuth</a>
+        <a href={`#fusion`}>Fusion relay</a>
+        <a href={`/team/budgets?orgId=${orgId}#prompt-caching`}>Prompt caching</a>
+      </nav>
       {message ? (
         <p role="status" className="telemetry-status">
           {message}
@@ -115,7 +124,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
       ) : null}
 
       <section className="cad-connection-strip">
-        <article className="app-card cad-connection-tile">
+        <article className="app-card cad-connection-tile" id="onshape">
           <div>
             <span className="path-number">01</span>
             <span className={`app-badge ${onshapeConnected ? "good" : onshapeConfigured ? "setup" : "setup"}`}>
@@ -150,7 +159,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
             </>
           )}
         </article>
-        <article className="app-card cad-connection-tile">
+        <article className="app-card cad-connection-tile" id="fusion">
           <div>
             <span className="path-number">02</span>
             <span className={`app-badge ${devices.some((d) => !d.revokedAt && d.lastSeenAt) ? "good" : "setup"}`}>
