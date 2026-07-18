@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import {
   countdownState,
   formatAlliance,
+  hasEventCommandSignal,
   hasReadinessSignal,
+  hasScoutingCoverageSignal,
   matchLabel,
   rankLabel,
   recordLabel,
@@ -231,60 +233,80 @@ export default function KioskClient({
           </section>
         ))}
 
-      {data.board.preset === "event_command" && (
-        <section className="display-kiosk-panel">
-          <article>
-            <span>NEXT TEAM MATCH</span>
-            <strong>{match ? matchLabel(match.compLevel, match.matchNumber) : "-"}</strong>
-            <small>{match ? clock.label : "No upcoming match on TBA"}</small>
-          </article>
-          <article>
-            <span>RANK</span>
-            <strong>{rankLabel(data.eventStatus)}</strong>
-            <small>
-              {data.eventStatus?.source
-                ? `from ${data.eventStatus.source}`
-                : "Sync TBA/Statbotics metrics"}
-            </small>
-          </article>
-          <article>
-            <span>RECORD</span>
-            <strong>{recordLabel(data.eventStatus)}</strong>
-            <small>wins-losses{data.eventStatus?.ties ? "-ties" : ""}</small>
-          </article>
-          <article>
-            <span>SCOUT ALERTS</span>
-            <strong>{data.scouting.openDisagreements}</strong>
-            <small>
-              {error
-                ? error
-                : data.scouting.openDisagreements
-                  ? "open disagreements"
-                  : "No current display alerts"}
-            </small>
-          </article>
-        </section>
-      )}
+      {data.board.preset === "event_command" &&
+        (hasEventCommandSignal(data) ? (
+          <section className="display-kiosk-panel">
+            <article>
+              <span>NEXT TEAM MATCH</span>
+              <strong>{match ? matchLabel(match.compLevel, match.matchNumber) : "-"}</strong>
+              <small>{match ? clock.label : "No upcoming match on TBA"}</small>
+            </article>
+            <article>
+              <span>RANK</span>
+              <strong>{rankLabel(data.eventStatus)}</strong>
+              <small>
+                {data.eventStatus?.source
+                  ? `from ${data.eventStatus.source}`
+                  : "Sync TBA/Statbotics metrics"}
+              </small>
+            </article>
+            <article>
+              <span>RECORD</span>
+              <strong>{recordLabel(data.eventStatus)}</strong>
+              <small>wins-losses{data.eventStatus?.ties ? "-ties" : ""}</small>
+            </article>
+            <article>
+              <span>SCOUT ALERTS</span>
+              <strong>{data.scouting.openDisagreements}</strong>
+              <small>
+                {error
+                  ? error
+                  : data.scouting.openDisagreements
+                    ? "open disagreements"
+                    : "No current display alerts"}
+              </small>
+            </article>
+          </section>
+        ) : (
+          <section className="display-kiosk-empty">
+            <span>EVENT COMMAND</span>
+            <h2>Waiting on synced event data</h2>
+            <p>
+              Set an active event and sync TBA matches/metrics. This board stays blank instead of
+              inventing a rank, record, or next match.
+            </p>
+          </section>
+        ))}
 
-      {data.board.preset === "scouting_coverage" && (
-        <section className="display-kiosk-panel">
-          <article>
-            <span>ASSIGNMENTS</span>
-            <strong>{data.scouting.assignments}</strong>
-            <small>at active event</small>
-          </article>
-          <article>
-            <span>REPORTS</span>
-            <strong>{data.scouting.reports}</strong>
-            <small>synced observations</small>
-          </article>
-          <article>
-            <span>REVIEW WARNINGS</span>
-            <strong>{data.scouting.openDisagreements}</strong>
-            <small>open disagreements</small>
-          </article>
-        </section>
-      )}
+      {data.board.preset === "scouting_coverage" &&
+        (hasScoutingCoverageSignal(data.scouting) ? (
+          <section className="display-kiosk-panel">
+            <article>
+              <span>ASSIGNMENTS</span>
+              <strong>{data.scouting.assignments}</strong>
+              <small>at active event</small>
+            </article>
+            <article>
+              <span>REPORTS</span>
+              <strong>{data.scouting.reports}</strong>
+              <small>synced observations</small>
+            </article>
+            <article>
+              <span>REVIEW WARNINGS</span>
+              <strong>{data.scouting.openDisagreements}</strong>
+              <small>open disagreements</small>
+            </article>
+          </section>
+        ) : (
+          <section className="display-kiosk-empty">
+            <span>SCOUTING COVERAGE</span>
+            <h2>No scouting rows for this event</h2>
+            <p>
+              Assignments, reports, and disagreements appear only after Scouting records them at the
+              active event — not as zero DEMO counters.
+            </p>
+          </section>
+        ))}
 
       {data.board.preset === "custom" && (
         <section className="display-kiosk-custom">
