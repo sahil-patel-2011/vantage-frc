@@ -21,6 +21,7 @@ const prefsSchema = z.object({
   todoCompleted: z.boolean().optional(),
   dutyAssigned: z.boolean().optional(),
   calendarEvents: z.boolean().optional(),
+  sponsorReminders: z.boolean().optional(),
 });
 
 const emailPrefsSchema = z.object({
@@ -28,6 +29,7 @@ const emailPrefsSchema = z.object({
   coachAssignments: z.boolean().optional(),
   coachTodos: z.boolean().optional(),
   coachPracticeReminders: z.boolean().optional(),
+  sponsorReminders: z.boolean().optional(),
 });
 
 const putSchema = z.object({

@@ -18,6 +18,7 @@ const inAppPrefsSchema = z.object({
   todoCompleted: z.boolean().optional(),
   dutyAssigned: z.boolean().optional(),
   calendarEvents: z.boolean().optional(),
+  sponsorReminders: z.boolean().optional(),
 });
 
 const emailPrefsSchema = z.object({
@@ -25,6 +26,7 @@ const emailPrefsSchema = z.object({
   coachAssignments: z.boolean().optional(),
   coachTodos: z.boolean().optional(),
   coachPracticeReminders: z.boolean().optional(),
+  sponsorReminders: z.boolean().optional(),
 });
 
 const putSchema = z.object({
@@ -35,6 +37,7 @@ const putSchema = z.object({
   coachAssignments: z.boolean().optional(),
   coachTodos: z.boolean().optional(),
   coachPracticeReminders: z.boolean().optional(),
+  sponsorReminders: z.boolean().optional(),
 });
 
 async function currentSession() {
@@ -80,12 +83,14 @@ export async function PUT(request: Request) {
     (body.data.productUpdates !== undefined ||
     body.data.coachAssignments !== undefined ||
     body.data.coachTodos !== undefined ||
-    body.data.coachPracticeReminders !== undefined
+    body.data.coachPracticeReminders !== undefined ||
+    body.data.sponsorReminders !== undefined
       ? {
           productUpdates: body.data.productUpdates,
           coachAssignments: body.data.coachAssignments,
           coachTodos: body.data.coachTodos,
           coachPracticeReminders: body.data.coachPracticeReminders,
+          sponsorReminders: body.data.sponsorReminders,
         }
       : undefined);
 

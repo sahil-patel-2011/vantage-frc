@@ -30,6 +30,13 @@ describe("notification helpers", () => {
     );
     expect(notificationHref("calendar_updated", {}, "org-1")).toBe("/team/calendar?orgId=org-1");
     expect(notificationHref("scouting_coverage_gap", {}, "org-1")).toBe("/command?orgId=org-1");
+    expect(notificationHref("sponsor_thank_you_due", {}, "org-1")).toBe(
+      "/business?orgId=org-1&tab=sponsors",
+    );
+    expect(notificationHref("sponsor_renewal_due", {}, "org-1")).toBe(
+      "/business?orgId=org-1&tab=sponsors",
+    );
+    expect(notificationHref("sponsor_followup_overdue", {}, null)).toBe("/business?tab=sponsors");
     expect(notificationHref("purchase_request_submitted", { orderId: "o-1" }, "org-1")).toBe(
       "/orders?orgId=org-1&orderId=o-1",
     );
