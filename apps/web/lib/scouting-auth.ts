@@ -14,7 +14,9 @@ export async function withScoutingRequest<T>(
       "SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2",
       [orgId, session.user.id],
     );
-    if (!membership.rowCount) throw new ScoutingHttpError(403, "Organization access denied");
+    if (isWrongOrgDenied(membership.rowCount ?? 0)) {
+      throw new ScoutingHttpError(403, "Organization access denied");
+    }
     try{await assertOrgAuthentication(client,{userId:session.user.id,orgId,sessionId:session.session.id,authMethod:String((session.session as typeof session.session&{authMethod?:string}).authMethod??"unknown"),rememberedDeviceToken:(await cookies()).get("vantage_mfa_device")?.value});}catch(error){throw new ScoutingHttpError(403,error instanceof Error?error.message:"Organization authentication policy denied access");}
     return work(client);
   });
@@ -30,9 +32,17 @@ export class ScoutingHttpError extends Error {
 }
 
 export function scoutingErrorResponse(error: unknown) {
-  const status = error instanceof ScoutingHttpError ? error.status : 400;
-  return Response.json(
-    { error: error instanceof Error ? error.message : "Scouting request failed" },
-    { status },
-  );
+  if (error instanceof ScoutingHttpError) {
+    return Response.json({ error: error.message }, { status: error.status });
+  }
+  const message = error instanceof Error ? error.message : "Scouting request failed";
+  const status = /access denied|authentication policy|membership required|coach role/i.test(message)
+    ? 403
+    : 400;
+  return Response.json({ error: message }, { status });
+}
+
+/** Pure predicate used by unit tests — mirrors withScoutingRequest denial. */
+export function isWrongOrgDenied(membershipRowCount: number): boolean {
+  return membershipRowCount === 0;
 }
