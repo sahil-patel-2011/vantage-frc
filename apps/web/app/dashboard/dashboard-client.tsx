@@ -79,7 +79,7 @@ type SnapFeedback = {
 
 const POLL_MS = 30_000;
 
-const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" | "bolt" | "bell" | "grid" | "stats" | "target" | "clipboard" | "gear" | "display" | "chat" | "pin">> = {
+const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" | "bolt" | "bell" | "grid" | "stats" | "target" | "clipboard" | "gear" | "display" | "chat" | "pin" | "calendar">> = {
   next_match: "swords",
   robot_readiness: "cube",
   prediction_summary: "bolt",
@@ -93,6 +93,8 @@ const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" 
   notifications: "bell",
   ai_usage: "bolt",
   onboarding_checklist: "pin",
+  team_todos: "clipboard",
+  subteam_upcoming: "calendar",
 };
 
 function greeting() {
