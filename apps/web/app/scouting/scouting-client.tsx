@@ -322,7 +322,8 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   }
 
   async function attachMedia(file: File, options?: { fieldKey?: string; tags?: string[] }) {
-    if (!data?.eventKey || !teamKey) return null;
+    const eventKey = data?.eventKey;
+    if (!eventKey || !teamKey) return null;
     const clientId = stableClientId();
     const tags = ["pit", ...(options?.tags ?? [])];
     if (options?.fieldKey) tags.push(`field:${options.fieldKey}`, "robot_image");
@@ -330,7 +331,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
       clientId,
       orgId,
       metadata: {
-        eventKey: data.eventKey,
+        eventKey,
         teamKey,
         kind: file.type.startsWith("video/") ? "video" : "photo",
         contentType: file.type || "image/jpeg",
@@ -828,7 +829,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
 
             <ScoutVoiceNotesPanel
               orgId={orgId}
-              eventKey={data.eventKey}
+              eventKey={data?.eventKey ?? ""}
               matchKey={matchKey}
               teamKey={teamKey}
               entryType={type}

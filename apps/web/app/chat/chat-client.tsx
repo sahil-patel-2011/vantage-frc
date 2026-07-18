@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type SourceRef = {
@@ -82,6 +83,7 @@ export default function ChatClient({
   const [pendingEditorContextId, setPendingEditorContextId] = useState(contextId);
   const [promptCachingEnabled, setPromptCachingEnabled] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
 
   async function load(threadId?: string) {
     const response = await fetch(`/api/agent?orgId=${orgId}${threadId ? `&threadId=${threadId}` : ""}`);
@@ -113,7 +115,13 @@ export default function ChatClient({
       }),
     });
     const data = await response.json();
-    if (!response.ok) return setStatus(data.error);
+    if (!response.ok) {
+      const cutoff = resolveCutoffErrorCode(response.status, data);
+      if (cutoff) setCutoffCode(cutoff);
+      setStatus(data.error ?? "Could not create channel.");
+      return;
+    }
+    setCutoffCode(null);
     const value = {
       id: data.threadId,
       title: nextScope === "team" ? "Team strategy channel" : "Private workspace",
@@ -129,6 +137,7 @@ export default function ChatClient({
     event.preventDefault();
     if (!thread || !text.trim()) return;
     setStatus("Looking up authorized tools…");
+    setCutoffCode(null);
     const response = await fetch("/api/agent", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -143,7 +152,9 @@ export default function ChatClient({
     });
     const data = await response.json();
     if (!response.ok) {
-      setStatus(data.error);
+      const cutoff = resolveCutoffErrorCode(response.status, data);
+      if (cutoff) setCutoffCode(cutoff);
+      setStatus(data.error ?? "Agent request failed.");
       return;
     }
     const tools = (data.toolOutputs ?? []) as ToolOutput[];
@@ -292,6 +303,8 @@ export default function ChatClient({
         <a href={`/team/ai-runs${q}`}>AI runs</a>
         <a href={`/team/budgets${q}`}>API budgets</a>
       </nav>
+
+      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       <div className="ch-layout">
         <aside className="ch-sidebar" aria-label="Channels">

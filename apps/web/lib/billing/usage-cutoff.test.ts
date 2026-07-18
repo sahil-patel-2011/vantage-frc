@@ -5,6 +5,7 @@ import {
   evaluateUsageCutoff,
   isCutoffError,
   messageForCutoffError,
+  resolveCutoffErrorCode,
 } from "./usage-cutoff";
 
 describe("evaluateUsageCutoff", () => {
@@ -75,5 +76,37 @@ describe("cutoff Soft-UI error mapping", () => {
     const msg = messageForCutoffError("managed_allowance_exhausted", "org-9");
     expect(msg.title.toLowerCase()).toContain("allowance");
     expect(msg.ctas.some((c) => c.checkoutAction === "credits" || c.id === "credits")).toBe(true);
+  });
+});
+
+describe("resolveCutoffErrorCode (chat / agent)", () => {
+  it("maps 402 usage_hard_cutoff bodies the way agent failMeteredAi returns them", () => {
+    expect(
+      resolveCutoffErrorCode(402, {
+        error: "Included allowance exhausted",
+        code: "usage_hard_cutoff",
+        reason: "payg_not_enabled",
+        hardCutoff: true,
+      }),
+    ).toBe("usage_hard_cutoff");
+  });
+
+  it("maps credit and budget cutoff codes without requiring status 402", () => {
+    expect(resolveCutoffErrorCode(403, { code: "credit_cap_exceeded", error: "Credit limit" })).toBe(
+      "credit_cap_exceeded",
+    );
+    expect(resolveCutoffErrorCode(402, { code: "budget_limit_exceeded", reason: "org.daily_spend" })).toBe(
+      "budget_limit_exceeded",
+    );
+  });
+
+  it("returns null for ordinary agent failures", () => {
+    expect(resolveCutoffErrorCode(400, { error: "orgId is required" })).toBeNull();
+    expect(resolveCutoffErrorCode(404, { error: "Thread not found" })).toBeNull();
+  });
+
+  it("falls back when status is 402 but body omits code", () => {
+    expect(resolveCutoffErrorCode(402, { error: "hard stop" })).toBe("hard stop");
+    expect(resolveCutoffErrorCode(402, {})).toBe("usage_hard_cutoff");
   });
 });
