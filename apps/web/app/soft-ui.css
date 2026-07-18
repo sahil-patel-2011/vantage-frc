@@ -1930,6 +1930,16 @@ body.has-app-shell .strategy-demo-optin{
 .scout-form-panel textarea{min-height:96px;padding:12px;resize:vertical}
 .scout-voice{display:grid;gap:10px;padding:14px;margin:12px 0;border:1px solid var(--soft-line);border-radius:14px;background:var(--soft-bg)}
 .scout-voice small{display:block;margin-top:2px}
+.scout-voice-actions{display:flex;flex-wrap:wrap;gap:8px}
+.scout-voice-form-target{display:grid;gap:6px;font:600 12px var(--font-source-sans),ui-sans-serif;color:var(--soft-muted)}
+.scout-voice-form-target select{width:100%}
+.scout-voice-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.scout-voice-consent-copy{margin:0;font:600 13px/1.45 var(--font-source-sans),ui-sans-serif;color:var(--soft-ink)}
+.scout-voice-consent-list{margin:0;padding-left:1.1rem;display:grid;gap:6px;color:var(--soft-muted);font:600 12px/1.4 var(--font-source-sans),ui-sans-serif}
+.scout-voice-consent-check{display:flex;align-items:flex-start;gap:10px;font:600 13px/1.4 var(--font-source-sans),ui-sans-serif;color:var(--soft-ink)}
+.scout-voice-consent-check input{margin-top:3px}
+.scout-voice-note-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.scout-voice-note-list p{margin:4px 0 0}
 .scout-media{display:grid;gap:6px;margin:12px 0;color:var(--soft-muted);font:600 12px var(--font-source-sans),ui-sans-serif}
 .scout-media input{padding:10px}
 .scout-robot-images{display:grid;gap:10px}
