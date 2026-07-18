@@ -1,4 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery-reliability";
+import { loadBatteryFleet } from "../load-battery-fleet";
 import { evaluateRisk, riskMatrix, summarizeRisks } from ".";
 import type { MatrixCell, RiskCategory, RiskEvaluation, RiskStatus, RiskSummary, TeamRisk } from "./types";
 
@@ -32,6 +34,8 @@ export type RisksView =
       evaluations: RiskEvaluation[];
       summary: RiskSummary;
       matrix: MatrixCell[];
+      /** Derived from battery_packs/logs — feeds FMEA without inventing rows. */
+      batterySignals: BatteryFmeaSignal[];
       computedAt: string;
     };
 
@@ -106,7 +110,7 @@ export async function computeRisksView(
     };
   }
 
-  const [riskResult, seasonResult] = await Promise.all([
+  const [riskResult, seasonResult, fleet] = await Promise.all([
     client.query<RiskRow>(
       `SELECT id, title, category, likelihood, impact, status, mitigation, owner,
               due_on::text AS "dueOn", notes, season_year AS "seasonYear"
@@ -119,6 +123,7 @@ export async function computeRisksView(
       `SELECT DISTINCT season_year AS "seasonYear" FROM risk_register WHERE org_id = $1 ORDER BY season_year DESC`,
       [org.orgId],
     ),
+    loadBatteryFleet(client, org.orgId),
   ]);
 
   const risks = riskResult.rows.map(mapRisk);
@@ -127,6 +132,7 @@ export async function computeRisksView(
   const matrix = riskMatrix(risks);
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
+  const batterySignals = batteryFmeaSignals(fleet, org.orgId);
 
   return {
     status: "live",
@@ -137,6 +143,7 @@ export async function computeRisksView(
     evaluations,
     summary,
     matrix,
+    batterySignals,
     computedAt: new Date().toISOString(),
   };
 }

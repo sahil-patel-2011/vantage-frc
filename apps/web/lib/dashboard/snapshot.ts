@@ -1,6 +1,13 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { platformTbaEnvConfigured } from "@vantage/reference";
+import { buildOnboardingChecklistSteps } from "../onboarding-workflow";
 import { canAccessWidget, type DashboardWidgetType } from "./catalog";
+import {
+  buildMentorHomeStrip,
+  buildStudentHomeStrip,
+  homeAudienceFromTeamRole,
+} from "../home-workflows";
+import { countLodgingGaps } from "../logistics";
 
 export type WidgetDataStatus = "live" | "empty" | "setup_required";
 
@@ -84,12 +91,22 @@ export async function loadDashboardSnapshot(
   const hasScoutingSchemas = Number(scoutingMeta.rows[0]?.count ?? 0) > 0;
   const hasAiProvider = Boolean(aiMeta.rows[0]?.hasKey);
 
-  const context = {
+  const profileMeta = await client.query<{ teamRole: string | null; primaryFocus: string | null }>(
+    `SELECT team_role AS "teamRole", primary_focus AS "primaryFocus"
+     FROM profiles WHERE user_id = $1`,
+    [input.userId],
+  );
+  const teamRole = profileMeta.rows[0]?.teamRole ?? null;
+  const audience = homeAudienceFromTeamRole(teamRole);
+
+  const context: Record<string, unknown> = {
     orgName: row.name,
     teamNumber: row.teamNumber,
     eventKey,
     eventName: row.eventName,
     role: input.role,
+    teamRole,
+    homeAudience: audience,
     setupRequired: !eventKey || !teamKey,
     tbaConfigured,
     hasScoutingSchemas,
@@ -377,16 +394,15 @@ export async function loadDashboardSnapshot(
   }
 
   async function robotReadiness() {
-    const [due, batteries, failures] = await Promise.all([
+    const { loadBatteryFleet } = await import("../load-battery-fleet");
+    const { batteryReadinessChecklist } = await import("../battery-reliability");
+    const [due, fleet, failures] = await Promise.all([
       client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM maintenance_items
          WHERE org_id = $1 AND completed_at IS NULL AND (due_at IS NULL OR due_at <= now() + interval '2 days')`,
         [input.orgId],
       ),
-      client.query<{ count: string }>(
-        `SELECT count(*)::text AS count FROM batteries WHERE org_id = $1 AND status = 'active'`,
-        [input.orgId],
-      ),
+      loadBatteryFleet(client, input.orgId),
       client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM robot_failures
          WHERE org_id = $1 AND occurred_at > now() - interval '7 days'`,
@@ -394,16 +410,23 @@ export async function loadDashboardSnapshot(
       ),
     ]);
     const dueCount = Number(due.rows[0]?.count ?? 0);
-    const batteryCount = Number(batteries.rows[0]?.count ?? 0);
+    const batteryCount = fleet.activeCount;
     const failureCount = Number(failures.rows[0]?.count ?? 0);
     const checklist = [
-      { label: "Active batteries tracked", ready: batteryCount > 0, detail: batteryCount ? `${batteryCount} active` : "None logged" },
+      ...batteryReadinessChecklist(fleet),
       { label: "Maintenance current", ready: dueCount === 0, detail: dueCount ? `${dueCount} due` : "Clear" },
       { label: "Recent failures", ready: failureCount === 0, detail: failureCount ? `${failureCount} in 7d` : "None" },
     ];
     const ready = checklist.filter((item) => item.ready).length;
     const percent = Math.round((ready / checklist.length) * 100);
-    widgets.robot_readiness = stamp("live", "robot_readiness", { percent, checklist, dueCount, batteryCount, failureCount });
+    widgets.robot_readiness = stamp("live", "robot_readiness", {
+      percent,
+      checklist,
+      dueCount,
+      batteryCount,
+      readyBatteries: fleet.readyCount,
+      failureCount,
+    });
   }
 
   async function alerts() {
@@ -578,10 +601,10 @@ export async function loadDashboardSnapshot(
     widgets.quick_actions = stamp("live", "quick_actions", {
       links: [
         { href: `/scouting${orgQuery}`, label: "Scout", detail: "Open assigned form" },
-        { href: `/pit${orgQuery}`, label: "Pit Command", detail: "Release gate & battery" },
-        { href: `/strategy${orgQuery}`, label: "Strategize", detail: "Run match what-if" },
-        { href: `/business${orgQuery}`, label: "Business", detail: "Budget, sponsors & grants" },
-        { href: `/messages${orgQuery}`, label: "Messages", detail: "Team chat & DMs" },
+        { href: `/logistics${orgQuery}`, label: "Logistics", detail: "Lodging & travel checks" },
+        { href: `/kickoff${orgQuery}`, label: "Kickoff", detail: "Scoring + design priorities" },
+        { href: `/cad${orgQuery}`, label: "CAD brief", detail: "Design brief from team data" },
+        { href: `/todos${orgQuery}`, label: "Todos", detail: "Your open team tasks" },
         { href: `/team/calendar${orgQuery}`, label: "Calendar", detail: "What's next for your subteam" },
       ],
     });
@@ -589,41 +612,90 @@ export async function loadDashboardSnapshot(
 
   async function onboardingChecklist() {
     const orgQuery = `?orgId=${encodeURIComponent(input.orgId)}`;
+    let joinedSubteam = false;
+    let hasKnowledge = false;
+    let hasLogistics = false;
+    let kickoffReady = false;
+    let openedCadBrief = false;
+
+    try {
+      const sub = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM team_subteam_members
+         WHERE org_id = $1 AND user_id = $2`,
+        [input.orgId, input.userId],
+      );
+      joinedSubteam = Number(sub.rows[0]?.count ?? 0) > 0;
+    } catch {
+      joinedSubteam = false;
+    }
+
+    try {
+      const knowledge = await client.query<{ chars: string }>(
+        `SELECT COALESCE(length(btrim(content)), 0)::text AS chars FROM team_knowledge WHERE org_id = $1`,
+        [input.orgId],
+      );
+      hasKnowledge = Number(knowledge.rows[0]?.chars ?? 0) > 100;
+    } catch {
+      hasKnowledge = false;
+    }
+
+    try {
+      const logistics = await client.query<{ trips: string; hotels: string }>(
+        `SELECT
+           (SELECT count(*)::text FROM logistics_trips WHERE org_id = $1) AS trips,
+           (SELECT count(*)::text FROM logistics_hotels WHERE org_id = $1) AS hotels`,
+        [input.orgId],
+      );
+      hasLogistics =
+        Number(logistics.rows[0]?.trips ?? 0) > 0 || Number(logistics.rows[0]?.hotels ?? 0) > 0;
+    } catch {
+      hasLogistics = false;
+    }
+
+    try {
+      const year = new Date().getFullYear();
+      const kick = await client.query<{ actions: string; priorities: string }>(
+        `SELECT
+           (SELECT count(*)::text FROM game_scoring_actions WHERE org_id = $1 AND season_year = $2) AS actions,
+           (SELECT count(*)::text FROM design_priorities WHERE org_id = $1 AND season_year = $2) AS priorities`,
+        [input.orgId, year],
+      );
+      kickoffReady =
+        Number(kick.rows[0]?.actions ?? 0) > 0 || Number(kick.rows[0]?.priorities ?? 0) > 0;
+    } catch {
+      kickoffReady = false;
+    }
+
+    try {
+      const cad = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM cad_jobs
+         WHERE org_id = $1 AND created_by = $2 AND kind = 'brief'`,
+        [input.orgId, input.userId],
+      );
+      openedCadBrief = Number(cad.rows[0]?.count ?? 0) > 0;
+    } catch {
+      // cad_jobs schema may differ — treat as not done without inventing progress.
+      openedCadBrief = false;
+    }
+
     const steps = [
+      ...buildOnboardingChecklistSteps({
+        orgId: input.orgId,
+        hasEventContext: Boolean(eventKey && teamKey),
+        tbaConfigured,
+        hasScoutingSchemas,
+        hasAiProvider,
+        joinedSubteam,
+        hasKnowledge,
+        hasLogistics,
+        kickoffReady,
+      }),
       {
-        key: "workspace",
-        label: "Join workspace",
-        detail: "Accept a team invite or select your org",
-        done: true,
-        href: "/invite",
-      },
-      {
-        key: "event",
-        label: "Select event",
-        detail: "Set the active competition context",
-        done: Boolean(eventKey && teamKey),
-        href: `/command${orgQuery}`,
-      },
-      {
-        key: "tba",
-        label: "Sync TBA",
-        detail: "Connect match and rank ingest",
-        done: tbaConfigured,
-        href: `/team/data${orgQuery}`,
-      },
-      {
-        key: "scouting",
-        label: "Scout",
-        detail: "Starter match and pit forms",
-        done: hasScoutingSchemas,
-        href: `/scouting${orgQuery}`,
-      },
-      {
-        key: "ai",
-        label: "Metered AI",
-        detail: "BYO provider for free-tier AI",
-        done: hasAiProvider,
-        href: `/team${orgQuery}#custom-providers`,
+        key: "cad_brief",
+        label: "Open CAD brief",
+        detail: "Turn scouting + research into a design brief",
+        done: openedCadBrief,
+        href: `/cad${orgQuery}`,
       },
     ];
     const complete = steps.every((step) => step.done);
@@ -635,8 +707,149 @@ export async function loadDashboardSnapshot(
     );
   }
 
+  async function homeStrip() {
+    const orgId = input.orgId;
+    let needsAssignment = 0;
+    let lodgingGaps = 0;
+    let unsignedChecklists = 0;
+    let nextPracticeTitle: string | null = null;
+    let nextPracticeAt: string | null = null;
+    let hotelName: string | null = null;
+    let roomLabel: string | null = null;
+    let mineOpenTodos = 0;
+    let kickoffReady = false;
+
+    try {
+      const duties = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM duty_assignments
+         WHERE org_id = $1
+           AND assigned_user_id IS NULL
+           AND starts_at >= now()`,
+        [orgId],
+      );
+      needsAssignment = Number(duties.rows[0]?.count ?? 0);
+    } catch {
+      needsAssignment = 0;
+    }
+
+    try {
+      const rooms = await client.query<{ occupantUserId: string | null; occupantName: string }>(
+        `SELECT occupant_user_id AS "occupantUserId", occupant_name AS "occupantName"
+         FROM logistics_room_assignments WHERE org_id = $1`,
+        [orgId],
+      );
+      lodgingGaps = countLodgingGaps(rooms.rows);
+      const mine = rooms.rows.find((room) => room.occupantUserId === input.userId);
+      if (mine) {
+        const hotel = await client.query<{ name: string; roomLabel: string }>(
+          `SELECT h.name, r.room_label AS "roomLabel"
+           FROM logistics_room_assignments r
+           JOIN logistics_hotels h ON h.id = r.hotel_id
+           WHERE r.org_id = $1 AND r.occupant_user_id = $2
+           LIMIT 1`,
+          [orgId, input.userId],
+        );
+        hotelName = hotel.rows[0]?.name ?? null;
+        roomLabel = hotel.rows[0]?.roomLabel ?? null;
+      }
+    } catch {
+      lodgingGaps = 0;
+    }
+
+    try {
+      const unsigned = await client.query<{ count: string }>(
+        `SELECT count(DISTINCT m.user_id)::text AS count
+         FROM memberships m
+         CROSS JOIN logistics_checklist_items i
+         WHERE m.org_id = $1
+           AND i.org_id = $1
+           AND i.audience IN ('all', 'student', 'mentor')
+           AND NOT EXISTS (
+             SELECT 1 FROM logistics_checklist_checks c
+             WHERE c.item_id = i.id AND c.user_id = m.user_id
+           )`,
+        [orgId],
+      );
+      unsignedChecklists = Number(unsigned.rows[0]?.count ?? 0);
+    } catch {
+      unsignedChecklists = 0;
+    }
+
+    try {
+      const practice = await client.query<{ title: string; startsAt: string }>(
+        `SELECT e.title, e.starts_at::text AS "startsAt"
+         FROM subteam_calendar_events e
+         WHERE e.org_id = $1
+           AND e.starts_at >= now()
+           AND e.kind IN ('practice', 'build', 'meeting')
+           AND (
+             e.subteam_id IS NULL
+             OR e.subteam_id IN (
+               SELECT subteam_id FROM team_subteam_members
+               WHERE org_id = $1 AND user_id = $2
+             )
+           )
+         ORDER BY e.starts_at ASC
+         LIMIT 1`,
+        [orgId, input.userId],
+      );
+      nextPracticeTitle = practice.rows[0]?.title ?? null;
+      nextPracticeAt = practice.rows[0]?.startsAt ?? null;
+    } catch {
+      nextPracticeTitle = null;
+      nextPracticeAt = null;
+    }
+
+    try {
+      const todos = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM team_todos
+         WHERE org_id = $1 AND assignee_user_id = $2 AND status <> 'done'`,
+        [orgId, input.userId],
+      );
+      mineOpenTodos = Number(todos.rows[0]?.count ?? 0);
+    } catch {
+      mineOpenTodos = 0;
+    }
+
+    try {
+      const year = new Date().getFullYear();
+      const kick = await client.query<{ actions: string; priorities: string }>(
+        `SELECT
+           (SELECT count(*)::text FROM game_scoring_actions WHERE org_id = $1 AND season_year = $2) AS actions,
+           (SELECT count(*)::text FROM design_priorities WHERE org_id = $1 AND season_year = $2) AS priorities`,
+        [orgId, year],
+      );
+      kickoffReady =
+        Number(kick.rows[0]?.actions ?? 0) > 0 || Number(kick.rows[0]?.priorities ?? 0) > 0;
+    } catch {
+      kickoffReady = false;
+    }
+
+    context.homeStrip = {
+      audience,
+      items:
+        audience === "mentor"
+          ? buildMentorHomeStrip({
+              orgId,
+              needsAssignment,
+              lodgingGaps,
+              unsignedChecklists,
+            })
+          : buildStudentHomeStrip({
+              orgId,
+              nextPracticeTitle,
+              nextPracticeAt,
+              hotelName,
+              roomLabel,
+              mineOpenTodos,
+              kickoffReady,
+            }),
+    };
+  }
+
   await Promise.all([
     onboardingChecklist(),
+    homeStrip(),
     nextMatch(),
     recentResult(),
     competitionSnapshot(),

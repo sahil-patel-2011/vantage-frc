@@ -27,7 +27,7 @@ export function buildUnifiedContext(sources:ContextSource[],tokenBudget:number){
 }
 
 export type OrchestratorRequest={
-  orgId:string;userId:string;threadId?:string;requestId:string;capability:"strategy"|"team_intel"|"research"|"prediction"|"cad"|"coding"|"maintenance"|"chat";
+  orgId:string;userId:string;threadId?:string;requestId:string;capability:"strategy"|"team_intel"|"research"|"prediction"|"cad"|"coding"|"maintenance"|"chat"|"writer";
   privacyScope:"private"|"team";message:string;adapter:ChatAdapter;contextSources:ContextSource[];tokenBudget?:number;
   selected?:{teamKey?:string;matchKey?:string};toolCalls?:Array<{name:string;input:unknown}>;
   billingOwner?:{type:"user"|"org";id:string};usesOrgData?:boolean;autoTools?:boolean;promptCachingEnabled?:boolean;
@@ -48,13 +48,18 @@ export class AIOrchestrator{
   constructor(private readonly client:PoolClient,private readonly registry=new AIToolRegistry()){}
   async run(request:OrchestratorRequest):Promise<OrchestratorResult>{
     const active=(await this.client.query<{active_event_key:string|null}>(`SELECT active_event_key FROM org_active_context WHERE org_id=$1`,[request.orgId])).rows[0]?.active_event_key??null;
+    const autoToolSurfaces = new Set(["chat", "cad", "strategy"]);
     const plannedToolCalls =
       request.toolCalls ??
-      ((request.autoTools ?? request.capability === "chat")
-        ? planChatToolCalls(request.message, { selected: request.selected, activeEventKey: active })
+      ((request.autoTools ?? autoToolSurfaces.has(request.capability))
+        ? planChatToolCalls(request.message, {
+            selected: request.selected,
+            activeEventKey: active,
+            capability: request.capability,
+          })
         : []);
     let billingOwner=request.billingOwner;if(!billingOwner&&request.privacyScope==="private"){const personal=await this.client.query(`SELECT 1 FROM billing_accounts a JOIN billing_subscriptions s ON s.billing_account_id=a.id AND s.status IN ('active','trialing') WHERE a.owner_user_id=$1 AND s.current_period_start<=now() AND s.current_period_end>now()`,[request.userId]);if(personal.rowCount)billingOwner={type:"user",id:request.userId};}billingOwner??={type:"org",id:request.orgId};
-    const toolUsesOrgData=plannedToolCalls.some((call)=>["scouting.team","strategy.match","artifacts.related"].includes(call.name));
+    const toolUsesOrgData=plannedToolCalls.some((call)=>["scouting.team","strategy.match","strategy.design","artifacts.related","kickoff.intelligence","kickoff.rules","rules.compliance","cad.briefs","knowledge.search","knowledge.get_page"].includes(call.name));
     const usesOrgData=request.usesOrgData??(toolUsesOrgData||request.contextSources.some(source=>["team_memory","hard_metric","scout_observation","researched_claim","artifact","github_file","vscode_selection"].includes(source.classification)));if(billingOwner.type==="user"&&usesOrgData){const allowed=await this.client.query(`SELECT 1 FROM org_member_funding_policies WHERE org_id=$1 AND user_id=$2 AND allow_individual_funding=true`,[request.orgId,request.userId]);if(!allowed.rowCount)throw new Error("Organization admin approval is required to fund an org-data run with an individual plan");}
     if(request.privacyScope==="team"&&billingOwner.type!=="org")throw new Error("Team-shared AI must use the organization billing account");
     const usageFeature=request.capability;

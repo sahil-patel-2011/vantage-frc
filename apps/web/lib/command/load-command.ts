@@ -1,6 +1,11 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { deriveReliability } from "@vantage/intel-research";
+import { buildCoverageBoard, summarizeCoverageBoard } from "@vantage/scouting/trust";
+import { batteryPitFlags } from "../battery-reliability";
+import { loadBatteryFleet } from "../load-battery-fleet";
 import { computeStrategyView, resolveTbaAccess } from "../strategy/compute-strategy";
+import { emptyCommandCoverage } from "./empty-coverage";
+import { maybeNotifyCoverageGaps } from "./notify-coverage-gaps";
 import { buildScoutQueue, teamNumberFromKey, withScoutFormHrefs } from "./scout-queue";
 import type {
   CommandMatch,
@@ -122,7 +127,10 @@ export async function loadEventDayCommand(
 
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const canSetEvent = ["owner", "admin"].includes(row.role);
-  const tbaAccess = await resolveTbaAccess(client, input.orgId);
+  const [tbaAccess, dataSourceHealth] = await Promise.all([
+    resolveTbaAccess(client, input.orgId),
+    loadDataSourceHealth(client, input.orgId),
+  ]);
   const links = {
     strategy: withOrg("/strategy", input.orgId),
     scouting: withOrg("/scouting", input.orgId),
@@ -132,6 +140,8 @@ export async function loadEventDayCommand(
     teamData: withOrg("/team/data", input.orgId),
     display: withOrg("/display", input.orgId),
     chemistry: withOrg("/chemistry", input.orgId),
+    pit: withOrg("/pit", input.orgId),
+    batteries: withOrg("/batteries", input.orgId),
   };
 
   const setupSteps = [
@@ -176,6 +186,7 @@ export async function loadEventDayCommand(
     eventName: row.eventName,
     tbaConfigured: tbaAccess.tbaConfigured,
     tbaAccess,
+    dataSourceHealth,
     setupSteps,
     links,
   };
@@ -193,7 +204,7 @@ export async function loadEventDayCommand(
       pitFlags: [],
       prediction: emptyPrediction("setup_required"),
       record: emptyRecord("setup_required"),
-      coverage: { matchReports: 0, pitReports: 0, openDisagreements: 0, upcomingUnscouted: 0 },
+      coverage: emptyCommandCoverage(),
     };
   }
 
@@ -332,6 +343,19 @@ export async function loadEventDayCommand(
   );
 
   const pitFlags: PitFlag[] = [];
+  const fleet = await loadBatteryFleet(client, input.orgId);
+  for (const flag of batteryPitFlags(fleet, input.orgId)) {
+    pitFlags.push({
+      teamKey: teamKey ?? `org:${input.orgId}`,
+      teamNumber: row.teamNumber,
+      severity: flag.severity,
+      title: flag.title,
+      detail: flag.detail,
+      evidence: flag.evidence,
+      source: "battery",
+    });
+  }
+
   if (focusTeams.length) {
     const [pitEntries, matchEntries, maintenance] = await Promise.all([
       client.query<{
@@ -526,6 +550,69 @@ export async function loadEventDayCommand(
   const upcomingUnscouted = scoutQueue.filter((item) => !item.hasMatchScout).length;
   const c = counts.rows[0];
 
+  const focusMatchKeys = matches.map((match) => match.matchKey);
+  let liveBoard: CommandSnapshot["coverage"]["liveBoard"] = [];
+  let coordinatorNudge: CommandSnapshot["coverage"]["coordinatorNudge"] = null;
+  let missingRows = 0;
+  let assignedWaiting = 0;
+  let coveredRows = 0;
+  let doubleCovered = 0;
+  if (focusMatchKeys.length) {
+    const [assignmentRows, entryRows] = await Promise.all([
+      client.query<{ matchKey: string; teamKey: string; count: string }>(
+        `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::text AS count
+         FROM scout_assignments
+         WHERE org_id = $1 AND event_key = $2 AND match_key = ANY($3::text[])
+         GROUP BY match_key, team_key`,
+        [input.orgId, eventKey, focusMatchKeys],
+      ),
+      client.query<{ matchKey: string; teamKey: string; count: string }>(
+        `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::text AS count
+         FROM match_scout_entries
+         WHERE org_id = $1 AND event_key = $2 AND match_key = ANY($3::text[])
+         GROUP BY match_key, team_key`,
+        [input.orgId, eventKey, focusMatchKeys],
+      ),
+    ]);
+    const assignmentCounts = new Map(
+      assignmentRows.rows.map((row) => [`${row.matchKey}|${row.teamKey}`, Number(row.count)]),
+    );
+    const entryCounts = new Map(
+      entryRows.rows.map((row) => [`${row.matchKey}|${row.teamKey}`, Number(row.count)]),
+    );
+    const board = buildCoverageBoard({
+      matches: matches.map((match) => ({
+        matchKey: match.matchKey,
+        matchNumber: match.matchNumber,
+        compLevel: match.compLevel,
+        teamKeys: [...match.red.teamKeys, ...match.blue.teamKeys],
+      })),
+      assignmentCounts,
+      entryCounts,
+    });
+    liveBoard = board.map((cell) => ({
+      ...cell,
+      teamNumber: teamNumberFromKey(cell.teamKey),
+    }));
+    const summary = summarizeCoverageBoard(board);
+    missingRows = summary.missing;
+    assignedWaiting = summary.assigned;
+    coveredRows = summary.covered;
+    doubleCovered = summary.doubleCovered;
+    const nudge = await maybeNotifyCoverageGaps(client, {
+      orgId: input.orgId,
+      eventKey,
+      actorUserId: input.userId,
+      actorRole: row.role,
+      board,
+    });
+    coordinatorNudge = {
+      status: nudge.status,
+      missingRows: nudge.missingRows,
+      message: nudge.message,
+    };
+  }
+
   return {
     ...base,
     status: matches.length || metric || scoutQueue.length ? "live" : "empty",
@@ -539,12 +626,18 @@ export async function loadEventDayCommand(
     pitFlags: uniqueFlags,
     prediction,
     record,
-    coverage: {
+    coverage: emptyCommandCoverage({
       matchReports: Number(c?.matchReports ?? 0),
       pitReports: Number(c?.pitReports ?? 0),
       openDisagreements: Number(c?.openDisagreements ?? 0),
       upcomingUnscouted,
-    },
+      missingRows,
+      assignedWaiting,
+      coveredRows,
+      doubleCovered,
+      liveBoard,
+      coordinatorNudge,
+    }),
     links,
   };
 }
@@ -605,7 +698,7 @@ function emptySnapshot(input: {
     pitFlags: [],
     prediction: emptyPrediction("setup_required"),
     record: emptyRecord("setup_required"),
-    coverage: { matchReports: 0, pitReports: 0, openDisagreements: 0, upcomingUnscouted: 0 },
+    coverage: emptyCommandCoverage(),
     links: {
       strategy: "/strategy",
       scouting: "/scouting",
@@ -615,6 +708,8 @@ function emptySnapshot(input: {
       teamData: "/team/data",
       display: "/display",
       chemistry: "/chemistry",
+      pit: "/pit",
+      batteries: "/batteries",
     },
   };
 }

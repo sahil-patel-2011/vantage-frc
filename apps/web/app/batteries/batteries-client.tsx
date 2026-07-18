@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { EmptyState, PageHeader } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { BATTERY_LOG_KINDS, type BatteryStatus, type HealthStatus } from "../../lib/battery";
 
@@ -62,9 +63,9 @@ const LOG_KIND_LABEL: Record<string, string> = {
 };
 
 function fmtWhen(iso: string | null): string {
-  if (!iso) return "ΓÇö";
+  if (!iso) return "—";
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "ΓÇö";
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
@@ -97,7 +98,7 @@ function AssignRow({
         <input
           value={value}
           disabled={busy}
-          placeholder="Robot ┬╖ Charger A ┬╖ Spare cart"
+          placeholder="Robot · Charger A · Spare cart"
           onChange={(event) => setValue(event.target.value)}
         />
       </label>
@@ -188,7 +189,7 @@ export default function BatteriesClient() {
         );
         await load();
       } catch {
-        setError("Network error ΓÇö changes were not saved.");
+        setError("Network error — changes were not saved.");
       } finally {
         setBusyKey(null);
       }
@@ -199,26 +200,20 @@ export default function BatteriesClient() {
   if (fetchFailed || !view) {
     return (
       <main className="module-page batt-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Team / Batteries</span>
-            <h1>Batteries</h1>
-          </div>
-        </header>
+        <PageHeader breadcrumbs="Competition / Batteries" title="Batteries" />
         <TeamOpsNav active="batteries" />
-        <div className="app-card batt-empty">
+        <EmptyState
+          title={fetchFailed ? "Could not load batteries" : "Loading batteries…"}
+          description={fetchFailed ? error || "Check your connection and try again." : undefined}
+          soft
+          aria-busy={!fetchFailed}
+        >
           {fetchFailed ? (
-            <>
-              <strong>Could not load batteries</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
-          ) : (
-            <p className="app-muted">Loading batteriesΓÇª</p>
-          )}
-        </div>
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -226,21 +221,17 @@ export default function BatteriesClient() {
   if (view.status === "setup_required") {
     return (
       <main className="module-page batt-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Team / Batteries</span>
-            <h1>Batteries</h1>
-            <p>Track charge cycles, assignment, and competition readiness for every pack.</p>
-          </div>
-        </header>
+        <PageHeader
+          breadcrumbs="Competition / Batteries"
+          title="Batteries"
+          description="Track charge cycles, assignment, and competition readiness for every pack."
+        />
         <TeamOpsNav active="batteries" />
-        <div className="app-card batt-empty">
-          <strong>Select a team workspace</strong>
-          <p className="app-muted">{view.message}</p>
+        <EmptyState title="Select a team workspace" description={view.message} badge="Setup" badgeTone="setup" soft>
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
-        </div>
+        </EmptyState>
       </main>
     );
   }
@@ -254,15 +245,16 @@ export default function BatteriesClient() {
 
   return (
     <main className="module-page batt-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Team / Batteries</span>
-          <h1>Batteries</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Competition / Batteries"
+        title="Batteries"
+        description={
+          <>
             Charge cycles, assignment, and event readiness for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}.
-          </p>
-        </div>
+          </>
+        }
+      >
         <div className="batt-header-actions">
           <a className="app-button secondary" href={orgId ? `/pit?orgId=${encodeURIComponent(orgId)}` : "/pit"}>
             Pit Command
@@ -271,7 +263,7 @@ export default function BatteriesClient() {
             Inventory
           </a>
         </div>
-      </header>
+      </PageHeader>
       <TeamOpsNav orgId={orgId} active="batteries" />
 
       {error ? (
@@ -299,24 +291,25 @@ export default function BatteriesClient() {
           <span>Need attention</span>
         </article>
         <article className="batt-summary-tile">
-          <strong>{rotationPacks[0]?.label ?? "ΓÇö"}</strong>
+          <strong>{rotationPacks[0]?.label ?? "—"}</strong>
           <span>Next up</span>
         </article>
       </section>
 
       {view.packs.length === 0 ? (
-        <div className="app-card batt-empty">
-          <strong>No batteries yet</strong>
-          <p className="app-muted">Add your first pack to start tracking cycles, resistance, and match rotation.</p>
-        </div>
+        <EmptyState
+          title="No batteries yet"
+          description="Add your first pack to start tracking cycles, resistance, and match rotation."
+          soft
+        />
       ) : null}
 
       <div className="batt-layout">
         <div className="batt-panel">
           {rotationPacks.length > 0 ? (
-            <section className="app-card">
+            <section className="app-card soft-panel">
               <h2>Recommended rotation</h2>
-              <p className="app-muted">Healthiest packs, least-recently-used first ΓÇö grab these for the next matches.</p>
+              <p className="app-muted">Healthiest packs, least-recently-used first — grab these for the next matches.</p>
               <ol className="batt-rotation">
                 {rotationPacks.map((pack, index) => (
                   <li key={pack.id} className={index === 0 ? "next" : undefined}>
@@ -325,8 +318,8 @@ export default function BatteriesClient() {
                       <strong>{pack.label}</strong>
                       <small>
                         {pack.cycleCount} cycles
-                        {pack.assignment ? ` ┬╖ ${pack.assignment}` : ""}
-                        {pack.lastUsedAt ? ` ┬╖ last used ${fmtWhen(pack.lastUsedAt)}` : " ┬╖ never used"}
+                        {pack.assignment ? ` · ${pack.assignment}` : ""}
+                        {pack.lastUsedAt ? ` · last used ${fmtWhen(pack.lastUsedAt)}` : " · never used"}
                       </small>
                     </span>
                     <span className="score">{pack.health.score}</span>
@@ -336,7 +329,7 @@ export default function BatteriesClient() {
             </section>
           ) : null}
 
-          <section className="app-card">
+          <section className="app-card soft-panel">
             <h2>Fleet</h2>
             <ul className="batt-fleet">
               {view.packs.map((pack) => (
@@ -345,15 +338,15 @@ export default function BatteriesClient() {
                     <div className="who">
                       <strong>
                         {pack.label}
-                        {pack.brand ? ` ┬╖ ${pack.brand}` : ""}
+                        {pack.brand ? ` · ${pack.brand}` : ""}
                       </strong>
                       <small>
                         {pack.cycleCount} cycles
-                        {pack.nominalAh != null ? ` ┬╖ ${pack.nominalAh} Ah` : ""}
-                        {pack.lastInternalResistanceMohm != null ? ` ┬╖ ${pack.lastInternalResistanceMohm} m╬⌐` : ""}
-                        {pack.lastRestingVoltage != null ? ` ┬╖ ${pack.lastRestingVoltage} V` : ""}
-                        {pack.ageMonths != null ? ` ┬╖ ${pack.ageMonths} mo` : ""}
-                        {" ┬╖ charged "}
+                        {pack.nominalAh != null ? ` · ${pack.nominalAh} Ah` : ""}
+                        {pack.lastInternalResistanceMohm != null ? ` · ${pack.lastInternalResistanceMohm} mΩ` : ""}
+                        {pack.lastRestingVoltage != null ? ` · ${pack.lastRestingVoltage} V` : ""}
+                        {pack.ageMonths != null ? ` · ${pack.ageMonths} mo` : ""}
+                        {" · charged "}
                         {fmtWhen(pack.lastChargedAt)}
                       </small>
                     </div>
@@ -439,7 +432,7 @@ export default function BatteriesClient() {
             </ul>
           </section>
 
-          <section className="app-card">
+          <section className="app-card soft-panel">
             <h2>Recent activity</h2>
             {view.logs.length === 0 ? (
               <p className="app-muted">No activity logged yet.</p>
@@ -448,15 +441,15 @@ export default function BatteriesClient() {
                 {view.logs.slice(0, 30).map((log) => (
                   <li key={log.id}>
                     <strong>
-                      {log.batteryLabel} ┬╖ {LOG_KIND_LABEL[log.kind] ?? log.kind}
+                      {log.batteryLabel} · {LOG_KIND_LABEL[log.kind] ?? log.kind}
                     </strong>
                     <small>
                       {fmtWhen(log.createdAt)}
-                      {log.byName ? ` ┬╖ ${log.byName}` : ""}
-                      {log.internalResistanceMohm != null ? ` ┬╖ ${log.internalResistanceMohm} m╬⌐` : ""}
-                      {log.restingVoltage != null ? ` ┬╖ ${log.restingVoltage} V` : ""}
-                      {log.matchKey ? ` ┬╖ ${log.matchKey}` : ""}
-                      {log.note ? ` ┬╖ ${log.note}` : ""}
+                      {log.byName ? ` · ${log.byName}` : ""}
+                      {log.internalResistanceMohm != null ? ` · ${log.internalResistanceMohm} mΩ` : ""}
+                      {log.restingVoltage != null ? ` · ${log.restingVoltage} V` : ""}
+                      {log.matchKey ? ` · ${log.matchKey}` : ""}
+                      {log.note ? ` · ${log.note}` : ""}
                     </small>
                   </li>
                 ))}
@@ -467,7 +460,7 @@ export default function BatteriesClient() {
 
         <aside className="batt-panel batt-forms">
           <form
-            className="batt-form app-card"
+            className="batt-form app-card soft-panel"
             onSubmit={(event) => {
               event.preventDefault();
               if (!packForm.label.trim()) return;
@@ -548,7 +541,7 @@ export default function BatteriesClient() {
                 />
               </label>
               <label className="batt-field">
-                <span>Initial resistance (m╬⌐)</span>
+                <span>Initial resistance (mΩ)</span>
                 <input
                   type="number"
                   min="0"
@@ -576,7 +569,7 @@ export default function BatteriesClient() {
           </form>
 
           <form
-            className="batt-form app-card"
+            className="batt-form app-card soft-panel"
             onSubmit={(event) => {
               event.preventDefault();
               if (!logForm.batteryId) return;
@@ -645,7 +638,7 @@ export default function BatteriesClient() {
                     />
                   </label>
                   <label className="batt-field">
-                    <span>Resistance (m╬⌐)</span>
+                    <span>Resistance (mΩ)</span>
                     <input
                       type="number"
                       min="0"

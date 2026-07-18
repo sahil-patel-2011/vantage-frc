@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   batteryHealth,
+  competitionReadiness,
   monthsBetween,
   parseBatteryAction,
   rankForRotation,
@@ -88,10 +89,54 @@ describe("rankForRotation", () => {
   });
 });
 
+describe("competitionReadiness", () => {
+  const good = { status: "good" as const, score: 95, reasons: [] as string[] };
+  it("marks a fresh active pack ready", () => {
+    expect(
+      competitionReadiness({
+        status: "active",
+        health: good,
+        lastMeasuredAt: new Date().toISOString(),
+        lastRestingVoltage: 12.8,
+        lastInternalResistanceMohm: 12,
+      }).ready,
+    ).toBe(true);
+  });
+  it("blocks quarantined packs", () => {
+    expect(
+      competitionReadiness({
+        status: "quarantine",
+        health: good,
+        lastMeasuredAt: new Date().toISOString(),
+        lastRestingVoltage: 12.8,
+        lastInternalResistanceMohm: 12,
+      }).ready,
+    ).toBe(false);
+  });
+  it("blocks stale readings", () => {
+    expect(
+      competitionReadiness({
+        status: "active",
+        health: good,
+        lastMeasuredAt: "2020-01-01T00:00:00Z",
+        lastRestingVoltage: 12.8,
+        lastInternalResistanceMohm: 12,
+      }).ready,
+    ).toBe(false);
+  });
+});
+
 describe("parseBatteryAction", () => {
   it("parses a create_pack action", () => {
-    const action = parseBatteryAction({ action: "create_pack", orgId: "o1", label: "B-01", nominalAh: 18 });
-    expect(action).toMatchObject({ action: "create_pack", label: "B-01", nominalAh: 18 });
+    const action = parseBatteryAction({ action: "create_pack", orgId: "o1", label: "B-01", nominalAh: 18, assignment: "Cart" });
+    expect(action).toMatchObject({ action: "create_pack", label: "B-01", nominalAh: 18, assignment: "Cart" });
+  });
+
+  it("parses assign_pack", () => {
+    expect(parseBatteryAction({ action: "assign_pack", orgId: "o1", id: "b1", assignment: "Robot" })).toMatchObject({
+      action: "assign_pack",
+      assignment: "Robot",
+    });
   });
 
   it("rejects a create_pack with no label", () => {
