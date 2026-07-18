@@ -90,6 +90,12 @@ body.has-app-shell{padding:64px 0 0 248px;background:var(--app-bg);overflow-x:hi
 .strategy-demo-banner{grid-column:1/-1;display:grid;gap:10px;padding:16px 18px;border:1px solid #d7c483;border-radius:var(--app-radius);background:#fff8df}
 .strategy-demo-banner p{margin:0;color:#67531c;line-height:1.45}
 .strategy-provenance{margin:0 0 12px;font-size:12px}
+.strategy-reasoning{margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--app-line)}
+.strategy-reasoning h3{margin:0 0 8px;font-size:13px}
+.strategy-reasoning ol{margin:0;padding-left:18px;display:grid;gap:8px}
+.strategy-reasoning li{display:grid;gap:2px;font-size:12px}
+.strategy-reasoning small{color:var(--app-muted)}
+.strategy-engine-soft{margin:0 0 12px;font-size:12px}
 .strategy-empty-block{display:grid;gap:12px}
 .strategy-kind{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.04em;margin-right:6px}
 .strategy-kind.model{color:#6b5a1e}

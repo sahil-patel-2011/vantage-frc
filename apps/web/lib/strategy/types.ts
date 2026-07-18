@@ -5,11 +5,13 @@ import type {
   OpponentTendency,
   PickListHint,
   ScoutProvenanceRef,
+  StrategyEngineSummary,
   TeamOperationalSignal,
 } from "@vantage/prediction-strategy";
 import type { DataSourceHealthView } from "../reference-health";
 
 export type { DataSourceHealthView };
+export type { StrategyEngineSummary };
 
 export type StrategySetupStep = {
   id: string;
@@ -104,6 +106,9 @@ export type StrategyView =
       dataSourceHealth?: DataSourceHealthView;
       /** Active-season kickoff rules / design priorities (empty when none for this seasonYear). */
       gameRules?: StrategyGameRulesContext;
+      /** Soft-UI: which engine this org's plan entitles (never DEMO stats). */
+      engine?: StrategyEngineSummary;
+      productVersion?: string;
     }
   | {
       status: "live";
@@ -139,4 +144,7 @@ export type StrategyView =
       gameRules: StrategyGameRulesContext;
       sources: Array<{ source: string; syncedAt: string | null; teamKey: string }>;
       computedAt: string;
+      /** Soft-UI: active engine from org billing plan. */
+      engine: StrategyEngineSummary;
+      productVersion: string;
     };

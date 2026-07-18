@@ -30,6 +30,9 @@ function DemoPanel({ onHide }: { onHide: () => void }) {
           </div>
           <small>{prediction.modelVersion}</small>
         </header>
+        <p className="app-muted strategy-provenance">
+          <span className="app-badge demo">DEMO</span> Engine {prediction.modelVersion} · illustrative fixture only
+        </p>
         <div className="strategy-probability">
           <strong>{Math.round(prediction.pRed * 100)}%</strong>
           <span>Red alliance</span>
@@ -217,8 +220,16 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
             <span className="app-badge good">Live inputs</span>
             <h2>{title}</h2>
           </div>
-          <small>{view.prediction.modelVersion}</small>
+          <small title={`Plan ${view.engine.planCode} · depth ${view.engine.depth}`}>
+            {view.engine.label}
+          </small>
         </header>
+        <p className="app-muted strategy-provenance">
+          <span className="app-badge good">Engine</span> {view.engine.id} · plan{" "}
+          {view.engine.planCode.replace(/_/g, " ")}
+          {view.engine.thisSeasonOnly ? " · this-season rules" : " · multi-season weights"}
+          {view.productVersion ? ` · product ${view.productVersion}` : ""}
+        </p>
         <p className="app-muted strategy-provenance">
           <span className="app-badge setup">MODEL</span> Sources: {sourceLabel} · you are{" "}
           {view.ourAlliance.toUpperCase()} ({Math.round(ourWin * 100)}% win)
@@ -270,6 +281,19 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
             {item}
           </p>
         ))}
+        {view.prediction.reasoningSteps?.length ? (
+          <div className="strategy-reasoning">
+            <h3>Reasoning depth</h3>
+            <ol>
+              {view.prediction.reasoningSteps.map((step) => (
+                <li key={step.step}>
+                  <strong>{step.title}</strong>
+                  <small>{step.detail}</small>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
         <button type="button" className="text-button" onClick={() => setShowDeep((open) => !open)}>
           {showDeep ? "Hide contribution & citations" : "Alliance contribution & citations"}
         </button>
@@ -717,6 +741,13 @@ export default function StrategyClient() {
             title={view.message}
             description="No fabricated win probability until TBA/Statbotics (and optional scouting) inputs exist for a real match. Pick lists still work once an event is selected."
           >
+            {view.engine ? (
+              <p className="app-muted strategy-engine-soft">
+                Active engine for your plan ({view.engine.planCode.replace(/_/g, " ")}):{" "}
+                <strong>{view.engine.label}</strong>
+                {view.productVersion ? ` · product ${view.productVersion}` : ""}
+              </p>
+            ) : null}
             <ol className="strategy-setup-steps">
               {view.steps.map((step) => (
                 <li key={step.id} className={step.done ? "done" : undefined}>
