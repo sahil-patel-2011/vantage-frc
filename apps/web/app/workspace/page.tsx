@@ -5,9 +5,16 @@ import { redirect } from "next/navigation";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { loadDataSourceHealth } from "../../lib/reference-health";
 import {
+  WORKSPACE_RELATED_INCLUDE,
+  classifyWorkspaceShell,
+  formatWorkspaceMembershipCount,
   formatWorkspaceOrgLabel,
-  workspaceJoinCopy,
+  realWorkspaceMemberships,
   workspaceJoinNextActions,
+  workspaceOrgHref,
+  workspaceRelatedLinks,
+  workspaceSetupSteps,
+  workspaceShellCopy,
 } from "../../lib/workspace";
 import SyncIndicator from "./sync-indicator";
 import QuickActions from "./quick-actions";
@@ -31,12 +38,18 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         [session.user.id],
       ),
     );
-    if (memberships.rows.length === 1) {
-      redirect(`/workspace?orgId=${encodeURIComponent(memberships.rows[0]!.orgId)}`);
+    const options = realWorkspaceMemberships(memberships.rows);
+    const shell = classifyWorkspaceShell({ membershipCount: options.length });
+
+    if (shell === "ready" && options[0]) {
+      redirect(workspaceOrgHref(options[0].orgId));
     }
-    if (memberships.rows.length === 0) {
-      const copy = workspaceJoinCopy("none");
-      const actions = workspaceJoinNextActions("none");
+
+    if (shell === "empty") {
+      const copy = workspaceShellCopy("empty");
+      const actions = workspaceJoinNextActions("empty");
+      const related = workspaceRelatedLinks(null, { include: [...WORKSPACE_RELATED_INCLUDE] });
+      const steps = workspaceSetupSteps(null);
       return (
         <main className="onboarding-page invite-flow-page">
           <section className="onboarding-card invite-flow-card" aria-labelledby="workspace-join-title">
@@ -44,6 +57,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
               <div className="onboarding-brand">
                 <VantageLogo />
               </div>
+              {copy.badge ? <span className="invite-empty-badge">{copy.badge}</span> : null}
               <span>{copy.eyebrow}</span>
               <h1 id="workspace-join-title">{copy.title}</h1>
               <p className="onboarding-sub">{copy.description}</p>
@@ -53,15 +67,44 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
               <p>
                 <strong>Closed membership</strong>
                 <span>
-                  Vantage does not open workspaces from team numbers alone. Ask your coach or
-                  platform admin for an invite to your verified email.
+                  Vantage does not open workspaces from team numbers alone, and never seeds DEMO
+                  organizations. Ask your coach or platform admin for an invite to your verified email.
                 </span>
               </p>
             </div>
+            <nav className="workspace-related-strip" aria-label="Related Soft-UI surfaces">
+              {related.map((link) => (
+                <a key={link.id} href={link.href}>
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+            <section className="invite-next-actions" aria-label="Setup steps">
+              <header>
+                <h2>Setup</h2>
+                <p>
+                  {formatWorkspaceMembershipCount(0, true)} real memberships — invite-based join only;
+                  never DEMO organizations.
+                </p>
+              </header>
+              <ol>
+                {steps.map((step) => (
+                  <li key={step.id}>
+                    <div>
+                      <strong>{step.label}</strong>
+                      <span>{step.detail}</span>
+                    </div>
+                    <a className="signin-link" href={step.href}>
+                      Open
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </section>
             <section className="invite-next-actions" aria-label="Next steps">
               <header>
                 <h2>Next steps</h2>
-                <p>Exact-email invites only — nothing is invented while you wait.</p>
+                <p>Exact-email invites only — Invite, Support, and Account stay honest while you wait.</p>
               </header>
               <ol>
                 {actions.map((action) => (
@@ -81,8 +124,10 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         </main>
       );
     }
-    const copy = workspaceJoinCopy("select");
+
+    const copy = workspaceShellCopy("select");
     const actions = workspaceJoinNextActions("select");
+    const related = workspaceRelatedLinks(null, { include: [...WORKSPACE_RELATED_INCLUDE] });
     return (
       <main className="onboarding-page invite-flow-page">
         <section className="onboarding-card invite-flow-card" aria-labelledby="workspace-select-title">
@@ -90,23 +135,33 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
             <div className="onboarding-brand">
               <VantageLogo />
             </div>
+            {copy.badge ? <span className="invite-empty-badge">{copy.badge}</span> : null}
             <span>{copy.eyebrow}</span>
             <h1 id="workspace-select-title">{copy.title}</h1>
             <p className="onboarding-sub">{copy.description}</p>
           </header>
-          <ul className="dash-checklist">
-            {memberships.rows.map((row) => (
+          <p className="workspace-membership-count" role="status">
+            {formatWorkspaceMembershipCount(options.length, true)} real team
+            {options.length === 1 ? "" : "s"} — never DEMO organizations.
+          </p>
+          <ul className="dash-checklist workspace-org-pick">
+            {options.map((row) => (
               <li key={row.orgId}>
-                <a href={`/workspace?orgId=${encodeURIComponent(row.orgId)}`}>
-                  {formatWorkspaceOrgLabel(row)}
-                </a>
+                <a href={workspaceOrgHref(row.orgId)}>{formatWorkspaceOrgLabel(row)}</a>
               </li>
             ))}
           </ul>
+          <nav className="workspace-related-strip" aria-label="Related Soft-UI surfaces">
+            {related.map((link) => (
+              <a key={link.id} href={link.href}>
+                {link.label}
+              </a>
+            ))}
+          </nav>
           <section className="invite-next-actions" aria-label="Next steps">
             <header>
               <h2>Next steps</h2>
-              <p>Pick a membership you already have — no DEMO organizations appear here.</p>
+              <p>Pick a membership you already have — Invite, Support, and Account if you need another team.</p>
             </header>
             <ol>
               {actions.map((action) => (
