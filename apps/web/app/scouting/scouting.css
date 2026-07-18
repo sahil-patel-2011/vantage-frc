@@ -4,6 +4,22 @@
 .scout-field-trust{margin:4px 0 0;font:600 11px/1.35 var(--font-source-sans),ui-sans-serif;color:var(--soft-muted)}
 .scout-field-trust.warn{color:#a23a2c}.scout-field-trust.ok{color:#1f7a3d}
 .scout-field-wrap.is-history-warn{padding:8px 10px;margin:0 -4px;border-radius:12px;background:color-mix(in srgb,#fff8e8 88%,transparent);border:1px solid color-mix(in srgb,#b45309 28%,var(--soft-line))}
+.scout-mc-row{display:grid;gap:8px}
+.scout-mc-option{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--soft-line);background:var(--soft-bg);cursor:pointer}
+.scout-mc-option:has(input:checked){border-color:var(--soft-accent);background:var(--soft-accent-soft)}
+.scout-voice{display:grid;gap:10px;padding:14px;margin:12px 0;border:1px solid var(--soft-line);border-radius:14px;background:var(--soft-bg)}
+.scout-voice small{display:block;margin-top:2px}
+.scout-voice-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.scout-voice-actions{display:flex;flex-wrap:wrap;gap:8px}
+.scout-voice-consent-copy{margin:0;font:600 13px/1.45 var(--font-source-sans),ui-sans-serif;color:var(--soft-ink)}
+.scout-voice-consent-list{margin:0;padding-left:1.1rem;display:grid;gap:6px;color:var(--soft-muted);font:600 12px/1.4 var(--font-source-sans),ui-sans-serif}
+.scout-voice-consent-check{display:flex;align-items:flex-start;gap:10px;font:600 13px/1.4 var(--font-source-sans),ui-sans-serif;color:var(--soft-ink)}
+.scout-voice-consent-check input{margin-top:3px}
+.scout-voice-note-list{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.scout-voice-note-list li{display:grid;gap:6px;padding-top:10px;border-top:1px solid var(--soft-line)}
+.scout-voice-note-list li:first-child{border-top:0;padding-top:0}
+.scout-voice-note-list p{margin:0;white-space:pre-wrap;font:600 13px/1.45 var(--font-source-sans),ui-sans-serif;color:var(--soft-ink)}
+.scout-empty-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .scout-accuracy-mini{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .scout-accuracy-mini li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--soft-line)}
 .scout-accuracy-mini li:first-child{border-top:0;padding-top:0}

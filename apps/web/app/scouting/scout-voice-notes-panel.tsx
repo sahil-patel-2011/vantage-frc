@@ -48,8 +48,12 @@ type Props = {
   matchKey: string;
   teamKey: string;
   entryType: "match" | "pit";
-  /** When the scout saves, notes attach to this client id without touching form fields. */
+  /** Notes attach to this client id; form fill is optional via onApplyToForm. */
   pendingEntryClientId: string | null;
+  /** Published custom-form fields available for optional STT → form fill. */
+  formFields?: Array<{ key: string; label: string }>;
+  /** Apply a reviewed transcript onto the open custom form (caller owns payload merge). */
+  onApplyToForm?: (transcript: string, fieldKey: string | null) => void;
   onStatus?: (message: string) => void;
   onQueuedMedia?: () => void;
 };
@@ -61,6 +65,8 @@ export default function ScoutVoiceNotesPanel({
   teamKey,
   entryType,
   pendingEntryClientId,
+  formFields = [],
+  onApplyToForm,
   onStatus,
   onQueuedMedia,
 }: Props) {
@@ -69,6 +75,7 @@ export default function ScoutVoiceNotesPanel({
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [draft, setDraft] = useState("");
+  const [formFieldKey, setFormFieldKey] = useState("");
   const [sttSource, setSttSource] = useState<ScoutVoiceSttSource>("browser");
   const [consentChecked, setConsentChecked] = useState(false);
   const [browserStt, setBrowserStt] = useState(false);
@@ -120,7 +127,10 @@ export default function ScoutVoiceNotesPanel({
           setError("error" in data && data.error ? data.error : "Request failed.");
           return null;
         }
-        if ("status" in data && (data.status === "live" || data.status === "opt_in_required" || data.status === "setup_required")) {
+        if (
+          "status" in data &&
+          (data.status === "live" || data.status === "opt_in_required" || data.status === "setup_required")
+        ) {
           setView(data as ScoutVoiceView);
         }
         return data;
@@ -416,9 +426,10 @@ export default function ScoutVoiceNotesPanel({
     <div className="scout-voice">
       <div className="scout-voice-heading">
         <div>
-          <strong>Voice notes</strong>
+          <strong>Voice STT</strong>
           <small className="app-muted">
-            Attached to this entry — never writes into form fields.
+            Record → transcript queues with audio in the offline outbox. Optionally apply speech into
+            this custom form, or attach as a note only.
             {browserStt ? " Browser STT ready." : ""}
             {view.providers.cloudConfigured ? " Cloud STT available (metered)." : " Cloud STT not configured."}
           </small>
@@ -432,6 +443,24 @@ export default function ScoutVoiceNotesPanel({
           Turn off
         </button>
       </div>
+
+      {onApplyToForm && formFields.length ? (
+        <label className="scout-voice-form-target">
+          <span className="app-muted">Apply speech to form field</span>
+          <select
+            value={formFieldKey}
+            onChange={(event) => setFormFieldKey(event.target.value)}
+            disabled={recording || busy}
+          >
+            <option value="">Auto-fill labeled fields</option>
+            {formFields.map((field) => (
+              <option key={field.key} value={field.key}>
+                {field.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <div className="scout-voice-actions">
         {!recording ? (
@@ -456,12 +485,25 @@ export default function ScoutVoiceNotesPanel({
         >
           Attach typed note
         </button>
+        {onApplyToForm ? (
+          <button
+            type="button"
+            className="app-button secondary"
+            disabled={busy || !draft.trim()}
+            onClick={() => {
+              onApplyToForm(draft.trim(), formFieldKey || null);
+              onStatus?.("Transcript applied to the custom form — review before saving");
+            }}
+          >
+            Apply to form
+          </button>
+        ) : null}
       </div>
 
       <textarea
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        placeholder="Transcript appears here. Review before attaching — form fields stay untouched."
+        placeholder='Transcript appears here. Example: "Auto score 8, notes good defense"'
         disabled={recording && sttSource === "browser"}
       />
 
@@ -474,14 +516,29 @@ export default function ScoutVoiceNotesPanel({
                 <small className="app-muted"> · {new Date(note.createdAt).toLocaleString()}</small>
               </div>
               <p>{note.transcript}</p>
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy}
-                onClick={() => void mutate({ action: "delete-note", noteId: note.id })}
-              >
-                Delete
-              </button>
+              <div className="scout-voice-actions">
+                {onApplyToForm ? (
+                  <button
+                    type="button"
+                    className="app-button secondary"
+                    disabled={busy}
+                    onClick={() => {
+                      onApplyToForm(note.transcript, formFieldKey || null);
+                      onStatus?.("Voice note applied to the custom form");
+                    }}
+                  >
+                    Apply to form
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className="app-button secondary"
+                  disabled={busy}
+                  onClick={() => void mutate({ action: "delete-note", noteId: note.id })}
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ))}
         </ul>

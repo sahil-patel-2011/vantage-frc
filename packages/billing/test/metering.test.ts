@@ -1,8 +1,24 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { CommitAndThrowError } from "@vantage/db";
 import { describe, expect, it, vi } from "vitest";
-import { CreditCapExceededError, meteredAI } from "../src";
+import {
+  UsageHardCutoffError,
+  classifyMeteredAiError,
+  meteredAI,
+  meteredAiErrorBody,
+} from "../src";
 
-function paidClient(used: number, cap: number, grants = 0) {
+function paidClient(
+  used: number,
+  cap: number,
+  grants = 0,
+  policy?: {
+    payg_enabled?: boolean;
+    prepaid_balance_usd?: string;
+    overage_spend_cap_usd?: string;
+    kill_switch?: boolean;
+  },
+) {
   const queries: string[] = [];
   const client = {
     async query(sql: string) {
@@ -19,7 +35,20 @@ function paidClient(used: number, cap: number, grants = 0) {
           rowCount: 1
         };
       }
-      if (sql.includes("COALESCE")) {
+      if (sql.includes("FROM org_usage_policies")) {
+        return {
+          rows: policy
+            ? [{
+                payg_enabled: policy.payg_enabled ?? false,
+                prepaid_balance_usd: policy.prepaid_balance_usd ?? "0",
+                overage_spend_cap_usd: policy.overage_spend_cap_usd ?? "0",
+                kill_switch: policy.kill_switch ?? false,
+              }]
+            : [],
+          rowCount: policy ? 1 : 0,
+        };
+      }
+      if (sql.includes("ai_credit_grants") || (sql.includes("COALESCE") && sql.includes("AS used"))) {
         return { rows: [{ used: String(used), grants: String(grants) }], rowCount: 1 };
       }
       return { rows: [], rowCount: 1 };
@@ -28,8 +57,16 @@ function paidClient(used: number, cap: number, grants = 0) {
   return { client, queries };
 }
 
+function unwrapCutoff(error: unknown): UsageHardCutoffError {
+  if (error instanceof CommitAndThrowError && error.publicError instanceof UsageHardCutoffError) {
+    return error.publicError;
+  }
+  if (error instanceof UsageHardCutoffError) return error;
+  throw error;
+}
+
 describe("serialized AI metering", () => {
-  it("rejects estimated spend over the cap before invoking a provider", async () => {
+  it("hard-stops when included allowance is exhausted and PAYG is off", async () => {
     const { client } = paidClient(9.5, 10);
     const invoke = vi.fn();
     await expect(meteredAI({
@@ -40,7 +77,116 @@ describe("serialized AI metering", () => {
       requestId: "request",
       estimatedCostUsd: 0.51,
       invoke
-    })).rejects.toBeInstanceOf(CreditCapExceededError);
+    })).rejects.toSatisfy((error: unknown) => unwrapCutoff(error) instanceof UsageHardCutoffError);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
+  it("hard-stops with payg_not_enabled reason for Soft-UI CTAs", async () => {
+    const { client } = paidClient(10, 10);
+    try {
+      await meteredAI({
+        client,
+        orgId: "org",
+        userId: "user",
+        feature: "chat",
+        requestId: "request-cutoff",
+        estimatedCostUsd: 0.01,
+        invoke: async () => {
+          throw new Error("should not invoke");
+        },
+      });
+      expect.unreachable("expected hard cutoff");
+    } catch (error) {
+      const cutoff = unwrapCutoff(error);
+      expect(cutoff.reason).toBe("payg_not_enabled");
+      const classified = classifyMeteredAiError(error);
+      expect(classified).toMatchObject({
+        status: 402,
+        code: "usage_hard_cutoff",
+        reason: "payg_not_enabled",
+      });
+      expect(classified).not.toHaveProperty("hardCutoff");
+      expect(meteredAiErrorBody(classified!)).toMatchObject({
+        code: "usage_hard_cutoff",
+        reason: "payg_not_enabled",
+        hardCutoff: true,
+      });
+    }
+  });
+
+  it("does not treat admin grants as silent included overage without PAYG", async () => {
+    // Grants count as prepaid credits, not an expanded included cap.
+    const { client } = paidClient(10, 10, 5);
+    const invoke = vi.fn(async (source: "platform" | "byo" | "local_cli") => ({
+      value: "ok",
+      promptTokens: 1,
+      completionTokens: 1,
+      costUsd: 0.4,
+      model: "test",
+      provider: "test",
+      keySource: source,
+    }));
+    // Estimate within grant balance → allowed via prepaid path (explicit credits, not silent overage).
+    const result = await meteredAI({
+      client,
+      orgId: "org",
+      userId: "user",
+      feature: "research",
+      requestId: "request-grants",
+      estimatedCostUsd: 0.5,
+      invoke,
+    });
+    expect(result).toBe("ok");
+    expect(invoke).toHaveBeenCalled();
+  });
+
+  it("allows PAYG when prepaid balance and spend cap cover the estimate", async () => {
+    const { client } = paidClient(10, 10, 0, {
+      payg_enabled: true,
+      prepaid_balance_usd: "5",
+      overage_spend_cap_usd: "20",
+    });
+    const result = await meteredAI({
+      client,
+      orgId: "org",
+      userId: "user",
+      feature: "writer",
+      requestId: "request-payg",
+      estimatedCostUsd: 0.25,
+      invoke: async (source) => ({
+        value: "ok",
+        promptTokens: 10,
+        completionTokens: 5,
+        costUsd: 0.2,
+        model: "test",
+        provider: "test",
+        keySource: source,
+      }),
+    });
+    expect(result).toBe("ok");
+  });
+
+  it("hard-stops PAYG at the spend cap", async () => {
+    const { client } = paidClient(10, 10, 0, {
+      payg_enabled: true,
+      prepaid_balance_usd: "50",
+      overage_spend_cap_usd: "0.1",
+    });
+    const invoke = vi.fn();
+    try {
+      await meteredAI({
+        client,
+        orgId: "org",
+        userId: "user",
+        feature: "research",
+        requestId: "request-cap",
+        estimatedCostUsd: 0.5,
+        invoke,
+      });
+      expect.unreachable("expected spend_cap cutoff");
+    } catch (error) {
+      expect(unwrapCutoff(error).reason).toBe("spend_cap");
+    }
     expect(invoke).not.toHaveBeenCalled();
   });
 

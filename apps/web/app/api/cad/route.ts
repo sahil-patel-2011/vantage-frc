@@ -3,6 +3,8 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import {
   buildDefaultCadPlan,
+  CAD_OPERATIONS,
+  canAutoRunWithinAllowlist,
   CadRepository,
   DeterministicMockCadAdapter,
   OnshapeHostedCadAdapter,
@@ -28,14 +30,19 @@ import type { ContextSource } from "@vantage/agent";
 import { createKms, decryptSecret, encryptSecret, meteredAI, type EncryptedSecret } from "@vantage/billing";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
+import {
+  loadCadAdaptiveContext,
+  parseCadTeamProfile,
+  parseCadUserPreferences,
+} from "../../../lib/cad/adaptive-context";
+import { failMeteredAi } from "../../../lib/metered-ai-fail";
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
   if (!value) throw new Error("Authentication required");
   return value;
 }
-const fail = (error: unknown) =>
-  Response.json({ error: error instanceof Error ? error.message : "CAD request failed" }, { status: 400 });
+const fail = (error: unknown) => failMeteredAi(error, "CAD request failed");
 
 async function loadOnshapeTokens(
   client: PoolClient,
@@ -99,6 +106,15 @@ export async function GET(request: Request) {
                 [orgId, jobId],
               )
             ).rows,
+            contextLinks: (
+              await client.query(
+                `SELECT source_kind AS "sourceKind",source_id AS "sourceId",relation,metadata,created_at AS "createdAt"
+                 FROM feature_context_links
+                 WHERE org_id=$1 AND target_kind='cad_job' AND target_id=$2
+                 ORDER BY created_at DESC LIMIT 80`,
+                [orgId, jobId],
+              )
+            ).rows,
           }
         : null;
       const devices = await client.query(
@@ -128,6 +144,7 @@ export async function GET(request: Request) {
             [orgId, session.user.id],
           )
         ).rows,
+        adaptive: await loadCadAdaptiveContext(client, orgId, session.user.id),
       };
     });
     return Response.json({
@@ -155,7 +172,46 @@ export async function POST(request: Request) {
       if (!member.rowCount) throw new Error("Organization access denied");
       const repository = new CadRepository(client);
       const action = String(body.action ?? "");
+      if (action === "save-user-preferences") {
+        const preferences = parseCadUserPreferences(body);
+        await client.query(
+          `INSERT INTO cad_user_preferences(
+             org_id,user_id,response_style,explanation_depth,preferred_units,preferred_platform,custom_instructions
+           ) VALUES($1,$2,$3,$4,$5,$6,$7)
+           ON CONFLICT(org_id,user_id) DO UPDATE SET
+             response_style=excluded.response_style,explanation_depth=excluded.explanation_depth,
+             preferred_units=excluded.preferred_units,preferred_platform=excluded.preferred_platform,
+             custom_instructions=excluded.custom_instructions,updated_at=now()`,
+          [
+            orgId,session.user.id,preferences.responseStyle,preferences.explanationDepth,
+            preferences.preferredUnits,preferences.preferredPlatform,preferences.customInstructions,
+          ],
+        );
+        return { preferences };
+      }
+      if (action === "save-team-profile") {
+        const adaptive = await loadCadAdaptiveContext(client, orgId, session.user.id);
+        if (!adaptive.canManageTeamProfile) throw new Error("Owner or admin role required to change team CAD standards");
+        const profile = parseCadTeamProfile(body);
+        await client.query(
+          `INSERT INTO cad_team_profiles(
+             org_id,default_platform,preferred_units,manufacturing_processes,preferred_materials,
+             standard_components,design_rules,updated_by
+           ) VALUES($1,$2,$3,$4::text[],$5::text[],$6::text[],$7::text[],$8)
+           ON CONFLICT(org_id) DO UPDATE SET
+             default_platform=excluded.default_platform,preferred_units=excluded.preferred_units,
+             manufacturing_processes=excluded.manufacturing_processes,
+             preferred_materials=excluded.preferred_materials,standard_components=excluded.standard_components,
+             design_rules=excluded.design_rules,updated_by=excluded.updated_by,updated_at=now()`,
+          [
+            orgId,profile.defaultPlatform,profile.preferredUnits,profile.manufacturingProcesses,
+            profile.preferredMaterials,profile.standardComponents,profile.designRules,session.user.id,
+          ],
+        );
+        return { profile };
+      }
       if (action === "brief") {
+        const adaptive = await loadCadAdaptiveContext(client, orgId, session.user.id);
         const teamKey = String(body.teamKey ?? "");
         const sources: ContextSource[] = [];
         if (teamKey) {
@@ -244,13 +300,15 @@ export async function POST(request: Request) {
           title: String(body.title ?? "Engineering concept"),
           request: String(body.request ?? ""),
           sources,
-          platform: (body.platform ?? "mock") as "onshape" | "fusion360" | "mock",
+          platform: (body.platform ?? adaptive.userPreferences.preferredPlatform ?? adaptive.teamProfile.defaultPlatform) as "onshape" | "fusion360" | "mock",
           executionMode: (body.executionMode ?? "hosted") as "hosted" | "local",
           selected: {
             ...(teamKey ? { teamKey } : {}),
             ...(matchKey ? { matchKey } : {}),
           },
           seasonYear,
+          teamProfile: adaptive.teamProfile,
+          userPreferences: { preferredUnits: adaptive.userPreferences.preferredUnits },
         });
       }
       if (action === "confirm")
@@ -258,6 +316,7 @@ export async function POST(request: Request) {
       if (action === "plan")
         return repository.savePlan(orgId, String(body.jobId), session.user.id, body.actions as CadAction[]);
       if (action === "plan-default") {
+        const adaptive = await loadCadAdaptiveContext(client, orgId, session.user.id);
         const job = (
           await client.query<{ brief: EngineeringBrief; platform: string }>(
             `SELECT brief,platform FROM cad_jobs WHERE id=$1 AND org_id=$2 AND brief_confirmed_at IS NOT NULL`,
@@ -275,9 +334,40 @@ export async function POST(request: Request) {
         const plan = buildDefaultCadPlan(job.brief, {
           autoRunVerify: Boolean(body.autoRunVerify),
           includeExport,
+          teamProfile: adaptive.teamProfile,
+          userPreferences: adaptive.userPreferences,
         });
         await repository.savePlan(orgId, String(body.jobId), session.user.id, plan);
         return { actions: plan };
+      }
+      if (action === "append-step") {
+        const operation = String(body.operation ?? "");
+        if (!CAD_OPERATIONS.includes(operation as (typeof CAD_OPERATIONS)[number])) {
+          throw new Error("Choose an allowlisted CAD operation");
+        }
+        const job = (
+          await client.query<{ platform: string }>(
+            `SELECT platform FROM cad_jobs WHERE id=$1 AND org_id=$2 AND created_by=$3`,
+            [body.jobId, orgId, session.user.id],
+          )
+        ).rows[0];
+        if (!job) throw new Error("CAD job not found");
+        const fusionImplemented = new Set(["create_sketch","create_extrude","verify_topology","render_views","create_checkpoint"]);
+        if (job.platform === "fusion360" && !fusionImplemented.has(operation)) {
+          throw new Error(`${operation} is not implemented by the Fusion desktop add-in yet`);
+        }
+        const parameters = body.parameters && typeof body.parameters === "object" && !Array.isArray(body.parameters)
+          ? (body.parameters as Record<string, unknown>)
+          : {};
+        if (JSON.stringify(parameters).length > 20_000) throw new Error("CAD parameters exceed the complexity limit");
+        const reason = String(body.reason ?? "User-added reviewed CAD operation").trim().slice(0, 1000);
+        const cadAction: CadAction = {
+          operation: operation as CadAction["operation"],
+          parameters,
+          reason,
+          requiresApproval: !canAutoRunWithinAllowlist(operation as CadAction["operation"], Boolean(body.autoRunVerify)),
+        };
+        return repository.appendPlanStep(orgId, String(body.jobId), session.user.id, cadAction);
       }
       if (action === "approve")
         return repository.approveStep(

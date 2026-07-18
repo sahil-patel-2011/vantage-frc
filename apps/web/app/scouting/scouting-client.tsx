@@ -6,6 +6,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 
 import type { SchemaDefinition, ScoutSchema, SyncEntry, ScoutIdentity } from "@vantage/scouting";
 import {
+  applyVoiceTranscriptToForm,
   DEFAULT_DRIVETRAIN_OPTIONS,
   normalizeRobotImageRefs,
 } from "@vantage/scouting";
@@ -105,6 +106,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   const [teamKey, setTeamKey] = useState("");
   const [payload, setPayload] = useState<Record<string, unknown>>({});
   const [confidence, setConfidence] = useState<"high" | "normal" | "low">("normal");
+  const [source, setSource] = useState<"manual" | "voice">("manual");
   const [entryClientId, setEntryClientId] = useState(() => stableClientId());
   const online = useOnline();
   const [fromCache, setFromCache] = useState(false);
@@ -307,11 +309,12 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
       schemaId: schema.id,
       payload,
       confidence,
-      source: "manual",
+      source,
       updatedAt: new Date().toISOString(),
     };
     await queueEntry(entry);
     setPayload({});
+    setSource("manual");
     setEntryClientId(stableClientId());
     setMessage(online ? "Saved locally; syncing…" : "Saved offline; will sync on reconnect");
     await refreshCounts();
@@ -812,8 +815,23 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
               teamKey={teamKey}
               entryType={type}
               pendingEntryClientId={entryClientId}
+              formFields={formFields
+                .filter((field) => field.type !== "robot_image" && field.widget !== "robot_image")
+                .map((field) => ({ key: field.key, label: field.label }))}
+              onApplyToForm={(transcript, fieldKey) => {
+                if (!schema) return;
+                setSource("voice");
+                setPayload((current) =>
+                  applyVoiceTranscriptToForm(schema.definition, current, transcript, {
+                    fieldKey,
+                  }).payload,
+                );
+              }}
               onStatus={setMessage}
-              onQueuedMedia={() => void refreshCounts()}
+              onQueuedMedia={() => {
+                void refreshCounts();
+                void sync();
+              }}
             />
 
             {type === "pit" ? (

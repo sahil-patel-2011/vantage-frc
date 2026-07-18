@@ -1,6 +1,7 @@
 import { assertOrgAuthentication,auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies,headers } from "next/headers";
+import { failMeteredAi } from "./metered-ai-fail";
 
 export class IntelHttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -33,8 +34,8 @@ export async function intelSession() {
 }
 
 export function intelErrorResponse(error: unknown) {
-  return Response.json(
-    { error: error instanceof Error ? error.message : "Intel request failed" },
-    { status: error instanceof IntelHttpError ? error.status : 400 },
-  );
+  if (error instanceof IntelHttpError) {
+    return Response.json({ error: error.message }, { status: error.status });
+  }
+  return failMeteredAi(error, "Intel request failed");
 }

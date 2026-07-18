@@ -12,6 +12,7 @@ describe("scout identity lock", () => {
     expect(isScoutIdentityField({ key: "scout_name", label: "Scout" })).toBe(true);
     expect(isScoutIdentityField({ key: "scouter", label: "Who" })).toBe(true);
     expect(isScoutIdentityField({ key: "name", label: "Scout Name" })).toBe(true);
+    expect(isScoutIdentityField({ key: "who_scouted", label: "Who scouted?" })).toBe(true);
     expect(isScoutIdentityField({ key: "notes", label: "Notes" })).toBe(false);
     expect(isScoutIdentityField({ key: "auto_score", label: "Auto" })).toBe(false);
   });

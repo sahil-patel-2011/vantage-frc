@@ -19,6 +19,7 @@ import {
   type KickoffIntelligenceRecord,
   type StrategyAdviceBundle,
 } from "../../../../lib/kickoff-intelligence";
+import { failMeteredAi } from "../../../../lib/metered-ai-fail";
 
 class HttpError extends Error {
   constructor(
@@ -41,11 +42,10 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 }
 
 function fail(error: unknown) {
-  const status = error instanceof HttpError ? error.status : 400;
-  return Response.json(
-    { error: error instanceof Error ? error.message : "Kickoff intelligence request failed" },
-    { status },
-  );
+  if (error instanceof HttpError) {
+    return Response.json({ error: error.message }, { status: error.status });
+  }
+  return failMeteredAi(error, "Kickoff intelligence request failed");
 }
 
 function localIntelligenceAdapter(summary: GameIntelligenceSummary, strategy: StrategyAdviceBundle): ChatAdapter {

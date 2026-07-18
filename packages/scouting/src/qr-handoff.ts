@@ -3,6 +3,8 @@
  * Short codes use the same ambiguous alphabet as CAD/editor pairing (no I/O/0/1).
  */
 
+import { lockScoutPayload } from "./identity";
+
 export const SCOUT_QR_EMBED_PREFIX = "vantage://scout/";
 export const SCOUT_QR_HANDOFF_PREFIX = "vantage://handoff/";
 export const SCOUT_QR_MAX_EMBEDDED_BYTES = 1200;
@@ -56,10 +58,12 @@ function normalizeRecord(raw: unknown, index: number): ScoutQrRecord {
     "teamKey", "team_key", "team", "teamNumber", "payload", "type", "schemaId", "schema_id",
     "confidence", "source", "updatedAt", "updated_at",
   ]);
-  const payload =
+  const rawPayload =
     row.payload && typeof row.payload === "object"
       ? (row.payload as Record<string, unknown>)
       : Object.fromEntries(Object.entries(row).filter(([key]) => !reserved.has(key)));
+  // CD #4 — QR rows may carry legacy free-text scout names; strip before queue/sync.
+  const payload = lockScoutPayload(rawPayload).payload;
   return {
     clientId: String(row.clientId ?? row.client_id ?? `qr-${index}-${eventKey}-${teamKey}`),
     eventKey,
@@ -188,7 +192,7 @@ export function syncEntriesToQrRecords(entries: import("./index").SyncEntry[]): 
     teamKey: entry.teamKey,
     type: entry.type,
     schemaId: entry.schemaId,
-    payload: entry.payload,
+    payload: lockScoutPayload(entry.payload).payload,
     confidence: entry.confidence,
     source: entry.source,
     updatedAt: entry.updatedAt,
@@ -207,7 +211,7 @@ export function importedToSyncEntries(input: {
     matchKey: record.matchKey,
     teamKey: record.teamKey,
     schemaId: record.schemaId ?? input.schemaId,
-    payload: record.payload,
+    payload: lockScoutPayload(record.payload).payload,
     confidence: record.confidence ?? "normal",
     // QR / short-code ingress is always provenance "import" on the receiving device.
     source: "import",

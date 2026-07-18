@@ -16,9 +16,10 @@ export async function POST(request: Request) {
       eventKey?: string;
       teamKey?: string;
       entryId?: string;
-      kind?: "photo" | "video";
+      kind?: "photo" | "video" | "audio";
       contentType?: string;
       byteSize?: number;
+      transcript?: string | null;
       tags?: string[];
     };
     if (
@@ -32,6 +33,13 @@ export async function POST(request: Request) {
     ) {
       return Response.json({ error: "Invalid media metadata" }, { status: 400 });
     }
+    if (body.kind !== "photo" && body.kind !== "video" && body.kind !== "audio") {
+      return Response.json({ error: "Invalid media kind" }, { status: 400 });
+    }
+    const transcript =
+      typeof body.transcript === "string" && body.transcript.trim()
+        ? body.transcript.trim()
+        : null;
     const upload=await withScoutingRequest(body.orgId, async (client) => {
       const member=await client.query("SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2",[body.orgId,session.user.id]);
       if(!member.rowCount)throw new Error("Organization access denied");
@@ -39,13 +47,15 @@ export async function POST(request: Request) {
       await client.query(
         `INSERT INTO scout_media
           (org_id,event_key,team_key,entry_id,client_id,kind,storage_key,
-           content_type,byte_size,tags,captured_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         ON CONFLICT (org_id,client_id) DO UPDATE SET updated_at=now()`,
+           content_type,byte_size,transcript,tags,captured_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         ON CONFLICT (org_id,client_id) DO UPDATE SET
+           transcript=COALESCE(EXCLUDED.transcript, scout_media.transcript),
+           updated_at=now()`,
         [
           body.orgId, body.eventKey, body.teamKey, body.entryId ?? null,
           body.clientId, body.kind, prepared.storageKey, body.contentType,
-          body.byteSize, body.tags ?? [], session.user.id,
+          body.byteSize, transcript, body.tags ?? [], session.user.id,
         ],
       );
       return prepared;
