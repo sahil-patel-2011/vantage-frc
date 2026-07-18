@@ -13,9 +13,352 @@ import {
   type RuleNote,
   type ScoringAction,
 } from "../../lib/kickoff";
+import type { KickoffIntelligenceRecord } from "../../lib/kickoff-intelligence";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type RunFn = (body: ActionBody, key: string) => Promise<void>;
+
+function IntelligenceSection({
+  orgId,
+  seasonYear,
+  busyKey,
+  setBusyKey,
+  setError,
+  onApplied,
+}: {
+  orgId: string;
+  seasonYear: number;
+  busyKey: string | null;
+  setBusyKey: (key: string | null) => void;
+  setError: (message: string) => void;
+  onApplied: () => Promise<void>;
+}) {
+  const [manualText, setManualText] = useState("");
+  const [transcriptText, setTranscriptText] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [records, setRecords] = useState<KickoffIntelligenceRecord[]>([]);
+  const [emptyMessage, setEmptyMessage] = useState(
+    "Upload a game manual excerpt or kickoff transcript to generate the season intelligence summary.",
+  );
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const busy = busyKey != null;
+  const selected = records.find((record) => record.id === selectedId) ?? records[0] ?? null;
+
+  const loadIntel = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/kickoff/intelligence?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`,
+      );
+      const data = (await response.json()) as {
+        status?: string;
+        message?: string | null;
+        records?: KickoffIntelligenceRecord[];
+        error?: string;
+      };
+      if (!response.ok) {
+        setError(data.error ?? "Could not load game intelligence.");
+        return;
+      }
+      setRecords(data.records ?? []);
+      setEmptyMessage(
+        data.message ??
+          "Upload a game manual excerpt or kickoff transcript to generate the season intelligence summary.",
+      );
+      if (data.records?.length) {
+        setSelectedId((current) => current ?? data.records![0]!.id);
+      }
+    } catch {
+      setError("Network error — could not load game intelligence.");
+    }
+  }, [orgId, seasonYear, setError]);
+
+  useEffect(() => {
+    void loadIntel();
+  }, [loadIntel]);
+
+  async function runIntel(body: Record<string, unknown>, key: string) {
+    setBusyKey(key);
+    setError("");
+    try {
+      const response = await fetch("/api/kickoff/intelligence", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        id?: string;
+        cadJobId?: string | null;
+        record?: KickoffIntelligenceRecord | null;
+      };
+      if (!response.ok) {
+        setError(data.error ?? "Intelligence action failed.");
+        return;
+      }
+      if (data.id) setSelectedId(data.id);
+      await loadIntel();
+      await onApplied();
+    } catch {
+      setError("Network error — intelligence was not saved.");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  function onPickFile(kind: "manual" | "transcript", file: File | null) {
+    if (!file) return;
+    if (file.size > 1_500_000) {
+      setError("Keep uploads under ~1.5 MB of plain text. For PDFs, paste extracted text instead.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result ?? "");
+      if (kind === "manual") setManualText(text);
+      else setTranscriptText(text);
+    };
+    reader.readAsText(file);
+  }
+
+  return (
+    <section className="app-card kick-section kick-intel">
+      <h2>Game release intelligence</h2>
+      <p className="app-muted">
+        Paste the game manual and kickoff transcript (or a text URL). Vantage structures a season summary, seeds design
+        priorities, and opens a CAD design brief — labeled <strong>MODEL</strong> advice, never invented DEMO stats.
+      </p>
+
+      {!selected ? (
+        <div className="kick-intel-empty">
+          <strong>Waiting for release materials</strong>
+          <p className="app-muted">{emptyMessage}</p>
+        </div>
+      ) : (
+        <article className="kick-intel-result">
+          <header className="kick-intel-result-head">
+            <div>
+              <span className="kick-chip kick-phase-auto">{selected.adviceLabel}</span>
+              <h3>{selected.title}</h3>
+              <p className="app-muted">
+                {selected.provider}/{selected.model}
+                {selected.cadJobId ? (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <a className="kick-link" href={`/cad?orgId=${encodeURIComponent(orgId)}`}>
+                      Open CAD brief
+                    </a>
+                  </>
+                ) : null}
+              </p>
+            </div>
+            {records.length > 1 ? (
+              <label className="kick-year">
+                Version
+                <select
+                  value={selected.id}
+                  disabled={busy}
+                  onChange={(event) => setSelectedId(event.target.value)}
+                >
+                  {records.map((record) => (
+                    <option key={record.id} value={record.id}>
+                      {record.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </header>
+
+          <p>{selected.summary.overview}</p>
+
+          <div className="kick-intel-grid">
+            <div>
+              <h4>Game pieces</h4>
+              <ul className="kick-list">
+                {selected.summary.gamePieces.length ? (
+                  selected.summary.gamePieces.map((piece) => (
+                    <li key={piece.name}>
+                      <strong>{piece.name}</strong>
+                      {piece.notes ? <span className="app-muted"> — {piece.notes}</span> : null}
+                    </li>
+                  ))
+                ) : (
+                  <li className="app-muted">None extracted yet.</li>
+                )}
+              </ul>
+            </div>
+            <div>
+              <h4>Scoring (from source)</h4>
+              <ul className="kick-list">
+                {selected.summary.scoring.length ? (
+                  selected.summary.scoring.map((row) => (
+                    <li key={`${row.phase}-${row.action}`}>
+                      <strong>{row.action}</strong>
+                      <span className="app-muted">
+                        {" "}
+                        · {row.phase}
+                        {row.points != null ? ` · ${row.points} pts` : " · points TBD"}
+                      </span>
+                    </li>
+                  ))
+                ) : (
+                  <li className="app-muted">No numeric scoring lines found — add them below.</li>
+                )}
+              </ul>
+            </div>
+            <div>
+              <h4>How to play</h4>
+              <ul className="kick-list">
+                {selected.summary.howToPlay.length ? (
+                  selected.summary.howToPlay.map((step) => <li key={step}>{step}</li>)
+                ) : (
+                  <li className="app-muted">Add gameplay notes from the reveal.</li>
+                )}
+              </ul>
+            </div>
+            <div>
+              <h4>Constraints</h4>
+              <ul className="kick-list">
+                {selected.summary.constraints.length ? (
+                  selected.summary.constraints.map((item) => <li key={item}>{item}</li>)
+                ) : (
+                  <li className="app-muted">Confirm robot rules in the official manual.</li>
+                )}
+              </ul>
+            </div>
+          </div>
+
+          <div className="kick-intel-grid">
+            <div>
+              <h4>Design directions ({selected.adviceLabel})</h4>
+              <ul className="kick-list">
+                {selected.designPrioritiesDraft.map((direction) => (
+                  <li key={direction.capability}>
+                    <strong>
+                      {direction.capability} · w{direction.weight}
+                    </strong>
+                    <div className="app-muted">{direction.rationale}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4>Open questions</h4>
+              <ul className="kick-list">
+                {selected.summary.openQuestions.length ? (
+                  selected.summary.openQuestions.map((question) => <li key={question}>{question}</li>)
+                ) : (
+                  <li className="app-muted">None extracted.</li>
+                )}
+              </ul>
+            </div>
+          </div>
+
+          <p className="kick-intel-advice">{selected.strategyAdvice.localText}</p>
+          <p className="app-muted kick-intel-disclaimer">{selected.summary.provenance.disclaimer}</p>
+
+          <div className="kick-add">
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy}
+              onClick={() => void runIntel({ action: "apply", orgId, id: selected.id }, "intel-apply")}
+            >
+              Re-seed priorities
+            </button>
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy}
+              onClick={() => void runIntel({ action: "create_cad_brief", orgId, id: selected.id }, "intel-cad")}
+            >
+              {selected.cadJobId ? "Create another CAD brief" : "Create CAD brief"}
+            </button>
+            <button
+              type="button"
+              className="kick-link danger"
+              disabled={busy}
+              onClick={() => void runIntel({ action: "delete", orgId, id: selected.id }, "intel-delete")}
+            >
+              Delete summary
+            </button>
+          </div>
+        </article>
+      )}
+
+      <form
+        className="kick-intel-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void runIntel(
+            {
+              action: "analyze",
+              orgId,
+              seasonYear,
+              manualText: manualText.trim() || null,
+              transcriptText: transcriptText.trim() || null,
+              sourceUrl: sourceUrl.trim() || null,
+              createCadBrief: true,
+              applyDrafts: true,
+            },
+            "intel-analyze",
+          );
+        }}
+      >
+        <label>
+          Game manual (paste or .txt)
+          <textarea
+            value={manualText}
+            disabled={busy}
+            rows={7}
+            placeholder="Paste scoring tables, game pieces, constraints…"
+            onChange={(event) => setManualText(event.target.value)}
+          />
+          <input
+            type="file"
+            accept=".txt,.md,.markdown,text/plain"
+            disabled={busy}
+            onChange={(event) => onPickFile("manual", event.target.files?.[0] ?? null)}
+          />
+        </label>
+        <label>
+          Kickoff video transcript
+          <textarea
+            value={transcriptText}
+            disabled={busy}
+            rows={7}
+            placeholder="Paste the reveal transcript or Q&A…"
+            onChange={(event) => setTranscriptText(event.target.value)}
+          />
+          <input
+            type="file"
+            accept=".txt,.md,.markdown,text/plain"
+            disabled={busy}
+            onChange={(event) => onPickFile("transcript", event.target.files?.[0] ?? null)}
+          />
+        </label>
+        <label>
+          Optional text URL
+          <input
+            type="url"
+            value={sourceUrl}
+            disabled={busy}
+            placeholder="https://… (plain text / markdown — not PDF binary)"
+            onChange={(event) => setSourceUrl(event.target.value)}
+          />
+        </label>
+        <button
+          type="submit"
+          className="app-button"
+          disabled={busy || (!manualText.trim() && !transcriptText.trim() && !sourceUrl.trim())}
+        >
+          {busyKey === "intel-analyze" ? "Generating…" : "Generate summary → strategy → CAD"}
+        </button>
+      </form>
+    </section>
+  );
+}
 
 function ScoringSection({
   actions,
@@ -579,9 +922,9 @@ export default function KickoffClient() {
           <span className="breadcrumbs">Season / Kickoff</span>
           <h1>Kickoff & Game Analysis</h1>
           <p>
-            Break the {year} game into scoring actions for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — points vs cycle time, then a
-            priority list the build season follows.
+            Start from the {year} manual and kickoff transcript for {view.context.orgName ?? "your team"}
+            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — structure the game, rank
+            scoring value, lock design priorities, and hand a CAD brief to Onshape/Fusion paths.
           </p>
         </div>
         <label className="kick-year">
@@ -621,6 +964,14 @@ export default function KickoffClient() {
         </div>
       </section>
 
+      <IntelligenceSection
+        orgId={orgId}
+        seasonYear={year}
+        busyKey={busyKey}
+        setBusyKey={setBusyKey}
+        setError={setError}
+        onApplied={load}
+      />
       <ScoringSection actions={actions} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
       <PrioritySection priorities={priorities} actions={actions} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
       <RulesSection ruleNotes={ruleNotes} orgId={orgId} seasonYear={year} busyKey={busyKey} run={run} />
