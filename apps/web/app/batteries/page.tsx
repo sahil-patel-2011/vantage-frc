@@ -1,6 +1,11 @@
 import BatteriesClient from "./batteries-client";
+import "./batteries.css";
 
-export default async function BatteriesPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
-  const { orgId } = await searchParams;
-  return <BatteriesClient orgId={orgId ?? null} />;
+export const metadata = {
+  title: "Batteries · Vantage",
+  description: "Track FRC battery charge cycles, assignment, and competition readiness.",
+};
+
+export default function BatteriesPage() {
+  return <BatteriesClient />;
 }
