@@ -1,5 +1,10 @@
 import { lintSchemaBudget } from "@vantage/scouting/trust";
-import { assertSchemaIdentityLock, stripScoutIdentityFields } from "@vantage/scouting/identity";
+import {
+  assertSchemaIdentityLock,
+  isScoutIdentityField,
+  stripScoutIdentityFields,
+  SCOUT_IDENTITY_LOCK_COPY,
+} from "@vantage/scouting/identity";
 import {
   DEFAULT_DRIVETRAIN_OPTIONS,
   type FieldDefinition,
@@ -8,6 +13,7 @@ import {
   type SchemaDefinition,
 } from "@vantage/scouting";
 
+export { SCOUT_IDENTITY_LOCK_COPY };
 export type AnswerKind = FieldWidget;
 
 export const ANSWER_KIND_OPTIONS: Array<{
@@ -203,6 +209,11 @@ export function validateDraft(title: string, questions: DraftQuestion[]): FormBu
   for (const [index, question] of questions.entries()) {
     const n = index + 1;
     if (!question.label.trim()) errors.push(`Question ${n} needs a label.`);
+    if (isScoutIdentityField({ key: question.label, label: question.label })) {
+      errors.push(
+        `Question ${n} (“${question.label.trim()}”) is a free-text scout identity field — identity locks to membership userId.`,
+      );
+    }
     const labelKey = question.label.trim().toLowerCase();
     if (labelKey && labels.has(labelKey)) {
       errors.push(`Duplicate label: “${question.label.trim()}”.`);

@@ -24,6 +24,7 @@ import {
   preferRegion,
 } from "../../../../lib/team-background";
 import type { GrantFocus, WriterProfile, WriterTone } from "../../../../lib/writer/types";
+import { failMeteredAi } from "../../../../lib/metered-ai-fail";
 
 const GRANT_FOCI: GrantFocus[] = ["general", "impact", "technical", "sustainability", "inclusion"];
 
@@ -33,17 +34,7 @@ async function session() {
   return value;
 }
 
-const fail = (error: unknown) => {
-  const message = error instanceof Error ? error.message : "Grant assist request failed";
-  const status = /Authentication/i.test(message)
-    ? 401
-    : /access denied/i.test(message)
-      ? 403
-      : /credit|cap exceeded|policy denied|approval/i.test(message)
-        ? 402
-        : 400;
-  return Response.json({ error: message }, { status });
-};
+const fail = (error: unknown) => failMeteredAi(error, "Grant assist request failed");
 
 function oneOf<T extends string>(allowed: T[], value: unknown): T | null {
   return typeof value === "string" && (allowed as string[]).includes(value) ? (value as T) : null;

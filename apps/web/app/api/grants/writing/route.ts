@@ -27,6 +27,7 @@ import {
   type GrantWritingView,
 } from "../../../../lib/grant-writing";
 import type { WriterProfile } from "../../../../lib/writer/types";
+import { failMeteredAi } from "../../../../lib/metered-ai-fail";
 
 export type { GrantWritingView };
 
@@ -246,14 +247,6 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Grant writing request failed";
-    const status = /access denied/i.test(message)
-      ? 403
-      : /not found/i.test(message)
-        ? 404
-        : /Unknown action|Invalid|required/i.test(message)
-          ? 400
-          : 500;
-    return Response.json({ error: message }, { status });
+    return failMeteredAi(error, "Grant writing request failed");
   }
 }

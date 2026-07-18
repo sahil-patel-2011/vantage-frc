@@ -16,6 +16,7 @@ import {
   moveQuestion,
   newDraftQuestion,
   parseOptions,
+  SCOUT_IDENTITY_LOCK_COPY,
   validateDraft,
   type AnswerKind,
   type DraftQuestion,
@@ -334,6 +335,12 @@ export default function FormsClient({ orgId }: { orgId: string }) {
         ]}
       />
 
+      <div className="sfb-identity-lock" role="status">
+        <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
+        <strong>{SCOUT_IDENTITY_LOCK_COPY.title}</strong>
+        <small className="app-muted">{SCOUT_IDENTITY_LOCK_COPY.detail}</small>
+      </div>
+
       <div className="sfb-meta">
         <FormRow label="Form title">
           <input
@@ -395,6 +402,13 @@ export default function FormsClient({ orgId }: { orgId: string }) {
             <>
               <h2>{title || "Untitled form"}</h2>
               <p className="app-muted">Tablet preview — answers are not saved here.</p>
+              <div className="sfb-identity-lock" role="status">
+                <span className="eyebrow">{SCOUT_IDENTITY_LOCK_COPY.eyebrow}</span>
+                <strong>Signed-in member</strong>
+                <small className="app-muted">
+                  Live entry binds to membership userId — no free-text scout name field.
+                </small>
+              </div>
               <div className="sfb-preview-fields">
                 {questions.map((question) => (
                   <PreviewField key={question.id} question={question} />

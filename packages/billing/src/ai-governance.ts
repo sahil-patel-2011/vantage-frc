@@ -68,6 +68,7 @@ const KNOWN_FEATURES = [
   "maintenance",
   "chat",
   "writer",
+  "scout_voice_stt",
 ] as const;
 
 const KNOWN_TOOLS = [

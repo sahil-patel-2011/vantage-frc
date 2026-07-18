@@ -27,6 +27,7 @@ import type { BomEntry, InventoryItem } from "../../../lib/inventory";
 import type { DesignPriority, ScoringAction } from "../../../lib/kickoff";
 import type { Milestone } from "../../../lib/season-calendar";
 import type { VideoNote, VideoReview } from "../../../lib/video-review";
+import { failMeteredAi } from "../../../lib/metered-ai-fail";
 
 class HttpError extends Error {
   constructor(
@@ -44,8 +45,10 @@ async function requireSession() {
 }
 
 function fail(error: unknown) {
-  const status = error instanceof HttpError ? error.status : 400;
-  return Response.json({ error: error instanceof Error ? error.message : "Insight request failed" }, { status });
+  if (error instanceof HttpError) {
+    return Response.json({ error: error.message }, { status: error.status });
+  }
+  return failMeteredAi(error, "Insight request failed");
 }
 
 /**

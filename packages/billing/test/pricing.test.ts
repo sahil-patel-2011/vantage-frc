@@ -43,6 +43,24 @@ describe("managed allowance and opt-in PAYG", () => {
       evaluateManagedUsage({ ...base, includedRemainingUsd: 0, paygEnabled: false, prepaidBalanceUsd: 0 }),
     ).toMatchObject({ allowed: false, reason: "payg_not_enabled" });
   });
+  it("allows prepaid Usage Credits without PAYG enrollment (no silent overage)", () => {
+    expect(
+      evaluateManagedUsage({ ...base, includedRemainingUsd: 0, paygEnabled: false, prepaidBalanceUsd: 1 }),
+    ).toMatchObject({ allowed: true, bucket: "prepaid" });
+  });
+  it("hard-stops PAYG at the overage spend cap even when prepaid remains", () => {
+    expect(
+      evaluateManagedUsage({
+        ...base,
+        includedRemainingUsd: 0,
+        paygEnabled: true,
+        prepaidBalanceUsd: 10,
+        overageUsedUsd: 0.9,
+        overageSpendCapUsd: 1,
+        estimatedCostUsd: 0.2,
+      }),
+    ).toMatchObject({ allowed: false, reason: "spend_cap" });
+  });
 });
 
 describe("1.0× usage credit debit (no Vantage markup)", () => {
