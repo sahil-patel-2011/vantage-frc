@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { impactAudienceLabel, impactCategoryLabel } from "../../lib/impact";
 import {
   IMPACT_AUDIENCES,
@@ -100,15 +101,16 @@ export default function ImpactClient() {
 
   return (
     <main className="module-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Team / Community Impact</span>
-          <h1>Community Impact</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Team / Community Impact"
+        title="Community Impact"
+        description={
+          <>
             Log outreach, STEM demos, and mentoring — the evidence trail behind the Impact and Engineering Inspiration
             awards. Readiness is computed from what you actually record; nothing is invented.
-          </p>
-        </div>
+          </>
+        }
+      >
         {view?.status === "live" && view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
@@ -128,7 +130,7 @@ export default function ImpactClient() {
             </select>
           </label>
         ) : null}
-      </header>
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -137,22 +139,18 @@ export default function ImpactClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load Community Impact</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
+        <EmptyState
+          title="Could not load Community Impact"
+          description="A network or server issue prevented loading. Try again."
+        >
           <button type="button" className="app-button secondary" onClick={() => load()}>
             Retry
           </button>
-        </section>
+        </EmptyState>
       ) : view == null ? (
-        <section className="app-card soft-panel">
-          <h2>Loading…</h2>
-          <p className="app-muted">Checking your workspace.</p>
-        </section>
+        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -164,7 +162,7 @@ export default function ImpactClient() {
               </li>
             ))}
           </ol>
-        </section>
+        </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <ReadinessPanel view={view} />
@@ -182,7 +180,7 @@ function ReadinessPanel({ view }: { view: LiveView }) {
   const { readiness } = view;
   const components = Object.entries(readiness.components) as Array<[string, number]>;
   return (
-    <section className="app-card soft-panel" aria-label="Impact award readiness">
+    <Panel aria-label="Impact award readiness">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div>
           <span className={`app-badge ${tierTone(readiness.tier)}`}>{readiness.tier.toUpperCase()}</span>
@@ -214,7 +212,7 @@ function ReadinessPanel({ view }: { view: LiveView }) {
           </ul>
         </div>
       ) : null}
-    </section>
+    </Panel>
   );
 }
 
@@ -228,7 +226,7 @@ function SummaryTiles({ view }: { view: LiveView }) {
     { label: "Impact signal", value: pct(summary.impactSignal) },
   ];
   return (
-    <section className="app-card soft-panel">
+    <Panel>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -237,7 +235,7 @@ function SummaryTiles({ view }: { view: LiveView }) {
           </div>
         ))}
       </div>
-    </section>
+    </Panel>
   );
 }
 
@@ -302,17 +300,16 @@ function RecentActivities({
 }) {
   if (view.summary.totalEvents === 0) {
     return (
-      <section className="app-card soft-panel">
-        <span className="app-badge setup">No activities yet</span>
-        <h2>Log your first community-impact activity</h2>
-        <p className="app-muted">
-          STEM demos, mentoring, and community events build the Impact and Engineering Inspiration narratives.
-        </p>
-      </section>
+      <EmptyState
+        badge="No activities yet"
+        badgeTone="setup"
+        title="Log your first community-impact activity"
+        description="STEM demos, mentoring, and community events build the Impact and Engineering Inspiration narratives."
+      />
     );
   }
   return (
-    <section className="app-card soft-panel">
+    <Panel>
       <h2 style={{ marginTop: 0 }}>Recent activities</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
         {view.activities.slice(0, 20).map((item) => (
@@ -347,7 +344,7 @@ function RecentActivities({
           </li>
         ))}
       </ul>
-    </section>
+    </Panel>
   );
 }
 
@@ -381,8 +378,8 @@ function LogActivityForm({
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
 
   return (
-    <form
-      className="app-card soft-panel"
+    <Panel
+      as="form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.title.trim() || !form.occurredOn) return;
@@ -405,17 +402,14 @@ function LogActivityForm({
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Log activity</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Title</span>
+      <FormGrid min={160}>
+        <FormRow label="Title">
           <input value={form.title} onChange={set("title")} placeholder="Elementary STEM night" required />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Date</span>
+        </FormRow>
+        <FormRow label="Date">
           <input type="date" value={form.occurredOn} onChange={set("occurredOn")} required />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Category</span>
+        </FormRow>
+        <FormRow label="Category">
           <select value={form.category} onChange={set("category")}>
             {IMPACT_CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -423,9 +417,8 @@ function LogActivityForm({
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Audience</span>
+        </FormRow>
+        <FormRow label="Audience">
           <select value={form.audience} onChange={set("audience")}>
             {IMPACT_AUDIENCES.map((audience) => (
               <option key={audience} value={audience}>
@@ -433,28 +426,23 @@ function LogActivityForm({
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Duration (min)</span>
+        </FormRow>
+        <FormRow label="Duration (min)">
           <input type="number" min={0} value={form.durationMinutes} onChange={set("durationMinutes")} />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Team members</span>
+        </FormRow>
+        <FormRow label="Team members">
           <input type="number" min={0} value={form.participantCount} onChange={set("participantCount")} />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">People reached</span>
+        </FormRow>
+        <FormRow label="People reached">
           <input type="number" min={0} value={form.peopleReached} onChange={set("peopleReached")} />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Location (optional)</span>
+        </FormRow>
+        <FormRow label="Location (optional)">
           <input value={form.location} onChange={set("location")} />
-        </label>
-      </div>
-      <label style={{ display: "grid", gap: 4 }}>
-        <span className="app-muted">Notes (optional)</span>
+        </FormRow>
+      </FormGrid>
+      <FormRow label="Notes (optional)">
         <textarea value={form.description} onChange={set("description")} rows={2} />
-      </label>
+      </FormRow>
       <fieldset style={{ border: "none", padding: 0, margin: 0, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <span className="app-muted">Evidence for:</span>
         {IMPACT_AWARD_TAGS.map((tag) => (
@@ -469,6 +457,6 @@ function LogActivityForm({
           Log activity
         </button>
       </div>
-    </form>
+    </Panel>
   );
 }
