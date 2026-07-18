@@ -1,6 +1,7 @@
 import { auth, peekOrganizationInvite } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { inviteTermsRequired } from "../../../../lib/invite";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 
 const limiter = createRateLimiter({ limit: 30, windowMs: 10 * 60_000, namespace: "invite-preview" });
@@ -25,15 +26,30 @@ export async function GET(request: Request) {
   }
 
   try {
-    const preview = await withRls({ userId: session.user.id }, (client) =>
-      peekOrganizationInvite(client, token),
-    );
-    if (!preview) return privateJson({ preview: null }, { status: 404 });
+    const result = await withRls({ userId: session.user.id }, async (client) => {
+      const preview = await peekOrganizationInvite(client, token);
+      const terms = await client.query<{ termsAcceptedAt: string | null }>(
+        `SELECT terms_accepted_at::text AS "termsAcceptedAt"
+         FROM profiles WHERE user_id = $1::uuid`,
+        [session.user.id],
+      );
+      return {
+        preview,
+        termsRequired: inviteTermsRequired(terms.rows[0]?.termsAcceptedAt ?? null),
+      };
+    });
+    if (!result.preview) {
+      return privateJson({ preview: null, termsRequired: result.termsRequired }, { status: 404 });
+    }
     const sessionEmail = session.user.email?.trim().toLowerCase();
-    if (sessionEmail && preview.email.trim().toLowerCase() !== sessionEmail) {
+    // Exact-email gate: never return org identity to a mismatched session.
+    if (sessionEmail && result.preview.email.trim().toLowerCase() !== sessionEmail) {
       return privateJson({ error: "This invite was sent to a different email address." }, { status: 403 });
     }
-    return privateJson({ preview });
+    return privateJson({
+      preview: result.preview,
+      termsRequired: result.termsRequired,
+    });
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Could not load invite preview" },

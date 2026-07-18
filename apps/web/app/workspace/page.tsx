@@ -4,16 +4,22 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { loadDataSourceHealth } from "../../lib/reference-health";
+import {
+  formatWorkspaceOrgLabel,
+  workspaceJoinCopy,
+  workspaceJoinNextActions,
+} from "../../lib/workspace";
 import SyncIndicator from "./sync-indicator";
 import QuickActions from "./quick-actions";
 import { VantageLogo } from "../../components/brand";
+import "../invite/invite-flow.css";
 
 export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
   const { orgId: orgIdParam } = await searchParams;
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/signin?next=%2Fworkspace");
 
-  let orgId = orgIdParam ?? null;
+  const orgId = orgIdParam ?? null;
   if (!orgId) {
     const memberships = await withRls({ userId: session.user.id }, async (client) =>
       client.query<{ orgId: string; orgName: string; teamNumber: number | null }>(
@@ -29,40 +35,93 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
       redirect(`/workspace?orgId=${encodeURIComponent(memberships.rows[0]!.orgId)}`);
     }
         if (memberships.rows.length === 0) {
+      const copy = workspaceJoinCopy("none");
+      const actions = workspaceJoinNextActions("none");
       return (
-        <main className="onboarding-page">
-          <section className="onboarding-card">
-            <h1>Join a team workspace</h1>
-            <p className="onboarding-sub">Access comes from a verified invitation. Accept an invite link, then return here.</p>
-            <div className="onboarding-callout">
-              <strong>Closed membership</strong>
-              <p>Vantage does not open workspaces from team numbers alone. Ask your coach or platform admin for an invite to your verified email.</p>
+        <main className="onboarding-page invite-flow-page">
+          <section className="onboarding-card invite-flow-card" aria-labelledby="workspace-join-title">
+            <header className="invite-flow-header">
+              <div className="onboarding-brand">
+                <VantageLogo />
+              </div>
+              <span>{copy.eyebrow}</span>
+              <h1 id="workspace-join-title">{copy.title}</h1>
+              <p className="onboarding-sub">{copy.description}</p>
+            </header>
+            <div className="invite-security-note">
+              <b aria-hidden="true">OK</b>
+              <p>
+                <strong>Closed membership</strong>
+                <span>
+                  Vantage does not open workspaces from team numbers alone. Ask your coach or
+                  platform admin for an invite to your verified email.
+                </span>
+              </p>
             </div>
-            <a className="signin-submit" href="/dashboard" style={{ display: "inline-flex", width: "auto", textDecoration: "none" }}>
-              Back to dashboard
-            </a>
+            <section className="invite-next-actions" aria-label="Next steps">
+              <header>
+                <h2>Next steps</h2>
+                <p>Exact-email invites only — nothing is invented while you wait.</p>
+              </header>
+              <ol>
+                {actions.map((action) => (
+                  <li key={action.id} className={action.primary ? "primary" : undefined}>
+                    <div>
+                      <strong>{action.label}</strong>
+                      <span>{action.detail}</span>
+                    </div>
+                    <a className="signin-link" href={action.href}>
+                      Open
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </section>
           </section>
         </main>
       );
     }
+    const copy = workspaceJoinCopy("select");
+    const actions = workspaceJoinNextActions("select");
     return (
-      <main className="onboarding-page">
-        <section className="onboarding-card">
-          <h1>Select your team workspace</h1>
-          <p className="onboarding-sub">You belong to more than one organization. Pick one to continue.</p>
+      <main className="onboarding-page invite-flow-page">
+        <section className="onboarding-card invite-flow-card" aria-labelledby="workspace-select-title">
+          <header className="invite-flow-header">
+            <div className="onboarding-brand">
+              <VantageLogo />
+            </div>
+            <span>{copy.eyebrow}</span>
+            <h1 id="workspace-select-title">{copy.title}</h1>
+            <p className="onboarding-sub">{copy.description}</p>
+          </header>
           <ul className="dash-checklist">
             {memberships.rows.map((row) => (
               <li key={row.orgId}>
-                <a href={`/workspace?orgId=${encodeURIComponent(row.orgId)}`}>
-                  {row.orgName}
-                  {row.teamNumber ? ` · Team ${row.teamNumber}` : ""}
+                <a href={/workspace?orgId=\}>
+                  {formatWorkspaceOrgLabel(row)}
                 </a>
               </li>
             ))}
           </ul>
-          <a className="signin-link" href="/dashboard">
-            Back to dashboard
-          </a>
+          <section className="invite-next-actions" aria-label="Next steps">
+            <header>
+              <h2>Next steps</h2>
+              <p>Pick a membership you already have — no DEMO organizations appear here.</p>
+            </header>
+            <ol>
+              {actions.map((action) => (
+                <li key={action.id} className={action.primary ? "primary" : undefined}>
+                  <div>
+                    <strong>{action.label}</strong>
+                    <span>{action.detail}</span>
+                  </div>
+                  <a className="signin-link" href={action.href}>
+                    Open
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </section>
         </section>
       </main>
     );
