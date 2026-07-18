@@ -38,7 +38,8 @@ const groups: NavGroup[] = [
       { href: "/repairs", label: "Repair Log", icon: "gear" },
       { href: "/intel", label: "Matches", icon: "swords" },
       { href: "/workspace", label: "Schedule", icon: "calendar" },
-      { href: "/meetings", label: "Meetings", icon: "calendar" },
+      { href: "/team/calendar", label: "Team Calendar", icon: "calendar" },
+      { href: "/calendar", label: "Season Calendar", icon: "calendar" },
     ],
   },
   {
@@ -78,6 +79,7 @@ const groups: NavGroup[] = [
       { href: "/business", label: "Business", icon: "clipboard" },
       { href: "/costs", label: "Season Costs", icon: "stats" },
       { href: "/attendance", label: "Attendance", icon: "users" },
+      { href: "/practice", label: "Practice Planner", icon: "target" },
       { href: "/hours", label: "Build Hours", icon: "calendar" },
       { href: "/training", label: "Training Matrix", icon: "users" },
       { href: "/season-rollover", label: "Season Rollover", icon: "calendar" },
