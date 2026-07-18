@@ -150,8 +150,8 @@ export function summarizeSubscriptions(subscriptions: SeasonSubscription[]): Sub
 }
 
 /**
- * Combine every source of cost into one all-in season total: real-world purchases + fees,
- * annualized subscriptions, and the app's own AI/API usage.
+ * Combine every source of cost into one all-in season total: logged season fees,
+ * annualized subscriptions, and the app's own AI/API usage. Purchase approvals live on /orders.
  */
 export function combineAllCosts(input: {
   seasonCommitted: number;
@@ -163,7 +163,7 @@ export function combineAllCosts(input: {
   const api = round2(input.apiUsageUsd);
   const grandTotal = round2(season + subscriptions + api);
   const parts: Array<{ key: AllCostsSummary["breakdown"][number]["key"]; label: string; amount: number }> = [
-    { key: "season", label: "Season purchases & fees", amount: season },
+    { key: "season", label: "Logged season fees & costs", amount: season },
     { key: "subscriptions", label: "Subscriptions (annualized)", amount: subscriptions },
     { key: "api", label: "App AI / API usage", amount: api },
   ];

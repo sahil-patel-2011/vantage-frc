@@ -102,8 +102,13 @@ function currentSeasonYear(now: Date = new Date()): number {
   return now.getUTCFullYear();
 }
 
-function orderHref(orgId: string, orderId: string): string {
-  return `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(orderId)}`;
+function orderHref(orgId: string, orderId: string, seasonYear?: number): string {
+  const params = new URLSearchParams({
+    orgId,
+    orderId,
+  });
+  if (seasonYear) params.set("season", String(seasonYear));
+  return `/orders?${params.toString()}`;
 }
 
 async function resolveOrg(
@@ -212,14 +217,21 @@ async function assertBuyerMember(client: PoolClient, orgId: string, buyerUserId:
 
 async function notifyAdminsSubmitted(
   client: PoolClient,
-  input: { orgId: string; actorUserId: string; orderId: string; title: string; totalUsd: number },
+  input: {
+    orgId: string;
+    actorUserId: string;
+    orderId: string;
+    title: string;
+    totalUsd: number;
+    seasonYear?: number;
+  },
 ): Promise<void> {
   const admins = await client.query<{ userId: string }>(
     `SELECT user_id AS "userId" FROM memberships
      WHERE org_id = $1::uuid AND role IN ('owner', 'admin') AND user_id <> $2::uuid`,
     [input.orgId, input.actorUserId],
   );
-  const href = orderHref(input.orgId, input.orderId);
+  const href = orderHref(input.orgId, input.orderId, input.seasonYear);
   for (const admin of admins.rows) {
     await emitPreferredNotification(client, {
       userId: admin.userId,
@@ -244,9 +256,10 @@ async function notifyRequesterReviewed(
     title: string;
     approved: boolean;
     reviewNotes: string | null;
+    seasonYear?: number;
   },
 ): Promise<void> {
-  const href = orderHref(input.orgId, input.orderId);
+  const href = orderHref(input.orgId, input.orderId, input.seasonYear);
   await emitPreferredNotification(client, {
     userId: input.requesterUserId,
     orgId: input.orgId,
@@ -379,6 +392,7 @@ export async function submitOrder(
     orderId,
     title: validated.value.title,
     totalUsd: totalCostUsd,
+    seasonYear,
   });
   return orderId;
 }
@@ -421,6 +435,9 @@ export async function reviewOrder(
 
   const reviewNotes =
     typeof input.reviewNotes === "string" ? input.reviewNotes.trim().slice(0, 1000) || null : null;
+  // Default buyer to requester so approve → buy → mark-ordered works without a second assign step.
+  const resolvedBuyer =
+    input.decision === "approved" ? (input.buyerUserId ?? row.requestedBy) : null;
 
   await client.query(
     `UPDATE purchase_requests SET
@@ -428,10 +445,10 @@ export async function reviewOrder(
        reviewed_by = $4::uuid,
        reviewed_at = now(),
        review_notes = coalesce($5, review_notes),
-       buyer_user_id = CASE WHEN $3 = 'approved' THEN coalesce($6::uuid, buyer_user_id) ELSE buyer_user_id END,
+       buyer_user_id = CASE WHEN $3 = 'approved' THEN coalesce($6::uuid, buyer_user_id, requested_by) ELSE buyer_user_id END,
        updated_at = now()
      WHERE id = $1::uuid AND org_id = $2::uuid`,
-    [input.orderId, input.orgId, input.decision, input.userId, reviewNotes, input.buyerUserId ?? null],
+    [input.orderId, input.orgId, input.decision, input.userId, reviewNotes, resolvedBuyer],
   );
 
   if (input.decision === "approved") {
@@ -455,16 +472,74 @@ export async function reviewOrder(
     title: row.title,
     approved: input.decision === "approved",
     reviewNotes,
+    seasonYear: row.seasonYear,
   });
 
-  if (input.decision === "approved" && input.buyerUserId && input.buyerUserId !== row.requestedBy) {
+  if (
+    input.decision === "approved" &&
+    resolvedBuyer &&
+    resolvedBuyer !== row.requestedBy
+  ) {
     await notifyBuyerAssigned(client, {
       orgId: input.orgId,
-      buyerUserId: input.buyerUserId,
+      buyerUserId: resolvedBuyer,
       orderId: input.orderId,
       title: row.title,
     });
   }
+}
+
+export async function updateOrderItemUrl(
+  client: PoolClient,
+  input: { orgId: string; userId: string; orderId: string; itemUrl: string },
+): Promise<void> {
+  await assertMember(client, input.orgId, input.userId);
+
+  const rawUrl = input.itemUrl.trim();
+  let parsedUrl: string;
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error("Vendor link must be an http(s) URL.");
+    }
+    parsedUrl = parsed.toString();
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Vendor link")) throw error;
+    throw new Error("Vendor link must be a valid URL.");
+  }
+
+  const org = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+    [input.orgId, input.userId],
+  );
+  const isAdmin = org.rows[0]?.role === "owner" || org.rows[0]?.role === "admin";
+
+  const existing = await client.query<{
+    status: OrderStatus;
+    requestedBy: string;
+    buyerUserId: string | null;
+  }>(
+    `SELECT status, requested_by AS "requestedBy", buyer_user_id AS "buyerUserId"
+     FROM purchase_requests WHERE id = $1::uuid AND org_id = $2::uuid`,
+    [input.orderId, input.orgId],
+  );
+  const row = existing.rows[0];
+  if (!row) throw new Error("Purchase request not found");
+  if (row.status !== "approved" && row.status !== "ordered") {
+    throw new Error("Product URL can only be updated on approved or ordered requests");
+  }
+
+  const canEdit =
+    isAdmin ||
+    row.buyerUserId === input.userId ||
+    (!row.buyerUserId && row.requestedBy === input.userId);
+  if (!canEdit) throw new Error("Only the assigned buyer, requester, or an admin can set the buy link");
+
+  await client.query(
+    `UPDATE purchase_requests SET item_url = $3, updated_at = now()
+     WHERE id = $1::uuid AND org_id = $2::uuid`,
+    [input.orderId, input.orgId, parsedUrl],
+  );
 }
 
 export async function assignBuyer(

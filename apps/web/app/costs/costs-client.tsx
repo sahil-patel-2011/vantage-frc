@@ -196,7 +196,7 @@ function AllInPanel({ view }: { view: LiveView }) {
           <strong style={{ fontSize: "2.2rem", display: "block" }}>{usd(all.grandTotal)}</strong>
         </div>
         <small className="app-muted" style={{ maxWidth: 280 }}>
-          Everything: purchases &amp; fees + annualized subscriptions + the app&apos;s live AI/API usage.
+          Everything: logged season fees + annualized subscriptions + live AI/API usage. Approved purchase requests live under Orders / Business Budget — they are not invented here.
         </small>
       </div>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
