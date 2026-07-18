@@ -1,0 +1,24 @@
+/* Soft-UI Decision Log — .decision-log-* + shared Soft-UI tokens. Never DEMO entries. */
+.decision-log-page{display:grid;gap:16px}
+.decision-log-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.decision-log-related{display:flex;flex-wrap:wrap;gap:8px}
+.decision-log-next-actions{margin:0}
+.decision-log-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.decision-log-stats strong{font-size:1.5rem}
+.decision-log-category-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.decision-log-open{border-left:3px solid #b26a00}
+.decision-log-open ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.decision-log-form{display:grid;gap:10px}
+.decision-log-list{display:grid;gap:12px;list-style:none;padding:0;margin:0}
+.decision-log-card{opacity:1}
+.decision-log-card.is-superseded{opacity:0.7}
+.decision-log-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.decision-log-card-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.decision-log-card h2{margin:4px 0 0;font-size:1.15rem}
+.decision-log-field{margin:8px 0 0}
+.decision-log-options{margin:2px 0 0;padding-left:18px}
+.decision-log-card-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+@media(max-width:900px){
+  .decision-log-header-actions{justify-content:flex-start}
+  .decision-log-next-actions li{flex-direction:column;align-items:stretch}
+}

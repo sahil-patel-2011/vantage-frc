@@ -209,11 +209,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "governance", label: "Governance", legacyHref: "/team/ai-policy" },
       { id: "finance", label: "Finance" },
       { id: "usage", label: "Usage", legacyHref: "/team/usage", primary: false },
+      { id: "decisions", label: "Decision Log", legacyHref: "/decisions", primary: false },
       { id: "decision-search", label: "Decision Search", legacyHref: "/decision-search", primary: false },
       { id: "season-report", label: "Season Report", legacyHref: "/season-report", primary: false },
     ],
   },
 ];
+
 
 export function hubById(id: ProductHubDef["id"]): ProductHubDef {
   const hub = PRODUCT_HUBS.find((entry) => entry.id === id);

@@ -75,7 +75,7 @@ describe("product hubs", () => {
       "finance",
     ]);
     expect(hubMoreTabs(ai).map((tab) => tab.id)).toEqual(
-      expect.arrayContaining(["usage", "decision-search", "season-report"]),
+      expect.arrayContaining(["usage", "decisions", "decision-search", "season-report"]),
     );
   });
 });
