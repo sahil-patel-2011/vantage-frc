@@ -1,0 +1,14 @@
+/* Soft-UI Vendor Directory — .vendors-* + shared Soft-UI tokens. Never DEMO vendor metrics. */
+.vendors-page{display:grid;gap:16px}
+.vendors-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.vendors-related{display:flex;flex-wrap:wrap;gap:8px}
+.vendors-next-actions{margin:0}
+.vendors-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.vendors-stats strong{font-size:1.5rem}
+.vendors-layout{display:grid;gap:16px}
+.vendors-category-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.vendors-tip{margin:0}
+@media(max-width:900px){
+  .vendors-header-actions{justify-content:flex-start}
+  .vendors-next-actions li{flex-direction:column;align-items:stretch}
+}

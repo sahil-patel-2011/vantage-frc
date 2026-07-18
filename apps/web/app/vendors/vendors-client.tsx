@@ -1,20 +1,152 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { vendorCategoryLabel } from "../../lib/vendors";
 import { VENDOR_CATEGORIES, type VendorsView } from "../../lib/vendors/compute-vendors";
+import {
+  VENDORS_RELATED_INCLUDE,
+  classifyVendorsShell,
+  formatVendorsMetric,
+  shouldShowVendorsSummaryTiles,
+  vendorsNextActions,
+  vendorsRelatedLinks,
+  vendorsShellCopy,
+  type VendorsNextAction,
+  type VendorsShellKind,
+} from "../../lib/vendors/vendors-related";
 import type { Vendor, VendorCategory } from "../../lib/vendors/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./vendors.css";
 
 type LiveView = Extract<VendorsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
+
+function VendorsRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = vendorsRelatedLinks(orgId, {
+    include: [...VENDORS_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related vendors-related" aria-label="Related procurement tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function VendorsNextActionsPanel({ actions }: { actions: VendorsNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions vendors-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Orders and Vendor Lead Times — never DEMO vendor metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function VendorsShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: VendorsShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = vendorsNextActions({ orgId, shell });
+  const copy = vendorsShellCopy(shell);
+  const buildHref = withOrgHref("/build", orgId);
+  const ordersHref = hubHref("/business", "orders", orgId);
+  const leadTimesHref = hubHref("/business", "vendor-lead-times", orgId);
+
+  return (
+    <main className="module-page vendors-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Vendors"}
+          </>
+        }
+        title="Vendor Directory"
+        description={description}
+      >
+        <VendorsRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No vendors yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={ordersHref}>
+              Open Orders
+            </a>
+            <a className="app-button secondary" href={leadTimesHref}>
+              Open Vendor Lead Times
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <VendorsNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function VendorsClient() {
   const [view, setView] = useState<VendorsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -36,6 +168,33 @@ export default function VendorsClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const vendorCount = view?.status === "live" ? view.vendors.length : 0;
+  const preferredCount = view?.status === "live" ? view.summary.preferred : 0;
+  const missingContactCount = view?.status === "live" ? view.summary.missingContact : 0;
+
+  const shell = classifyVendorsShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    vendorCount,
+  });
+  const shellCopy = vendorsShellCopy(shell);
+  const nextActions = vendorsNextActions({
+    orgId,
+    shell,
+    vendorCount,
+    preferredCount,
+    missingContactCount,
+  });
+  const relatedLinks = vendorsRelatedLinks(orgId, {
+    include: [...VENDORS_RELATED_INCLUDE],
+  });
+  const buildHref = withOrgHref("/build", orgId);
+  const ordersHref = hubHref("/business", "orders", orgId);
+  const leadTimesHref = hubHref("/business", "vendor-lead-times", orgId);
 
   const mutate = useCallback<Mutate>(
     (payload) => {
@@ -61,42 +220,30 @@ export default function VendorsClient() {
     [orgId, busy],
   );
 
-  return (
-    <main className="module-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Build / Vendors</span>
-          <h1>Vendor Directory</h1>
-          <p>
-            Your team&apos;s known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and
-            ratings, so anyone can reorder fast and next season&apos;s team inherits your sourcing knowledge.
-          </p>
-        </div>
-      </header>
+  if (shell === "loading") {
+    return <VendorsShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
 
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
+  if (shell === "error") {
+    return (
+      <VendorsShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={load}
+      />
+    );
+  }
 
-      {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load vendors</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
-          <button type="button" className="app-button secondary" onClick={load}>
-            Retry
-          </button>
-        </section>
-      ) : view == null ? (
-        <section className="app-card soft-panel">
-          <h2>Loading…</h2>
-          <p className="app-muted">Checking your workspace.</p>
-        </section>
-      ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
+  if (shell === "setup") {
+    return (
+      <VendorsShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      >
+        {view?.status === "setup_required" && view.steps.length > 0 ? (
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -108,14 +255,75 @@ export default function VendorsClient() {
               </li>
             ))}
           </ol>
-        </section>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <AddVendorForm busy={busy} mutate={mutate} />
-          <VendorList view={view} busy={busy} mutate={mutate} />
+        ) : null}
+      </VendorsShell>
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <VendorsShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
+  return (
+    <main className="module-page vendors-page">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Vendors"}
+          </>
+        }
+        title="Vendor Directory"
+        description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Cross-check Orders and Vendor Lead Times — never DEMO vendor metrics."
+      >
+        <div className="vendors-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
-      )}
+      </PageHeader>
+
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <VendorsNextActionsPanel actions={nextActions} />
+
+      {shouldShowVendorsSummaryTiles(vendorCount) ? <SummaryTiles view={view} /> : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No vendors yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href={ordersHref}>
+            Open Orders
+          </a>
+          <a className="app-button secondary" href={leadTimesHref}>
+            Open Vendor Lead Times
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div className="vendors-layout">
+        <AddVendorForm busy={busy} mutate={mutate} />
+        <VendorList view={view} busy={busy} mutate={mutate} />
+        <Panel className="vendors-tip" aria-label="Vendor directory tip">
+          <span className="eyebrow">Procurement path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Place reorders through <a href={ordersHref}>Orders</a> and keep shipping windows in{" "}
+            <a href={leadTimesHref}>Vendor Lead Times</a> — never invent DEMO contacts, ratings, or
+            lead-time averages.
+          </p>
+        </Panel>
+      </div>
     </main>
   );
 }
@@ -123,25 +331,29 @@ export default function VendorsClient() {
 function SummaryTiles({ view }: { view: LiveView }) {
   const s = view.summary;
   const tiles = [
-    { label: "Vendors", value: String(s.total) },
-    { label: "Preferred", value: String(s.preferred) },
-    { label: "Avg rating", value: s.avgRating ? `${s.avgRating}★` : "—" },
-    { label: "Missing contact", value: String(s.missingContact) },
+    { label: "Vendors", value: formatVendorsMetric(s.total, true) },
+    { label: "Preferred", value: formatVendorsMetric(s.preferred, true) },
+    { label: "Avg rating", value: s.avgRating > 0 ? `${s.avgRating}★` : "—" },
+    { label: "Missing contact", value: formatVendorsMetric(s.missingContact, true) },
   ];
   return (
-    <section className="app-card soft-panel">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
+    <section className="vendors-stats" aria-label="Real vendor directory counts">
+      {tiles.map((tile) => (
+        <div key={tile.label}>
+          <strong>{tile.value}</strong>
+          <span className="app-muted" style={{ display: "block" }}>
+            {tile.label}
+          </span>
+        </div>
+      ))}
       {s.byCategory.length > 0 ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+        <div className="vendors-category-chips">
           {s.byCategory.map((row) => (
-            <span key={row.category} className="app-badge demo" title={row.avgLeadTimeDays != null ? `~${row.avgLeadTimeDays}d lead` : "lead time unknown"}>
+            <span
+              key={row.category}
+              className="app-badge"
+              title={row.avgLeadTimeDays != null ? `~${row.avgLeadTimeDays}d lead` : "lead time unknown"}
+            >
               {vendorCategoryLabel(row.category)}: {row.count}
               {row.avgLeadTimeDays != null ? ` · ~${row.avgLeadTimeDays}d` : ""}
             </span>
@@ -170,8 +382,9 @@ function AddVendorForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
   return (
-    <form
-      className="app-card soft-panel"
+    <Panel
+      id="vendors-add-vendor"
+      as="form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.name.trim()) return;
@@ -190,13 +403,14 @@ function AddVendorForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add vendor</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-        <label style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-          <span className="app-muted">Vendor name</span>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Contacts and lead times come from real suppliers — never DEMO directory rows.
+      </p>
+      <FormGrid min={140}>
+        <FormRow label="Vendor name" wide>
           <input value={form.name} onChange={set("name")} placeholder="McMaster-Carr" required />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Category</span>
+        </FormRow>
+        <FormRow label="Category">
           <select value={form.category} onChange={set("category")}>
             {VENDOR_CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -204,49 +418,38 @@ function AddVendorForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Website</span>
+        </FormRow>
+        <FormRow label="Website">
           <input value={form.website} onChange={set("website")} placeholder="mcmaster.com" />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Email</span>
+        </FormRow>
+        <FormRow label="Email">
           <input value={form.contactEmail} onChange={set("contactEmail")} />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Phone</span>
+        </FormRow>
+        <FormRow label="Phone">
           <input value={form.contactPhone} onChange={set("contactPhone")} />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Lead time (days)</span>
+        </FormRow>
+        <FormRow label="Lead time (days)">
           <input type="number" min={0} value={form.leadTimeDays} onChange={set("leadTimeDays")} />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Rating (1–5)</span>
+        </FormRow>
+        <FormRow label="Rating (1–5)">
           <input type="number" min={1} max={5} value={form.rating} onChange={set("rating")} />
-        </label>
-      </div>
+        </FormRow>
+      </FormGrid>
       <div>
         <button type="submit" className="app-button" disabled={busy || !form.name.trim()}>
           Add vendor
         </button>
       </div>
-    </form>
+    </Panel>
   );
 }
 
 function VendorList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
   if (view.vendors.length === 0) {
-    return (
-      <section className="app-card soft-panel">
-        <span className="app-badge setup">No vendors yet</span>
-        <h2>Build your sourcing directory</h2>
-        <p className="app-muted">Add the suppliers you buy from so anyone on the team can reorder without hunting for links.</p>
-      </section>
-    );
+    return null;
   }
   return (
-    <section style={{ display: "grid", gap: 12 }}>
+    <section id="vendors-directory" style={{ display: "grid", gap: 12 }} aria-label="Vendor directory">
       {view.vendors.map((vendor) => (
         <VendorCard key={vendor.id} vendor={vendor} busy={busy} mutate={mutate} />
       ))}
@@ -264,11 +467,16 @@ function VendorCard({ vendor, busy, mutate }: { vendor: Vendor; busy: boolean; m
     <article className="app-card soft-panel">
       <header style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
         <div>
-          <span className="app-badge demo">{vendorCategoryLabel(vendor.category)}</span>{" "}
+          <span className="app-badge">{vendorCategoryLabel(vendor.category)}</span>{" "}
           {vendor.rating ? <small className="app-muted">{"★".repeat(vendor.rating)}</small> : null}
           <h2 style={{ margin: "4px 0 0", fontSize: "1.1rem" }}>
             {vendor.name}
-            {vendor.preferred ? <span title="Preferred" style={{ color: "#c9a900" }}> ★</span> : null}
+            {vendor.preferred ? (
+              <span title="Preferred" style={{ color: "#c9a900" }}>
+                {" "}
+                ★
+              </span>
+            ) : null}
           </h2>
           <small className="app-muted">
             {websiteHref ? (
@@ -283,7 +491,7 @@ function VendorCard({ vendor, busy, mutate }: { vendor: Vendor; busy: boolean; m
         </div>
         <button
           type="button"
-          className={`app-badge ${vendor.preferred ? "good" : "demo"}`}
+          className={`app-badge ${vendor.preferred ? "good" : ""}`}
           disabled={busy}
           title="Toggle preferred"
           style={{ cursor: "pointer", border: "none" }}
@@ -298,7 +506,9 @@ function VendorCard({ vendor, busy, mutate }: { vendor: Vendor; busy: boolean; m
           <select
             value={vendor.rating ? String(vendor.rating) : ""}
             disabled={busy}
-            onChange={(event) => mutate({ action: "update-vendor", vendorId: vendor.id, rating: event.target.value || null })}
+            onChange={(event) =>
+              mutate({ action: "update-vendor", vendorId: vendor.id, rating: event.target.value || null })
+            }
           >
             <option value="">—</option>
             {[1, 2, 3, 4, 5].map((n) => (
