@@ -1,59 +1,51 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
 
-type Snapshot = {
-  board: { name: string; preset: string; widgets: Array<{ type: string }> };
-  organization: { name: string; teamNumber: number };
-  activeEvent: { name: string | null };
-  nextMatch: null | {
-    compLevel: string;
-    matchNumber: number;
-    scheduledTime: string;
-    redAlliance: { teamKeys: string[] };
-    blueAlliance: { teamKeys: string[] };
-  };
-  prediction: null | {
-    matchKey: string;
-    pRed: number;
-    pBlue: number;
-    confidenceLow: number;
-    confidenceHigh: number;
-    modelVersion: string;
-    keyFactors: Array<{ name: string; impact: number; evidence: string }>;
-    caveats: string[];
-    scoredAt: string;
-  };
-  scouting: { assignments: number; reports: number; openDisagreements: number };
-  updatedAt: string;
-};
+import { useCallback, useEffect, useState } from "react";
+import {
+  countdownState,
+  formatAlliance,
+  hasReadinessSignal,
+  matchLabel,
+  rankLabel,
+  recordLabel,
+  widgetValue,
+  type DisplaySnapshot,
+} from "../../../lib/display";
 
 export default function KioskClient({
   params,
 }: {
   params: { orgId?: string; boardId?: string; token?: string };
 }) {
-  const [data, setData] = useState<Snapshot | null>(null);
+  const [data, setData] = useState<DisplaySnapshot | null>(null);
   const [error, setError] = useState("");
   const [online, setOnline] = useState(true);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
+
   const refresh = useCallback(async () => {
+    if (!params.token && !(params.orgId && params.boardId)) {
+      setError("Provide a TV token, or orgId and boardId while signed in.");
+      return;
+    }
     const query = params.token
       ? `token=${encodeURIComponent(params.token)}`
-      : `orgId=${params.orgId}&boardId=${params.boardId}`;
+      : `orgId=${encodeURIComponent(params.orgId!)}&boardId=${encodeURIComponent(params.boardId!)}`;
     try {
-      const r = await fetch(`/api/display/snapshot?${query}`, { cache: "no-store" });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error);
-      setData(d);
+      const response = await fetch(`/api/display/snapshot?${query}`, { cache: "no-store" });
+      const payload = (await response.json()) as DisplaySnapshot & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Display unavailable");
+      if (!payload.board) throw new Error("Display board not found");
+      setData(payload);
       setError("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Display offline");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Display offline");
     }
   }, [params]);
+
   useEffect(() => {
     void refresh();
     const clock = setInterval(() => setNow(Date.now()), 1000);
-    const live = setInterval(() => void refresh(), 30000);
+    const live = setInterval(() => void refresh(), 30_000);
     const status = () => setOnline(navigator.onLine);
     status();
     addEventListener("online", status);
@@ -65,130 +57,217 @@ export default function KioskClient({
       removeEventListener("offline", status);
     };
   }, [refresh]);
-  const match = data?.nextMatch;
-  const remaining = match?.scheduledTime ? new Date(match.scheduledTime).getTime() - now : null;
-  const countdown =
-    remaining === null
-      ? "—"
-      : remaining <= 0
-        ? "QUEUE NOW"
-        : `${Math.floor(remaining / 60000)}:${String(Math.floor((remaining % 60000) / 1000)).padStart(2, "0")}`;
-  const leave = remaining !== null && remaining <= 15 * 60000;
-  if (!data)
+
+  if (!data) {
     return (
-      <main className="kiosk loading">
+      <main className={`display-kiosk ${error ? "error" : "loading"}`}>
         <h1>{error || "Loading display…"}</h1>
-        <button onClick={refresh}>Retry</button>
+        <p>
+          {params.token
+            ? "Using read-only TV token. If this fails, the token may be revoked or expired."
+            : "Signed-in kiosk needs a saved board id for this workspace."}
+        </p>
+        <button type="button" onClick={() => void refresh()}>
+          Retry
+        </button>
       </main>
     );
+  }
+
+  const match = data.nextMatch;
   const prediction = data.prediction;
+  const clock = countdownState(match?.scheduledTime, now);
+  const eventName = data.activeEvent?.name ?? "NO ACTIVE EVENT";
+  const readiness = data.readiness;
+
   return (
-    <main className={`kiosk preset-${data.board.preset}`}>
+    <main className={`display-kiosk preset-${data.board.preset}`}>
       <header>
-        <div>
+        <div className="kiosk-brand">
           <span>VANTAGE DISPLAY</span>
           <strong>
             {data.organization.name} · #{data.organization.teamNumber}
           </strong>
         </div>
-        <div className={online ? "online" : "offline"}>{online ? "CONNECTED" : "OFFLINE · LAST DATA"}</div>
-        <button onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
-        <button onClick={refresh}>Refresh</button>
+        <div className={`kiosk-status ${online ? "online" : "offline"}`}>
+          {online ? "CONNECTED" : "OFFLINE · LAST DATA"}
+        </div>
+        <div className="kiosk-controls">
+          <button type="button" onClick={() => void document.documentElement.requestFullscreen?.()}>
+            Fullscreen
+          </button>
+          <button type="button" onClick={() => void refresh()}>
+            Refresh
+          </button>
+        </div>
       </header>
-      <section className="kiosk-title">
+
+      <section className="display-kiosk-title">
         <div>
-          <span>{data.activeEvent.name ?? "NO ACTIVE EVENT"}</span>
+          <span>{eventName}</span>
           <h1>{data.board.name}</h1>
         </div>
-        <time>Updated {new Date(data.updatedAt).toLocaleTimeString()}</time>
+        <time dateTime={data.updatedAt}>Updated {new Date(data.updatedAt).toLocaleTimeString()}</time>
       </section>
-      {data.board.preset === "next_match" && (
-        <section className="tv-next">
-          <div>
-            <span>NEXT MATCH</span>
-            <strong>{match ? `${match.compLevel.toUpperCase()} ${match.matchNumber}` : "—"}</strong>
-            <small>
-              {match?.scheduledTime
-                ? new Date(match.scheduledTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-                : "Schedule unavailable"}
-            </small>
-          </div>
-          <div className="countdown">
-            <span>COUNTDOWN</span>
-            <strong>{countdown}</strong>
-            <em className={leave ? "leave" : ""}>{leave ? "LEAVE PIT NOW" : "STAY READY"}</em>
-          </div>
-          <div>
-            <span>ALLIANCES</span>
-            <p>
-              <b>RED</b> {match?.redAlliance.teamKeys.join(" · ") ?? "—"}
-            </p>
-            <p>
-              <b>BLUE</b> {match?.blueAlliance.teamKeys.join(" · ") ?? "—"}
-            </p>
-          </div>
-        </section>
-      )}
-      {data.board.preset === "win_prediction" &&
-        (prediction ? (
-          <section className="tv-next">
-            <div>
-              <span>WIN PREDICTION · MODEL</span>
-              <strong>{Math.round(prediction.pRed * 100)}% RED</strong>
+
+      {data.board.preset === "next_match" &&
+        (match ? (
+          <section className="display-kiosk-panel">
+            <article>
+              <span>NEXT MATCH</span>
+              <strong>{matchLabel(match.compLevel, match.matchNumber)}</strong>
               <small>
-                {prediction.modelVersion} · {Math.round(prediction.confidenceLow * 100)}–
-                {Math.round(prediction.confidenceHigh * 100)}% · {prediction.matchKey}
+                {match.scheduledTime
+                  ? new Date(match.scheduledTime).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
+                  : "Schedule time unavailable from TBA"}
               </small>
-            </div>
-            <div className="countdown">
-              <span>BLUE</span>
-              <strong>{Math.round(prediction.pBlue * 100)}%</strong>
-              <em>Not a TBA result</em>
-            </div>
-            <div>
-              <span>TOP FACTORS</span>
-              {(prediction.keyFactors ?? []).slice(0, 3).map((factor) => (
-                <p key={factor.name}>
-                  <b>{factor.impact}</b> {factor.name}
-                </p>
-              ))}
-            </div>
+            </article>
+            <article>
+              <span>COUNTDOWN</span>
+              <strong>{clock.label}</strong>
+              <em className={clock.leavePit ? "leave" : undefined}>
+                {clock.queueNow ? "QUEUE NOW" : clock.leavePit ? "LEAVE PIT NOW" : "STAY READY"}
+              </em>
+            </article>
+            <article>
+              <span>ALLIANCES</span>
+              <p className="alliance-red">RED {formatAlliance(match.redAlliance?.teamKeys)}</p>
+              <p className="alliance-blue">BLUE {formatAlliance(match.blueAlliance?.teamKeys)}</p>
+            </article>
           </section>
         ) : (
-          <section className="tv-empty">
-            <span>WIN PREDICTION</span>
-            <h2>Awaiting a current prediction</h2>
+          <section className="display-kiosk-empty">
+            <span>NEXT MATCH</span>
+            <h2>No upcoming team match</h2>
             <p>
-              Open Strategy once with a synced match + metrics so the model can persist a prediction for this event.
+              Set an active event and sync TBA matches. This board only shows matches that include team #
+              {data.organization.teamNumber} — it will not invent a queue time.
             </p>
           </section>
         ))}
-      {data.board.preset === "robot_readiness" && (
-        <section className="tv-empty">
-          <span>ROBOT READINESS</span>
-          <h2>Readiness data not yet synced</h2>
-          <p>
-            Battery, checklist, inspection, maintenance, and queue warnings stay blank rather than showing assumed
-            status.
-          </p>
-        </section>
-      )}
+
+      {data.board.preset === "win_prediction" &&
+        (prediction ? (
+          <>
+            <section className="display-kiosk-panel">
+              <article>
+                <span>WIN PREDICTION · MODEL</span>
+                <strong>{Math.round(prediction.pRed * 100)}% RED</strong>
+                <small>
+                  {prediction.modelVersion} · {Math.round(prediction.confidenceLow * 100)}–
+                  {Math.round(prediction.confidenceHigh * 100)}% · {prediction.matchKey}
+                </small>
+              </article>
+              <article>
+                <span>BLUE</span>
+                <strong>{Math.round(prediction.pBlue * 100)}%</strong>
+                <em>Not a TBA result</em>
+              </article>
+              <article>
+                <span>TOP FACTORS</span>
+                {(prediction.keyFactors ?? []).slice(0, 3).map((factor) => (
+                  <small key={factor.name}>
+                    {factor.impact} · {factor.name}
+                  </small>
+                ))}
+                {!(prediction.keyFactors ?? []).length ? (
+                  <small>No key factors stored on this prediction.</small>
+                ) : null}
+              </article>
+            </section>
+            {data.strategyHeadline ? (
+              <section className="display-kiosk-strategy">
+                <span>STRATEGY</span>
+                <strong>{data.strategyHeadline}</strong>
+              </section>
+            ) : null}
+          </>
+        ) : (
+          <section className="display-kiosk-empty">
+            <span>WIN PREDICTION</span>
+            <h2>Awaiting a stored prediction</h2>
+            <p>
+              Open Strategy with a synced match and score a model prediction for this event. Until then this
+              board stays blank — no DEMO odds.
+            </p>
+          </section>
+        ))}
+
+      {data.board.preset === "robot_readiness" &&
+        (hasReadinessSignal(readiness) ? (
+          <section className="display-kiosk-panel">
+            <article>
+              <span>ACTIVE BATTERIES</span>
+              <strong>{readiness!.batteriesActive}</strong>
+              <small>packs marked active in Pit</small>
+            </article>
+            <article>
+              <span>IN SERVICE</span>
+              <strong>{readiness!.batteriesService}</strong>
+              <small>packs out of rotation</small>
+            </article>
+            <article>
+              <span>OPEN FAILURES</span>
+              <strong>{readiness!.openFailures}</strong>
+              <small>unresolved robot failures</small>
+            </article>
+            <article>
+              <span>OPEN MAINTENANCE</span>
+              <strong>{readiness!.openMaintenance}</strong>
+              <small>incomplete maintenance tasks</small>
+            </article>
+          </section>
+        ) : (
+          <section className="display-kiosk-empty">
+            <span>ROBOT READINESS</span>
+            <h2>Readiness data not logged yet</h2>
+            <p>
+              Battery fleet, failures, and maintenance stay blank until your team records them in Pit ops.
+              Vantage will not show an assumed green checklist.
+            </p>
+          </section>
+        ))}
+
       {data.board.preset === "event_command" && (
-        <section className="tv-command">
+        <section className="display-kiosk-panel">
           <article>
             <span>NEXT TEAM MATCH</span>
-            <strong>{match ? `${match.compLevel.toUpperCase()} ${match.matchNumber}` : "—"}</strong>
-            <small>{countdown}</small>
+            <strong>{match ? matchLabel(match.compLevel, match.matchNumber) : "-"}</strong>
+            <small>{match ? clock.label : "No upcoming match on TBA"}</small>
           </article>
           <article>
-            <span>EVENT ALERTS</span>
-            <strong>{error ? "1" : "0"}</strong>
-            <small>{error || "No current display alerts"}</small>
+            <span>RANK</span>
+            <strong>{rankLabel(data.eventStatus)}</strong>
+            <small>
+              {data.eventStatus?.source
+                ? `from ${data.eventStatus.source}`
+                : "Sync TBA/Statbotics metrics"}
+            </small>
+          </article>
+          <article>
+            <span>RECORD</span>
+            <strong>{recordLabel(data.eventStatus)}</strong>
+            <small>wins-losses{data.eventStatus?.ties ? "-ties" : ""}</small>
+          </article>
+          <article>
+            <span>SCOUT ALERTS</span>
+            <strong>{data.scouting.openDisagreements}</strong>
+            <small>
+              {error
+                ? error
+                : data.scouting.openDisagreements
+                  ? "open disagreements"
+                  : "No current display alerts"}
+            </small>
           </article>
         </section>
       )}
+
       {data.board.preset === "scouting_coverage" && (
-        <section className="tv-command">
+        <section className="display-kiosk-panel">
           <article>
             <span>ASSIGNMENTS</span>
             <strong>{data.scouting.assignments}</strong>
@@ -206,25 +285,25 @@ export default function KioskClient({
           </article>
         </section>
       )}
+
       {data.board.preset === "custom" && (
-        <section className="tv-custom">
-          {data.board.widgets.map((widget, index) => (
+        <section className="display-kiosk-custom">
+          {(data.board.widgets?.length ? data.board.widgets : [{ type: "-" }]).map((widget, index) => (
             <article key={`${widget.type}-${index}`}>
-              <span>{widget.type.replaceAll("_", " ")}</span>
+              <span>{String(widget.type).replaceAll("_", " ")}</span>
               <strong>
-                {widget.type === "scouting_coverage"
-                  ? `${data.scouting.reports} reports`
-                  : widget.type === "win_prediction" && prediction
-                    ? `${Math.round(prediction.pRed * 100)}% red`
-                    : "Connected"}
+                {widget.type === "-"
+                  ? "No widgets on this board"
+                  : widgetValue(String(widget.type), data)}
               </strong>
             </article>
           ))}
         </section>
       )}
+
       <footer>
-        <span>Layout is fixed until manually changed in Display Mode setup.</span>
-        {error && <strong>{error}</strong>}
+        <span>Layout is fixed until changed in Display Mode setup.</span>
+        {error ? <strong className="kiosk-error">{error}</strong> : <span>Live refresh every 30s</span>}
       </footer>
     </main>
   );

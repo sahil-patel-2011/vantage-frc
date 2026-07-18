@@ -1,0 +1,92 @@
+﻿import { describe, expect, it } from "vitest";
+import {
+  countdownState,
+  formatAlliance,
+  hasReadinessSignal,
+  isDisplayPreset,
+  isDisplayWidgetType,
+  matchLabel,
+  rankLabel,
+  recordLabel,
+  stripFrc,
+  widgetValue,
+} from "./display";
+
+describe("display helpers", () => {
+  it("strips frc prefixes and formats alliances", () => {
+    expect(stripFrc("frc1678")).toBe("1678");
+    expect(formatAlliance(["frc254", "frc1678"])).toBe("254 · 1678");
+    expect(formatAlliance([])).toBe("-");
+  });
+
+  it("labels matches and validates presets/widgets", () => {
+    expect(matchLabel("qm", 42)).toBe("Qual 42");
+    expect(matchLabel("f", 1)).toBe("Final 1");
+    expect(isDisplayPreset("next_match")).toBe(true);
+    expect(isDisplayPreset("demo")).toBe(false);
+    expect(isDisplayWidgetType("prediction")).toBe(true);
+    expect(isDisplayWidgetType("secret_chat")).toBe(false);
+  });
+
+  it("builds honest countdowns without inventing schedule times", () => {
+    expect(countdownState(null, Date.now()).label).toBe("-");
+    expect(countdownState("not-a-date", Date.now()).label).toBe("-");
+
+    const now = Date.parse("2026-03-15T12:00:00.000Z");
+    const soon = countdownState("2026-03-15T12:10:00.000Z", now);
+    expect(soon.label).toBe("10:00");
+    expect(soon.leavePit).toBe(true);
+    expect(soon.queueNow).toBe(false);
+
+    const later = countdownState("2026-03-15T12:30:00.000Z", now);
+    expect(later.leavePit).toBe(false);
+
+    const past = countdownState("2026-03-15T11:59:00.000Z", now);
+    expect(past.label).toBe("QUEUE NOW");
+    expect(past.queueNow).toBe(true);
+  });
+
+  it("formats rank/record only from real metrics", () => {
+    expect(rankLabel(null)).toBe("-");
+    expect(recordLabel(null)).toBe("-");
+    expect(rankLabel({ rank: 7, wins: 4, losses: 2, ties: 0, source: "tba" })).toBe("#7");
+    expect(recordLabel({ rank: 7, wins: 4, losses: 2, ties: 1, source: "tba" })).toBe("4-2-1");
+  });
+
+  it("treats zero readiness counts as no signal (not green)", () => {
+    expect(hasReadinessSignal(null)).toBe(false);
+    expect(
+      hasReadinessSignal({
+        batteriesActive: 0,
+        batteriesService: 0,
+        openFailures: 0,
+        openMaintenance: 0,
+      }),
+    ).toBe(false);
+    expect(
+      hasReadinessSignal({
+        batteriesActive: 2,
+        batteriesService: 0,
+        openFailures: 0,
+        openMaintenance: 0,
+      }),
+    ).toBe(true);
+  });
+
+  it("widgetValue stays empty-honest when modules have no data", () => {
+    const empty = {
+      nextMatch: null,
+      prediction: null,
+      scouting: { assignments: 0, reports: 0, openDisagreements: 0 },
+      eventStatus: null,
+      readiness: null,
+      strategyHeadline: null,
+    };
+    expect(widgetValue("next_match", empty)).toMatch(/No upcoming/i);
+    expect(widgetValue("prediction", empty)).toMatch(/No stored prediction/i);
+    expect(widgetValue("strategy", empty)).toMatch(/No strategy headline/i);
+    expect(widgetValue("robot_readiness", empty)).toMatch(/No readiness data/i);
+    expect(widgetValue("event_status", empty)).toMatch(/Rank not synced/i);
+    expect(widgetValue("alerts", empty)).toMatch(/No open scout/i);
+  });
+});
