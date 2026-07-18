@@ -30,6 +30,16 @@
 .scout-voice-note-list p{margin:0;white-space:pre-wrap;font:600 13px/1.45 var(--font-source-sans),ui-sans-serif;color:var(--soft-ink)}
 .scout-empty-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .scout-related{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.scout-page.soft-gate{display:grid;gap:16px}
+.scout-header-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.scout-header-meta .scout-related{margin:0}
+.scout-setup-steps{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:10px;width:100%;text-align:left}
+.scout-setup-steps li{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--soft-line)}
+.scout-setup-steps li:first-child{border-top:0;padding-top:0}
+.scout-setup-steps li div{display:grid;gap:4px;min-width:0}
+.scout-setup-steps li span{font:600 12px/1.4 var(--font-source-sans),ui-sans-serif;color:var(--soft-muted)}
+.scout-next-actions{margin-top:4px}
+.scout-shell-empty{margin-bottom:4px}
 .scout-accuracy-mini{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .scout-accuracy-mini li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--soft-line)}
 .scout-accuracy-mini li:first-child{border-top:0;padding-top:0}
