@@ -30,6 +30,14 @@ export {
   loadKnowledgeWikiView,
   searchKnowledgeCorpus,
 } from "./compute-wiki";
+export {
+  KNOWLEDGE_RELATED_LINKS,
+  knowledgeRelatedLinks,
+  knowledgeSetupNextActions,
+  type KnowledgeRelatedId,
+  type KnowledgeRelatedLink,
+  type KnowledgeSetupNextAction,
+} from "./knowledge-related";
 
 import {
   KNOWLEDGE_TEMPLATE_KINDS,
