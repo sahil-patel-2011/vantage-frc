@@ -10,6 +10,7 @@ export const BUSINESS_RELATED_LINKS = [
   { id: "grants", label: "Grants", kind: "hub" as const, tab: "grants" },
   { id: "evidence", label: "Awards & evidence", kind: "hub" as const, tab: "evidence" },
   { id: "fundraisers", label: "Fundraisers", kind: "path" as const, path: "/fundraisers" },
+  { id: "costs", label: "Season Costs", kind: "path" as const, path: "/costs" },
   { id: "impact", label: "Community Impact", kind: "path" as const, path: "/impact" },
   { id: "awards", label: "Awards workbench", kind: "path" as const, path: "/team/awards" },
   { id: "writer", label: "Grant & sponsor writer", kind: "path" as const, path: "/writer" },
@@ -62,21 +63,31 @@ export const BUSINESS_GRANTS_RELATED_INCLUDE: BusinessRelatedId[] = [
   "finance-ai",
 ];
 
-/** Fundraisers Soft-UI strip (`/fundraisers`) — sponsors, grants, orders. */
+/** Fundraisers Soft-UI strip (`/fundraisers`) — sponsors, grants, orders, season costs. */
 export const FUNDRAISERS_RELATED_INCLUDE: BusinessRelatedId[] = [
   "sponsors",
   "grants",
   "orders",
+  "costs",
   "budget",
   "finance-ai",
 ];
 
-/** Orders Soft-UI strip (`/orders` + Business Orders) — sponsors, fundraisers, budget. */
+/** Orders Soft-UI strip (`/orders` + Business Orders) — sponsors, fundraisers, budget, season costs. */
 export const ORDERS_RELATED_INCLUDE: BusinessRelatedId[] = [
   "sponsors",
   "fundraisers",
+  "costs",
   "budget",
   "grants",
+  "finance-ai",
+];
+
+/** Season Costs Soft-UI strip (`/costs`) — orders, fundraisers, Business budget. */
+export const COSTS_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "orders",
+  "fundraisers",
+  "budget",
   "finance-ai",
 ];
 

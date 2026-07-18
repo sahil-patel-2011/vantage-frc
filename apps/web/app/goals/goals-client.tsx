@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { TeamOpsNav } from "../../components/team-ops-nav";
+import { TeamHubRelated } from "../../components/team-hub-related";
 import { formatGoalValue, goalCategoryLabel, goalStatusLabel } from "../../lib/goals";
 import {
   GOAL_CATEGORIES,
@@ -10,29 +10,19 @@ import {
   METRIC_TYPES,
   type GoalsView,
 } from "../../lib/goals/compute-goals";
+import {
+  GOALS_TEAM_RELATED_INCLUDE,
+  formatGoalsAchievedDisplay,
+  formatGoalsProgressDisplay,
+  goalsNextActions,
+  goalsRelatedLinks,
+} from "../../lib/goals/goals-related";
 import type { GoalCategory, GoalEvaluation, GoalPriority, GoalStatus, MetricType } from "../../lib/goals/types";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./goals.css";
 
 type LiveView = Extract<GoalsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
-
-function statusColor(status: GoalStatus): string {
-  switch (status) {
-    case "achieved":
-      return "#1f7a3d";
-    case "at_risk":
-      return "#b26a00";
-    case "missed":
-      return "#c02626";
-    case "in_progress":
-      return "#1f4fd6";
-    default:
-      return "#8a8f98";
-  }
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 const METRIC_LABEL: Record<MetricType, string> = {
   percent: "Percent (0–100)",
@@ -40,6 +30,65 @@ const METRIC_LABEL: Record<MetricType, string> = {
   currency: "Dollars",
   binary: "Yes / no",
 };
+
+function GoalsRelated({ orgId }: { orgId: string }) {
+  const primary = goalsRelatedLinks(orgId, { include: ["todos", "practice", "team"] });
+  return (
+    <div className="goals-related">
+      <nav className="product-hub-related goals-hub-related" aria-label="Related team tools">
+        {primary.map((link) => (
+          <a key={link.id} className="app-button secondary" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
+      <TeamHubRelated orgId={orgId} include={[...GOALS_TEAM_RELATED_INCLUDE]} />
+    </div>
+  );
+}
+
+function NextActions({
+  orgId,
+  goalCount,
+  achieved,
+  needsAttention,
+  topTitle,
+}: {
+  orgId?: string | null;
+  goalCount: number;
+  achieved: number;
+  needsAttention: number;
+  topTitle?: string | null;
+}) {
+  const actions = goalsNextActions({
+    orgId,
+    goalCount,
+    achieved,
+    needsAttention,
+    topTitle,
+  });
+  return (
+    <section className="goals-next-actions app-card soft-panel" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>Prioritized from logged season goals — progress stays blank until you enter real current values.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export default function GoalsClient() {
   const [view, setView] = useState<GoalsView | null>(null);
@@ -101,112 +150,200 @@ export default function GoalsClient() {
     [orgId, season, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs="Team / Goals"
-        title="Goals"
-        description={
-          <>
-            Set the measurable objectives that define a successful season — competition, technical, outreach, and
-            business — and track progress toward each with a live scorecard.
-          </>
-        }
-      >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-      </PageHeader>
-      <TeamOpsNav orgId={orgId} active="goals" />
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
+  if (fetchFailed || view == null) {
+    return (
+      <main className="module-page goals-page">
+        <PageHeader
+          breadcrumbs="Team / Goals"
+          title="Goals"
+          description="Measurable season objectives with progress from real current values — never demo percentages."
+        />
         <EmptyState
-          title="Could not load season goals"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          title={fetchFailed ? "Could not load season goals" : "Loading season goals…"}
+          description={
+            fetchFailed
+              ? "A network or server issue prevented loading. Try again."
+              : "Checking your workspace."
+          }
+          aria-busy={!fetchFailed}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          {fetchFailed ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
+      </main>
+    );
+  }
+
+  if (view.status === "setup_required") {
+    return (
+      <main className="module-page goals-page">
+        <PageHeader
+          breadcrumbs="Team / Goals"
+          title="Goals"
+          description="Set measurable season objectives and track progress from real entries only — never invented scorecards."
+        />
+        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+          <ol className="goals-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
                 <div>
                   <strong>{step.label}</strong>
                   <span>{step.detail}</span>
                 </div>
-                <a href={step.href}>Open</a>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
               </li>
             ))}
           </ol>
         </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <Scorecard view={view} />
-          {view.summary.needsAttention.length > 0 ? <NeedsAttention view={view} /> : null}
-          <AddGoalForm busy={busy} mutate={mutate} />
-          <GoalList view={view} busy={busy} mutate={mutate} />
+        <NextActions orgId={view.orgId} goalCount={0} achieved={0} needsAttention={0} />
+      </main>
+    );
+  }
+
+  const hasGoals = view.evaluations.length > 0;
+  const topTitle = view.summary.needsAttention[0]?.goal.title ?? view.evaluations[0]?.goal.title ?? null;
+
+  return (
+    <main className="module-page goals-page">
+      <PageHeader
+        breadcrumbs="Team / Goals"
+        title="Goals"
+        description={
+          <>
+            Set the measurable objectives that define a successful season — competition, technical, outreach, and
+            business — and track progress from real current values only. Scorecard % stays blank until goals exist.
+          </>
+        }
+      >
+        <div className="goals-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <a className="app-button secondary" href={withOrgHref("/todos", orgId)}>
+            Todos
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/practice", orgId)}>
+            Practice
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/team", orgId)}>
+            Team hub
+          </a>
         </div>
-      )}
+      </PageHeader>
+
+      {orgId ? <GoalsRelated orgId={orgId} /> : null}
+
+      {error ? (
+        <p className="goals-alert" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <NextActions
+        orgId={orgId}
+        goalCount={view.summary.total}
+        achieved={view.summary.achieved}
+        needsAttention={view.summary.needsAttention.length}
+        topTitle={topTitle}
+      />
+
+      <Scorecard view={view} />
+
+      {view.summary.needsAttention.length > 0 ? <NeedsAttention view={view} /> : null}
+
+      {!hasGoals ? (
+        <EmptyState
+          soft
+          title="No season goals yet"
+          description="Add a measurable target above (matches won, outreach hours, dollars raised, a yes/no milestone). Season progress stays blank until then — nothing is invented."
+        >
+          <div className="goals-row-links">
+            <a href={withOrgHref("/todos", orgId)}>Todos →</a>
+            <a href={withOrgHref("/practice", orgId)}>Practice →</a>
+            <a href={withOrgHref("/team", orgId)}>Team hub →</a>
+          </div>
+        </EmptyState>
+      ) : null}
+
+      <AddGoalForm busy={busy} mutate={mutate} />
+      {hasGoals ? <GoalList view={view} busy={busy} mutate={mutate} /> : null}
     </main>
   );
 }
 
 function Scorecard({ view }: { view: LiveView }) {
   const s = view.summary;
+  const hasGoals = s.total > 0;
+  const attention = s.statusCounts.at_risk + s.statusCounts.missed;
   const tiles = [
-    { label: "Goals", value: String(s.total) },
-    { label: "Achieved", value: `${s.achieved}/${s.total}` },
-    { label: "At risk / missed", value: String(s.statusCounts.at_risk + s.statusCounts.missed) },
-    { label: "Season progress", value: pct(s.weightedProgress) },
+    { label: "Goals", value: hasGoals ? String(s.total) : "—", tone: "" },
+    {
+      label: "Achieved",
+      value: formatGoalsAchievedDisplay(s.achieved, s.total),
+      tone: hasGoals && s.achieved === s.total ? "good" : "",
+    },
+    {
+      label: "At risk / missed",
+      value: hasGoals ? String(attention) : "—",
+      tone: attention > 0 ? "warn" : "",
+    },
+    {
+      label: "Season progress",
+      value: formatGoalsProgressDisplay(s.weightedProgress, s.total),
+      tone: "",
+    },
   ];
   return (
-    <Panel style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
+    <Panel>
+      <section className="goals-summary" aria-label="Season goals scorecard">
         {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
+          <article key={tile.label} className={`goals-summary-tile${tile.tone ? ` ${tile.tone}` : ""}`}>
+            <strong>{tile.value}</strong>
+            <span>{tile.label}</span>
+          </article>
         ))}
-      </div>
-      <div>
-        <div className="mini-probability" aria-hidden="true">
-          <i style={{ width: `${Math.max(2, s.weightedProgress * 100)}%`, background: "#1f4fd6" }} />
+      </section>
+      <div className="goals-progress-wrap">
+        <div className={`goals-progress-bar${hasGoals ? "" : " empty"}`} aria-hidden="true">
+          <i style={{ width: hasGoals ? `${Math.max(2, s.weightedProgress * 100)}%` : "0%" }} />
         </div>
-        <small className="app-muted">Priority-weighted progress across all goals</small>
+        <small className="app-muted">
+          {hasGoals
+            ? "Priority-weighted progress across logged goals only"
+            : "Season progress stays blank until you add a real goal"}
+        </small>
       </div>
-      {s.byCategory.length > 0 ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      {hasGoals && s.byCategory.length > 0 ? (
+        <div className="goals-category-row">
           {s.byCategory.map((row) => (
-            <span key={row.category} className="app-badge demo" title={`${row.achieved}/${row.total} achieved`}>
-              {goalCategoryLabel(row.category)}: {pct(row.avgProgress)}
+            <span
+              key={row.category}
+              className="goals-badge"
+              title={`${row.achieved}/${row.total} achieved from logged values`}
+            >
+              {goalCategoryLabel(row.category)}: {Math.round(row.avgProgress * 100)}%
             </span>
           ))}
         </div>
@@ -217,16 +354,16 @@ function Scorecard({ view }: { view: LiveView }) {
 
 function NeedsAttention({ view }: { view: LiveView }) {
   return (
-    <Panel style={{ borderLeft: "3px solid #b26a00" }}>
-      <h2 style={{ marginTop: 0 }}>Needs attention</h2>
-      <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+    <section className="goals-attention app-card soft-panel" aria-label="Goals needing attention">
+      <h2>Needs attention</h2>
+      <ul>
         {view.summary.needsAttention.map((evaluation) => (
           <li key={evaluation.goal.id}>
-            <strong>{evaluation.goal.title}</strong>{" "}
-            <span style={{ color: statusColor(evaluation.status) }}>· {goalStatusLabel(evaluation.status)}</span>
-            <span className="app-muted">
-              {" "}
-              · {pct(evaluation.progress)}
+            <strong>{evaluation.goal.title}</strong>
+            <span className="meta">
+              <span className={`goals-badge ${evaluation.status}`}>{goalStatusLabel(evaluation.status)}</span>
+              {" · "}
+              {Math.round(evaluation.progress * 100)}%
               {evaluation.daysToDue != null
                 ? evaluation.daysToDue < 0
                   ? ` · ${Math.abs(evaluation.daysToDue)}d overdue`
@@ -236,7 +373,7 @@ function NeedsAttention({ view }: { view: LiveView }) {
           </li>
         ))}
       </ul>
-    </Panel>
+    </section>
   );
 }
 
@@ -262,6 +399,7 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
   return (
     <Panel
       as="form"
+      className="goals-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.title.trim()) return;
@@ -277,9 +415,9 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Add goal</h2>
+      <h2>Add goal</h2>
+      <p>Current value starts at zero — progress only moves when someone updates it from real work.</p>
       <FormGrid min={140}>
         <FormRow label="Objective" wide>
           <input value={form.title} onChange={set("title")} placeholder="Qualify for the district championship" required />
@@ -325,7 +463,7 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
           <input type="date" value={form.dueOn} onChange={set("dueOn")} />
         </FormRow>
       </FormGrid>
-      <div>
+      <div className="goals-form-actions">
         <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
           Add goal
         </button>
@@ -335,18 +473,8 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
 }
 
 function GoalList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
-  if (view.evaluations.length === 0) {
-    return (
-      <EmptyState
-        badge="No goals yet"
-        badgeTone="setup"
-        title="Set your season objectives"
-        description="Add a goal above — a target you can measure (matches won, outreach hours, dollars raised, a yes/no milestone)."
-      />
-    );
-  }
   return (
-    <section style={{ display: "grid", gap: 12 }}>
+    <section className="goals-list" aria-label="Season goals">
       {view.evaluations.map((evaluation) => (
         <GoalCard key={evaluation.goal.id} evaluation={evaluation} busy={busy} mutate={mutate} />
       ))}
@@ -357,33 +485,36 @@ function GoalList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutat
 function GoalCard({ evaluation, busy, mutate }: { evaluation: GoalEvaluation; busy: boolean; mutate: Mutate }) {
   const { goal, progress, status, daysToDue } = evaluation;
   return (
-    <Panel as="article">
-      <header style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-        <div>
-          <span className="app-badge" style={{ background: statusColor(status), color: "#fff" }}>
-            {goalStatusLabel(status)}
-          </span>{" "}
-          <small className="app-muted">
-            {goalCategoryLabel(goal.category)} · {goal.priority}
-            {daysToDue != null
-              ? daysToDue < 0
-                ? ` · ${Math.abs(daysToDue)}d overdue`
-                : ` · due in ${daysToDue}d`
-              : ""}
-          </small>
-          <h2 style={{ margin: "4px 0 0", fontSize: "1.1rem" }}>{goal.title}</h2>
+    <article className={`goals-row ${status}`}>
+      <header className="goals-row-top">
+        <div className="goals-row-title">
+          <div className="goals-row-meta">
+            <span className={`goals-badge ${status as GoalStatus}`}>{goalStatusLabel(status)}</span>
+            <span>
+              {goalCategoryLabel(goal.category)} · {goal.priority}
+              {daysToDue != null
+                ? daysToDue < 0
+                  ? ` · ${Math.abs(daysToDue)}d overdue`
+                  : ` · due in ${daysToDue}d`
+                : ""}
+            </span>
+          </div>
+          <strong>{goal.title}</strong>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <strong style={{ fontSize: "1.3rem" }}>{pct(progress)}</strong>
-          <small className="app-muted" style={{ display: "block" }}>{formatGoalValue(goal)}</small>
+        <div className="goals-row-scores">
+          <span className="goals-score">
+            <em>Progress</em>
+            <strong>{Math.round(progress * 100)}%</strong>
+          </span>
+          <small className="app-muted">{formatGoalValue(goal)}</small>
         </div>
       </header>
 
-      <div className="mini-probability" aria-hidden="true" style={{ margin: "10px 0" }}>
-        <i style={{ width: `${Math.max(2, progress * 100)}%`, background: statusColor(status) }} />
+      <div className="goals-progress-bar" aria-hidden="true">
+        <i style={{ width: `${Math.max(2, progress * 100)}%` }} />
       </div>
 
-      <footer style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      <footer className="goals-row-actions">
         {goal.metricType === "binary" ? (
           <button
             type="button"
@@ -396,7 +527,7 @@ function GoalCard({ evaluation, busy, mutate }: { evaluation: GoalEvaluation; bu
             {goal.currentValue >= 1 ? "Mark not done" : "Mark done"}
           </button>
         ) : (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <label>
             Progress
             <input
               type="number"
@@ -414,10 +545,11 @@ function GoalCard({ evaluation, busy, mutate }: { evaluation: GoalEvaluation; bu
                   mutate({ action: "update-goal", goalId: goal.id, currentValue: next });
                 }
               }}
-              style={{ width: 100 }}
             />
-            <span>/ {goal.metricType === "currency" ? `$${goal.targetValue.toLocaleString()}` : goal.targetValue}
-              {goal.metricType === "percent" ? "%" : goal.unit ? ` ${goal.unit}` : ""}</span>
+            <span>
+              / {goal.metricType === "currency" ? `$${goal.targetValue.toLocaleString()}` : goal.targetValue}
+              {goal.metricType === "percent" ? "%" : goal.unit ? ` ${goal.unit}` : ""}
+            </span>
           </label>
         )}
         <button
@@ -432,6 +564,6 @@ function GoalCard({ evaluation, busy, mutate }: { evaluation: GoalEvaluation; bu
           Delete
         </button>
       </footer>
-    </Panel>
+    </article>
   );
 }
