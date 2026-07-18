@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { OfflineBanner } from "../../components/offline-banner";
 import {
   allianceOf,
   compLevelLabel,
@@ -113,6 +114,11 @@ export default function ScheduleClient() {
             <h1>Match Schedule</h1>
           </div>
         </header>
+        <OfflineBanner
+          feature="Schedule"
+          fromCache={false}
+          detail={fetchFailed ? "Open Schedule once online so the shell can cache for venue Wi-Fi drops." : undefined}
+        />
         <div className="app-card sched-empty">
           {fetchFailed ? (
             <>
@@ -140,6 +146,7 @@ export default function ScheduleClient() {
             <p>Every match at your active event — your matches highlighted, with results and scout coverage.</p>
           </div>
         </header>
+        <OfflineBanner feature="Schedule" fromCache={false} />
         <div className="app-card sched-empty">
           <strong>Almost there</strong>
           <p className="app-muted">{view.message}</p>
@@ -181,6 +188,16 @@ export default function ScheduleClient() {
           Refresh
         </button>
       </header>
+
+      <OfflineBanner
+        feature="Schedule"
+        fromCache={Boolean(view.matches.length) && fetchFailed}
+        detail={
+          fetchFailed
+            ? "Showing the last loaded schedule from this session when available — never DEMO match rows."
+            : undefined
+        }
+      />
 
       {fetchFailed ? (
         <p className="telemetry-status" role="alert">

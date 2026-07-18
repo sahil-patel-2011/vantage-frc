@@ -2,9 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import {
+  OFFLINE_SHELL_RELATED_INCLUDE,
+  classifyOfflineShell,
+  formatOfflineCount,
+  offlineReadinessTone,
+  offlineRelatedLinks,
+  offlineShellCopy,
+  offlineShellNextActions,
+  type OfflineShellKind,
+} from "../../lib/offline/offline-related";
 import { OFFLINE_SHELL_NETWORK_STATUSES, offlineShellNetworkStatusLabel } from "../../lib/offline-shell";
 import type { OfflineShellView } from "../../lib/offline-shell/compute-offline-shell";
-import type { OfflineShellNetworkStatus, OfflineShellTier } from "../../lib/offline-shell/types";
+import type { OfflineShellNetworkStatus } from "../../lib/offline-shell/types";
+import { OfflineBanner } from "../../components/offline-banner";
+import "./offline-shell.css";
 
 const COMPONENT_LABEL: Record<string, string> = {
   routeCoverage: "Shell route coverage",
@@ -12,12 +24,6 @@ const COMPONENT_LABEL: Record<string, string> = {
   recency: "Sync recency",
   offlineVerified: "Verified offline",
 };
-
-function tierTone(tier: OfflineShellTier): string {
-  if (tier === "ready") return "good";
-  if (tier === "partial") return "setup";
-  return "demo";
-}
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -31,6 +37,56 @@ function formatBytes(bytes: number): string {
 
 type LiveView = Extract<OfflineShellView, { status: "live" }>;
 
+function RelatedStrip({ orgId }: { orgId: string | null }) {
+  const links = offlineRelatedLinks(orgId, {
+    active: "offline-shell",
+    include: [...OFFLINE_SHELL_RELATED_INCLUDE],
+  });
+  return (
+    <nav className="product-hub-related offline-shell-related" aria-label="Related offline tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActions({
+  orgId,
+  shell,
+  recommendations,
+}: {
+  orgId: string | null;
+  shell: OfflineShellKind;
+  recommendations?: string[];
+}) {
+  const actions = offlineShellNextActions({ orgId, shell, recommendations });
+  if (!actions.length) return null;
+  return (
+    <section className="offline-shell-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>From logged precache syncs only — never DEMO device or sync counts.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function OfflineShellClient() {
   const [view, setView] = useState<OfflineShellView | null>(null);
   const [error, setError] = useState("");
@@ -38,6 +94,17 @@ export default function OfflineShellClient() {
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  const loading = view == null && !fetchFailed;
+  const shell = classifyOfflineShell({
+    loading,
+    fetchFailed,
+    status: view?.status ?? null,
+    tier: view && view.status === "live" ? view.readiness.tier : null,
+    totalEvents: view && view.status === "live" ? view.summary.totalEvents : 0,
+  });
+  const shellCopy = offlineShellCopy(shell);
+  const recommendations =
+    view && view.status === "live" ? view.readiness.recommendations : undefined;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -89,7 +156,7 @@ export default function OfflineShellClient() {
   );
 
   return (
-    <main className="module-page">
+    <main className="module-page offline-shell-page">
       <PageHeader
         breadcrumbs={
           <>
@@ -98,19 +165,12 @@ export default function OfflineShellClient() {
           </>
         }
         title="Offline Shell"
-        description="Track service-worker precache readiness so scouting and schedule shell routes still cold-launch with no signal at the venue."
+        description="Track service-worker precache readiness so Scouting and schedule shells still cold-launch with no signal. Scores use logged sync events only — never DEMO counts."
       >
-        {orgId ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-            <a className="app-button secondary" href={`/scouting?orgId=${encodeURIComponent(orgId)}`}>
-              Scouting shell
-            </a>
-            <a className="app-button secondary" href={`/schedule?orgId=${encodeURIComponent(orgId)}`}>
-              Schedule shell
-            </a>
-          </div>
-        ) : null}
+        <RelatedStrip orgId={orgId} />
       </PageHeader>
+
+      <OfflineBanner feature="Offline Shell" fromCache={false} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -119,18 +179,17 @@ export default function OfflineShellClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load Offline Shell status"
-          description="A network or server issue prevented loading. Try again."
-        >
+        <EmptyState soft title={shellCopy.title} description={shellCopy.description}>
+          <NextActions orgId={orgId} shell="error" />
           <button type="button" className="app-button secondary" onClick={() => load()}>
             Retry
           </button>
         </EmptyState>
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
+        <EmptyState soft title={shellCopy.title} description={shellCopy.description} aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        <EmptyState soft badge={shellCopy.badge} badgeTone="setup" title={shellCopy.title} description={shellCopy.description}>
+          <NextActions orgId={null} shell="setup" />
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -144,11 +203,12 @@ export default function OfflineShellClient() {
           </ol>
         </EmptyState>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
+        <div className="offline-shell-stack">
+          <NextActions orgId={orgId} shell={shell} recommendations={recommendations} />
           <ReadinessPanel view={view} />
-          <SummaryTiles view={view} />
+          <SummaryTiles view={view} loaded />
           <LogCacheEventForm busy={busy} mutate={mutate} />
-          <RecentEvents view={view} busy={busy} mutate={mutate} />
+          <RecentEvents view={view} busy={busy} mutate={mutate} orgId={orgId} shell={shell} />
         </div>
       )}
     </main>
@@ -158,33 +218,35 @@ export default function OfflineShellClient() {
 function ReadinessPanel({ view }: { view: LiveView }) {
   const { readiness } = view;
   const components = Object.entries(readiness.components) as Array<[string, number]>;
+  const tone = offlineReadinessTone(readiness.tier);
   return (
-    <Panel aria-label="Offline shell readiness">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+    <Panel aria-label="Offline shell readiness" className="offline-shell-readiness">
+      <header className="offline-shell-readiness-header">
         <div>
-          <span className={`app-badge ${tierTone(readiness.tier)}`}>{readiness.tier.replace("_", " ").toUpperCase()}</span>
-          <h2 style={{ margin: "6px 0 0" }}>Offline-shell precache readiness</h2>
+          <span className={`app-badge ${tone}`}>{readiness.tier.replace("_", " ").toUpperCase()}</span>
+          <h2>Offline-shell precache readiness</h2>
           <small className="app-muted">
-            {view.summary.deviceCount} device(s) reporting · {view.summary.offlineVerifiedCount} verified offline
+            {formatOfflineCount(view.summary.deviceCount, true)} device(s) reporting ·{" "}
+            {formatOfflineCount(view.summary.offlineVerifiedCount, true)} verified offline — from logged syncs only
           </small>
         </div>
-        <strong style={{ fontSize: "2rem" }}>{pct(readiness.score)}</strong>
+        <strong className="offline-shell-score">{pct(readiness.score)}</strong>
       </header>
-      <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+      <div className="offline-shell-meters">
         {components.map(([key, value]) => (
-          <div key={key} style={{ display: "grid", gridTemplateColumns: "180px 1fr 48px", gap: 8, alignItems: "center" }}>
+          <div key={key} className="offline-shell-meter">
             <span className="app-muted">{COMPONENT_LABEL[key] ?? key}</span>
             <span className="mini-probability" aria-hidden="true">
               <i style={{ width: `${Math.max(2, value * 100)}%` }} />
             </span>
-            <small className="app-muted" style={{ textAlign: "right" }}>{pct(value)}</small>
+            <small className="app-muted">{pct(value)}</small>
           </div>
         ))}
       </div>
       {readiness.recommendations.length > 0 ? (
-        <div style={{ marginTop: 12 }}>
-          <strong className="app-muted">Next steps</strong>
-          <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+        <div className="offline-shell-recs">
+          <strong className="app-muted">From real sync logs</strong>
+          <ul>
             {readiness.recommendations.map((rec) => (
               <li key={rec}>{rec}</li>
             ))}
@@ -195,25 +257,26 @@ function ReadinessPanel({ view }: { view: LiveView }) {
   );
 }
 
-function SummaryTiles({ view }: { view: LiveView }) {
+function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
   const { summary } = view;
   const tiles = [
-    { label: "Sync events", value: String(summary.totalEvents) },
-    { label: "Devices", value: String(summary.deviceCount) },
-    { label: "Routes cached", value: String(summary.routesCovered.length) },
+    { label: "Sync events", value: formatOfflineCount(summary.totalEvents, loaded) },
+    { label: "Devices", value: formatOfflineCount(summary.deviceCount, loaded) },
+    { label: "Routes cached", value: formatOfflineCount(summary.routesCovered.length, loaded) },
     { label: "Cache size", value: formatBytes(summary.totalCacheBytes) },
     { label: "Last sync", value: summary.lastSyncAt ? new Date(summary.lastSyncAt).toLocaleString() : "—" },
   ];
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+    <Panel aria-label="Offline shell summary">
+      <div className="offline-shell-tiles">
         {tiles.map((tile) => (
           <div key={tile.label}>
-            <strong style={{ fontSize: "1.4rem", display: "block" }}>{tile.value}</strong>
+            <strong>{tile.value}</strong>
             <span className="app-muted">{tile.label}</span>
           </div>
         ))}
       </div>
+      <p className="app-muted offline-shell-tiles-note">Blank or zero until teammates log a real precache sync — never DEMO totals.</p>
     </Panel>
   );
 }
@@ -222,39 +285,36 @@ function RecentEvents({
   view,
   busy,
   mutate,
+  orgId,
+  shell,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  orgId: string | null;
+  shell: OfflineShellKind;
 }) {
   if (view.summary.totalEvents === 0) {
+    const copy = offlineShellCopy("empty");
     return (
-      <EmptyState
-        badge="No sync events yet"
-        badgeTone="setup"
-        title="Log your first offline-shell precache sync"
-        description="Precache the scouting and schedule shells on a device, verify a cold launch offline, then log it here."
-      />
+      <EmptyState soft badge={copy.badge} badgeTone="setup" title={copy.title} description={copy.description}>
+        <NextActions orgId={orgId} shell={shell} />
+      </EmptyState>
     );
   }
   return (
     <Panel>
-      <h2 style={{ marginTop: 0 }}>Recent sync events</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <h2 className="offline-shell-panel-title">Recent sync events</h2>
+      <ul className="offline-shell-events">
         {view.events.slice(0, 20).map((item) => (
-          <li
-            key={item.id}
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-          >
+          <li key={item.id}>
             <div>
               <strong>{item.deviceLabel}</strong>
-              <small className="app-muted" style={{ display: "block" }}>
+              <small className="app-muted">
                 {new Date(item.occurredAt).toLocaleString()} · {offlineShellNetworkStatusLabel(item.networkStatus)} ·{" "}
                 {item.routeCount} route(s) · {formatBytes(item.cacheBytes)}
               </small>
-              <small className="app-muted" style={{ display: "block" }}>
-                {item.routes.join(", ") || "No routes recorded"}
-              </small>
+              <small className="app-muted">{item.routes.join(", ") || "No routes recorded"}</small>
               {item.notes ? <small className="app-muted">{item.notes}</small> : null}
             </div>
             <button
@@ -299,6 +359,7 @@ function LogCacheEventForm({
 
   return (
     <Panel
+      id="offline-shell-log"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -316,9 +377,10 @@ function LogCacheEventForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
+      className="offline-shell-log-form"
     >
-      <h2 style={{ margin: 0 }}>Log a precache sync</h2>
+      <h2 className="offline-shell-panel-title">Log a precache sync</h2>
+      <p className="app-muted">Record only devices you actually warmed and verified — do not invent DEMO sync rows.</p>
       <FormGrid min={160}>
         <FormRow label="Device">
           <input value={form.deviceLabel} onChange={set("deviceLabel")} placeholder="Scout tablet A" required />
