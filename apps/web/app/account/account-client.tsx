@@ -4,10 +4,19 @@ import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import {
   ACCOUNT_RELATED_INCLUDE,
+  CONNECTIONS_RELATED_INCLUDE,
   accountNextActions,
   accountRelatedLinks,
+  buildConnectionConnectors,
+  classifyConnectionsShell,
+  connectionBadgeLabel,
+  connectionBadgeTone,
+  connectionsEmptyCopy,
+  connectionsNextActions,
+  connectionsRelatedLinks,
   formatAccountOrgLabel,
   formatAccountRole,
+  type ConnectionConnectorStatus,
 } from "../../lib/account";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { signOutAndRedirect } from "../../lib/sign-out";
@@ -36,6 +45,11 @@ type EmailPrefs = {
 
 type Integration = { status: "available" | "setup_required"; detail: string };
 
+type ConnectorIntegration = {
+  status: ConnectionConnectorStatus;
+  detail: string;
+};
+
 type AccountView = {
   name?: string | null;
   email?: string | null;
@@ -49,6 +63,9 @@ type AccountView = {
   integrations?: {
     google: Integration;
     tba: Integration;
+    onshape?: ConnectorIntegration;
+    discord?: ConnectorIntegration;
+    github?: ConnectorIntegration;
   };
 };
 
@@ -133,6 +150,67 @@ function AccountRelated({ orgId }: { orgId: string | null }) {
         </a>
       ))}
     </nav>
+  );
+}
+
+function ConnectionsRelated({ orgId }: { orgId: string | null }) {
+  const links = connectionsRelatedLinks(orgId, { include: [...CONNECTIONS_RELATED_INCLUDE] });
+  return (
+    <nav className="product-hub-related connections-related" aria-label="Related connection tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function ConnectionsNextActions({
+  orgId,
+  googleReady,
+  tbaReady,
+  onshapeStatus,
+  discordStatus,
+  githubStatus,
+}: {
+  orgId: string | null;
+  googleReady: boolean;
+  tbaReady: boolean;
+  onshapeStatus: ConnectionConnectorStatus;
+  discordStatus: ConnectionConnectorStatus;
+  githubStatus: ConnectionConnectorStatus;
+}) {
+  const actions = connectionsNextActions({
+    orgId,
+    googleReady,
+    tbaReady,
+    onshapeStatus,
+    discordStatus,
+    githubStatus,
+  });
+  return (
+    <section className="account-next-actions app-card soft-panel" aria-label="Connection next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>
+          Connected appears only for real OAuth, webhook, or PAT rows — never a DEMO linked account.
+        </p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -406,10 +484,47 @@ export default function AccountClient() {
   const emailDeliveryReady = account?.emailDelivery?.status !== "setup_required";
   const googleReady = account?.integrations?.google.status === "available";
   const tbaReady = account?.integrations?.tba.status === "available";
+  const onshapeStatus: ConnectionConnectorStatus =
+    account?.integrations?.onshape?.status ?? (orgId ? "empty" : "setup_required");
+  const discordStatus: ConnectionConnectorStatus =
+    account?.integrations?.discord?.status ?? (orgId ? "empty" : "setup_required");
+  const githubStatus: ConnectionConnectorStatus =
+    account?.integrations?.github?.status ?? (orgId ? "empty" : "setup_required");
+  const connectionCards = buildConnectionConnectors({
+    orgId,
+    google: account?.integrations?.google,
+    tba: account?.integrations?.tba,
+    onshape: account?.integrations?.onshape,
+    discord: account?.integrations?.discord,
+    github: account?.integrations?.github,
+  });
+  const connectionsShell = classifyConnectionsShell({
+    orgId,
+    loading,
+    fetchFailed,
+    // Team connectors only — Google is deployment/personal, not a workspace link.
+    connectors: connectionCards.filter((c) => c.id !== "google").map((c) => ({ status: c.status })),
+  });
+  const connectionsCopy = connectionsEmptyCopy(connectionsShell);
+  const showConnectionNextActions =
+    !loading &&
+    !fetchFailed &&
+    account != null &&
+    tab === "integrations" &&
+    (connectionsShell === "setup" ||
+      connectionsShell === "empty" ||
+      !googleReady ||
+      !tbaReady ||
+      onshapeStatus === "setup_required" ||
+      onshapeStatus === "empty" ||
+      discordStatus === "setup_required" ||
+      discordStatus === "empty" ||
+      githubStatus === "empty");
   const showNextActions =
     !loading &&
     !fetchFailed &&
     account != null &&
+    tab !== "integrations" &&
     (!orgId || !hasProfile || !emailDeliveryReady || !googleReady || !tbaReady);
 
   return (
@@ -677,52 +792,77 @@ export default function AccountClient() {
           ) : null}
 
           {tab === "integrations" ? (
-            <section className="admin-grid settings-connections">
-              {!orgId ? (
+            <section className="settings-connections" aria-label="Connections">
+              <ConnectionsRelated orgId={orgId} />
+
+              {connectionsShell === "setup" || connectionsShell === "empty" ? (
                 <EmptyState
                   soft
-                  badge="Setup required"
-                  badgeTone="setup"
-                  title="Connectors need a workspace"
-                  description="Google sign-in is personal. TBA connectors and team API keys are saved per active team."
+                  badge={connectionsCopy.badge}
+                  badgeTone={connectionsCopy.badgeTone}
+                  title={connectionsCopy.title}
+                  description={connectionsCopy.description}
                 >
                   <div className="account-empty-actions">
-                    <a className="app-button" href="/workspace">
-                      Open Workspace
-                    </a>
-                    <a className="app-button secondary" href="/support">
-                      Help & Support
+                    {!orgId ? (
+                      <a className="app-button" href="/workspace">
+                        Open Workspace
+                      </a>
+                    ) : (
+                      <a className="app-button" href={withOrgHref("/cad/connections", orgId)}>
+                        Open CAD Connections
+                      </a>
+                    )}
+                    <a
+                      className="app-button secondary"
+                      href={orgId ? withOrgHref("/team/discord", orgId) : "/support"}
+                    >
+                      {orgId ? "Open Discord" : "Help & Support"}
                     </a>
                   </div>
                 </EmptyState>
               ) : null}
-              <Panel as="article">
-                <h2>Google</h2>
-                <span className={`app-badge ${googleReady ? "good" : "setup"}`}>
-                  {googleReady ? "Available" : "Setup required"}
-                </span>
-                <p>{account.integrations?.google.detail ?? "Checking Google configuration…"}</p>
-                <a href="/signin">Open sign-in</a>
-              </Panel>
-              <Panel as="article">
-                <h2>The Blue Alliance</h2>
-                <span className={`app-badge ${tbaReady ? "good" : "setup"}`}>
-                  {tbaReady ? "Configured" : "Not configured"}
-                </span>
-                <p>{account.integrations?.tba.detail ?? "Checking TBA configuration…"}</p>
-                {orgId ? <a href={withOrgHref("/team/data", orgId)}>Open TBA connectors</a> : null}
-              </Panel>
-              <Panel as="article">
+
+              {showConnectionNextActions ? (
+                <ConnectionsNextActions
+                  orgId={orgId}
+                  googleReady={googleReady}
+                  tbaReady={tbaReady}
+                  onshapeStatus={onshapeStatus}
+                  discordStatus={discordStatus}
+                  githubStatus={githubStatus}
+                />
+              ) : null}
+
+              <div className="admin-grid settings-connections-grid">
+                {connectionCards.map((card) => (
+                  <Panel as="article" key={card.id} className="settings-connection-card">
+                    <div className="settings-connection-card-top">
+                      <h2>{card.label}</h2>
+                      <span className={`app-badge ${connectionBadgeTone(card.status)}`}>
+                        {connectionBadgeLabel(card.status)}
+                      </span>
+                    </div>
+                    <p>{card.detail}</p>
+                    <a href={card.href}>{card.cta}</a>
+                  </Panel>
+                ))}
+              </div>
+
+              <Panel as="article" className="settings-connection-footer">
                 <h2>Security, billing &amp; usage</h2>
                 <p>
                   Personal 2FA lives on Security. Workspace billing, AI usage, BYOK keys, and budgets follow the active
-                  team — never invented spend.
+                  team — never invented spend. Team connectors above stay empty until real links exist.
                 </p>
                 <div className="settings-inline-links">
                   <a href="/security">Security</a>
                   {orgId ? <a href={withOrgHref("/ai?tab=budgets", orgId)}>Billing</a> : null}
                   {orgId ? <a href={withOrgHref("/team/usage", orgId)}>AI usage</a> : null}
                   {orgId ? <a href={withOrgHref("/team", orgId)}>Team API keys</a> : null}
+                  {orgId ? <a href={withOrgHref("/cad/connections", orgId)}>CAD Connections</a> : null}
+                  {orgId ? <a href={withOrgHref("/team/discord", orgId)}>Discord</a> : null}
+                  <a href="/account?tab=profile">Account</a>
                   <a href="/whats-new">What’s new</a>
                   <a href="/support">Support</a>
                 </div>
