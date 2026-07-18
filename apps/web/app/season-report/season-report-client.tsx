@@ -1,10 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
+import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { SEASON_REPORT_CATEGORIES, SEASON_REPORT_SENTIMENTS, seasonReportCategoryLabel, seasonReportSentimentLabel } from "../../lib/season-report";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import {
+  SEASON_REPORT_CATEGORIES,
+  SEASON_REPORT_SENTIMENTS,
+  seasonReportCategoryLabel,
+  seasonReportSentimentLabel,
+} from "../../lib/season-report";
 import type { SeasonReportView } from "../../lib/season-report/compute-season-report";
+import {
+  SEASON_REPORT_RELATED_INCLUDE,
+  classifySeasonReportShell,
+  formatSeasonReportCompleteness,
+  formatSeasonReportMetric,
+  seasonReportNextActions,
+  seasonReportRelatedLinks,
+  seasonReportShellCopy,
+  type SeasonReportNextAction,
+  type SeasonReportShellKind,
+} from "../../lib/season-report/season-report-related";
 import type { SeasonReportCategory, SeasonReportSentiment } from "../../lib/season-report/types";
+import "./season-report.css";
 
 function sentimentTone(sentiment: SeasonReportSentiment): string {
   if (sentiment === "positive") return "good";
@@ -12,11 +33,133 @@ function sentimentTone(sentiment: SeasonReportSentiment): string {
   return "setup";
 }
 
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
+type LiveView = Extract<SeasonReportView, { status: "live" }>;
+
+function SeasonReportRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = seasonReportRelatedLinks(orgId, { include: [...SEASON_REPORT_RELATED_INCLUDE] });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related season-report-related" aria-label="Related season tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
 }
 
-type LiveView = Extract<SeasonReportView, { status: "live" }>;
+function SeasonReportNextActionsPanel({ actions }: { actions: SeasonReportNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions season-report-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy and Impact only — never DEMO season stats.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function SeasonReportShell({
+  title,
+  description,
+  orgId,
+  shell,
+  entryCount,
+  snapshotCount,
+  error,
+  onRetry,
+  children,
+}: {
+  title: string;
+  description: string;
+  orgId?: string | null;
+  shell: SeasonReportShellKind;
+  entryCount?: number;
+  snapshotCount?: number;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = seasonReportNextActions({
+    orgId,
+    shell,
+    entryCount,
+    snapshotCount,
+  });
+  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const aiHref = hubHref("/ai", "season-report", orgId);
+
+  return (
+    <main className="module-page season-report-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={aiHref}>AI</a>
+            {" / Season Report"}
+          </>
+        }
+        title="Season Report"
+        description={description}
+      >
+        <SeasonReportRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No entries yet"
+                : shell === "loading"
+                  ? undefined
+                  : "Season Report"
+        }
+        badgeTone={shell === "error" ? "demo" : "setup"}
+        title={title}
+        description={description}
+        aria-busy={shell === "loading" || undefined}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={workspaceHref}>
+            Open Workspace
+          </a>
+        ) : null}
+      </EmptyState>
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <SeasonReportNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function SeasonReportClient() {
   const [view, setView] = useState<SeasonReportView | null>(null);
@@ -24,8 +167,10 @@ export default function SeasonReportClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  const loading = view == null && !fetchFailed;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -58,15 +203,28 @@ export default function SeasonReportClient() {
       if (!orgId || busy) return;
       setBusy(true);
       setError("");
+      if (payload.action === "generate-snapshot") setCutoffCode(null);
       try {
         const response = await fetch("/api/season-report", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
         });
-        const data = (await response.json()) as SeasonReportView | { error?: string };
+        const data = (await response.json()) as
+          | SeasonReportView
+          | { error?: string; code?: string; reason?: string };
         if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          const cutoff = resolveCutoffErrorCode(response.status, {
+            code: "code" in data ? data.code : undefined,
+            reason: "reason" in data ? data.reason : undefined,
+            error: "error" in data ? data.error : undefined,
+          });
+          if (cutoff) {
+            setCutoffCode(cutoff);
+            setError("");
+          } else {
+            setError("error" in data && data.error ? data.error : "Something went wrong.");
+          }
           return;
         }
         setView(data);
@@ -80,37 +238,136 @@ export default function SeasonReportClient() {
     [orgId, season, busy],
   );
 
+  const entryCount = view?.status === "live" ? view.summary.totalEntries : 0;
+  const snapshotCount = view?.status === "live" ? view.snapshots.length : 0;
+  const shell = classifySeasonReportShell({
+    loading,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    entryCount,
+  });
+  const shellCopy = seasonReportShellCopy(shell);
+  const nextActions = seasonReportNextActions({
+    orgId,
+    shell,
+    entryCount,
+    snapshotCount,
+  });
+  const aiHref = hubHref("/ai", "season-report", orgId);
+  const relatedLinks = seasonReportRelatedLinks(orgId, {
+    include: [...SEASON_REPORT_RELATED_INCLUDE],
+  });
+
+  if (shell === "loading") {
+    return (
+      <SeasonReportShell
+        title={shellCopy.title}
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="loading"
+      />
+    );
+  }
+
+  if (shell === "error") {
+    return (
+      <SeasonReportShell
+        title={shellCopy.title}
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup" && view?.status === "setup_required") {
+    return (
+      <SeasonReportShell
+        title={view.message}
+        description={shellCopy.description}
+        orgId={view.orgId}
+        shell="setup"
+      >
+        <ol className="strategy-setup-steps">
+          {view.steps.map((step) => (
+            <li key={step.id}>
+              <div>
+                <strong>{step.label}</strong>
+                <span>{step.detail}</span>
+              </div>
+              <a href={step.href.startsWith("/") ? withOrgHref(step.href, view.orgId) : step.href}>
+                Open
+              </a>
+            </li>
+          ))}
+        </ol>
+      </SeasonReportShell>
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <SeasonReportShell
+        title={shellCopy.title}
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return (
+      <SeasonReportShell
+        title={shellCopy.title}
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page season-report-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/ai?orgId=${encodeURIComponent(orgId)}` : "/ai"}>AI</a>
+            <a href={aiHref}>AI</a>
             {" / Season Report"}
           </>
         }
         title="Season Report"
-        description="Log build reliability, results, budget, and outreach notes through the season, then generate a state-of-the-team retrospective grounded in only what you recorded."
+        description="Log build reliability, results, budget, and outreach notes through the season, then generate a state-of-the-team retrospective grounded in only what you recorded — never DEMO season stats."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="season-report-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+          {view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -119,66 +376,80 @@ export default function SeasonReportClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      {orgId ? (
+        <MeteredAiCutoffBanner
+          orgId={orgId}
+          errorCode={cutoffCode}
+          compact
+          className="season-report-metered"
+        />
+      ) : null}
+
+      <SeasonReportNextActionsPanel actions={nextActions} />
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load Season Report"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No entries yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href="#season-report-log">
+            Log first entry
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <CompletenessPanel view={view} />
-          <LogEntryForm busy={busy} mutate={mutate} />
-          {view.summary.totalEntries > 0 ? <CategoryBreakdown view={view} /> : null}
-          <SnapshotsPanel view={view} busy={busy} mutate={mutate} />
-          <RecentEntries view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      ) : null}
+
+      <div style={{ display: "grid", gap: 16 }}>
+        <CompletenessPanel view={view} loaded />
+        <LogEntryForm busy={busy} mutate={mutate} />
+        {view.summary.totalEntries > 0 ? <CategoryBreakdown view={view} /> : null}
+        <SnapshotsPanel view={view} busy={busy} mutate={mutate} />
+        <RecentEntries view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
 
-function CompletenessPanel({ view }: { view: LiveView }) {
+function CompletenessPanel({ view, loaded }: { view: LiveView; loaded: boolean }) {
   const { summary } = view;
+  const completenessLabel = formatSeasonReportCompleteness(summary.completeness, loaded);
+  const entryLabel = formatSeasonReportMetric(summary.totalEntries, loaded);
   return (
-    <Panel aria-label="Season report coverage">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+    <Panel className="season-report-coverage" aria-label="Season report coverage">
+      <header>
         <div>
-          <span className={`app-badge ${summary.completeness >= 0.8 ? "good" : summary.completeness >= 0.4 ? "setup" : "demo"}`}>
-            {summary.completeness >= 0.8 ? "READY" : summary.completeness >= 0.4 ? "IN PROGRESS" : "GETTING STARTED"}
+          <span
+            className={`app-badge ${
+              summary.completeness >= 0.8 ? "good" : summary.completeness >= 0.4 ? "setup" : "demo"
+            }`}
+          >
+            {summary.totalEntries === 0
+              ? "EMPTY"
+              : summary.completeness >= 0.8
+                ? "READY"
+                : summary.completeness >= 0.4
+                  ? "IN PROGRESS"
+                  : "GETTING STARTED"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Retrospective coverage</h2>
-          <small className="app-muted">{summary.totalEntries} entr{summary.totalEntries === 1 ? "y" : "ies"} logged</small>
+          <small className="app-muted">
+            {entryLabel} entr{summary.totalEntries === 1 ? "y" : "ies"} logged — never DEMO totals
+          </small>
         </div>
-        <strong style={{ fontSize: "2rem" }}>{pct(summary.completeness)}</strong>
+        <strong className="season-report-coverage-pct">{completenessLabel}</strong>
       </header>
-      <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+      <div className="season-report-bars">
         {summary.byCategory.map((row) => (
-          <div key={row.category} style={{ display: "grid", gridTemplateColumns: "160px 1fr 48px", gap: 8, alignItems: "center" }}>
+          <div key={row.category} className="season-report-bar-row">
             <span className="app-muted">{seasonReportCategoryLabel(row.category)}</span>
             <span className="mini-probability" aria-hidden="true">
               <i style={{ width: `${Math.max(2, Math.min(100, row.entries * 20))}%` }} />
             </span>
-            <small className="app-muted" style={{ textAlign: "right" }}>{row.entries}</small>
+            <small className="app-muted" style={{ textAlign: "right" }}>
+              {formatSeasonReportMetric(row.entries, loaded)}
+            </small>
           </div>
         ))}
       </div>
@@ -189,15 +460,12 @@ function CompletenessPanel({ view }: { view: LiveView }) {
 function CategoryBreakdown({ view }: { view: LiveView }) {
   const { summary } = view;
   return (
-    <section
-      className="app-card soft-panel"
-      style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}
-    >
+    <section className="app-card soft-panel season-report-breakdown">
       <div>
         <h2 style={{ marginTop: 0 }}>By category</h2>
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <ul className="season-report-list">
           {summary.byCategory.map((row) => (
-            <li key={row.category} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <li key={row.category}>
               <span>{seasonReportCategoryLabel(row.category)}</span>
               <small className="app-muted">
                 {row.entries} · {row.positive} positive · {row.negative} watch
@@ -220,7 +488,7 @@ function SnapshotsPanel({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel>
+    <Panel id="season-report-snapshots">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <h2 style={{ margin: 0 }}>Generated snapshots</h2>
         <button
@@ -232,17 +500,22 @@ function SnapshotsPanel({
           Generate retrospective
         </button>
       </header>
+      <p className="app-muted">
+        Snapshot generation is metered through your plan allowance. Narratives use only logged entries —
+        never DEMO season stats.
+      </p>
       {view.summary.totalEntries === 0 ? (
         <p className="app-muted">Log at least one entry to generate a retrospective snapshot.</p>
       ) : view.snapshots.length === 0 ? (
         <p className="app-muted">No snapshot generated yet for this season.</p>
       ) : (
-        <div style={{ display: "grid", gap: 16, marginTop: 12 }}>
+        <div className="season-report-snapshots">
           {view.snapshots.map((snapshot) => (
             <article key={snapshot.id} className="app-card soft-panel" style={{ display: "grid", gap: 10 }}>
               <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <small className="app-muted">
-                  {new Date(snapshot.createdAt).toLocaleString()} · {snapshot.entryCount} entries · {pct(snapshot.completeness)} coverage
+                  {new Date(snapshot.createdAt).toLocaleString()} · {snapshot.entryCount} entries ·{" "}
+                  {formatSeasonReportCompleteness(snapshot.completeness, true)} coverage
                 </small>
                 <button
                   type="button"
@@ -312,21 +585,14 @@ function RecentEntries({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   if (view.summary.totalEntries === 0) {
-    return (
-      <EmptyState
-        badge="No entries yet"
-        badgeTone="setup"
-        title="Log your first season-report entry"
-        description="Build reliability notes, results, budget calls, outreach wins, and lessons build the retrospective narrative."
-      />
-    );
+    return null;
   }
   return (
     <Panel>
       <h2 style={{ marginTop: 0 }}>Recent entries</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul className="season-report-entry-list">
         {view.entries.slice(0, 20).map((item) => (
-          <li key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={item.id}>
             <div>
               <span className={`app-badge ${sentimentTone(item.sentiment)}`} style={{ marginRight: 8 }}>
                 {seasonReportSentimentLabel(item.sentiment)}
@@ -381,6 +647,7 @@ function LogEntryForm({
 
   return (
     <Panel
+      id="season-report-log"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
