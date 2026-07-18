@@ -26,6 +26,8 @@
 | Code Coach Soft-UI | `/build?tab=code`, `/ai?tab=code` (also `/code`) | Local free pattern review + teach-not-do lessons; empty/setup + next actions; clear local-vs-metered strip; UsageCutoffBanner on AI hub (metered neighbors); cross-links to CAD / GitHub / AI chat — never invented review findings |
 | AI | `/ai` | Chat · Budgets · Writer · Code assist · Memory · Governance · Finance (+ More tools) |
 | AI Memory Soft-UI | `/ai?tab=memory` (also `/team/ai-memory`) | Admin opt-in team memory policy + real Neon counts; private vs team-shared clarity; empty/setup/forbidden shells; Chat/Budgets cross-links — never DEMO memories |
+| AI Governance Soft-UI | `/ai?tab=governance` (also `/team/ai-policy`) | Feature/tool allowlists, high-cost approvals, spend alerts, Finance-in-AI consent; empty/setup/forbidden shells; Memory/Budgets/Chat cross-links — never DEMO policy stats |
+| Finance-in-AI Soft-UI | `/ai?tab=finance` | Admin redaction consent toggle + honest empty/off; cross-links to Governance / Chat / Budgets / Memory — never DEMO ledger totals |
 
 Team admin: `/team/admin`. Redirects: `apps/web/next.config.ts`.
 
