@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { summarizeScrimInvites, upcomingScrimInvites } from ".";
+import { crossTeamScrimSetupSteps, type CrossTeamScrimSetupStep } from "./cross-team-scrim-related";
 import type { ScrimDataShareScope, ScrimInvite, ScrimStatus, ScrimSummary } from "./types";
 
 export const SCRIM_STATUSES: ScrimStatus[] = [
@@ -18,12 +19,7 @@ export const SCRIM_DATA_SHARE_SCOPES: ScrimDataShareScope[] = [
   "video_only",
 ];
 
-export type ScrimSetupStep = {
-  id: string;
-  label: string;
-  detail: string;
-  href: string;
-};
+export type ScrimSetupStep = CrossTeamScrimSetupStep;
 
 export type CrossTeamScrimView =
   | {
@@ -110,9 +106,7 @@ export async function computeCrossTeamScrimView(
     return {
       status: "setup_required",
       message: "Select a team workspace to schedule scrims and manage data-sharing agreements with nearby teams.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: crossTeamScrimSetupSteps(null),
       orgId: null,
       seasonYear,
     };

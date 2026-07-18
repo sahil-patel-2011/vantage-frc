@@ -114,6 +114,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "offline-shell", label: "Offline Shell", legacyHref: "/offline-shell", primary: false },
       { id: "onboarding-buddy", label: "Onboarding Buddy", legacyHref: "/onboarding-buddy", primary: false },
       { id: "pit-map-planner", label: "Pit Map Planner", legacyHref: "/pit-map-planner", primary: false },
+      { id: "retro", label: "Team Retrospective", legacyHref: "/retro", primary: false },
       { id: "risk-burndown", label: "Risk-Register Burndown", legacyHref: "/risk-burndown", primary: false },
       { id: "safety-training", label: "Safety Training Tracker", legacyHref: "/safety-training", primary: false },
       { id: "skills-graph", label: "Skills & Mentorship Graph", legacyHref: "/skills-graph", primary: false },
