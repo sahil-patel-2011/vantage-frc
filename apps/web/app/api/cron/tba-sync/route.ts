@@ -4,6 +4,7 @@ import {
   runTbaSeasonSync,
 } from "../../../../lib/reference/run-ingest";
 import { notifyMatchScheduleAfterSync } from "../../../../lib/reference/notify-schedule";
+import { runSponsorReminders } from "../../../../lib/run-sponsor-reminders";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -50,7 +51,9 @@ async function run(request: Request) {
         if (effectiveMode === "season") {
           const summary = await runTbaSeasonSync(body.year ?? year);
           const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
-          return Response.json({ ok: true, summary, matchAlerts });
+          // Hobby allows 2 crons — piggyback daily sponsor reminders on season sync.
+          const sponsorReminders = await runSponsorReminders();
+          return Response.json({ ok: true, summary, matchAlerts, sponsorReminders });
         }
         const summary = await runTbaEventDaySync({
           year: body.year ?? year,
@@ -70,7 +73,9 @@ async function run(request: Request) {
     if (mode === "season") {
       const summary = await runTbaSeasonSync(year);
       const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
-      return Response.json({ ok: true, summary, matchAlerts });
+      // Hobby allows 2 crons — piggyback daily sponsor reminders on season sync.
+      const sponsorReminders = await runSponsorReminders();
+      return Response.json({ ok: true, summary, matchAlerts, sponsorReminders });
     }
 
     const eventKey = url.searchParams.get("eventKey");

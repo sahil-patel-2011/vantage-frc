@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PageHeader } from "../../../components/ui/page-header";
+import { TeamOpsNav } from "../../../components/team-ops-nav";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 import { surfaceOnboardingLinks } from "../../../lib/onboarding-workflow";
 
 type Signals = {
-  hasLocation: boolean | null;
   members: number;
   pendingInvites: number;
   knowledgeChars: number;
@@ -16,6 +18,7 @@ type Signals = {
   joinedSubteam: boolean;
   logisticsTrips: number;
   kickoffActions: number;
+  hasLocation?: boolean;
 };
 
 type Data = {
@@ -42,7 +45,7 @@ function buildTasks(data: Data, orgId: string): Task[] {
     {
       title: "Add team location",
       detail:
-        s.hasLocation
+        s.hasLocation === true
           ? "City and state are on the org profile for sponsorships and partners."
           : "Owners/admins: add city and state so one-pagers know where you compete from.",
       done: s.hasLocation === true,
@@ -105,7 +108,7 @@ function buildTasks(data: Data, orgId: string): Task[] {
       detail:
         s.assistantRuns > 0
           ? `${s.assistantRuns} assistant run(s) so far.`
-          : "Ask it something real: “draft an auto strategy” or “what should we scout?”",
+          : "Ask it something real: draft an auto strategy or what should we scout.",
       done: s.assistantRuns > 0,
       href: `/chat${q}`,
       cta: "Open assistant",
@@ -180,76 +183,65 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
   const crossLinks = surfaceOnboardingLinks("getting_started", orgId);
 
   return (
-    <main className="intel-app">
-      <header className="intel-header">
-        <div>
-          <span className="eyebrow">VANTAGE / GETTING STARTED</span>
-          <h1>{data ? `Welcome, Team ${data.teamNumber ?? ""}`.trim() : "Getting started"}</h1>
-          <p className="app-muted">
-            A guided path from subteam calendar → knowledge wiki → logistics → kickoff summary. Everything
-            here reflects your team&apos;s real state — check items off as you go.
-          </p>
-        </div>
-        <nav className="intel-actions" aria-label="Onboarding path">
+    <main className="module-page start-page getting-started-page">
+      <PageHeader
+        navPath="/team/getting-started"
+        title={data ? `Team setup · ${data.orgName}` : "Team setup"}
+        description="Org-wide workspace checklist — invites, knowledge, budgets. For your personal role path, open Your path."
+      >
+        <div className="start-actions">
+          <a className="start-btn primary" href={withOrgHref("/start", orgId)}>
+            Your path
+          </a>
           {crossLinks.map((link) => (
-            <a key={link.href} href={link.href}>
+            <a key={link.href} className="start-btn" href={link.href}>
               {link.label}
             </a>
           ))}
-        </nav>
-      </header>
+        </div>
+      </PageHeader>
 
-      {message && <p role="status" className="telemetry-status">{message}</p>}
-      {loading && <p className="app-muted">Loading…</p>}
+      <TeamOpsNav orgId={orgId} />
 
-      {!loading && data && (
+      {message ? (
+        <p className="start-warn" role="status">
+          {message}
+        </p>
+      ) : null}
+      {loading ? <p className="start-meta">Loading…</p> : null}
+
+      {!loading && data ? (
         <>
-          <section className="intel-panel" style={{ marginBottom: "1.5rem" }}>
-            <span className="eyebrow">SETUP PROGRESS · {done}/{tasks.length} DONE</span>
-            <div
-              style={{
-                marginTop: "10px",
-                height: "10px",
-                borderRadius: "6px",
-                background: "#1a2329",
-                overflow: "hidden",
-              }}
-            >
-              <div style={{ width: `${pct}%`, height: "100%", background: "#16d9e8" }} />
+          <section className="start-progress" aria-label="Setup progress">
+            <strong>
+              {done}/{tasks.length} done · {pct}%
+            </strong>
+            <div className="start-progress-bar">
+              <span style={{ width: `${pct}%` }} />
             </div>
           </section>
 
-          {tasks.map((task) => (
-            <article
-              className="admin-org"
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}
-              key={task.title}
-            >
-              <div>
-                <strong>
-                  <span style={{ color: task.done ? "#16d9e8" : "#829198", marginRight: "8px" }}>
-                    {task.done ? "✓" : "○"}
-                  </span>
-                  {task.title}
-                </strong>
-                <small>{task.detail}</small>
-              </div>
-              <a href={task.href} className="intel-actions" style={{ whiteSpace: "nowrap" }}>
-                {task.done ? "Review" : task.cta}
-              </a>
-            </article>
-          ))}
+          <ul className="start-checks">
+            {tasks.map((task) => (
+              <li key={task.title} className={`start-check${task.done ? " done" : ""}`}>
+                <span aria-hidden="true">{task.done ? "✓" : "○"}</span>
+                <div>
+                  <strong>{task.title}</strong>
+                  <span>{task.detail}</span>
+                </div>
+                <a href={task.href}>{task.done ? "Review" : task.cta}</a>
+              </li>
+            ))}
+          </ul>
 
-          <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
-            <span className="eyebrow">GETTING GREAT ANSWERS FROM THE AI</span>
-            <p className="app-muted" style={{ marginTop: "0.5rem" }}>
-              1 · <strong>Give it context</strong> — your Team Knowledge does this automatically. 2 ·{" "}
-              <strong>Say what you want to do.</strong> 3 · <strong>Describe the result you expect</strong> (a
-              checklist, a table, three options).
+          <section className="start-empty">
+            <p>
+              <strong>Getting great answers from the AI</strong> — 1 · Give it context (Team Knowledge does
+              this). 2 · Say what you want to do. 3 · Describe the result you expect.
             </p>
           </section>
         </>
-      )}
+      ) : null}
     </main>
   );
 }
