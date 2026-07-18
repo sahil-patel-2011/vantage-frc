@@ -1826,6 +1826,17 @@ body.has-app-shell .messages-page .messages-live.on{color:var(--soft-accent);bor
 body.has-app-shell .messages-page .messages-live i{
   width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;
 }
+body.has-app-shell .messages-page .messages-layout{
+  border-color:var(--soft-line);background:var(--soft-card);box-shadow:var(--soft-shadow);
+}
+body.has-app-shell .messages-page .messages-mention-empty,
+body.has-app-shell .messages-page .messages-mention-menu{
+  background:var(--soft-card);border-color:var(--soft-line);
+}
+body.has-app-shell .messages-page .messages-mention-chip{
+  color:var(--soft-accent);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line));
+  background:color-mix(in srgb,var(--soft-accent-soft) 70%,var(--soft-card));
+}
 body.has-app-shell .team-admin-page .admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 body.has-app-shell .team-admin-page .intel-panel,
 body.has-app-shell .team-admin-page .compare-panel{

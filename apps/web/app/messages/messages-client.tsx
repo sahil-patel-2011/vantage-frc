@@ -1,7 +1,9 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { EmptyState, PageHeader } from "../../components/ui";
 import {
   applyMention,
   filterMembersForMention,
@@ -24,6 +26,8 @@ import {
   pollBackoffMs,
   totalUnread,
 } from "../../lib/messages/sync";
+import { MESSAGES_RELATED_INCLUDE } from "../../lib/team/team-related";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 type Conversation = {
   id: string;
@@ -180,6 +184,7 @@ export default function MessagesClient({
   const [linkQuery, setLinkQuery] = useState("");
   const [linkTargets, setLinkTargets] = useState<LinkTarget[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [live, setLive] = useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -195,6 +200,9 @@ export default function MessagesClient({
   const mentionSuggestions = activeMention
     ? filterMembersForMention(members, activeMention.query)
     : [];
+  const selectedMentions = mentionedUserIds
+    .map((id) => members.find((member) => member.id === id))
+    .filter((member): member is Member => Boolean(member));
 
   useEffect(() => {
     if (initialObjectLink) {
@@ -248,9 +256,12 @@ export default function MessagesClient({
     const response = await fetch(`/api/messages?orgId=${encodeURIComponent(orgId)}`);
     const data = await response.json();
     if (!response.ok) {
-      setStatus(data.error || "Could not load conversations.");
+      const message = data.error || "Could not load conversations.";
+      setLoadError(message);
+      setStatus(message);
       return null;
     }
+    setLoadError(null);
     applyInbox(data.conversations ?? []);
     if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
     return data.conversations as Conversation[];
@@ -303,6 +314,28 @@ export default function MessagesClient({
     },
     [applyInbox, orgId],
   );
+
+  async function reloadMessages() {
+    setLoading(true);
+    setLoadError(null);
+    setStatus("");
+    const list = await loadInbox();
+    const preferred =
+      (activeId && list?.find((item) => item.id === activeId)) ||
+      (initialConversationId && list?.find((item) => item.id === initialConversationId)) ||
+      list?.find((item) => item.kind === "team") ||
+      list?.[0] ||
+      null;
+    if (preferred) {
+      setActiveId(preferred.id);
+      await loadThread(preferred.id);
+    } else {
+      setActiveId(null);
+      setMessages([]);
+      setPinned([]);
+    }
+    setLoading(false);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -561,290 +594,374 @@ export default function MessagesClient({
 
   return (
     <main className="chat-page messages-page">
-      <header className="team-ops-header">
-        <div>
-          <span className="breadcrumbs">Team / Messages</span>
-          <h1>Messages</h1>
-        </div>
+      <PageHeader
+        breadcrumbs="Team / Messages"
+        title="Messages"
+        description="Org-scoped team channel and private chats — real members only, never demo threads."
+      >
         <span className={`messages-live ${live ? "on" : "off"}`}>
           <i aria-hidden="true" />
           {live ? "Live" : "Paused"}
           {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
         </span>
-      </header>
-      <div style={{ padding: "0 clamp(14px,2vw,28px)" }}>
-        <TeamOpsNav orgId={orgId} active="messages" />
-      </div>
+      </PageHeader>
+      <TeamOpsNav orgId={orgId} active="messages" />
+      <TeamHubRelated
+        orgId={orgId}
+        active="messages"
+        include={MESSAGES_RELATED_INCLUDE}
+        ariaLabel="Related team ops for messages"
+      />
 
-      <aside className="chat-sidebar">
-        <span className="eyebrow">Inbox</span>
-        <button type="button" className="messages-new-dm" onClick={() => void openMemberPicker()} disabled={sending}>
-          + Private message
-        </button>
-        {conversations.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={activeId === item.id ? "active" : ""}
-            aria-current={activeId === item.id ? "true" : undefined}
-            onClick={() => void selectConversation(item.id)}
-          >
-            <span>
-              {item.kind === "team" ? "Team" : "Private"}
-              {item.unreadCount > 0 ? (
-                <b className="messages-unread" aria-label={`${item.unreadCount} unread`}>
-                  {item.unreadCount > 99 ? "99+" : item.unreadCount}
-                </b>
-              ) : null}
-            </span>
-            {labelFor(item)}
-            {item.lastBody ? <small className="messages-preview">{item.lastBody}</small> : null}
+      {loading ? (
+        <EmptyState soft title="Loading messages…" description="Opening your org inbox." aria-busy />
+      ) : loadError ? (
+        <EmptyState
+          title="Could not load messages"
+          description={loadError}
+          badge="Setup"
+          badgeTone="setup"
+        >
+          <button type="button" className="app-button secondary" onClick={() => void reloadMessages()}>
+            Retry
           </button>
-        ))}
-        {!loading && conversations.length === 0 ? (
-          <p className="messages-sidebar-empty">No conversations yet. Your team channel opens when you need it.</p>
-        ) : null}
-      </aside>
-
-      <section className="chat-main">
-        {!active ? (
-          <div className="empty-chat">
-            <h1>Team messages</h1>
-            <p>
-              Use the org team channel for shared updates, or message a teammate privately. Conversations stay
-              organization-scoped.
-            </p>
-          </div>
-        ) : (
-          <>
-            <header>
-              <div>
-                <span className="eyebrow">{active.kind === "team" ? "Team channel" : "Private chat"}</span>
-                <h1>{labelFor(active)}</h1>
-              </div>
-              {active.kind === "team" ? (
-                <strong className="shared-warning">Visible to all org members</strong>
-              ) : null}
-            </header>
-
-            {active.kind === "team" && pinned.length > 0 ? (
-              <div className="messages-pins" aria-label="Pinned match-day notes">
-                <span className="eyebrow">Pinned notes</span>
-                {pinned.map((item) => (
-                  <article key={item.id}>
-                    <MessageBody body={item.body} mentions={item.mentions} members={members} />
-                    <footer>
-                      <small>
-                        {item.authorName} · {formatTime(item.pinnedAt ?? item.createdAt)}
-                      </small>
-                      {pinsSupported ? (
-                        <button type="button" onClick={() => void togglePin(item)}>
-                          Unpin
-                        </button>
-                      ) : null}
-                    </footer>
-                  </article>
-                ))}
-              </div>
-            ) : null}
-
-            <div
-              className="messages"
-              onScroll={(event) => {
-                const node = event.currentTarget;
-                stickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 80;
-              }}
+          <a className="app-button secondary" href="/workspace">
+            Choose workspace
+          </a>
+        </EmptyState>
+      ) : (
+        <div className="messages-layout">
+          <aside className="chat-sidebar">
+            <span className="eyebrow">Inbox</span>
+            <button
+              type="button"
+              className="messages-new-dm"
+              onClick={() => void openMemberPicker()}
+              disabled={sending}
             >
-              {messages.length === 0 ? (
-                <div className="empty-chat">
-                  <h1>No messages yet.</h1>
-                  <p>
-                    {active.kind === "team"
-                      ? "Say something the whole team should see—pit schedule, travel notes, or a quick heads-up. Use @name to notify someone, and pin important match-day notes."
-                      : "Start a private thread with this teammate. Only the two of you can read it."}
-                  </p>
-                </div>
-              ) : (
-                messages.map((item) =>
-                  item.deletedAt ? (
-                    <article className="deleted" key={item.id}>
-                      <span>deleted · {formatTime(item.createdAt)}</span>
-                      <p>
-                        <em>Message deleted</em>
-                      </p>
-                    </article>
-                  ) : (
-                    <article className={`${item.mine ? "user" : "member"}${item.pinnedAt ? " pinned" : ""}`} key={item.id}>
-                      <span>
-                        {item.mine ? "You" : item.authorName} · {formatTime(item.createdAt)}
-                        {item.pinnedAt ? " · pinned" : ""}
-                      </span>
-                      <MessageBody body={item.body} mentions={item.mentions} members={members} />
-                      {item.objectLink ? (
-                        <a className="message-object-link" href={item.objectLink.href ?? "#"}>
-                          <span className="message-object-link-kind">{objectTypeLabel(item.objectLink.objectType)}</span>
-                          {item.objectLink.label}
-                        </a>
-                      ) : null}
-                      <div className="message-actions">
-                        {pinsSupported && active.kind === "team" ? (
-                          <button type="button" className="message-pin" onClick={() => void togglePin(item)}>
-                            {item.pinnedAt ? "Unpin" : "Pin note"}
-                          </button>
-                        ) : null}
-                        {item.mine ? (
-                          <button type="button" className="message-delete" onClick={() => void softDelete(item.id)}>
-                            Delete
-                          </button>
-                        ) : null}
-                      </div>
-                    </article>
-                  ),
-                )
-              )}
-              <div ref={bottomRef} />
-            </div>
+              + Private message
+            </button>
+            {conversations.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={activeId === item.id ? "active" : ""}
+                aria-current={activeId === item.id ? "true" : undefined}
+                onClick={() => void selectConversation(item.id)}
+              >
+                <span>
+                  {item.kind === "team" ? "Team" : "Private"}
+                  {item.unreadCount > 0 ? (
+                    <b className="messages-unread" aria-label={`${item.unreadCount} unread`}>
+                      {item.unreadCount > 99 ? "99+" : item.unreadCount}
+                    </b>
+                  ) : null}
+                </span>
+                {labelFor(item)}
+                {item.lastBody ? <small className="messages-preview">{item.lastBody}</small> : null}
+              </button>
+            ))}
+            {conversations.length === 0 ? (
+              <EmptyState
+                soft
+                title="No conversations yet"
+                description="Your team channel opens with this workspace. Private chats appear after you message a teammate in this org."
+              />
+            ) : null}
+          </aside>
 
-            <form className="chat-composer" onSubmit={send}>
-              {active.kind === "team" ? (
-                <div className="messages-composer-hint">
-                  Team channel · type @ to mention · link a task, CAD, inventory, or event
-                </div>
-              ) : null}
-              {active.kind === "team" && pendingObjectLink ? (
-                <div className="messages-link-chip-row">
-                  <span className="messages-link-chip">
-                    <span className="messages-link-chip-kind">{objectTypeLabel(pendingObjectLink.objectType)}</span>
-                    {pendingObjectLink.label}
-                    <button
-                      type="button"
-                      className="messages-link-chip-clear"
-                      aria-label="Remove linked object"
-                      onClick={() => setPendingObjectLink(null)}
-                    >
-                      ×
-                    </button>
-                  </span>
-                </div>
-              ) : null}
-              <div className="messages-composer-wrap">
-                {active.kind === "team" && linkPickerOpen ? (
-                  <div className="messages-link-picker" role="dialog" aria-label="Link an object">
-                    <div className="messages-link-picker-head">
-                      {COMPOSER_OBJECT_TYPES.map((type) => (
-                        <button
-                          key={type}
-                          type="button"
-                          className={linkPickerType === type ? "active" : undefined}
-                          onClick={() => {
-                            setLinkPickerType(type);
-                            setLinkQuery("");
-                          }}
+          <section className="chat-main">
+            {!active ? (
+              <EmptyState
+                soft
+                title="Team messages"
+                description="Use the org team channel for shared updates, or message a teammate privately. Conversations stay organization-scoped — never shared across teams."
+              >
+                <button type="button" className="app-button" onClick={() => void openMemberPicker()}>
+                  Message a teammate
+                </button>
+              </EmptyState>
+            ) : (
+              <>
+                <header>
+                  <div>
+                    <span className="eyebrow">{active.kind === "team" ? "Team channel" : "Private chat"}</span>
+                    <h1>{labelFor(active)}</h1>
+                  </div>
+                  {active.kind === "team" ? (
+                    <strong className="shared-warning">Visible to all org members</strong>
+                  ) : null}
+                </header>
+
+                {active.kind === "team" && pinned.length > 0 ? (
+                  <div className="messages-pins" aria-label="Pinned match-day notes">
+                    <span className="eyebrow">Pinned notes</span>
+                    {pinned.map((item) => (
+                      <article key={item.id}>
+                        <MessageBody body={item.body} mentions={item.mentions} members={members} />
+                        <footer>
+                          <small>
+                            {item.authorName} · {formatTime(item.pinnedAt ?? item.createdAt)}
+                          </small>
+                          {pinsSupported ? (
+                            <button type="button" onClick={() => void togglePin(item)}>
+                              Unpin
+                            </button>
+                          ) : null}
+                        </footer>
+                      </article>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div
+                  className="messages"
+                  onScroll={(event) => {
+                    const node = event.currentTarget;
+                    stickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 80;
+                  }}
+                >
+                  {messages.length === 0 ? (
+                    <EmptyState
+                      soft
+                      title="No messages yet"
+                      description={
+                        active.kind === "team"
+                          ? "Say something the whole team should see—pit schedule, travel notes, or a quick heads-up. Use @name to notify someone, and pin important match-day notes. Nothing is invented for empty channels."
+                          : "Start a private thread with this teammate. Only the two of you in this organization can read it."
+                      }
+                    />
+                  ) : (
+                    messages.map((item) =>
+                      item.deletedAt ? (
+                        <article className="deleted" key={item.id}>
+                          <span>deleted · {formatTime(item.createdAt)}</span>
+                          <p>
+                            <em>Message deleted</em>
+                          </p>
+                        </article>
+                      ) : (
+                        <article
+                          className={`${item.mine ? "user" : "member"}${item.pinnedAt ? " pinned" : ""}`}
+                          key={item.id}
                         >
-                          {objectTypeLabel(type)}
-                        </button>
+                          <span>
+                            {item.mine ? "You" : item.authorName} · {formatTime(item.createdAt)}
+                            {item.pinnedAt ? " · pinned" : ""}
+                          </span>
+                          <MessageBody body={item.body} mentions={item.mentions} members={members} />
+                          {item.objectLink ? (
+                            <a className="message-object-link" href={item.objectLink.href ?? "#"}>
+                              <span className="message-object-link-kind">
+                                {objectTypeLabel(item.objectLink.objectType)}
+                              </span>
+                              {item.objectLink.label}
+                            </a>
+                          ) : null}
+                          <div className="message-actions">
+                            {pinsSupported && active.kind === "team" ? (
+                              <button type="button" className="message-pin" onClick={() => void togglePin(item)}>
+                                {item.pinnedAt ? "Unpin" : "Pin note"}
+                              </button>
+                            ) : null}
+                            {item.mine ? (
+                              <button
+                                type="button"
+                                className="message-delete"
+                                onClick={() => void softDelete(item.id)}
+                              >
+                                Delete
+                              </button>
+                            ) : null}
+                          </div>
+                        </article>
+                      ),
+                    )
+                  )}
+                  <div ref={bottomRef} />
+                </div>
+
+                <form className="chat-composer" onSubmit={send}>
+                  {active.kind === "team" ? (
+                    <div className="messages-composer-hint">
+                      Team channel · type @ to mention · ↑↓ Enter to pick · Esc to dismiss · link a task,
+                      CAD, inventory, or event
+                    </div>
+                  ) : null}
+                  {active.kind === "team" && selectedMentions.length > 0 ? (
+                    <div className="messages-mention-chips" aria-label="People mentioned in this draft">
+                      {selectedMentions.map((member) => (
+                        <span key={member.id} className="messages-mention-chip">
+                          @{member.name}
+                        </span>
                       ))}
                     </div>
-                    <input
-                      className="messages-link-picker-search"
-                      value={linkQuery}
-                      onChange={(event) => setLinkQuery(event.target.value)}
-                      placeholder={`Search ${objectTypeLabel(linkPickerType).toLowerCase()}…`}
-                      aria-label="Search link targets"
-                    />
-                    <ul className="messages-link-picker-list" role="listbox" aria-label="Link targets">
-                      {linkTargets.length === 0 ? (
-                        <li className="messages-link-picker-empty">No matches yet.</li>
-                      ) : (
-                        linkTargets.map((target) => (
-                          <li key={`${target.objectType}-${target.objectId}`}>
+                  ) : null}
+                  {active.kind === "team" && pendingObjectLink ? (
+                    <div className="messages-link-chip-row">
+                      <span className="messages-link-chip">
+                        <span className="messages-link-chip-kind">
+                          {objectTypeLabel(pendingObjectLink.objectType)}
+                        </span>
+                        {pendingObjectLink.label}
+                        <button
+                          type="button"
+                          className="messages-link-chip-clear"
+                          aria-label="Remove linked object"
+                          onClick={() => setPendingObjectLink(null)}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    </div>
+                  ) : null}
+                  <div className="messages-composer-wrap">
+                    {active.kind === "team" && linkPickerOpen ? (
+                      <div className="messages-link-picker" role="dialog" aria-label="Link an object">
+                        <div className="messages-link-picker-head">
+                          {COMPOSER_OBJECT_TYPES.map((type) => (
                             <button
+                              key={type}
                               type="button"
-                              role="option"
-                              onMouseDown={(event) => {
-                                event.preventDefault();
-                                setPendingObjectLink(target);
-                                setLinkPickerOpen(false);
+                              className={linkPickerType === type ? "active" : undefined}
+                              onClick={() => {
+                                setLinkPickerType(type);
                                 setLinkQuery("");
                               }}
                             >
-                              <strong>{target.label}</strong>
-                              {target.subtitle ? <small>{target.subtitle}</small> : null}
+                              {objectTypeLabel(type)}
                             </button>
-                          </li>
-                        ))
-                      )}
-                    </ul>
-                    <button type="button" className="messages-link-picker-close" onClick={() => setLinkPickerOpen(false)}>
-                      Close
-                    </button>
-                  </div>
-                ) : null}
-                {active.kind === "team" && activeMention && mentionSuggestions.length > 0 ? (
-                  <ul className="messages-mention-menu" role="listbox" aria-label="Mention teammate">
-                    {mentionSuggestions.map((member, index) => (
-                      <li key={member.id}>
+                          ))}
+                        </div>
+                        <input
+                          className="messages-link-picker-search"
+                          value={linkQuery}
+                          onChange={(event) => setLinkQuery(event.target.value)}
+                          placeholder={`Search ${objectTypeLabel(linkPickerType).toLowerCase()}…`}
+                          aria-label="Search link targets"
+                        />
+                        <ul className="messages-link-picker-list" role="listbox" aria-label="Link targets">
+                          {linkTargets.length === 0 ? (
+                            <li className="messages-link-picker-empty">
+                              No matches in this organization yet.
+                            </li>
+                          ) : (
+                            linkTargets.map((target) => (
+                              <li key={`${target.objectType}-${target.objectId}`}>
+                                <button
+                                  type="button"
+                                  role="option"
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    setPendingObjectLink(target);
+                                    setLinkPickerOpen(false);
+                                    setLinkQuery("");
+                                  }}
+                                >
+                                  <strong>{target.label}</strong>
+                                  {target.subtitle ? <small>{target.subtitle}</small> : null}
+                                </button>
+                              </li>
+                            ))
+                          )}
+                        </ul>
                         <button
                           type="button"
-                          role="option"
-                          aria-selected={index === mentionIndex}
-                          className={index === mentionIndex ? "active" : undefined}
-                          onMouseDown={(event) => {
-                            event.preventDefault();
-                            selectMention(member);
-                          }}
+                          className="messages-link-picker-close"
+                          onClick={() => setLinkPickerOpen(false)}
                         >
-                          <strong>{member.name}</strong>
-                          <small>{member.email}</small>
+                          Close
                         </button>
-                      </li>
-                    ))}
-                  </ul>
+                      </div>
+                    ) : null}
+                    {active.kind === "team" && activeMention ? (
+                      mentionSuggestions.length > 0 ? (
+                        <ul className="messages-mention-menu" role="listbox" aria-label="Mention teammate">
+                          {mentionSuggestions.map((member, index) => (
+                            <li key={member.id}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={index === mentionIndex}
+                                className={index === mentionIndex ? "active" : undefined}
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
+                                  selectMention(member);
+                                }}
+                              >
+                                <strong>{member.name}</strong>
+                                <small>{member.email}</small>
+                              </button>
+                            </li>
+                          ))}
+                          <li className="messages-mention-hint" aria-hidden="true">
+                            ↑↓ move · Enter or Tab select · Esc dismiss
+                          </li>
+                        </ul>
+                      ) : (
+                        <div className="messages-mention-empty" role="status">
+                          <p>
+                            {members.length === 0
+                              ? "No teammates to mention yet — invite under Team admin."
+                              : activeMention.query
+                                ? `No org member matches @${activeMention.query}`
+                                : "Type a name to mention a teammate in this organization."}
+                          </p>
+                          <small>Esc to dismiss · mentions stay inside this team</small>
+                          {members.length === 0 ? (
+                            <a className="app-button secondary" href={withOrgHref("/team/admin", orgId)}>
+                              Team admin
+                            </a>
+                          ) : null}
+                        </div>
+                      )
+                    ) : null}
+                    <textarea
+                      ref={composerRef}
+                      aria-label="Message"
+                      value={text}
+                      onChange={(event) => {
+                        updateComposer(
+                          event.target.value,
+                          event.target.selectionStart ?? event.target.value.length,
+                        );
+                      }}
+                      onClick={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
+                      onKeyUp={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
+                      onSelect={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
+                      onKeyDown={onComposerKeyDown}
+                      placeholder={
+                        active.kind === "team"
+                          ? "Message the team… use @name to notify someone"
+                          : "Private message…"
+                      }
+                      maxLength={8000}
+                    />
+                  </div>
+                  {active.kind === "team" ? (
+                    <button
+                      type="button"
+                      className="messages-link-toggle"
+                      onClick={() => setLinkPickerOpen((open) => !open)}
+                      disabled={sending}
+                    >
+                      Link
+                    </button>
+                  ) : null}
+                  <button type="submit" disabled={!text.trim() || sending}>
+                    Send
+                  </button>
+                </form>
+                {status ? (
+                  <p className="chat-status" role="status">
+                    {status}
+                  </p>
                 ) : null}
-                <textarea
-                  ref={composerRef}
-                  aria-label="Message"
-                  value={text}
-                  onChange={(event) => {
-                    updateComposer(
-                      event.target.value,
-                      event.target.selectionStart ?? event.target.value.length,
-                    );
-                  }}
-                  onClick={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
-                  onKeyUp={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
-                  onSelect={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
-                  onKeyDown={onComposerKeyDown}
-                  placeholder={
-                    active.kind === "team"
-                      ? "Message the team… use @name to notify someone"
-                      : "Private message…"
-                  }
-                  maxLength={8000}
-                />
-              </div>
-              {active.kind === "team" ? (
-                <button
-                  type="button"
-                  className="messages-link-toggle"
-                  onClick={() => setLinkPickerOpen((open) => !open)}
-                  disabled={sending}
-                >
-                  Link
-                </button>
-              ) : null}
-              <button type="submit" disabled={!text.trim() || sending}>
-                Send
-              </button>
-            </form>
-            {status ? (
-              <p className="chat-status" role="status">
-                {status}
-              </p>
-            ) : null}
-          </>
-        )}
-      </section>
+              </>
+            )}
+          </section>
+        </div>
+      )}
 
       {pickerOpen ? (
         <aside className="memory-panel open messages-member-panel" aria-label="Start private message">
@@ -854,7 +971,15 @@ export default function MessagesClient({
           <span className="eyebrow">Team members</span>
           <p>Private chats stay inside this organization. Only you and the other member can read them.</p>
           {members.length === 0 ? (
-            <p className="messages-sidebar-empty">Invite teammates under Team Admin, then message them here.</p>
+            <EmptyState
+              soft
+              title="No teammates yet"
+              description="Invite members under Team admin, then start a private chat here. Empty orgs stay empty."
+            >
+              <a className="app-button secondary" href={withOrgHref("/team/admin", orgId)}>
+                Team admin
+              </a>
+            </EmptyState>
           ) : (
             members.map((member) => (
               <article key={member.id}>
