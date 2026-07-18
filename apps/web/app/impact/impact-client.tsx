@@ -102,34 +102,46 @@ export default function ImpactClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs="Team / Community Impact"
-        title="Community Impact"
-        description={
+        breadcrumbs={
           <>
-            Log outreach, STEM demos, and mentoring — the evidence trail behind the Impact and Engineering Inspiration
-            awards. Readiness is computed from what you actually record; nothing is invented.
+            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
+            {" / Community Impact"}
           </>
         }
+        title="Community Impact"
+        description="Log outreach, STEM demos, and mentoring — the evidence trail for Impact and Engineering Inspiration. Readiness uses only what you record."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          {view?.status === "live" && view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {orgId ? (
+            <>
+              <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>
+                Business · Awards
+              </a>
+              <a className="app-button secondary" href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>
+                Awards workbench
+              </a>
+            </>
+          ) : null}
+        </div>
       </PageHeader>
 
       {error ? (

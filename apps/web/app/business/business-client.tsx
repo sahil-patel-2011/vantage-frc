@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import PartnerPlacement from "../../components/partner-placement";
+import { EmptyState, PageHeader, TabBar } from "../../components/ui";
 import {
   GRANT_STATUSES,
   SPONSOR_STATUSES,
@@ -16,13 +17,13 @@ import { PartnerPlacementsPanel } from "./partner-placements-panel";
 
 type Tab = "overview" | "budget" | "sponsors" | "placements" | "grants" | "evidence";
 
-const TABS: Array<{ id: Tab; label: string; eyebrow: string }> = [
-  { id: "overview", label: "Command center", eyebrow: "Today" },
-  { id: "budget", label: "Budget & orders", eyebrow: "Money out" },
-  { id: "sponsors", label: "Sponsor CRM", eyebrow: "Relationships" },
-  { id: "placements", label: "Partner placements", eyebrow: "Recognition" },
-  { id: "grants", label: "Grants & writer", eyebrow: "Funding" },
-  { id: "evidence", label: "Awards & evidence", eyebrow: "Proof" },
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "budget", label: "Budget" },
+  { id: "sponsors", label: "Sponsors" },
+  { id: "placements", label: "Partners" },
+  { id: "grants", label: "Grants" },
+  { id: "evidence", label: "Awards" },
 ];
 
 function isTab(value: string | null): value is Tab {
@@ -176,73 +177,107 @@ export default function BusinessClient() {
     }
   }, [busy, live, load]);
 
+  const orgId = live?.orgId;
+  const q = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+
   return (
     <main className="module-page business-page">
-      <header className="biz-hero">
-        <div>
-          <span className="breadcrumbs">
-            <a href={live ? `/dashboard?orgId=${encodeURIComponent(live.orgId)}` : "/dashboard"}>Home</a>
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={orgId ? `/dashboard?orgId=${encodeURIComponent(orgId)}` : "/dashboard"}>Home</a>
             {" / "}
-            <a href={live ? `/team?orgId=${encodeURIComponent(live.orgId)}` : "/team"}>Team</a>
+            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
             {" / Business"}
-          </span>
-          <p className="biz-kicker">Same workspace · same org · shared Soft-UI shell</p>
-          <h1>Funding, purchasing, and partner relationships—one source of truth.</h1>
-          <p>Every request has an owner. Every dollar has a destination. Every sponsor has a next step. Every claim in a grant draft points back to recorded evidence.</p>
-        </div>
+          </>
+        }
+        title="Business"
+        description={
+          live
+            ? `Budget, purchases, sponsors, grants, and award evidence for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
+            : "Budget, purchases, sponsors, grants, and award evidence — one season source of truth."
+        }
+      >
         {live ? (
-          <div className="biz-season-control">
-            <span>{live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName}</span>
-            <label>
+          <div className="biz-header-actions">
+            <label className="biz-season">
               Season
               <select value={live.seasonYear} onChange={(event) => void load(Number(event.target.value))}>
-                {live.seasons.map((season) => <option key={season}>{season}</option>)}
+                {live.seasons.map((season) => (
+                  <option key={season} value={season}>
+                    {season}
+                  </option>
+                ))}
               </select>
             </label>
-            <ToneBadge tone={live.canManageFinance ? "blue" : "neutral"}>{live.canManageFinance ? "Finance lead" : "Team member"}</ToneBadge>
+            <ToneBadge tone={live.canManageFinance ? "blue" : "neutral"}>
+              {live.canManageFinance ? "Finance lead" : "Team member"}
+            </ToneBadge>
           </div>
         ) : null}
-      </header>
+      </PageHeader>
 
-      {error ? <div className="biz-alert danger" role="alert"><strong>Couldn’t complete that.</strong><span>{error}</span><button type="button" onClick={() => setError("")}>Dismiss</button></div> : null}
-      {notice ? <div className="biz-alert success" role="status"><strong>Done.</strong><span>{notice}</span><button type="button" onClick={() => setNotice("")}>Dismiss</button></div> : null}
+      {live ? (
+        <nav className="biz-related" aria-label="Related finance tools">
+          <a className="app-button secondary" href={`/costs${q}`}>
+            Season Costs
+          </a>
+          <a
+            className="app-button secondary"
+            href={`/impact?orgId=${encodeURIComponent(live.orgId)}&season=${live.seasonYear}`}
+          >
+            Community Impact
+          </a>
+          <a className="app-button secondary" href={`/team/grants${q}`}>
+            Grants workbench
+          </a>
+          <a className="app-button secondary" href={`/team/awards${q}`}>
+            Awards workbench
+          </a>
+          <a className="app-button secondary" href={`/team/sponsors${q}`}>
+            Sponsors CRM
+          </a>
+        </nav>
+      ) : null}
 
-      {!view && !error ? <Loading /> : null}
+      {error ? (
+        <div className="biz-alert danger" role="alert">
+          <strong>Couldn’t complete that.</strong>
+          <span>{error}</span>
+          <button type="button" onClick={() => setError("")}>
+            Dismiss
+          </button>
+        </div>
+      ) : null}
+      {notice ? (
+        <div className="biz-alert success" role="status">
+          <strong>Done.</strong>
+          <span>{notice}</span>
+          <button type="button" onClick={() => setNotice("")}>
+            Dismiss
+          </button>
+        </div>
+      ) : null}
+
+      {!view && !error ? (
+        <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
+      ) : null}
       {view?.status === "setup_required" ? (
-        <section className="app-card biz-setup">
-          <ToneBadge tone="warn">Workspace required</ToneBadge>
-          <h2>{view.message}</h2>
-          <p>Choose the organization for this team, then return here to start the season business plan.</p>
-          <a className="app-button" href="/workspace">Choose workspace</a>
-        </section>
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Choose the organization for this team, then return here to start the season business plan.">
+          <a className="app-button" href="/workspace">
+            Choose workspace
+          </a>
+        </EmptyState>
       ) : null}
 
       {live ? (
         <>
-          <nav className="biz-cross-nav" aria-label="Jump to competition ops">
-            <a href={`/dashboard?orgId=${encodeURIComponent(live.orgId)}`}>Home</a>
-            <a href={`/command?orgId=${encodeURIComponent(live.orgId)}`}>Event Day</a>
-            <a href={`/scouting?orgId=${encodeURIComponent(live.orgId)}`}>Scouting</a>
-            <a href={`/strategy?orgId=${encodeURIComponent(live.orgId)}`}>Strategy</a>
-            <a href={`/pit?orgId=${encodeURIComponent(live.orgId)}`}>Pit Command</a>
-            <a href={`/impact?orgId=${encodeURIComponent(live.orgId)}&season=${live.seasonYear}`}>Community Impact</a>
-            <a href={`/costs?orgId=${encodeURIComponent(live.orgId)}`}>Season Costs</a>
-            <a href={`/attendance?orgId=${encodeURIComponent(live.orgId)}`}>Attendance</a>
-            <a href={`/team/grants?orgId=${encodeURIComponent(live.orgId)}`}>Grants workbench</a>
-            <a href={`/team/awards?orgId=${encodeURIComponent(live.orgId)}`}>Awards workbench</a>
-            <a href={`/exports?orgId=${encodeURIComponent(live.orgId)}&domains=usage,wallet,membership`}>Exports</a>
-            <a href={`/team/data?orgId=${encodeURIComponent(live.orgId)}`}>Data analytics</a>
-            <a href={`/team/usage?orgId=${encodeURIComponent(live.orgId)}`}>AI usage</a>
-            <a href={`/team?orgId=${encodeURIComponent(live.orgId)}`}>Team Admin</a>
-          </nav>
-
-          <nav className="biz-tabs" aria-label="Business portal sections">
-            {TABS.map((item) => (
-              <button key={item.id} type="button" className={tab === item.id ? "active" : ""} onClick={() => selectTab(item.id)}>
-                <small>{item.eyebrow}</small><span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
+          <TabBar
+            aria-label="Business sections"
+            value={tab}
+            onChange={(id) => selectTab(id as Tab)}
+            tabs={TABS}
+          />
 
           {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
           {tab === "budget" ? <Budget view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
@@ -256,10 +291,6 @@ export default function BusinessClient() {
       ) : null}
     </main>
   );
-}
-
-function Loading() {
-  return <section className="app-card biz-setup"><h2>Opening the team business portal…</h2><p>Reconciling this season’s budget, orders, partner history, grants, and evidence.</p></section>;
 }
 
 function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => void }) {
@@ -288,7 +319,7 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
             <div><span>Actually ordered</span><strong>{money(view.budget.spentCents)}</strong></div>
             <div><span>Fundraising target</span><strong>{money(view.budget.fundraisingGoalCents)}</strong></div>
           </div>
-          <button className="biz-text-button" type="button" onClick={() => setTab("budget")}>Open budget control →</button>
+          <button className="app-button secondary" type="button" onClick={() => setTab("budget")}>Open budget</button>
         </article>
         <article className="app-card">
           <header className="biz-card-head"><div><span className="biz-overline">Attention queue</span><h2>What needs a human next</h2></div><span className="biz-count">{submitted.length + followUps.length + grantDeadlines.length}</span></header>
@@ -303,8 +334,8 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
 
       <section className="biz-grid three">
         <article className="app-card"><span className="biz-overline">Monthly spend</span><h2>Order rhythm</h2><MonthBars rows={view.budget.monthlySpend} /></article>
-        <article className="app-card"><span className="biz-overline">Relationship memory</span><h2>Built to survive graduation</h2><div className="biz-big-stat">{view.interactions.length}</div><p className="app-muted">Sponsor interactions logged with owners, dates, next steps, and follow-ups.</p><button className="biz-text-button" type="button" onClick={() => setTab("sponsors")}>Open partner history →</button></article>
-        <article className="app-card"><span className="biz-overline">Evidence locker</span><h2>Never write from memory again</h2><div className="biz-evidence-stats"><b>{view.awards.length}<small>awards</small></b><b>{view.impact.hours}<small>impact hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><button className="biz-text-button" type="button" onClick={() => setTab("evidence")}>Strengthen the record →</button></article>
+        <article className="app-card soft-panel"><span className="biz-overline">Relationship memory</span><h2>Built to survive graduation</h2><div className="biz-big-stat">{view.interactions.length}</div><p className="app-muted">Sponsor interactions logged with owners, dates, next steps, and follow-ups.</p><button className="app-button secondary" type="button" onClick={() => setTab("sponsors")}>Open sponsors</button></article>
+        <article className="app-card soft-panel"><span className="biz-overline">Evidence locker</span><h2>Never write from memory again</h2><div className="biz-evidence-stats"><b>{view.awards.length}<small>awards</small></b><b>{view.impact.hours}<small>impact hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><button className="app-button secondary" type="button" onClick={() => setTab("evidence")}>Open awards</button></article>
       </section>
 
       <section className="biz-grid two">
@@ -312,13 +343,13 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
           <span className="biz-overline">Partner recognition</span>
           <h2>Sell placements without leaving Vantage.</h2>
           <p className="app-muted">Storefront packages, creative approval, and live recognition strips share this org—dashboard, pit, and this portal.</p>
-          <button className="biz-text-button" type="button" onClick={() => setTab("placements")}>Open partner placements →</button>
+          <button className="app-button secondary" type="button" onClick={() => setTab("placements")}>Open partners</button>
         </article>
-        <article className="app-card">
+        <article className="app-card soft-panel">
           <span className="biz-overline">Season spend tracker</span>
           <h2>Separate from operating budget when you need it.</h2>
           <p className="app-muted">Season Costs tracks real-world event spend alongside this portal’s finance guardrails—same login, same org.</p>
-          <a className="biz-text-button" href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Open Season Costs →</a>
+          <a className="app-button secondary" href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Open Season Costs</a>
         </article>
       </section>
 
@@ -350,7 +381,7 @@ function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
           <Field label="Operating budget"><input name="totalBudgetDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.totalBudgetCents)} disabled={!view.canManageFinance} /></Field>
           <Field label="Fundraising goal"><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} disabled={!view.canManageFinance} /></Field>
           <Field label="Finance notes" wide><textarea name="notes" rows={3} placeholder="Cash reserves, travel assumptions, board constraints…" disabled={!view.canManageFinance} /></Field>
-          <button className="biz-primary" disabled={busy || !view.canManageFinance}>Save season guardrails</button>
+          <button className="app-button" disabled={busy || !view.canManageFinance}>Save season guardrails</button>
         </form>
         {view.canManageFinance ? <form className="biz-inline-form" onSubmit={(event) => void submit(event, "add-category", ["allocated"])}><input name="name" placeholder="Category (Robot, Travel, Outreach…)" required /><input name="allocatedDollars" type="number" min="0" step="0.01" placeholder="Allocation" required /><button disabled={busy}>Add / update category</button></form> : null}
       </article>
@@ -366,7 +397,7 @@ function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
           <Field label="Shipping / tax estimate"><input name="shippingDollars" type="number" min="0" step="0.01" defaultValue="0" /></Field>
           <Field label="Needed by"><input name="neededBy" type="date" /></Field>
           <Field label="Why the team needs it" hint="Approvers should understand the outcome, not just the part." wide><textarea name="purpose" required rows={3} placeholder="Needed to finish the elevator rebuild before our first event…" /></Field>
-          <button className="biz-primary" disabled={busy}>Submit for approval</button>
+          <button className="app-button" disabled={busy}>Submit for approval</button>
         </form>
       </article>
     </section>
@@ -404,12 +435,12 @@ function Sponsors({ view, busy, submit, mutate, research }: { view: BusinessView
           <Field label="Relationship owner"><input name="relationshipOwner" placeholder="Student / mentor owner" disabled={!view.canManageFinance} /></Field>
           <Field label="Next follow-up"><input name="nextFollowUpOn" type="date" disabled={!view.canManageFinance} /></Field>
           <Field label="Relationship notes" wide><textarea name="notes" rows={3} placeholder="Why they care, history, recognition preferences…" disabled={!view.canManageFinance} /></Field>
-          <button className="biz-primary" disabled={busy || !view.canManageFinance}>Add partner</button>
+          <button className="app-button" disabled={busy || !view.canManageFinance}>Add partner</button>
         </form>
       </article>
       <article className="app-card biz-research-card">
         <span className="biz-overline">Source-linked discovery</span><h2>Find the next best sponsor from the team’s real relationship pattern.</h2><p>The research agent uses the team number, prior sponsor industries, and robotics/STEM fit. It stores the source and reasoning—never auto-contacts anyone.</p>
-        <button className="biz-primary" type="button" disabled={busy} onClick={() => void research()}>{busy ? "Researching…" : "Research sponsor prospects"}</button>
+        <button className="app-button" type="button" disabled={busy} onClick={() => void research()}>{busy ? "Researching…" : "Research sponsor prospects"}</button>
         <div className="biz-prospect-list">{view.prospects.map((prospect) => <article key={prospect.id}><header><strong>{prospect.name}</strong><ToneBadge tone={prospect.fitScore >= 75 ? "good" : "blue"}>{prospect.fitScore}% fit</ToneBadge></header><p>{prospect.summary}</p><small>{prospect.fitReason}</small><footer><a href={prospect.website} target="_blank" rel="noreferrer">Verify source ↗</a>{view.canManageFinance ? <button disabled={busy} onClick={() => void mutate({ action: "save-prospect", prospectId: prospect.id })}>Add to CRM</button> : null}<button disabled={busy} onClick={() => void mutate({ action: "dismiss-prospect", prospectId: prospect.id })}>Dismiss</button></footer></article>)}{!view.prospects.length ? <p className="biz-empty-inline">Run research to build a review queue of source-linked candidates.</p> : null}</div>
       </article>
     </section>
@@ -417,8 +448,8 @@ function Sponsors({ view, busy, submit, mutate, research }: { view: BusinessView
     <section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Relationship health</span><h2>Make next year’s renewal easier today.</h2></div><span className="biz-count">{view.sponsors.length}</span></header><div className="biz-sponsor-grid">{view.sponsors.map((sponsor) => <SponsorCard key={sponsor.id} sponsor={sponsor} view={view} busy={busy} submit={submit} mutate={mutate} />)}{!view.sponsors.length ? <p className="biz-empty-inline">Add the first sponsor to begin building durable team memory.</p> : null}</div></section>
 
     {view.sponsors.length ? <section className="biz-grid two">
-      <article className="app-card"><span className="biz-overline">Log a touchpoint</span><h2>Capture what happened and what happens next.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "log-interaction")}><Field label="Sponsor"><select name="sponsorId" required>{view.sponsors.map((sponsor) => <option key={sponsor.id} value={sponsor.id}>{sponsor.name}</option>)}</select></Field><Field label="Type"><select name="interactionType" defaultValue="email"><option value="email">Email</option><option value="call">Call</option><option value="meeting">Meeting</option><option value="visit">Visit</option><option value="thank_you">Thank-you</option><option value="note">Note</option></select></Field><Field label="Date"><input name="occurredOn" type="date" defaultValue={today()} required /></Field><Field label="Next follow-up"><input name="nextFollowUpOn" type="date" /></Field><Field label="What happened" wide><textarea name="summary" rows={3} required placeholder="Who attended, what mattered, what they asked for…" /></Field><Field label="Next step" wide><input name="nextStep" placeholder="Send impact update and invite to shop tour" /></Field><button className="biz-primary" disabled={busy}>Log interaction</button></form></article>
-      <article className="app-card"><span className="biz-overline">Contribution ledger</span><h2>Add cash and in-kind support to the season.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-contribution", ["amount"])}><Field label="Sponsor"><select name="sponsorId" required disabled={!view.canManageFinance}>{view.sponsors.map((sponsor) => <option key={sponsor.id} value={sponsor.id}>{sponsor.name}</option>)}</select></Field><Field label="Type"><select name="contributionType" disabled={!view.canManageFinance}><option value="cash">Cash</option><option value="in_kind">In-kind value</option></select></Field><Field label="Value"><input name="amountDollars" type="number" min="0" step="0.01" required disabled={!view.canManageFinance} /></Field><Field label="Received"><input name="receivedOn" type="date" defaultValue={today()} required disabled={!view.canManageFinance} /></Field><Field label="Description" wide><input name="description" placeholder="Check, machining time, materials…" disabled={!view.canManageFinance} /></Field><button className="biz-primary" disabled={busy || !view.canManageFinance}>Record contribution</button></form></article>
+      <article className="app-card"><span className="biz-overline">Log a touchpoint</span><h2>Capture what happened and what happens next.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "log-interaction")}><Field label="Sponsor"><select name="sponsorId" required>{view.sponsors.map((sponsor) => <option key={sponsor.id} value={sponsor.id}>{sponsor.name}</option>)}</select></Field><Field label="Type"><select name="interactionType" defaultValue="email"><option value="email">Email</option><option value="call">Call</option><option value="meeting">Meeting</option><option value="visit">Visit</option><option value="thank_you">Thank-you</option><option value="note">Note</option></select></Field><Field label="Date"><input name="occurredOn" type="date" defaultValue={today()} required /></Field><Field label="Next follow-up"><input name="nextFollowUpOn" type="date" /></Field><Field label="What happened" wide><textarea name="summary" rows={3} required placeholder="Who attended, what mattered, what they asked for…" /></Field><Field label="Next step" wide><input name="nextStep" placeholder="Send impact update and invite to shop tour" /></Field><button className="app-button" disabled={busy}>Log interaction</button></form></article>
+      <article className="app-card"><span className="biz-overline">Contribution ledger</span><h2>Add cash and in-kind support to the season.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-contribution", ["amount"])}><Field label="Sponsor"><select name="sponsorId" required disabled={!view.canManageFinance}>{view.sponsors.map((sponsor) => <option key={sponsor.id} value={sponsor.id}>{sponsor.name}</option>)}</select></Field><Field label="Type"><select name="contributionType" disabled={!view.canManageFinance}><option value="cash">Cash</option><option value="in_kind">In-kind value</option></select></Field><Field label="Value"><input name="amountDollars" type="number" min="0" step="0.01" required disabled={!view.canManageFinance} /></Field><Field label="Received"><input name="receivedOn" type="date" defaultValue={today()} required disabled={!view.canManageFinance} /></Field><Field label="Description" wide><input name="description" placeholder="Check, machining time, materials…" disabled={!view.canManageFinance} /></Field><button className="app-button" disabled={busy || !view.canManageFinance}>Record contribution</button></form></article>
     </section> : null}
   </div>;
 }
@@ -434,8 +465,8 @@ function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
   return <div className="biz-stack">
     <div className="biz-detail-link"><span>Need prompt-by-prompt essays, character limits, attachments, assignees, and due dates?</span><a href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>Open the full application workbench →</a></div>
     <section className="biz-grid two">
-      <article className="app-card"><span className="biz-overline">Grant pipeline</span><h2>Turn a deadline into an owned plan.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-grant", ["requested"])}><Field label="Funder"><input name="funder" required placeholder="Community Foundation" /></Field><Field label="Opportunity"><input name="title" required placeholder="Youth STEM Innovation Grant" /></Field><Field label="Source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Deadline"><input name="deadline" type="date" /></Field><Field label="Request amount"><input name="requestedDollars" type="number" min="0" step="0.01" /></Field><Field label="Owner"><input name="ownerName" placeholder="Student + mentor pair" /></Field><Field label="Purpose / project" wide><textarea name="purpose" required rows={3} placeholder="Exactly what this funding would make possible…" /></Field><Field label="Eligibility" wide><textarea name="eligibility" rows={2} placeholder="501(c)(3), geography, grade levels…" /></Field><Field label="Requirements" wide><textarea name="requirements" rows={2} placeholder="Prompts, attachments, character limits, reporting…" /></Field><button className="biz-primary" disabled={busy}>Add to pipeline</button></form></article>
-      <article className="app-card biz-writer"><span className="biz-overline">Evidence-grounded writing studio</span><h2>Draft faster without inventing a single metric.</h2><p>The writer pulls only from this team’s Impact log and award history, then attaches its evidence list for review.</p><form className="biz-form-grid" onSubmit={(event) => void submit(event, "generate-draft")}><Field label="Document"><select name="documentType" defaultValue="sponsor_email"><option value="sponsor_email">Sponsor introduction</option><option value="grant_narrative">Grant narrative</option><option value="thank_you">Sponsor thank-you</option><option value="renewal">Renewal request</option></select></Field><Field label="Audience"><input name="audience" required placeholder="Foundation review committee" /></Field><Field label="Sponsor (optional)"><select name="sponsorName" defaultValue=""><option value="">No specific sponsor</option>{view.sponsors.map((sponsor) => <option key={sponsor.id}>{sponsor.name}</option>)}</select></Field><Field label="Goal" wide><textarea name="goal" rows={3} required placeholder="Fund 12 new student tool certifications and safety equipment…" /></Field><button className="biz-primary" disabled={busy}>Create sourced draft</button></form></article>
+      <article className="app-card"><span className="biz-overline">Grant pipeline</span><h2>Turn a deadline into an owned plan.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-grant", ["requested"])}><Field label="Funder"><input name="funder" required placeholder="Community Foundation" /></Field><Field label="Opportunity"><input name="title" required placeholder="Youth STEM Innovation Grant" /></Field><Field label="Source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Deadline"><input name="deadline" type="date" /></Field><Field label="Request amount"><input name="requestedDollars" type="number" min="0" step="0.01" /></Field><Field label="Owner"><input name="ownerName" placeholder="Student + mentor pair" /></Field><Field label="Purpose / project" wide><textarea name="purpose" required rows={3} placeholder="Exactly what this funding would make possible…" /></Field><Field label="Eligibility" wide><textarea name="eligibility" rows={2} placeholder="501(c)(3), geography, grade levels…" /></Field><Field label="Requirements" wide><textarea name="requirements" rows={2} placeholder="Prompts, attachments, character limits, reporting…" /></Field><button className="app-button" disabled={busy}>Add to pipeline</button></form></article>
+      <article className="app-card biz-writer"><span className="biz-overline">Evidence-grounded writing studio</span><h2>Draft faster without inventing a single metric.</h2><p>The writer pulls only from this team’s Impact log and award history, then attaches its evidence list for review.</p><form className="biz-form-grid" onSubmit={(event) => void submit(event, "generate-draft")}><Field label="Document"><select name="documentType" defaultValue="sponsor_email"><option value="sponsor_email">Sponsor introduction</option><option value="grant_narrative">Grant narrative</option><option value="thank_you">Sponsor thank-you</option><option value="renewal">Renewal request</option></select></Field><Field label="Audience"><input name="audience" required placeholder="Foundation review committee" /></Field><Field label="Sponsor (optional)"><select name="sponsorName" defaultValue=""><option value="">No specific sponsor</option>{view.sponsors.map((sponsor) => <option key={sponsor.id}>{sponsor.name}</option>)}</select></Field><Field label="Goal" wide><textarea name="goal" rows={3} required placeholder="Fund 12 new student tool certifications and safety equipment…" /></Field><button className="app-button" disabled={busy}>Create sourced draft</button></form></article>
     </section>
 
     <section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Application board</span><h2>Research → draft → review → submit → report</h2></div><span className="biz-count">{view.grants.length}</span></header><div className="biz-grant-board">{GRANT_STATUSES.map((status) => <div key={status}><header><span>{statusLabel(status)}</span><b>{view.grants.filter((grant) => grant.status === status).length}</b></header>{view.grants.filter((grant) => grant.status === status).map((grant) => <GrantCard key={grant.id} grant={grant} canManage={view.canManageFinance} busy={busy} mutate={mutate} />)}</div>)}</div></section>
@@ -459,6 +490,6 @@ function Evidence({ view, busy, submit }: { view: BusinessView; busy: boolean; s
   }, [view.awards]);
   return <div className="biz-stack">
     <div className="biz-detail-link"><span>Need FIRST catalog prompts, essay drafts, character limits, and submission status?</span><a href={`/team/awards?orgId=${encodeURIComponent(view.orgId)}`}>Open the full awards workbench →</a></div>
-    <section className="biz-grid two"><article className="app-card"><span className="biz-overline">Verified achievement record</span><h2>Add an award once. Reuse it for years.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-award")}><Field label="Award"><input name="awardName" required placeholder="Engineering Inspiration Award" /></Field><Field label="Event"><input name="eventName" placeholder="District Championship" /></Field><Field label="Level"><input name="awardLevel" placeholder="Winner, finalist, district…" /></Field><Field label="Official source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Why it mattered" hint="Capture the story future students would otherwise lose." wide><textarea name="story" rows={4} placeholder="What the team did, who led it, and what changed…" /></Field><button className="biz-primary" disabled={busy}>Add award to {view.seasonYear}</button></form></article><article className="app-card biz-impact-link"><span className="biz-overline">Live impact evidence</span><h2>Your grant facts are only as strong as this log.</h2><div className="biz-evidence-stats"><b>{view.impact.activities}<small>activities</small></b><b>{view.impact.hours}<small>hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><p>These figures flow directly into sourced writing drafts. Add outreach, mentoring, demos, and service in Community Impact.</p><a className="biz-primary" href={`/impact?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`}>Open Community Impact</a></article></section><section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Team history</span><h2>The proof that graduates with the team—not with a person.</h2></div><span className="biz-count">{view.awards.length}</span></header><div className="biz-award-years">{[...grouped.entries()].sort(([a], [b]) => b - a).map(([year, awards]) => <section key={year}><h3>{year}</h3><div>{awards.map((award) => <article key={award.id}><ToneBadge tone="good">Achievement</ToneBadge><strong>{award.awardName}</strong><span>{[award.eventName, award.awardLevel].filter(Boolean).join(" · ") || "Team record"}</span>{award.story ? <p>{award.story}</p> : null}{award.sourceUrl ? <a href={award.sourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a> : null}</article>)}</div></section>)}{!view.awards.length ? <p className="biz-empty-inline">Start with the team’s most recent judged or competition award.</p> : null}</div></section>
+    <section className="biz-grid two"><article className="app-card"><span className="biz-overline">Verified achievement record</span><h2>Add an award once. Reuse it for years.</h2><form className="biz-form-grid" onSubmit={(event) => void submit(event, "add-award")}><Field label="Award"><input name="awardName" required placeholder="Engineering Inspiration Award" /></Field><Field label="Event"><input name="eventName" placeholder="District Championship" /></Field><Field label="Level"><input name="awardLevel" placeholder="Winner, finalist, district…" /></Field><Field label="Official source"><input name="sourceUrl" type="url" placeholder="https://…" /></Field><Field label="Why it mattered" hint="Capture the story future students would otherwise lose." wide><textarea name="story" rows={4} placeholder="What the team did, who led it, and what changed…" /></Field><button className="app-button" disabled={busy}>Add award to {view.seasonYear}</button></form></article><article className="app-card biz-impact-link"><span className="biz-overline">Live impact evidence</span><h2>Your grant facts are only as strong as this log.</h2><div className="biz-evidence-stats"><b>{view.impact.activities}<small>activities</small></b><b>{view.impact.hours}<small>hours</small></b><b>{view.impact.peopleReached.toLocaleString()}<small>people reached</small></b></div><p>These figures flow directly into sourced writing drafts. Add outreach, mentoring, demos, and service in Community Impact.</p><a className="app-button" href={`/impact?orgId=${encodeURIComponent(view.orgId)}&season=${view.seasonYear}`}>Open Community Impact</a></article></section><section className="app-card"><header className="biz-card-head"><div><span className="biz-overline">Team history</span><h2>The proof that graduates with the team—not with a person.</h2></div><span className="biz-count">{view.awards.length}</span></header><div className="biz-award-years">{[...grouped.entries()].sort(([a], [b]) => b - a).map(([year, awards]) => <section key={year}><h3>{year}</h3><div>{awards.map((award) => <article key={award.id}><ToneBadge tone="good">Achievement</ToneBadge><strong>{award.awardName}</strong><span>{[award.eventName, award.awardLevel].filter(Boolean).join(" · ") || "Team record"}</span>{award.story ? <p>{award.story}</p> : null}{award.sourceUrl ? <a href={award.sourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a> : null}</article>)}</div></section>)}{!view.awards.length ? <p className="biz-empty-inline">Start with the team’s most recent judged or competition award.</p> : null}</div></section>
   </div>;
 }
