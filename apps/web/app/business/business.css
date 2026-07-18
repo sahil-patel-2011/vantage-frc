@@ -1397,6 +1397,9 @@
   display: grid;
   gap: 14px;
 }
+.biz-next-actions {
+  margin: 0;
+}
 .biz-pipeline-goal-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
