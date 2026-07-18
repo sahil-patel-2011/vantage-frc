@@ -1,4 +1,5 @@
 import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import type { CommandSnapshot } from "./types";
 
 export type EventDayNextAction = {
@@ -8,18 +9,6 @@ export type EventDayNextAction = {
   href: string;
   primary?: boolean;
 };
-
-function withOrg(path: string, orgId?: string | null, extra?: Record<string, string | null | undefined>): string {
-  const params = new URLSearchParams();
-  if (orgId) params.set("orgId", orgId);
-  if (extra) {
-    for (const [key, value] of Object.entries(extra)) {
-      if (value) params.set(key, value);
-    }
-  }
-  const qs = params.toString();
-  return qs ? `${path}?${qs}` : path;
-}
 
 /**
  * Prioritized next actions for Event Day Command / My Day.
@@ -61,7 +50,7 @@ export function eventDayNextActions(
       id: "event",
       label: "Set active event",
       detail: "Pick the TBA event so match time, alliances, and bumper cues can load.",
-      href: snap?.canSetEvent ? withOrg("/command", orgId) : withOrg("/workspace", orgId),
+      href: snap?.canSetEvent ? withOrgHref("/command", orgId) : withOrgHref("/workspace", orgId),
       primary: true,
     });
   }
@@ -71,7 +60,7 @@ export function eventDayNextActions(
       id: "tba",
       label: "Configure TBA sync",
       detail: "Sync schedule under Team → Data. Event Day never fabricates match times.",
-      href: snap?.links.teamData ?? withOrg("/team/data", orgId),
+      href: snap?.links.teamData ?? withOrgHref("/team/data", orgId),
       primary: !snap?.eventKey ? false : true,
     });
   }
@@ -82,7 +71,7 @@ export function eventDayNextActions(
       id: "schedule",
       label: "Check schedule sync",
       detail: "No upcoming match in Neon cache yet — refresh TBA after the event posts.",
-      href: snap.links.teamData ?? withOrg("/team/data", orgId),
+      href: snap.links.schedule ?? withOrgHref("/schedule", orgId),
       primary: snap.tbaConfigured !== false,
     });
   }

@@ -5,6 +5,8 @@ import { loadRepeatFailureAlerts } from "../fmea/repeat-failures";
 import { loadBatteryFleet } from "../load-battery-fleet";
 import { bumperCue, formatMyDayWhen } from "../my-day";
 import { loadMyDayLogistics } from "../my-day-load";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { computeStrategyView, resolveTbaAccess } from "../strategy/compute-strategy";
 import { emptyCommandCoverage } from "./empty-coverage";
 import { buildCoverageBoard, summarizeCoverageBoard } from "./match-coverage";
@@ -28,11 +30,6 @@ function allianceScore(alliance: unknown): number | null {
   if (!alliance || typeof alliance !== "object") return null;
   const score = (alliance as { score?: number | null }).score;
   return typeof score === "number" && Number.isFinite(score) ? score : null;
-}
-
-function withOrg(path: string, orgId: string, extra?: Record<string, string>) {
-  const params = new URLSearchParams({ orgId, ...(extra ?? {}) });
-  return `${path}?${params.toString()}`;
 }
 
 function pitFlagsFromPayload(input: {
@@ -133,20 +130,20 @@ export async function loadEventDayCommand(
   const canSetEvent = ["owner", "admin"].includes(row.role);
   const tbaAccess = await resolveTbaAccess(client, input.orgId);
   const links = {
-    strategy: withOrg("/strategy", input.orgId),
-    scouting: withOrg("/scouting", input.orgId),
-    messages: withOrg("/messages", input.orgId),
-    intel: withOrg("/intel", input.orgId),
-    workspace: withOrg("/workspace", input.orgId),
-    teamData: withOrg("/team/data", input.orgId),
-    display: withOrg("/display", input.orgId),
-    chemistry: withOrg("/chemistry", input.orgId),
-    pit: withOrg("/pit", input.orgId),
-    batteries: withOrg("/batteries", input.orgId),
-    myDay: withOrg("/my-day", input.orgId),
-    logistics: withOrg("/logistics", input.orgId),
-    schedule: withOrg("/schedule", input.orgId),
-    matchChecklist: withOrg("/match-checklist", input.orgId),
+    strategy: hubHref("/competition", "strategy", input.orgId),
+    scouting: hubHref("/competition", "scouting", input.orgId),
+    messages: withOrgHref("/messages", input.orgId),
+    intel: withOrgHref("/intel", input.orgId),
+    workspace: withOrgHref("/workspace", input.orgId),
+    teamData: withOrgHref("/team/data", input.orgId),
+    display: withOrgHref("/display", input.orgId),
+    chemistry: hubHref("/competition", "chemistry", input.orgId),
+    pit: withOrgHref("/pit", input.orgId),
+    batteries: withOrgHref("/batteries", input.orgId),
+    myDay: hubHref("/competition", "my-day", input.orgId),
+    logistics: withOrgHref("/logistics", input.orgId),
+    schedule: withOrgHref("/schedule", input.orgId),
+    matchChecklist: hubHref("/competition", "match-checklist", input.orgId),
   };
 
   const setupSteps = [
@@ -154,9 +151,9 @@ export async function loadEventDayCommand(
       id: "event",
       label: "Select active event",
       detail: canSetEvent
-        ? "Choose the competition you are at today."
+        ? "Choose the competition you are at today — never DEMO events."
         : "Ask an owner/admin to set the active event.",
-      href: canSetEvent ? withOrg("/command", input.orgId) : withOrg("/workspace", input.orgId),
+      href: canSetEvent ? withOrgHref("/command", input.orgId) : withOrgHref("/workspace", input.orgId),
       done: Boolean(row.eventKey),
     },
     {
@@ -164,7 +161,7 @@ export async function loadEventDayCommand(
       label: "Sync TBA schedule",
       detail: tbaAccess.tbaConfigured
         ? "TBA is configured — confirm sync freshness under Team → Data if matches are missing."
-        : "Set TBA_AUTH_KEY or save a TBA credential under Team → Data.",
+        : "Set TBA_AUTH_KEY or save a TBA credential under Team → Data. Never invent DEMO match times.",
       href: links.teamData,
       done: tbaAccess.tbaConfigured,
     },
@@ -172,7 +169,7 @@ export async function loadEventDayCommand(
       id: "team",
       label: "Confirm team number",
       detail: "Your org team number powers now/next match filtering.",
-      href: withOrg("/team", input.orgId),
+      href: withOrgHref("/team", input.orgId),
       done: Boolean(teamKey),
     },
   ];
@@ -559,7 +556,10 @@ export async function loadEventDayCommand(
       tendencies: strategy.tendencies,
       fullPrediction: strategy.prediction,
     };
-    links.strategy = withOrg("/strategy", input.orgId, { matchKey: strategy.matchKey });
+    links.strategy = withOrgHref(
+      `/strategy?matchKey=${encodeURIComponent(strategy.matchKey)}`,
+      input.orgId,
+    );
   } else if (!tbaAccess.tbaConfigured) {
     prediction = emptyPrediction("setup_required");
   }
@@ -764,20 +764,20 @@ function emptySnapshot(input: {
     record: emptyRecord("setup_required"),
     coverage: emptyCommandCoverage(),
     links: {
-      strategy: "/strategy",
-      scouting: "/scouting",
+      strategy: hubHref("/competition", "strategy", null),
+      scouting: hubHref("/competition", "scouting", null),
       messages: "/messages",
       intel: "/intel",
       workspace: "/workspace",
       teamData: "/team/data",
       display: "/display",
-      chemistry: "/chemistry",
+      chemistry: hubHref("/competition", "chemistry", null),
       pit: "/pit",
       batteries: "/batteries",
-      myDay: "/my-day",
+      myDay: hubHref("/competition", "my-day", null),
       logistics: "/logistics",
       schedule: "/schedule",
-      matchChecklist: "/match-checklist",
+      matchChecklist: hubHref("/competition", "match-checklist", null),
     },
   };
 }
