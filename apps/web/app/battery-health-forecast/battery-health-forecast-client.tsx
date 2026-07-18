@@ -1,10 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { forecastStatusLabel } from "../../lib/battery-health-forecast";
 import type { BatteryHealthForecastView } from "../../lib/battery-health-forecast/compute-battery-health-forecast";
 import type { ForecastStatus } from "../../lib/battery-health-forecast/types";
+import {
+  BATTERY_HEALTH_FORECAST_RELATED_INCLUDE,
+  batteryHealthForecastNextActions,
+  batteryHealthForecastRelatedLinks,
+  batteryHealthForecastSetupSteps,
+  batteryHealthForecastShellCopy,
+  classifyBatteryHealthForecastShell,
+  formatBatteryHealthForecastMetric,
+  formatBatteryHealthForecastReadiness,
+  shouldShowBatteryHealthForecastSummaryTiles,
+  type BatteryHealthForecastNextAction,
+  type BatteryHealthForecastShellKind,
+} from "../../lib/battery-health-forecast/battery-health-forecast-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 function statusTone(status: ForecastStatus): string {
   if (status === "healthy") return "good";
@@ -13,19 +28,149 @@ function statusTone(status: ForecastStatus): string {
   return "setup";
 }
 
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
+type LiveView = Extract<BatteryHealthForecastView, { status: "live" }>;
+type Mutate = (payload: Record<string, unknown>) => void;
+
+function BatteryHealthForecastRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = batteryHealthForecastRelatedLinks(orgId, {
+    include: [...BATTERY_HEALTH_FORECAST_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav
+      className="product-hub-related battery-health-forecast-related"
+      aria-label="Related battery tools"
+    >
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
 }
 
-type LiveView = Extract<BatteryHealthForecastView, { status: "live" }>;
+function BatteryHealthForecastNextActionsPanel({
+  actions,
+}: {
+  actions: BatteryHealthForecastNextAction[];
+}) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions battery-health-forecast-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">
+          Battery Rotation, Batteries, and Pit — never DEMO IR or end-of-life metrics.
+        </p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function BatteryHealthForecastShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: BatteryHealthForecastShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = batteryHealthForecastNextActions({ orgId, shell });
+  const copy = batteryHealthForecastShellCopy(shell);
+  const buildHref = withOrgHref("/build", orgId);
+  const rotationHref = hubHref("/competition", "battery-rotation", orgId);
+  const batteriesHref = hubHref("/team", "batteries", orgId);
+  const pitHref = withOrgHref("/pit", orgId);
+
+  return (
+    <main className="module-page battery-health-forecast-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Battery Health Forecast"}
+          </>
+        }
+        title="Battery Health Forecast"
+        description={description}
+      >
+        <BatteryHealthForecastRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No batteries yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={rotationHref}>
+              Open Battery Rotation
+            </a>
+            <a className="app-button secondary" href={batteriesHref}>
+              Open Batteries
+            </a>
+            <a className="app-button secondary" href={pitHref}>
+              Open Pit Command
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <BatteryHealthForecastNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function BatteryHealthForecastClient() {
   const [view, setView] = useState<BatteryHealthForecastView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -50,72 +195,91 @@ export default function BatteryHealthForecastClient() {
     load();
   }, [load]);
 
-  const mutate = useCallback(
-    async (payload: Record<string, unknown>) => {
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const batteryCount = view?.status === "live" ? view.batteries.length : 0;
+  const summary = view?.status === "live" ? view.summary : null;
+  const scoredPackCount = summary
+    ? summary.activeBatteries - summary.insufficientDataCount
+    : 0;
+
+  const shell = classifyBatteryHealthForecastShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    batteryCount,
+  });
+  const shellCopy = batteryHealthForecastShellCopy(shell);
+  const nextActions = batteryHealthForecastNextActions({
+    orgId,
+    shell,
+    batteryCount,
+    insufficientDataCount: summary?.insufficientDataCount ?? 0,
+    watchCount: summary?.watchCount ?? 0,
+    retireSoonCount: summary?.retireSoonCount ?? 0,
+    overdueCount: summary?.overdueCount ?? 0,
+  });
+  const relatedLinks = batteryHealthForecastRelatedLinks(orgId, {
+    include: [...BATTERY_HEALTH_FORECAST_RELATED_INCLUDE],
+  });
+  const buildHref = withOrgHref("/build", orgId);
+  const rotationHref = hubHref("/competition", "battery-rotation", orgId);
+  const batteriesHref = hubHref("/team", "batteries", orgId);
+  const pitHref = withOrgHref("/pit", orgId);
+  const setupSteps = batteryHealthForecastSetupSteps(orgId);
+
+  const mutate = useCallback<Mutate>(
+    (payload) => {
       if (!orgId || busy) return;
       setBusy(true);
       setError("");
-      try {
-        const response = await fetch("/api/battery-health-forecast", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, ...payload }),
-        });
-        const data = (await response.json()) as BatteryHealthForecastView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
-          return;
-        }
-        setView(data);
-      } catch {
-        setError("Network error — please try again.");
-      } finally {
-        setBusy(false);
-      }
+      void fetch("/api/battery-health-forecast", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, ...payload }),
+      })
+        .then(async (response) => {
+          const data = (await response.json()) as BatteryHealthForecastView | { error?: string };
+          if (!response.ok || !("status" in data)) {
+            setError("error" in data && data.error ? data.error : "Something went wrong.");
+            return;
+          }
+          setView(data);
+        })
+        .catch(() => setError("Network error — please try again."))
+        .finally(() => setBusy(false));
     },
     [orgId, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
-            {" / Battery Health Forecast"}
-          </>
-        }
-        title="Battery Health Forecast"
-        description="Predict battery end-of-life from cycle count and internal-resistance history. Forecasts use only what you log — no fabricated numbers."
+  if (shell === "loading") {
+    return (
+      <BatteryHealthForecastShell description={shellCopy.description} orgId={null} shell="loading" />
+    );
+  }
+
+  if (shell === "error") {
+    return (
+      <BatteryHealthForecastShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={load}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <BatteryHealthForecastShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
       >
-        {orgId ? (
-          <a className="app-button secondary" href={`/battery-rotation?orgId=${encodeURIComponent(orgId)}`}>
-            Battery rotation
-          </a>
-        ) : null}
-      </PageHeader>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Battery Health Forecast"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        {(view?.status === "setup_required" ? view.steps : setupSteps).length > 0 ? (
           <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
+            {(view?.status === "setup_required" ? view.steps : setupSteps).map((step) => (
               <li key={step.id}>
                 <div>
                   <strong>{step.label}</strong>
@@ -125,32 +289,109 @@ export default function BatteryHealthForecastClient() {
               </li>
             ))}
           </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <FleetSummaryPanel view={view} />
-          <AddBatteryForm busy={busy} mutate={mutate} />
-          <LogReadingForm view={view} busy={busy} mutate={mutate} />
-          <ForecastTable view={view} busy={busy} mutate={mutate} />
+        ) : null}
+      </BatteryHealthForecastShell>
+    );
+  }
+
+  if (view?.status !== "live") {
+    return (
+      <BatteryHealthForecastShell description={shellCopy.description} orgId={orgId} shell="setup" />
+    );
+  }
+
+  return (
+    <main className="module-page battery-health-forecast-page">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Battery Health Forecast"}
+          </>
+        }
+        title="Battery Health Forecast"
+        description="Predict battery end-of-life from cycle count and internal-resistance history. Forecasts use only what you log — never DEMO IR or EOL metrics."
+      >
+        <div className="battery-health-forecast-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
-      )}
+      </PageHeader>
+
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <BatteryHealthForecastNextActionsPanel actions={nextActions} />
+
+      {shouldShowBatteryHealthForecastSummaryTiles(batteryCount) ? (
+        <FleetSummaryPanel view={view} scoredPackCount={scoredPackCount} />
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No batteries yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href={rotationHref}>
+            Open Battery Rotation
+          </a>
+          <a className="app-button secondary" href={batteriesHref}>
+            Open Batteries
+          </a>
+          <a className="app-button secondary" href={pitHref}>
+            Open Pit Command
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div style={{ display: "grid", gap: 16 }}>
+        <AddBatteryForm busy={busy} mutate={mutate} />
+        <LogReadingForm view={view} busy={busy} mutate={mutate} />
+        {shell === "ready" ? <ForecastTable view={view} busy={busy} mutate={mutate} /> : null}
+        <Panel aria-label="Battery health forecast tip">
+          <span className="eyebrow">Fleet path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Schedule match packs in <a href={rotationHref}>Battery Rotation</a>, log IR on{" "}
+            <a href={batteriesHref}>Batteries</a>, and check event-day rack status in{" "}
+            <a href={pitHref}>Pit Command</a> — never invent DEMO resistance or retirement dates.
+          </p>
+        </Panel>
+      </div>
     </main>
   );
 }
 
-function FleetSummaryPanel({ view }: { view: LiveView }) {
+function FleetSummaryPanel({
+  view,
+  scoredPackCount,
+}: {
+  view: LiveView;
+  scoredPackCount: number;
+}) {
   const { summary } = view;
   const tiles = [
-    { label: "Batteries", value: String(summary.totalBatteries) },
-    { label: "Active", value: String(summary.activeBatteries) },
-    { label: "Retired", value: String(summary.retiredBatteries) },
-    { label: "Watch", value: String(summary.watchCount) },
-    { label: "Retire soon", value: String(summary.retireSoonCount) },
-    { label: "Overdue", value: String(summary.overdueCount) },
-    { label: "Fleet readiness", value: pct(summary.fleetReadiness) },
+    { label: "Batteries", value: formatBatteryHealthForecastMetric(summary.totalBatteries, true) },
+    { label: "Active", value: formatBatteryHealthForecastMetric(summary.activeBatteries, true) },
+    { label: "Retired", value: formatBatteryHealthForecastMetric(summary.retiredBatteries, true) },
+    { label: "Watch", value: formatBatteryHealthForecastMetric(summary.watchCount, true) },
+    { label: "Retire soon", value: formatBatteryHealthForecastMetric(summary.retireSoonCount, true) },
+    { label: "Overdue", value: formatBatteryHealthForecastMetric(summary.overdueCount, true) },
+    {
+      label: "Fleet readiness",
+      value: formatBatteryHealthForecastReadiness(summary.fleetReadiness, true, scoredPackCount),
+    },
   ];
   return (
-    <Panel>
+    <section className="battery-health-forecast-stats" aria-label="Real battery forecast counts">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -159,7 +400,7 @@ function FleetSummaryPanel({ view }: { view: LiveView }) {
           </div>
         ))}
       </div>
-    </Panel>
+    </section>
   );
 }
 
@@ -170,20 +411,10 @@ function ForecastTable({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
-  if (view.forecasts.length === 0) {
-    return (
-      <EmptyState
-        badge="No batteries yet"
-        badgeTone="setup"
-        title="Add a battery to start forecasting"
-        description="Add a pack above and log cycle-count and internal-resistance readings to project its end-of-life."
-      />
-    );
-  }
   return (
-    <Panel>
+    <Panel id="bhf-forecast">
       <h2 style={{ marginTop: 0 }}>Fleet forecast</h2>
       <div style={{ overflowX: "auto" }}>
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10, margin: 0 }}>
@@ -199,9 +430,15 @@ function ForecastTable({
                 <strong>{forecast.label}</strong>
                 {forecast.serialNumber ? <small className="app-muted"> · {forecast.serialNumber}</small> : null}
                 <small className="app-muted" style={{ display: "block" }}>
-                  {forecast.readingsCount} reading(s)
-                  {forecast.latestCycleCount != null ? ` · ${forecast.latestCycleCount} cycles` : ""}
-                  {forecast.latestResistanceMohm != null ? ` · ${forecast.latestResistanceMohm} mΩ latest` : ""}
+                  {forecast.readingsCount === 0
+                    ? "No IR readings logged yet"
+                    : `${forecast.readingsCount} reading(s)${
+                        forecast.latestCycleCount != null ? ` · ${forecast.latestCycleCount} cycles` : ""
+                      }${
+                        forecast.latestResistanceMohm != null
+                          ? ` · ${forecast.latestResistanceMohm} mΩ latest`
+                          : ""
+                      }`}
                 </small>
                 {forecast.projectedRetirementDate ? (
                   <small className="app-muted" style={{ display: "block" }}>
@@ -254,13 +491,7 @@ function ForecastTable({
   );
 }
 
-function AddBatteryForm({
-  busy,
-  mutate,
-}: {
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
+function AddBatteryForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
   const empty = useMemo(() => ({ label: "", serialNumber: "", putInServiceOn: "", notes: "" }), []);
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
@@ -268,6 +499,7 @@ function AddBatteryForm({
 
   return (
     <Panel
+      id="bhf-add-battery"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -314,7 +546,7 @@ function LogReadingForm({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: Mutate;
 }) {
   const activeBatteries = view.batteries.filter((b) => b.status === "active");
   const empty = useMemo(
@@ -337,6 +569,7 @@ function LogReadingForm({
 
   return (
     <Panel
+      id="bhf-log-reading"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -385,7 +618,11 @@ function LogReadingForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.batteryId || !form.internalResistanceMohm}>
+        <button
+          type="submit"
+          className="app-button"
+          disabled={busy || !form.batteryId || !form.internalResistanceMohm}
+        >
           Log reading
         </button>
       </div>
