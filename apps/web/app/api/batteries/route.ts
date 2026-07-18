@@ -2,15 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import {
-  batteryHealth,
-  competitionReady,
-  monthsBetween,
-  parseBatteryAction,
-  rankForRotation,
-  type BatteryStatus,
-  type HealthStatus,
-} from "../../../lib/battery";
+import { batteryHealth, monthsBetween, parseBatteryAction, rankForRotation, type BatteryStatus, type HealthStatus } from "../../../lib/battery";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -45,7 +37,6 @@ type PackRow = {
   nominalAh: number | null;
   purchaseDate: string | null;
   status: BatteryStatus;
-  assignment: string;
   notes: string;
   createdAt: string;
   cycleCount: number;
@@ -77,7 +68,7 @@ export async function GET(request: Request) {
       const [packs, logs] = await Promise.all([
         client.query<PackRow>(
           `SELECT p.id, p.label, p.brand, p.nominal_ah::float8 AS "nominalAh", p.purchase_date::text AS "purchaseDate",
-                  p.status, COALESCE(p.assignment, '') AS assignment, p.notes, p.created_at::text AS "createdAt",
+                  p.status, p.notes, p.created_at::text AS "createdAt",
                   COALESCE(agg.cycle_count, 0) AS "cycleCount",
                   agg.last_resistance::float8 AS "lastInternalResistanceMohm",
                   agg.last_voltage::float8 AS "lastRestingVoltage",
@@ -117,14 +108,7 @@ export async function GET(request: Request) {
           cycleCount: pack.cycleCount,
           ageMonths,
         });
-        const readiness = competitionReady({
-          status: pack.status,
-          healthStatus: health.status,
-          lastChargedAt: pack.lastChargedAt,
-          lastRestingVoltage: pack.lastRestingVoltage,
-          now,
-        });
-        return { ...pack, ageMonths, health, readiness };
+        return { ...pack, ageMonths, health };
       });
       const rotation = rankForRotation(enriched).slice(0, 5).map((pack) => pack.id);
 
@@ -136,8 +120,7 @@ export async function GET(request: Request) {
         rotation,
         summary: {
           active: enriched.filter((p) => p.status === "active").length,
-          competitionReady: enriched.filter((p) => p.readiness.ready).length,
-          needAttention: enriched.filter((p) => p.status === "active" && (p.health.status !== "good" || !p.readiness.ready)).length,
+          needAttention: enriched.filter((p) => p.status === "active" && p.health.status !== "good").length,
           retired: enriched.filter((p) => p.status === "retired").length,
         },
       };
@@ -163,9 +146,9 @@ export async function POST(request: Request) {
       switch (action.action) {
         case "create_pack": {
           const inserted = await client.query<{ id: string }>(
-            `INSERT INTO battery_packs (org_id, label, brand, nominal_ah, purchase_date, assignment, notes, created_by)
-             VALUES ($1, $2, $3, $4, $5::date, $6, $7, $8) RETURNING id`,
-            [action.orgId, action.label, action.brand, action.nominalAh, action.purchaseDate, action.assignment, action.notes, userId],
+            `INSERT INTO battery_packs (org_id, label, brand, nominal_ah, purchase_date, notes, created_by)
+             VALUES ($1, $2, $3, $4, $5::date, $6, $7) RETURNING id`,
+            [action.orgId, action.label, action.brand, action.nominalAh, action.purchaseDate, action.notes, userId],
           );
           const id = inserted.rows[0]!.id;
           if (action.initialResistanceMohm != null || action.initialVoltage != null) {
@@ -189,26 +172,12 @@ export async function POST(request: Request) {
           if (action.patch.brand !== undefined) add("brand", action.patch.brand);
           if (action.patch.nominalAh !== undefined) add("nominal_ah", action.patch.nominalAh);
           if (action.patch.purchaseDate !== undefined) add("purchase_date", action.patch.purchaseDate, "::date");
-          if (action.patch.assignment !== undefined) add("assignment", action.patch.assignment);
           if (action.patch.notes !== undefined) add("notes", action.patch.notes);
           const updated = await client.query(
             `UPDATE battery_packs SET ${sets.join(", ")}, updated_at = now() WHERE id = $${values.length + 1} AND org_id = $${values.length + 2}`,
             [...values, action.id, action.orgId],
           );
           if (!updated.rowCount) throw new HttpError(404, "Battery not found");
-          return { ok: true };
-        }
-
-        case "assign_pack": {
-          const updated = await client.query(
-            `UPDATE battery_packs SET assignment = $1, updated_at = now() WHERE id = $2 AND org_id = $3`,
-            [action.assignment, action.id, action.orgId],
-          );
-          if (!updated.rowCount) throw new HttpError(404, "Battery not found");
-          await client.query(
-            `INSERT INTO battery_logs (org_id, battery_id, kind, note, logged_by) VALUES ($1, $2, 'note', $3, $4)`,
-            [action.orgId, action.id, action.assignment ? `Assigned to ${action.assignment}` : "Cleared assignment", userId],
-          );
           return { ok: true };
         }
 

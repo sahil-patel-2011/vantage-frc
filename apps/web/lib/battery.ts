@@ -31,13 +31,9 @@ export const VOLTAGE_LOW = 12.0;
 export const VOLTAGE_FULL = 12.8;
 export const AGE_AGING_MONTHS = 48;
 export const CYCLES_AGING = 300;
-/** A pack is competition-ready only if charged (or measured) within this window. */
-export const CHARGE_FRESH_HOURS = 18;
-export const READY_VOLTAGE_MIN = 12.5;
 
 export type HealthStatus = "good" | "aging" | "retire";
 export type BatteryHealth = { status: HealthStatus; score: number; reasons: string[] };
-export type CompetitionReady = { ready: boolean; reasons: string[] };
 
 const RANK: Record<HealthStatus, number> = { good: 0, aging: 1, retire: 2 };
 
@@ -143,53 +139,11 @@ export function rankForRotation<T extends { status: BatteryStatus; health: Batte
     });
 }
 
-/**
- * Event-day go/no-go: active pack, not retire-grade, freshly charged, and
- * resting voltage in the safe band when a reading exists.
- */
-export function competitionReady(input: {
-  status: BatteryStatus;
-  healthStatus: HealthStatus;
-  lastChargedAt: string | null;
-  lastRestingVoltage: number | null;
-  now?: Date;
-}): CompetitionReady {
-  const reasons: string[] = [];
-  const now = input.now ?? new Date();
-
-  if (input.status !== "active") reasons.push("Pack is not active");
-  if (input.healthStatus === "retire") reasons.push("Health says retire");
-  if (input.healthStatus === "aging") reasons.push("Health is aging — prefer a fresher pack");
-
-  if (!input.lastChargedAt) {
-    reasons.push("No charge logged yet");
-  } else {
-    const chargedAt = new Date(input.lastChargedAt).getTime();
-    if (Number.isNaN(chargedAt)) {
-      reasons.push("Charge timestamp is invalid");
-    } else {
-      const ageHours = (now.getTime() - chargedAt) / 3_600_000;
-      if (ageHours > CHARGE_FRESH_HOURS) {
-        reasons.push(`Last charge was ${Math.round(ageHours)}h ago (need ≤ ${CHARGE_FRESH_HOURS}h)`);
-      }
-    }
-  }
-
-  if (input.lastRestingVoltage != null && input.lastRestingVoltage < READY_VOLTAGE_MIN) {
-    reasons.push(`Resting voltage ${input.lastRestingVoltage} V is below ${READY_VOLTAGE_MIN} V`);
-  }
-
-  // Aging is a soft warning — still usable if charged and voltage is fine.
-  const blocking = reasons.filter((r) => !r.startsWith("Health is aging"));
-  return { ready: blocking.length === 0, reasons };
-}
-
 // ---- request validation -------------------------------------------------
 
 export type BatteryAction =
-  | { action: "create_pack"; orgId: string; label: string; brand: string | null; nominalAh: number | null; purchaseDate: string | null; assignment: string; notes: string; initialResistanceMohm: number | null; initialVoltage: number | null }
-  | { action: "update_pack"; orgId: string; id: string; patch: { label?: string; brand?: string | null; nominalAh?: number | null; purchaseDate?: string | null; assignment?: string; notes?: string } }
-  | { action: "assign_pack"; orgId: string; id: string; assignment: string }
+  | { action: "create_pack"; orgId: string; label: string; brand: string | null; nominalAh: number | null; purchaseDate: string | null; notes: string; initialResistanceMohm: number | null; initialVoltage: number | null }
+  | { action: "update_pack"; orgId: string; id: string; patch: { label?: string; brand?: string | null; nominalAh?: number | null; purchaseDate?: string | null; notes?: string } }
   | { action: "set_status"; orgId: string; id: string; status: BatteryStatus; note: string }
   | { action: "delete_pack"; orgId: string; id: string }
   | { action: "log_event"; orgId: string; batteryId: string; kind: BatteryLogKind; restingVoltage: number | null; internalResistanceMohm: number | null; matchKey: string | null; note: string };
@@ -231,24 +185,20 @@ export function parseBatteryAction(raw: unknown): BatteryAction {
         brand: optStr(body.brand) || null,
         nominalAh: optNum(body.nominalAh, "nominalAh"),
         purchaseDate: nullableDate(body.purchaseDate),
-        assignment: optStr(body.assignment),
         notes: optStr(body.notes),
         initialResistanceMohm: optNum(body.initialResistanceMohm, "initialResistanceMohm"),
         initialVoltage: optNum(body.initialVoltage, "initialVoltage"),
       };
     case "update_pack": {
-      const patch: { label?: string; brand?: string | null; nominalAh?: number | null; purchaseDate?: string | null; assignment?: string; notes?: string } = {};
+      const patch: { label?: string; brand?: string | null; nominalAh?: number | null; purchaseDate?: string | null; notes?: string } = {};
       if (body.label !== undefined) patch.label = reqStr(body.label, "label");
       if (body.brand !== undefined) patch.brand = optStr(body.brand) || null;
       if (body.nominalAh !== undefined) patch.nominalAh = optNum(body.nominalAh, "nominalAh");
       if (body.purchaseDate !== undefined) patch.purchaseDate = nullableDate(body.purchaseDate);
-      if (body.assignment !== undefined) patch.assignment = optStr(body.assignment);
       if (body.notes !== undefined) patch.notes = optStr(body.notes);
       if (Object.keys(patch).length === 0) throw new Error("No changes provided");
       return { action, orgId, id: reqStr(body.id, "id"), patch };
     }
-    case "assign_pack":
-      return { action, orgId, id: reqStr(body.id, "id"), assignment: optStr(body.assignment) };
     case "set_status": {
       const status = reqStr(body.status, "status");
       if (!BATTERY_STATUSES.includes(status as BatteryStatus)) throw new Error("Invalid status");
