@@ -139,6 +139,7 @@ export type DutyOnCalendar = {
   assignedUserName: string | null;
   calendarEventId: string | null;
   notes: string;
+  createdByName: string | null;
   mine: boolean;
 };
 
@@ -231,6 +232,7 @@ function withOrgPath(path: string, orgId: string): string {
 /**
  * Deep links from a calendar row into workflow surfaces.
  * Kind drives defaults; explicit practice / attendance / milestone links win when set.
+ * Onboarding path (getting-started, wiki, logistics, kickoff) is additive.
  */
 export function eventWorkflowLinks(event: CalendarEvent, orgId: string): WorkflowLink[] {
   const links: WorkflowLink[] = [];
@@ -244,9 +246,11 @@ export function eventWorkflowLinks(event: CalendarEvent, orgId: string): Workflo
   if (event.kind === "event") {
     push(withOrgPath("/command", orgId), "Event Day Command");
     push(withOrgPath("/scouting", orgId), "Scouting duty");
+    push(withOrgPath("/logistics", orgId), "Event logistics");
   }
   if (event.kind === "deadline") {
     push(withOrgPath("/business", orgId), "Business deadlines");
+    push(withOrgPath("/kickoff", orgId), "Kickoff summary");
   }
   if (event.attendanceEventId) {
     push(withOrgPath("/attendance", orgId), "Attendance roll call");
@@ -257,6 +261,10 @@ export function eventWorkflowLinks(event: CalendarEvent, orgId: string): Workflo
   if (event.kind === "meeting" || event.kind === "outreach") {
     push(withOrgPath("/team/calendar", orgId), "Team calendar");
   }
+  if (event.kind === "practice" || event.kind === "build" || event.kind === "meeting") {
+    push(withOrgPath("/team/knowledge", orgId), "Knowledge wiki");
+  }
+  push(withOrgPath("/team/getting-started", orgId), "Onboarding checklist");
   return links;
 }
 
