@@ -245,6 +245,8 @@ export default function CalendarClient() {
           <p>
             Build-season milestones for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — from Kickoff through competition.
+            For practices and subteam schedules, open{" "}
+            <a href={orgId ? `/team/calendar?orgId=${encodeURIComponent(orgId)}` : "/team/calendar"}>Team Calendar</a>.
           </p>
         </div>
       </header>

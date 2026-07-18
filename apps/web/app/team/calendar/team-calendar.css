@@ -1,0 +1,358 @@
+/* Subteam calendars — Soft-UI, theme-aware. Prefixed .tc-* so styles stay local. */
+.tc-page input,
+.tc-page select,
+.tc-page textarea {
+  min-height: 38px;
+  padding: 8px 10px;
+  color: var(--app-ink);
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+  font: inherit;
+}
+.tc-page textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.tc-empty {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 26px;
+}
+
+.tc-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0 14px;
+}
+.tc-tabs button {
+  padding: 8px 14px;
+  border: 1px solid var(--app-line);
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.tc-tabs button.active {
+  color: var(--app-ink);
+  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+  background: color-mix(in srgb, var(--app-accent) 12%, var(--app-surface));
+}
+
+.tc-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.tc-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.tc-filter.active {
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--app-ink) 8%, transparent);
+}
+.tc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.tc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.tc-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: calc(var(--app-radius) + 2px);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--app-ink) 4%, transparent);
+}
+
+.tc-panel h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.tc-muted {
+  margin: 0;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.tc-day {
+  display: grid;
+  gap: 8px;
+}
+.tc-day h3 {
+  margin: 8px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.tc-event {
+  display: grid;
+  gap: 6px;
+  padding: 12px 13px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-bg) 55%, var(--app-surface));
+  border-left: 3px solid var(--tc-accent, var(--app-accent));
+}
+.tc-event-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tc-event-top strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.tc-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+.tc-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tc-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+}
+.tc-links a {
+  color: var(--app-accent);
+  font-weight: 650;
+  text-decoration: none;
+}
+.tc-links a:hover {
+  text-decoration: underline;
+}
+.tc-text-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--app-critical);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tc-text-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.tc-form {
+  display: grid;
+  gap: 10px;
+}
+.tc-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.tc-form-grid .wide {
+  grid-column: 1 / -1;
+}
+.tc-field {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+.tc-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--app-ink);
+}
+.tc-check input {
+  width: 16px;
+  min-height: auto;
+}
+
+.tc-upcoming {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tc-upcoming li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--app-line);
+  background: var(--app-bg);
+}
+.tc-upcoming strong {
+  font-size: 13px;
+}
+.tc-upcoming span {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+
+.tc-sub-create {
+  display: grid;
+  gap: 10px;
+}
+.tc-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tc-color {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.tc-color.active {
+  border-color: var(--app-ink);
+  box-shadow: 0 0 0 2px var(--app-surface);
+}
+
+.tc-sub-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.tc-sub-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: var(--app-bg);
+}
+.tc-sub-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 650;
+}
+
+.tc-roster {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tc-roster th,
+.tc-roster td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--app-line);
+  text-align: left;
+  vertical-align: middle;
+}
+.tc-roster th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-muted);
+  font-weight: 700;
+}
+.tc-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 8px;
+  margin: 0 3px 3px 0;
+  border-radius: 999px;
+  border: 1px solid var(--app-line);
+  background: var(--app-surface);
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tc-toggle.on {
+  color: #fff;
+  border-color: transparent;
+}
+
+.tc-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--app-critical) 12%, var(--app-surface));
+  color: var(--app-critical);
+  font-size: 13px;
+}
+
+.tc-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+.tc-related a {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--app-accent);
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .tc-layout {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .tc-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
