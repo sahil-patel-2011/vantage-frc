@@ -18,7 +18,14 @@ import {
   type YearMetricRow,
 } from "@vantage/prediction-strategy";
 import { platformTbaEnvConfigured } from "@vantage/reference";
-import type { ReferenceAccessInfo, StrategyView, TbaAccessInfo } from "./types";
+import type {
+  ReferenceAccessInfo,
+  StrategyEngineeringContext,
+  StrategyGameRulesContext,
+  StrategyView,
+  TbaAccessInfo,
+} from "./types";
+import { resolveActiveSeasonYear } from "@vantage/agent";
 
 function allianceKeys(alliance: unknown): string[] {
   if (!alliance || typeof alliance !== "object") return [];
@@ -112,6 +119,88 @@ export async function resolveReferenceAccess(
       yearMetricRows,
     },
   };
+}
+
+/** Load kickoff rules / design priorities for one seasonYear only — never mix prior seasons. */
+export async function loadSeasonGameRules(
+  client: PoolClient,
+  orgId: string,
+  seasonYear: number,
+): Promise<StrategyGameRulesContext> {
+  const kickoffHref = `/kickoff?orgId=${encodeURIComponent(orgId)}&season=${seasonYear}`;
+  try {
+    const [notes, priorities, intel] = await Promise.all([
+      client.query<{
+        id: string;
+        question: string;
+        answer: string;
+        ruleRef: string;
+        status: string;
+      }>(
+        `SELECT id, question, answer, rule_ref AS "ruleRef", status
+         FROM kickoff_rule_notes
+         WHERE org_id=$1::uuid AND season_year=$2
+         ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC
+         LIMIT 40`,
+        [orgId, seasonYear],
+      ),
+      client.query<{
+        id: string;
+        capability: string;
+        rationale: string;
+        weight: number;
+        status: string;
+      }>(
+        `SELECT id, capability, rationale, weight, status
+         FROM design_priorities
+         WHERE org_id=$1::uuid AND season_year=$2
+         ORDER BY weight DESC, created_at ASC
+         LIMIT 40`,
+        [orgId, seasonYear],
+      ),
+      client.query<{ summary: { constraints?: string[] } | null }>(
+        `SELECT summary FROM kickoff_game_intelligence
+         WHERE org_id=$1::uuid AND season_year=$2
+         ORDER BY created_at DESC LIMIT 1`,
+        [orgId, seasonYear],
+      ),
+    ]);
+    const constraints = Array.isArray(intel.rows[0]?.summary?.constraints)
+      ? intel.rows[0]!.summary!.constraints!.map((row) => String(row).trim()).filter(Boolean)
+      : [];
+    const ruleNotes = notes.rows;
+    const designPriorities = priorities.rows;
+    if (!ruleNotes.length && !designPriorities.length && !constraints.length) {
+      return {
+        seasonYear,
+        status: "empty",
+        message: `No ${seasonYear} game rules or design priorities yet. Add them on Kickoff — strategy and CAD will not use prior-season rules.`,
+        kickoffHref,
+        constraints: [],
+        ruleNotes: [],
+        designPriorities: [],
+      };
+    }
+    return {
+      seasonYear,
+      status: "ready",
+      message: `${seasonYear} kickoff rules loaded (${constraints.length} constraint${constraints.length === 1 ? "" : "s"}, ${ruleNotes.length} note${ruleNotes.length === 1 ? "" : "s"}).`,
+      kickoffHref,
+      constraints,
+      ruleNotes,
+      designPriorities,
+    };
+  } catch {
+    return {
+      seasonYear,
+      status: "setup_required",
+      message: `Kickoff rules tables are not available yet for ${seasonYear}.`,
+      kickoffHref,
+      constraints: [],
+      ruleNotes: [],
+      designPriorities: [],
+    };
+  }
 }
 
 function normalizeConfidence(value: string | null): "high" | "normal" | "low" {
@@ -268,14 +357,16 @@ function setupPayload(
   access: ReferenceAccessInfo,
   fields: Omit<
     Extract<StrategyView, { status: "setup_required" | "empty" }>,
-    "tbaConfigured" | "tbaAccess" | "referenceAccess"
+    "tbaConfigured" | "tbaAccess" | "referenceAccess" | "gameRules"
   >,
+  gameRules?: StrategyGameRulesContext,
 ): Extract<StrategyView, { status: "setup_required" | "empty" }> {
   return {
     ...fields,
     tbaConfigured: access.tbaConfigured,
     tbaAccess: tbaSlice(access),
     referenceAccess: access,
+    ...(gameRules ? { gameRules } : {}),
   };
 }
 
@@ -292,9 +383,10 @@ export async function computeStrategyView(
     teamNumber: number | null;
     eventKey: string | null;
     eventName: string | null;
+    eventYear: number | null;
   }>(
     `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber",
-            c.active_event_key AS "eventKey", e.name AS "eventName"
+            c.active_event_key AS "eventKey", e.name AS "eventName", e.year AS "eventYear"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      LEFT JOIN org_active_context c ON c.org_id = o.id
@@ -309,6 +401,11 @@ export async function computeStrategyView(
   const row = membership.rows[0];
   const access = await resolveReferenceAccess(client, row?.orgId ?? null);
   const dataHref = row?.orgId ? `/team/data?orgId=${encodeURIComponent(row.orgId)}` : "/team/data";
+  const seasonYear = resolveActiveSeasonYear({
+    seasonYear: row?.eventYear,
+    activeEventKey: row?.eventKey,
+  });
+  const gameRules = row?.orgId ? await loadSeasonGameRules(client, row.orgId, seasonYear) : undefined;
 
   const baseSteps = [
     {
@@ -362,15 +459,19 @@ export async function computeStrategyView(
   }
 
   if (!row.eventKey || !row.teamNumber) {
-    return setupPayload(access, {
-      status: "setup_required",
-      message: "Select an active event and team number to load a match schedule.",
-      steps: baseSteps,
-      orgId: row.orgId,
-      eventKey: row.eventKey,
-      eventName: row.eventName,
-      teamNumber: row.teamNumber,
-    });
+    return setupPayload(
+      access,
+      {
+        status: "setup_required",
+        message: "Select an active event and team number to load a match schedule.",
+        steps: baseSteps,
+        orgId: row.orgId,
+        eventKey: row.eventKey,
+        eventName: row.eventName,
+        teamNumber: row.teamNumber,
+      },
+      gameRules,
+    );
   }
 
   const teamKey = `frc${row.teamNumber}`;
@@ -421,7 +522,7 @@ export async function computeStrategyView(
       eventKey: row.eventKey,
       eventName: row.eventName,
       teamNumber: row.teamNumber,
-    });
+    }, gameRules);
   }
 
   const red = allianceKeys(upcoming.redAlliance);
@@ -436,7 +537,7 @@ export async function computeStrategyView(
       eventKey: row.eventKey,
       eventName: row.eventName,
       teamNumber: row.teamNumber,
-    });
+    }, gameRules);
   }
 
   const year = upcoming.year ?? new Date().getFullYear();
@@ -546,7 +647,7 @@ export async function computeStrategyView(
       eventKey: row.eventKey,
       eventName: row.eventName,
       teamNumber: row.teamNumber,
-    });
+    }, gameRules);
   }
 
   const ourAlliance: Alliance = red.includes(teamKey) ? "red" : "blue";
@@ -785,6 +886,35 @@ export async function computeStrategyView(
     );
   }
 
+  let engineeringContext: StrategyEngineeringContext[] = [];
+  try {
+    engineeringContext = (
+      await client.query<StrategyEngineeringContext>(
+        `SELECT j.id AS "jobId",j.title,j.status,j.platform,
+                COALESCE(j.brief->'requirements','[]'::jsonb) AS requirements,
+                COALESCE(j.brief->'constraints','[]'::jsonb) AS constraints,
+                COALESCE(j.brief->'risks','[]'::jsonb) AS risks,
+                CASE WHEN a.id IS NULL THEN NULL ELSE jsonb_build_object(
+                  'id',a.id,'type',a.type,'title',a.title,'version',a.version
+                ) END AS "latestArtifact",
+                j.updated_at::text AS "updatedAt"
+         FROM feature_context_links l
+         JOIN cad_jobs j ON j.org_id=l.org_id AND j.id::text=l.target_id
+           AND l.target_kind='cad_job'
+         LEFT JOIN LATERAL (
+           SELECT id,type,title,version FROM cad_artifacts
+           WHERE org_id=j.org_id AND job_id=j.id AND type<>'engineering_brief'
+           ORDER BY created_at DESC LIMIT 1
+         ) a ON true
+         WHERE l.org_id=$1 AND l.source_kind='strategy_match' AND l.source_id=$2
+         ORDER BY j.updated_at DESC LIMIT 6`,
+        [row.orgId, upcoming.matchKey],
+      )
+    ).rows;
+  } catch {
+    // Deploys may briefly run before the cross-feature graph migration lands.
+  }
+
   return {
     status: "live",
     orgId: row.orgId,
@@ -808,6 +938,8 @@ export async function computeStrategyView(
     pickListHints,
     scoutProvenance: scoutProvenance.slice(0, 80),
     operations,
+    engineeringContext,
+    gameRules: gameRules!,
     sources,
     computedAt: scoredAt,
   };

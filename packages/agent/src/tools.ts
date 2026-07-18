@@ -2,6 +2,7 @@ import { AIToolRegistry, type ToolDefinition } from "./orchestrator";
 import { checkGameRuleCompliance } from "./rule-compliance";
 import { FINANCE_IN_AI_DENIED, sanitizeFinancePayloadForAi } from "./finance-redact";
 import { isFinanceInAiAllowed, loadOrgAiPolicy } from "@vantage/billing";
+import { resolveActiveSeasonYear } from "./season-year";
 
 const object = (value: unknown) => {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Tool input must be an object");
@@ -23,7 +24,8 @@ const seasonInput = (value: unknown) => {
   const input = object(value);
   const raw = input.seasonYear;
   if (raw == null || raw === "") {
-    return { seasonYear: new Date().getUTCFullYear() };
+    // Caller / execute will lock to org active season via activeEventKey.
+    return { seasonYear: undefined as number | undefined };
   }
   const seasonYear = Number(raw);
   if (!Number.isInteger(seasonYear) || seasonYear < 1992 || seasonYear > 2100) {
@@ -31,6 +33,10 @@ const seasonInput = (value: unknown) => {
   }
   return { seasonYear };
 };
+
+function lockSeasonYear(seasonYear: number | undefined, activeEventKey: string | null, matchKey?: string | null) {
+  return resolveActiveSeasonYear({ seasonYear, activeEventKey, matchKey });
+}
 const rowsOutput = (value: unknown) => {
   if (!Array.isArray(value)) throw new Error("Tool output must be an array");
   return value as Array<Record<string, unknown>>;
@@ -58,31 +64,18 @@ export const SHARED_STRATEGY_CAD_TOOLS = [
   "fmea.open_risks",
   "fmea.repeat",
   "cad.briefs",
+  "cad.design_context",
   "cad.create_brief",
-  "knowledge.search",
-  "finance.summary",
-  "finance.orders",
-  "finance.create_purchase_request",
-] as const;
-
-export const ORG_DATA_TOOLS = [
-  "scouting.team",
-  "strategy.match",
-  "strategy.design",
-  "artifacts.related",
-  "kickoff.intelligence",
-  "kickoff.rules",
-  "rules.compliance",
-  "cad.briefs",
-  "cad.create_brief",
+  "inventory.availability",
   "knowledge.search",
   "knowledge.get_page",
-  "fmea.open_risks",
-  "fmea.repeat",
   "finance.summary",
   "finance.orders",
   "finance.create_purchase_request",
+  "my_day.summary",
 ] as const;
+
+export { ORG_DATA_TOOL_NAMES as ORG_DATA_TOOLS } from "./feature-context";
 
 function round2(value: number) {
   return Math.round(value * 100) / 100;
@@ -514,7 +507,8 @@ export function createVantageToolRegistry(): AIToolRegistry {
           "Read the latest kickoff game-release intelligence summary (manual/transcript → structured game + design directions)",
         parseInput: seasonInput,
         parseOutput: objectOutput,
-        async execute({ client, orgId }, input) {
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
           try {
             const row = await client.query(
               `SELECT id, season_year AS "seasonYear", status, title, summary,
@@ -527,11 +521,11 @@ export function createVantageToolRegistry(): AIToolRegistry {
                WHERE org_id=$1 AND season_year=$2
                ORDER BY created_at DESC
                LIMIT 1`,
-              [orgId, input.seasonYear],
+              [orgId, seasonYear],
             );
-            return { seasonYear: input.seasonYear, record: row.rows[0] ?? null };
+            return { seasonYear, record: row.rows[0] ?? null };
           } catch {
-            return { seasonYear: input.seasonYear, record: null, setup_required: true };
+            return { seasonYear, record: null, setup_required: true };
           }
         },
       }),
@@ -543,14 +537,15 @@ export function createVantageToolRegistry(): AIToolRegistry {
           "Read kickoff rule notes plus constraints from game intelligence for rules Q&A / compliance context",
         parseInput: seasonInput,
         parseOutput: objectOutput,
-        async execute({ client, orgId }, input) {
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
           const notes = await client.query(
             `SELECT id, question, answer, rule_ref AS "ruleRef", status
              FROM kickoff_rule_notes
              WHERE org_id=$1 AND season_year=$2
              ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, created_at DESC
              LIMIT 40`,
-            [orgId, input.seasonYear],
+            [orgId, seasonYear],
           );
           let constraints: string[] = [];
           try {
@@ -558,7 +553,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
               `SELECT summary FROM kickoff_game_intelligence
                WHERE org_id=$1 AND season_year=$2
                ORDER BY created_at DESC LIMIT 1`,
-              [orgId, input.seasonYear],
+              [orgId, seasonYear],
             );
             if (Array.isArray(intel.rows[0]?.summary?.constraints)) {
               constraints = intel.rows[0]!.summary!.constraints!;
@@ -567,7 +562,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
             // kickoff_game_intelligence not migrated yet
           }
           return {
-            seasonYear: input.seasonYear,
+            seasonYear,
             ruleNotes: notes.rows,
             constraints,
           };
@@ -588,7 +583,8 @@ export function createVantageToolRegistry(): AIToolRegistry {
           return { proposal, seasonYear: season.seasonYear };
         },
         parseOutput: objectOutput,
-        async execute({ client, orgId }, input) {
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
           const notes = await client.query<{
             question: string;
             answer: string;
@@ -599,7 +595,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
              FROM kickoff_rule_notes
              WHERE org_id=$1 AND season_year=$2
              ORDER BY created_at DESC LIMIT 40`,
-            [orgId, input.seasonYear],
+            [orgId, seasonYear],
           );
           let constraints: string[] = [];
           try {
@@ -607,7 +603,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
               `SELECT summary FROM kickoff_game_intelligence
                WHERE org_id=$1 AND season_year=$2
                ORDER BY created_at DESC LIMIT 1`,
-              [orgId, input.seasonYear],
+              [orgId, seasonYear],
             );
             if (Array.isArray(intel.rows[0]?.summary?.constraints)) {
               constraints = intel.rows[0]!.summary!.constraints!;
@@ -621,7 +617,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
             ruleNotes: notes.rows,
           });
           return {
-            seasonYear: input.seasonYear,
+            seasonYear,
             constraintCount: constraints.length,
             openRuleNotes: notes.rows.filter((row) => row.status === "open").length,
             ...report,
@@ -636,7 +632,8 @@ export function createVantageToolRegistry(): AIToolRegistry {
           "Read design priorities + kickoff strategy advice for the season (strategy→CAD handoff inputs)",
         parseInput: seasonInput,
         parseOutput: objectOutput,
-        async execute({ client, orgId }, input) {
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
           const priorities = await client.query(
             `SELECT id, capability, rationale, weight, status,
                     linked_action_id AS "linkedActionId"
@@ -644,7 +641,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
              WHERE org_id=$1 AND season_year=$2
              ORDER BY weight DESC, created_at ASC
              LIMIT 40`,
-            [orgId, input.seasonYear],
+            [orgId, seasonYear],
           );
           let kickoffStrategy: Record<string, unknown> | null = null;
           try {
@@ -655,14 +652,14 @@ export function createVantageToolRegistry(): AIToolRegistry {
                FROM kickoff_game_intelligence
                WHERE org_id=$1 AND season_year=$2
                ORDER BY created_at DESC LIMIT 1`,
-              [orgId, input.seasonYear],
+              [orgId, seasonYear],
             );
             kickoffStrategy = (intel.rows[0] as Record<string, unknown> | undefined) ?? null;
           } catch {
             // optional
           }
           return {
-            seasonYear: input.seasonYear,
+            seasonYear,
             priorities: priorities.rows,
             kickoffStrategy,
           };
@@ -697,6 +694,106 @@ export function createVantageToolRegistry(): AIToolRegistry {
     )
     .register(
       tool({
+        name: "cad.design_context",
+        description:
+          "Read CAD jobs, confirmed engineering requirements, plans, and latest verified artifacts linked to a strategy match",
+        parseInput(value) {
+          const input = object(value);
+          const matchKey = String(input.matchKey ?? "").trim().slice(0, 100);
+          const limitRaw = Number(input.limit ?? 6);
+          const limit = Number.isFinite(limitRaw) ? Math.min(12, Math.max(1, Math.floor(limitRaw))) : 6;
+          return { matchKey, limit };
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }, input) {
+          return (
+            await client.query(
+              `SELECT j.id AS "jobId", j.title, j.status, j.platform,
+                      j.brief_confirmed_at AS "briefConfirmedAt",
+                      j.brief->'requirements' AS requirements,
+                      j.brief->'constraints' AS constraints,
+                      j.brief->'risks' AS risks,
+                      j.brief->'acceptanceCriteria' AS "acceptanceCriteria",
+                      j.action_plan AS "actionPlan",
+                      j.updated_at AS "updatedAt",
+                      latest.artifact
+               FROM cad_jobs j
+               LEFT JOIN LATERAL (
+                 SELECT jsonb_build_object(
+                   'id',a.id,'type',a.type,'title',a.title,'version',a.version,
+                   'previewText',left(coalesce(a.content->>'previewText',''),1000),
+                   'topologyFingerprint',coalesce(
+                     a.content#>>'{topology,fingerprint}',
+                     a.content#>>'{provenance,topologyFingerprint}'
+                   ),
+                   'provenance',a.content->'provenance','createdAt',a.created_at
+                 ) AS artifact
+                 FROM cad_artifacts a
+                 WHERE a.org_id=j.org_id AND a.job_id=j.id AND a.type<>'engineering_brief'
+                 ORDER BY a.created_at DESC LIMIT 1
+               ) latest ON true
+               WHERE j.org_id=$1
+                 AND ($2='' OR EXISTS(
+                   SELECT 1 FROM feature_context_links l
+                   WHERE l.org_id=j.org_id
+                     AND l.source_kind='strategy_match' AND l.source_id=$2
+                     AND l.target_kind='cad_job' AND l.target_id=j.id::text
+                 ))
+               ORDER BY j.updated_at DESC
+               LIMIT $3`,
+              [orgId, input.matchKey, input.limit],
+            )
+          ).rows;
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "inventory.availability",
+        description:
+          "Search organization inventory and BOM availability before CAD recommends material or purchased parts",
+        parseInput(value) {
+          const input = object(value);
+          const query = String(input.query ?? input.part ?? "").trim().slice(0, 160);
+          const subsystem = String(input.subsystem ?? "").trim().slice(0, 120);
+          const limitRaw = Number(input.limit ?? 20);
+          const limit = Number.isFinite(limitRaw) ? Math.min(40, Math.max(1, Math.floor(limitRaw))) : 20;
+          return { query, subsystem, limit };
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId }, input) {
+          const items = await client.query(
+            `SELECT i.id,i.name,i.category,i.part_number AS "partNumber",i.vendor,i.unit,
+                    i.quantity::text AS quantity,i.min_quantity::text AS "minQuantity",
+                    i.unit_cost::text AS "unitCost",i.subsystem,i.notes,l.name AS "locationName",
+                    (i.quantity <= i.min_quantity) AS "lowStock"
+             FROM inventory_items i
+             LEFT JOIN inventory_locations l ON l.id=i.location_id
+             WHERE i.org_id=$1 AND NOT i.archived
+               AND ($2='' OR concat_ws(' ',i.name,i.part_number,i.vendor,i.category,i.subsystem,i.notes) ILIKE '%'||$2||'%')
+               AND ($3='' OR lower(coalesce(i.subsystem,''))=lower($3))
+             ORDER BY (i.quantity <= i.min_quantity) DESC,i.name LIMIT $4`,
+            [orgId, input.query, input.subsystem, input.limit],
+          );
+          const bom = input.subsystem
+            ? await client.query(
+                `SELECT b.id,i.id AS "itemId",i.name,b.quantity_needed::text AS "quantityNeeded",
+                        i.quantity::text AS "quantityAvailable",
+                        greatest(b.quantity_needed-i.quantity,0)::text AS shortage,
+                        l.name AS "locationName"
+                 FROM bom_entries b JOIN inventory_items i ON i.id=b.item_id
+                 LEFT JOIN inventory_locations l ON l.id=i.location_id
+                 WHERE b.org_id=$1 AND lower(b.subsystem)=lower($2)
+                 ORDER BY greatest(b.quantity_needed-i.quantity,0) DESC,i.name`,
+                [orgId, input.subsystem],
+              )
+            : { rows: [] };
+          return { query: input.query, subsystem: input.subsystem || null, items: items.rows, bom: bom.rows };
+        },
+      }),
+    )
+    .register(
+      tool({
         name: "fmea.repeat",
         description:
           "Detect subsystems that failed repeatedly this season (FMEA log, with pit robot_failures fallback). Returns empty when nothing repeats — never invents counts.",
@@ -712,7 +809,8 @@ export function createVantageToolRegistry(): AIToolRegistry {
           return { seasonYear: season.seasonYear, threshold, limit };
         },
         parseOutput: objectOutput,
-        async execute({ client, orgId }, input) {
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
           try {
             const fmea = await client.query<{
               subsystemName: string;
@@ -734,7 +832,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
                HAVING count(*) >= $3
                ORDER BY count(*) DESC, max(occurrence * severity * detection) DESC
                LIMIT $4`,
-              [orgId, input.seasonYear, input.threshold, input.limit],
+              [orgId, seasonYear, input.threshold, input.limit],
             );
             if (fmea.rows.length) {
               const alerts = fmea.rows.map((row) => {
@@ -747,13 +845,13 @@ export function createVantageToolRegistry(): AIToolRegistry {
                   failureCount,
                   openCount,
                   maxRpn,
-                  message: `${row.subsystemName} has failed ${failureCount} time${failureCount === 1 ? "" : "s"} this season (${input.seasonYear})`,
+                  message: `${row.subsystemName} has failed ${failureCount} time${failureCount === 1 ? "" : "s"} this season (${seasonYear})`,
                   recentTitles: Array.isArray(row.titles) ? row.titles.filter(Boolean) : [],
                   href: "/fmea",
                   source: "fmea_failures",
                 };
               });
-              return { seasonYear: input.seasonYear, threshold: input.threshold, alerts };
+              return { seasonYear, threshold: input.threshold, alerts };
             }
           } catch {
             // fmea_failures not migrated
@@ -775,7 +873,7 @@ export function createVantageToolRegistry(): AIToolRegistry {
                HAVING count(*) >= $3
                ORDER BY count(*) DESC
                LIMIT $4`,
-              [orgId, input.seasonYear, input.threshold, input.limit],
+              [orgId, seasonYear, input.threshold, input.limit],
             );
             const alerts = pit.rows.map((row) => {
               const failureCount = Number(row.failureCount) || 0;
@@ -785,15 +883,15 @@ export function createVantageToolRegistry(): AIToolRegistry {
                 failureCount,
                 openCount: failureCount,
                 maxRpn: null,
-                message: `${row.subsystemName} has failed ${failureCount} time${failureCount === 1 ? "" : "s"} this season (${input.seasonYear})`,
+                message: `${row.subsystemName} has failed ${failureCount} time${failureCount === 1 ? "" : "s"} this season (${seasonYear})`,
                 recentTitles: Array.isArray(row.titles) ? row.titles.filter(Boolean) : [],
                 href: "/pit",
                 source: "robot_failures",
               };
             });
-            return { seasonYear: input.seasonYear, threshold: input.threshold, alerts };
+            return { seasonYear, threshold: input.threshold, alerts };
           } catch {
-            return { seasonYear: input.seasonYear, threshold: input.threshold, alerts: [], setup_required: true };
+            return { seasonYear, threshold: input.threshold, alerts: [], setup_required: true };
           }
         },
       }),
@@ -1107,7 +1205,8 @@ export function createVantageToolRegistry(): AIToolRegistry {
           return { seasonYear: season.seasonYear, limit };
         },
         parseOutput: objectOutput,
-        async execute({ client, orgId }, input) {
+        async execute({ client, orgId, activeEventKey }, input) {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey);
           try {
             const rows = await client.query(
               `SELECT id, title, failure_mode AS "failureMode", subsystem_name AS "subsystemName",
@@ -1120,11 +1219,11 @@ export function createVantageToolRegistry(): AIToolRegistry {
                WHERE org_id=$1 AND season_year=$2 AND status IN ('open','fixing')
                ORDER BY (occurrence * severity * detection) DESC, occurred_at DESC
                LIMIT $3`,
-              [orgId, input.seasonYear, input.limit],
+              [orgId, seasonYear, input.limit],
             );
-            return { seasonYear: input.seasonYear, failures: rows.rows, openCount: rows.rows.length };
+            return { seasonYear, failures: rows.rows, openCount: rows.rows.length };
           } catch {
-            return { seasonYear: input.seasonYear, failures: [], openCount: 0, setup_required: true };
+            return { seasonYear, failures: [], openCount: 0, setup_required: true };
           }
         },
       }),
@@ -1145,7 +1244,8 @@ export function createVantageToolRegistry(): AIToolRegistry {
           return { request, title, matchKey, seasonYear: season.seasonYear };
         },
         parseOutput: objectOutput,
-        async execute({ client, orgId, userId }, input): Promise<Record<string, unknown>> {
+        async execute({ client, orgId, userId, activeEventKey }, input): Promise<Record<string, unknown>> {
+          const seasonYear = lockSeasonYear(input.seasonYear, activeEventKey, input.matchKey);
           const { createMeteredCadBriefJob } = await import("./cad-brief");
           try {
             const created = await createMeteredCadBriefJob(client, {
@@ -1153,9 +1253,11 @@ export function createVantageToolRegistry(): AIToolRegistry {
               userId,
               title: input.title,
               request: input.request,
-              seasonYear: input.seasonYear,
+              seasonYear,
               selected: input.matchKey ? { matchKey: input.matchKey } : undefined,
               sources: [],
+              // Parent chat/strategy turn already meters — avoid a nested ledger hit.
+              inheritMetering: true,
             });
             return {
               jobId: created.jobId,

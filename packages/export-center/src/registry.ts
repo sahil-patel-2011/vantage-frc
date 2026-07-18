@@ -68,6 +68,54 @@ export function createExportRegistry() {
       params: (c) => [c.orgId, c.filters.eventKey ?? null],
     }),
     sqlAdapter({
+      id: "scouting-purple-standard",
+      fileName: "scouting_purple_standard.csv",
+      description: "Match scouting entries mapped to The Purple Standard interchange fields",
+      scope: "team",
+      category: "scouting",
+      provenance: "Vantage match scouting forms normalized to The Purple Standard",
+      columns: ["abilities", "counters", "data", "metadata", "ratings", "timers"],
+      query: `SELECT
+        '{}'::jsonb::text AS abilities,
+        '{}'::jsonb::text AS counters,
+        e.payload::text AS data,
+        jsonb_strip_nulls(jsonb_build_object(
+          'event', e.event_key,
+          'match', CASE
+            WHEN e.match_key ~ '_qm[0-9]+$' THEN jsonb_build_object(
+              'level', 'qm',
+              'number', substring(e.match_key from '_qm([0-9]+)$')::integer,
+              'set', 1
+            )
+            WHEN e.match_key ~ '_sf[0-9]+m[0-9]+$' THEN jsonb_build_object(
+              'level', 'sf',
+              'number', substring(e.match_key from '_sf[0-9]+m([0-9]+)$')::integer,
+              'set', substring(e.match_key from '_sf([0-9]+)m[0-9]+$')::integer
+            )
+            WHEN e.match_key ~ '_f[0-9]+m[0-9]+$' THEN jsonb_build_object(
+              'level', 'f',
+              'number', substring(e.match_key from '_f[0-9]+m([0-9]+)$')::integer,
+              'set', substring(e.match_key from '_f([0-9]+)m[0-9]+$')::integer
+            )
+            ELSE NULL
+          END,
+          'bot', regexp_replace(e.team_key, '^frc', ''),
+          'scouter', jsonb_strip_nulls(jsonb_build_object(
+            'team', o.team_number::text,
+            'app', 'Vantage'
+          )),
+          'timestamp', (extract(epoch FROM e.created_at) * 1000)::bigint,
+          'modified-timestamp', (extract(epoch FROM e.updated_at) * 1000)::bigint
+        ))::text AS metadata,
+        '{}'::jsonb::text AS ratings,
+        '{}'::jsonb::text AS timers
+      FROM match_scout_entries e
+      JOIN organizations o ON o.id=e.org_id
+      WHERE e.org_id=$1 AND ($2::text IS NULL OR e.event_key=$2)
+      ORDER BY e.created_at,e.id`,
+      params: (c) => [c.orgId, c.filters.eventKey ?? null],
+    }),
+    sqlAdapter({
       id: "scouting-pit",
       fileName: "scouting_pit_entries.csv",
       description: "Pit scouting entries",
@@ -208,6 +256,17 @@ export function createExportRegistry() {
       provenance: "CAD agent artifacts (cad_artifacts)",
       columns: ["id", "job_id", "step_id", "type", "title", "version", "parent_artifact_id", "content_json", "checksum", "source_refs_json", "created_at"],
       query: `SELECT id,job_id,step_id,type,title,version,parent_artifact_id,content::text AS content_json,checksum,source_refs::text AS source_refs_json,created_at FROM cad_artifacts WHERE org_id=$1 ORDER BY created_at,id`,
+      params: (c) => [c.orgId],
+    }),
+    sqlAdapter({
+      id: "feature-context-links",
+      fileName: "feature_context_links.csv",
+      description: "Auditable relationships between strategy, CAD, inventory, tasks, knowledge, finance, and team evidence",
+      scope: "team",
+      category: "ops",
+      provenance: "Organization cross-feature context graph (feature_context_links)",
+      columns: ["id", "source_kind", "source_id", "target_kind", "target_id", "relation", "metadata_json", "created_at"],
+      query: `SELECT id,source_kind,source_id,target_kind,target_id,relation,metadata::text AS metadata_json,created_at FROM feature_context_links WHERE org_id=$1 ORDER BY created_at,id`,
       params: (c) => [c.orgId],
     }),
     sqlAdapter({

@@ -75,6 +75,48 @@ export const KNOWLEDGE_TEMPLATES: KnowledgeTemplate[] = [
 `,
   },
   {
+    kind: "inventory_handoff",
+    title: "Inventory expert brain dump",
+    blurb: "Capture where parts really live, naming conventions, substitutes, vendors, and event-pack shortcuts.",
+    defaultTags: ["handoff", "inventory", "parts"],
+    body: `# Inventory expert brain dump
+
+**Primary inventory expert:**
+**Backup owner:**
+**Season:**
+
+## How the shop is organized
+- Location and bin naming rules:
+- Places people forget to check:
+- Parts stored outside the main shop:
+
+## Critical spares and substitutes
+| Part | Normal location | Acceptable substitute | Minimum event quantity |
+|---|---|---|---:|
+| | | | |
+
+## Vendor and ordering shortcuts
+- Preferred vendors / account owner (no passwords):
+- Long-lead items:
+- Parts we should never run out of:
+
+## Pit and travel packing knowledge
+- What always goes to events:
+- What stays home:
+- Last-minute checks:
+
+## Scan-label cleanup
+- [ ] Every active bin has a Vantage QR label
+- [ ] Unassigned inventory items were given a location
+- [ ] Obsolete locations were archived or renamed
+
+## If I am unavailable
+1.
+2.
+3.
+`,
+  },
+  {
     kind: "role_onboarding",
     title: "Role onboarding path",
     blurb: "Guided first steps for a new lead, mentor, or scout — not a 9-page wall of text.",

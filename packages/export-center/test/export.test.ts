@@ -40,6 +40,27 @@ describe("secure CSV exports", () => {
     }
   });
 
+  it("offers a privacy-safe Purple Standard scouting adapter", () => {
+    const adapter = createExportRegistry().get("scouting-purple-standard");
+    expect(adapter).toMatchObject({
+      fileName: "scouting_purple_standard.csv",
+      category: "scouting",
+      scope: "team",
+      columns: ["abilities", "counters", "data", "metadata", "ratings", "timers"],
+    });
+    expect(JSON.stringify(adapter)).not.toContain("scout_user_id");
+  });
+
+  it("exports the cross-feature provenance graph without member identity", () => {
+    const adapter = createExportRegistry().get("feature-context-links");
+    expect(adapter).toMatchObject({
+      fileName: "feature_context_links.csv",
+      scope: "team",
+      columns: ["id", "source_kind", "source_id", "target_kind", "target_id", "relation", "metadata_json", "created_at"],
+    });
+    expect(adapter?.columns).not.toContain("created_by");
+  });
+
   it("reads a versioned ZIP manifest with provenance metadata", () => {
     const manifest = {
       format: "Vantage Team Data Export",

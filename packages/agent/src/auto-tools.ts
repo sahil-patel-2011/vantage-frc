@@ -1,3 +1,5 @@
+import { resolveActiveSeasonYear } from "./season-year";
+
 export type PlannedToolCall = { name: string; input: unknown };
 
 export type ChatToolPlanOptions = {
@@ -5,6 +7,7 @@ export type ChatToolPlanOptions = {
   activeEventKey?: string | null;
   /** When set, planner can prefer CAD/finance tools for that surface. */
   capability?: "strategy" | "team_intel" | "research" | "prediction" | "cad" | "coding" | "maintenance" | "chat" | "writer";
+  /** Org active season (events_ref.year). Prefer this over years mentioned in chat. */
   seasonYear?: number;
 };
 
@@ -26,7 +29,6 @@ const CALENDAR_UPCOMING_RE = /\b(upcoming\s+(?:events?|meetings?|practices?)|tea
 const FMEA_RE =
   /\b(fmea|failure\s*log|repeat(?:ed|ing)?\s*fail|fail(?:ed|ure)s?\s*(?:again|pattern|history)|most\s*failure|subsystem\s*reliab|root\s*cause|five\s*whys|RPN)\b/i;
 const PIT_OPS_RE = /\b(pit\s*(?:board|command|crew)?|release\s*gate|robot\s*issue)\b/i;
-const SEASON_YEAR_RE = /\b(20\d{2})\b/;
 const FINANCE_ORDERS_RE =
   /\b(purchase\s*requests?|purchase\s*orders?|open\s*orders?|ordering\s*requests?|budget\s*requests?|awaiting\s*approval|ready\s*to\s*buy|finance\s*assistant)\b/i;
 const FINANCE_SUMMARY_RE =
@@ -44,11 +46,13 @@ function unique(values: string[]) {
   return [...new Set(values)];
 }
 
-function resolveSeasonYear(message: string, options: ChatToolPlanOptions) {
-  if (options.seasonYear && Number.isInteger(options.seasonYear)) return options.seasonYear;
-  const match = message.match(SEASON_YEAR_RE);
-  if (match) return Number(match[1]);
-  return new Date().getUTCFullYear();
+/** Lock kickoff/rules/design tools to the org active season — never a year from chat text. */
+function resolveSeasonYear(_message: string, options: ChatToolPlanOptions) {
+  return resolveActiveSeasonYear({
+    seasonYear: options.seasonYear,
+    activeEventKey: options.activeEventKey,
+    matchKey: options.selected?.matchKey,
+  });
 }
 
 function extractNeedPartTitle(message: string): string | null {
@@ -147,7 +151,11 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
     add("fmea.open_risks", { seasonYear, limit: 12 });
     add("fmea.repeat", { seasonYear });
   }
-  if (MY_DAY_RE.test(text)) {
+  const wantsMyDay =
+    MY_DAY_RE.test(text) ||
+    ((isStrategySurface || wantsStrategy) &&
+      /\b(competition|event\s*day|alliance|on\s*field|queue)\b/i.test(text));
+  if (wantsMyDay) {
     add("my_day.summary", {});
   }
   if (CALENDAR_UPCOMING_RE.test(text)) {
@@ -200,6 +208,25 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
     add("cad.briefs", { limit: 6 });
   }
 
+  // Pull trusted scouting early on CAD/strategy so the 12-tool cap does not drop it.
+  for (const teamKey of teamKeys) {
+    if (isCadSurface || isStrategySurface || wantsScout || TEAM_INTENT_RE.test(text)) {
+      add("scouting.team", { teamKey });
+    }
+  }
+
+  if (isCadSurface) {
+    add("inventory.availability", { query: text.slice(0, 160), limit: 20 });
+  }
+
+  if (isStrategySurface) {
+    add("cad.design_context", { matchKey: matchKeys[0] ?? options.selected?.matchKey ?? "", limit: 6 });
+    if (!wantsKnowledge) {
+      add("knowledge.search", { query: text.slice(0, 200), limit: 6 });
+    }
+    add("fmea.open_risks", { seasonYear, limit: 8 });
+  }
+
   if (wantsCreateBrief && !isCadSurface) {
     add("cad.create_brief", {
       request: text.slice(0, 8_000),
@@ -216,15 +243,16 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
   }
 
   for (const teamKey of teamKeys) {
-    if (wantsScout || wantsMetrics || TEAM_INTENT_RE.test(text) || isStrategySurface) {
+    if (wantsScout || wantsMetrics || TEAM_INTENT_RE.test(text) || isStrategySurface || isCadSurface) {
       add("reference.team", { teamKey });
     }
-    // Strategy cites scout validation + TBA trust strip alongside reference metrics.
+    // Strategy + CAD cite scout validation + TBA trust strip (never invent observations).
     if (
       wantsScout ||
       TEAM_INTENT_RE.test(text) ||
       isStrategySurface ||
-      (!matchKeys.length && !wantsResearch && !isCadSurface)
+      isCadSurface ||
+      (!matchKeys.length && !wantsResearch)
     ) {
       add("scouting.team", { teamKey });
     }
@@ -236,8 +264,9 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
     add("strategy.match", { matchKey: options.selected.matchKey });
   }
 
-  // Cap tool fan-out for a single chat turn.
-  return calls.slice(0, 10);
+  // Cap tool fan-out — slightly higher on CAD/strategy so the shared graph stays intact.
+  const cap = isCadSurface || isStrategySurface ? 12 : 10;
+  return calls.slice(0, cap);
 }
 
 export type ToolDataSourceAnnotation = {
@@ -282,6 +311,8 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
         ? ("researched_claim" as const)
         : name === "strategy.match" ||
             name === "strategy.design" ||
+            name === "cad.design_context" ||
+            name === "cad.create_brief" ||
             name === "rules.compliance" ||
             name.startsWith("finance.") ||
             name.startsWith("knowledge.") ||
@@ -478,13 +509,26 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
 
   if (name === "rules.compliance") {
     const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
-    const status = String(row.status ?? "pass");
+    const constraintCount = Number(row.constraintCount ?? 0);
+    const openRuleNotes = Number(row.openRuleNotes ?? 0);
     const findings = Array.isArray(row.findings) ? row.findings : [];
+    if (!constraintCount && !openRuleNotes && !findings.length) {
+      const seasonLabel = row.seasonYear != null ? ` for ${row.seasonYear}` : "";
+      return {
+        name,
+        status: "empty",
+        classification,
+        summary: `No this-season game rules${seasonLabel} yet — add kickoff constraints or rule notes before compliance checks.`,
+        output,
+        input,
+      };
+    }
+    const status = String(row.status ?? "pass");
     return {
       name,
       status: "ok",
       classification,
-      summary: `Compliance ${status} (${findings.length} finding${findings.length === 1 ? "" : "s"})`,
+      summary: `Compliance ${status} (${findings.length} finding${findings.length === 1 ? "" : "s"}) · season ${row.seasonYear ?? "?"}`,
       output,
       input,
     };
@@ -534,6 +578,39 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
       status: "ok",
       classification: "hard_metric",
       summary: `${alerts.length} subsystem(s) with repeat failures this season`,
+      output,
+      input,
+    };
+  }
+
+  if (name === "my_day.summary") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    if (row.setup_required) {
+      return {
+        name,
+        status: "setup_required",
+        classification: "hard_metric",
+        summary: "My Day tables are not available yet.",
+        output,
+        input,
+      };
+    }
+    const next = row.nextMatch && typeof row.nextMatch === "object" ? (row.nextMatch as { label?: string }) : null;
+    if (!next) {
+      return {
+        name,
+        status: "empty",
+        classification: "hard_metric",
+        summary: String(row.emptyReason ?? "No upcoming match queued for this team."),
+        output,
+        input,
+      };
+    }
+    return {
+      name,
+      status: "ok",
+      classification: "hard_metric",
+      summary: `Next match ${next.label ?? ""} — see bumper/lodging cues`.trim(),
       output,
       input,
     };
