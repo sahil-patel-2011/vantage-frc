@@ -131,10 +131,14 @@ async function loadScoutOperations(
       payload: Record<string, unknown>;
       confidence: string | null;
       updatedAt: string | null;
+      source: string | null;
+      videoReviewId: string | null;
+      videoAtSeconds: number | null;
     }>(
       `SELECT id, team_key AS "teamKey", match_key AS "matchKey",
               scout_user_id::text AS "scoutUserId", payload, confidence,
-              updated_at::text AS "updatedAt"
+              updated_at::text AS "updatedAt", source,
+              video_review_id::text AS "videoReviewId", video_at_seconds AS "videoAtSeconds"
        FROM match_scout_entries
        WHERE org_id = $1 AND event_key = $2 AND team_key = ANY($3::text[])
        ORDER BY updated_at DESC
@@ -159,17 +163,61 @@ async function loadScoutOperations(
     ),
   ]);
 
+  const { loadEntryValidations, trustScoutPayloads } = await import("../scouting-trust");
+  const validations = await loadEntryValidations(
+    client,
+    orgId,
+    matchRows.rows.map((row) => row.id),
+  );
+  const trustedByEntry = trustScoutPayloads(
+    matchRows.rows.map((row) => ({ id: row.id, payload: row.payload ?? {} })),
+    validations,
+  );
+
+  const conflictProvenance: ScoutProvenanceRef[] = [];
   const entries: ScoutEntryRecord[] = [
-    ...matchRows.rows.map((row) => ({
-      id: row.id,
-      teamKey: row.teamKey,
-      entryType: "match" as const,
-      matchKey: row.matchKey,
-      scoutUserId: row.scoutUserId,
-      payload: row.payload ?? {},
-      confidence: normalizeConfidence(row.confidence),
-      updatedAt: row.updatedAt,
-    })),
+    ...matchRows.rows.map((row) => {
+      const trusted = trustedByEntry.get(row.id);
+      if (trusted?.excludedFields.length) {
+        conflictProvenance.push({
+          entryId: row.id,
+          entryType: "match",
+          teamKey: row.teamKey,
+          matchKey: row.matchKey,
+          scoutUserId: row.scoutUserId,
+          influence: "tba_conflict_excluded",
+          weight: 0,
+          source:
+            row.source === "manual" ||
+            row.source === "voice" ||
+            row.source === "import" ||
+            row.source === "video"
+              ? row.source
+              : undefined,
+          videoReviewId: row.videoReviewId,
+          videoAtSeconds: row.videoAtSeconds,
+        });
+      }
+      return {
+        id: row.id,
+        teamKey: row.teamKey,
+        entryType: "match" as const,
+        matchKey: row.matchKey,
+        scoutUserId: row.scoutUserId,
+        payload: trusted?.trustedPayload ?? row.payload ?? {},
+        confidence: normalizeConfidence(row.confidence),
+        updatedAt: row.updatedAt,
+        source:
+          row.source === "manual" ||
+          row.source === "voice" ||
+          row.source === "import" ||
+          row.source === "video"
+            ? row.source
+            : undefined,
+        videoReviewId: row.videoReviewId,
+        videoAtSeconds: row.videoAtSeconds,
+      };
+    }),
     ...pitRows.rows.map((row) => ({
       id: row.id,
       teamKey: row.teamKey,
@@ -195,10 +243,19 @@ async function loadScoutOperations(
     defenseLikely: row.defenseLikely,
     pitNotes: row.pitNotes,
     scoutEntryIds: [...new Set(row.provenance.map((ref) => ref.entryId))],
-    qualityNotes: row.quality.transparency,
+    qualityNotes: [
+      ...row.quality.transparency,
+      ...(conflictProvenance.some((ref) => ref.teamKey === row.teamKey)
+        ? [
+            "Some scout fields contradicted TBA official results and were excluded from strategy scoring.",
+          ]
+        : []),
+    ],
+    videoRescoutCount: row.videoRescoutCount,
+    videoReviewIds: row.videoReviewIds,
   }));
 
-  const provenance = built.flatMap((row) => row.provenance);
+  const provenance = [...built.flatMap((row) => row.provenance), ...conflictProvenance];
   let worstOpponentFoul: "low" | "medium" | "high" | "unknown" = "unknown";
   for (const op of operations) {
     const rate = op.foulRate ?? 0;

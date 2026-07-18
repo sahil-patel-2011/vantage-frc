@@ -199,6 +199,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/costs", label: "Season Costs", icon: "stats" },
       { href: "/team/finance", label: "Finance", icon: "stats" },
       { href: "/team/sponsors", label: "Sponsors", icon: "users" },
+      { href: "/sponsorship", label: "Sponsorship One-Pagers", icon: "clipboard" },
       { href: "/team/grants", label: "Grants", icon: "clipboard" },
       { href: "/team/awards", label: "Awards", icon: "target" },
       { href: "/fundraisers", label: "Fundraisers", icon: "bolt" },

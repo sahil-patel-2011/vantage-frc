@@ -35,7 +35,9 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/command")).toBe("Competition / Event Day");
     expect(breadcrumbForPath("/my-day")).toBe("Competition / My Day");
     expect(breadcrumbForPath("/business")).toBe("Business / Business Hub");
+    expect(breadcrumbForPath("/sponsorship")).toBe("Business / Sponsorship One-Pagers");
     expect(breadcrumbForPath("/team/security")).toBe("Settings / Team security");
+    expect(breadcrumbForPath("/team/background")).toBe("Settings / Team background");
     expect(breadcrumbForPath("/intel")).toBe("Competition / Matches");
     expect(breadcrumbForPath("/kickoff")).toBe("Kickoff / Kickoff Summary");
     expect(breadcrumbForPath("/logistics")).toBe("Logistics / Event Logistics");
