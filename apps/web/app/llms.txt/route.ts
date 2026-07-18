@@ -14,13 +14,15 @@ Vantage (also called "Vantage FRC") is web software (installable as an iOS PWA) 
 FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access is invite-only; a platform admin provisions each team and a verified owner, who then invites members by email.
 
 ## Core capabilities
-- Offline-first match and pit scouting (works without venue Wi-Fi; syncs later)
-- Scouting trust layer (disagreement review, coverage gaps, reliability signals) — shipping
-- FRC Assistant for competition ops/intel: strategy, matchups, opponent history, robot capabilities—grounded in event context with labeled sources
+- Offline-first match and pit scouting with QR handoffs (works without venue Wi-Fi; syncs later)
+- Scouting trust layer (disagreement review, coverage gaps, reliability signals) — Available
+- FRC Assistant for competition ops/intel: strategy, matchups, opponent history, robot capabilities—grounded in event context with labeled sources — Available
 - Integrated scouting: synced scout facts feed predictions, strategy playbooks, pick lists, live boards, and Assistant context (not a silo)
-- Event Day command and My Day personal queue
-- Team knowledge/wiki; CAD↔strategy linkage for approval-gated build work
-- Event logistics and sponsorship pipeline — shipping
+- Event Day command and My Day personal queue — Available
+- Team knowledge/wiki; CAD↔strategy linkage for approval-gated build work (CAD connectors Setup required)
+- Event logistics, sponsorship pipeline, grants, and orders — Available
+- Product hubs (Competition, Team, Business, Build, AI) — Available
+- Broader AI tool-graph auto-routing across engines — Shipping
 - Live reference data from The Blue Alliance and Statbotics (cached, deduped, freshness-stamped)
 - Win/loss prediction with confidence intervals, key factors, and tracked accuracy
 - Strategy, explicit what-if scenarios, and durable alliance pick lists

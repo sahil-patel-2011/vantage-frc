@@ -3,7 +3,7 @@
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It brings scouting (with trust signals), live match data, win/loss prediction, an FRC Assistant, strategy, CAD↔strategy workflows, Event Day / My Day, knowledge, logistics, sponsorship, and robot-code review into one shared, source-attributed event context.",
+    a: "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It brings scouting (with trust signals and offline QR), live match data, win/loss prediction, an FRC Assistant, strategy, CAD↔strategy workflows, Event Day / My Day, knowledge, logistics, sponsorship/grants/orders, product hubs, and robot-code review into one shared, source-attributed event context. Broader AI tool-graph routing is still shipping and labeled as such.",
   },
   {
     q: "What is the FRC Assistant?",
