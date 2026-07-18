@@ -9,6 +9,7 @@ import {
   isValidDiscordWebhook,
   postTeamDiscordMessage,
 } from "../../../../lib/discord";
+import { canPostViaDiscord } from "../../../../lib/discord-related";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -98,6 +99,32 @@ async function loadDiscordRow(
   }
 }
 
+async function loadBridgePostCounts(
+  client: import("@neondatabase/serverless").PoolClient,
+  orgId: string,
+): Promise<{ posted: number; failed: number } | null> {
+  try {
+    const counts = await client.query<{ status: string; total: string }>(
+      `SELECT status, count(*)::text AS total
+       FROM discord_bridge_posts
+       WHERE org_id = $1::uuid
+       GROUP BY status`,
+      [orgId],
+    );
+    let posted = 0;
+    let failed = 0;
+    for (const row of counts.rows) {
+      const n = Number(row.total);
+      if (!Number.isFinite(n)) continue;
+      if (row.status === "posted") posted = n;
+      else if (row.status === "failed") failed = n;
+    }
+    return { posted, failed };
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const current = await session();
@@ -107,23 +134,43 @@ export async function GET(request: Request) {
     const data = await withRls({ userId: current.user.id, orgId }, async (client) => {
       await assertAdmin(client, orgId, current.user.id);
       const connection = await loadDiscordRow(client, orgId);
+      const configured = Boolean(connection);
+      const hasWebhook = connection?.hasWebhook ?? false;
+      const channelId = connection?.channelId ?? null;
+      const platformConfigured = setup.configured;
+      const canPost = canPostViaDiscord({ hasWebhook, channelId, platformConfigured });
+      // setup_required when posting cannot succeed (no webhook and no bot token path).
+      const setupRequired = !canPost;
+      const bridgePosts = configured ? await loadBridgePostCounts(client, orgId) : null;
       return {
-        ...setup,
-        configured: Boolean(connection),
-        platformConfigured: setup.configured,
-        setupRequired: setup.setupRequired,
+        status: !configured ? "empty" : setupRequired ? "setup_required" : "live",
+        orgId,
+        configured,
+        platformConfigured,
+        setupRequired,
+        canPost,
+        inviteUrl: setup.inviteUrl,
+        message: !configured
+          ? "Link a Discord guild and channel for announcements and an optional object-linked chat bridge."
+          : setupRequired
+            ? hasWebhook || channelId
+              ? "Add a valid channel webhook, or set DISCORD_BOT_TOKEN on the server with a channel id, before posting."
+              : "Provide a channel webhook URL and/or a Discord channel id to finish setup."
+            : setup.message,
         channelLabel: connection?.channelLabel ?? null,
         enabled: connection?.enabled ?? false,
         updatedAt: connection?.updatedAt ?? null,
         guildId: connection?.guildId ?? null,
         guildName: connection?.guildName ?? null,
-        channelId: connection?.channelId ?? null,
+        channelId,
         chatBridgeEnabled: connection?.chatBridgeEnabled ?? false,
-        hasWebhook: connection?.hasWebhook ?? false,
-        empty: !connection,
-        emptyReason: connection
+        hasWebhook,
+        empty: !configured,
+        emptyReason: configured
           ? null
           : "No Discord guild/channel linked yet. Paste a webhook or set guild + channel ids.",
+        // Real discord_bridge_posts only — null when table unavailable, never DEMO sync %.
+        bridgePosts,
       };
     });
     return Response.json(data);
