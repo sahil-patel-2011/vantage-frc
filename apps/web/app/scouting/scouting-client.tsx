@@ -323,6 +323,21 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
         </div>
       </PageHeader>
 
+      <nav className="scout-related" aria-label="Related data tools" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        <a className="app-button secondary" href={`/scouting/lineup?orgId=${encodeURIComponent(orgId)}`}>
+          Lineup &amp; coverage
+        </a>
+        <a
+          className="app-button secondary"
+          href={`/exports?orgId=${encodeURIComponent(orgId)}&domains=scouting-match,scouting-pit,scouting-disagreements${data?.eventKey ? `&eventKey=${encodeURIComponent(data.eventKey)}` : ""}`}
+        >
+          Export scout CSVs
+        </a>
+        <a className="app-button secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
+          Data analytics
+        </a>
+      </nav>
+
       {!data?.eventKey ? (
         <EmptyState
           badge="Setup required"
