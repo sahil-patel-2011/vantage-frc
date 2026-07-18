@@ -84,6 +84,8 @@ const KNOWN_TOOLS = [
   "fmea.repeat",
   "knowledge.search",
   "knowledge.get_page",
+  "my_day.summary",
+  "calendar.upcoming",
   "finance.summary",
   "finance.orders",
   "finance.create_purchase_request",

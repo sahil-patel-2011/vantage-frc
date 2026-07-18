@@ -244,7 +244,7 @@ export function eventWorkflowLinks(event: CalendarEvent, orgId: string): Workflo
     push(withOrgPath("/practice", orgId), "Practice Planner");
   }
   if (event.kind === "event") {
-    push(withOrgPath("/command", orgId), "Event Day Command");
+    push(withOrgPath("/command", orgId), "Event Day Command");`r`n    push(withOrgPath("/my-day", orgId), "My Day");
     push(withOrgPath("/scouting", orgId), "Scouting duty");
     push(withOrgPath("/logistics", orgId), "Event logistics");
   }

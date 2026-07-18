@@ -12,7 +12,7 @@ export type TeamOpsKey =
   | "attendance"
   | "goals"
   | "batteries"
-  | "admin";
+  | "knowledge"`r`n  | "admin";
 
 const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path: string) => boolean }> = [
   { key: "start", href: "/start", label: "Your path", match: (p) => p === "/start" || p.startsWith("/start/") },
@@ -31,7 +31,7 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
     match: (p) => p.startsWith("/team/calendar") || p === "/calendar",
   },
   { key: "attendance", href: "/attendance", label: "Attendance", match: (p) => p.startsWith("/attendance") },
-  { key: "goals", href: "/goals", label: "Goals", match: (p) => p.startsWith("/goals") },
+  { key: "goals", href: "/goals", label: "Goals", match: (p) => p.startsWith("/goals") },`r`n  { key: "knowledge", href: "/team/knowledge", label: "Knowledge", match: (p) => p.startsWith("/team/knowledge") },
   { key: "batteries", href: "/batteries", label: "Batteries", match: (p) => p.startsWith("/batteries") },
   {
     key: "admin",

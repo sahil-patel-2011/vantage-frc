@@ -21,6 +21,8 @@ const METRIC_RE = /\b(epa|metric|stat(?:s|istics)?|rank(?:ing)?|opr|compare|capa
 const RESEARCH_RE = /\b(research|finding|article|source|cite|citation)\b/i;
 const TEAM_INTENT_RE = /\b(team|opponent|alliance|robot)\b/i;
 const MATCH_INTENT_RE = /\b(match|qual|qm|qf|sf|final)\b/i;
+const MY_DAY_RE = /\b(my\s*day|next\s*match|bumper(?:s)?|on\s*deck|queue\s*time)\b/i;
+const CALENDAR_UPCOMING_RE = /\b(upcoming\s+(?:events?|meetings?|practices?)|team\s*calendar)\b/i;
 const FMEA_RE =
   /\b(fmea|failure\s*log|repeat(?:ed|ing)?\s*fail|fail(?:ed|ure)s?\s*(?:again|pattern|history)|most\s*failure|subsystem\s*reliab|root\s*cause|five\s*whys|RPN)\b/i;
 const PIT_OPS_RE = /\b(pit\s*(?:board|command|crew)?|release\s*gate|robot\s*issue)\b/i;
@@ -144,6 +146,12 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
   if (wantsFmea) {
     add("fmea.open_risks", { seasonYear, limit: 12 });
     add("fmea.repeat", { seasonYear });
+  }
+  if (MY_DAY_RE.test(text)) {
+    add("my_day.summary", {});
+  }
+  if (CALENDAR_UPCOMING_RE.test(text)) {
+    add("calendar.upcoming", { limit: 8 });
   }
 
   if (wantsFinanceSummary) {

@@ -1176,5 +1176,120 @@ export function createVantageToolRegistry() {
           }
         },
       }),
+    .register(
+      tool({
+        name: "my_day.summary",
+        description:
+          "Read next-match / bumper / lodging cues for competition My Day. Empty when unset - never invents schedule times.",
+        parseInput(value) {
+          object(value);
+          return {};
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId, userId, activeEventKey }) {
+          try {
+            const org = await client.query<{
+              teamNumber: number | null;
+              eventKey: string | null;
+              eventName: string | null;
+            }>(
+              `SELECT o.team_number AS "teamNumber",
+                      coalesce($2::text, c.active_event_key) AS "eventKey",
+                      e.name AS "eventName"
+               FROM organizations o
+               LEFT JOIN org_active_context c ON c.org_id = o.id
+               LEFT JOIN events_ref e ON e.event_key = coalesce($2::text, c.active_event_key)
+               WHERE o.id=$1::uuid`,
+              [orgId, activeEventKey ?? null],
+            );
+            const row = org.rows[0];
+            if (!row?.teamNumber || !row.eventKey) {
+              return { nextMatch: null, emptyReason: !row?.eventKey ? "no_active_event" : "no_team_number" };
+            }
+            const teamKey = `frc${row.teamNumber}`;
+            const matches = await client.query<{
+              matchKey: string; compLevel: string; matchNumber: number; scheduledTime: string | null;
+              red: { teamKeys?: string[] } | null; blue: { teamKeys?: string[] } | null;
+              redScore: number | null; blueScore: number | null;
+            }>(
+              `SELECT match_key AS "matchKey", comp_level AS "compLevel", match_number AS "matchNumber",
+                      COALESCE(actual_time, predicted_time, event_time)::text AS "scheduledTime",
+                      red_alliance AS red, blue_alliance AS blue,
+                      NULLIF(red_alliance->>'score','')::float AS "redScore",
+                      NULLIF(blue_alliance->>'score','')::float AS "blueScore"
+               FROM matches_ref WHERE event_key=$1
+               ORDER BY CASE comp_level WHEN 'qm' THEN 0 WHEN 'qf' THEN 2 WHEN 'sf' THEN 3 WHEN 'f' THEN 4 ELSE 5 END, match_number`,
+              [row.eventKey],
+            );
+            const next = matches.rows.find((m) => {
+              const keys = [...(m.red?.teamKeys ?? []), ...(m.blue?.teamKeys ?? [])];
+              return keys.includes(teamKey) && m.redScore == null && m.blueScore == null;
+            });
+            const side = next
+              ? (next.red?.teamKeys ?? []).includes(teamKey) ? "red"
+                : (next.blue?.teamKeys ?? []).includes(teamKey) ? "blue" : null
+              : null;
+            let lodging: unknown = null;
+            let nextTravel: unknown = null;
+            try {
+              lodging = (await client.query(
+                `SELECT h.name AS "hotelName", r.room_label AS "roomLabel"
+                 FROM logistics_room_assignments r JOIN logistics_hotels h ON h.id=r.hotel_id
+                 WHERE r.org_id=$1::uuid AND r.occupant_user_id=$2::uuid LIMIT 1`,
+                [orgId, userId],
+              )).rows[0] ?? null;
+            } catch { /* optional */ }
+            try {
+              nextTravel = (await client.query(
+                `SELECT title, starts_at::text AS "startsAt", meeting_point AS "meetingPoint"
+                 FROM logistics_travel_legs
+                 WHERE org_id=$1::uuid AND starts_at >= now() - interval '30 minutes'
+                 ORDER BY starts_at ASC LIMIT 1`,
+                [orgId],
+              )).rows[0] ?? null;
+            } catch { /* optional */ }
+            return {
+              eventKey: row.eventKey, eventName: row.eventName, teamKey,
+              nextMatch: next ? {
+                matchKey: next.matchKey,
+                label: `${next.compLevel} ${next.matchNumber}`,
+                scheduledTime: next.scheduledTime,
+                alliance: side,
+                bumperCue: side === "red" ? "Switch to RED bumpers" : side === "blue" ? "Switch to BLUE bumpers" : "Alliance TBD",
+              } : null,
+              lodging, nextTravel, href: "/my-day",
+            };
+          } catch {
+            return { nextMatch: null, setup_required: true };
+          }
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "calendar.upcoming",
+        description: "List upcoming team/subteam calendar events. Returns empty when nothing is scheduled - never invents events.",
+        parseInput(value) {
+          const input = object(value);
+          const limitRaw = Number(input.limit ?? 8);
+          const limit = Number.isFinite(limitRaw) ? Math.min(20, Math.max(1, Math.floor(limitRaw))) : 8;
+          return { limit };
+        },
+        parseOutput: rowsOutput,
+        async execute({ client, orgId }, input) {
+          try {
+            return (await client.query(
+              `SELECT id::text AS id, title, kind, starts_at AS "startsAt", ends_at AS "endsAt", location
+               FROM subteam_calendar_events
+               WHERE org_id=$1::uuid AND starts_at >= now() - interval '1 day'
+               ORDER BY starts_at ASC LIMIT $2`,
+              [orgId, input.limit],
+            )).rows;
+          } catch {
+            return [];
+          }
+        },
+      }),
+    )
     );
 }
