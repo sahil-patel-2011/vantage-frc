@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { attainmentPct, parseFundraiserAction, summarizeFundraisers, validateFundraiser } from "./fundraisers";
+import {
+  attainmentPct,
+  hasFundraiserGoalProgress,
+  parseFundraiserAction,
+  summarizeFundraisers,
+  validateFundraiser,
+} from "./fundraisers";
 
 describe("attainmentPct", () => {
   it("computes percent of goal and handles no/zero goal", () => {
@@ -39,6 +45,18 @@ describe("summarizeFundraisers", () => {
     expect(summary.completed).toBe(1);
     expect(summary.active).toBe(1);
     expect(summary.planned).toBe(1);
+    expect(hasFundraiserGoalProgress(summary)).toBe(true);
+  });
+
+  it("hides progress chrome when nothing is planned or raised — never DEMO $0 tiles", () => {
+    const summary = summarizeFundraisers([
+      { status: "planned", goalUsd: null, proceedsUsd: 0 },
+      { status: "cancelled", goalUsd: 999, proceedsUsd: 50 },
+    ]);
+    expect(summary.totalRaised).toBe(0);
+    expect(summary.totalGoal).toBe(0);
+    expect(summary.attainment).toBeNull();
+    expect(hasFundraiserGoalProgress(summary)).toBe(false);
   });
 });
 

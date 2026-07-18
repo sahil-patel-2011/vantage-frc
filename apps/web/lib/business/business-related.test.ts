@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   businessRelatedLinks,
   BUSINESS_GRANTS_RELATED_INCLUDE,
+  FUNDRAISERS_RELATED_INCLUDE,
   GRANTS_WRITING_RELATED_INCLUDE,
   PLACEMENTS_RELATED_INCLUDE,
   SPONSOR_CRM_RELATED_INCLUDE,
@@ -48,6 +49,17 @@ describe("business-related Soft-UI helpers", () => {
     const links = businessRelatedLinks("org-1", { include: BUSINESS_GRANTS_RELATED_INCLUDE });
     expect(links.find((l) => l.id === "grant-workbench")?.href).toBe("/team/grants?orgId=org-1");
     expect(links.find((l) => l.id === "writer")?.href).toBe("/writer?orgId=org-1");
+  });
+
+  it("builds fundraisers Soft-UI cross-links to sponsors, grants, and orders", () => {
+    const links = businessRelatedLinks("org-1", {
+      active: "fundraisers",
+      include: FUNDRAISERS_RELATED_INCLUDE,
+    });
+    expect(links.map((l) => l.id)).toEqual(["sponsors", "orders", "grants", "finance-ai", "budget"]);
+    expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
+    expect(links.find((l) => l.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
+    expect(links.find((l) => l.id === "orders")?.href).toBe("/business?tab=orders&orgId=org-1");
   });
 
   it("never uses DEMO labels", () => {
