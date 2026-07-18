@@ -1,4 +1,29 @@
-.product-hub-tabs { margin: 0 0 16px; }
+.product-hub-tabs { margin: 0 0 12px; }
+.product-hub-more {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card, var(--soft-bg));
+}
+.product-hub-more > summary {
+  cursor: pointer;
+  font: 650 13px/1.35 var(--font-source-sans), ui-sans-serif;
+  color: var(--soft-ink);
+  list-style-position: outside;
+}
+.product-hub-more-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+.product-hub-more-links a {
+  font: 600 12px/1.35 var(--font-source-sans), ui-sans-serif;
+  color: var(--soft-accent);
+  text-decoration: none;
+}
+.product-hub-more-links a:hover { text-decoration: underline; }
 .product-hub-panel > main.module-page,
 .product-hub-panel > main.intel-app,
 .product-hub-panel > main.workspace-page,

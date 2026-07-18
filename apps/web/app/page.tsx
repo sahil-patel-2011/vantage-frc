@@ -22,6 +22,18 @@ const capabilities: {
     status: "Available",
   },
   {
+    id: "form-builder",
+    title: "Custom scouting form builder",
+    copy: "Owners publish versioned match and pit schemas with drivetrain, robot photos, and free-text fields—then scouts enter on the Soft-UI hub.",
+    status: "Available",
+  },
+  {
+    id: "scout-voice",
+    title: "Scout voice notes",
+    copy: "Opt-in voice notes attach to scout entries (never overwrite form fields). Browser STT works locally; cloud STT is metered when configured.",
+    status: "Available",
+  },
+  {
     id: "event-day",
     title: "Event Day · My Day",
     copy: "Shared next-match and readiness for the whole crew. Personal shifts, todos, and acknowledgements so each person knows what they own.",
@@ -68,7 +80,7 @@ const capabilities: {
 const hubs = [
   {
     name: "Competition",
-    routes: "Command · My Day · Strategy · Scouting · Pick clock",
+    routes: "Command · My Day · Strategy · Scouting · Form builder · Match checklist",
   },
   {
     name: "Team",

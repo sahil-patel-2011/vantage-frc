@@ -665,6 +665,24 @@ export default function StrategyClient() {
         <div className="strategy-header-actions">
           {orgId ? (
             <>
+              <a
+                className="app-button secondary"
+                href={`/competition?tab=scouting&orgId=${encodeURIComponent(orgId)}`}
+              >
+                Scouting
+              </a>
+              <a
+                className="app-button secondary"
+                href={`/competition?tab=forms&orgId=${encodeURIComponent(orgId)}`}
+              >
+                Form builder
+              </a>
+              <a
+                className="app-button secondary"
+                href={`/competition?tab=match-checklist&orgId=${encodeURIComponent(orgId)}`}
+              >
+                Match checklist
+              </a>
               <a className="app-button secondary" href={`/pick-clock?orgId=${encodeURIComponent(orgId)}`}>
                 Pick clock (45s)
               </a>

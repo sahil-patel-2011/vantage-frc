@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { UsageCutoffBanner, isCutoffError } from "../../components/usage-cutoff-banner";
 import { queueVoiceCapture, stableClientId } from "../../lib/scout-offline";
 import type { ScoutVoiceView } from "../../lib/scout-voice/compute-scout-voice";
 import type { ScoutVoiceSttSource } from "../../lib/scout-voice/types";
@@ -48,8 +49,12 @@ type Props = {
   matchKey: string;
   teamKey: string;
   entryType: "match" | "pit";
-  /** Notes attach to this client id — never written into form fields. */
+  /** Notes attach to this client id; form fill is optional via onApplyToForm. */
   pendingEntryClientId: string | null;
+  /** Published custom-form fields available for optional STT → form fill. */
+  formFields?: Array<{ key: string; label: string }>;
+  /** Apply a reviewed transcript onto the open custom form (caller owns payload merge). */
+  onApplyToForm?: (transcript: string, fieldKey: string | null) => void;
   onStatus?: (message: string) => void;
   onQueuedMedia?: () => void;
 };
@@ -61,14 +66,18 @@ export default function ScoutVoiceNotesPanel({
   teamKey,
   entryType,
   pendingEntryClientId,
+  formFields = [],
+  onApplyToForm,
   onStatus,
   onQueuedMedia,
 }: Props) {
   const [view, setView] = useState<ScoutVoiceView | null>(null);
   const [error, setError] = useState("");
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [draft, setDraft] = useState("");
+  const [formFieldKey, setFormFieldKey] = useState("");
   const [sttSource, setSttSource] = useState<ScoutVoiceSttSource>("browser");
   const [consentChecked, setConsentChecked] = useState(false);
   const [browserStt, setBrowserStt] = useState(false);
@@ -104,6 +113,7 @@ export default function ScoutVoiceNotesPanel({
     async (payload: Record<string, unknown>) => {
       setBusy(true);
       setError("");
+      setCutoffCode(null);
       try {
         const response = await fetch("/api/scout-voice", {
           method: "POST",
@@ -115,9 +125,20 @@ export default function ScoutVoiceNotesPanel({
             ...payload,
           }),
         });
-        const data = (await response.json()) as ScoutVoiceView | { error?: string; status?: string };
+        const data = (await response.json()) as ScoutVoiceView | {
+          error?: string;
+          status?: string;
+          code?: string;
+          reason?: string;
+        };
         if (!response.ok) {
-          setError("error" in data && data.error ? data.error : "Request failed.");
+          const code = "code" in data ? data.code : undefined;
+          const reason = "reason" in data ? data.reason : undefined;
+          const message = "error" in data && data.error ? data.error : "Request failed.";
+          if (response.status === 402 || isCutoffError(code) || isCutoffError(reason) || isCutoffError(message)) {
+            setCutoffCode(String(code || reason || message));
+          }
+          setError(message);
           return null;
         }
         if (
@@ -191,7 +212,7 @@ export default function ScoutVoiceNotesPanel({
         }
       }
 
-      onStatus?.("Recording voice note — form fields stay unchanged");
+      onStatus?.("Recording voice note — review transcript before applying to the form");
     } catch {
       setError("Microphone permission denied or unavailable.");
       await stopTracks();
@@ -224,6 +245,7 @@ export default function ScoutVoiceNotesPanel({
       let source: ScoutVoiceSttSource = sttSource;
 
       if (!transcript && blob && view && "providers" in view && view.providers.cloudConfigured) {
+        setCutoffCode(null);
         const audioBase64 = await blobToBase64(blob);
         const response = await fetch("/api/scout-voice", {
           method: "POST",
@@ -240,6 +262,8 @@ export default function ScoutVoiceNotesPanel({
           transcript?: string;
           message?: string;
           error?: string;
+          code?: string;
+          reason?: string;
         };
         if (data.status === "setup_required") {
           setError(data.message || "Cloud STT provider is not configured.");
@@ -247,7 +271,11 @@ export default function ScoutVoiceNotesPanel({
           return;
         }
         if (!response.ok || !data.transcript) {
-          setError(data.error || data.message || "Cloud transcription failed.");
+          const message = data.error || data.message || "Cloud transcription failed.";
+          if (response.status === 402 || isCutoffError(data.code) || isCutoffError(data.reason) || isCutoffError(message)) {
+            setCutoffCode(String(data.code || data.reason || message));
+          }
+          setError(message);
           return;
         }
         transcript = data.transcript.trim();
@@ -321,7 +349,7 @@ export default function ScoutVoiceNotesPanel({
 
   if (!view) {
     return (
-      <div className="scout-voice">
+      <div className="scout-voice" id="scout-voice">
         <strong>Voice notes</strong>
         <small className="app-muted">Loading opt-in and STT status…</small>
       </div>
@@ -330,7 +358,7 @@ export default function ScoutVoiceNotesPanel({
 
   if (view.status === "setup_required") {
     return (
-      <div className="scout-voice">
+      <div className="scout-voice" id="scout-voice">
         <div>
           <strong>Voice notes</strong>
           <small className="app-muted">{view.message}</small>
@@ -355,7 +383,7 @@ export default function ScoutVoiceNotesPanel({
 
   if (view.status === "opt_in_required") {
     return (
-      <div className="scout-voice scout-voice-consent">
+      <div className="scout-voice scout-voice-consent" id="scout-voice">
         <div>
           <strong>{consent.title}</strong>
           <small className="app-muted">{view.message}</small>
@@ -410,12 +438,13 @@ export default function ScoutVoiceNotesPanel({
   }
 
   return (
-    <div className="scout-voice">
+    <div className="scout-voice" id="scout-voice">
       <div className="scout-voice-heading">
         <div>
-          <strong>Voice notes</strong>
+          <strong>Voice STT</strong>
           <small className="app-muted">
-            Attached to this entry — never writes into form fields.
+            Record → transcript queues with audio in the offline outbox. Optionally apply speech into
+            this custom form, or attach as a note only.
             {browserStt ? " Browser STT ready." : ""}
             {view.providers.cloudConfigured ? " Cloud STT available (metered)." : " Cloud STT not configured."}
           </small>
@@ -429,6 +458,26 @@ export default function ScoutVoiceNotesPanel({
           Turn off
         </button>
       </div>
+
+      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
+
+      {onApplyToForm && formFields.length ? (
+        <label className="scout-voice-form-target">
+          <span className="app-muted">Apply speech to form field</span>
+          <select
+            value={formFieldKey}
+            onChange={(event) => setFormFieldKey(event.target.value)}
+            disabled={recording || busy}
+          >
+            <option value="">Auto-fill labeled fields</option>
+            {formFields.map((field) => (
+              <option key={field.key} value={field.key}>
+                {field.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <div className="scout-voice-actions">
         {!recording ? (
@@ -453,12 +502,25 @@ export default function ScoutVoiceNotesPanel({
         >
           Attach typed note
         </button>
+        {onApplyToForm ? (
+          <button
+            type="button"
+            className="app-button secondary"
+            disabled={busy || !draft.trim()}
+            onClick={() => {
+              onApplyToForm(draft.trim(), formFieldKey || null);
+              onStatus?.("Transcript applied to the custom form — review before saving");
+            }}
+          >
+            Apply to form
+          </button>
+        ) : null}
       </div>
 
       <textarea
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        placeholder="Transcript appears here. Review before attaching — form fields stay untouched."
+        placeholder='Transcript appears here. Example: "Auto score 8, notes good defense"'
         disabled={recording && sttSource === "browser"}
       />
 
@@ -471,14 +533,29 @@ export default function ScoutVoiceNotesPanel({
                 <small className="app-muted"> · {new Date(note.createdAt).toLocaleString()}</small>
               </div>
               <p>{note.transcript}</p>
-              <button
-                type="button"
-                className="app-button secondary"
-                disabled={busy}
-                onClick={() => void mutate({ action: "delete-note", noteId: note.id })}
-              >
-                Delete
-              </button>
+              <div className="scout-voice-actions">
+                {onApplyToForm ? (
+                  <button
+                    type="button"
+                    className="app-button secondary"
+                    disabled={busy}
+                    onClick={() => {
+                      onApplyToForm(note.transcript, formFieldKey || null);
+                      onStatus?.("Voice note applied to the custom form");
+                    }}
+                  >
+                    Apply to form
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className="app-button secondary"
+                  disabled={busy}
+                  onClick={() => void mutate({ action: "delete-note", noteId: note.id })}
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ))}
         </ul>
