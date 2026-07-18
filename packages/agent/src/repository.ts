@@ -202,11 +202,32 @@ export class AgentRepository {
       teamBudget = team.rows[0]?.tokenBudget ?? 0;
       teamItems = team.rows.map((row) => ({ type: "team_memory", id: row.id, content: row.content, importance: row.importance }));
     }
+    // Team Knowledge Base: an admin-authored markdown doc injected into every
+    // team-scope prompt with top priority, independent of the memory toggle.
+    // Guarded so a not-yet-migrated table can never break chat.
+    let knowledgeItems: ContextItem[] = [];
+    if (orgId) {
+      try {
+        const knowledge = await this.client.query<{ content: string }>(
+          `SELECT content FROM team_knowledge
+           WHERE org_id=$1 AND enabled=true AND length(btrim(content))>0`,
+          [orgId],
+        );
+        const content = knowledge.rows[0]?.content;
+        if (content) {
+          knowledgeItems = [{ type: "team_memory", id: "team-knowledge", content, importance: 1000 }];
+        }
+      } catch {
+        // team_knowledge not migrated yet — skip rather than break chat.
+      }
+    }
+    const knowledgeBounded = boundedContext(knowledgeItems, 3000);
     const privateBounded = boundedContext(privateItems, privateBudget);
     const teamBounded = boundedContext(teamItems, teamBudget);
     return {
-      items: [...privateBounded.items, ...teamBounded.items],
-      estimatedTokens: privateBounded.estimatedTokens + teamBounded.estimatedTokens,
+      items: [...knowledgeBounded.items, ...privateBounded.items, ...teamBounded.items],
+      estimatedTokens:
+        knowledgeBounded.estimatedTokens + privateBounded.estimatedTokens + teamBounded.estimatedTokens,
     };
   }
 
