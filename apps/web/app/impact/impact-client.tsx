@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BusinessRelated } from "../../components/business-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { IMPACT_RELATED_INCLUDE } from "../../lib/business/business-related";
+import { impactNextActions } from "../../lib/business/impact-next-actions";
 import { impactAudienceLabel, impactCategoryLabel } from "../../lib/impact";
 import {
   IMPACT_AUDIENCES,
@@ -10,6 +13,7 @@ import {
   type ImpactView,
 } from "../../lib/impact/compute-impact";
 import type { ImpactAudience, ImpactAwardTag, ImpactCategory, ImpactTier } from "../../lib/impact/types";
+import "./impact.css";
 
 const TAG_LABEL: Record<ImpactAwardTag, string> = {
   impact: "Impact",
@@ -36,6 +40,36 @@ function pct(value: number): string {
 }
 
 type LiveView = Extract<ImpactView, { status: "live" }>;
+
+function ImpactNextActions({
+  actions,
+}: {
+  actions: ReturnType<typeof impactNextActions>;
+}) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions impact-next-actions" aria-label="Next actions">
+      <header>
+        <span className="biz-overline">Next actions</span>
+        <h2>Build award evidence from real outreach</h2>
+        <p>Hours, reach, and readiness use logged activities only — never DEMO community metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export default function ImpactClient() {
   const [view, setView] = useState<ImpactView | null>(null);
@@ -99,12 +133,30 @@ export default function ImpactClient() {
     [orgId, season, busy],
   );
 
+  const nextActions = useMemo(() => {
+    if (view?.status === "setup_required") {
+      return impactNextActions({ orgId: view.orgId ?? null, activityCount: 0 });
+    }
+    if (view?.status !== "live") {
+      return impactNextActions({ orgId: orgId ?? null, activityCount: 0 });
+    }
+    return impactNextActions({
+      orgId: view.orgId,
+      activityCount: view.summary.totalEvents,
+      totalHours: view.summary.totalHours,
+      readinessScore: view.readiness.score,
+      seasonYear: view.seasonYear,
+    });
+  }, [view, orgId]);
+
+  const relatedOrg = orgId ?? (view?.status === "setup_required" ? view.orgId : null) ?? null;
+
   return (
-    <main className="module-page">
+    <main className="module-page impact-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
+            <a href={relatedOrg ? `/business?orgId=${encodeURIComponent(relatedOrg)}` : "/business"}>Business</a>
             {" / Community Impact"}
           </>
         }
@@ -131,27 +183,27 @@ export default function ImpactClient() {
               </select>
             </label>
           ) : null}
-          {orgId ? (
-            <>
-              <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=evidence`}>
-                Business · Awards
-              </a>
-              <a className="app-button secondary" href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>
-                Awards workbench
-              </a>
-            </>
-          ) : null}
         </div>
       </PageHeader>
 
+      {relatedOrg ? (
+        <BusinessRelated
+          orgId={relatedOrg}
+          active="impact"
+          include={IMPACT_RELATED_INCLUDE}
+          ariaLabel="Related impact and awards tools"
+        />
+      ) : null}
+
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p className="impact-status" role="alert">
           {error}
         </p>
       ) : null}
 
       {fetchFailed ? (
         <EmptyState
+          soft
           title="Could not load Community Impact"
           description="A network or server issue prevented loading. Try again."
         >
@@ -160,28 +212,39 @@ export default function ImpactClient() {
           </button>
         </EmptyState>
       ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
+        <EmptyState soft title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
+        <>
+          <ImpactNextActions actions={nextActions} />
+          <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+            <ol className="strategy-setup-steps">
+              {view.steps.map((step) => (
+                <li key={step.id}>
+                  <div>
+                    <strong>{step.label}</strong>
+                    <span>{step.detail}</span>
+                  </div>
+                  <a href={step.href}>Open</a>
+                </li>
+              ))}
+            </ol>
+            {relatedOrg ? (
+              <BusinessRelated
+                orgId={relatedOrg}
+                include={["awards", "grants", "sponsors"]}
+                ariaLabel="Setup impact related links"
+              />
+            ) : null}
+          </EmptyState>
+        </>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
+          <ImpactNextActions actions={nextActions} />
           <ReadinessPanel view={view} />
           <SummaryTiles view={view} />
           <LogActivityForm busy={busy} mutate={mutate} />
           {view.summary.totalEvents > 0 ? <Breakdowns view={view} /> : null}
-          <RecentActivities view={view} busy={busy} mutate={mutate} />
+          <RecentActivities view={view} busy={busy} mutate={mutate} relatedOrg={relatedOrg} />
         </div>
       )}
     </main>
@@ -192,79 +255,105 @@ function ReadinessPanel({ view }: { view: LiveView }) {
   const { readiness } = view;
   const components = Object.entries(readiness.components) as Array<[string, number]>;
   return (
-    <Panel aria-label="Impact award readiness">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+    <section className="app-card soft-panel impact-readiness" aria-label="Impact award readiness">
+      <div className="impact-readiness-head">
         <div>
           <span className={`app-badge ${tierTone(readiness.tier)}`}>{readiness.tier.toUpperCase()}</span>
-          <h2 style={{ margin: "6px 0 0" }}>Impact-award evidence readiness</h2>
+          <h2 style={{ marginTop: 6 }}>Impact-award evidence readiness</h2>
           <small className="app-muted">
-            Active in {readiness.monthsActive} month(s) · {readiness.audiencesReached} audience group(s) reached
+            Active in {readiness.monthsActive} month(s) · {readiness.audiencesReached} audience group(s) reached — from
+            logged activities only
           </small>
         </div>
-        <strong style={{ fontSize: "2rem" }}>{pct(readiness.score)}</strong>
-      </header>
-      <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+        <strong className="impact-score">{pct(readiness.score)}</strong>
+      </div>
+      <div className="impact-components">
         {components.map(([key, value]) => (
-          <div key={key} style={{ display: "grid", gridTemplateColumns: "160px 1fr 48px", gap: 8, alignItems: "center" }}>
+          <div key={key} className="impact-component">
             <span className="app-muted">{COMPONENT_LABEL[key] ?? key}</span>
             <span className="mini-probability" aria-hidden="true">
               <i style={{ width: `${Math.max(2, value * 100)}%` }} />
             </span>
-            <small className="app-muted" style={{ textAlign: "right" }}>{pct(value)}</small>
+            <small>{pct(value)}</small>
           </div>
         ))}
       </div>
       {readiness.recommendations.length > 0 ? (
-        <div style={{ marginTop: 12 }}>
+        <div>
           <strong className="app-muted">Next steps</strong>
-          <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+          <ul className="impact-recs">
             {readiness.recommendations.map((rec) => (
               <li key={rec}>{rec}</li>
             ))}
           </ul>
         </div>
       ) : null}
-    </Panel>
+    </section>
   );
 }
 
 function SummaryTiles({ view }: { view: LiveView }) {
   const { summary } = view;
-  const tiles = [
-    { label: "Activities", value: String(summary.totalEvents) },
-    { label: "Hours", value: String(summary.totalHours) },
-    { label: "People reached", value: summary.totalPeopleReached.toLocaleString() },
-    { label: "Member-participations", value: String(summary.totalParticipants) },
-    { label: "Impact signal", value: pct(summary.impactSignal) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+  if (summary.totalEvents === 0) {
+    return (
+      <section className="app-card soft-panel impact-stats" aria-label="Season impact summary">
+        <header className="biz-card-head">
+          <div>
+            <span className="biz-overline">Season totals</span>
+            <h2 style={{ margin: 0, fontSize: 16 }}>No activities recorded yet</h2>
           </div>
-        ))}
+        </header>
+        <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
+          Hours, people reached, and readiness stay blank until you log real outreach — never DEMO community metrics.
+        </p>
+      </section>
+    );
+  }
+  return (
+    <section className="app-card soft-panel impact-stats" aria-label="Season impact summary">
+      <header className="biz-card-head">
+        <div>
+          <span className="biz-overline">Season totals</span>
+          <h2 style={{ margin: 0, fontSize: 16 }}>From logged activities only</h2>
+        </div>
+      </header>
+      <div className="soft-snapshot-grid">
+        <div>
+          <strong>{summary.totalEvents}</strong>
+          <span>activities</span>
+        </div>
+        <div>
+          <strong>{summary.totalHours}</strong>
+          <span>hours</span>
+        </div>
+        <div>
+          <strong>{summary.totalPeopleReached.toLocaleString()}</strong>
+          <span>people reached</span>
+        </div>
+        <div>
+          <strong>{summary.totalParticipants}</strong>
+          <span>member-participations</span>
+        </div>
+        <div>
+          <strong className="accent">{pct(summary.impactSignal)}</strong>
+          <span>impact signal</span>
+        </div>
       </div>
-    </Panel>
+    </section>
   );
 }
 
 function Breakdowns({ view }: { view: LiveView }) {
   const { summary } = view;
   return (
-    <section
-      className="app-card soft-panel"
-      style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}
-    >
+    <section className="app-card soft-panel impact-breakdowns" aria-label="Impact breakdowns">
       <div>
-        <h2 style={{ marginTop: 0 }}>By category</h2>
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <h2>By category</h2>
+        <ul>
           {summary.byCategory.map((row) => (
-            <li key={row.category} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <li key={row.category}>
               <span>{impactCategoryLabel(row.category)}</span>
-              <small className="app-muted">
+              <small>
                 {row.events} · {row.hours}h · {row.peopleReached.toLocaleString()}
               </small>
             </li>
@@ -272,12 +361,12 @@ function Breakdowns({ view }: { view: LiveView }) {
         </ul>
       </div>
       <div>
-        <h2 style={{ marginTop: 0 }}>By audience</h2>
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <h2>By audience</h2>
+        <ul>
           {summary.byAudience.map((row) => (
-            <li key={row.audience} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <li key={row.audience}>
               <span>{impactAudienceLabel(row.audience)}</span>
-              <small className="app-muted">
+              <small>
                 {row.events} · {row.peopleReached.toLocaleString()} reached
               </small>
             </li>
@@ -285,12 +374,12 @@ function Breakdowns({ view }: { view: LiveView }) {
         </ul>
       </div>
       <div>
-        <h2 style={{ marginTop: 0 }}>By month</h2>
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <h2>By month</h2>
+        <ul>
           {summary.byMonth.map((row) => (
-            <li key={row.month} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <li key={row.month}>
               <span>{row.month}</span>
-              <small className="app-muted">
+              <small>
                 {row.events} · {row.hours}h · {row.peopleReached.toLocaleString()}
               </small>
             </li>
@@ -305,40 +394,50 @@ function RecentActivities({
   view,
   busy,
   mutate,
+  relatedOrg,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  relatedOrg: string | null;
 }) {
   if (view.summary.totalEvents === 0) {
     return (
       <EmptyState
+        soft
         badge="No activities yet"
         badgeTone="setup"
         title="Log your first community-impact activity"
-        description="STEM demos, mentoring, and community events build the Impact and Engineering Inspiration narratives."
-      />
+        description="STEM demos, mentoring, and community events build the Impact and Engineering Inspiration narratives — empty means nothing logged, not a placeholder scoreboard."
+      >
+        {relatedOrg ? (
+          <BusinessRelated
+            orgId={relatedOrg}
+            include={["awards", "grants", "sponsors"]}
+            ariaLabel="Empty impact related links"
+          />
+        ) : null}
+      </EmptyState>
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Recent activities</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <section className="app-card soft-panel impact-list" aria-label="Recent activities">
+      <h2>Recent activities</h2>
+      <ul className="impact-activity-list">
         {view.activities.slice(0, 20).map((item) => (
-          <li
-            key={item.id}
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-          >
+          <li key={item.id}>
             <div>
               <strong>{item.title}</strong>
-              <small className="app-muted" style={{ display: "block" }}>
+              <span>
                 {item.occurredOn} · {impactCategoryLabel(item.category)} · {impactAudienceLabel(item.audience)}
                 {item.location ? ` · ${item.location}` : ""}
-              </small>
-              <small className="app-muted">
+              </span>
+              <small>
                 {Math.round(item.durationMinutes / 6) / 10}h · {item.participantCount} member(s) ·{" "}
                 {item.peopleReached.toLocaleString()} reached
-                {item.evidenceAwards.length ? ` · evidence for ${item.evidenceAwards.map((t) => TAG_LABEL[t]).join(", ")}` : ""}
+                {item.evidenceAwards.length
+                  ? ` · evidence for ${item.evidenceAwards.map((t) => TAG_LABEL[t]).join(", ")}`
+                  : ""}
               </small>
             </div>
             <button
@@ -356,7 +455,7 @@ function RecentActivities({
           </li>
         ))}
       </ul>
-    </Panel>
+    </section>
   );
 }
 
@@ -392,6 +491,7 @@ function LogActivityForm({
   return (
     <Panel
       as="form"
+      className="impact-form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.title.trim() || !form.occurredOn) return;
@@ -413,7 +513,8 @@ function LogActivityForm({
       }}
       style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Log activity</h2>
+      <span className="biz-overline">Record outreach</span>
+      <h2>Log activity</h2>
       <FormGrid min={160}>
         <FormRow label="Title">
           <input value={form.title} onChange={set("title")} placeholder="Elementary STEM night" required />
@@ -455,10 +556,10 @@ function LogActivityForm({
       <FormRow label="Notes (optional)">
         <textarea value={form.description} onChange={set("description")} rows={2} />
       </FormRow>
-      <fieldset style={{ border: "none", padding: 0, margin: 0, display: "flex", gap: 12, flexWrap: "wrap" }}>
+      <fieldset className="impact-tag-row">
         <span className="app-muted">Evidence for:</span>
         {IMPACT_AWARD_TAGS.map((tag) => (
-          <label key={tag} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <label key={tag}>
             <input type="checkbox" checked={tags.includes(tag)} onChange={() => toggleTag(tag)} />
             {TAG_LABEL[tag]}
           </label>
