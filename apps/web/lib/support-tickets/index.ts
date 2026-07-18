@@ -5,6 +5,19 @@ export {
   triageSupportTicket,
 } from "./compute";
 export {
+  SUPPORT_RELATED_INCLUDE,
+  SUPPORT_RELATED_LINKS,
+  summarizeSupportTickets,
+  supportNextActions,
+  supportRelatedLinks,
+  supportStatusTone,
+  ticketAwaitsReply,
+  type SupportNextAction,
+  type SupportRelatedId,
+  type SupportRelatedLink,
+  type SupportTicketSummary,
+} from "./support-related";
+export {
   SUPPORT_TICKET_STATUSES,
   isSupportTicketStatus,
   statusLabel,
