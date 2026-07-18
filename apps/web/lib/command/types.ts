@@ -1,4 +1,5 @@
 import type { OpponentTendency, MatchPrediction, AllianceMatchup } from "@vantage/prediction-strategy";
+import type { DataSourceHealthView } from "../reference-health";
 import type { StrategyPlaybookView, TbaAccessInfo } from "../strategy/types";
 
 export type CommandMatchAlliance = {
@@ -72,6 +73,8 @@ export type CommandSnapshot = {
   eventName: string | null;
   tbaConfigured: boolean;
   tbaAccess?: TbaAccessInfo;
+  /** TBA/Statbotics ingest health — command keeps serving Neon last-good when degraded. */
+  dataSourceHealth?: DataSourceHealthView;
   setupSteps: Array<{ id: string; label: string; detail: string; href: string; done?: boolean }>;
   matches: CommandMatch[];
   scoutQueue: ScoutQueueItem[];
