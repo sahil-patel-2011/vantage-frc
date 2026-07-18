@@ -3027,3 +3027,146 @@ export const dutyAssignments = pgTable(
     index("duty_assignments_assignee_idx").on(table.orgId, table.assignedUserId, table.startsAt),
   ],
 );
+
+/** Event logistics — trips, lodging, checklists, contacts, on-duty mentors. */
+export const logisticsTrips = pgTable(
+  "logistics_trips",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    eventKey: text("event_key"),
+    venueName: text("venue_name").notNull().default(""),
+    venueAddress: text("venue_address").notNull().default(""),
+    travelNotes: text("travel_notes").notNull().default(""),
+    transportNotes: text("transport_notes").notNull().default(""),
+    startsOn: date("starts_on"),
+    endsOn: date("ends_on"),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [index("logistics_trips_org_idx").on(table.orgId, table.startsOn)],
+);
+
+export const logisticsHotels = pgTable(
+  "logistics_hotels",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id").notNull().references(() => logisticsTrips.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    address: text("address").notNull().default(""),
+    phone: text("phone").notNull().default(""),
+    confirmationCode: text("confirmation_code").notNull().default(""),
+    checkInAt: timestamp("check_in_at", { withTimezone: true }),
+    checkOutAt: timestamp("check_out_at", { withTimezone: true }),
+    roomBlockNotes: text("room_block_notes").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [index("logistics_hotels_trip_idx").on(table.orgId, table.tripId)],
+);
+
+export const logisticsRoomAssignments = pgTable(
+  "logistics_room_assignments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    hotelId: uuid("hotel_id").notNull().references(() => logisticsHotels.id, { onDelete: "cascade" }),
+    roomLabel: text("room_label").notNull(),
+    occupantUserId: uuid("occupant_user_id").references(() => users.id, { onDelete: "set null" }),
+    occupantName: text("occupant_name").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("logistics_rooms_hotel_idx").on(table.orgId, table.hotelId)],
+);
+
+export const logisticsChecklistItems = pgTable(
+  "logistics_checklist_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id").references(() => logisticsTrips.id, { onDelete: "cascade" }),
+    audience: text("audience").notNull().default("all"),
+    label: text("label").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("logistics_checklist_org_idx").on(table.orgId, table.tripId, table.sortOrder)],
+);
+
+export const logisticsChecklistChecks = pgTable(
+  "logistics_checklist_checks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id").notNull().references(() => logisticsChecklistItems.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    checkedAt: timestamp("checked_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("logistics_checks_user_idx").on(table.orgId, table.userId)],
+);
+
+export const logisticsEmergencyContacts = pgTable(
+  "logistics_emergency_contacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    roleLabel: text("role_label").notNull().default(""),
+    phone: text("phone").notNull().default(""),
+    email: text("email").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("logistics_contacts_org_idx").on(table.orgId, table.sortOrder)],
+);
+
+export const logisticsOnDuty = pgTable(
+  "logistics_on_duty",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id").references(() => logisticsTrips.id, { onDelete: "cascade" }),
+    mentorUserId: uuid("mentor_user_id").references(() => users.id, { onDelete: "set null" }),
+    mentorName: text("mentor_name").notNull().default(""),
+    phone: text("phone").notNull().default(""),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    locationNote: text("location_note").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [index("logistics_on_duty_org_idx").on(table.orgId, table.startsAt)],
+);
+
+export const logisticsTravelLegs = pgTable(
+  "logistics_travel_legs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id").notNull().references(() => logisticsTrips.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    title: text("title").notNull().default(""),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    location: text("location").notNull().default(""),
+    meetingPoint: text("meeting_point").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    subteamId: uuid("subteam_id"),
+    calendarEventId: uuid("calendar_event_id"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdBy: uuid("created_by").notNull().references(() => users.id),
+    ...timestamps,
+  },
+  (table) => [index("logistics_travel_legs_trip_idx").on(table.orgId, table.tripId, table.startsAt)],
+);
+
