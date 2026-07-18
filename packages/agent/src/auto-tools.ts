@@ -214,6 +214,9 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
       add("scouting.team", { teamKey });
     }
   }
+  if (isCadSurface || isStrategySurface || wantsScout || /\b(scout(?:ing)?\s*form|form\s*builder|schema\s*field|custom\s*form)\b/i.test(text)) {
+    add("scouting.schema", { seasonYear });
+  }
 
   if (isCadSurface) {
     add("inventory.availability", { query: text.slice(0, 160), limit: 20 });
@@ -307,6 +310,8 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
   const classification =
     name === "scouting.team"
       ? ("scout_observation" as const)
+      : name === "scouting.schema"
+        ? ("hard_metric" as const)
       : name === "research.findings" || name === "kickoff.intelligence" || name === "kickoff.rules"
         ? ("researched_claim" as const)
         : name === "strategy.match" ||

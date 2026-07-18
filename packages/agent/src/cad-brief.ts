@@ -89,6 +89,9 @@ export function planCadStrategyToolCalls(
   if (options.teamKey && !preferred.some((call) => call.name === "scouting.team")) {
     preferred.push({ name: "scouting.team", input: { teamKey: options.teamKey } });
   }
+  if (!preferred.some((call) => call.name === "scouting.schema")) {
+    preferred.push({ name: "scouting.schema", input: { seasonYear } });
+  }
   if (preferred.length) return preferred.slice(0, 12);
   const fallback: Array<{ name: string; input: unknown }> = [
     { name: "kickoff.intelligence", input: { seasonYear } },
@@ -96,6 +99,7 @@ export function planCadStrategyToolCalls(
     { name: "kickoff.rules", input: { seasonYear } },
     { name: "fmea.open_risks", input: { seasonYear, limit: 12 } },
     { name: "rules.compliance", input: { proposal: request.trim().slice(0, 8_000), seasonYear } },
+    { name: "scouting.schema", input: { seasonYear } },
   ];
   if (options.matchKey) fallback.unshift({ name: "strategy.match", input: { matchKey: options.matchKey } });
   if (options.teamKey) fallback.push({ name: "scouting.team", input: { teamKey: options.teamKey } });
@@ -114,6 +118,15 @@ export type CreateMeteredCadBriefInput = {
   executionMode?: "hosted" | "local";
   selected?: { teamKey?: string; matchKey?: string };
   seasonYear?: number;
+  teamProfile?: {
+    defaultPlatform: "onshape" | "fusion360" | "mock";
+    preferredUnits: "mm" | "in";
+    manufacturingProcesses: string[];
+    preferredMaterials: string[];
+    standardComponents: string[];
+    designRules: string[];
+  };
+  userPreferences?: { preferredUnits: "team" | "mm" | "in" };
   /**
    * When true (chat `cad.create_brief` nested invoke), skip a second meteredAI run —
    * parent orchestrator already meters the turn. Still writes the CAD job + context links.
@@ -312,6 +325,18 @@ export async function createMeteredCadBriefJob(
     active,
     strategyToolCalls,
   );
+  const effectiveUnits =
+    input.userPreferences?.preferredUnits && input.userPreferences.preferredUnits !== "team"
+      ? input.userPreferences.preferredUnits
+      : input.teamProfile?.preferredUnits;
+  const cadProfileNotes = [
+    effectiveUnits ? `CAD dimensions must use explicit ${effectiveUnits} units` : "",
+    ...(input.teamProfile?.manufacturingProcesses ?? []).slice(0, 5).map((value) => `Manufacturing process: ${value}`),
+    ...(input.teamProfile?.preferredMaterials ?? []).slice(0, 5).map((value) => `Preferred material: ${value}`),
+    ...(input.teamProfile?.standardComponents ?? []).slice(0, 5).map((value) => `Standard component: ${value}`),
+    ...(input.teamProfile?.designRules ?? []).slice(0, 5).map((value) => `Team CAD rule: ${value}`),
+  ].filter(Boolean);
+  knowledgeNotes.unshift(...cadProfileNotes);
 
   const sources = input.sources ?? [];
   const sourceRefs = sources.map((source) => ({

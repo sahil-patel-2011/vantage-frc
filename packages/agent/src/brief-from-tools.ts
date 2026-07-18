@@ -349,6 +349,24 @@ function fromScouting(data: unknown): { constraints: string[]; risks: string[] }
         `Scout TBA conflict on ${teamKey}: do not trust ${excluded.join(", ") || "contradicted fields"}`,
       );
     }
+    const labeled = Array.isArray(entry.trustedLabeled)
+      ? entry.trustedLabeled
+          .map((item) => {
+            const row = asRecord(item);
+            if (!row) return null;
+            const label = String(row.label ?? row.key ?? "").trim();
+            const value = row.value;
+            if (!label || value == null || value === "") return null;
+            return `${label}=${typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? String(value) : JSON.stringify(value)}`;
+          })
+          .filter((item): item is string => Boolean(item))
+      : [];
+    if (labeled.length) {
+      constraints.push(
+        `Trusted scout (${teamKey}): ${labeled.slice(0, 6).join("; ")}${labeled.length > 6 ? "…" : ""}`,
+      );
+      continue;
+    }
     const trusted = asRecord(entry.trustedPayload);
     if (trusted) {
       const keys = Object.keys(trusted).filter((key) => trusted[key] != null && trusted[key] !== "");
@@ -392,7 +410,7 @@ export function buildEngineeringBriefFromTools(input: BriefFromToolsInput): Engi
   const requirements: string[] = [];
   const constraints: string[] = [
     ...(input.knowledgeNotes?.length
-      ? input.knowledgeNotes.slice(0, 6).map((note) => `Team knowledge: ${note}`)
+      ? input.knowledgeNotes.slice(0, 18).map((note) => `Team knowledge: ${note}`)
       : []),
   ];
   const scoringTasks: string[] = [];
