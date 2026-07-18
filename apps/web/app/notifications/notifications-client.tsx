@@ -93,7 +93,8 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         <button type="button" disabled={busy || unreadCount < 1} onClick={() => void patch("read_all")}>
           Mark all read
         </button>
-        <a href="/account?tab=notifications">Preferences</a>
+        <a href="/account?tab=notifications">Prefs &amp; email opt-ins</a>
+        <a href="/security">Security</a>
       </TabBar>
 
       {message ? (
@@ -112,9 +113,14 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           title={filter === "unread" ? "No unread notifications" : "No notifications yet"}
           description="When exports finish, teammates message you, or billing/sync events fire, they appear here with a real timestamp — never as placeholder competition noise."
         >
-          <a className="app-button secondary" href="/account?tab=notifications">
-            Manage preferences
-          </a>
+          <div className="settings-inline-links">
+            <a className="app-button secondary" href="/account?tab=notifications">
+              Notification &amp; email prefs
+            </a>
+            <a className="app-button secondary" href="/security">
+              Security
+            </a>
+          </div>
         </EmptyState>
       ) : (
         <ul className="notif-list">

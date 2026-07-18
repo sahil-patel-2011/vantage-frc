@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EmptyState, Panel } from "../../../components/ui";
 
 type OrgCapability =
   | "manage_api_keys"
@@ -123,20 +124,21 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
   const admins = members.filter((member) => member.role === "owner" || member.role === "admin");
 
   return (
-    <section className="intel-panel member-capabilities-panel" style={{ marginTop: "1.5rem" }}>
-      <span className="eyebrow">DELEGATED ADMIN POWERS</span>
+    <Panel className="member-capabilities-panel">
+      <span className="eyebrow">Delegated admin powers</span>
       <h2>Member capabilities</h2>
       <p className="app-muted">
-        Grant elevated capabilities to scouts and viewers without promoting them to full team admin.
-        Changes are enforced on API routes and audited.
+        Grant elevated capabilities to scouts and viewers without promoting them to full team admin. Includes API keys /
+        connectors and budgets. Changes are enforced on API routes and audited.
       </p>
-      {message && (
+      {message ? (
         <p role="status" className="telemetry-status">
           {message}
         </p>
-      )}
-      {loading && <p className="app-muted">Loading members…</p>}
-      {!loading && (
+      ) : null}
+      {loading ? (
+        <EmptyState soft title="Loading members…" description="Pulling roles and delegated capabilities." aria-busy />
+      ) : (
         <>
           <div className="invite-list" style={{ marginBottom: "1rem" }}>
             {admins.map((member) => (
@@ -147,19 +149,27 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
                     {member.email} · {member.role} · full admin powers
                   </small>
                 </div>
-                {member.role === "admin" && actorRole === "owner" && (
+                {member.role === "admin" && actorRole === "owner" ? (
                   <div>
                     <button type="button" onClick={() => void demote(member.userId, "scout")}>
                       Demote to scout
                     </button>
                   </div>
-                )}
+                ) : null}
               </article>
             ))}
           </div>
-          {!editable.length && (
-            <p className="app-muted">No scouts or viewers to delegate. Invite members from Team Admin.</p>
-          )}
+          {!editable.length ? (
+            <EmptyState
+              soft
+              title="No scouts or viewers to delegate"
+              description="Invite members from Team admin, then grant API keys, budgets, or settings powers here."
+            >
+              <a className="app-button secondary" href={`/team?orgId=${orgId}`}>
+                Open Team admin
+              </a>
+            </EmptyState>
+          ) : null}
           {editable.map((member) => (
             <article className="admin-org" key={member.userId} style={{ marginBottom: "1rem" }}>
               <div>
@@ -199,6 +209,6 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
           ))}
         </>
       )}
-    </section>
+    </Panel>
   );
 }

@@ -64,6 +64,7 @@ const groups: NavGroup[] = [
       { href: "/code", label: "Code", icon: "code" },
       { href: "/display", label: "Displays", icon: "display" },
       { href: "/inventory", label: "Inventory & BOM", icon: "grid" },
+      { href: "/vendors", label: "Vendors & Suppliers", icon: "clipboard" },
       { href: "/parts-relay", label: "FRC Parts Relay", icon: "bolt" },
       { href: "/config", label: "Robot Configuration", icon: "gear" },
       { href: "/changes", label: "Engineering Changes", icon: "clipboard" },
@@ -75,8 +76,9 @@ const groups: NavGroup[] = [
     toneBg: "#e8eefc",
     icon: "gear",
     items: [
+      { href: "/announcements", label: "Announcements", icon: "bell" },
       { href: "/practice", label: "Practice", icon: "target" },
-      { href: "/tasks", label: "Todos", icon: "clipboard" },
+      { href: "/todos", label: "Todos", icon: "clipboard" },
       { href: "/messages", label: "Messages", icon: "chat" },
       { href: "/team/calendar", label: "Calendar", icon: "calendar" },
       { href: "/attendance", label: "Attendance", icon: "users" },
@@ -106,6 +108,7 @@ const groups: NavGroup[] = [
     icon: "gear",
     items: [
       { href: "/account", label: "Account", icon: "users" },
+      { href: "/help", label: "Help & Support", icon: "chat" },
       { href: "/notifications", label: "Notifications", icon: "bell" },
       { href: "/security", label: "Security", icon: "gear" },
       { href: "/team/security", label: "Team security", icon: "gear" },

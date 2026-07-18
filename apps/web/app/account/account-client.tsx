@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EmptyState, TabBar } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { ThemeToggle } from "../theme-provider";
 import { signOutAndRedirect } from "../../lib/sign-out";
 
@@ -10,6 +10,13 @@ type NotificationPrefs = {
   scoutReminders: boolean;
   syncFailures: boolean;
   productUpdates: boolean;
+};
+
+type EmailPrefs = {
+  productUpdates: boolean;
+  coachAssignments: boolean;
+  coachTodos: boolean;
+  coachPracticeReminders: boolean;
 };
 
 type Integration = { status: "available" | "setup_required"; detail: string };
@@ -21,6 +28,7 @@ type AccountView = {
   displayName?: string | null;
   themePreference?: "light" | "dark";
   notificationPrefs?: NotificationPrefs;
+  emailPrefs?: EmailPrefs;
   integrations?: {
     google: Integration;
     tba: Integration;
@@ -33,8 +41,21 @@ const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail: string
   { key: "matchAlerts", title: "Match alerts", detail: "Upcoming match reminders when live TBA data is available." },
   { key: "scoutReminders", title: "Scout reminders", detail: "Assigned scouting form nudges for your workspace." },
   { key: "syncFailures", title: "Sync failures", detail: "Notify when TBA/reference ingest health degrades." },
-  { key: "productUpdates", title: "Product updates", detail: "Occasional Vantage product notes (off by default)." },
+  { key: "productUpdates", title: "In-app product notes", detail: "Occasional Vantage product notes in the inbox (off by default)." },
 ];
+
+const EMAIL_PREF_LABELS: { key: keyof EmailPrefs; title: string; detail: string }[] = [
+  { key: "productUpdates", title: "Product updates (email)", detail: "Occasional product notes by email. Off until you opt in." },
+  { key: "coachAssignments", title: "Coach assignments", detail: "Email when practice or task assignments land for coaches." },
+  { key: "coachTodos", title: "Coach todos", detail: "Email digests for open coach todos." },
+  { key: "coachPracticeReminders", title: "Practice reminders", detail: "Email reminders ahead of scheduled practice." },
+];
+
+function withOrg(href: string, orgId: string | null) {
+  if (!orgId) return href;
+  const join = href.includes("?") ? "&" : "?";
+  return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
+}
 
 export default function AccountClient() {
   const [tab, setTab] = useState<Tab>("profile");
@@ -45,6 +66,12 @@ export default function AccountClient() {
     scoutReminders: true,
     syncFailures: true,
     productUpdates: false,
+  });
+  const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>({
+    productUpdates: false,
+    coachAssignments: false,
+    coachTodos: false,
+    coachPracticeReminders: false,
   });
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
@@ -75,6 +102,7 @@ export default function AccountClient() {
     setAccount(data);
     setDisplayName(data.displayName ?? data.name ?? "");
     if (data.notificationPrefs) setPrefs(data.notificationPrefs);
+    if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
     const meResponse = await fetch("/api/me");
     if (meResponse.ok) {
       const me = await meResponse.json();
@@ -118,7 +146,7 @@ export default function AccountClient() {
       const response = await fetch("/api/account", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ notificationPrefs: prefs }),
+        body: JSON.stringify({ notificationPrefs: prefs, emailPrefs }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -140,14 +168,43 @@ export default function AccountClient() {
   const initial = (displayName.trim()?.[0] ?? account?.email?.trim()?.[0] ?? "V").toUpperCase();
 
   return (
-    <main className="intel-app account-page">
-      <header className="intel-header">
-        <div>
-          <span className="eyebrow">Account</span>
-          <h1>Your settings</h1>
-          <p>Profile, appearance, notifications, and integration status for this signed-in session.</p>
-        </div>
-      </header>
+    <main className="module-page account-page">
+      <PageHeader
+        breadcrumbs="Account / Settings"
+        title="Your settings"
+        description="Profile, appearance, notification preferences, email opt-ins, and where security and API keys live."
+      />
+
+      <nav className="settings-hub" aria-label="Related settings">
+        <a href="/security">
+          <strong>Security</strong>
+          <span>Authenticator app, remembered devices</span>
+        </a>
+        <a href="/notifications">
+          <strong>Inbox</strong>
+          <span>In-app alerts for this account</span>
+        </a>
+        <button type="button" onClick={() => setTab("notifications")}>
+          <strong>Notification prefs</strong>
+          <span>In-app alerts and email opt-ins</span>
+        </button>
+        {orgId ? (
+          <>
+            <a href={withOrg("/team/security", orgId)}>
+              <strong>Team security</strong>
+              <span>Auth policy and delegated powers</span>
+            </a>
+            <a href={withOrg("/team", orgId)}>
+              <strong>API keys</strong>
+              <span>BYOK providers and connectors</span>
+            </a>
+            <a href={withOrg("/team/budgets", orgId)}>
+              <strong>API budgets</strong>
+              <span>Hard spend and token limits</span>
+            </a>
+          </>
+        ) : null}
+      </nav>
 
       <TabBar
         className="account-tabs"
@@ -157,8 +214,8 @@ export default function AccountClient() {
         tabs={[
           { id: "profile", label: "Profile" },
           { id: "appearance", label: "Appearance" },
-          { id: "notifications", label: "Alerts" },
-          { id: "integrations", label: "Links" },
+          { id: "notifications", label: "Notifications" },
+          { id: "integrations", label: "Connections" },
         ]}
       />
 
@@ -180,7 +237,7 @@ export default function AccountClient() {
       ) : null}
 
       {tab === "profile" && account ? (
-        <section className="intel-panel account-panel">
+        <Panel className="account-panel">
           <div className="account-identity">
             {account.image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -217,19 +274,22 @@ export default function AccountClient() {
               </button>
             </div>
           </form>
-        </section>
+        </Panel>
       ) : null}
 
       {tab === "appearance" ? (
-        <section className="intel-panel appearance-panel account-panel">
+        <Panel className="appearance-panel account-panel">
           <ThemeToggle expanded />
-        </section>
+        </Panel>
       ) : null}
 
       {tab === "notifications" ? (
-        <section className="intel-panel account-panel">
-          <h2>Notification preferences</h2>
-          <p className="app-muted">Controls what Vantage may notify you about. It does not invent live competition data.</p>
+        <Panel className="account-panel">
+          <h2>In-app notifications</h2>
+          <p className="app-muted">
+            Controls what Vantage may put in your inbox. It does not invent live competition data.{" "}
+            <a href="/notifications">Open inbox</a>
+          </p>
           <ul className="account-prefs">
             {PREF_LABELS.map((item) => (
               <li key={item.key}>
@@ -248,35 +308,62 @@ export default function AccountClient() {
               </li>
             ))}
           </ul>
+
+          <h2 className="account-prefs-heading">Email opt-ins</h2>
+          <p className="app-muted">Email stays off until you explicitly opt in. You can change these anytime.</p>
+          <ul className="account-prefs">
+            {EMAIL_PREF_LABELS.map((item) => (
+              <li key={item.key}>
+                <div>
+                  <strong>{item.title}</strong>
+                  <small>{item.detail}</small>
+                </div>
+                <label className="account-switch">
+                  <span className="sr-only">{item.title}</span>
+                  <input
+                    type="checkbox"
+                    checked={emailPrefs[item.key]}
+                    onChange={(event) =>
+                      setEmailPrefs((current) => ({ ...current, [item.key]: event.target.checked }))
+                    }
+                  />
+                </label>
+              </li>
+            ))}
+          </ul>
           <button className="primary-action" type="button" disabled={busy} onClick={() => void savePrefs()}>
             Save preferences
           </button>
-        </section>
+        </Panel>
       ) : null}
 
       {tab === "integrations" ? (
-        <section className="admin-grid">
-          <article className="intel-panel">
+        <section className="admin-grid settings-connections">
+          <Panel as="article">
             <h2>Google</h2>
             <span className={`app-badge ${account?.integrations?.google.status === "available" ? "good" : "setup"}`}>
               {account?.integrations?.google.status === "available" ? "Available" : "Setup required"}
             </span>
             <p>{account?.integrations?.google.detail ?? "Checking Google configuration…"}</p>
             <a href="/signin">Open sign-in</a>
-          </article>
-          <article className="intel-panel">
+          </Panel>
+          <Panel as="article">
             <h2>The Blue Alliance</h2>
             <span className={`app-badge ${account?.integrations?.tba.status === "available" ? "good" : "setup"}`}>
               {account?.integrations?.tba.status === "available" ? "Configured" : "Not configured"}
             </span>
             <p>{account?.integrations?.tba.detail ?? "Checking TBA configuration…"}</p>
-            {orgId ? <a href={`/team/data?orgId=${orgId}`}>Open TBA connectors</a> : null}
-          </article>
-          <article className="intel-panel">
-            <h2>Security</h2>
-            <p>Authenticator app, remembered devices, and step-up verification live on the Security page.</p>
-            <a href="/security">Open security settings</a>
-          </article>
+            {orgId ? <a href={withOrg("/team/data", orgId)}>Open TBA connectors</a> : null}
+          </Panel>
+          <Panel as="article">
+            <h2>Security &amp; API keys</h2>
+            <p>Personal 2FA lives on Security. Team API keys, BYOK providers, and budgets live under Team admin.</p>
+            <div className="settings-inline-links">
+              <a href="/security">Security</a>
+              {orgId ? <a href={withOrg("/team", orgId)}>Team API keys</a> : null}
+              {orgId ? <a href={withOrg("/team/budgets", orgId)}>API budgets</a> : null}
+            </div>
+          </Panel>
         </section>
       ) : null}
     </main>

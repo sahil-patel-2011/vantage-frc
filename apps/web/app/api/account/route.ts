@@ -1,4 +1,9 @@
-import { auth } from "@vantage/core";
+import {
+  auth,
+  getUserEmailPreferences,
+  updateUserEmailPreferences,
+  type UserEmailPreferences,
+} from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
@@ -11,9 +16,17 @@ const prefsSchema = z.object({
   productUpdates: z.boolean().optional(),
 });
 
+const emailPrefsSchema = z.object({
+  productUpdates: z.boolean().optional(),
+  coachAssignments: z.boolean().optional(),
+  coachTodos: z.boolean().optional(),
+  coachPracticeReminders: z.boolean().optional(),
+});
+
 const putSchema = z.object({
   displayName: z.string().trim().min(1).max(80).optional(),
   notificationPrefs: prefsSchema.optional(),
+  emailPrefs: emailPrefsSchema.optional(),
 });
 
 export type NotificationPrefs = {
@@ -61,10 +74,12 @@ export async function GET() {
          WHERE user_id=$1 AND read_at IS NULL`,
         [session.user.id],
       );
+      const emailPrefs = await getUserEmailPreferences(client, session.user.id);
       const tba = await resolveTbaConfigured(client, null);
       return {
         row: result.rows[0] ?? null,
         unreadCount: Number(unread.rows[0]?.count ?? 0),
+        emailPrefs,
         tba,
       };
     });
@@ -77,15 +92,20 @@ export async function GET() {
       displayName: profile.row?.displayName ?? session.user.name ?? null,
       themePreference: profile.row?.themePreference === "dark" ? "dark" : "light",
       notificationPrefs: mergePrefs(profile.row?.notificationPrefs),
+      emailPrefs: profile.emailPrefs,
       unreadNotificationCount: profile.unreadCount,
       googleConnected: false,
       tbaConfigured: profile.tba.tbaConfigured,
       integrations: {
         google: {
-          status: process.env["GOOGLE_CLIENT_ID"]?.trim() && process.env["GOOGLE_CLIENT_SECRET"]?.trim() ? "available" : "setup_required",
-          detail: process.env["GOOGLE_CLIENT_ID"]?.trim() && process.env["GOOGLE_CLIENT_SECRET"]?.trim()
-            ? "Google sign-in is configured for this deployment."
-            : "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set on this deployment.",
+          status:
+            process.env["GOOGLE_CLIENT_ID"]?.trim() && process.env["GOOGLE_CLIENT_SECRET"]?.trim()
+              ? "available"
+              : "setup_required",
+          detail:
+            process.env["GOOGLE_CLIENT_ID"]?.trim() && process.env["GOOGLE_CLIENT_SECRET"]?.trim()
+              ? "Google sign-in is configured for this deployment."
+              : "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set on this deployment.",
         },
         tba: {
           status: tbaReady || profile.tba.cacheHasSync ? "available" : "setup_required",
@@ -136,7 +156,14 @@ export async function PUT(request: Request) {
         await client.query(`UPDATE users SET name=$2 WHERE id=$1`, [session.user.id, body.data.displayName]);
       }
 
-      return { displayName, notificationPrefs: nextPrefs };
+      let emailPrefs: UserEmailPreferences | undefined;
+      if (body.data.emailPrefs) {
+        emailPrefs = await updateUserEmailPreferences(client, session.user.id, body.data.emailPrefs);
+      } else {
+        emailPrefs = await getUserEmailPreferences(client, session.user.id);
+      }
+
+      return { displayName, notificationPrefs: nextPrefs, emailPrefs };
     });
 
     return Response.json({ ok: true, ...updated });

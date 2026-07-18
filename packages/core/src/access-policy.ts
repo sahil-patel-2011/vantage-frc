@@ -19,7 +19,7 @@ export function isEmailProviderConfigured() {
 }
 
 /** Avoid Next.js build-time inlining of `process.env.NAME` so Sensitive Vercel secrets remain runtime-readable. */
-function runtimeEnv(name: string) {
+export function runtimeEnv(name: string) {
   return process.env[name]?.trim() || "";
 }
 

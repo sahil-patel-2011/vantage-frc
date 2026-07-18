@@ -1,6 +1,124 @@
 "use client";
-import { useEffect,useState } from "react";
-export default function AuthPolicyClient({orgId}:{orgId:string}){const[policy,setPolicy]=useState({allowPassword:false,allowGoogle:true,allowEmailOtp:true,mfaPolicy:"optional",rememberedDeviceDays:14});const[message,setMessage]=useState("");
- useEffect(()=>{void fetch(`/api/organizations/auth-policy?orgId=${orgId}`).then(r=>r.json()).then(d=>d.policy&&setPolicy(d.policy));},[orgId]);
- async function save(e:React.FormEvent){e.preventDefault();const r=await fetch("/api/organizations/auth-policy",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({orgId,...policy})});const d=await r.json();setMessage(r.ok?"Authentication policy saved and audited.":d.error);}
- return<main className="intel-app"><header className="intel-header"><div><span className="eyebrow">TEAM SETTINGS / ACCESS</span><h1>Authentication policy</h1></div><a href={`/team?orgId=${orgId}`}>← Team settings</a></header>{message&&<p role="status" className="telemetry-status">{message}</p>}<form className="intel-panel auth-policy-form" onSubmit={save}><h2>Allowed sign-in methods</h2><p>These methods only authenticate an identity. Membership remains invite-only and verified-email matching still applies.</p><label className="state-control"><input type="checkbox" checked={policy.allowEmailOtp} onChange={e=>setPolicy({...policy,allowEmailOtp:e.target.checked})}/><span><strong>Email one-time code</strong><small>Short-lived, single-use numeric code</small></span></label><label className="state-control"><input type="checkbox" checked={policy.allowPassword} onChange={e=>setPolicy({...policy,allowPassword:e.target.checked})}/><span><strong>Email and password</strong><small>Verified email, breach check, reset code, session revocation</small></span></label><label className="state-control"><input type="checkbox" checked={policy.allowGoogle} onChange={e=>setPolicy({...policy,allowGoogle:e.target.checked})}/><span><strong>Google</strong><small>Verified Google email and existing membership only</small></span></label><h2>Authenticator-app 2FA</h2><label>Policy<select value={policy.mfaPolicy} onChange={e=>setPolicy({...policy,mfaPolicy:e.target.value})}><option value="off">Off</option><option value="optional">Optional</option><option value="required">Required for organization access</option></select></label><label>Remember verified device for<input type="number" min="0" max="90" value={policy.rememberedDeviceDays} onChange={e=>setPolicy({...policy,rememberedDeviceDays:Number(e.target.value)})}/><small>days (0 disables remembered devices)</small></label><button className="primary-action">Save access policy</button></form></main>;}
+
+import { useEffect, useState } from "react";
+import { PageHeader, Panel } from "../../../components/ui";
+
+export default function AuthPolicyClient({ orgId }: { orgId: string }) {
+  const [policy, setPolicy] = useState({
+    allowPassword: false,
+    allowGoogle: true,
+    allowEmailOtp: true,
+    mfaPolicy: "optional",
+    rememberedDeviceDays: 14,
+  });
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    void fetch(`/api/organizations/auth-policy?orgId=${orgId}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.policy) setPolicy(data.policy);
+      });
+  }, [orgId]);
+
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    const response = await fetch("/api/organizations/auth-policy", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orgId, ...policy }),
+    });
+    const data = await response.json();
+    setMessage(response.ok ? "Authentication policy saved and audited." : data.error);
+  }
+
+  return (
+    <main className="module-page team-security-page">
+      <PageHeader
+        breadcrumbs="Team / Security"
+        title="Team security"
+        description="Organization sign-in policy, 2FA requirements, and delegated admin powers. Personal authenticator setup lives under Account → Security."
+      >
+        <nav className="settings-inline-links" aria-label="Related settings">
+          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+          <a href={`/team/budgets?orgId=${orgId}`}>API budgets</a>
+          <a href={`/team?orgId=${orgId}#custom-providers`}>API keys</a>
+          <a href="/security">Personal 2FA</a>
+        </nav>
+      </PageHeader>
+
+      {message ? (
+        <p role="status" className="telemetry-status">
+          {message}
+        </p>
+      ) : null}
+
+      <Panel as="form" className="auth-policy-form" onSubmit={save}>
+        <h2>Allowed sign-in methods</h2>
+        <p>
+          These methods only authenticate an identity. Membership remains invite-only and verified-email matching still
+          applies.
+        </p>
+        <label className="state-control">
+          <input
+            type="checkbox"
+            checked={policy.allowEmailOtp}
+            onChange={(event) => setPolicy({ ...policy, allowEmailOtp: event.target.checked })}
+          />
+          <span>
+            <strong>Email one-time code</strong>
+            <small>Short-lived, single-use numeric code</small>
+          </span>
+        </label>
+        <label className="state-control">
+          <input
+            type="checkbox"
+            checked={policy.allowPassword}
+            onChange={(event) => setPolicy({ ...policy, allowPassword: event.target.checked })}
+          />
+          <span>
+            <strong>Email and password</strong>
+            <small>Verified email, breach check, reset code, session revocation</small>
+          </span>
+        </label>
+        <label className="state-control">
+          <input
+            type="checkbox"
+            checked={policy.allowGoogle}
+            onChange={(event) => setPolicy({ ...policy, allowGoogle: event.target.checked })}
+          />
+          <span>
+            <strong>Google</strong>
+            <small>Verified Google email and existing membership only</small>
+          </span>
+        </label>
+        <h2>Authenticator-app 2FA</h2>
+        <label>
+          Policy
+          <select
+            value={policy.mfaPolicy}
+            onChange={(event) => setPolicy({ ...policy, mfaPolicy: event.target.value })}
+          >
+            <option value="off">Off</option>
+            <option value="optional">Optional</option>
+            <option value="required">Required for organization access</option>
+          </select>
+        </label>
+        <label>
+          Remember verified device for
+          <input
+            type="number"
+            min={0}
+            max={90}
+            value={policy.rememberedDeviceDays}
+            onChange={(event) => setPolicy({ ...policy, rememberedDeviceDays: Number(event.target.value) })}
+          />
+          <small>days (0 disables remembered devices)</small>
+        </label>
+        <button className="primary-action" type="submit">
+          Save access policy
+        </button>
+      </Panel>
+    </main>
+  );
+}

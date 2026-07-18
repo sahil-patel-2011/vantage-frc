@@ -1,3 +1,4 @@
+import { EmptyState } from "../../../components/ui";
 import CapabilitiesClient from "./capabilities-client";
 import AuthPolicyClient from "./policy-client";
 
@@ -7,11 +8,27 @@ export default async function TeamSecurityPage({
   searchParams: Promise<{ orgId?: string }>;
 }) {
   const { orgId } = await searchParams;
-  if (!orgId) return <main className="content"><h1>Select an organization</h1></main>;
+  if (!orgId) {
+    return (
+      <main className="module-page">
+        <EmptyState
+          soft
+          badge="Setup"
+          badgeTone="setup"
+          title="Select an organization"
+          description="Open Team security from Team admin so the workspace orgId is included."
+        >
+          <a className="app-button secondary" href="/team">
+            Open Team admin
+          </a>
+        </EmptyState>
+      </main>
+    );
+  }
   return (
     <>
       <AuthPolicyClient orgId={orgId} />
-      <main className="intel-app" style={{ paddingTop: 0 }}>
+      <main className="module-page team-security-capabilities" style={{ paddingTop: 0 }}>
         <CapabilitiesClient orgId={orgId} />
       </main>
     </>

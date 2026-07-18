@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PageHeader } from "../../../components/ui";
 
 const blank = {
   dailySpendLimitUsd: "",
@@ -81,23 +82,19 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   }
 
   return (
-    <main className="intel-app">
-      <header className="intel-header">
-        <div>
-          <span className="eyebrow">Vantage / API budgets</span>
-          <h1>Hard limits before every call</h1>
-          <p className="app-muted">
-            Org spend/token caps, layered feature limits, kill switch, and prompt caching. Changes are audited.
-          </p>
-        </div>
-        <nav className="intel-actions" aria-label="Governance links">
+    <main className="module-page budget-page">
+      <PageHeader
+        breadcrumbs="Team / API budgets"
+        title="API budgets"
+        description="Hard spend and token limits checked before every metered AI call. Pair with Team admin API keys and Team security delegation."
+      >
+        <nav className="settings-inline-links" aria-label="Related settings">
+          <a href={`/team${q}`}>Team admin</a>
+          <a href={`/team${q}#custom-providers`}>API keys</a>
+          <a href={`/team/security${q}`}>Team security</a>
           <a href={`/team/usage${q}`}>AI usage</a>
-          <a href={`/team/ai-runs${q}`}>AI runs</a>
-          <a href={`/team/ai-memory${q}`}>AI memory</a>
-          <a href={`/chat${q}`}>Assistant</a>
-          <a href={`/team${q}`}>Team admin →</a>
         </nav>
-      </header>
+      </PageHeader>
 
       {message ? <p className="telemetry-status">{message}</p> : null}
 
