@@ -88,6 +88,10 @@
 .product-hub-panel .batt-related .product-hub-related {
   margin-bottom: 12px;
 }
+.product-hub-panel .todos-page {
+  max-width: none;
+  padding-bottom: 24px;
+}
 .product-hub-panel .messages-page {
   width: 100%;
   max-width: none;

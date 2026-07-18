@@ -50,7 +50,8 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/team/calendar")).toBe("Team / Calendar");
     expect(breadcrumbForPath("/calendar")).toBe("Team / Season Calendar");
     expect(breadcrumbForPath("/shifts")).toBe("Team / Shifts");
-    expect(breadcrumbForPath("/tasks")).toBe("Team / Todos");
+    expect(breadcrumbForPath("/tasks")).toBe("Team / Build-Season Task Board");
+    expect(breadcrumbForPath("/todos")).toBe("Team / Todos");
     expect(breadcrumbForPath("/command")).toBe("Competition / Command");
     expect(breadcrumbForPath("/my-day")).toBe("Competition / My Day");
     expect(breadcrumbForPath("/start")).toBe("Home / Your path");

@@ -18,7 +18,7 @@ const LEGACY_REDIRECTS: Array<{ source: string; destination: string }> = [
   { source: "/scouting", destination: "/competition?tab=scouting" },
   { source: "/pick-clock", destination: "/competition?tab=pick-clock" },
   { source: "/chemistry", destination: "/competition?tab=chemistry" },
-  { source: "/tasks", destination: "/team?tab=todos" },
+  // Soft-UI shared todos live on the Team hub; `/tasks` remains the build-season board.
   { source: "/todos", destination: "/team?tab=todos" },
   { source: "/messages", destination: "/team?tab=messages" },
   { source: "/practice", destination: "/team?tab=practice" },

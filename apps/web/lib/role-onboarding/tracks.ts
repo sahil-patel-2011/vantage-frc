@@ -127,7 +127,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "How students move from first login to owning work.",
     source: "role",
     checks: checks([
-      ["todos", "Claim a todo", "Pick something small and finish it this week.", "/tasks"],
+      ["todos", "Claim a todo", "Pick something small and finish it this week.", "/team?tab=todos"],
       ["messages", "Introduce yourself in Messages", "Say your subteam and what you want to learn.", "/messages"],
       ["attendance", "Understand attendance", "Build hours and practice roll expectations.", "/attendance"],
       ["goals", "See season goals", "Know what done looks like for the team.", "/goals"],
