@@ -56,7 +56,15 @@ export type CadBriefSeed = {
   title: string;
   request: string;
   sources: Array<{
-    type: string;
+    type:
+      | "private_memory"
+      | "team_memory"
+      | "module_data"
+      | "module_fact"
+      | "artifact"
+      | "task"
+      | "github_file"
+      | "vscode_selection";
     id: string;
     content: string;
     importance: number;
@@ -491,7 +499,7 @@ export function buildCadBriefFromIntelligence(input: {
       classification: "model_inference",
     },
     ...requirements.slice(0, 6).map((capability, index) => ({
-      type: "module_data",
+      type: "module_data" as const,
       id: `kickoff-direction:${index}`,
       content: capability,
       importance: 0.8,
