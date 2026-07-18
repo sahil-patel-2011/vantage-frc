@@ -61,7 +61,7 @@ CD, verbatim: "we only retain students for 2 years, so institutional knowledge w
 
 26. ~~**[GAP] Team knowledge base / wiki with structured handoff templates**~~ — **shipped:** multi-page wiki at `/team/knowledge` (`knowledge_pages` + handoff templates) with FRC Assistant / CAD `knowledge.*` retrieval tools.
 27. **Graduation exit-interview capture flow** — structured prompts for outgoing seniors/mentors ("what do you know that nobody else does?") feeding directly into #26, targeting the "Coach Steve is the catalog, and if he wins the lottery we're done" failure mode.
-28. **Role-based onboarding checklists, auto-assigned by subteam** — CD: a new mentor with a 9-page onboarding doc still didn't know "whether to start on software, hardware, scouting, strategy, driving." Turn the wiki into a guided path, not a wall of text.
+28. **Role-based onboarding checklists, auto-assigned by subteam** — ✅ `/start` Soft-UI path; tracks from team role + primary focus + calendar subteam name match; progress in `0163_role_onboarding`. CD: a new mentor with a 9-page onboarding doc still didn't know "whether to start on software, hardware, scouting, strategy, driving."
 29. **Season postmortem generator** — auto-compile the season's decisions (`decision_records`), risks (`risk_register`), and incidents into a single "what we learned" doc at season end, so it survives graduation without anyone hand-writing it.
 30. ~~**Cross-season searchable decision/design history** [EXTEND]~~ — **shipped:** wiki search spans `decision_records` + `design_reviews`; pages link to both; agents retrieve via `knowledge.search` / `knowledge.get_page`.
 

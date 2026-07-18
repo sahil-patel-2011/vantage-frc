@@ -204,6 +204,30 @@ describe("chat auto-tool planning", () => {
     const empty = annotateToolOutput("scouting.team", [], { teamKey: "frc254" });
     expect(empty.status).toBe("empty");
     expect(formatGroundedReply("scout 254", [empty])).toContain("nothing was invented");
+    const withConflict = annotateToolOutput(
+      "scouting.team",
+      [
+        {
+          id: "e1",
+          conflictCount: 1,
+          excludedFields: ["climb"],
+          trustedPayload: { notes: "ok" },
+          payload: { climb: "none", notes: "ok" },
+        },
+      ],
+      { teamKey: "frc254" },
+    );
+    expect(withConflict.summary).toMatch(/TBA conflicts|trustedPayload/i);
+    const strategyTrust = annotateToolOutput(
+      "strategy.match",
+      {
+        prediction: { pRed: 0.5 },
+        strategy: null,
+        scoutTbaConflicts: [{ fieldKey: "climb", status: "conflict" }],
+      },
+      { matchKey: "2026nysu_qm1" },
+    );
+    expect(strategyTrust.summary).toMatch(/TBA-contradicted/);
   });
 
   it("auto-selects strategy.match for matchup questions with event context", async () => {
@@ -223,5 +247,37 @@ describe("chat auto-tool planning", () => {
   it("does not invent tool calls for unrelated chat", async () => {
     const { planChatToolCalls } = await import("../src/auto-tools");
     expect(planChatToolCalls("Thanks — remind me how private memory works.")).toEqual([]);
+  });
+
+  it("plans finance.orders for open purchase-request questions", async () => {
+    const { planChatToolCalls, annotateToolOutput } = await import("../src/auto-tools");
+    const calls = planChatToolCalls("What purchase requests are awaiting approval?");
+    expect(calls.some((call) => call.name === "finance.orders")).toBe(true);
+    const empty = annotateToolOutput("finance.orders", { orders: [], financeAiEnabled: false, aiSummary: null });
+    expect(empty.status).toBe("empty");
+  });
+
+  it("plans finance.create_purchase_request when CAD needs a part", async () => {
+    const { planChatToolCalls } = await import("../src/auto-tools");
+    const calls = planChatToolCalls("Need part NEO 550 for the intake roller", { capability: "cad" });
+    expect(calls.some((call) => call.name === "finance.create_purchase_request")).toBe(true);
+    expect(calls.some((call) => call.name === "finance.orders")).toBe(true);
+    const create = calls.find((call) => call.name === "finance.create_purchase_request");
+    expect((create?.input as { source?: string }).source).toBe("cad");
+  });
+
+  it("auto-selects knowledge.search for wiki / decision history questions", async () => {
+    const { planChatToolCalls, annotateToolOutput } = await import("../src/auto-tools");
+    const calls = planChatToolCalls("Why did we choose swerve over tank last season?");
+    expect(calls.some((call) => call.name === "knowledge.search")).toBe(true);
+    const empty = annotateToolOutput("knowledge.search", [], { query: "swerve" });
+    expect(empty.status).toBe("empty");
+    expect(empty.summary).toMatch(/No wiki/);
+  });
+
+  it("CAD capability plans knowledge retrieval for briefs", async () => {
+    const { planChatToolCalls } = await import("../src/auto-tools");
+    const calls = planChatToolCalls("Design a 2-stage elevator", { capability: "cad" });
+    expect(calls.some((call) => call.name === "knowledge.search")).toBe(true);
   });
 });
