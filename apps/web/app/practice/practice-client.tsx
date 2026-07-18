@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
   actionBreakdown,
   sessionStats,
@@ -386,10 +387,11 @@ export default function PracticeClient() {
   if (fetchFailed || !view) {
     return (
       <main className="practice-page">
+        <TeamOpsNav active="practice" />
         <header className="practice-hero">
           <div>
-            <p className="practice-kicker">Team · Practice Planner</p>
-            <h1>Practice with a plan.</h1>
+            <p className="practice-kicker">Team / Practice</p>
+            <h1>Practice</h1>
             <p>Sessions, goals, and cycle times for the drive team.</p>
           </div>
         </header>
@@ -411,10 +413,11 @@ export default function PracticeClient() {
   if (view.status === "setup_required") {
     return (
       <main className="practice-page">
+        <TeamOpsNav active="practice" />
         <header className="practice-hero">
           <div>
-            <p className="practice-kicker">Team · Practice Planner</p>
-            <h1>Practice with a plan.</h1>
+            <p className="practice-kicker">Team / Practice</p>
+            <h1>Practice</h1>
             <p>Log drive-team sessions, set goals, and track cycle times against real attendance and build work.</p>
           </div>
         </header>
@@ -436,19 +439,20 @@ export default function PracticeClient() {
 
   return (
     <main className="practice-page">
+      <TeamOpsNav orgId={orgId} active="practice" />
       <header className="practice-hero">
         <div>
-          <p className="practice-kicker">Team · Practice Planner{context.teamNumber ? ` · ${context.teamNumber}` : ""}</p>
-          <h1>Practice with a plan.</h1>
+          <p className="practice-kicker">Team / Practice{context.teamNumber ? ` · ${context.teamNumber}` : ""}</p>
+          <h1>Practice</h1>
           <p>
             Schedule drive sessions, write the goal for the day, time every cycle, and keep attendance and build tasks
             in the same loop for {context.orgName ?? "your team"}.
           </p>
           <div className="practice-hero-links">
-            <a href={withOrg("/tasks", orgId)}>Build tasks</a>
-            <a href={withOrg("/hours", orgId)}>Build hours</a>
+            <a href={withOrg("/tasks", orgId)}>Todos</a>
+            <a href={withOrg("/messages", orgId)}>Messages</a>
+            <a href={withOrg("/team/calendar", orgId)}>Calendar</a>
             <a href={withOrg("/attendance", orgId)}>Attendance</a>
-            <a href={withOrg("/meetings", orgId)}>Meetings</a>
           </div>
         </div>
         <div className="practice-hero-score">
