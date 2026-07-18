@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense">
+    <div className="marketing-site marketing-v2 marketing-dense marketing-pro">
       <SiteHeader />
       <main className="pricing-page">
         <section className="pricing-hero brand-route-hero">
@@ -23,6 +23,14 @@ export default function PricingPage() {
             tools, and context with included API allowance at published provider rates—then a hard stop unless you buy
             Usage Credits or enable PAYG. No per-seat student pricing and no surprise charges.
           </p>
+          <div className="route-hero-actions">
+            <a className="button primary" href="/#waitlist">
+              Join the waitlist
+            </a>
+            <a className="button secondary" href="/features">
+              See the product
+            </a>
+          </div>
         </section>
 
         <PricingCatalog />
@@ -40,19 +48,19 @@ export default function PricingPage() {
               non-withdrawable.
             </p>
             <p>
-              After included allowance is exhausted: <strong>hard stop</strong> unless you opt into Usage Credits or
-              PAYG (explicit enable + spend cap). Prepaid stopping at zero is the default. BYOK/local cost does not
-              consume managed allowance, but plan entitlements and org limits still apply. Managed is stronger via
-              integrated routing, tools, and context—not because BYOK is sabotaged.
+              After included allowance is exhausted: <strong>hard stop</strong> unless you opt into Usage Credits or PAYG
+              (explicit enable + spend cap). Prepaid stopping at zero is the default. BYOK/local cost does not consume
+              managed allowance, but plan entitlements and org limits still apply. Managed is stronger via integrated
+              routing, tools, and context—not because BYOK is sabotaged.
             </p>
             <p>
-              Sponsored free AI, when available, is clearly labeled, low priority, capped per user/org/IP, and never
-              falls through to a paid model. Exhaustion offers BYOK, local relay, or upgrade.
+              Sponsored free AI, when available, is clearly labeled, low priority, capped per user/org/IP, and never falls
+              through to a paid model. Exhaustion offers BYOK, local relay, or upgrade.
             </p>
             <p>
-              Checkout stays inactive until Stripe credentials and admin-configured Price IDs exist. Until then, join
-              the early-access waitlist—plan numbers live in the admin-configurable catalog and can change for future
-              periods with notice; active paid periods keep their snapshotted terms.
+              Checkout stays inactive until Stripe credentials and admin-configured Price IDs exist. Until then, join the
+              early-access waitlist—plan numbers live in the admin-configurable catalog and can change for future periods
+              with notice; active paid periods keep their snapshotted terms.
             </p>
             <p className="pricing-note">
               Catalog defaults: Free $0 / $0 API · Individual Pro $49 / $40 · Individual Max $79 / $68 · Team Pro $149 /
@@ -65,6 +73,20 @@ export default function PricingPage() {
               dashboards or fabricated win rates.
             </p>
           </div>
+        </section>
+
+        <section className="waitlist v2-final-waitlist pricing-waitlist" id="waitlist">
+          <div>
+            <span className="section-id">EARLY ACCESS</span>
+            <h2>Join the waitlist before checkout opens.</h2>
+            <p>
+              Plans are published now; Stripe checkout activates when credentials and Price IDs are configured. Until
+              then, the waitlist is the path in.
+            </p>
+          </div>
+          <a className="button primary" href="/#waitlist">
+            Join the waitlist
+          </a>
         </section>
       </main>
       <SiteFooter />
