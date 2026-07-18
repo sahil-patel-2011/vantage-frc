@@ -73,13 +73,43 @@ function briefFrom(input:{request:string;sources:ContextSource[];knowledgeNotes?
   };
 }
 
-/** CAD briefs always attempt wiki/decision retrieval so prior design choices ground geometry plans. */
+/** Shared Assistant/Strategy/CAD tool graph for engineering briefs (no copy-paste). */
+export function planCadStrategyToolCalls(
+  request: string,
+  options: { matchKey?: string; seasonYear?: number; activeEventKey?: string | null } = {},
+) {
+  const seasonYear = options.seasonYear ?? new Date().getUTCFullYear();
+  const planned = planChatToolCalls(request, {
+    capability: "cad",
+    selected: options.matchKey ? { matchKey: options.matchKey } : undefined,
+    seasonYear,
+    activeEventKey: options.activeEventKey,
+  });
+  const preferred = planned.filter((call) =>
+    [
+      "strategy.match",
+      "strategy.design",
+      "kickoff.intelligence",
+      "kickoff.rules",
+      "rules.compliance",
+      "cad.briefs",
+      "knowledge.search",
+      "knowledge.get_page",
+      "fmea.repeat",
+    ].includes(call.name),
+  );
+  if (preferred.length) return preferred.slice(0, 10);
+  return [
+    { name: "kickoff.intelligence", input: { seasonYear } },
+    { name: "strategy.design", input: { seasonYear } },
+    { name: "kickoff.rules", input: { seasonYear } },
+    { name: "rules.compliance", input: { proposal: request.trim().slice(0, 8_000), seasonYear } },
+  ];
+}
+
+/** @deprecated Prefer planCadStrategyToolCalls */
 export function planCadKnowledgeToolCalls(request: string) {
-  const planned = planChatToolCalls(request, { capability: "cad" });
-  const knowledge = planned.filter((call) => call.name.startsWith("knowledge."));
-  if (knowledge.length) return knowledge.slice(0, 3);
-  const query = request.trim().slice(0, 200);
-  return query ? [{ name: "knowledge.search", input: { query, limit: 6 } }] : [];
+  return planCadStrategyToolCalls(request);
 }
 
 export function validateCadPlan(actions:CadAction[]){
@@ -95,10 +125,10 @@ export class CadRepository{
  constructor(private readonly client:PoolClient){}
  async createBriefJob(input:{orgId:string;userId:string;threadId?:string;requestId:string;title:string;request:string;sources:ContextSource[];platform?:"onshape"|"fusion360"|"mock";executionMode?:"hosted"|"local"}){
   const registry=createVantageToolRegistry();
-  const knowledgeCalls=planCadKnowledgeToolCalls(input.request);
+  const strategyToolCalls=planCadStrategyToolCalls(input.request);
   const knowledgeNotes:string[]=[];
   const knowledgeSources:ContextSource[]=[];
-  for(const call of knowledgeCalls){
+  for(const call of strategyToolCalls.filter((entry)=>entry.name.startsWith("knowledge."))){
     try{
       const output=await registry.invoke(call.name,{client:this.client,orgId:input.orgId,userId:input.userId,activeEventKey:null},call.input);
       if(Array.isArray(output)){
@@ -137,7 +167,7 @@ export class CadRepository{
     }
   }
   const mergedSources=[...knowledgeSources,...input.sources];
-  const brief=briefFrom({request:input.request,sources:mergedSources,knowledgeNotes});
+  const seed=briefFrom({request:input.request,sources:mergedSources,knowledgeNotes});
   const orchestrated=await new AIOrchestrator(this.client,registry).run({
     orgId:input.orgId,
     userId:input.userId,
@@ -146,14 +176,15 @@ export class CadRepository{
     capability:"cad",
     privacyScope:"team",
     message:input.request,
-    adapter:new BriefAdapter(brief),
+    adapter:new BriefAdapter(seed.sourceRefs,knowledgeNotes),
     contextSources:mergedSources,
-    toolCalls:[],
+    autoTools:true,
+    toolCalls:strategyToolCalls,
     usesOrgData:true,
   });
   const parsed=JSON.parse(orchestrated.text) as EngineeringBrief;const result=await this.client.query<{id:string}>(`INSERT INTO cad_jobs(org_id,created_by,thread_id,execution_mode,platform,title,brief,status) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,'awaiting_brief_confirmation') RETURNING id`,[input.orgId,input.userId,input.threadId??null,input.executionMode??"hosted",input.platform??"mock",input.title,JSON.stringify(parsed)]);const jobId=result.rows[0]!.id;
   const aiArtifact=await new AIOrchestrator(this.client).createArtifact({runId:orchestrated.runId,orgId:input.orgId,userId:input.userId,threadId:input.threadId,kind:"cad_brief",title:input.title,content:parsed as unknown as Record<string,unknown>,claims:parsed.sourceRefs.map(ref=>({claim:`Source used: ${ref.id}`,classification:ref.classification==="hard_metric"?"hard_metric":ref.classification==="scout_observation"?"scout_observation":ref.classification==="researched_claim"?"researched_claim":"model_inference",sourceIds:[ref.id]}))});
-  const checksum=createHash("sha256").update(JSON.stringify(parsed)).digest("hex");await this.client.query(`INSERT INTO cad_artifacts(org_id,job_id,type,title,content,checksum,source_refs,created_by) VALUES($1,$2,'engineering_brief',$3,$4::jsonb,$5,$6::jsonb,$7)`,[input.orgId,jobId,input.title,JSON.stringify({...parsed,aiArtifactId:aiArtifact.id}),checksum,JSON.stringify(parsed.sourceRefs),input.userId]);await this.audit(input.orgId,jobId,input.userId,"cad.brief.created",{aiRunId:orchestrated.runId,aiArtifactId:aiArtifact.id,knowledgeTools:knowledgeCalls.map((c)=>c.name)});return{jobId,brief:parsed,aiRunId:orchestrated.runId};
+  const checksum=createHash("sha256").update(JSON.stringify(parsed)).digest("hex");await this.client.query(`INSERT INTO cad_artifacts(org_id,job_id,type,title,content,checksum,source_refs,created_by) VALUES($1,$2,'engineering_brief',$3,$4::jsonb,$5,$6::jsonb,$7)`,[input.orgId,jobId,input.title,JSON.stringify({...parsed,aiArtifactId:aiArtifact.id}),checksum,JSON.stringify(parsed.sourceRefs),input.userId]);await this.audit(input.orgId,jobId,input.userId,"cad.brief.created",{aiRunId:orchestrated.runId,aiArtifactId:aiArtifact.id,graphTools:strategyToolCalls.map((c)=>c.name)});return{jobId,brief:parsed,aiRunId:orchestrated.runId,tools:orchestrated.toolOutputs};
  }
  async confirmBrief(orgId:string,jobId:string,userId:string,brief:EngineeringBrief){const result=await this.client.query(`UPDATE cad_jobs SET brief=$4::jsonb,brief_confirmed_at=now(),status='planning',updated_at=now() WHERE id=$1 AND org_id=$2 AND created_by=$3 RETURNING id`,[jobId,orgId,userId,JSON.stringify(brief)]);if(!result.rowCount)throw new Error("CAD job is unavailable");await this.audit(orgId,jobId,userId,"cad.brief.confirmed",{});}
  async savePlan(orgId:string,jobId:string,userId:string,actions:CadAction[]){validateCadPlan(actions);await this.client.query("DELETE FROM cad_job_steps WHERE job_id=$1 AND org_id=$2 AND status='planned'",[jobId,orgId]);for(const[index,action]of actions.entries())await this.client.query(`INSERT INTO cad_job_steps(org_id,job_id,sequence,operation,idempotency_key,parameters,requires_approval,approval_status) VALUES($1,$2,$3,$4,$5,$6::jsonb,$7,$8)`,[orgId,jobId,index+1,action.operation,`${jobId}:${index+1}:${createHash("sha256").update(JSON.stringify(action)).digest("hex").slice(0,16)}`,JSON.stringify({...action.parameters,reason:action.reason}),action.requiresApproval,action.requiresApproval?"pending":"approved"]);await this.client.query(`UPDATE cad_jobs SET action_plan=$3::jsonb,status='awaiting_action_approval',updated_at=now() WHERE id=$1 AND org_id=$2 AND brief_confirmed_at IS NOT NULL`,[jobId,orgId,JSON.stringify(actions)]);await this.audit(orgId,jobId,userId,"cad.plan.saved",{steps:actions.length});}

@@ -119,8 +119,12 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
     NEED_PART_RE.test(text) ||
     (isCadSurface && /\bneed\b/i.test(text) && /\b(part|buy|order|purchase)\b/i.test(text));
   const wantsCad = CAD_RE.test(text) || isCadSurface;
-  const wantsFmea = FMEA_RE.test(text) || PIT_OPS_RE.test(text);
+  const wantsFmea = FMEA_RE.test(text) || PIT_OPS_RE.test(text) || isCadSurface;
   const wantsKnowledge = KNOWLEDGE_RE.test(text) || isCadSurface;
+  const wantsCreateBrief =
+    /\b(create|draft|write|generate|start)\b.{0,40}\b(cad|engineering|design)\s*brief\b/i.test(text) ||
+    /\b(cad|engineering|design)\s*brief\b.{0,40}\b(create|draft|write|generate|start)\b/i.test(text);
+  const isStrategySurface = options.capability === "strategy";
 
   const calls: PlannedToolCall[] = [];
   const seen = new Set<string>();
@@ -138,6 +142,7 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
   }
 
   if (wantsFmea) {
+    add("fmea.open_risks", { seasonYear, limit: 12 });
     add("fmea.repeat", { seasonYear });
   }
 
@@ -174,37 +179,52 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
     /\b(rule(?:s)?|compliance|legal|inspection|constraint|frame\s*perimeter|extension|weight\s*limit|G\d{2,4}|R\d{2,4})\b/i.test(
       text,
     );
-  if (isCadSurface || wantsCad || wantsKickoff || wantsRules) {
+  if (isCadSurface || wantsCad || wantsKickoff || wantsRules || isStrategySurface) {
     add("kickoff.intelligence", { seasonYear });
     add("strategy.design", { seasonYear });
     add("kickoff.rules", { seasonYear });
-    add("rules.compliance", { proposal: text.slice(0, 8_000), seasonYear });
+    if (isCadSurface || wantsRules || wantsCad) {
+      add("rules.compliance", { proposal: text.slice(0, 8_000), seasonYear });
+    }
   }
 
   if (isCadSurface || wantsCad) {
     add("cad.briefs", { limit: 6 });
   }
 
+  if (wantsCreateBrief && !isCadSurface) {
+    add("cad.create_brief", {
+      request: text.slice(0, 8_000),
+      title: text.slice(0, 120),
+      seasonYear,
+      matchKey: matchKeys[0] ?? options.selected?.matchKey,
+    });
+  }
+
   for (const matchKey of matchKeys) {
-    if (wantsStrategy || STRATEGY_RE.test(text) || matchKeys.length) {
+    if (wantsStrategy || STRATEGY_RE.test(text) || matchKeys.length || isStrategySurface) {
       add("strategy.match", { matchKey });
     }
   }
 
   for (const teamKey of teamKeys) {
-    if (wantsScout || (!wantsStrategy && !wantsResearch) || wantsMetrics) {
-      if (wantsScout || wantsMetrics || TEAM_INTENT_RE.test(text)) {
-        add("reference.team", { teamKey });
-      }
+    if (wantsScout || wantsMetrics || TEAM_INTENT_RE.test(text) || isStrategySurface) {
+      add("reference.team", { teamKey });
     }
-    if (wantsScout || TEAM_INTENT_RE.test(text) || (!matchKeys.length && !wantsResearch && !isCadSurface)) {
+    // Strategy cites scout validation + TBA trust strip alongside reference metrics.
+    if (
+      wantsScout ||
+      TEAM_INTENT_RE.test(text) ||
+      isStrategySurface ||
+      (!matchKeys.length && !wantsResearch && !isCadSurface)
+    ) {
       add("scouting.team", { teamKey });
     }
     if (wantsResearch) add("research.findings", { teamKey });
   }
 
   // Strategy questions without an explicit match still benefit from selected match context.
-  if (!matchKeys.length && options.selected?.matchKey && wantsStrategy) {
+  if (!matchKeys.length && options.selected?.matchKey && (wantsStrategy || isStrategySurface)) {
     add("strategy.match", { matchKey: options.selected.matchKey });
   }
 
@@ -606,7 +626,7 @@ export function formatGroundedReply(message: string, tools: AnnotatedToolOutput[
         : "";
     const sourceNote =
       tool.dataSource && tool.dataSource.mode !== "ok"
-        ? ` · data source ${tool.dataSource.mode}${tool.dataSource.usingLastGoodCache ? " (last-good cache)" : ""}`
+        ? ` · data source ${tool.dataSource.mode}${tool.dataSource.usingLastGoodCache ? " (last-good Neon cache)" : ""}`
         : "";
     if (tool.status === "empty" || tool.status === "setup_required") {
       return `- ${tool.name}${target ? ` (${target})` : ""}: ${tool.summary}${sourceNote}`;
@@ -615,10 +635,10 @@ export function formatGroundedReply(message: string, tools: AnnotatedToolOutput[
   });
   const emptyOnly = tools.every((tool) => tool.status !== "ok");
   const degraded = tools.find((tool) => tool.dataSource && tool.dataSource.mode !== "ok")?.dataSource;
-  const lead = emptyOnly
-    ? "I looked up your event-scoped sources and found no stored rows yet — nothing was invented."
-    : degraded
-      ? `Grounded in authorized Vantage tools using the last-good Neon cache — ${degraded.message}`
-      : "Grounded in authorized Vantage tools (Neon/TBA/scout). Sources are labeled below.";
+  const lead = degraded
+    ? `Grounded in authorized Vantage tools using the last-good Neon cache — ${degraded.message}`
+    : emptyOnly
+      ? "I looked up your event-scoped sources and found no stored rows yet — nothing was invented."
+      : "Grounded in authorized Vantage tools (Neon/TBA/scout/kickoff). Sources are labeled below.";
   return `Vantage response: ${message.trim()}\n\n${lead}\n${lines.join("\n")}`;
 }
