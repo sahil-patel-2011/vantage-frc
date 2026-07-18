@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  addOption,
   definitionFromDraft,
   draftFromDefinition,
+  moveOption,
   moveQuestion,
+  needsOptionEditor,
   newDraftQuestion,
   parseOptions,
+  removeOption,
+  resolveDraftPublishStatus,
+  scoutingPostSaveNextSteps,
+  serializeOptions,
   slugifyKey,
+  updateOptionAt,
   validateDraft,
 } from "./form-builder";
 
@@ -101,5 +109,59 @@ describe("form-builder", () => {
       ],
     });
     expect(draft.questions.map((q) => q.label)).toEqual(["Auto"]);
+  });
+
+  it("edits MC/dropdown option rows", () => {
+    expect(needsOptionEditor("mc")).toBe(true);
+    expect(needsOptionEditor("short")).toBe(false);
+    expect(serializeOptions(["none", "park", "climb"])).toBe("none, park, climb");
+    expect(addOption(["a"], "b")).toEqual(["a", "b"]);
+    expect(updateOptionAt(["a", "b"], 1, "beta")).toEqual(["a", "beta"]);
+    expect(removeOption(["a", "b", "c"], 1)).toEqual(["a", "c"]);
+    expect(moveOption(["a", "b", "c"], 2, 0)).toEqual(["c", "a", "b"]);
+  });
+
+  it("reports draft vs published Soft-UI status", () => {
+    const questions = [
+      newDraftQuestion({ label: "Climb", kind: "dropdown", optionsText: "none, park" }),
+    ];
+    const unpublished = resolveDraftPublishStatus({
+      published: null,
+      draftTitle: "Match",
+      draftQuestions: questions,
+    });
+    expect(unpublished.kind).toBe("unpublished");
+
+    const definition = definitionFromDraft("Match", questions);
+    const published = resolveDraftPublishStatus({
+      published: { version: 3, definition },
+      draftTitle: "Match",
+      draftQuestions: questions,
+    });
+    expect(published.kind).toBe("published");
+    expect(published.version).toBe(3);
+
+    const dirty = resolveDraftPublishStatus({
+      published: { version: 3, definition },
+      draftTitle: "Match",
+      draftQuestions: [
+        ...questions,
+        newDraftQuestion({ label: "Notes", kind: "free" }),
+      ],
+    });
+    expect(dirty.kind).toBe("draft_changes");
+  });
+
+  it("builds post-save next-step links to strategy and coverage", () => {
+    const steps = scoutingPostSaveNextSteps("org-1", {
+      eventKey: "2026casj",
+      entryType: "match",
+    });
+    expect(steps.map((s) => s.id)).toEqual(["strategy", "coverage", "lineup"]);
+    expect(steps[0]?.href).toContain("tab=strategy");
+    expect(steps[0]?.href).toContain("orgId=org-1");
+    expect(steps[1]?.href).toContain("/scout-coverage-live");
+    expect(steps[1]?.href).toContain("eventKey=2026casj");
+    expect(steps.every((s) => !/demo/i.test(s.label + s.detail))).toBe(true);
   });
 });
