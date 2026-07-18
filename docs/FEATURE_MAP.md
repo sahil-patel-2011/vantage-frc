@@ -12,6 +12,7 @@
 | Batteries Soft-UI | `/team?tab=batteries`, `/build?tab=batteries` (also `/batteries`) | Pack list, rotation, health/log empty states, next actions; IR/cycles from real logs only — never DEMO metrics; cross-links to FMEA / Pit / rotation / forecast |
 | Knowledge Soft-UI | `/team?tab=knowledge` (also `/team/knowledge`) | Page list filters, empty/setup shells, editor affordances (dirty/char count/md chips); cross-links to Messages / FMEA / CAD; page mutations stay org-scoped — never DEMO articles |
 | FMEA Soft-UI | `/team?tab=fmea`, `/build?tab=fmea` (also `/fmea`) | Risk rows with O×S×D + RPN, empty/setup + next actions; cross-links to Knowledge / CAD / Prototypes; RPN only from logged scores — never DEMO numbers |
+| Risk Register Soft-UI | `/risks` | Proactive season L×I register (distinct from FMEA); empty/setup + next actions; top score blank until real entries; cross-links to FMEA / Knowledge |
 | Logistics Soft-UI | `/logistics` (also `/travel`) | Hotels, rooming, travel legs, checklist, on-duty mentors; empty/setup states; cross-links to Event Day / My Day / Team calendar; tripId/hotelId org-scoped — never DEMO lodging |
 | Business | `/business` | Overview · Budget · Orders · Sponsors · Sponsorship · Grants · … |
 | Business Soft-UI CRM | `/business?tab=sponsors` · `/business?tab=placements` | Soft-UI pipeline / packages / placements; empty/setup + next actions; cross-links to fundraisers, grants, orders, Finance-in-AI; packageId org-scoped — never DEMO sponsor metrics |

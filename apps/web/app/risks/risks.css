@@ -1,0 +1,134 @@
+/* Season Risk Register — Soft-UI surface, .risks-* prefixed, theme-aware.
+   Distinct from FMEA: proactive L×I season risks vs logged O×S×D failures. */
+.risks-page{max-width:1100px;margin:0 auto}
+.risks-page input,.risks-page select,.risks-page textarea{
+  width:100%;min-height:40px;padding:10px 12px;color:var(--soft-ink,var(--app-ink));
+  background:var(--soft-bg,var(--app-bg));border:1px solid var(--soft-line,var(--app-line));
+  border-radius:12px;font:inherit;
+}
+.risks-page select{cursor:pointer}
+
+.risks-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.risks-related{display:grid;gap:0;margin:0 0 4px}
+.risks-related .product-hub-related{margin-bottom:10px}
+
+.risks-next-actions{display:grid;gap:10px;margin:0 0 16px;padding:16px 18px}
+.risks-next-actions>header{display:grid;gap:4px}
+.risks-next-actions h2{margin:0;font-size:15px;letter-spacing:-.01em}
+.risks-next-actions>header p,.risks-next-actions>p{margin:0;color:var(--app-muted);font-size:12px;line-height:1.4}
+.risks-next-actions ol{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.risks-next-actions li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--app-line);background:var(--app-bg)}
+.risks-next-actions li.primary{border-color:color-mix(in srgb,var(--app-accent) 35%,var(--app-line));background:color-mix(in srgb,var(--app-accent) 8%,var(--app-bg))}
+.risks-next-actions li div{display:grid;gap:2px;min-width:0}
+.risks-next-actions li strong{font-size:14px}
+.risks-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
+.risks-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px;font-size:12px}
+
+.risks-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px}
+.risks-summary-tile{display:grid;gap:3px;padding:16px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius,12px)}
+.risks-summary-tile strong{font-size:24px;line-height:1;font-variant-numeric:tabular-nums}
+.risks-summary-tile span{color:var(--app-muted);font-size:11px}
+.risks-summary-tile.warn strong{color:var(--app-warn,#c9a900)}
+.risks-summary-tile.critical strong{color:var(--app-critical,#c02626)}
+.risks-level-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+.risks-layout{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin-bottom:4px}
+.risks-panel{display:grid;gap:12px;align-content:start;min-width:0}
+.risks-panel h2{margin:0;font-size:16px;letter-spacing:-.01em}
+.risks-panel>p{margin:0;color:var(--app-muted);font-size:13px;line-height:1.4}
+
+.risks-matrix-wrap{display:flex;gap:8px;align-items:stretch}
+.risks-matrix-axis{display:flex;align-items:center}
+.risks-matrix-axis span{
+  writing-mode:vertical-rl;transform:rotate(180deg);font-size:0.75rem;color:var(--app-muted);
+}
+.risks-matrix{display:grid;grid-template-columns:repeat(5,44px);gap:4px}
+.risks-matrix-cell{
+  height:44px;border-radius:8px;color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:0.95rem;font-variant-numeric:tabular-nums;
+}
+.risks-matrix-cell.empty{opacity:0.28}
+.risks-matrix-cell.low{background:#2f9e57}
+.risks-matrix-cell.moderate{background:#c9a900}
+.risks-matrix-cell.high{background:#d9822b}
+.risks-matrix-cell.critical{background:#c02626}
+.risks-matrix-labels{display:grid;grid-template-columns:repeat(5,44px);gap:4px;margin-top:4px}
+.risks-matrix-labels span,.risks-matrix-caption{text-align:center;font-size:0.75rem;color:var(--app-muted)}
+.risks-matrix-caption{margin-top:2px}
+
+.risks-top-list,.risks-battery-signals{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.risks-top-list li,.risks-battery-signals li{
+  display:grid;gap:4px;padding:12px 14px;border-radius:12px;
+  border:1px solid var(--app-line);background:var(--app-bg);
+}
+.risks-top-list .who,.risks-battery-signals .who{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.risks-top-list .who strong,.risks-battery-signals strong{font-size:14px}
+.risks-top-list .meta,.risks-battery-signals .meta{color:var(--app-muted);font-size:12px;line-height:1.35}
+
+.risks-list{display:grid;gap:12px}
+.risks-row{
+  display:grid;gap:10px;padding:14px 16px;border-radius:14px;
+  border:1px solid var(--app-line);background:var(--app-surface);
+}
+.risks-row.closed{opacity:0.6}
+.risks-row.critical{border-color:color-mix(in srgb,#c02626 40%,var(--app-line))}
+.risks-row.high{border-color:color-mix(in srgb,#d9822b 45%,var(--app-line))}
+.risks-row.moderate{border-color:color-mix(in srgb,#c9a900 40%,var(--app-line))}
+.risks-row.overdue{box-shadow:inset 3px 0 0 #c02626}
+
+.risks-row-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.risks-row-title{display:grid;gap:4px;min-width:0}
+.risks-row-title strong{font-size:15px;letter-spacing:-.01em;line-height:1.3}
+.risks-row-scores{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
+.risks-score{
+  display:inline-flex;align-items:baseline;gap:6px;padding:6px 10px;border-radius:10px;
+  background:var(--app-soft,#eef2f7);border:1px solid var(--app-line);font-variant-numeric:tabular-nums;
+}
+.risks-score em{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--app-muted)}
+.risks-score strong{font-size:18px;line-height:1}
+.risks-li{
+  display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:10px;
+  border:1px dashed var(--app-line);color:var(--app-muted);font-size:12px;font-variant-numeric:tabular-nums;font-weight:600;
+}
+.risks-badge{
+  display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:999px;
+  border:1px solid var(--app-line);background:var(--app-soft,#eef2f7);color:var(--app-muted);
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+}
+.risks-badge.low{color:#245f46;background:#eaf5ef;border-color:#93bda9}
+.risks-badge.moderate{color:#805a17;background:#fff7e4;border-color:#e0c48a}
+.risks-badge.high{color:#8a4b16;background:#fff4e8;border-color:#e0b48a}
+.risks-badge.critical{color:#8d2f2a;background:#fff0ef;border-color:#d9aaa6}
+.risks-badge.overdue{color:#8d2f2a;background:#fff0ef;border-color:#d9aaa6}
+
+.risks-row-body{display:grid;gap:6px}
+.risks-row-body p{margin:0;font-size:13px;line-height:1.45}
+.risks-row-body .label{color:var(--app-muted)}
+.risks-row-body .warn{color:#c02626;font-weight:600}
+
+.risks-row-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--app-muted);font-size:12px}
+.risks-row-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.risks-row-actions label{display:flex;gap:6px;align-items:center;color:var(--app-muted);font-size:12px}
+.risks-row-actions select{width:auto;min-height:34px;padding:6px 10px}
+.risks-row-links{display:flex;flex-wrap:wrap;gap:8px}
+.risks-row-links a{font-size:12px;font-weight:600}
+
+.risks-form-actions{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.risks-preview{color:var(--app-muted);font-size:13px}
+.risks-preview strong{color:var(--app-ink);font-variant-numeric:tabular-nums}
+.risks-alert{margin:0 0 12px;padding:10px 12px;border-radius:8px;background:#fff1ef;color:#8c322e;font-size:12px;font-weight:600}
+.risks-setup-steps{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px;width:min(100%,420px)}
+.risks-setup-steps li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--app-line);background:var(--app-bg)}
+.risks-setup-steps li div{display:grid;gap:2px;min-width:0}
+.risks-setup-steps strong{font-size:13px}
+.risks-setup-steps span{color:var(--app-muted);font-size:12px}
+
+@media(max-width:720px){
+  .risks-summary{grid-template-columns:1fr 1fr}
+  .risks-row-top{flex-direction:column}
+  .risks-row-scores{justify-content:flex-start}
+}
+@media(max-width:560px){
+  .risks-summary{grid-template-columns:1fr}
+  .risks-next-actions li{flex-direction:column;align-items:stretch}
+}
