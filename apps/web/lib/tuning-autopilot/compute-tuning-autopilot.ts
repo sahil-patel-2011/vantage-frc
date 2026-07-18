@@ -159,7 +159,30 @@ export async function computeTuningAutopilotView(
       status: "setup_required",
       message: "Select a team workspace to log tuning sessions.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        {
+          id: "workspace",
+          label: "Select workspace",
+          detail: "Tuning Autopilot is org-scoped — pick a team before logging gain sets.",
+          href: "/workspace",
+        },
+        {
+          id: "cad",
+          label: "Open CAD",
+          detail: "Mechanism geometry stays blank until connected — never DEMO models.",
+          href: "/build?tab=cad",
+        },
+        {
+          id: "fmea",
+          label: "Open FMEA",
+          detail: "Failure modes stay blank until scored — never DEMO RPN.",
+          href: "/build?tab=fmea",
+        },
+        {
+          id: "practice",
+          label: "Open Practice",
+          detail: "Practice plans stay empty until scheduled — never DEMO attendance.",
+          href: "/team?tab=practice",
+        },
       ],
       orgId: null,
       seasonYear,

@@ -27,6 +27,7 @@
 | Control Map Soft-UI | `/control-map` | Driver/operator button bindings; empty/setup + next actions; counts from saved rows only; cross-links to Subsystems / FMEA / Practice — never DEMO bindings |
 | Spare Forecast Soft-UI | `/spare-forecast` | Exhaustion forecast from real spare-category inventory × FMEA cadence; empty/setup + next actions; cross-links to Batteries / Orders / Subsystems — never DEMO spare counts |
 | Inspection Copilot Soft-UI | `/inspection-copilot` | Weight / frame-bumper / wiring readiness from logged limits + measurements only; empty/setup + next actions; cross-links to Batteries / FMEA / Subsystems — never DEMO risk scores |
+| Tuning Autopilot Soft-UI | `/tuning-autopilot` | PID/feedforward next-gain suggestions from logged iterations only; empty/setup + next actions; cross-links to CAD / FMEA / Practice — never DEMO gain metrics |
 | Code Coach Soft-UI | `/build?tab=code`, `/ai?tab=code` (also `/code`) | Local free pattern review + teach-not-do lessons; empty/setup + next actions; clear local-vs-metered strip; UsageCutoffBanner on AI hub (metered neighbors); cross-links to CAD / GitHub / AI chat — never invented review findings |
 | AI | `/ai` | Chat · Budgets · Writer · Code assist · Memory · Governance · Finance (+ More tools) |
 | Season Report Soft-UI | `/ai` More tools · `/season-report` | Soft-UI retrospective from logged entries only; empty/setup + next actions; metered snapshot cutoff banner; cross-links to Strategy / Impact / Decision Search — never DEMO season stats |
