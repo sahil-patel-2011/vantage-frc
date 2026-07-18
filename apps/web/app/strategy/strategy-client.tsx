@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { runWhatIf } from "@vantage/prediction-strategy";
+import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { strategyFixture } from "../../lib/marketing/strategy-demo";
+import {
+  strategyCoverageLinks,
+  strategySetupNextActions,
+} from "../../lib/strategy/competition-related";
 import type { StrategyView } from "../../lib/strategy/types";
 import { PickListWorkbench } from "./pick-list-workbench";
 
@@ -211,9 +216,17 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
       : `${view.compLevel.toUpperCase()} ${view.matchNumber}`;
   const ourWin = view.ourAlliance === "red" ? view.prediction.pRed : view.prediction.pBlue;
   const cadHref = `/cad?orgId=${encodeURIComponent(view.orgId)}&matchKey=${encodeURIComponent(view.matchKey)}&title=${encodeURIComponent(`${title} strategy mechanism`)}&request=${encodeURIComponent(`Engineer for ${title}. Priorities: ${view.playbook.priorities.slice(0, 3).join("; ")}`)}`;
+  const coverageLinks = strategyCoverageLinks(view.orgId, { eventKey: view.eventKey });
 
   return (
     <section className="strategy-workbench strategy-live-grid">
+      <nav className="strategy-coverage-links product-hub-related" aria-label="Explainability and coverage">
+        {coverageLinks.map((link) => (
+          <a key={link.id} className="app-button secondary" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
       <Panel className="strategy-primary">
         <header>
           <div>
@@ -665,35 +678,14 @@ export default function StrategyClient() {
         <div className="strategy-header-actions">
           {orgId ? (
             <>
-              <a
-                className="app-button secondary"
-                href={`/competition?tab=scouting&orgId=${encodeURIComponent(orgId)}`}
-              >
-                Scouting
-              </a>
-              <a
-                className="app-button secondary"
-                href={`/competition?tab=forms&orgId=${encodeURIComponent(orgId)}`}
-              >
-                Form builder
-              </a>
-              <a
-                className="app-button secondary"
-                href={`/competition?tab=match-checklist&orgId=${encodeURIComponent(orgId)}`}
-              >
-                Match checklist
-              </a>
-              <a className="app-button secondary" href={`/pick-clock?orgId=${encodeURIComponent(orgId)}`}>
-                Pick clock (45s)
-              </a>
               <a className="app-button secondary" href={`/strategy/draft?orgId=${encodeURIComponent(orgId)}`}>
-                Draft day board
+                Draft board
               </a>
               <a
                 className="app-button secondary"
                 href={`/exports?orgId=${encodeURIComponent(orgId)}&domains=pick-lists,reference-metrics,research`}
               >
-                Export strategy data
+                Export
               </a>
               <a className="app-button secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
                 Data provenance
@@ -713,6 +705,8 @@ export default function StrategyClient() {
           ) : null}
         </div>
       </PageHeader>
+
+      <CompetitionHubRelated orgId={orgId} active="strategy" />
 
       <TabBar
         aria-label="Strategy sections"
@@ -777,6 +771,30 @@ export default function StrategyClient() {
                 </li>
               ))}
             </ol>
+            <div className="strategy-next-actions" aria-label="Next actions">
+              <h3>Also useful now</h3>
+              <ul>
+                {strategySetupNextActions({
+                  orgId: view.orgId,
+                  eventKey: view.eventKey,
+                  tbaConfigured: view.tbaConfigured ?? view.tbaAccess?.tbaConfigured,
+                  hasMetrics: view.referenceAccess?.statbotics.cacheHasMetrics,
+                })
+                  .filter((action) => !view.steps.some((step) => step.id === action.id && !step.done))
+                  .slice(0, 5)
+                  .map((action) => (
+                    <li key={action.id}>
+                      <div>
+                        <strong>{action.label}</strong>
+                        <span>{action.detail}</span>
+                      </div>
+                      <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
+                        Open
+                      </a>
+                    </li>
+                  ))}
+              </ul>
+            </div>
           </EmptyState>
           <Panel className="strategy-demo-optin" style={{ minHeight: "auto" }}>
             <h2 style={{ marginTop: 0 }}>Try demo scenario</h2>

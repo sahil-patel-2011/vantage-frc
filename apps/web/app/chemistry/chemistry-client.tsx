@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Icon } from "../../components/app-shell";
+import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
 import type { ChemistryView } from "../../lib/chemistry/load-chemistry";
+import { strategySetupNextActions } from "../../lib/strategy/competition-related";
 
 type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null };
 
@@ -70,17 +72,27 @@ export default function ChemistryClient() {
   }
 
   if (!orgId && !loading) {
+    const nextActions = strategySetupNextActions({});
     return (
       <main className="edc-page chem-page">
         <PageHeader
           breadcrumbs="Competition / Chemistry"
           title="Select a team workspace"
-          description="Open Home to choose your organization first."
-        >
-          <a className="app-button" href="/dashboard">
-            Go to Home
-          </a>
-        </PageHeader>
+          description="Open Home to choose your organization first — no demo alliances."
+        />
+        <EmptyState badge="Setup required" badgeTone="setup" title="Workspace required" description="Alliance chemistry scores real TBA/Statbotics seats only.">
+          <ol className="strategy-setup-steps">
+            {nextActions.map((action) => (
+              <li key={action.id}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a href={action.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        </EmptyState>
       </main>
     );
   }
@@ -101,8 +113,17 @@ export default function ChemistryClient() {
           <a className="app-button secondary" href={orgId ? `/strategy?orgId=${encodeURIComponent(orgId)}` : "/strategy"}>
             Strategy
           </a>
+          <a className="app-button secondary" href={orgId ? `/pick-clock?orgId=${encodeURIComponent(orgId)}` : "/pick-clock"}>
+            Pick clock
+          </a>
         </div>
       </PageHeader>
+
+      <CompetitionHubRelated
+        orgId={orgId || null}
+        active="chemistry"
+        include={["strategy", "scouting", "forms", "match-checklist", "pick-clock", "draft", "coverage"]}
+      />
 
       {error ? <p className="edc-banner error">{error}</p> : null}
 
@@ -156,20 +177,22 @@ export default function ChemistryClient() {
           description="No demo alliances — chemistry needs a real event context and reference metrics."
         >
           <ol className="strategy-setup-steps">
-            <li>
-              <div>
-                <strong>Select active event</strong>
-                <span>Event Day Command → Change event</span>
-              </div>
-              <a href={orgId ? `/command?orgId=${encodeURIComponent(orgId)}` : "/command"}>Open</a>
-            </li>
-            <li>
-              <div>
-                <strong>Sync TBA / Statbotics</strong>
-                <span>Metrics power role complementarity</span>
-              </div>
-              <a href={orgId ? `/team/data?orgId=${encodeURIComponent(orgId)}` : "/team/data"}>Open</a>
-            </li>
+            {strategySetupNextActions({
+              orgId,
+              eventKey: view.eventKey,
+              tbaConfigured: view.tbaConfigured,
+              hasMetrics: false,
+            })
+              .slice(0, 5)
+              .map((action) => (
+                <li key={action.id}>
+                  <div>
+                    <strong>{action.label}</strong>
+                    <span>{action.detail}</span>
+                  </div>
+                  <a href={action.href}>Open</a>
+                </li>
+              ))}
           </ol>
         </EmptyState>
       ) : null}
@@ -284,7 +307,17 @@ export default function ChemistryClient() {
           </article>
         </section>
       ) : view?.status === "empty" ? (
-        <EmptyState soft title={view.message} description="Enter team numbers above, or set an event so we can default to your next alliance." />
+        <EmptyState
+          soft
+          title={view.message}
+          description="Enter team numbers above, or set an event so we can default to your next alliance. Scores stay blank until real metrics exist."
+        >
+          <CompetitionHubRelated
+            orgId={orgId}
+            active="chemistry"
+            include={["strategy", "pick-clock", "scouting", "coverage"]}
+          />
+        </EmptyState>
       ) : loading ? (
         <EmptyState title="Loading…" description="Scoring alliance chemistry." aria-busy />
       ) : null}

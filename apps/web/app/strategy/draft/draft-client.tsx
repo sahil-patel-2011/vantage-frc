@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CompetitionHubRelated } from "../../../components/competition-hub-related";
+import { EmptyState, PageHeader } from "../../../components/ui";
+import { strategySetupNextActions } from "../../../lib/strategy/competition-related";
 import type { AllianceBoardState, AllianceSlot } from "../../../lib/strategy/pick-desk";
 
 type DraftPickAssist = {
@@ -208,43 +211,55 @@ export default function DraftClient() {
   }
 
   if (setup) {
+    const nextActions = strategySetupNextActions({
+      orgId,
+      eventKey: null,
+      hasMetrics: false,
+    });
     return (
-      <main className="module-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Competition / Strategy / Draft</span>
-            <h1>Alliance board</h1>
-            <p>{setup}</p>
-          </div>
-        </header>
-        <a className="app-button secondary" href="/workspace">
-          Open workspace
-        </a>
+      <main className="module-page strategy-draft-page">
+        <PageHeader
+          breadcrumbs="Competition / Strategy / Draft"
+          title="Alliance board"
+          description="Draft day needs a workspace and active event — never invented alliance rankings."
+        />
+        <EmptyState badge="Setup required" badgeTone="setup" title={setup} description="No demo draft board.">
+          <ol className="strategy-setup-steps">
+            {nextActions.slice(0, 5).map((action) => (
+              <li key={action.id}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a href={action.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+          <CompetitionHubRelated
+            orgId={orgId}
+            active="draft"
+            include={["strategy", "scouting", "forms", "match-checklist", "pick-clock", "chemistry"]}
+          />
+        </EmptyState>
       </main>
     );
   }
 
   if (!data) {
     return (
-      <main className="module-page">
-        <section className="app-card">
-          <h2>Loading draft day…</h2>
-        </section>
+      <main className="module-page strategy-draft-page">
+        <EmptyState title="Loading draft day…" description="Pulling alliance board and pick assist." aria-busy />
       </main>
     );
   }
 
   return (
     <main className="module-page strategy-draft-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Competition / Strategy / Draft</span>
-          <h1>Draft day alliance board</h1>
-          <p>
-            {data.eventName ?? data.eventKey} · captains then first picks, then reverse second picks. Only teams with
-            synced event metrics appear in the pool — no fabricated rankings.
-          </p>
-        </div>
+      <PageHeader
+        breadcrumbs="Competition / Strategy / Draft"
+        title="Draft day alliance board"
+        description={`${data.eventName ?? data.eventKey} · captains then first picks, then reverse second picks. Only teams with synced event metrics appear in the pool — no fabricated rankings.`}
+      >
         <div className="strategy-pick-actions">
           <a className="app-button secondary" href={`/strategy?orgId=${encodeURIComponent(data.orgId)}`}>
             ← Strategy
@@ -256,7 +271,13 @@ export default function DraftClient() {
             Pick clock
           </a>
         </div>
-      </header>
+      </PageHeader>
+
+      <CompetitionHubRelated
+        orgId={data.orgId}
+        active="draft"
+        include={["scouting", "forms", "match-checklist", "pick-clock", "chemistry", "coverage"]}
+      />
 
       {!data.board ? (
         <section className="app-card">
