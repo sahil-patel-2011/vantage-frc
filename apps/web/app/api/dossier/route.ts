@@ -3,6 +3,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { computeTeamDossier } from "../../../lib/dossier/compute-dossier";
 import type { DossierView } from "../../../lib/dossier/compute-dossier";
+import { loadDataSourceHealth } from "../../../lib/reference-health";
 
 export type { DossierView };
 
@@ -19,13 +20,15 @@ export async function GET(request: Request) {
   }
 
   try {
-    const view = await withRls({ userId: session.user.id }, async (client) =>
-      computeTeamDossier(client, {
+    const view = await withRls({ userId: session.user.id }, async (client) => {
+      const dossier = await computeTeamDossier(client, {
         userId: session.user.id,
         requestedOrg,
         teamNumber,
-      }),
-    );
+      });
+      const dataSourceHealth = await loadDataSourceHealth(client, dossier.orgId);
+      return { ...dossier, dataSourceHealth };
+    });
     return Response.json(view);
   } catch {
     return Response.json(

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
+import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { PickDeskEntry, PickDeskList, PickDeskView } from "../../lib/strategy/pick-desk";
 
 const TIERS: Array<{ id: PickTier; label: string; hint: string }> = [
@@ -270,29 +271,81 @@ export function PickListWorkbench({
 
   return (
     <section className={`strategy-pick-desk${embedded ? " embedded" : ""}`} aria-label="Pick list workbench">
+      <DataSourceDegradedBanner health={desk.dataSourceHealth} compact />
       <header className="strategy-pick-header app-card">
         <div>
-          <span className="app-badge good">Real event inputs</span>
+          {desk.pickMode === "low_data_tba" ? (
+            <span className="app-badge setup">Low-data TBA</span>
+          ) : (
+            <span className="app-badge good">Real event inputs</span>
+          )}
           <h2>First / second / third pick desk</h2>
           <p className="app-muted">
             {desk.eventName ?? desk.eventKey}
             {desk.sources.length ? ` · ${desk.sources.join(" + ")}` : " · no metrics synced yet"}
             {" · "}
             {desk.candidates.length} teams with reference rows
+            {desk.pickMode === "low_data_tba" && desk.pickModeReason ? ` · ${desk.pickModeReason}` : ""}
+            {desk.epaDrifts?.length ? ` · ${desk.epaDrifts.length} EPA-drift callout${desk.epaDrifts.length === 1 ? "" : "s"}` : ""}
           </p>
         </div>
         <div className="strategy-pick-actions">
+          <a
+            className="app-button secondary"
+            href={`/pick-clock${desk.orgId ? `?orgId=${encodeURIComponent(desk.orgId)}` : ""}`}
+          >
+            Pick clock
+          </a>
           <a
             className="app-button secondary"
             href={`/strategy/draft${desk.orgId ? `?orgId=${encodeURIComponent(desk.orgId)}` : ""}`}
           >
             Open draft day
           </a>
+          {desk.canEdit ? (
+            <button
+              type="button"
+              className="app-button secondary"
+              onClick={() => void seatTopScouts()}
+              disabled={seating}
+            >
+              {seating ? "Seating…" : "Seat top scouts"}
+            </button>
+          ) : null}
           <button type="button" className="app-button secondary" onClick={saveList} disabled={saving}>
             {saving ? "Saving…" : "Save pick list"}
           </button>
         </div>
       </header>
+
+      <article className="app-card strategy-pick-seats" aria-label="Strategy meeting seats">
+        <header>
+          <h3>Strategy meeting seats</h3>
+          <small>
+            Top TBA-accurate scouts rotate into this pick-desk conversation so they see their product used.
+          </small>
+        </header>
+        {(desk.strategySeats ?? []).length ? (
+          <ul>
+            {(desk.strategySeats ?? []).map((seat) => (
+              <li key={`${seat.userId}-${seat.meetingOn}`}>
+                <strong>
+                  {seat.name}
+                  {seat.isMe ? " (you)" : ""}
+                </strong>
+                <small>
+                  {seat.meetingOn} · {seat.reason}
+                </small>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="app-muted">
+            No seats yet
+            {desk.canEdit ? " — use Seat top scouts after validations exist." : "."}
+          </p>
+        )}
+      </article>
 
       <div className="strategy-pick-toolbar app-card">
         <label>

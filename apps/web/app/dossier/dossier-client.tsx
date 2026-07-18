@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { DossierView } from "../../lib/dossier/compute-dossier";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -79,6 +80,8 @@ export default function DossierClient() {
           <span className="app-badge setup">Setup required</span>
         ) : null}
       </PageHeader>
+
+      <DataSourceDegradedBanner health={view?.dataSourceHealth} />
 
       <Panel as="form" className="dossier-search-panel" onSubmit={onSearch} style={{ minHeight: "auto" }}>
         <FormRow

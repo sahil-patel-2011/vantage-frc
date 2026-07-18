@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "../../components/app-shell";
+import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { PageHeader } from "../../components/ui";
 import { countdownLabel } from "../dashboard/widgets";
 import type { CommandSnapshot } from "../../lib/command/types";
+import { formatMyDayWhen } from "../../lib/my-day";
 
 type Me = {
   orgId?: string | null;
@@ -209,6 +211,7 @@ export default function CommandClient() {
 
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
+      <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
 
       {snap?.status === "setup_required" || (!snap?.eventKey && snap) ? (
         <section className="edc-setup dash-setup-banner" aria-label="Setup required">
@@ -256,15 +259,43 @@ export default function CommandClient() {
           </header>
           {next ? (
             <>
-              <div className="edc-match-hero">
+              <div className={`edc-match-hero alliance-${next.ourAlliance ?? "tbd"}`}>
                 <strong>
                   {next.compLevel.toUpperCase()} {next.matchNumber}
                 </strong>
-                <span>
+                <span className="edc-match-when">{formatMyDayWhen(next.scheduledTime) ?? "Time TBD"}</span>
+                <span className={`edc-bumper-cue ${next.ourAlliance ?? ""}`}>
                   {snap?.myDay?.bumperCue ??
-                    (next.ourAlliance ? `You are ${next.ourAlliance.toUpperCase()}` : "Alliance TBD")}
+                    (next.ourAlliance
+                      ? `Switch to ${next.ourAlliance.toUpperCase()} bumpers`
+                      : "Alliance TBD — confirm bumpers")}
                 </span>
               </div>
+              <p className="edc-partners">
+                <span>With</span>{" "}
+                <b>
+                  {(next.ourAlliance === "red"
+                    ? next.red.teamKeys
+                    : next.ourAlliance === "blue"
+                      ? next.blue.teamKeys
+                      : []
+                  )
+                    .filter((key) => key !== snap?.teamKey)
+                    .map((key) => teamLabel(key))
+                    .join(" · ") || "—"}
+                </b>
+                <span className="edc-vs"> vs </span>
+                <b>
+                  {(next.ourAlliance === "red"
+                    ? next.blue.teamKeys
+                    : next.ourAlliance === "blue"
+                      ? next.red.teamKeys
+                      : []
+                  )
+                    .map((key) => teamLabel(key))
+                    .join(" · ") || "—"}
+                </b>
+              </p>
               <div className="edc-alliances">
                 <div>
                   <span>Red</span>

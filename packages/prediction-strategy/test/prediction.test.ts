@@ -5,6 +5,7 @@ import {
   buildStrategyPlaybook,
   buildTeamDossierFacts,
   citeMatchResults,
+  detectPickDataMode,
   dossierHasReferenceFacts,
   fuseSeasonSignals,
   opponentTendencies,
@@ -279,6 +280,29 @@ describe("TBA-shaped signal builders", () => {
     expect(ranked[0]?.teamKey).toBe("frc2337");
     expect(ranked[0]?.suggestedTier).toBe("first");
     expect(ranked.find((row) => row.teamKey === "frc99")?.suggestedTier).toBeNull();
+  });
+
+  it("detects low-data TBA mode and ranks EPA-first without reliability demotion", () => {
+    const thin = Array.from({ length: 8 }, (_, index) => ({
+      teamKey: `frc${index + 1}`,
+      teamNumber: index + 1,
+      nickname: null,
+      epa: 50 - index,
+      autoEpa: null,
+      endgameEpa: null,
+      source: "tba" as string | null,
+      record: null,
+      rank: index + 1,
+      scoutSample: index === 0 ? 2 : 0,
+      reliability: index === 0 ? 40 : null,
+      foulRate: null,
+    }));
+    expect(detectPickDataMode(thin).mode).toBe("low_data_tba");
+    const ranked = rankPickCandidates(thin, { mode: "low_data_tba" });
+    expect(ranked[0]?.teamKey).toBe("frc1");
+    expect(ranked[0]?.suggestedTier).toBe("first");
+    const full = rankPickCandidates(thin, { mode: "full" });
+    expect(full.find((row) => row.teamKey === "frc1")?.suggestedTier).toBe("second");
   });
 
   it("citeMatchResults skips unscored rows and labels FACT", () => {

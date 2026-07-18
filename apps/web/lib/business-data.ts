@@ -12,6 +12,7 @@ import {
   type SponsorProspect,
   type WritingDraft,
 } from "./business-portal";
+import { buildOrdersPulse } from "./orders/business-pulse";
 import {
   buildSponsorReminders,
   isPipelineStage,
@@ -339,6 +340,19 @@ export async function loadBusinessView(
   const seasons = seasonsResult.rows.map((row) => Number(row.seasonYear));
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
+  let financeAiEnabled = false;
+  try {
+    const aiFlag = await client.query<{ aiAssistEnabled: boolean }>(
+      `SELECT ai_assist_enabled AS "aiAssistEnabled"
+       FROM season_budgets WHERE org_id = $1 AND season_year = $2`,
+      [orgId, seasonYear],
+    );
+    financeAiEnabled = Boolean(aiFlag.rows[0]?.aiAssistEnabled);
+  } catch {
+    financeAiEnabled = false;
+  }
+  const ordersPulse = buildOrdersPulse(purchases, seasonYear, financeAiEnabled);
+
   return {
     status: "live",
     orgId,
@@ -363,6 +377,7 @@ export async function loadBusinessView(
     },
     categories,
     purchases,
+    ordersPulse,
     sponsors,
     fundraisingProgress,
     sponsorReminders,

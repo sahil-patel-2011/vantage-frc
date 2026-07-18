@@ -311,16 +311,42 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
   const submitted = view.purchases.filter((purchase) => purchase.status === "submitted");
   const followUps = view.sponsors.filter((sponsor) => sponsorHealth(sponsor) !== "healthy");
   const grantDeadlines = view.grants.filter((grant) => grant.deadline && !["awarded", "declined"].includes(grant.status)).slice(0, 5);
+  const progress = view.fundraisingProgress;
+  const pulse = view.ordersPulse;
+  const ordersHref = `/orders?orgId=${encodeURIComponent(view.orgId)}`;
   return (
     <div className="biz-stack">
       <section className="biz-kpis" aria-label="Season funding summary">
         <Kpi label="Working funds" value={money(available)} detail={`${money(view.budget.totalBudgetCents)} base budget`} tone="blue" />
         <Kpi label="Committed" value={money(view.budget.committedCents)} detail={`${utilization}% of working funds`} tone={utilization > 90 ? "danger" : "neutral"} />
-        <Kpi label="Sponsor income" value={money(view.budget.sponsorIncomeCents)} detail={`${view.sponsors.filter((sponsor) => sponsor.status === "active").length} active partners`} tone="good" />
+        <Kpi label="Raised vs goal" value={`${progress.percentOfGoal}%`} detail={`${money(progress.actualCents)} of ${money(progress.goalCents)}`} tone={progress.percentOfGoal >= 100 ? "good" : "blue"} />
         <Kpi label="Grant awards" value={money(view.budget.grantIncomeCents)} detail={`${view.grants.length} applications tracked`} tone="good" />
-        <Kpi label="Awaiting approval" value={money(view.budget.requestedCents)} detail={`${submitted.length} student requests`} tone={submitted.length ? "warn" : "neutral"} />
-        <Kpi label="Uncommitted" value={money(view.budget.remainingCents)} detail="After approved purchases" tone={view.budget.remainingCents < 0 ? "danger" : "blue"} />
+        <Kpi label="Awaiting approval" value={money(view.budget.requestedCents)} detail={`${pulse.pendingCount} open orders`} tone={pulse.pendingCount ? "warn" : "neutral"} />
+        <Kpi label="Ready to buy" value={String(pulse.readyToBuyCount)} detail={`${money(pulse.openTotalCents)} open`} tone={pulse.readyToBuyCount ? "warn" : "neutral"} />
       </section>
+
+      {pulse.financeAiEnabled && pulse.aiHeadline ? (
+        <section className="app-card soft-panel" aria-label="Finance assistant on open orders">
+          <header className="biz-card-head">
+            <div>
+              <span className="biz-overline">Finance assistant</span>
+              <h2>Open purchase requests</h2>
+            </div>
+            <a className="app-button secondary" href={ordersHref}>Open orders</a>
+          </header>
+          <p style={{ margin: "8px 0", fontWeight: 600 }}>{pulse.aiHeadline}</p>
+          <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+            {pulse.aiRecommendations.slice(0, 4).map((rec) => (
+              <li key={rec}>{rec}</li>
+            ))}
+          </ul>
+          <small className="app-muted" style={{ display: "block", marginTop: 8 }}>
+            Opt-in rule-based guidance from Season Costs — no card or bank data stored.
+          </small>
+        </section>
+      ) : null}
+
+      <FundraisingGlance view={view} onOpenSponsors={() => setTab("sponsors")} />
 
       <section className="biz-grid two">
         <article className="app-card biz-finance-pulse">
@@ -329,14 +355,15 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
           <div className="biz-split-metrics">
             <div><span>Approved + ordered</span><strong>{money(view.budget.committedCents)}</strong></div>
             <div><span>Actually ordered</span><strong>{money(view.budget.spentCents)}</strong></div>
-            <div><span>Fundraising target</span><strong>{money(view.budget.fundraisingGoalCents)}</strong></div>
+            <div><span>Fundraising actual</span><strong>{money(progress.actualCents)}</strong></div>
           </div>
           <button className="app-button secondary" type="button" onClick={() => setTab("budget")}>Open budget</button>
+          <a className="app-button secondary" href={ordersHref} style={{ marginLeft: 8 }}>Purchase orders</a>
         </article>
         <article className="app-card">
           <header className="biz-card-head"><div><span className="biz-overline">Attention queue</span><h2>What needs a human next</h2></div><span className="biz-count">{submitted.length + followUps.length + grantDeadlines.length}</span></header>
           <ul className="biz-action-list">
-            {submitted.slice(0, 3).map((purchase) => <li key={purchase.id}><ToneBadge tone="warn">Purchase</ToneBadge><div><strong>{purchase.itemName}</strong><span>{money(purchase.totalCents)} requested by {purchase.requestedByName}</span></div><button type="button" onClick={() => setTab("budget")}>Review</button></li>)}
+            {submitted.slice(0, 3).map((purchase) => <li key={purchase.id}><ToneBadge tone="warn">Purchase</ToneBadge><div><strong>{purchase.itemName}</strong><span>{money(purchase.totalCents)} requested by {purchase.requestedByName}</span></div><a href={`${ordersHref}&orderId=${encodeURIComponent(purchase.id)}`}>Review</a></li>)}
             {followUps.slice(0, 3).map((sponsor) => <li key={sponsor.id}><ToneBadge tone={sponsorHealth(sponsor) === "due" ? "danger" : "warn"}>Sponsor</ToneBadge><div><strong>{sponsor.name}</strong><span>{sponsor.nextFollowUpOn ? `Follow-up ${sponsor.nextFollowUpOn}` : "Relationship needs a next step"}</span></div><button type="button" onClick={() => setTab("sponsors")}>Connect</button></li>)}
             {grantDeadlines.map((grant) => <li key={grant.id}><ToneBadge tone="blue">Grant</ToneBadge><div><strong>{grant.title}</strong><span>Due {grant.deadline}</span></div><button type="button" onClick={() => setTab("grants")}>Open</button></li>)}
             {!submitted.length && !followUps.length && !grantDeadlines.length ? <li className="empty"><strong>Queue clear.</strong><span>Add a purchase, sponsor, or grant opportunity to start the operating rhythm.</span></li> : null}
@@ -358,9 +385,12 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
           <button className="app-button secondary" type="button" onClick={() => setTab("placements")}>Open partners</button>
         </article>
         <article className="app-card soft-panel">
-          <span className="biz-overline">Season spend tracker</span>
-          <h2>Separate from operating budget when you need it.</h2>
-          <p className="app-muted">Season Costs tracks real-world event spend alongside this portal’s finance guardrails—same login, same org.</p>
+          <span className="biz-overline">Season spend + finance AI</span>
+          <h2>Toggle the assistant where the budget lives.</h2>
+          <p className="app-muted">
+            Season Costs tracks event spend and the opt-in finance assistant that summarizes open purchase orders here and on{" "}
+            <a href={ordersHref}>/orders</a>.
+          </p>
           <a className="app-button secondary" href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Open Season Costs</a>
         </article>
       </section>
@@ -466,9 +496,9 @@ function Sponsors({ view, busy, submit, mutate, research }: { view: BusinessView
   </div>;
 }
 
-function SponsorCard({ sponsor, view, busy, submit, mutate: _mutate }: { sponsor: Sponsor; view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
+function SponsorCard({ sponsor, view, busy, submit, mutate }: { sponsor: Sponsor; view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const health = sponsorHealth(sponsor);
-  return <article><header><div><strong>{sponsor.name}</strong><span>{sponsor.industry ?? sponsor.tier ?? "Community partner"}</span></div><ToneBadge tone={health === "healthy" ? "good" : health === "due" ? "danger" : "warn"}>{health}</ToneBadge></header><div className="biz-sponsor-money"><b>{money(sponsor.seasonCents)}<small>this season</small></b><b>{money(sponsor.lifetimeCents)}<small>recorded lifetime</small></b></div><dl><div><dt>Owner</dt><dd>{sponsor.relationshipOwner ?? "Assign one"}</dd></div><div><dt>Last touch</dt><dd>{sponsor.lastContactOn ?? "Never"}</dd></div><div><dt>Next step</dt><dd>{sponsor.nextFollowUpOn ?? "Not scheduled"}</dd></div></dl>{sponsor.contactName || sponsor.contactEmail ? <p>{sponsor.contactName}{sponsor.contactEmail ? ` · ${sponsor.contactEmail}` : ""}</p> : null}<footer>{sponsor.website ? <a href={sponsor.website} target="_blank" rel="noreferrer">Website ↗</a> : <span />}{view.canManageFinance ? <form onSubmit={(event) => void submit(event, "update-sponsor")}><input type="hidden" name="sponsorId" value={sponsor.id} /><select name="status" defaultValue={sponsor.status}>{SPONSOR_STATUSES.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}</select><button disabled={busy}>Update</button></form> : <ToneBadge>{statusLabel(sponsor.status)}</ToneBadge>}</footer></article>;
+  return <article><header><div><strong>{sponsor.name}</strong><span>{sponsor.industry ?? sponsor.tier ?? "Community partner"} � {statusLabel(sponsor.pipelineStage)}</span></div><ToneBadge tone={health === "healthy" ? "good" : health === "due" ? "danger" : "warn"}>{health}</ToneBadge></header><div className="biz-sponsor-money"><b>{money(sponsor.seasonCents)}<small>this season</small></b><b>{money(sponsor.lifetimeCents)}<small>recorded lifetime</small></b></div><dl><div><dt>Owner</dt><dd>{sponsor.relationshipOwner ?? "Assign one"}</dd></div><div><dt>Last touch</dt><dd>{sponsor.lastContactOn ?? "Never"}</dd></div><div><dt>Next step</dt><dd>{sponsor.nextFollowUpOn ?? "Not scheduled"}</dd></div></dl>{sponsor.contactName || sponsor.contactEmail ? <p>{sponsor.contactName}{sponsor.contactEmail ? ` · ${sponsor.contactEmail}` : ""}</p> : null}<footer>{sponsor.website ? <a href={sponsor.website} target="_blank" rel="noreferrer">Website ↗</a> : <span />}{view.canManageFinance ? <form onSubmit={(event) => void submit(event, "update-sponsor")}><input type="hidden" name="sponsorId" value={sponsor.id} /><select name="status" defaultValue={sponsor.status}>{SPONSOR_STATUSES.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}</select><button disabled={busy}>Update</button></form> : <ToneBadge>{statusLabel(sponsor.status)}</ToneBadge>}{view.canManageFinance ? <button type="button" disabled={busy} onClick={() => { const stages = ["prospect","ask","visit","pledged","active","renewal"] as const; const index = stages.indexOf(sponsor.pipelineStage); const next = stages[Math.min(index + 1, stages.length - 1)]; if (next && next !== sponsor.pipelineStage) void mutate({ action: "set-pipeline-stage", sponsorId: sponsor.id, pipelineStage: next }); }}>Advance stage</button> : null}</footer></article>;
 }
 
 function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {

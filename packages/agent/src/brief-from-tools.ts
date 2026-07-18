@@ -1,4 +1,9 @@
-import type { ContextItem } from "./index";
+export type ContextItemLite = {
+  type: string;
+  id: string;
+  content: string;
+  importance: number;
+};
 
 export type EngineeringBrief = {
   summary: string;
@@ -47,7 +52,7 @@ const DEFAULT_ACCEPTANCE = [
 const DISCLAIMER =
   "AI-generated design review suggestions are not engineering or safety certification.";
 
-function parseToolFacts(context: ContextItem[]): ToolFact[] {
+function parseToolFacts(context: ContextItemLite[]): ToolFact[] {
   const facts: ToolFact[] = [];
   for (const item of context) {
     if (item.type !== "module_fact") continue;
@@ -295,7 +300,7 @@ function fromFmea(data: unknown, tool: string): { risks: string[]; constraints: 
 
 export type BriefFromToolsInput = {
   request: string;
-  context: ContextItem[];
+  context: ContextItemLite[];
   sourceRefs?: EngineeringBrief["sourceRefs"];
   knowledgeNotes?: string[];
 };

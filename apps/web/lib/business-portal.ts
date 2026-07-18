@@ -1,5 +1,14 @@
+import {
+  PIPELINE_STAGE_LABELS,
+  SPONSOR_PIPELINE_STAGES,
+  type SponsorPipelineStage,
+  type SponsorReminder,
+} from "./sponsor-pipeline";
+
 export const PURCHASE_STATUSES = ["submitted", "approved", "ordered", "received", "rejected"] as const;
 export const SPONSOR_STATUSES = ["prospect", "active", "lapsed", "declined"] as const;
+export { PIPELINE_STAGE_LABELS, SPONSOR_PIPELINE_STAGES };
+export type { SponsorPipelineStage, SponsorReminder };
 export const GRANT_STATUSES = ["researching", "drafting", "review", "submitted", "awarded", "declined"] as const;
 export const DRAFT_TYPES = ["sponsor_email", "grant_narrative", "thank_you", "renewal"] as const;
 
@@ -37,6 +46,7 @@ export type Sponsor = {
   id: string;
   name: string;
   status: SponsorStatus;
+  pipelineStage: SponsorPipelineStage;
   tier: string | null;
   website: string | null;
   industry: string | null;
@@ -46,9 +56,30 @@ export type Sponsor = {
   lastContactOn: string | null;
   nextFollowUpOn: string | null;
   notes: string | null;
+  askCents: number;
+  pledgedCents: number;
+  thankYouDueOn: string | null;
+  renewalDueOn: string | null;
   lifetimeCents: number;
   seasonCents: number;
   seasonCashCents: number;
+};
+
+export type FundraisingProgress = {
+  goalCents: number;
+  actualCashCents: number;
+  grantIncomeCents: number;
+  actualCents: number;
+  pledgedPipelineCents: number;
+  remainingCents: number;
+  percentOfGoal: number;
+  stages: Array<{
+    stage: SponsorPipelineStage;
+    count: number;
+    askCents: number;
+    pledgedCents: number;
+    valueCents: number;
+  }>;
 };
 
 export type SponsorInteraction = {
@@ -113,6 +144,16 @@ export type WritingDraft = {
   createdAt: string;
 };
 
+/** Open purchase-order pulse for Business overview (+ optional finance-AI). */
+export type OrdersPulse = {
+  pendingCount: number;
+  readyToBuyCount: number;
+  openTotalCents: number;
+  financeAiEnabled: boolean;
+  aiHeadline: string | null;
+  aiRecommendations: string[];
+};
+
 export type BusinessView = {
   status: "live";
   orgId: string;
@@ -136,7 +177,10 @@ export type BusinessView = {
   impact: { activities: number; hours: number; peopleReached: number };
   categories: BudgetCategory[];
   purchases: PurchaseRequest[];
+  ordersPulse?: OrdersPulse;
   sponsors: Sponsor[];
+  fundraisingProgress: FundraisingProgress;
+  sponsorReminders: SponsorReminder[];
   interactions: SponsorInteraction[];
   prospects: SponsorProspect[];
   grants: GrantApplication[];
