@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { VideoPlayer, type VideoPlayerHandle } from "../../components/video-player";
 import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
 import {
@@ -14,6 +14,18 @@ import {
   type RescoutView,
 } from "../../lib/video-rescout";
 import {
+  VIDEO_RESCOUT_RELATED_INCLUDE,
+  classifyVideoRescoutShell,
+  formatVideoRescoutMetric,
+  shouldShowVideoRescoutSummaryTiles,
+  videoRescoutNextActions,
+  videoRescoutRelatedLinks,
+  videoRescoutSetupSteps,
+  videoRescoutShellCopy,
+  type VideoRescoutNextAction,
+  type VideoRescoutShellKind,
+} from "../../lib/video-rescout-related";
+import {
   fmtTimestamp,
   NOTE_TAGS,
   parseTimestampInput,
@@ -22,12 +34,261 @@ import {
   tagCounts,
   type NoteTag,
 } from "../../lib/video-review";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type DetailTab = "notes" | "rescout";
+type ReadyView = Extract<RescoutView, { status: "ready" }>;
 
 function teamLabel(teamKey: string): string {
   return teamKey.replace(/^frc/i, "");
+}
+
+function VideoRescoutRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = videoRescoutRelatedLinks(orgId, {
+    include: [...VIDEO_RESCOUT_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related vid-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function VideoRescoutNextActionsPanel({ actions }: { actions: VideoRescoutNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions vid-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Scouting, Accuracy, and Disagreements — never DEMO jobs.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function VideoRescoutShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: VideoRescoutShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = videoRescoutNextActions({ orgId, shell });
+  const copy = videoRescoutShellCopy(shell);
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const steps = shell === "setup" ? videoRescoutSetupSteps(orgId) : [];
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const accuracyHref = withOrgHref("/scout-accuracy", orgId);
+  const disagreementsHref = withOrgHref("/scout-disagreements", orgId);
+
+  return (
+    <main className="module-page vid-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Video Re-Scout"}
+          </>
+        }
+        title="Post-Match Video Re-Scout"
+        description={description}
+      >
+        <VideoRescoutRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No reviews yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
+            {orgId ? "Open Scouting" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#video-new-review">
+              Add a match review
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+            <a className="app-button secondary" href={accuracyHref}>
+              Open Accuracy
+            </a>
+            <a className="app-button secondary" href={disagreementsHref}>
+              Open Disagreements
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="vid-soft-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Scouting, Accuracy, and Disagreements — never DEMO jobs.</p>
+          </header>
+          <ul className="vid-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted vid-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <VideoRescoutNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
+function NewReviewPanel({
+  orgId,
+  busyKey,
+  newTitle,
+  newUrl,
+  newMatchKey,
+  setNewTitle,
+  setNewUrl,
+  setNewMatchKey,
+  onCreate,
+}: {
+  orgId: string;
+  busyKey: string | null;
+  newTitle: string;
+  newUrl: string;
+  newMatchKey: string;
+  setNewTitle: (value: string) => void;
+  setNewUrl: (value: string) => void;
+  setNewMatchKey: (value: string) => void;
+  onCreate: () => void;
+}) {
+  return (
+    <Panel className="vid-new" id="video-new-review">
+      <strong>New review</strong>
+      <p className="app-muted vid-tip">Real YouTube match links only — never DEMO jobs.</p>
+      <FormRow label="Title">
+        <input
+          value={newTitle}
+          placeholder="Q42 vs 254"
+          disabled={busyKey === "create"}
+          onChange={(event) => setNewTitle(event.target.value)}
+        />
+      </FormRow>
+      <FormRow label="YouTube URL">
+        <input
+          value={newUrl}
+          placeholder="https://youtube.com/…"
+          disabled={busyKey === "create"}
+          onChange={(event) => setNewUrl(event.target.value)}
+        />
+      </FormRow>
+      <FormRow label="Match key" hint="Required before commit.">
+        <input
+          value={newMatchKey}
+          placeholder="2026miket_qm12"
+          disabled={busyKey === "create"}
+          onChange={(event) => setNewMatchKey(event.target.value)}
+        />
+      </FormRow>
+      <button
+        type="button"
+        className="app-button"
+        disabled={busyKey === "create" || !newTitle.trim() || !newUrl.trim() || !orgId}
+        onClick={onCreate}
+      >
+        New review
+      </button>
+    </Panel>
+  );
+}
+
+function SummaryTiles({
+  reviewCount,
+  scoreCount,
+  noteCount,
+  loaded,
+}: {
+  reviewCount: number;
+  scoreCount: number;
+  noteCount: number;
+  loaded: boolean;
+}) {
+  return (
+    <section className="vid-kpis" aria-label="Video re-scout summary">
+      <article>
+        <span>Reviews</span>
+        <strong>{formatVideoRescoutMetric(reviewCount, loaded)}</strong>
+        <small>saved match clips</small>
+      </article>
+      <article>
+        <span>Timeline scores</span>
+        <strong>{formatVideoRescoutMetric(scoreCount, loaded)}</strong>
+        <small>stamped on footage</small>
+      </article>
+      <article>
+        <span>Notes</span>
+        <strong>{formatVideoRescoutMetric(noteCount, loaded)}</strong>
+        <small>timestamped</small>
+      </article>
+      <article>
+        <span>Source</span>
+        <strong>Live</strong>
+        <small>never DEMO jobs</small>
+      </article>
+    </section>
+  );
 }
 
 export default function VideoRescoutClient() {
@@ -65,6 +326,7 @@ export default function VideoRescoutClient() {
       setView(data);
     } catch {
       setFetchFailed(true);
+      setError("Network error — please try again.");
     }
   }, []);
 
@@ -124,49 +386,32 @@ export default function VideoRescoutClient() {
     [load],
   );
 
-  if (fetchFailed || !view) {
-    return (
-      <main className="module-page vid-page">
-        <PageHeader navPath="/video" title="Post-Match Video Re-Scout" description="Loading match footage and timeline scores…" />
-        <EmptyState soft title={fetchFailed ? "Could not load video re-scout" : "Loading…"} description={error || "Checking workspace and saved reviews."}>
-          {fetchFailed ? (
-            <button type="button" className="app-button secondary" onClick={() => void load()}>
-              Retry
-            </button>
-          ) : null}
-        </EmptyState>
-      </main>
-    );
-  }
+  const orgId = view?.status === "ready" ? view.context.orgId : null;
+  const reviews = view?.status === "ready" ? view.reviews : [];
+  const reviewCount = reviews.length;
+  const scoreCount = reviews.reduce((sum, review) => sum + review.scores.length, 0);
+  const noteCount = reviews.reduce((sum, review) => sum + review.notes.length, 0);
 
-  if (view.status === "setup_required") {
-    return (
-      <main className="module-page vid-page">
-        <PageHeader navPath="/video" title="Post-Match Video Re-Scout" description={view.message} />
-        <EmptyState soft badge="Setup required" badgeTone="setup" title="Select a team workspace" description={view.message}>
-          <a className="app-button" href="/workspace">
-            Choose workspace
-          </a>
-        </EmptyState>
-      </main>
-    );
-  }
-
-  const orgId = view.context.orgId;
-  const reviews = view.reviews;
-  const selected = reviews.find((review) => review.id === selectedId) ?? reviews[0] ?? null;
-  const schemaFields = view.matchSchema?.fields ?? [];
-  const assignedTeams = selected?.assignedTeamKeys ?? [];
-  const activeTeamKey = activeTeam && assignedTeams.includes(activeTeam) ? activeTeam : assignedTeams[0] ?? null;
-  const scoreCounts = selected ? scoreCountByTeam(selected.scores, assignedTeams) : {};
-  const visibleScores = selected
-    ? sortTimelineScores(
-        activeTeamKey ? selected.scores.filter((entry) => entry.teamKey === activeTeamKey) : selected.scores,
-      )
-    : [];
+  const shell = classifyVideoRescoutShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    reviewCount,
+  });
+  const shellCopy = videoRescoutShellCopy(shell);
+  const nextActions = videoRescoutNextActions({
+    orgId,
+    shell,
+    reviewCount,
+    scoreCount,
+  });
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const showTiles = shouldShowVideoRescoutSummaryTiles({ reviewCount, scoreCount });
+  const loaded = view?.status === "ready";
 
   const createReview = () => {
-    if (!newTitle.trim() || !newUrl.trim()) return;
+    if (!orgId || !newTitle.trim() || !newUrl.trim()) return;
     void runVideo(
       {
         action: "create_review",
@@ -183,6 +428,69 @@ export default function VideoRescoutClient() {
       setNewMatchKey("");
     });
   };
+
+  if (shell === "loading") {
+    return <VideoRescoutShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <VideoRescoutShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => void load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <VideoRescoutShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (shell === "empty" || view?.status !== "ready" || !orgId) {
+    return (
+      <VideoRescoutShell description={shellCopy.description} orgId={orgId} shell="empty">
+        {orgId ? (
+          <NewReviewPanel
+            orgId={orgId}
+            busyKey={busyKey}
+            newTitle={newTitle}
+            newUrl={newUrl}
+            newMatchKey={newMatchKey}
+            setNewTitle={setNewTitle}
+            setNewUrl={setNewUrl}
+            setNewMatchKey={setNewMatchKey}
+            onCreate={createReview}
+          />
+        ) : null}
+        {error ? (
+          <p className="telemetry-status" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </VideoRescoutShell>
+    );
+  }
+
+  const readyView = view as ReadyView;
+  const selected = reviews.find((review) => review.id === selectedId) ?? reviews[0] ?? null;
+  const schemaFields = readyView.matchSchema?.fields ?? [];
+  const assignedTeams = selected?.assignedTeamKeys ?? [];
+  const activeTeamKey = activeTeam && assignedTeams.includes(activeTeam) ? activeTeam : assignedTeams[0] ?? null;
+  const scoreCounts = selected ? scoreCountByTeam(selected.scores, assignedTeams) : {};
+  const visibleScores = selected
+    ? sortTimelineScores(
+        activeTeamKey ? selected.scores.filter((entry) => entry.teamKey === activeTeamKey) : selected.scores,
+      )
+    : [];
 
   const saveAssignments = () => {
     if (!selected) return;
@@ -218,13 +526,13 @@ export default function VideoRescoutClient() {
   };
 
   const commitRescout = () => {
-    if (!selected || !view.matchSchema) return;
+    if (!selected || !readyView.matchSchema) return;
     void runRescout(
       {
         action: "commit_rescout",
         orgId,
         reviewId: selected.id,
-        schemaId: view.matchSchema.id,
+        schemaId: readyView.matchSchema.id,
         confidence: "normal",
       },
       "commit",
@@ -330,7 +638,7 @@ export default function VideoRescoutClient() {
   };
 
   const renderRescout = (review: RescoutReview) => (
-    <div className="vid-rescout">
+    <div className="vid-rescout" id="video-timeline">
       <Panel className="vid-team-assign">
         <strong>Assigned teams (1–{MAX_RESCOUT_TEAMS})</strong>
         <FormRow label="Team numbers" hint="Comma or space separated. Saved per review.">
@@ -362,8 +670,18 @@ export default function VideoRescoutClient() {
         </button>
       </Panel>
 
-      {!view.matchSchema ? (
-        <EmptyState soft title="Match schema required" description="Configure a match scouting schema before timeline scoring." />
+      {!readyView.matchSchema ? (
+        <EmptyState
+          soft
+          badge="Schema required"
+          badgeTone="setup"
+          title="Match schema required"
+          description="Configure a real match scouting schema before timeline scoring — never DEMO jobs."
+        >
+          <a className="app-button" href={hubHref("/competition", "scouting", orgId)}>
+            Open Scouting
+          </a>
+        </EmptyState>
       ) : !activeTeamKey ? (
         <EmptyState soft title="Assign teams" description="Add up to four alliance teams, then tap score buttons at the playhead." />
       ) : (
@@ -419,7 +737,7 @@ export default function VideoRescoutClient() {
       <Panel>
         <strong>Timeline scores</strong>
         {visibleScores.length === 0 ? (
-          <p className="app-muted">No timeline scores yet for this team.</p>
+          <p className="app-muted">No timeline scores yet for this team — never DEMO jobs.</p>
         ) : (
           <ul className="vid-timeline">
             {visibleScores.map((entry) => (
@@ -449,7 +767,7 @@ export default function VideoRescoutClient() {
         <button
           type="button"
           className="app-button"
-          disabled={busyKey === "commit" || !view.matchSchema || assignedTeams.length === 0 || !review.matchKey}
+          disabled={busyKey === "commit" || !readyView.matchSchema || assignedTeams.length === 0 || !review.matchKey}
           onClick={commitRescout}
         >
           Commit re-scout to scouting
@@ -462,10 +780,19 @@ export default function VideoRescoutClient() {
   return (
     <main className="module-page vid-page">
       <PageHeader
-        navPath="/video"
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Video Re-Scout"}
+          </>
+        }
         title="Post-Match Video Re-Scout"
-        description={`Re-watch match footage for ${view.context.orgName ?? "your team"} and drop timeline scores into scouting.`}
-      />
+        description={`Re-watch real match footage for ${readyView.context.orgName ?? "your team"} and drop timeline scores into scouting — never DEMO jobs.`}
+      >
+        <div className="vid-header-meta">
+          <VideoRescoutRelatedStrip orgId={orgId} />
+        </div>
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -473,25 +800,25 @@ export default function VideoRescoutClient() {
         </p>
       ) : null}
 
+      {showTiles ? (
+        <SummaryTiles reviewCount={reviewCount} scoreCount={scoreCount} noteCount={noteCount} loaded={loaded} />
+      ) : null}
+
       <div className="vid-layout">
         <aside className="vid-sidebar">
-          <Panel className="vid-new">
-            <strong>New review</strong>
-            <FormRow label="Title">
-              <input value={newTitle} placeholder="Q42 vs 254" disabled={busyKey === "create"} onChange={(event) => setNewTitle(event.target.value)} />
-            </FormRow>
-            <FormRow label="YouTube URL">
-              <input value={newUrl} placeholder="https://youtube.com/…" disabled={busyKey === "create"} onChange={(event) => setNewUrl(event.target.value)} />
-            </FormRow>
-            <FormRow label="Match key" hint="Required before commit.">
-              <input value={newMatchKey} placeholder="2026miket_qm12" disabled={busyKey === "create"} onChange={(event) => setNewMatchKey(event.target.value)} />
-            </FormRow>
-            <button type="button" className="app-button" disabled={busyKey === "create" || !newTitle.trim() || !newUrl.trim()} onClick={createReview}>
-              New review
-            </button>
-          </Panel>
+          <NewReviewPanel
+            orgId={orgId}
+            busyKey={busyKey}
+            newTitle={newTitle}
+            newUrl={newUrl}
+            newMatchKey={newMatchKey}
+            setNewTitle={setNewTitle}
+            setNewUrl={setNewUrl}
+            setNewMatchKey={setNewMatchKey}
+            onCreate={createReview}
+          />
 
-          <nav className="vid-nav" aria-label="Saved reviews">
+          <nav className="vid-nav" id="video-reviews" aria-label="Saved reviews">
             {reviews.map((review) => (
               <button
                 key={review.id}
@@ -517,7 +844,7 @@ export default function VideoRescoutClient() {
                 <p className="app-muted">
                   {selected.matchKey ? `${selected.matchKey} · ` : ""}
                   {assignedTeams.length ? `${assignedTeams.length} teams assigned · ` : ""}
-                  {view.matchSchema?.title ?? "No match schema"}
+                  {readyView.matchSchema?.title ?? "No match schema"}
                 </p>
               </div>
               <button
@@ -534,12 +861,7 @@ export default function VideoRescoutClient() {
               </button>
             </header>
 
-            <VideoPlayer
-              ref={playerRef}
-              videoId={selected.videoId}
-              title={selected.title}
-              onTimeUpdate={setCurrentSeconds}
-            />
+            <VideoPlayer ref={playerRef} videoId={selected.videoId} title={selected.title} onTimeUpdate={setCurrentSeconds} />
 
             <TabBar
               aria-label="Review detail tabs"
@@ -554,9 +876,19 @@ export default function VideoRescoutClient() {
             {detailTab === "notes" ? renderNotes(selected) : renderRescout(selected)}
           </Panel>
         ) : (
-          <EmptyState soft title="No reviews yet" description="Paste a YouTube match link and assign up to four teams to re-scout." />
+          <EmptyState soft title="No reviews yet" description="Paste a YouTube match link and assign up to four teams to re-scout — never DEMO jobs." />
         )}
       </div>
+
+      <VideoRescoutNextActionsPanel actions={nextActions} />
+      <p className="app-muted vid-footer-links">
+        Also see{" "}
+        <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+        {" · "}
+        <a href={withOrgHref("/scout-accuracy", orgId)}>Accuracy</a>
+        {" · "}
+        <a href={withOrgHref("/scout-disagreements", orgId)}>Disagreements</a>
+      </p>
     </main>
   );
 }

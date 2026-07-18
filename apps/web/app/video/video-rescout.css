@@ -1,4 +1,87 @@
-/* Post-match video re-scout — Soft-UI .vid-* styles (theme-aware). */
+/* Soft-UI Video Re-Scout — .vid-* + shared Soft-UI tokens. Never DEMO jobs. */
+.vid-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 32px) 16px 40px;
+  display: grid;
+  gap: 18px;
+}
+.vid-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.vid-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vid-next-actions {
+  margin: 0;
+}
+.vid-tip {
+  margin: 0;
+}
+.vid-soft-panel {
+  padding: 16px 18px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  border-radius: var(--soft-radius, 16px);
+  background: var(--soft-card, #fff);
+  box-shadow: var(--soft-shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
+}
+.vid-soft-panel header {
+  margin-bottom: 12px;
+}
+.vid-soft-panel h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: var(--soft-ink, #132033);
+}
+.vid-setup-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.vid-setup-steps li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.vid-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.vid-kpis article {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card, #fff);
+  box-shadow: var(--soft-shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
+}
+.vid-kpis span,
+.vid-kpis small {
+  color: var(--soft-muted, #5a6578);
+  font: 700 10px/1.2 var(--font-ibm-mono), ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.vid-kpis strong {
+  font-size: clamp(24px, 3.6vw, 32px);
+  letter-spacing: -0.03em;
+  color: var(--soft-ink, #132033);
+}
+.vid-footer-links {
+  margin: 0;
+}
 .vid-page input,
 .vid-page select {
   min-height: 38px;
@@ -329,5 +412,17 @@
     grid-auto-flow: column;
     grid-auto-columns: minmax(180px, 1fr);
     overflow-x: auto;
+  }
+  .vid-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .vid-kpis {
+    grid-template-columns: 1fr;
+  }
+  .vid-setup-steps li {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
