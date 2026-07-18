@@ -2,8 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
+import {
+  AI_GOVERNANCE_RELATED_INCLUDE,
+  AI_GOVERNANCE_SCOPE_CARDS,
+  aiGovernanceNextActions,
+  aiGovernanceRelatedLinks,
+  aiGovernanceShellCopy,
+  classifyAiGovernanceShell,
+  formatAiGovernanceCount,
+  formatAiGovernanceMoney,
+  type AiGovernancePolicySnapshot,
+  type AiGovernanceShellKind,
+} from "../../../lib/ai-governance/ai-governance-related";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import "./ai-policy.css";
 
 type PolicyForm = {
   featureAllowlistEnabled: boolean;
@@ -35,8 +48,6 @@ type Approval = {
 
 type ModelLimit = { provider: string; model: string; allowed: boolean };
 
-const money = (value: unknown) => `$${Number(value ?? 0).toFixed(2)}`;
-const num = (value: unknown) => Number(value ?? 0).toLocaleString();
 const toggleList = (list: string[], value: string) =>
   list.includes(value) ? list.filter((entry) => entry !== value) : [...list, value];
 
@@ -55,6 +66,64 @@ const defaultForm: PolicyForm = {
   financeInAiEnabled: false,
 };
 
+function toSnapshot(form: PolicyForm, pendingApprovals: number): AiGovernancePolicySnapshot {
+  return {
+    featureAllowlistEnabled: form.featureAllowlistEnabled,
+    allowedFeaturesCount: form.allowedFeatures.length,
+    toolAllowlistEnabled: form.toolAllowlistEnabled,
+    allowedToolsCount: form.allowedTools.length,
+    requireApprovalAboveThreshold: form.requireApprovalAboveThreshold,
+    highCostThresholdSet: form.highCostThresholdUsd.trim() !== "",
+    requireApprovalForFeaturesCount: form.requireApprovalForFeatures.length,
+    financeInAiEnabled: form.financeInAiEnabled,
+    dailySpendAlertSet: form.dailySpendAlertUsd.trim() !== "",
+    monthlySpendAlertSet: form.monthlySpendAlertUsd.trim() !== "",
+    pendingApprovals,
+  };
+}
+
+function GovernanceRelatedStrip({ orgId }: { orgId: string }) {
+  const links = aiGovernanceRelatedLinks(orgId, { include: [...AI_GOVERNANCE_RELATED_INCLUDE] });
+  return (
+    <nav className="product-hub-related ai-governance-related" aria-label="Related AI tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActions({ orgId, shell }: { orgId: string; shell: AiGovernanceShellKind }) {
+  const actions = aiGovernanceNextActions({ orgId, shell });
+  if (!actions.length) return null;
+  return (
+    <section
+      className="ai-governance-next-actions app-card soft-panel edc-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p>From real org policy and Neon spend only — never DEMO policy stats.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function AiPolicyClient({ orgId }: { orgId: string }) {
   const [form, setForm] = useState<PolicyForm>(defaultForm);
   const [features, setFeatures] = useState<string[]>([]);
@@ -71,6 +140,8 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [httpStatus, setHttpStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [financeInAiAcceptedAt, setFinanceInAiAcceptedAt] = useState<string | null>(null);
   const [financeInAiAckVersion, setFinanceInAiAckVersion] = useState<string | null>(null);
   const [catalogFinanceAckVersion, setCatalogFinanceAckVersion] = useState<string | null>(null);
@@ -82,41 +153,70 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
     Boolean(catalogFinanceAckVersion) &&
     financeInAiAckVersion === catalogFinanceAckVersion;
 
+  const chatHref = hubHref("/ai", "chat", orgId);
+  const budgetsHref = hubHref("/ai", "budgets", orgId);
+  const memoryHref = hubHref("/ai", "memory", orgId);
+  const financeHref = hubHref("/ai", "finance", orgId);
+  const runsHref = withOrgHref("/team/ai-runs", orgId);
+  const headerLinks = aiGovernanceRelatedLinks(orgId);
+
   async function load() {
     setLoading(true);
+    setLoadError(null);
     const [policyRes, approvalRes] = await Promise.all([
-      fetch(`/api/organizations/ai-policy?orgId=${orgId}`),
-      fetch(`/api/organizations/ai-approvals?orgId=${orgId}&status=pending`),
+      fetch(`/api/organizations/ai-policy?orgId=${encodeURIComponent(orgId)}`),
+      fetch(
+        `/api/organizations/ai-approvals?orgId=${encodeURIComponent(orgId)}&status=pending`,
+      ),
     ]);
-    const policyData = await policyRes.json();
-    const approvalData = await approvalRes.json();
+    const policyData = (await policyRes.json()) as {
+      error?: string;
+      policy?: Record<string, unknown> | null;
+      catalog?: { features?: string[]; tools?: string[]; financeInAiAckVersion?: string };
+      models?: ModelLimit[];
+      usage?: Record<string, string>;
+      budget?: {
+        modelAllowlistEnabled?: boolean;
+        providerAllowlistEnabled?: boolean;
+        killSwitch?: boolean;
+      } | null;
+      pendingApprovals?: number;
+    };
+    const approvalData = (await approvalRes.json()) as {
+      error?: string;
+      approvals?: Approval[];
+    };
+    setHttpStatus(policyRes.status);
     if (!policyRes.ok) {
-      setMessage(policyData.error ?? "Unable to load AI policy");
+      setLoadError(policyData.error ?? "Unable to load AI policy");
+      setMessage("");
       setLoading(false);
       return;
     }
+    setLoadError(null);
     if (policyData.policy) {
       const policy = policyData.policy;
       setForm({
         featureAllowlistEnabled: Boolean(policy.featureAllowlistEnabled),
-        allowedFeatures: policy.allowedFeatures ?? [],
+        allowedFeatures: (policy.allowedFeatures as string[]) ?? [],
         toolAllowlistEnabled: Boolean(policy.toolAllowlistEnabled),
-        allowedTools: policy.allowedTools ?? [],
+        allowedTools: (policy.allowedTools as string[]) ?? [],
         highCostThresholdUsd:
           policy.highCostThresholdUsd == null ? "" : String(policy.highCostThresholdUsd),
         requireApprovalAboveThreshold: Boolean(policy.requireApprovalAboveThreshold),
-        requireApprovalForFeatures: policy.requireApprovalForFeatures ?? [],
+        requireApprovalForFeatures: (policy.requireApprovalForFeatures as string[]) ?? [],
         adminBypassApproval: policy.adminBypassApproval !== false,
         dailySpendAlertUsd:
           policy.dailySpendAlertUsd == null ? "" : String(policy.dailySpendAlertUsd),
         monthlySpendAlertUsd:
           policy.monthlySpendAlertUsd == null ? "" : String(policy.monthlySpendAlertUsd),
-        spendAlertThresholds: (policy.spendAlertThresholds ?? [50, 75, 90]).join(","),
+        spendAlertThresholds: ((policy.spendAlertThresholds as number[]) ?? [50, 75, 90]).join(","),
         financeInAiEnabled: Boolean(policy.financeInAiEnabled),
       });
-      setFinanceInAiAcceptedAt(policy.financeInAiAcceptedAt ?? null);
-      setFinanceInAiAckVersion(policy.financeInAiAckVersion ?? null);
+      setFinanceInAiAcceptedAt((policy.financeInAiAcceptedAt as string | null) ?? null);
+      setFinanceInAiAckVersion((policy.financeInAiAckVersion as string | null) ?? null);
     } else {
+      setForm(defaultForm);
       setFinanceInAiAcceptedAt(null);
       setFinanceInAiAckVersion(null);
     }
@@ -189,8 +289,8 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           : false,
       }),
     });
-    const data = await response.json();
-    setMessage(response.ok ? "AI governance policy saved and audited." : data.error);
+    const data = (await response.json()) as { error?: string };
+    setMessage(response.ok ? "AI governance policy saved and audited." : (data.error ?? "Save failed"));
     setSaving(false);
     if (response.ok) await load();
   }
@@ -201,71 +301,173 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, approvalId, decision }),
     });
-    const data = await response.json();
+    const data = (await response.json()) as { error?: string };
     setMessage(
       response.ok
         ? decision === "approve"
           ? "Run approved — requester can retry within 24h (consumed once)."
           : "Run denied."
-        : data.error,
+        : (data.error ?? "Decision failed"),
     );
     if (response.ok) await load();
   }
 
+  const shell = classifyAiGovernanceShell({
+    loading,
+    status: httpStatus,
+    error: loadError,
+    policy: loading || loadError ? null : toSnapshot(form, pendingCount),
+  });
+  const shellCopy = aiGovernanceShellCopy(shell);
+  const blocked = shell === "forbidden" || shell === "auth_required" || shell === "error";
+  const showEmptyBanner = shell === "empty" || shell === "setup";
+  const metricsLoaded = !loading && !blocked;
+
   return (
-    <main className="intel-app">
+    <main className="intel-app ai-governance-page">
       <header className="intel-header">
         <div>
           <span className="eyebrow">AI / GOVERNANCE</span>
           <h1>Org policy for models, tools, and spend</h1>
           <p className="app-muted">
             Control which assistant features and tools members may use, set absolute spend alerts, and
-            require admin approval before high-cost runs. Model/provider allowlists live under API
-            budgets; this page owns tool/feature policy and the approval queue.
+            require admin approval before high-cost runs. Model/provider allowlists live under Budgets;
+            shared memory under Memory; enforcement happens in Chat.
           </p>
         </div>
         <nav className="intel-actions" aria-label="Governance links">
-          <a href={hubHref("/ai", "budgets", orgId)}>API budgets</a>
-          <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
-          <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
-          <a href={hubHref("/ai", "memory", orgId)}>AI memory</a>
-          <a href={hubHref("/ai", "finance", orgId)}>Finance in AI</a>
-          <a href={withOrgHref("/team/admin", orgId)}>Team admin</a>
+          {headerLinks
+            .filter((link) =>
+              ["chat", "budgets", "memory", "finance", "usage", "runs", "admin"].includes(link.id),
+            )
+            .map((link) => (
+              <a key={link.id} href={link.href}>
+                {link.label}
+              </a>
+            ))}
         </nav>
       </header>
 
       <AiHubRelated orgId={orgId} active="governance" />
+      <GovernanceRelatedStrip orgId={orgId} />
 
-      {message && <p role="status" className="telemetry-status">{message}</p>}
-      {loading && <p className="app-muted">Loading AI governance…</p>}
+      {message ? (
+        <p role="status" className="telemetry-status">
+          {message}
+        </p>
+      ) : null}
 
-      {!loading && (
+      {loading ? (
+        <section className="app-card soft-panel product-hub-setup" aria-busy>
+          <h2>{shellCopy.title}</h2>
+          <p className="app-muted">{shellCopy.description}</p>
+        </section>
+      ) : null}
+
+      {blocked ? (
+        <section className="app-card soft-panel product-hub-setup" role="status">
+          {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
+          <h2>{shellCopy.title}</h2>
+          <p className="app-muted">{shellCopy.description}</p>
+          <NextActions orgId={orgId} shell={shell} />
+          {shell === "error" ? (
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </section>
+      ) : null}
+
+      {!loading && !blocked ? (
         <>
-          <section className="metric-grid">
+          <section className="ai-governance-scope" aria-label="What governance owns">
+            {AI_GOVERNANCE_SCOPE_CARDS.map((card) => (
+              <article key={card.id} className="app-card soft-panel ai-governance-scope-card">
+                <span className="eyebrow">
+                  {card.id === "policy"
+                    ? "POLICY"
+                    : card.id === "budgets"
+                      ? "BUDGETS"
+                      : card.id === "memory"
+                        ? "MEMORY"
+                        : "CHAT"}
+                </span>
+                <h2>{card.title}</h2>
+                <p className="app-muted">{card.body}</p>
+                {card.id === "policy" ? (
+                  <a className="app-button secondary" href="#ai-governance-policy">
+                    Edit policy
+                  </a>
+                ) : null}
+                {card.id === "budgets" ? (
+                  <a className="app-button secondary" href={budgetsHref}>
+                    Open Budgets
+                  </a>
+                ) : null}
+                {card.id === "memory" ? (
+                  <a className="app-button secondary" href={memoryHref}>
+                    Open Memory
+                  </a>
+                ) : null}
+                {card.id === "chat" ? (
+                  <a className="app-button secondary" href={chatHref}>
+                    Open Chat
+                  </a>
+                ) : null}
+              </article>
+            ))}
+          </section>
+
+          <section className="metric-grid" aria-label="Live spend and policy state">
             <article>
               <span>Spend today</span>
-              <strong>{money(usage.dailySpend)}</strong>
+              <strong>{formatAiGovernanceMoney(usage.dailySpend, metricsLoaded)}</strong>
             </article>
             <article>
               <span>Spend this month</span>
-              <strong>{money(usage.monthlySpend)}</strong>
+              <strong>{formatAiGovernanceMoney(usage.monthlySpend, metricsLoaded)}</strong>
             </article>
             <article>
               <span>Pending approvals</span>
-              <strong>{num(pendingCount)}</strong>
+              <strong>{formatAiGovernanceCount(pendingCount, metricsLoaded)}</strong>
             </article>
             <article>
               <span>Model allowlist</span>
-              <strong>{budget?.modelAllowlistEnabled ? "On" : "Off"}</strong>
+              <strong>
+                {metricsLoaded
+                  ? budget?.modelAllowlistEnabled || budget?.providerAllowlistEnabled
+                    ? "On"
+                    : "Off"
+                  : "…"}
+              </strong>
             </article>
             <article>
               <span>Finance-in-AI</span>
-              <strong>{form.financeInAiEnabled ? "On" : "Off"}</strong>
+              <strong>{metricsLoaded ? (form.financeInAiEnabled ? "On" : "Off") : "…"}</strong>
             </article>
           </section>
 
-          <form className="intel-panel auth-policy-form" onSubmit={save} style={{ marginTop: "1.5rem" }}>
+          {showEmptyBanner ? (
+            <section className="app-card soft-panel product-hub-setup" role="status">
+              {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
+              <h2>{shellCopy.title}</h2>
+              <p className="app-muted">{shellCopy.description}</p>
+            </section>
+          ) : null}
+
+          <NextActions orgId={orgId} shell={shell} />
+
+          <form
+            id="ai-governance-policy"
+            className="intel-panel auth-policy-form ai-governance-policy"
+            onSubmit={save}
+          >
             <span className="eyebrow">FEATURE &amp; TOOL POLICY</span>
+            <p className="app-muted ai-governance-policy-lead">
+              Org gates for metered AI capabilities. Empty Neon spend and empty approval queues stay empty —
+              never DEMO policy stats. Model allowlists are edited on{" "}
+              <a href={budgetsHref}>Budgets</a>.
+            </p>
             <label className="state-control">
               <input
                 type="checkbox"
@@ -278,18 +480,25 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               </span>
             </label>
             <div className="budget-fields" style={{ display: "grid", gap: "0.35rem" }}>
-              {features.map((feature) => (
-                <label key={feature} className="check-field">
-                  <input
-                    type="checkbox"
-                    checked={form.allowedFeatures.includes(feature)}
-                    onChange={() =>
-                      setForm({ ...form, allowedFeatures: toggleList(form.allowedFeatures, feature) })
-                    }
-                  />
-                  {feature}
-                </label>
-              ))}
+              {features.length === 0 ? (
+                <p className="app-muted">No feature catalog loaded — save will keep the current list empty.</p>
+              ) : (
+                features.map((feature) => (
+                  <label key={feature} className="check-field">
+                    <input
+                      type="checkbox"
+                      checked={form.allowedFeatures.includes(feature)}
+                      onChange={() =>
+                        setForm({
+                          ...form,
+                          allowedFeatures: toggleList(form.allowedFeatures, feature),
+                        })
+                      }
+                    />
+                    {feature}
+                  </label>
+                ))
+              )}
             </div>
 
             <label className="state-control" style={{ marginTop: "1rem" }}>
@@ -304,18 +513,22 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               </span>
             </label>
             <div className="budget-fields" style={{ display: "grid", gap: "0.35rem" }}>
-              {tools.map((tool) => (
-                <label key={tool} className="check-field">
-                  <input
-                    type="checkbox"
-                    checked={form.allowedTools.includes(tool)}
-                    onChange={() =>
-                      setForm({ ...form, allowedTools: toggleList(form.allowedTools, tool) })
-                    }
-                  />
-                  {tool}
-                </label>
-              ))}
+              {tools.length === 0 ? (
+                <p className="app-muted">No tool catalog loaded — leave the allowlist off until catalog returns.</p>
+              ) : (
+                tools.map((tool) => (
+                  <label key={tool} className="check-field">
+                    <input
+                      type="checkbox"
+                      checked={form.allowedTools.includes(tool)}
+                      onChange={() =>
+                        setForm({ ...form, allowedTools: toggleList(form.allowedTools, tool) })
+                      }
+                    />
+                    {tool}
+                  </label>
+                ))
+              )}
             </div>
 
             <span className="eyebrow" style={{ marginTop: "1.25rem", display: "block" }}>
@@ -330,8 +543,9 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               <span>
                 <strong>Allow AI to read team financial summaries</strong>
                 <small>
-                  Opt-in only. Assistants may use redacted budget and order context. Manage ledger on{" "}
-                  <a href={`/team/finance?orgId=${orgId}`}>Team finance</a>.
+                  Opt-in only. Assistants may use redacted budget and order context (amounts, vendor,
+                  purpose) — card/bank/SSN patterns are stripped. Dedicated consent UI:{" "}
+                  <a href={financeHref}>Finance-in-AI</a>.
                   {financeInAiAcceptedAt ? (
                     <>
                       {" "}
@@ -360,7 +574,10 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               />
               <span>
                 <strong>Require approval above estimated cost</strong>
-                <small>Uses the caller&apos;s estimatedCostUsd (CAD/research can pass real estimates).</small>
+                <small>
+                  Uses the caller&apos;s estimatedCostUsd (CAD/research can pass real estimates). Set a
+                  USD threshold below when this is on.
+                </small>
               </span>
             </label>
             <label>
@@ -440,9 +657,20 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               </label>
             </div>
 
-            <button className="primary-action" disabled={saving}>
-              {saving ? "Saving…" : "Save AI governance policy"}
-            </button>
+            <div className="ai-governance-policy-actions">
+              <button className="primary-action" disabled={saving} type="submit">
+                {saving ? "Saving…" : "Save AI governance policy"}
+              </button>
+              <a className="app-button secondary" href={chatHref}>
+                Open Chat
+              </a>
+              <a className="app-button secondary" href={budgetsHref}>
+                Open Budgets
+              </a>
+              <a className="app-button secondary" href={memoryHref}>
+                Open Memory
+              </a>
+            </div>
           </form>
 
           <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
@@ -451,11 +679,13 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               {budget?.modelAllowlistEnabled || budget?.providerAllowlistEnabled
                 ? "Model/provider allowlist enforcement is on."
                 : "Model/provider allowlist enforcement is off."}{" "}
-              Edit on <a href={`/team/budgets?orgId=${orgId}`}>API budgets</a>
+              Edit on <a href={budgetsHref}>API budgets</a>
               {budget?.killSwitch ? " · Kill switch is active." : "."}
             </p>
             {models.length === 0 ? (
-              <p className="app-muted">No per-model rules yet.</p>
+              <p className="app-muted">
+                No per-model rules yet — an empty list is honest, not a DEMO allowlist.
+              </p>
             ) : (
               <ul>
                 {models.map((model) => (
@@ -467,22 +697,15 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
             )}
           </section>
 
-          <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
+          <section className="intel-panel ai-governance-approvals" style={{ marginTop: "1.5rem" }}>
             <span className="eyebrow">PENDING HIGH-COST APPROVALS</span>
             {approvals.length === 0 ? (
-              <p className="app-muted">No pending approvals.</p>
+              <p className="app-muted">
+                No pending approvals — the queue stays empty until a real high-cost run waits.
+              </p>
             ) : (
               approvals.map((approval) => (
-                <article
-                  key={approval.id}
-                  style={{
-                    display: "grid",
-                    gap: "0.35rem",
-                    marginTop: "0.75rem",
-                    paddingTop: "0.75rem",
-                    borderTop: "1px solid color-mix(in oklab, currentColor 12%, transparent)",
-                  }}
-                >
+                <article key={approval.id}>
                   <strong>
                     {approval.feature}
                     {approval.provider ? ` · ${approval.provider}/${approval.model}` : ""}
@@ -490,10 +713,11 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
                   <small>
                     {approval.requesterName ?? "Member"}
                     {approval.requesterEmail ? ` · ${approval.requesterEmail}` : ""} · est.{" "}
-                    {money(approval.estimatedCostUsd)} · {approval.reason ?? "approval"}
+                    {formatAiGovernanceMoney(approval.estimatedCostUsd, true)} ·{" "}
+                    {approval.reason ?? "approval"}
                   </small>
                   <small>{new Date(approval.createdAt).toLocaleString()}</small>
-                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <div className="ai-governance-approval-actions">
                     <button
                       type="button"
                       className="primary-action"
@@ -504,14 +728,14 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
                     <button type="button" onClick={() => void decide(approval.id, "deny")}>
                       Deny
                     </button>
-                    {approval.runId && <a href={`/team/ai-runs?orgId=${orgId}`}>View runs</a>}
+                    {approval.runId ? <a href={runsHref}>View runs</a> : null}
                   </div>
                 </article>
               ))
             )}
           </section>
         </>
-      )}
+      ) : null}
 
       {financeRiskModalOpen ? (
         <div
@@ -528,8 +752,9 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               </button>
             </header>
             <p className="edc-muted">
-              AI limited to pricing, amounts, vendor/source, purpose/category; never bank account
-              numbers, full card numbers, routing, SSN
+              AI is limited to pricing, amounts, vendor/source, and purpose/category. Never bank account
+              numbers, full card numbers, routing, or SSN — those patterns are redacted before any model
+              call.
             </p>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "1rem" }}>
               <button type="button" className="primary-action" onClick={acceptFinanceRisks}>
