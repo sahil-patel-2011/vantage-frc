@@ -147,8 +147,9 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     ...TONE,
     icon: "users",
     items: [
-      // `/tasks` is the live Todos board; Soft-UI `/todos` can replace it when shipped.
-      { href: "/tasks", label: "Todos", icon: "clipboard" },
+      // Soft-UI shared list at `/todos`; `/tasks` remains the build-season task board.
+      { href: "/todos", label: "Todos", icon: "clipboard" },
+      { href: "/tasks", label: "Task board", icon: "clipboard" },
       { href: "/messages", label: "Messages", icon: "chat" },
       { href: "/goals", label: "Goals", icon: "target" },
       { href: "/risks", label: "Risk Register", icon: "bolt" },
