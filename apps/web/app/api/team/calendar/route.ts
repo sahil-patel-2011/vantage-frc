@@ -23,6 +23,7 @@ import {
   type Subteam,
   type SubteamCalendarView,
   type SubteamMemberLite,
+  type TravelLegOnCalendar,
 } from "../../../../lib/subteam-calendar";
 
 function newFeedToken() {
@@ -259,6 +260,28 @@ async function loadView(
     duties = [];
   }
 
+
+  let travelLegs: TravelLegOnCalendar[] = [];
+  try {
+    const legs = await client.query<TravelLegOnCalendar>(
+      `SELECT l.id, l.trip_id AS "tripId", t.title AS "tripTitle", l.kind, l.title,
+              l.starts_at::text AS "startsAt", l.ends_at::text AS "endsAt",
+              l.location, l.meeting_point AS "meetingPoint", l.notes,
+              l.subteam_id AS "subteamId", st.name AS "subteamName", st.color AS "subteamColor",
+              l.calendar_event_id AS "calendarEventId"
+       FROM logistics_travel_legs l
+       JOIN logistics_trips t ON t.id = l.trip_id
+       LEFT JOIN team_subteams st ON st.id = l.subteam_id
+       WHERE l.org_id = $1
+       ORDER BY l.starts_at, l.sort_order
+       LIMIT 200`,
+      [orgId],
+    );
+    travelLegs = legs.rows;
+  } catch {
+    travelLegs = [];
+  }
+
   return {
     status: "ready",
     context: {
@@ -273,6 +296,7 @@ async function loadView(
     members: memberRows,
     events: eventRows,
     duties,
+    travelLegs,
     mySubteamIds: membershipsByUser.get(userId) ?? [],
     attendanceEvents,
     practiceSessions,
