@@ -1,0 +1,17 @@
+/* Soft-UI Overnight Event-Intel Brief — never DEMO overnight metrics. */
+.overnight-intel-page{display:grid;gap:16px}
+.overnight-intel-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.overnight-intel-related{display:flex;flex-wrap:wrap;gap:8px}
+.overnight-intel-next-actions{margin:0}
+.overnight-intel-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.overnight-intel-stats strong{font-size:1.5rem}
+.overnight-intel-layout{display:grid;gap:16px}
+.overnight-intel-panel{display:grid;gap:12px}
+.overnight-intel-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.overnight-intel-row{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.overnight-intel-tip{margin:0}
+@media(max-width:900px){
+  .overnight-intel-header-actions{justify-content:flex-start}
+  .overnight-intel-next-actions li{flex-direction:column;align-items:stretch}
+  .overnight-intel-row{flex-direction:column}
+}
