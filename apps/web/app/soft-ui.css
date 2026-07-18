@@ -1474,8 +1474,58 @@ body.has-app-shell .admin-empty{
   min-height:120px;padding:22px;text-align:center;color:var(--soft-muted);
   border:1px dashed var(--soft-line);border-radius:12px;background:var(--soft-bg);font-size:13px;
 }
+body.has-app-shell .admin-lede{margin:0 0 14px;max-width:62ch;color:var(--soft-muted);font-size:14px;line-height:1.5}
+body.has-app-shell .admin-lede a{color:var(--soft-accent);font-weight:700;text-decoration:none}
+body.has-app-shell .admin-waitlist-search{display:flex;align-items:end;gap:10px;margin:0 0 14px}
+body.has-app-shell .admin-waitlist-search label{flex:1;display:grid;gap:6px;font:600 13px var(--font-source-sans),ui-sans-serif}
+body.has-app-shell .admin-waitlist-search input{
+  min-height:44px;padding:0 12px;border:1px solid var(--soft-line);border-radius:12px;
+  background:var(--soft-card);color:inherit;font:500 14px var(--font-source-sans),ui-sans-serif;
+}
+body.has-app-shell .admin-waitlist-row{flex-wrap:wrap}
+body.has-app-shell .admin-waitlist-actions{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
+body.has-app-shell .admin-waitlist-actions a,body.has-app-shell .admin-waitlist-actions button{
+  min-height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--soft-line);
+  background:var(--soft-card);color:var(--soft-ink);font:700 12px var(--font-source-sans),ui-sans-serif;
+  text-decoration:none;cursor:pointer;
+}
+body.has-app-shell .admin-waitlist-actions a{display:inline-flex;align-items:center;color:var(--soft-accent);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line))}
+body.has-app-shell .admin-waitlist-actions button:disabled{opacity:.55;cursor:not-allowed}
+body.has-app-shell .admin-control .intel-panel small{display:block;margin-top:6px;color:var(--soft-muted);font-weight:500;font-size:12px}
 @media(max-width:700px){
   body.has-app-shell .admin-control .cards{grid-template-columns:1fr}
+  body.has-app-shell .admin-waitlist-search{flex-direction:column;align-items:stretch}
+}
+
+/* Shared Soft-UI primitives (components/ui) */
+.soft-form-row{display:grid;gap:4px;min-width:0}
+.soft-form-row.wide{grid-column:1/-1}
+.soft-form-grid{display:grid;gap:10px}
+.soft-tab-bar{
+  display:flex;flex-wrap:wrap;gap:4px;padding:4px;margin:0 0 14px;
+  background:var(--soft-bg,#eef2f7);border:1px solid var(--soft-line,#d5dde8);border-radius:14px;
+  width:max-content;max-width:100%;
+}
+.soft-tab-bar button{
+  min-height:38px;padding:0 12px;border:0;border-radius:10px;background:transparent;
+  color:var(--soft-muted,#6b7280);font:700 12px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+}
+.soft-tab-bar button.active,.soft-tab-bar button[aria-selected="true"]{
+  color:var(--soft-ink,#0f172a);background:var(--soft-card,#fff);box-shadow:0 4px 14px rgba(28,36,48,.08);
+}
+.soft-tab-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.soft-tab-toolbar button,.soft-tab-toolbar a{
+  min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--soft-line,#d5dde8);
+  background:var(--soft-bg,#eef2f7);color:var(--soft-ink,#0f172a);font:700 12px var(--font-source-sans),ui-sans-serif;
+  text-decoration:none;cursor:pointer;
+}
+.soft-tab-toolbar button.primary,.soft-tab-toolbar button[aria-selected="true"]{
+  color:#fff;background:var(--soft-accent,#2563eb);border-color:var(--soft-accent,#2563eb);
+}
+.soft-tab-toolbar button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:650px){
+  .soft-tab-bar{width:100%}
+  .soft-tab-bar button{flex:1}
 }
 
 /* Strategy live denser */

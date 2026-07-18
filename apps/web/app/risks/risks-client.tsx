@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { riskCategoryLabel, riskLevelLabel, riskStatusLabel } from "../../lib/risks";
 import { RISK_CATEGORIES, RISK_STATUSES, type RisksView } from "../../lib/risks/compute-risks";
 import type { MatrixCell, RiskCategory, RiskEvaluation, RiskLevel, RiskStatus } from "../../lib/risks/types";
@@ -79,15 +80,16 @@ export default function RisksClient() {
 
   return (
     <main className="module-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Team / Risk Register</span>
-          <h1>Risk Register</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Team / Risk Register"
+        title="Risk Register"
+        description={
+          <>
             Identify what could derail your season — mechanism failures, schedule slips, funding gaps, driver
             availability — score each by likelihood and impact, assign a mitigation, and track it to closure.
-          </p>
-        </div>
+          </>
+        }
+      >
         {view?.status === "live" && view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
@@ -107,7 +109,7 @@ export default function RisksClient() {
             </select>
           </label>
         ) : null}
-      </header>
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -116,22 +118,18 @@ export default function RisksClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load the risk register</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
+        <EmptyState
+          title="Could not load the risk register"
+          description="A network or server issue prevented loading. Try again."
+        >
           <button type="button" className="app-button secondary" onClick={() => load()}>
             Retry
           </button>
-        </section>
+        </EmptyState>
       ) : view == null ? (
-        <section className="app-card soft-panel">
-          <h2>Loading…</h2>
-          <p className="app-muted">Checking your workspace.</p>
-        </section>
+        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -143,7 +141,7 @@ export default function RisksClient() {
               </li>
             ))}
           </ol>
-        </section>
+        </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <SummaryTiles view={view} />
@@ -168,7 +166,7 @@ function SummaryTiles({ view }: { view: LiveView }) {
     { label: "Overdue", value: String(s.overdue.length) },
   ];
   return (
-    <section className="app-card soft-panel">
+    <Panel>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -189,13 +187,13 @@ function SummaryTiles({ view }: { view: LiveView }) {
           </span>
         ))}
       </div>
-    </section>
+    </Panel>
   );
 }
 
 function RiskMatrix({ view }: { view: LiveView }) {
   return (
-    <section className="app-card soft-panel" style={{ overflowX: "auto" }}>
+    <Panel style={{ overflowX: "auto" }}>
       <h2 style={{ marginTop: 0 }}>Risk matrix</h2>
       <div style={{ display: "flex", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center" }}>
@@ -238,21 +236,21 @@ function RiskMatrix({ view }: { view: LiveView }) {
           </div>
         </div>
       </div>
-    </section>
+    </Panel>
   );
 }
 
 function TopRisks({ view }: { view: LiveView }) {
   if (view.summary.topRisks.length === 0) {
     return (
-      <section className="app-card soft-panel">
+      <Panel>
         <h2 style={{ marginTop: 0 }}>Top risks</h2>
         <p className="app-muted">No active risks logged yet.</p>
-      </section>
+      </Panel>
     );
   }
   return (
-    <section className="app-card soft-panel">
+    <Panel>
       <h2 style={{ marginTop: 0 }}>Top risks</h2>
       <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
         {view.summary.topRisks.map((evaluation) => (
@@ -269,7 +267,7 @@ function TopRisks({ view }: { view: LiveView }) {
           </li>
         ))}
       </ol>
-    </section>
+    </Panel>
   );
 }
 
@@ -283,8 +281,8 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
   return (
-    <form
-      className="app-card soft-panel"
+    <Panel
+      as="form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.title.trim()) return;
@@ -302,13 +300,11 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add risk</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
-        <label style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-          <span className="app-muted">Risk</span>
+      <FormGrid min={130}>
+        <FormRow label="Risk" wide>
           <input value={form.title} onChange={set("title")} placeholder="Climber winch could fail under load" required />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Category</span>
+        </FormRow>
+        <FormRow label="Category">
           <select value={form.category} onChange={set("category")}>
             {RISK_CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -316,9 +312,8 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Likelihood (1–5)</span>
+        </FormRow>
+        <FormRow label="Likelihood (1–5)">
           <select value={form.likelihood} onChange={set("likelihood")}>
             {SCALES.map((n) => (
               <option key={n} value={n}>
@@ -326,9 +321,8 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Impact (1–5)</span>
+        </FormRow>
+        <FormRow label="Impact (1–5)">
           <select value={form.impact} onChange={set("impact")}>
             {SCALES.map((n) => (
               <option key={n} value={n}>
@@ -336,33 +330,32 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Owner (optional)</span>
+        </FormRow>
+        <FormRow label="Owner (optional)">
           <input value={form.owner} onChange={set("owner")} />
-        </label>
-        <label style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-          <span className="app-muted">Mitigation (optional)</span>
+        </FormRow>
+        <FormRow label="Mitigation (optional)" wide>
           <input value={form.mitigation} onChange={set("mitigation")} placeholder="Add a redundant ratchet; test to 1.5× load" />
-        </label>
-      </div>
+        </FormRow>
+      </FormGrid>
       <div>
         <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
           Add risk
         </button>
       </div>
-    </form>
+    </Panel>
   );
 }
 
 function RiskList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
   if (view.evaluations.length === 0) {
     return (
-      <section className="app-card soft-panel">
-        <span className="app-badge setup">No risks yet</span>
-        <h2>Start your risk register</h2>
-        <p className="app-muted">Add the things that could go wrong this season — the earlier you name them, the cheaper they are to mitigate.</p>
-      </section>
+      <EmptyState
+        badge="No risks yet"
+        badgeTone="setup"
+        title="Start your risk register"
+        description="Add the things that could go wrong this season — the earlier you name them, the cheaper they are to mitigate."
+      />
     );
   }
   return (
@@ -378,7 +371,7 @@ function RiskCard({ evaluation, busy, mutate }: { evaluation: RiskEvaluation; bu
   const { risk, score, level, overdue, daysToDue } = evaluation;
   const dimmed = risk.status === "closed";
   return (
-    <article className="app-card soft-panel" style={{ opacity: dimmed ? 0.6 : 1 }}>
+    <Panel as="article" style={{ opacity: dimmed ? 0.6 : 1 }}>
       <header style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
         <div>
           <span className="app-badge" style={{ background: LEVEL_COLOR[level], color: "#fff" }}>
@@ -455,6 +448,6 @@ function RiskCard({ evaluation, busy, mutate }: { evaluation: RiskEvaluation; bu
           Delete
         </button>
       </footer>
-    </article>
+    </Panel>
   );
 }

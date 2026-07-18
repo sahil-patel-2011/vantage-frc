@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { costCategoryLabel, subscriptionCadenceLabel, usd } from "../../lib/costs";
 import {
   COST_CATEGORIES,
@@ -95,15 +96,16 @@ export default function CostsClient() {
 
   return (
     <main className="module-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Team / Season Costs</span>
-          <h1>Season Costs &amp; Budget</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Team / Season Costs"
+        title="Season Costs & Budget"
+        description={
+          <>
             The full cost of your season in one place — real-world spend (registration, event fees, purchases), recurring
             subscriptions, and the app&apos;s own AI/API usage — tracked against one budget.
-          </p>
-        </div>
+          </>
+        }
+      >
         {view?.status === "live" && view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
@@ -123,7 +125,7 @@ export default function CostsClient() {
             </select>
           </label>
         ) : null}
-      </header>
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -132,22 +134,18 @@ export default function CostsClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load season costs</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
+        <EmptyState
+          title="Could not load season costs"
+          description="A network or server issue prevented loading. Try again."
+        >
           <button type="button" className="app-button secondary" onClick={() => load()}>
             Retry
           </button>
-        </section>
+        </EmptyState>
       ) : view == null ? (
-        <section className="app-card soft-panel">
-          <h2>Loading…</h2>
-          <p className="app-muted">Checking your workspace.</p>
-        </section>
+        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -159,7 +157,7 @@ export default function CostsClient() {
               </li>
             ))}
           </ol>
-        </section>
+        </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <AllInPanel view={view} />
@@ -179,7 +177,7 @@ function AllInPanel({ view }: { view: LiveView }) {
   const all = view.allCosts;
   const max = Math.max(all.grandTotal, 1);
   return (
-    <section className="app-card soft-panel" aria-label="Total season cost" style={{ display: "grid", gap: 12 }}>
+    <Panel aria-label="Total season cost" style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
         <div>
           <span className="app-muted">All-in season cost ({view.seasonYear})</span>
@@ -212,7 +210,7 @@ function AllInPanel({ view }: { view: LiveView }) {
         App AI/API usage ({usd(view.apiUsageUsd)}) is read live from your usage ledger for this season — separate from the
         real-world budget below.
       </small>
-    </section>
+    </Panel>
   );
 }
 
@@ -237,7 +235,7 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
     });
 
   return (
-    <section className="app-card soft-panel" style={{ display: "grid", gap: 12 }}>
+    <Panel style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
         <div>
           <strong style={{ fontSize: "1.6rem", display: "block" }}>
@@ -319,7 +317,7 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
           </span>
         </label>
       </form>
-    </section>
+    </Panel>
   );
 }
 
@@ -490,8 +488,8 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
   return (
-    <form
-      className="app-card soft-panel"
+    <Panel
+      as="form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.label.trim() || !form.incurredOn) return;
@@ -509,13 +507,11 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add cost</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-        <label style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-          <span className="app-muted">What was it?</span>
+      <FormGrid min={140}>
+        <FormRow label="What was it?" wide>
           <input value={form.label} onChange={set("label")} placeholder="Regional registration, swerve modules…" required />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Category</span>
+        </FormRow>
+        <FormRow label="Category">
           <select value={form.category} onChange={set("category")}>
             {COST_CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -523,21 +519,17 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Amount ($)</span>
+        </FormRow>
+        <FormRow label="Amount ($)">
           <input type="number" min={0} step="0.01" value={form.amountUsd} onChange={set("amountUsd")} required />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Vendor (optional)</span>
+        </FormRow>
+        <FormRow label="Vendor (optional)">
           <input value={form.vendor} onChange={set("vendor")} />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Date</span>
+        </FormRow>
+        <FormRow label="Date">
           <input type="date" value={form.incurredOn} onChange={set("incurredOn")} required />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Status</span>
+        </FormRow>
+        <FormRow label="Status">
           <select value={form.status} onChange={set("status")}>
             {COST_STATUSES.map((status) => (
               <option key={status} value={status}>
@@ -545,14 +537,14 @@ function AddCostForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
               </option>
             ))}
           </select>
-        </label>
-      </div>
+        </FormRow>
+      </FormGrid>
       <div>
         <button type="submit" className="app-button" disabled={busy || !form.label.trim() || !form.incurredOn}>
           Add cost
         </button>
       </div>
-    </form>
+    </Panel>
   );
 }
 
@@ -583,15 +575,16 @@ function CategoryBreakdown({ view }: { view: LiveView }) {
 function CostLog({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
   if (view.costs.length === 0) {
     return (
-      <section className="app-card soft-panel">
-        <span className="app-badge setup">No costs yet</span>
-        <h2>Log your first cost</h2>
-        <p className="app-muted">Start with your season registration and event fees, then add purchases as you go.</p>
-      </section>
+      <EmptyState
+        badge="No costs yet"
+        badgeTone="setup"
+        title="Log your first cost"
+        description="Start with your season registration and event fees, then add purchases as you go."
+      />
     );
   }
   return (
-    <section className="app-card soft-panel" style={{ overflowX: "auto" }}>
+    <Panel style={{ overflowX: "auto" }}>
       <h2 style={{ marginTop: 0 }}>Cost log</h2>
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
         <thead>
@@ -644,6 +637,6 @@ function CostLog({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate
           ))}
         </tbody>
       </table>
-    </section>
+    </Panel>
   );
 }

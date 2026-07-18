@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EmptyState, TabBar } from "../../components/ui";
 import { ThemeToggle } from "../theme-provider";
 import { signOutAndRedirect } from "../../lib/sign-out";
 
@@ -148,26 +149,18 @@ export default function AccountClient() {
         </div>
       </header>
 
-      <nav className="account-tabs" aria-label="Account sections">
-        {(
-          [
-            ["profile", "Profile"],
-            ["appearance", "Appearance"],
-            ["notifications", "Alerts"],
-            ["integrations", "Links"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={tab === id ? "active" : undefined}
-            aria-pressed={tab === id}
-            onClick={() => setTab(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      <TabBar
+        className="account-tabs"
+        aria-label="Account sections"
+        value={tab}
+        onChange={(id) => setTab(id as Tab)}
+        tabs={[
+          { id: "profile", label: "Profile" },
+          { id: "appearance", label: "Appearance" },
+          { id: "notifications", label: "Alerts" },
+          { id: "integrations", label: "Links" },
+        ]}
+      />
 
       {message ? (
         <p className={`telemetry-status${messageOk ? " success" : ""}`} role="status">
@@ -176,11 +169,14 @@ export default function AccountClient() {
       ) : null}
 
       {!account && !message ? (
-        <section className="soft-empty" aria-busy="true">
-          <span className="app-badge setup">Loading</span>
-          <h2>Loading account</h2>
-          <p>Pulling your profile and preferences…</p>
-        </section>
+        <EmptyState
+          soft
+          badge="Loading"
+          badgeTone="setup"
+          title="Loading account"
+          description="Pulling your profile and preferences…"
+          aria-busy
+        />
       ) : null}
 
       {tab === "profile" && account ? (

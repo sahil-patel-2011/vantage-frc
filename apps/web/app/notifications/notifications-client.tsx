@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { EmptyState, PageHeader, TabBar } from "../../components/ui";
 
 type NotifItem = {
   id: string;
@@ -62,34 +63,38 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
 
   return (
     <main className="notif-page module-page">
-      <header className="app-page-header">
-        <div>
-          <p className="breadcrumbs">Account / Inbox</p>
-          <h1>Notifications</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Account / Inbox"
+        title="Notifications"
+        description={
+          <>
             Real alerts for your signed-in account. Empty means nothing has been sent yet — Vantage does not invent
             competition notices.
-          </p>
-        </div>
-        {unreadCount >= 1 ? <span className="app-badge">{unreadCount} unread</span> : <span className="app-badge good">Inbox clear</span>}
-      </header>
+          </>
+        }
+      >
+        {unreadCount >= 1 ? (
+          <span className="app-badge">{unreadCount} unread</span>
+        ) : (
+          <span className="app-badge good">Inbox clear</span>
+        )}
+      </PageHeader>
 
-      <div className="notif-toolbar" role="toolbar" aria-label="Inbox filters">
-        <button type="button" className={filter === "all" ? "primary" : undefined} onClick={() => setFilter("all")}>
-          All
-        </button>
-        <button
-          type="button"
-          className={filter === "unread" ? "primary" : undefined}
-          onClick={() => setFilter("unread")}
-        >
-          Unread
-        </button>
+      <TabBar
+        variant="toolbar"
+        aria-label="Inbox filters"
+        value={filter}
+        onChange={(id) => setFilter(id as "all" | "unread")}
+        tabs={[
+          { id: "all", label: "All" },
+          { id: "unread", label: "Unread" },
+        ]}
+      >
         <button type="button" disabled={busy || unreadCount < 1} onClick={() => void patch("read_all")}>
           Mark all read
         </button>
         <a href="/account?tab=notifications">Preferences</a>
-      </div>
+      </TabBar>
 
       {message ? (
         <p className="telemetry-status" role="status">
@@ -98,22 +103,19 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
       ) : null}
 
       {loading ? (
-        <div className="notif-empty" aria-busy="true">
-          <strong>Loading inbox…</strong>
-          <p>Fetching notifications for your account.</p>
-        </div>
+        <EmptyState soft title="Loading inbox…" description="Fetching notifications for your account." aria-busy />
       ) : items.length === 0 ? (
-        <div className="notif-empty">
-          <span className="app-badge good">Empty</span>
-          <strong>{filter === "unread" ? "No unread notifications" : "No notifications yet"}</strong>
-          <p>
-            When exports finish, teammates message you, or billing/sync events fire, they appear here with a real
-            timestamp — never as placeholder competition noise.
-          </p>
+        <EmptyState
+          soft
+          badge="Empty"
+          badgeTone="good"
+          title={filter === "unread" ? "No unread notifications" : "No notifications yet"}
+          description="When exports finish, teammates message you, or billing/sync events fire, they appear here with a real timestamp — never as placeholder competition noise."
+        >
           <a className="app-button secondary" href="/account?tab=notifications">
             Manage preferences
           </a>
-        </div>
+        </EmptyState>
       ) : (
         <ul className="notif-list">
           {items.map((item) => (
