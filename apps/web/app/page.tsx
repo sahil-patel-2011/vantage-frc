@@ -268,24 +268,44 @@ export default function Home() {
             <p>
               Free covers scouting, reference data, manual strategy, exports, and team ops with BYOK or local AI. Paid
               plans add managed routing and included API allowance at provider list rates—then a hard stop unless you buy
-              Usage Credits or enable PAYG. Access $55 · Individual Pro $79 / Max $119 · Team Pro $229 / Max $449.
+              Usage Credits or enable PAYG.
             </p>
+            <ul className="pricing-price-strip" aria-label="Raised monthly plan prices">
+              <li>
+                <span>Access</span>
+                <strong>$55</strong>
+              </li>
+              <li>
+                <span>Individual Pro / Max</span>
+                <strong>$79 / $119</strong>
+              </li>
+              <li>
+                <span>Team Pro / Max</span>
+                <strong>$229 / $449</strong>
+              </li>
+            </ul>
           </div>
-          <a className="button secondary" href="/pricing">
-            Review plans
-          </a>
+          <div className="pricing-preview-actions">
+            <a className="button primary" href="#waitlist">
+              Join the waitlist
+            </a>
+            <a className="button secondary" href="/pricing">
+              Review plans
+            </a>
+          </div>
         </section>
 
         <FAQ />
 
-        <section className="waitlist v2-final-waitlist" id="waitlist">
+        <section className="waitlist v2-final-waitlist soft-waitlist-band" id="waitlist">
           <div>
+            <p className="brand-hero-wordmark route-wordmark waitlist-wordmark">Vantage</p>
             <span className="section-id">EARLY ACCESS</span>
             <h2>Put one operational picture in front of the whole team.</h2>
             <p>
-              Join the prelaunch list. Account verification, <a href="/terms">terms</a>, <a href="/privacy">privacy</a>,
-              and administrator-created team access remain separate launch steps. See <a href="/pricing">pricing</a> for
-              plan details.
+              Join the prelaunch list—terms acceptance is required. Account verification and administrator-created
+              team access remain separate launch steps. Raised plans: Access $55 · Individual $79/$119 · Team $229/$449
+              on <a href="/pricing">pricing</a>. Read <a href="/terms">terms</a> and <a href="/privacy">privacy</a>.
             </p>
           </div>
           <WaitlistForm idPrefix="hero" />
