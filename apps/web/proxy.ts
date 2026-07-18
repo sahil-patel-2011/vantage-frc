@@ -15,6 +15,8 @@ const PUBLIC_PAGES = new Set([
   "/terms",
   "/signin",
   "/sign-in",
+  // Precached navigation shell for cold offline loads (CD #10).
+  "/offline",
   // Token-gated email unsubscribe (no session).
   "/unsubscribe",
 ]);
@@ -33,6 +35,8 @@ const PUBLIC_PREFIXES = [
   "/support",
   // Opt-in email one-click unsubscribe (token in body; no session).
   "/api/notifications/unsubscribe",
+  // Vercel cron jobs authenticate via CRON_SECRET (Bearer / x-cron-secret).
+  "/api/cron",
   // Calendar ICS subscribe URLs are allow-listed in isPublicCalendarFeed (token path only).
   "/api/parts-relay",
   "/parts-relay",

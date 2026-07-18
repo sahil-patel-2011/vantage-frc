@@ -1,0 +1,79 @@
+.offline-shell {
+  min-height: 100dvh;
+  margin: 0;
+  padding: clamp(28px, 6vw, 64px) clamp(18px, 5vw, 40px) 48px;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, color-mix(in srgb, var(--soft-accent, #0f766e) 18%, transparent), transparent),
+    linear-gradient(165deg, var(--soft-bg, #f7f6f2) 0%, color-mix(in srgb, var(--soft-bg, #f7f6f2) 88%, #dbe4e0) 100%);
+  color: var(--soft-ink, #14201c);
+  font-family: var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.offline-shell-brand {
+  margin: 0 0 12px;
+  font: 700 clamp(28px, 5vw, 40px) var(--font-source-serif), Georgia, serif;
+  letter-spacing: -0.03em;
+}
+
+.offline-shell h1 {
+  margin: 0 0 10px;
+  font: 650 clamp(22px, 3.5vw, 28px) var(--font-source-sans), ui-sans-serif;
+}
+
+.offline-shell-lead {
+  max-width: 36rem;
+  margin: 0 0 16px;
+  color: var(--soft-muted, #5b6b66);
+  line-height: 1.5;
+}
+
+.offline-shell-status {
+  max-width: 36rem;
+  margin: 0 0 28px;
+  font-size: 13px;
+  color: var(--soft-muted, #5b6b66);
+}
+
+.offline-shell-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  max-width: 28rem;
+}
+
+.offline-shell-links a {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--soft-line, #d5ddd9);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--soft-card, #fff) 92%, transparent);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 1px 0 color-mix(in srgb, #000 4%, transparent);
+}
+
+.offline-shell-links a:hover,
+.offline-shell-links a:focus-visible {
+  border-color: color-mix(in srgb, var(--soft-accent, #0f766e) 45%, var(--soft-line, #d5ddd9));
+  outline: none;
+}
+
+.offline-shell-links strong {
+  font-size: 15px;
+}
+
+.offline-shell-links span {
+  font-size: 13px;
+  color: var(--soft-muted, #5b6b66);
+}
+
+.offline-shell-hint {
+  max-width: 36rem;
+  margin: 28px 0 0;
+  font-size: 13px;
+  color: var(--soft-muted, #5b6b66);
+  line-height: 1.45;
+}

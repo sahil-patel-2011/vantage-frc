@@ -2,8 +2,9 @@
   "name": "Vantage Competition Operations",
   "short_name": "Vantage",
   "description": "FRC scouting, strategy, engineering, and event operations",
-  "id": "/dashboard",
-  "start_url": "/dashboard",
+  "id": "/offline",
+  "start_url": "/offline",
+
   "scope": "/",
   "display": "standalone",
   "background_color": "#f7f6f2",

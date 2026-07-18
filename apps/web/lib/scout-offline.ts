@@ -3,10 +3,12 @@
 import type { SyncEntry } from "@vantage/scouting";
 
 const DB_NAME = "vantage-scouting";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const OUTBOX = "entry-outbox";
 const MEDIA = "media-outbox";
 const CACHE = "event-cache";
+const META = "meta";
+const LAST_ORG_KEY = "lastOrgId";
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -16,6 +18,7 @@ function openDatabase(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(OUTBOX)) db.createObjectStore(OUTBOX, { keyPath: "clientId" });
       if (!db.objectStoreNames.contains(MEDIA)) db.createObjectStore(MEDIA, { keyPath: "clientId" });
       if (!db.objectStoreNames.contains(CACHE)) db.createObjectStore(CACHE, { keyPath: "orgId" });
+      if (!db.objectStoreNames.contains(META)) db.createObjectStore(META, { keyPath: "key" });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -52,9 +55,30 @@ export async function queueMedia(input: {
   await requestValue(objectStore.put(input));
 }
 
+export async function rememberOrgId(orgId: string): Promise<void> {
+  const objectStore = await store("readwrite", META);
+  await requestValue(objectStore.put({ key: LAST_ORG_KEY, value: orgId }));
+}
+
+export async function getLastOrgId(): Promise<string | null> {
+  const objectStore = await store("readonly", META);
+  const row = await requestValue<{ value?: string } | undefined>(objectStore.get(LAST_ORG_KEY));
+  if (typeof row?.value === "string" && row.value) return row.value;
+
+  const cacheStore = await store("readonly", CACHE);
+  const cached = await requestValue<Array<{ orgId: string }>>(cacheStore.getAll());
+  const fallback = cached[0]?.orgId;
+  if (fallback) {
+    await rememberOrgId(fallback);
+    return fallback;
+  }
+  return null;
+}
+
 export async function cacheEvent(orgId: string, data: unknown): Promise<void> {
   const objectStore = await store("readwrite", CACHE);
   await requestValue(objectStore.put({ orgId, data, cachedAt: new Date().toISOString() }));
+  await rememberOrgId(orgId);
 }
 
 export async function getCachedEvent<T>(orgId: string): Promise<T | null> {
