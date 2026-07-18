@@ -35,6 +35,15 @@ function tbaSlice(access: ReferenceAccessInfo): TbaAccessInfo {
   };
 }
 
+function normalizeScoutSource(
+  source: string | null | undefined,
+): ScoutEntryRecord["source"] {
+  if (source === "manual" || source === "voice" || source === "import" || source === "video") {
+    return source;
+  }
+  return undefined;
+}
+
 /** @deprecated Prefer resolveReferenceAccess — kept for callers that only need TBA. */
 export async function resolveTbaAccess(
   client: PoolClient,
@@ -187,13 +196,7 @@ async function loadScoutOperations(
           scoutUserId: row.scoutUserId,
           influence: "tba_conflict_excluded",
           weight: 0,
-          source:
-            row.source === "manual" ||
-            row.source === "voice" ||
-            row.source === "import" ||
-            row.source === "video"
-              ? row.source
-              : undefined,
+          source: normalizeScoutSource(row.source),
           videoReviewId: row.videoReviewId,
           videoAtSeconds: row.videoAtSeconds,
         });
@@ -207,13 +210,7 @@ async function loadScoutOperations(
         payload: trusted?.trustedPayload ?? row.payload ?? {},
         confidence: normalizeConfidence(row.confidence),
         updatedAt: row.updatedAt,
-        source:
-          row.source === "manual" ||
-          row.source === "voice" ||
-          row.source === "import" ||
-          row.source === "video"
-            ? row.source
-            : undefined,
+        source: normalizeScoutSource(row.source),
         videoReviewId: row.videoReviewId,
         videoAtSeconds: row.videoAtSeconds,
       };

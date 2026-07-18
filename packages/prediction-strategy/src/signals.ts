@@ -429,6 +429,9 @@ export type PickCandidate = {
   reliability: number | null;
   foulRate: number | null;
   suggestedTier: PickTier | null;
+  /** Scout fields that contradicted TBA official results (desk callout). */
+  tbaConflictCount?: number;
+  tbaConflictFields?: string[];
 };
 
 export type PickDataModeInfo = {
