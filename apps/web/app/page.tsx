@@ -256,7 +256,7 @@ export default function Home() {
             <p>
               Free covers scouting, reference data, manual strategy, exports, and team ops with BYOK or local AI. Paid
               plans add managed routing and included API allowance at provider list rates—then a hard stop unless you buy
-              Usage Credits or enable PAYG. Individual Pro $49 · Max $79 · Team Pro $149 · Team Max $299.
+              Usage Credits or enable PAYG. Individual Pro $79 · Max $119 · Team Pro $229 · Team Max $449.
             </p>
           </div>
           <a className="button secondary" href="/pricing">

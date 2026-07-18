@@ -1046,7 +1046,7 @@ export async function grantTrial(
   const allowed: TrialPlanCode[] = ["team_trial", "team_pro", "individual_pro", "individual_max", "managed_20", "managed_50"];
   if (!allowed.includes(input.planCode)) throw new Error("Invalid trial plan");
   const planCode = input.planCode === "managed_20" || input.planCode === "managed_50" ? "team_trial" : input.planCode;
-  const creditsCap = input.creditsCapUsd ?? 20;
+  const creditsCap = input.creditsCapUsd ?? 30;
   const startsAt = new Date();
   const expiresAt = new Date(startsAt.getTime() + 7 * 24 * 60 * 60 * 1000);
   await client.query(

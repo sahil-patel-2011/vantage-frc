@@ -63,8 +63,8 @@ export default function PricingPage() {
               with notice; active paid periods keep their snapshotted terms.
             </p>
             <p className="pricing-note">
-              Catalog defaults: Free $0 / $0 API · Individual Pro $49 / $40 · Individual Max $79 / $68 · Team Pro $149 /
-              $130 · Team Max $299 / $260 · Access $35 + PAYG · Week team trial $20 API / 7 days.
+              Catalog defaults: Free $0 / $0 API · Individual Pro $79 / $50 · Individual Max $119 / $85 · Team Pro $229 /
+              $150 · Team Max $449 / $300 · Access $55 + PAYG · Week team trial $30 API / 7 days.
             </p>
             <p className="pricing-footnote">
               <strong>Free vs FRC Assistant:</strong> Free includes offline scouting, cached reference data, manual
