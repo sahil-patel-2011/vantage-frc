@@ -1,4 +1,5 @@
 import CadWorkspace from "./cad-client";
+import "./cad-setup.css";
 
 export default async function CadPage({
   searchParams,

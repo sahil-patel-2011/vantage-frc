@@ -61,6 +61,8 @@ Mock without Autodesk: `VANTAGE_CAD_MOCK=1 vantage-cad start`
 - `FUSION_RELAY_SIGNING_SECRET` must match between Vantage server and the Fusion add-in process env (default local secret is for demos only).
 - Device token stored via OS keychain/`~/.vantage-cad/credentials.json` — never commit.
 
+When no desktop is paired or the relay is offline, CAD Builder shows **Setup required** on Fusion steps — jobs do not run on Vercel.
+
 ## Agent rules
 
 - Mutations require human approval in the web UI (allowlisted ops only).

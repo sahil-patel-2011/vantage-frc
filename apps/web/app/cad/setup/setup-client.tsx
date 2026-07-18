@@ -34,13 +34,19 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
   const [devices, setDevices] = useState<Device[]>([]);
   const [message, setMessage] = useState("");
   const [onshapeConfigured, setOnshapeConfigured] = useState(false);
+  const [onshapeSetupMessage, setOnshapeSetupMessage] = useState("");
 
   async function load() {
     const response = await fetch(`/api/cad?orgId=${encodeURIComponent(orgId)}`);
     const data = await response.json();
     if (response.ok) {
       setDevices(data.devices ?? []);
-      setOnshapeConfigured(Boolean(data.onshapeConfigured));
+      setOnshapeConfigured(Boolean(data.onshapeConfigured ?? data.onshape?.configured));
+      setOnshapeSetupMessage(
+        data.onshape?.setupRequired
+          ? String(data.onshape.message ?? "Setup required — configure Onshape OAuth on the server.")
+          : "",
+      );
     } else setMessage(data.error);
   }
 
@@ -85,6 +91,13 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
         <p className="telemetry-status" role="status">
           {message}
         </p>
+      ) : null}
+
+      {onshapeSetupMessage && cadTarget === "onshape" ? (
+        <aside className="cad-setup-required" role="status">
+          <strong>Setup required · Onshape</strong>
+          <p>{onshapeSetupMessage}</p>
+        </aside>
       ) : null}
 
       <ol className="cad-setup-steps" aria-label="CAD setup progress">

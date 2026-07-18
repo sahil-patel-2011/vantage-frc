@@ -34,10 +34,13 @@ Register the redirect URI in the Onshape Developer Portal. Redeploy after settin
 
 Also ensure `BETTER_AUTH_SECRET` (or KMS) is set so tokens encrypt at rest in `cad_connections`.
 
-Status helpers (package `@vantage/cad`):
+- Status helpers (package `@vantage/cad`):
 
 - `isOnshapeOAuthConfigured()` / `onshapeSetupStatus()` → `{ configured, setupRequired, message }`
-- API: `GET /api/cad/onshape?orgId=…` and `GET /api/cad?orgId=…` (`onshapeConfigured`)
+- `createMeteredCadBriefJob` / `planCadStrategyToolCalls` (re-exported from `@vantage/agent`) — strategy.match + kickoff + FMEA autocall into briefs
+- API: `GET /api/cad/onshape?orgId=…` and `GET /api/cad?orgId=…` (`onshapeConfigured`, `onshape.setupRequired`)
+
+UI shows a clear **Setup required** banner when OAuth env is missing. Users can still create Onshape-platform briefs once env is configured; **Run Onshape** stays blocked until the user connects OAuth.
 
 ## User connect flow
 

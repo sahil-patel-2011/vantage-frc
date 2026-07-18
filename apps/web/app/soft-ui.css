@@ -1274,11 +1274,14 @@ body.has-app-shell .display-nav{
   border-color:var(--soft-accent)!important;border-radius:12px!important;color:var(--soft-accent)!important;
 }
 
-/* Strategy / CAD module pages already token-based ? soft radius + shadow */
+/* Strategy / CAD module pages already token-based — soft radius + shadow */
 body.has-app-shell .strategy-page .app-card,
 body.has-app-shell .strategy-draft-page .app-card,
 body.has-app-shell .strategy-board-public .app-card,
-body.has-app-shell .cad-module .app-card{
+body.has-app-shell .cad-module .app-card,
+body.has-app-shell .cad-connections-page .app-card,
+body.has-app-shell .cad-setup-page .cad-setup-panel,
+body.has-app-shell .cad-pair-page .cad-pair-card{
   border-radius:var(--soft-radius);box-shadow:var(--soft-shadow);
 }
 body.has-app-shell .strategy-tabs{
@@ -1294,6 +1297,16 @@ body.has-app-shell .cad-job-list button.active{
 body.has-app-shell .cad-mode-picker label{border-radius:12px}
 body.has-app-shell .cad-mode-picker label.active{
   border-color:var(--soft-accent);box-shadow:inset 0 0 0 1px var(--soft-accent);background:var(--soft-accent-soft);
+}
+body.has-app-shell .cad-connection-tile.needs-setup{
+  border-color:color-mix(in srgb,var(--soft-warning, #b8860b) 35%, var(--soft-line));
+}
+body.has-app-shell .cad-setup-page .cad-choice,
+body.has-app-shell .cad-pair-page .cad-choice{
+  border-radius:12px;
+}
+body.has-app-shell .cad-setup-page .cad-setup-steps li{
+  border-radius:12px;background:var(--soft-card);
 }
 
 /* Messages ? soft without touching realtime logic */
