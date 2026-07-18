@@ -186,6 +186,7 @@ export const auth = betterAuth({
 });
 
 export * from "./email";
+export * from "./email-notifications";
 export * from "./mfa";
 export * from "./access-policy";
 export * from "./auth-access";
