@@ -13,6 +13,7 @@ import {
   WorkflowStrip,
 } from "../components/marketing/product-demos";
 import { FAQ } from "../components/marketing/faq";
+import { HeroOperatingPanel, RoleValueExplorer } from "../components/marketing/value-explorer";
 
 const capIcons: Record<string, ReactNode> = {
   clipboard: (
@@ -210,10 +211,10 @@ const seasonHighlights = [
 
 export default function Home() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense">
+    <div className="marketing-site marketing-v2 marketing-dense marketing-value">
       <SiteHeader />
       <main>
-        <section className="brand-hero" aria-labelledby="brand-hero-title">
+        <section className="brand-hero brand-hero-value" aria-labelledby="brand-hero-title">
           <div className="brand-hero-plane" aria-hidden="true">
             <div className="brand-hero-grid" />
             <div className="brand-hero-field">
@@ -227,23 +228,32 @@ export default function Home() {
               <rect x="60" y="88" width="12" height="12" fill="currentColor" />
             </svg>
           </div>
-          <div className="brand-hero-copy">
+          <div className="brand-hero-copy brand-hero-value-copy">
             <p className="brand-hero-wordmark">Vantage</p>
-            <h1 id="brand-hero-title">One shared event for scout, ask, decide, and build.</h1>
+            <p className="brand-hero-kicker"><i /> THE TEAM OPERATING SYSTEM FOR FRC</p>
+            <h1 id="brand-hero-title">Run the whole season from one shared source of truth.</h1>
             <p>
-              Competition ops for FRC teams—offline scouting, grounded Assistant answers, and human-gated CAD and code
-              inside one invite-only workspace.
+              Vantage connects scouting, match strategy, robot readiness, CAD, code, sponsors, and team operations—so
+              every crew can act on the same current evidence.
             </p>
             <div className="actions">
               <a className="button primary" href="#hero-email">
-                Join the waitlist
+                Build your team workspace
               </a>
-              <a className="button secondary" href="#product-substance">
-                See what it does
+              <a className="button secondary" href="#value-by-role">
+                Explore by team role
               </a>
             </div>
+            <ul className="brand-value-trust" aria-label="Vantage platform principles">
+              <li><i /> Works through venue Wi-Fi failures</li>
+              <li><i /> Shows where every answer came from</li>
+              <li><i /> Keeps consequential AI actions human-approved</li>
+            </ul>
           </div>
+          <HeroOperatingPanel />
         </section>
+
+        <RoleValueExplorer />
 
         <section className="capability-overview" id="product-substance" aria-labelledby="capabilities-title">
           <header>

@@ -1,0 +1,12 @@
+/* Export Center Soft-UI surface. */
+.exports-page{display:grid;gap:16px}
+.exports-page .soft-panel,.exports-shell{
+  padding:16px;border:1px solid var(--soft-line,#d5dde8);border-radius:var(--soft-radius,16px);
+  background:var(--soft-card,#fff);box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+}
+.exports-page h1{margin:0 0 6px;font-size:28px;letter-spacing:-.02em}
+.exports-page p{margin:0;color:var(--soft-muted,#5a6578);line-height:1.55}
+.exports-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.exports-actions .button,.exports-actions button{
+  min-height:40px;padding:0 14px;border-radius:12px;font:600 13px var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
+}
