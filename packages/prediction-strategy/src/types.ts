@@ -52,6 +52,11 @@ export type MatchResultFact = {
   eventKey?: string;
 };
 
+export type StrategyEngineId =
+  | "weighted-current-v1"
+  | "strategy-engine-v2"
+  | "strategy-engine-max-v1";
+
 export type MatchPredictionInput = {
   matchKey: string;
   currentYear: number;
@@ -63,6 +68,18 @@ export type MatchPredictionInput = {
   eventLabel?: string;
   /** Optional TBA-shaped match results for FACT citations. */
   matchResults?: MatchResultFact[];
+  /**
+   * Engine selected from org plan entitlements.
+   * Defaults to weighted-current-v1 (Free / Access baseline).
+   */
+  engineId?: StrategyEngineId;
+};
+
+/** Deterministic explainability step (Max tier). Never invents DEMO metrics. */
+export type StrategyReasoningStep = {
+  step: number;
+  title: string;
+  detail: string;
 };
 
 export type PredictionFactor = {
@@ -101,7 +118,7 @@ export type TeamContribution = {
 
 export type AllianceWinBreakdown = {
   matchKey: string;
-  modelVersion: "weighted-current-v1";
+  modelVersion: StrategyEngineId;
   pRed: number;
   pBlue: number;
   confidenceLow: number;
@@ -116,7 +133,7 @@ export type AllianceWinBreakdown = {
 
 export type MatchPrediction = {
   matchKey: string;
-  modelVersion: "weighted-current-v1";
+  modelVersion: StrategyEngineId;
   pRed: number;
   pBlue: number;
   confidenceLow: number;
@@ -131,4 +148,6 @@ export type MatchPrediction = {
     red: TeamContribution[];
     blue: TeamContribution[];
   };
+  /** Max-tier multi-step explainability (grounded in computed factors only). */
+  reasoningSteps?: StrategyReasoningStep[];
 };

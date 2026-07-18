@@ -9,6 +9,8 @@ import {
   opponentTendencies,
   pickListHintsForAlliance,
   predictMatch,
+  selectStrategyEngine,
+  toEngineSummary,
   type Alliance,
   type EventMetricRow,
   type MatchResultFact,
@@ -26,6 +28,7 @@ import type {
   TbaAccessInfo,
 } from "./types";
 import { resolveActiveSeasonYear } from "@vantage/agent";
+import { VANTAGE_PRODUCT_VERSION } from "../product-version";
 
 function allianceKeys(alliance: unknown): string[] {
   if (!alliance || typeof alliance !== "object") return [];
@@ -357,8 +360,9 @@ function setupPayload(
   access: ReferenceAccessInfo,
   fields: Omit<
     Extract<StrategyView, { status: "setup_required" | "empty" }>,
-    "tbaConfigured" | "tbaAccess" | "referenceAccess" | "gameRules"
-  >,
+    "tbaConfigured" | "tbaAccess" | "referenceAccess" | "gameRules" | "engine" | "productVersion"
+  > &
+    Partial<Pick<Extract<StrategyView, { status: "setup_required" | "empty" }>, "engine" | "productVersion">>,
   gameRules?: StrategyGameRulesContext,
 ): Extract<StrategyView, { status: "setup_required" | "empty" }> {
   return {
@@ -406,6 +410,17 @@ export async function computeStrategyView(
     activeEventKey: row?.eventKey,
   });
   const gameRules = row?.orgId ? await loadSeasonGameRules(client, row.orgId, seasonYear) : undefined;
+
+  let planCode = "free";
+  if (row?.orgId) {
+    const entitlement = await client.query<{ planCode: string | null }>(
+      `SELECT plan_code AS "planCode" FROM org_entitlements WHERE org_id = $1::uuid LIMIT 1`,
+      [row.orgId],
+    );
+    planCode = entitlement.rows[0]?.planCode?.trim().toLowerCase() || "free";
+  }
+  const enginePolicy = selectStrategyEngine(planCode);
+  const engine = toEngineSummary(enginePolicy, planCode);
 
   const baseSteps = [
     {
@@ -455,6 +470,8 @@ export async function computeStrategyView(
       eventKey: null,
       eventName: null,
       teamNumber: null,
+      engine,
+      productVersion: VANTAGE_PRODUCT_VERSION,
     });
   }
 
@@ -469,6 +486,8 @@ export async function computeStrategyView(
         eventKey: row.eventKey,
         eventName: row.eventName,
         teamNumber: row.teamNumber,
+        engine,
+        productVersion: VANTAGE_PRODUCT_VERSION,
       },
       gameRules,
     );
@@ -522,6 +541,8 @@ export async function computeStrategyView(
       eventKey: row.eventKey,
       eventName: row.eventName,
       teamNumber: row.teamNumber,
+      engine,
+      productVersion: VANTAGE_PRODUCT_VERSION,
     }, gameRules);
   }
 
@@ -537,6 +558,8 @@ export async function computeStrategyView(
       eventKey: row.eventKey,
       eventName: row.eventName,
       teamNumber: row.teamNumber,
+      engine,
+      productVersion: VANTAGE_PRODUCT_VERSION,
     }, gameRules);
   }
 
@@ -647,6 +670,8 @@ export async function computeStrategyView(
       eventKey: row.eventKey,
       eventName: row.eventName,
       teamNumber: row.teamNumber,
+      engine,
+      productVersion: VANTAGE_PRODUCT_VERSION,
     }, gameRules);
   }
 
@@ -725,6 +750,7 @@ export async function computeStrategyView(
     seasons,
     operations,
     matchResults,
+    engineId: enginePolicy.engineId,
   };
 
   const prediction = predictMatch(predictionInput);
@@ -797,6 +823,9 @@ export async function computeStrategyView(
     blue,
     ourAlliance,
     eventKey: row.eventKey,
+    engineId: enginePolicy.engineId,
+    engineTier: enginePolicy.tier,
+    planCode,
     scoutSample: operations.reduce((sum, op) => sum + op.scoutSample, 0),
     scoutEntryIds: [...new Set(operations.flatMap((op) => op.scoutEntryIds ?? []))].slice(0, 48),
     scoutProvenanceSummary: formatScoutProvenance(scoutProvenance, 10),
@@ -804,6 +833,7 @@ export async function computeStrategyView(
     sources: [...new Set(sources.map((item) => item.source))],
     yearSignalCount: yearMetricRows.filter((metric) => metric.epaTotal != null).length,
     eventSignalCount: metricRows.filter((metric) => metric.epaTotal != null).length,
+    productVersion: VANTAGE_PRODUCT_VERSION,
   };
 
   const scoredAt = new Date().toISOString();
@@ -942,5 +972,7 @@ export async function computeStrategyView(
     gameRules: gameRules!,
     sources,
     computedAt: scoredAt,
+    engine,
+    productVersion: VANTAGE_PRODUCT_VERSION,
   };
 }
