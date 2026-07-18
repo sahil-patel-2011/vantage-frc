@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { emitNotification } from "@vantage/core";
 import {
   buildChoseScoutResolution,
   buildDismissResolution,
@@ -22,6 +23,7 @@ export type DisagreementResolutionResult = {
   disagreementId: string;
   status: DisagreementReviewStatus;
   trustAdjustments: number;
+  coordinatorsNotified: number;
   eventKey: string;
   matchKey: string;
   teamKey: string;
@@ -33,7 +35,7 @@ function text(value: unknown, maximum = 500) {
   return typeof value === "string" ? value.trim().slice(0, maximum) : "";
 }
 
-/** Record which scout was right, adjust confidence, append audit. */
+/** Record which scout was right, adjust confidence, append audit, notify coordinators. */
 export async function applyDisagreementResolution(
   client: PoolClient,
   input: DisagreementResolutionInput,
@@ -180,11 +182,53 @@ export async function applyDisagreementResolution(
     );
   }
 
+  const coordinators = await client.query<{ userId: string }>(
+    `SELECT user_id::text AS "userId"
+     FROM memberships
+     WHERE org_id = $1::uuid AND role IN ('owner', 'admin')`,
+    [input.orgId],
+  );
+  const subject = `${row.matchKey} · ${row.teamKey} · ${row.fieldKey}`;
+  const message =
+    input.status === "resolved"
+      ? winningScoutName
+        ? `Disagreement resolved for ${subject}. ${winningScoutName} was right — pick-desk/strategy trust updated.`
+        : `Disagreement resolved for ${subject}. Pick-desk/strategy trust updated.`
+      : `Disagreement dismissed for ${subject}.`;
+  let coordinatorsNotified = 0;
+  for (const coordinator of coordinators.rows) {
+    await emitNotification(client, {
+      userId: coordinator.userId,
+      orgId: input.orgId,
+      type: "scouting_disagreement_resolved",
+      payload: {
+        title:
+          input.status === "resolved"
+            ? "Scout disagreement resolved"
+            : "Scout disagreement dismissed",
+        message,
+        eventKey: row.eventKey,
+        matchKey: row.matchKey,
+        teamKey: row.teamKey,
+        fieldKey: row.fieldKey,
+        disagreementId: input.disagreementId,
+        status: input.status,
+        winningEntryId,
+        winningScoutUserId,
+        winningScoutName,
+        trustAdjustments: adjustments.length,
+        href: `/scouting?orgId=${encodeURIComponent(input.orgId)}&tab=conflicts`,
+      },
+    });
+    coordinatorsNotified += 1;
+  }
+
   return {
     ok: true,
     disagreementId: input.disagreementId,
     status: input.status,
     trustAdjustments: adjustments.length,
+    coordinatorsNotified,
     eventKey: row.eventKey,
     matchKey: row.matchKey,
     teamKey: row.teamKey,
