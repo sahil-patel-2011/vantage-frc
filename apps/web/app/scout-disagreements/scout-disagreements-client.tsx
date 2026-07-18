@@ -1,49 +1,224 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { distinctValues, scoutDisagreementStatusLabel } from "../../lib/scout-disagreements";
 import { type ScoutDisagreementsView } from "../../lib/scout-disagreements/compute-scout-disagreements";
 import type { ScoutDisagreement } from "../../lib/scout-disagreements/types";
+import {
+  SCOUT_DISAGREEMENTS_RELATED_INCLUDE,
+  classifyScoutDisagreementsShell,
+  formatScoutDisagreementsMetric,
+  scoutDisagreementsNextActions,
+  scoutDisagreementsRelatedLinks,
+  scoutDisagreementsSetupSteps,
+  scoutDisagreementsShellCopy,
+  shouldShowScoutDisagreementsSummaryTiles,
+  type ScoutDisagreementsNextAction,
+  type ScoutDisagreementsShellKind,
+} from "../../lib/scout-disagreements/scout-disagreements-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./scout-disagreements.css";
 
 function statusTone(status: ScoutDisagreement["status"]): string {
   if (status === "resolved") return "good";
-  if (status === "dismissed") return "demo";
-  return "setup";
+  if (status === "dismissed") return "setup";
+  return "";
 }
 
 type LiveView = Extract<ScoutDisagreementsView, { status: "live" }>;
 
-export default function ScoutDisagreementsClient() {
+function ScoutDisagreementsRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = scoutDisagreementsRelatedLinks(orgId, {
+    include: [...SCOUT_DISAGREEMENTS_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav
+      className="product-hub-related scout-disagreements-related"
+      aria-label="Related competition tools"
+    >
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function ScoutDisagreementsNextActionsPanel({ actions }: { actions: ScoutDisagreementsNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions scout-disagreements-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Scouting, Accuracy, and Coverage — never DEMO conflicts.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ScoutDisagreementsShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: ScoutDisagreementsShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = scoutDisagreementsNextActions({ orgId, shell });
+  const copy = scoutDisagreementsShellCopy(shell);
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const steps = shell === "setup" ? scoutDisagreementsSetupSteps(orgId) : [];
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const accuracyHref = withOrgHref("/scout-accuracy", orgId);
+  const coverageHref = withOrgHref("/scouting/lineup", orgId);
+
+  return (
+    <main className="module-page scout-disagreements-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Scout Disagreements"}
+          </>
+        }
+        title="Scout Disagreements"
+        description={description}
+      >
+        <ScoutDisagreementsRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No disagreements yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
+            {orgId ? "Open Scouting" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={scoutingHref}>
+              Log scout entries
+            </a>
+            <a className="app-button secondary" href={accuracyHref}>
+              Open Accuracy
+            </a>
+            <a className="app-button secondary" href={coverageHref}>
+              Open Coverage
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="scout-disagreements-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Scouting, Accuracy, and Coverage — never DEMO conflicts.</p>
+          </header>
+          <ul className="scout-disagreements-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted scout-disagreements-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <ScoutDisagreementsNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
+export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgId?: string }) {
   const [view, setView] = useState<ScoutDisagreementsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
+  const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
-  const load = useCallback((seasonOverride?: number) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (seasonQuery) query.set("season", String(seasonQuery));
-    void fetch(`/api/scout-disagreements${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as ScoutDisagreementsView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+  const load = useCallback(
+    (seasonOverride?: number) => {
+      setFetchFailed(false);
+      setError("");
+      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+      const urlOrg = initialOrgId ?? params.get("orgId");
+      const seasonQuery =
+        seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonQuery) query.set("season", String(seasonQuery));
+      void fetch(`/api/scout-disagreements${query.toString() ? `?${query.toString()}` : ""}`)
+        .then(async (response) => {
+          const data = (await response.json()) as ScoutDisagreementsView | { error?: string };
+          if (!response.ok || !("status" in data)) {
+            setFetchFailed(true);
+            setError("error" in data && data.error ? data.error : "Could not load scout disagreements.");
+            return;
+          }
+          setView(data);
+          setSeason(data.seasonYear);
+          setFetchFailed(false);
+        })
+        .catch(() => {
           setFetchFailed(true);
-          return;
-        }
-        setView(data);
-        setSeason(data.seasonYear);
-      })
-      .catch(() => setFetchFailed(true));
-  }, []);
+          setError("Network error — please try again.");
+        });
+    },
+    [initialOrgId],
+  );
 
   useEffect(() => {
     load();
@@ -76,20 +251,97 @@ export default function ScoutDisagreementsClient() {
     [orgId, season, busy],
   );
 
+  const itemCount = view?.status === "live" ? view.items.length : 0;
+  const openCount = view?.status === "live" ? view.summary.totalOpen : 0;
+
+  const shell = classifyScoutDisagreementsShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    itemCount,
+  });
+  const shellCopy = scoutDisagreementsShellCopy(shell);
+  const nextActions = scoutDisagreementsNextActions({
+    orgId,
+    shell,
+    itemCount,
+    openCount,
+  });
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const showTiles =
+    view?.status === "live" &&
+    shouldShowScoutDisagreementsSummaryTiles({
+      totalOpen: view.summary.totalOpen,
+      totalResolved: view.summary.totalResolved,
+      totalDismissed: view.summary.totalDismissed,
+    });
+  const loaded = view?.status === "live";
+
+  if (shell === "loading") {
+    return (
+      <ScoutDisagreementsShell description={shellCopy.description} orgId={orgId} shell="loading" />
+    );
+  }
+
+  if (shell === "error") {
+    return (
+      <ScoutDisagreementsShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <ScoutDisagreementsShell
+        description={
+          view?.status === "setup_required" ? view.message : shellCopy.description
+        }
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (shell === "empty" || view?.status !== "live") {
+    return (
+      <ScoutDisagreementsShell description={shellCopy.description} orgId={orgId} shell="empty">
+        <LogDisagreementForm busy={busy} mutate={mutate} />
+      </ScoutDisagreementsShell>
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page scout-disagreements-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Scout Disagreements"}
           </>
         }
         title="Scout Disagreements"
-        description="Resolve conflicting scouted field values between scouts, with an immutable audit trail for every decision."
+        description="Resolve conflicting scouted field values between scouts, with an immutable audit trail — never DEMO conflicts."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div className="scout-disagreements-header-meta">
+          <ScoutDisagreementsRelatedStrip orgId={orgId} />
+        </div>
+      </PageHeader>
+
+      {error ? (
+        <p className="form-message" role="status">
+          {error}
+        </p>
+      ) : null}
+
+      {view.seasons.length > 0 ? (
+        <section className="scout-disagreements-season" aria-label="Season filter">
+          <label>
             Season
             <select
               value={season ?? view.seasonYear}
@@ -106,72 +358,56 @@ export default function ScoutDisagreementsClient() {
               ))}
             </select>
           </label>
-        ) : null}
-      </PageHeader>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
+        </section>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Scout Disagreements"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <LogDisagreementForm busy={busy} mutate={mutate} />
-          <Queue view={view} busy={busy} mutate={mutate} />
-          <AuditLog view={view} />
-        </div>
-      )}
+      {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
+      <LogDisagreementForm busy={busy} mutate={mutate} />
+      <Queue view={view} busy={busy} mutate={mutate} />
+      <AuditLog view={view} />
+      <ScoutDisagreementsNextActionsPanel actions={nextActions} />
+      <p className="app-muted scout-disagreements-footer-links">
+        Also see{" "}
+        <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+        {" · "}
+        <a href={withOrgHref("/scout-accuracy", orgId)}>Accuracy</a>
+        {" · "}
+        <a href={withOrgHref("/scouting/lineup", orgId)}>Coverage</a>
+      </p>
     </main>
   );
 }
 
-function SummaryTiles({ view }: { view: LiveView }) {
+function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
   const { summary } = view;
-  const tiles = [
-    { label: "Open", value: String(summary.totalOpen) },
-    { label: "Resolved", value: String(summary.totalResolved) },
-    { label: "Dismissed", value: String(summary.totalDismissed) },
-    { label: "Matches affected", value: String(summary.distinctMatches) },
-    { label: "Fields affected", value: String(summary.distinctFields) },
-  ];
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <section className="scout-disagreements-kpis" aria-label="Disagreement summary">
+      <article>
+        <span>Open</span>
+        <strong>{formatScoutDisagreementsMetric(summary.totalOpen, loaded)}</strong>
+        <small>awaiting resolve</small>
+      </article>
+      <article>
+        <span>Resolved</span>
+        <strong>{formatScoutDisagreementsMetric(summary.totalResolved, loaded)}</strong>
+        <small>authoritative set</small>
+      </article>
+      <article>
+        <span>Dismissed</span>
+        <strong>{formatScoutDisagreementsMetric(summary.totalDismissed, loaded)}</strong>
+        <small>not a conflict</small>
+      </article>
+      <article>
+        <span>Matches</span>
+        <strong>{formatScoutDisagreementsMetric(summary.distinctMatches, loaded)}</strong>
+        <small>affected</small>
+      </article>
+      <article>
+        <span>Fields</span>
+        <strong>{formatScoutDisagreementsMetric(summary.distinctFields, loaded)}</strong>
+        <small>affected</small>
+      </article>
+    </section>
   );
 }
 
@@ -187,17 +423,31 @@ function Queue({
   if (view.items.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No disagreements yet"
         badgeTone="setup"
         title="Log your first conflicting field"
-        description="When two scouts report different values for the same match/team/field, log it here to build the resolution queue."
-      />
+        description="When two scouts report different values for the same match/team/field, log it here — never DEMO conflicts."
+      >
+        <a className="app-button" href={hubHref("/competition", "scouting", view.orgId)}>
+          Open Scouting
+        </a>
+        <a className="app-button secondary" href={withOrgHref("/scout-accuracy", view.orgId)}>
+          Open Accuracy
+        </a>
+        <a className="app-button secondary" href={withOrgHref("/scouting/lineup", view.orgId)}>
+          Open Coverage
+        </a>
+      </EmptyState>
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Resolution queue</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel className="scout-disagreements-panel" id="disagreement-queue" aria-label="Resolution queue">
+      <header>
+        <h2>Resolution queue</h2>
+        <p className="app-muted">Real scout submissions only — never DEMO conflicts.</p>
+      </header>
+      <ul className="scout-disagreements-list">
         {view.items.map((item) => (
           <QueueRow key={item.id} item={item} busy={busy} mutate={mutate} />
         ))}
@@ -220,28 +470,30 @@ function QueueRow({
   const options = distinctValues(item.values);
 
   return (
-    <li className="app-card soft-panel" style={{ display: "grid", gap: 8 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+    <li>
+      <div className="scout-disagreements-row-head">
         <div>
-          <span className={`app-badge ${statusTone(item.status)}`}>{scoutDisagreementStatusLabel(item.status)}</span>
+          <span className={`app-badge ${statusTone(item.status)}`.trim()}>
+            {scoutDisagreementStatusLabel(item.status)}
+          </span>
           <strong style={{ display: "block", marginTop: 4 }}>
             Match {item.matchNumber} · Team {item.teamNumber} · {item.fieldLabel}
           </strong>
-          <small className="app-muted">
+          <small>
             {item.values.map((value) => `${value.source}: ${value.value}`).join("  ·  ")}
           </small>
         </div>
-      </header>
+      </div>
 
       {item.status === "resolved" ? (
-        <small className="app-muted">
+        <small>
           Resolved to <strong>{item.resolvedValue}</strong>
           {item.resolutionNote ? ` — ${item.resolutionNote}` : ""}
         </small>
       ) : null}
 
       {item.status === "open" ? (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <div className="scout-disagreements-actions">
           <select
             value={choice}
             aria-label="Authoritative value"
@@ -258,14 +510,18 @@ function QueueRow({
             placeholder="Resolution note (optional)"
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            style={{ flex: 1, minWidth: 160 }}
           />
           <button
             type="button"
             className="app-button"
             disabled={busy || !choice}
             onClick={() => {
-              mutate({ action: "resolve", disagreementId: item.id, resolvedValue: choice, note: note || undefined });
+              mutate({
+                action: "resolve",
+                disagreementId: item.id,
+                resolvedValue: choice,
+                note: note || undefined,
+              });
               setChoice("");
               setNote("");
             }}
@@ -300,14 +556,19 @@ function QueueRow({
 function AuditLog({ view }: { view: LiveView }) {
   if (view.auditLog.length === 0) return null;
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Audit trail</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+    <Panel className="scout-disagreements-panel" aria-label="Audit trail">
+      <header>
+        <h2>Audit trail</h2>
+        <p className="app-muted">Immutable decisions on real conflicts only.</p>
+      </header>
+      <ul className="scout-disagreements-audit">
         {view.auditLog.map((entry) => (
-          <li key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+          <li key={entry.id}>
             <span>
               {entry.action}
-              {entry.previousStatus && entry.newStatus ? ` (${entry.previousStatus} → ${entry.newStatus})` : ""}
+              {entry.previousStatus && entry.newStatus
+                ? ` (${entry.previousStatus} → ${entry.newStatus})`
+                : ""}
               {entry.resolvedValue ? ` — ${entry.resolvedValue}` : ""}
               {entry.note ? ` — ${entry.note}` : ""}
             </span>
@@ -355,6 +616,7 @@ function LogDisagreementForm({
   return (
     <Panel
       as="form"
+      className="scout-disagreements-panel scout-disagreements-form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!canSubmit) return;
@@ -372,9 +634,11 @@ function LogDisagreementForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Log a disagreement</h2>
+      <header>
+        <h2>Log a disagreement</h2>
+        <p className="app-muted">Manual entry for real scout conflicts — never DEMO rows.</p>
+      </header>
       <FormGrid min={160}>
         <FormRow label="Match #">
           <input type="number" min={1} value={form.matchNumber} onChange={set("matchNumber")} required />
