@@ -137,12 +137,20 @@ export async function GET(request: Request) {
         } satisfies AttendanceView;
       }
 
-      const [events, seasonRows] = await Promise.all([
+      const [events, seasonRows, members] = await Promise.all([
         loadEvents(client, row.orgId, seasonYear),
         client.query<{ seasonYear: number }>(
           `SELECT DISTINCT season_year AS "seasonYear"
            FROM attendance_events WHERE org_id = $1
            ORDER BY season_year DESC`,
+          [row.orgId],
+        ),
+        client.query<{ userId: string; name: string | null }>(
+          `SELECT u.id AS "userId", u.name
+           FROM memberships m
+           JOIN users u ON u.id = m.user_id
+           WHERE m.org_id = $1
+           ORDER BY u.name ASC NULLS LAST`,
           [row.orgId],
         ),
       ]);
@@ -164,6 +172,9 @@ export async function GET(request: Request) {
         events,
         seasonYear,
         seasons,
+        members: members.rows
+          .map((m) => ({ userId: m.userId, name: (m.name ?? "").trim() }))
+          .filter((m) => m.name.length > 0),
       } satisfies AttendanceView;
     });
 

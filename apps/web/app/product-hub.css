@@ -40,3 +40,45 @@
   border: 1px solid var(--soft-line); border-radius: var(--soft-radius-sm); background: var(--soft-card);
 }
 .product-hub-finance .state-control small { display: block; margin-top: 4px; color: var(--soft-muted); }
+
+/* Shared Soft-UI related-tool strips inside hub panels */
+.product-hub-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.product-hub-related .app-button {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* Nested Team surfaces: drop page chrome padding / duplicate heroes */
+.product-hub-panel .practice-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 24px;
+}
+.product-hub-panel .practice-hero h1,
+.product-hub-panel .practice-kicker {
+  display: none;
+}
+.product-hub-panel .practice-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+  padding: 20px 22px;
+  border-radius: 16px;
+}
+.product-hub-panel .practice-hero p {
+  max-width: 56ch;
+}
+.product-hub-panel .kb-hero h1 {
+  display: none;
+}
+.product-hub-panel .kb-hero {
+  margin-bottom: 4px;
+}
+.product-hub-panel .att-page {
+  padding-top: 0;
+}

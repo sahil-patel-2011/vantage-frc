@@ -82,7 +82,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/team",
     label: "Team",
     title: "Team",
-    description: "Calendar, todos, messages, practice, knowledge, and attendance — one place for day-to-day ops.",
+    description:
+      "Calendar & subteams, practice, attendance, knowledge, messages, batteries, and FMEA — day-to-day ops in one Soft-UI hub.",
     defaultTab: "calendar",
     tabs: [
       { id: "calendar", label: "Calendar", legacyHref: "/team/calendar" },
@@ -91,6 +92,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "practice", label: "Practice", legacyHref: "/practice" },
       { id: "knowledge", label: "Knowledge", legacyHref: "/team/knowledge" },
       { id: "attendance", label: "Attendance", legacyHref: "/attendance" },
+      { id: "batteries", label: "Batteries", legacyHref: "/batteries" },
+      { id: "fmea", label: "FMEA", legacyHref: "/fmea" },
       { id: "alumni-network", label: "Alumni Network", legacyHref: "/alumni-network", primary: false },
       { id: "build-burndown", label: "Build-Season Burndown", legacyHref: "/build-burndown", primary: false },
       { id: "bus-factor", label: "Bus-Factor & Burnout Watch", legacyHref: "/bus-factor", primary: false },
@@ -123,7 +126,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/business",
     label: "Business",
     title: "Business",
-    description: "Budget, orders, sponsorship, grants, and award evidence for the season.",
+    description:
+      "Budget, purchase orders, sponsor pipeline, sponsorship one-pagers, grants, partners, and award evidence — one season source of truth.",
     defaultTab: "overview",
     tabs: [
       { id: "overview", label: "Overview" },
@@ -134,8 +138,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "grants", label: "Grants", legacyHref: "/team/grants" },
       { id: "placements", label: "Partners" },
       { id: "evidence", label: "Awards" },
+      { id: "costs", label: "Season Costs", legacyHref: "/costs", primary: false },
+      { id: "fundraisers", label: "Fundraisers", legacyHref: "/fundraisers", primary: false },
+      { id: "impact", label: "Community Impact", legacyHref: "/impact", primary: false },
       { id: "award-tracker", label: "Award Submission Tracker", legacyHref: "/award-tracker", primary: false },
       { id: "grant-report", label: "Grant Report", legacyHref: "/grant-report", primary: false },
+      { id: "grants-workbench", label: "Grants workbench", legacyHref: "/team/grants", primary: false },
+      { id: "awards-workbench", label: "Awards workbench", legacyHref: "/team/awards", primary: false },
       { id: "impact-essay", label: "FIRST Impact Essay Generator", legacyHref: "/impact-essay", primary: false },
       { id: "judge-sim", label: "Judge-Pitch Simulator", legacyHref: "/judge-sim", primary: false },
       { id: "media-kit", label: "Media Kit", legacyHref: "/media-kit", primary: false },

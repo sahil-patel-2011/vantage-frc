@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { hubHref } from "../../lib/nav/hubs";
 import {
   ATTENDANCE_KIND_LABELS,
   ATTENDANCE_KINDS,
@@ -13,9 +15,11 @@ import {
   summarizeAttendance,
   type AttendanceEvent,
   type AttendanceKind,
+  type AttendanceMember,
   type AttendanceRole,
   type AttendanceView,
 } from "../../lib/attendance";
+import "./attendance.css";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -43,7 +47,7 @@ function CreateEventForm({
 
   return (
     <form
-      className="att-create"
+      className="att-create soft-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!title.trim() || !occurredOn) return;
@@ -107,6 +111,7 @@ function EventCard({
   selected,
   busy,
   orgId,
+  members,
   onSelect,
   run,
 }: {
@@ -115,6 +120,7 @@ function EventCard({
   selected: boolean;
   busy: boolean;
   orgId: string;
+  members: AttendanceMember[];
   onSelect: () => void;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
@@ -122,8 +128,35 @@ function EventCard({
   const [role, setRole] = useState<AttendanceRole>("student");
   const [hours, setHours] = useState("");
 
+  const marked = useMemo(
+    () => new Set(event.entries.map((entry) => entry.personName.trim().toLowerCase())),
+    [event.entries],
+  );
+  const suggestions = useMemo(
+    () => members.filter((member) => !marked.has(member.name.trim().toLowerCase())).slice(0, 12),
+    [members, marked],
+  );
+
+  const addPerson = (name: string, nextRole: AttendanceRole = role) => {
+    if (!name.trim()) return;
+    void run(
+      {
+        action: "add_entry",
+        orgId,
+        eventId: event.id,
+        personName: name.trim(),
+        role: nextRole,
+        hours: hours === "" ? null : Number(hours),
+      },
+      `add:${event.id}`,
+    ).then(() => {
+      setPersonName("");
+      setHours("");
+    });
+  };
+
   return (
-    <li className={`att-event${selected ? " active" : ""}`}>
+    <li className={`att-event soft-panel${selected ? " active" : ""}`}>
       <div className="att-event-head">
         <div>
           <h3>
@@ -147,6 +180,11 @@ function EventCard({
         <span>
           Hours <b>{event.entries.reduce((sum, entry) => sum + (entry.hours ?? event.creditHours), 0).toFixed(1)}</b>
         </span>
+        {event.kind === "practice" ? (
+          <a className="att-link" href={hubHref("/team", "practice", orgId)}>
+            Practice planner →
+          </a>
+        ) : null}
       </div>
 
       {selected ? (
@@ -157,28 +195,41 @@ function EventCard({
                 className="att-add"
                 onSubmit={(formEvent) => {
                   formEvent.preventDefault();
-                  if (!personName.trim()) return;
-                  void run(
-                    {
-                      action: "add_entry",
-                      orgId,
-                      eventId: event.id,
-                      personName: personName.trim(),
-                      role,
-                      hours: hours === "" ? null : Number(hours),
-                    },
-                    `add:${event.id}`,
-                  ).then(() => {
-                    setPersonName("");
-                    setHours("");
-                  });
+                  addPerson(personName);
                 }}
               >
                 <h3>Mark present</h3>
+                {suggestions.length > 0 ? (
+                  <div className="att-suggestions" aria-label="Team members not yet marked">
+                    {suggestions.map((member) => (
+                      <button
+                        key={member.userId}
+                        type="button"
+                        className="att-chip"
+                        disabled={busy}
+                        onClick={() => addPerson(member.name)}
+                      >
+                        {member.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="att-form-grid">
                   <label className="att-field wide">
                     <span>Name</span>
-                    <input value={personName} disabled={busy} placeholder="First Last" required onChange={(e) => setPersonName(e.target.value)} />
+                    <input
+                      list={`att-members-${event.id}`}
+                      value={personName}
+                      disabled={busy}
+                      placeholder="First Last"
+                      required
+                      onChange={(e) => setPersonName(e.target.value)}
+                    />
+                    <datalist id={`att-members-${event.id}`}>
+                      {members.map((member) => (
+                        <option key={member.userId} value={member.name} />
+                      ))}
+                    </datalist>
                   </label>
                   <label className="att-field">
                     <span>Role</span>
@@ -224,7 +275,7 @@ function EventCard({
           ) : null}
 
           {event.entries.length === 0 ? (
-            <p className="app-muted">No attendees marked yet.</p>
+            <EmptyState soft title="No attendees marked yet" description="Add people who showed up — totals stay empty until you mark them." />
           ) : (
             <ul className="att-entries">
               {event.entries.map((entry) => (
@@ -329,7 +380,7 @@ export default function AttendanceClient() {
   if (fetchFailed || !view) {
     return (
       <main className="module-page att-page">
-        <PageHeader breadcrumbs="Calendar / Attendance" title="Attendance" />
+        <PageHeader breadcrumbs="Team / Attendance" title="Attendance" />
         <TeamOpsNav active="attendance" />
         <EmptyState
           title={fetchFailed ? "Could not load attendance" : "Loading attendance…"}
@@ -350,7 +401,7 @@ export default function AttendanceClient() {
     return (
       <main className="module-page att-page">
         <PageHeader
-          breadcrumbs="Calendar / Attendance"
+          breadcrumbs="Team / Attendance"
           title="Attendance"
           description="Log who showed up to practice and meetings — real marks only."
         />
@@ -364,7 +415,7 @@ export default function AttendanceClient() {
     );
   }
 
-  const { context, events, seasons } = view;
+  const { context, events, seasons, members } = view;
   const orgId = context.orgId ?? "";
   const canManage = context.canManage;
   const summary = summarizeAttendance(events);
@@ -375,7 +426,7 @@ export default function AttendanceClient() {
   return (
     <main className="module-page att-page">
       <PageHeader
-        breadcrumbs="Calendar / Attendance"
+        breadcrumbs="Team / Attendance"
         title="Attendance"
         description={
           <>
@@ -404,12 +455,16 @@ export default function AttendanceClient() {
               ))}
             </select>
           </label>
-          <a className="app-button secondary" href={orgId ? `/practice?orgId=${encodeURIComponent(orgId)}` : "/practice"}>
+          <a className="app-button secondary" href={hubHref("/team", "practice", orgId)}>
             Practice
+          </a>
+          <a className="app-button secondary" href={hubHref("/team", "calendar", orgId)}>
+            Calendar
           </a>
         </div>
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="attendance" />
+      <TeamHubRelated orgId={orgId} active="attendance" />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -441,14 +496,21 @@ export default function AttendanceClient() {
           <h2>Events · {seasonYear}</h2>
           {canManage ? <CreateEventForm orgId={orgId} seasonYear={seasonYear} busy={busy} run={run} /> : null}
           {events.length === 0 ? (
-            <div className="app-card att-empty">
-              <strong>No attendance events this season</strong>
-              <p className="app-muted">
-                {canManage
-                  ? "Create a practice or meeting event, then mark who was present."
-                  : "An owner or admin will create the first roll-call event."}
-              </p>
-            </div>
+            <EmptyState
+              soft
+              title="No attendance events this season"
+              description={
+                canManage
+                  ? "Create a practice or meeting event, then mark who was present. Nothing is invented until you log it."
+                  : "An owner or admin will create the first roll-call event."
+              }
+            >
+              {canManage ? null : (
+                <a className="app-button secondary" href={hubHref("/team", "messages", orgId)}>
+                  Ask in Messages
+                </a>
+              )}
+            </EmptyState>
           ) : (
             <ul className="att-events">
               {events.map((event) => (
@@ -459,6 +521,7 @@ export default function AttendanceClient() {
                   selected={selected?.id === event.id}
                   busy={busy}
                   orgId={orgId}
+                  members={members}
                   onSelect={() => setSelectedId(event.id)}
                   run={run}
                 />
@@ -470,9 +533,7 @@ export default function AttendanceClient() {
         <aside className="att-panel">
           <h2>Season presence</h2>
           {board.length === 0 ? (
-            <div className="app-card att-empty">
-              <p className="app-muted">No marks yet — the board stays empty until someone is added to an event.</p>
-            </div>
+            <EmptyState soft title="Board is empty" description="No marks yet — the board stays empty until someone is added to an event." />
           ) : (
             <ul className="att-board">
               {board.map((row, index) => (

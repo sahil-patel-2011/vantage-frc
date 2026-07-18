@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { TeamHubRelated } from "../../components/team-hub-related";
 import { fmeaContextLabel, fmeaLevelLabel, fmeaStatusLabel } from "../../lib/fmea";
 import { FMEA_CONTEXTS, FMEA_STATUSES, type FmeaView } from "../../lib/fmea/compute-fmea";
 import type { FmeaContext, FmeaEvaluation, FmeaLevel, FmeaStatus } from "../../lib/fmea/types";
+import { hubHref } from "../../lib/nav/hubs";
 
 type LiveView = Extract<FmeaView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -83,7 +85,7 @@ export default function FmeaClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs="Build / Failure Log"
+        breadcrumbs="Team / FMEA"
         title="Failure Log (FMEA)"
         description={
           <>
@@ -118,8 +120,15 @@ export default function FmeaClient() {
           <a className="app-button secondary" href={`/inspection${orgQuery}`}>
             Inspection
           </a>
+          <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
+            Knowledge
+          </a>
+          <a className="app-button secondary" href={hubHref("/team", "batteries", orgId)}>
+            Batteries
+          </a>
         </div>
       </PageHeader>
+      {orgId ? <TeamHubRelated orgId={orgId} active="fmea" /> : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">

@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { hubHref } from "../../lib/nav/hubs";
 import {
   actionBreakdown,
   sessionStats,
@@ -13,6 +15,7 @@ import {
   type LinkableAttendance,
   type LinkableBuildTask,
 } from "../../lib/driver-practice";
+import "./practice.css";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<DriverPracticeView, { status: "ready" }>;
@@ -31,10 +34,8 @@ function driverLabel(session: DriverSession, membersById: Map<string, DriverPrac
   return session.driverName ?? (session.driverUserId ? membersById.get(session.driverUserId)?.name ?? "Member" : "Unassigned");
 }
 
-function withOrg(href: string, orgId: string) {
-  if (!orgId) return href;
-  const join = href.includes("?") ? "&" : "?";
-  return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
+function teamTab(tab: string, orgId: string) {
+  return hubHref("/team", tab, orgId);
 }
 
 function Stopwatch({ onStop, disabled }: { onStop: (seconds: number) => void; disabled?: boolean }) {
@@ -200,7 +201,7 @@ function SessionDetail({
                   <option key={event.id} value={event.id}>{event.title} · {fmtDate(event.startsAt)}</option>
                 ))}
               </select>
-              {session.attendanceEventId ? <a href={withOrg("/attendance", orgId)}>Open attendance →</a> : <span className="practice-muted">Optional link to who showed up</span>}
+              {session.attendanceEventId ? <a href={teamTab("attendance", orgId)}>Open attendance →</a> : <span className="practice-muted">Optional link to who showed up</span>}
             </label>
           ) : null}
           {buildTasks.length > 0 ? (
@@ -216,7 +217,7 @@ function SessionDetail({
                   <option key={task.id} value={task.id}>{task.title} · {task.subsystem}</option>
                 ))}
               </select>
-              {session.buildTaskId ? <a href={withOrg("/tasks", orgId)}>Open task board →</a> : <span className="practice-muted">Optional link to shop work</span>}
+              {session.buildTaskId ? <a href={teamTab("todos", orgId)}>Open task board →</a> : <span className="practice-muted">Optional link to shop work</span>}
             </label>
           ) : null}
         </div>
@@ -440,6 +441,7 @@ export default function PracticeClient() {
   return (
     <main className="practice-page">
       <TeamOpsNav orgId={orgId} active="practice" />
+      <TeamHubRelated orgId={orgId} active="practice" />
       <header className="practice-hero">
         <div>
           <p className="practice-kicker">Team / Practice{context.teamNumber ? ` · ${context.teamNumber}` : ""}</p>
@@ -449,10 +451,12 @@ export default function PracticeClient() {
             in the same loop for {context.orgName ?? "your team"}.
           </p>
           <div className="practice-hero-links">
-            <a href={withOrg("/todos", orgId)}>Todos</a>
-            <a href={withOrg("/messages", orgId)}>Messages</a>
-            <a href={withOrg("/team/calendar", orgId)}>Calendar</a>
-            <a href={withOrg("/attendance", orgId)}>Attendance</a>
+            <a href={teamTab("todos", orgId)}>Todos</a>
+            <a href={teamTab("messages", orgId)}>Messages</a>
+            <a href={teamTab("calendar", orgId)}>Calendar</a>
+            <a href={teamTab("attendance", orgId)}>Attendance</a>
+            <a href={teamTab("knowledge", orgId)}>Knowledge</a>
+            <a href={teamTab("batteries", orgId)}>Batteries</a>
           </div>
         </div>
         <div className="practice-hero-score">

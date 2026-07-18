@@ -162,6 +162,8 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/roles", label: "Roles", icon: "users" },
       { href: "/team/getting-started", label: "Team setup", icon: "pin" },
       { href: "/team?tab=knowledge", label: "Knowledge", icon: "clipboard" },
+      { href: "/team?tab=batteries", label: "Batteries", icon: "bolt" },
+      { href: "/team?tab=fmea", label: "FMEA", icon: "bolt" },
       { href: "/team/alumni", label: "Alumni", icon: "users" },
       { href: "/team/admin", label: "Admin", icon: "gear" },
       { href: "/team/discord", label: "Discord", icon: "chat" },

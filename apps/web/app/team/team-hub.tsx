@@ -6,6 +6,10 @@ import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components
 import { parseComposerLinkFromSearch, type MessageObjectLink } from "../../lib/messages/object-links";
 import "../product-hub.css";
 import "./calendar/team-calendar.css";
+import "../attendance/attendance.css";
+import "../practice/practice.css";
+import "./knowledge/knowledge.css";
+import "../batteries/batteries.css";
 
 const TeamCalendarClient = dynamic(() => import("./calendar/team-calendar-client"), { ssr: false });
 const TasksClient = dynamic(() => import("../tasks/tasks-client"), { ssr: false });
@@ -13,6 +17,8 @@ const MessagesClient = dynamic(() => import("../messages/messages-client"), { ss
 const PracticeClient = dynamic(() => import("../practice/practice-client"), { ssr: false });
 const KnowledgeClient = dynamic(() => import("./knowledge/knowledge-client"), { ssr: false });
 const AttendanceClient = dynamic(() => import("../attendance/attendance-client"), { ssr: false });
+const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false });
+const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false });
 
 function TeamAdminLink() {
   const [href, setHref] = useState("/team/admin");
@@ -58,6 +64,8 @@ export default function TeamHub() {
         if (tab === "practice") return <PracticeClient />;
         if (tab === "knowledge") return <KnowledgeClient />;
         if (tab === "attendance") return <AttendanceClient />;
+        if (tab === "batteries") return <BatteriesClient />;
+        if (tab === "fmea") return <FmeaClient />;
         if (tab === "messages") {
           return (
             <HubOrgGate orgId={orgId} label="Messages">

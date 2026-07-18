@@ -52,6 +52,8 @@ export type AttendanceContext = {
   canManage: boolean;
 };
 
+export type AttendanceMember = { userId: string; name: string };
+
 export type AttendanceView =
   | {
       status: "ready";
@@ -59,6 +61,8 @@ export type AttendanceView =
       events: AttendanceEvent[];
       seasonYear: number;
       seasons: number[];
+      /** Org members for Soft-UI name suggestions — never fabricated. */
+      members: AttendanceMember[];
     }
   | { status: "setup_required"; context: AttendanceContext; message: string };
 
