@@ -1,0 +1,22 @@
+/* Soft-UI Tuning Autopilot — .tuning-autopilot-* + shared Soft-UI tokens. Never DEMO gain metrics. */
+.tuning-autopilot-page{display:grid;gap:16px}
+.tuning-autopilot-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.tuning-autopilot-season{display:flex;gap:6px;align-items:center}
+.tuning-autopilot-related{display:flex;flex-wrap:wrap;gap:8px}
+.tuning-autopilot-next-actions{margin:0}
+.tuning-autopilot-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.tuning-autopilot-stats strong{font-size:1.5rem}
+.tuning-autopilot-layout{display:grid;gap:16px}
+.tuning-autopilot-panel{display:grid;gap:12px}
+.tuning-autopilot-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.tuning-autopilot-card{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.tuning-autopilot-gains{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:10px;margin-top:12px}
+.tuning-autopilot-gains strong{display:block;font-size:1.2rem}
+.tuning-autopilot-session-meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.tuning-autopilot-session-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.tuning-autopilot-tip{margin:0}
+@media(max-width:900px){
+  .tuning-autopilot-header-actions{justify-content:flex-start}
+  .tuning-autopilot-next-actions li{flex-direction:column;align-items:stretch}
+  .tuning-autopilot-session-actions{margin-left:0}
+}
