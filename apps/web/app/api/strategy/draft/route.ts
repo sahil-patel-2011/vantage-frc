@@ -2,11 +2,24 @@ import { createHash, randomBytes } from "node:crypto";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { recommendNextPick, type PickClockListHint } from "../../../../lib/strategy/pick-clock";
 import {
   emptyAllianceBoardState,
+  loadPickDesk,
   normalizeAllianceBoardState,
   type AllianceBoardState,
+  type AllianceSlot,
 } from "../../../../lib/strategy/pick-desk";
+
+function takenFromAlliances(alliances: AllianceSlot[]): string[] {
+  const keys: string[] = [];
+  for (const alliance of alliances) {
+    for (const key of [alliance.captainTeamKey, alliance.firstPickTeamKey, alliance.secondPickTeamKey]) {
+      if (key) keys.push(key);
+    }
+  }
+  return keys;
+}
 
 async function requireSession() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -149,6 +162,61 @@ export async function GET(request: Request) {
         [row.orgId, board.eventKey],
       );
 
+      const desk = await loadPickDesk(client, {
+        userId: session.user.id,
+        requestedOrg: row.orgId,
+      });
+      let pickAssist: {
+        pickMode: "full" | "low_data_tba";
+        pickModeReason: string | null;
+        scoutedTeams: number;
+        teamCount: number;
+        recommendation: ReturnType<typeof recommendNextPick>["recommendation"];
+        alternates: ReturnType<typeof recommendNextPick>["alternates"];
+        epaDrifts: Array<{ teamKey: string; label: string; delta: number; divergent: boolean }>;
+      } | null = null;
+      if (!("status" in desk)) {
+        const excludedTeamKeys = takenFromAlliances(state.alliances);
+        const linkedList =
+          desk.pickLists.find((list) => list.id === (state.pickListId ?? board.pickListId)) ??
+          desk.pickLists[0] ??
+          null;
+        const pickListEntries: PickClockListHint[] = linkedList
+          ? linkedList.entries.map((entry) => ({
+              teamKey: entry.teamKey,
+              rank: entry.rank,
+              tier: entry.tier,
+              notes: entry.notes,
+              listName: linkedList.name,
+            }))
+          : [];
+        const clock = recommendNextPick({
+          candidates: desk.candidates,
+          excludedTeamKeys,
+          pickListEntries,
+          alternateCount: 4,
+          pickMode: desk.pickMode,
+          epaDrifts: desk.epaDrifts,
+        });
+        pickAssist = {
+          pickMode: desk.pickMode,
+          pickModeReason: desk.pickModeReason,
+          scoutedTeams: desk.scoutedTeams,
+          teamCount: desk.teamCount,
+          recommendation: clock.recommendation,
+          alternates: clock.alternates,
+          epaDrifts: desk.epaDrifts
+            .filter((item) => !excludedTeamKeys.includes(item.teamKey))
+            .slice(0, 8)
+            .map((item) => ({
+              teamKey: item.teamKey,
+              label: item.label,
+              delta: item.delta,
+              divergent: item.divergent,
+            })),
+        };
+      }
+
       return {
         orgId: row.orgId,
         eventKey: board.eventKey,
@@ -164,6 +232,7 @@ export async function GET(request: Request) {
         teamKeys,
         pickLists: pickLists.rows,
         shareTokens: tokens.rows,
+        pickAssist,
       };
     });
 

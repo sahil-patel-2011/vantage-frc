@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import PartnerPlacement from "../../components/partner-placement";
+import PartnerPlacement from "../../components/partner-placement"";
+import { EmptyState } from "../../components/ui"";
 
 type Program = {
   settings: { publicId: string; storefrontEnabled: boolean; paymentUrl: string | null; pitch: string } | null;

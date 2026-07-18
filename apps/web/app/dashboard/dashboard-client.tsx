@@ -17,6 +17,8 @@ import {
 } from "../../lib/dashboard/catalog";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { Icon } from "../../components/app-shell";
+import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
+import type { DataSourceHealthView } from "../../lib/reference-health";
 import { countdownLabel, DashboardWidgetView } from "./widgets";
 import type { HomeStripItem } from "../../lib/home-workflows";
 import "react-grid-layout/css/styles.css";
@@ -607,6 +609,10 @@ export default function DashboardClient() {
   const setupRequired = Boolean(context.setupRequired);
   const hasScoutingSchemas = Boolean(context.hasScoutingSchemas);
   const hasAiProvider = Boolean(context.hasAiProvider);
+  const dataSourceHealth =
+    context.dataSourceHealth && typeof context.dataSourceHealth === "object"
+      ? (context.dataSourceHealth as DataSourceHealthView)
+      : null;
   const homeStripRaw = context.homeStrip as
     | { audience?: string; items?: HomeStripItem[] }
     | undefined;
@@ -910,6 +916,10 @@ export default function DashboardClient() {
             </li>
           </ol>
         </section>
+      ) : null}
+
+      {meLoaded && orgId && tbaConfigured !== false ? (
+        <DataSourceDegradedBanner health={dataSourceHealth} />
       ) : null}
 
       {meLoaded && (!orgId || setupRequired) && !editing ? (

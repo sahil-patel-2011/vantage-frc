@@ -3,10 +3,12 @@ import { isToolAllowed, loadOrgAiPolicy, meteredAI } from "@vantage/billing";
 import { boundedContext,type ChatAdapter,type ContextItem } from "./index";
 import {
   annotateToolOutput,
+  attachDataSourceNote,
   planChatToolCalls,
   toolOutputsToContextContent,
   type AnnotatedToolOutput,
 } from "./auto-tools";
+import { loadToolDataSourceNote } from "./data-source-note";
 
 export type ClaimClassification="hard_metric"|"scout_observation"|"researched_claim"|"model_inference";
 export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact"|"github_file"|"vscode_selection";sourceUrl?:string;observedAt?:string;label?:string};
@@ -74,13 +76,16 @@ export class AIOrchestrator{
     try{
       const context=buildUnifiedContext(request.contextSources,request.tokenBudget??4000);
       await this.client.query(`INSERT INTO ai_run_steps(org_id,run_id,sequence,kind,input,output,provenance) VALUES($1,$2,$3,'context',$4::jsonb,$5::jsonb,$6::jsonb)`,[request.orgId,runId,sequence++,JSON.stringify({tokenBudget:request.tokenBudget??4000}),JSON.stringify({estimatedTokens:context.estimatedTokens}),JSON.stringify(context.provenance)]);
+      const dataSourceNote=plannedToolCalls.length?await loadToolDataSourceNote(this.client):null;
       const annotatedTools:AnnotatedToolOutput[]=[];
       for(const call of plannedToolCalls){
         const output=await this.registry.invoke(call.name,{client:this.client,orgId:request.orgId,userId:request.userId,activeEventKey:active},call.input);
         const annotated=annotateToolOutput(call.name,output,call.input);
         annotatedTools.push(annotated);
-        await this.client.query(`INSERT INTO ai_run_steps(org_id,run_id,sequence,kind,tool_name,input,output,provenance) VALUES($1,$2,$3,'tool',$4,$5::jsonb,$6::jsonb,$7::jsonb)`,[request.orgId,runId,sequence++,call.name,JSON.stringify(call.input),JSON.stringify({status:annotated.status,summary:annotated.summary,data:output}),JSON.stringify([{type:"tool",id:call.name,classification:annotated.classification,status:annotated.status}])]);
+        await this.client.query(`INSERT INTO ai_run_steps(org_id,run_id,sequence,kind,tool_name,input,output,provenance) VALUES($1,$2,$3,'tool',$4,$5::jsonb,$6::jsonb,$7::jsonb)`,[request.orgId,runId,sequence++,call.name,JSON.stringify(call.input),JSON.stringify({status:annotated.status,summary:annotated.summary,data:output,dataSource:dataSourceNote&&dataSourceNote.mode!=="ok"?dataSourceNote:null}),JSON.stringify([{type:"tool",id:call.name,classification:annotated.classification,status:annotated.status,dataSource:dataSourceNote&&dataSourceNote.mode!=="ok"?dataSourceNote:undefined}])]);
       }
+      const stampedTools=attachDataSourceNote(annotatedTools,dataSourceNote);
+      annotatedTools.splice(0,annotatedTools.length,...stampedTools);
       const toolContext:ContextItem[]=toolOutputsToContextContent(annotatedTools);
       const toolProvenance=annotatedTools.map((item,index)=>({
         type:"module_fact" as const,

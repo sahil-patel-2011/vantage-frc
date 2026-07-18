@@ -9,6 +9,7 @@ import {
   type YearMetricRow,
 } from "@vantage/prediction-strategy";
 import { resolveReferenceAccess } from "../strategy/compute-strategy";
+import type { DataSourceHealthView } from "../reference-health";
 import type { ReferenceAccessInfo } from "../strategy/types";
 
 export type DossierSetupStep = {
@@ -27,6 +28,7 @@ export type DossierView =
       orgId: string | null;
       teamNumber: number | null;
       referenceAccess: ReferenceAccessInfo;
+      dataSourceHealth?: DataSourceHealthView;
     }
   | {
       status: "live";
@@ -38,6 +40,7 @@ export type DossierView =
       cards: DossierFactCard[];
       hasReferenceFacts: boolean;
       referenceAccess: ReferenceAccessInfo;
+      dataSourceHealth?: DataSourceHealthView;
       computedAt: string;
     };
 

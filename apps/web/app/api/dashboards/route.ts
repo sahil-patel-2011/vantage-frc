@@ -149,7 +149,13 @@ export async function GET(request: Request) {
           userId: session.user.id,
           role,
         });
-        return { role, ...snapshot };
+        const { loadDataSourceHealth } = await import("../../../lib/reference-health");
+        const dataSourceHealth = await loadDataSourceHealth(client, orgId);
+        return {
+          role,
+          ...snapshot,
+          context: { ...snapshot.context, dataSourceHealth },
+        };
       }
 
       const boards = await listBoards(client, orgId, session.user.id);

@@ -22,6 +22,57 @@ describe("business portal calculations", () => {
     expect(purchaseTotal({ quantity: 3, unitPriceCents: 1299, shippingCents: 500 })).toBe(4397);
   });
 
+  it("surfaces orders pulse and finance-AI only when the toggle is on", async () => {
+    const { buildOrdersPulse } = await import("./orders/business-pulse");
+    const purchases = [
+      {
+        id: "1",
+        itemName: "NEO 550",
+        vendor: "REV",
+        itemUrl: null,
+        categoryId: null,
+        categoryName: null,
+        quantity: 2,
+        unitPriceCents: 4500,
+        shippingCents: 0,
+        totalCents: 9000,
+        purpose: "Intake",
+        status: "submitted" as const,
+        requestedByName: "You",
+        requestedAt: "2026-07-01",
+        neededBy: null,
+        orderedOn: null,
+      },
+      {
+        id: "2",
+        itemName: "Belt",
+        vendor: "WCP",
+        itemUrl: "https://example.com/belt",
+        categoryId: null,
+        categoryName: null,
+        quantity: 1,
+        unitPriceCents: 1200,
+        shippingCents: 0,
+        totalCents: 1200,
+        purpose: "Elevator",
+        status: "approved" as const,
+        requestedByName: "You",
+        requestedAt: "2026-07-02",
+        neededBy: null,
+        orderedOn: null,
+      },
+    ];
+    const off = buildOrdersPulse(purchases, 2026, false);
+    expect(off.pendingCount).toBe(1);
+    expect(off.readyToBuyCount).toBe(1);
+    expect(off.openTotalCents).toBe(10_200);
+    expect(off.aiHeadline).toBeNull();
+    const on = buildOrdersPulse(purchases, 2026, true);
+    expect(on.financeAiEnabled).toBe(true);
+    expect(on.aiHeadline).toMatch(/awaiting approval|ready to buy|open/i);
+    expect(on.aiRecommendations.length).toBeGreaterThan(0);
+  });
+
   it("flags overdue and stale sponsor relationships", () => {
     const now = new Date("2026-07-17T12:00:00Z");
     expect(sponsorHealth({ status: "active", lastContactOn: "2026-07-01", nextFollowUpOn: "2026-07-10" }, now)).toBe("due");

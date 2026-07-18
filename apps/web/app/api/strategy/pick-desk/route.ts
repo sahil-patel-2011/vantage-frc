@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { loadDataSourceHealth } from "../../../../lib/reference-health";
 import { loadPickDesk } from "../../../../lib/strategy/pick-desk";
 
 export async function GET(request: Request) {
@@ -9,9 +10,11 @@ export async function GET(request: Request) {
 
   const orgId = new URL(request.url).searchParams.get("orgId");
   try {
-    const view = await withRls({ userId: session.user.id }, async (client) =>
-      loadPickDesk(client, { userId: session.user.id, requestedOrg: orgId }),
-    );
+    const view = await withRls({ userId: session.user.id }, async (client) => {
+      const desk = await loadPickDesk(client, { userId: session.user.id, requestedOrg: orgId });
+      const dataSourceHealth = await loadDataSourceHealth(client, desk.orgId);
+      return { ...desk, dataSourceHealth };
+    });
     return Response.json(view);
   } catch {
     return Response.json(

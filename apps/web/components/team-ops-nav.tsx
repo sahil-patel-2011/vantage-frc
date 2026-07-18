@@ -19,7 +19,7 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
   { key: "practice", href: "/practice", label: "Practice", match: (p) => p.startsWith("/practice") },
   {
     key: "todos",
-    href: "/todos",
+    href: "/tasks",
     label: "Todos",
     match: (p) => p.startsWith("/todos") || p.startsWith("/tasks"),
   },
