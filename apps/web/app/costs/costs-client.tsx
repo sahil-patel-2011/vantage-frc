@@ -12,11 +12,7 @@ import {
   SUBSCRIPTION_CADENCES,
   type CostsView,
 } from "../../lib/costs/compute-costs";
-import {
-  costsRelatedLinks,
-  formatBudgetPctDisplay,
-  formatCostUsdDisplay,
-} from "../../lib/costs/costs-related";
+import { formatBudgetPctDisplay, formatCostUsdDisplay } from "../../lib/costs/costs-related";
 import type {
   BudgetStatus,
   CostCategory,
@@ -46,18 +42,13 @@ function statusTone(status: BudgetStatus): string {
 }
 
 function CostsRelated({ orgId }: { orgId: string }) {
-  const primary = costsRelatedLinks(orgId, { include: ["orders", "fundraisers", "budget"] });
   return (
-    <div className="costs-related">
-      <nav className="product-hub-related costs-hub-related" aria-label="Related business tools">
-        {primary.map((link) => (
-          <a key={link.id} className="app-button secondary" href={link.href}>
-            {link.label}
-          </a>
-        ))}
-      </nav>
-      <BusinessRelated orgId={orgId} include={[...COSTS_RELATED_INCLUDE]} />
-    </div>
+    <BusinessRelated
+      orgId={orgId}
+      active="costs"
+      include={COSTS_RELATED_INCLUDE}
+      ariaLabel="Related costs and finance tools"
+    />
   );
 }
 
