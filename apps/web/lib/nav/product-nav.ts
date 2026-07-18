@@ -2,9 +2,8 @@
  * Product navigation — single source of truth for the app-shell drawer,
  * command palette, and breadcrumb labels.
  *
- * Pillars: Competition · Scouting · Calendar · Build · Team · Logistics · Kickoff ·
- * Business · Settings
- * See docs/FEATURE_MAP.md for the full “where does X live?” map.
+ * Pillars: Competition · Team · Logistics · Business · Build · AI
+ * (+ Home entry + Settings). See docs/FEATURE_MAP.md.
  */
 
 export type NavItemState = "setup" | "planned";
@@ -62,6 +61,10 @@ export const ORG_EXEMPT_HREFS = new Set([
   "/sign-in",
 ]);
 
+/**
+ * Consolidated IA — features grouped by job, not every page as a peer.
+ * Duplicate destinations (e.g. /intel under Scouting, /calendar under Kickoff) are removed.
+ */
 export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
   {
     label: "Home",
@@ -71,7 +74,6 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/dashboard", label: "Home", icon: "home" },
       { href: "/start", label: "Your path", icon: "pin" },
       { href: "/workspace", label: "Workspace", icon: "grid" },
-      { href: "/chat", label: "Vantage AI", icon: "bolt" },
       { href: "/announcements", label: "Announcements", icon: "bell" },
     ],
   },
@@ -82,45 +84,82 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     items: [
       { href: "/command", label: "Event Day", icon: "target" },
       { href: "/my-day", label: "My Day", icon: "calendar" },
-      { href: "/pit", label: "Pit Command", icon: "cube" },
-      { href: "/batteries", label: "Batteries", icon: "bolt" },
-      { href: "/incidents", label: "Incidents", icon: "gear" },
-      { href: "/match-checklist", label: "Match Checklist", icon: "clipboard" },
-      { href: "/intel", label: "Matches", icon: "swords" },
-      { href: "/schedule", label: "Match Schedule", icon: "calendar" },
-      { href: "/briefing", label: "Event Briefing", icon: "clipboard" },
-      { href: "/match-debrief", label: "Match Debrief", icon: "chat" },
-      { href: "/inspection", label: "Inspection", icon: "target" },
-    ],
-  },
-  {
-    label: "Scouting",
-    ...TONE,
-    icon: "scout",
-    items: [
-      { href: "/scouting", label: "Scouting Hub", icon: "clipboard" },
+      { href: "/scouting", label: "Scouting", icon: "scout" },
       { href: "/scouting/lineup", label: "Lineup & Coverage", icon: "target" },
-      { href: "/intel", label: "Teams", icon: "users" },
-      { href: "/strategy", label: "Strategy & AI", icon: "bolt" },
+      { href: "/intel", label: "Matches & Teams", icon: "swords" },
+      { href: "/schedule", label: "Match Schedule", icon: "calendar" },
       { href: "/pick-clock", label: "Pick Clock", icon: "target" },
       { href: "/chemistry", label: "Alliance Chemistry", icon: "users" },
       { href: "/dossier", label: "Team Dossier", icon: "clipboard" },
       { href: "/rankings", label: "Rankings", icon: "stats" },
       { href: "/video", label: "Video Review", icon: "display" },
+      { href: "/pit", label: "Pit Command", icon: "cube" },
+      { href: "/batteries", label: "Batteries", icon: "bolt" },
+      { href: "/incidents", label: "Incidents", icon: "gear" },
+      { href: "/match-checklist", label: "Match Checklist", icon: "clipboard" },
+      { href: "/briefing", label: "Event Briefing", icon: "clipboard" },
+      { href: "/match-debrief", label: "Match Debrief", icon: "chat" },
+      { href: "/inspection", label: "Inspection", icon: "target" },
+      { href: "/kickoff", label: "Kickoff", icon: "bolt" },
     ],
   },
   {
-    label: "Calendar",
+    label: "Team",
     ...TONE,
-    icon: "calendar",
+    icon: "users",
     items: [
       { href: "/team/calendar", label: "Team Calendar", icon: "calendar" },
-      { href: "/my-day", label: "My Day", icon: "calendar" },
       { href: "/calendar", label: "Season Calendar", icon: "calendar" },
       { href: "/practice", label: "Practice Planner", icon: "target" },
       { href: "/shifts", label: "Shifts", icon: "users" },
       { href: "/attendance", label: "Attendance", icon: "users" },
       { href: "/hours", label: "Build Hours", icon: "stats" },
+      { href: "/tasks", label: "Todos", icon: "clipboard" },
+      { href: "/messages", label: "Messages", icon: "chat" },
+      { href: "/goals", label: "Goals", icon: "target" },
+      { href: "/risks", label: "Risk Register", icon: "bolt" },
+      { href: "/roles", label: "Roles", icon: "users" },
+      { href: "/team/getting-started", label: "Team setup", icon: "pin" },
+      { href: "/team/knowledge", label: "Knowledge Base", icon: "clipboard" },
+      { href: "/team/alumni", label: "Alumni", icon: "users" },
+      { href: "/team", label: "Admin", icon: "gear" },
+      { href: "/team/discord", label: "Discord", icon: "chat" },
+      { href: "/team/data", label: "Data analytics", icon: "stats" },
+      { href: "/training", label: "Training Matrix", icon: "users", state: "planned" },
+      { href: "/leadership", label: "Leadership Continuity", icon: "users", state: "planned" },
+      { href: "/retro", label: "Team Retrospective", icon: "chat", state: "planned" },
+      { href: "/season-rollover", label: "Season Rollover", icon: "calendar", state: "planned" },
+      { href: "/mock-judging", label: "Mock Judging", icon: "chat", state: "planned" },
+    ],
+  },
+  {
+    label: "Logistics",
+    ...TONE,
+    icon: "pin",
+    items: [
+      { href: "/logistics", label: "Event Logistics", icon: "pin" },
+      { href: "/packing", label: "Packing List", icon: "grid" },
+      { href: "/duties", label: "Duty Roster", icon: "users" },
+      { href: "/visit-invites", label: "Visit Invites", icon: "users" },
+    ],
+  },
+  {
+    label: "Business",
+    ...TONE,
+    icon: "clipboard",
+    items: [
+      { href: "/business", label: "Business Hub", icon: "clipboard" },
+      { href: "/orders", label: "Orders", icon: "clipboard" },
+      { href: "/costs", label: "Season Costs", icon: "stats" },
+      { href: "/team/finance", label: "Finance", icon: "stats" },
+      { href: "/team/sponsors", label: "Sponsors", icon: "users" },
+      { href: "/sponsorship", label: "Sponsorship One-Pagers", icon: "clipboard" },
+      { href: "/team/grants", label: "Grants", icon: "clipboard" },
+      { href: "/team/awards", label: "Awards", icon: "target" },
+      { href: "/fundraisers", label: "Fundraisers", icon: "bolt" },
+      { href: "/impact", label: "Community Impact", icon: "target" },
+      { href: "/recognition", label: "Recognition", icon: "users" },
+      { href: "/exports", label: "Exports", icon: "clipboard" },
     ],
   },
   {
@@ -143,70 +182,14 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     ],
   },
   {
-    label: "Team",
-    ...TONE,
-    icon: "users",
-    items: [
-      // Soft-UI shared list at `/todos`; `/tasks` remains the build-season task board.
-      { href: "/todos", label: "Todos", icon: "clipboard" },
-      { href: "/tasks", label: "Task board", icon: "clipboard" },
-      { href: "/messages", label: "Messages", icon: "chat" },
-      { href: "/goals", label: "Goals", icon: "target" },
-      { href: "/risks", label: "Risk Register", icon: "bolt" },
-      { href: "/roles", label: "Roles", icon: "users" },
-      { href: "/team/getting-started", label: "Team setup", icon: "pin" },
-      { href: "/team/knowledge", label: "Knowledge Base", icon: "clipboard" },
-      { href: "/team/alumni", label: "Alumni", icon: "users" },
-      { href: "/team", label: "Admin", icon: "gear" },
-      { href: "/team/discord", label: "Discord", icon: "chat" },
-      { href: "/team/data", label: "Data analytics", icon: "stats" },
-      { href: "/team/usage", label: "AI usage", icon: "stats" },
-      { href: "/training", label: "Training Matrix", icon: "users", state: "planned" },
-      { href: "/leadership", label: "Leadership Continuity", icon: "users", state: "planned" },
-      { href: "/retro", label: "Team Retrospective", icon: "chat", state: "planned" },
-      { href: "/season-rollover", label: "Season Rollover", icon: "calendar", state: "planned" },
-      { href: "/mock-judging", label: "Mock Judging", icon: "chat", state: "planned" },
-    ],
-  },
-  {
-    label: "Logistics",
-    ...TONE,
-    icon: "pin",
-    items: [
-      { href: "/logistics", label: "Event Logistics", icon: "pin" },
-      { href: "/packing", label: "Packing List", icon: "grid" },
-      { href: "/duties", label: "Duty Roster", icon: "users" },
-      { href: "/visit-invites", label: "Visit Invites", icon: "users" },
-    ],
-  },
-  {
-    label: "Kickoff",
+    label: "AI",
     ...TONE,
     icon: "bolt",
     items: [
-      { href: "/kickoff", label: "Kickoff Summary", icon: "clipboard" },
-      { href: "/calendar", label: "Season milestones", icon: "calendar" },
-      { href: "/cad", label: "CAD Brief", icon: "cube", state: "setup" },
-    ],
-  },
-  {
-    label: "Business",
-    ...TONE,
-    icon: "clipboard",
-    items: [
-      { href: "/business", label: "Business Hub", icon: "clipboard" },
-      { href: "/orders", label: "Orders", icon: "clipboard" },
-      { href: "/costs", label: "Season Costs", icon: "stats" },
-      { href: "/team/finance", label: "Finance", icon: "stats" },
-      { href: "/team/sponsors", label: "Sponsors", icon: "users" },
-      { href: "/sponsorship", label: "Sponsorship One-Pagers", icon: "clipboard" },
-      { href: "/team/grants", label: "Grants", icon: "clipboard" },
-      { href: "/team/awards", label: "Awards", icon: "target" },
-      { href: "/fundraisers", label: "Fundraisers", icon: "bolt" },
-      { href: "/impact", label: "Community Impact", icon: "target" },
+      { href: "/chat", label: "Vantage AI", icon: "bolt" },
+      { href: "/strategy", label: "Strategy & AI", icon: "target" },
       { href: "/writer", label: "Award Writer", icon: "chat" },
-      { href: "/recognition", label: "Recognition", icon: "users" },
-      { href: "/exports", label: "Exports", icon: "clipboard" },
+      { href: "/team/usage", label: "AI usage", icon: "stats" },
     ],
   },
   {
@@ -226,12 +209,22 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
   },
 ];
 
-/** Bottom island — keep glanceable; full IA lives in the drawer. */
+/** Bottom island — glanceable; full IA lives in the drawer / More sheet. */
 export const PRIMARY_TABS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/dashboard", label: "Home", icon: "home" },
-  { href: "/command", label: "Event Day", icon: "target" },
+  { href: "/command", label: "Event", icon: "target" },
   { href: "/scouting", label: "Scout", icon: "scout" },
-  { href: "/team/calendar", label: "Calendar", icon: "calendar" },
+  { href: "/team/calendar", label: "Team", icon: "calendar" },
+];
+
+/** Quick destinations in the mobile More sheet (pillars, not a laundry list). */
+export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
+  { href: "/my-day", label: "My Day", icon: "calendar" },
+  { href: "/messages", label: "Messages", icon: "chat" },
+  { href: "/logistics", label: "Logistics", icon: "pin" },
+  { href: "/business", label: "Business", icon: "clipboard" },
+  { href: "/cad", label: "Build", icon: "cube" },
+  { href: "/chat", label: "AI", icon: "bolt" },
 ];
 
 export function withOrgHref(href: string, orgId: string | null | undefined): string {
@@ -257,9 +250,7 @@ export function findNavMatch(
       const nested = href !== "/" && path.startsWith(`${href}/`);
       if (!exact && !nested) continue;
       if (href === "/team" && nested) continue;
-      if (exact && href === "/intel" && group.label === "Scouting") continue;
-      if (exact && href === "/my-day" && group.label !== "Competition") continue;
-      if (exact && href === "/calendar" && group.label !== "Calendar") continue;
+      if (exact && href === "/team" && group.label === "Settings") continue;
       const score = href.length + (exact ? 1_000 : 0);
       if (!best || score > best.score) best = { group, item, score };
     }

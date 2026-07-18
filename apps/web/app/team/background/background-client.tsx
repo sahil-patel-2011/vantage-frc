@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
@@ -132,7 +132,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
       <TeamOpsNav orgId={orgId} active="admin" />
 
       <nav className="settings-inline-links" aria-label="Related team settings">
-        <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team admin</a>
+        <a href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>Team admin</a>
         <a href={`/writer?orgId=${encodeURIComponent(orgId)}`}>Award writer</a>
         <a href={`/team/grants?orgId=${encodeURIComponent(orgId)}`}>Grants</a>
         <a href={`/team/sponsors?orgId=${encodeURIComponent(orgId)}`}>Sponsors</a>
