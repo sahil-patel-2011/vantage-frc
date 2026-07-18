@@ -3,7 +3,7 @@
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. It brings scouting (with trust signals and offline QR), live match data, win/loss prediction, an FRC Assistant, strategy, CAD↔strategy workflows, Event Day / My Day, knowledge, logistics, sponsorship/grants/orders, product hubs, and robot-code review into one shared, source-attributed event context. Broader AI tool-graph routing is still shipping and labeled as such.",
+    a: "Vantage is a competition operations platform for FIRST Robotics Competition (FRC) teams. Soft-UI hubs organize Competition, Team, Business, Build, and AI. Available surfaces include custom scouting form builder, opt-in voice notes, offline QR scouting with trust signals, Event Day / My Day, strategy and Soft-UI pick tools, Business hub sponsorship/grants/orders, knowledge, logistics, FRC Assistant, and robot-code review. CAD connectors are Setup required. Broader AI tool-graph routing is still Shipping. Every number stays source-attributed; empty workspaces stay empty.",
   },
   {
     q: "What is the FRC Assistant?",
@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     q: "How does scouting connect to everything else?",
-    a: "Scouting is integrated, not a silo. Offline match and pit forms sync into attributed team facts that feed predictions, strategy playbooks, pick lists, live match boards, and Assistant context—so drive team and strategy work from the same event.",
+    a: "Scouting is integrated, not a silo. Owners publish versioned custom match/pit forms; scouts can attach opt-in voice notes without overwriting fields. Offline forms and QR handoffs sync into attributed team facts that feed predictions, Soft-UI strategy/pick tools, live match boards, and Assistant context—so drive team and strategy work from the same event.",
   },
   {
     q: "Who is Vantage for?",

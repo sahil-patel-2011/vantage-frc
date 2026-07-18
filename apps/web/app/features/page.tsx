@@ -10,7 +10,7 @@ import {
 export const metadata: Metadata = {
   title: "Product — Vantage",
   description:
-    "Vantage product showcase with honest Available, Shipping, and Setup-required labels: scouting trust, Event Day, kickoff to CAD, logistics, sponsors, grants, orders, knowledge, hubs, and AI.",
+    "Vantage product showcase with honest Available, Shipping, and Setup-required labels: custom scouting forms, voice notes, Soft-UI hubs, strategy tools, Business hub, Event Day, CAD setup, and hard usage cutoffs.",
   alternates: { canonical: "/features" },
 };
 
@@ -52,8 +52,13 @@ const surfaces: {
     status: "Available",
   },
   {
-    title: "Sponsorship, grants & orders",
-    copy: "Sponsor pipeline, grant writing assist with honest AI labels, and purchase orders in the Business hub.",
+    title: "Strategy Soft-UI tools",
+    copy: "Win/loss, what-if, playbooks, and Soft-UI pick desk (draft, collab, pick clock) from real event data—empty until metrics and scout facts exist.",
+    status: "Available",
+  },
+  {
+    title: "Business hub · sponsors · grants · orders",
+    copy: "Soft-UI fundraising glance, sponsor pipeline, grant writing assist with honest AI labels, and purchase orders in one hub.",
     status: "Available",
   },
   {
@@ -62,8 +67,13 @@ const surfaces: {
     status: "Available",
   },
   {
-    title: "Product hubs",
-    copy: "Competition, Team, Business, Build, and AI hubs group the season so navigation matches how teams work.",
+    title: "Soft-UI product hubs",
+    copy: "Competition, Team, Business, Build, and AI hubs group the season in one Soft-UI shell so navigation matches how teams work.",
+    status: "Available",
+  },
+  {
+    title: "Hard usage cutoffs",
+    copy: "Managed AI hard-stops at included allowance—no silent overage. Resume with Usage Credits, PAYG + spend cap, or upgrade.",
     status: "Available",
   },
   {
@@ -88,8 +98,9 @@ export default function FeaturesPage() {
           <p className="brand-hero-wordmark route-wordmark">Vantage</p>
           <h1>Shipped competition ops. Honest status labels.</h1>
           <p>
-            From trusted scouting and day-of command through kickoff CAD, logistics, sponsors, knowledge, and grounded
-            AI—previews use labeled fixtures; live product stays empty until real data exists.
+            From custom scouting forms and voice notes through Soft-UI hubs, strategy pick tools, Business fundraising,
+            kickoff CAD, and hard AI cutoffs—previews use labeled fixtures; live product stays empty until real data
+            exists.
           </p>
           <div className="route-hero-actions">
             <a className="button primary" href="/#waitlist">
@@ -191,8 +202,9 @@ export default function FeaturesPage() {
             <span className="section-id">NEXT</span>
             <h2>Join the waitlist or review raised plans.</h2>
             <p>
-              Free competition core with BYOK. Paid Individual and Team plans include managed API allowance at list
-              rates. Legal: <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
+              Free competition core with BYOK. Access $55 · Individual Pro $79 / Max $119 · Team Pro $229 / Max
+              $449—managed API at list rates, then hard stop unless Credits or PAYG. Legal:{" "}
+              <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
             </p>
           </div>
           <div className="pricing-preview-actions">

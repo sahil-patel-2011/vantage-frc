@@ -18,16 +18,18 @@ FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access i
 - Custom scouting form builder (versioned match/pit schemas) — Available
 - Scout voice notes (opt-in; attach to entries; cloud STT metered when configured) — Available
 - Scouting trust layer (disagreement review, coverage gaps, reliability signals) — Available
+- Soft-UI product hubs (Competition, Team, Business, Build, AI) — Available
+- Soft-UI strategy tools: win/loss, what-if, playbooks, pick desk (draft/collab/pick clock) — Available
+- Business hub: fundraising glance, sponsors, grants, orders — Available
+- Hard managed-AI usage cutoffs after included allowance (Credits or PAYG to resume) — Available
 - FRC Assistant for competition ops/intel: strategy, matchups, opponent history, robot capabilities—grounded in event context with labeled sources — Available
 - Integrated scouting: synced scout facts feed predictions, strategy playbooks, pick lists, live boards, and Assistant context (not a silo)
 - Event Day command and My Day personal queue — Available
 - Team knowledge/wiki; CAD↔strategy linkage for approval-gated build work (CAD connectors Setup required)
 - Event logistics, sponsorship pipeline, grants, and orders — Available
-- Product hubs (Competition, Team, Business, Build, AI) — Available
 - Broader AI tool-graph auto-routing across engines — Shipping
 - Live reference data from The Blue Alliance and Statbotics (cached, deduped, freshness-stamped)
 - Win/loss prediction with confidence intervals, key factors, and tracked accuracy
-- Strategy, explicit what-if scenarios, and durable alliance pick lists
 - AI CAD builder for Onshape and Fusion 360 (approval-gated, verified checkpoints)
 - FRC robot-code risk review delivered as human-approved diffs (never auto-deployed)
 - Pit and TV/kiosk displays

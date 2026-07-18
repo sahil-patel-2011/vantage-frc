@@ -13,12 +13,12 @@ const stages = [
     "1",
     "Reference",
     "Official schedules and metrics enter shared caches with source and freshness state.",
-    "Requires setup",
+    "Setup required",
   ],
   [
     "2",
     "Observe",
-    "Scouts capture attributed, versioned match and pit records that continue offline—then sync into team facts.",
+    "Custom match/pit forms and opt-in voice notes capture attributed records that continue offline—then sync into team facts.",
     "Available",
   ],
   [
@@ -30,14 +30,14 @@ const stages = [
   [
     "4",
     "Decide",
-    "FRC Assistant, strategy, and prediction outputs record their input versions. Pick lists and playbooks stay event-scoped.",
+    "FRC Assistant, Soft-UI strategy/pick tools, and prediction outputs record their input versions. Pick lists and playbooks stay event-scoped.",
     "Available",
   ],
   [
     "5",
     "Execute",
-    "Approved intent moves into display, CAD, Assistant threads, and export workflows under team policy.",
-    "Varies by connector",
+    "Approved intent moves into display, CAD, Assistant threads, and export workflows under team policy. CAD connectors need OAuth or a local relay.",
+    "Setup required",
   ],
 ];
 
@@ -68,7 +68,7 @@ export default function WorkflowPage() {
                 {index < stages.length - 1 && <i aria-hidden="true" />}
               </div>
               <section>
-                <span className="status-badge">{status}</span>
+                <span className={`status-badge ${status === "Available" ? "available" : "setup"}`}>{status}</span>
                 <h2>{title}</h2>
                 <p>{detail}</p>
               </section>
