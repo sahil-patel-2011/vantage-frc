@@ -3,7 +3,7 @@ import { MemoryWaitlistStore, waitlistSchema } from "./waitlist";
 
 describe("waitlist validation", () => {
   it("normalizes valid input", () => {
-    const result = waitlistSchema.parse({
+    const result = waitlistSchema.parse({ termsAccepted: true,
       email: "  Drive@Example.COM ",
       teamNumber: "254",
       phone: "+12025550123",
@@ -30,8 +30,8 @@ describe("duplicate-safe persistence", () => {
   beforeEach(() => store.clear());
 
   it("updates an existing email without disclosing a duplicate", async () => {
-    await store.upsert(waitlistSchema.parse({ email: "a@example.com", teamNumber: 1 }));
-    await expect(store.upsert(waitlistSchema.parse({
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, email: "a@example.com", teamNumber: 1 }));
+    await expect(store.upsert(waitlistSchema.parse({ termsAccepted: true,
       email: "A@example.com",
       teamNumber: 999,
       phone: "+12025550123",
@@ -47,8 +47,8 @@ describe("admin waitlist tools", () => {
   beforeEach(() => store.clear());
 
   it("lists, filters, and marks entries without assuming sort order for equal timestamps", async () => {
-    await store.upsert(waitlistSchema.parse({ email: "alpha@example.com", teamNumber: 254 }));
-    await store.upsert(waitlistSchema.parse({ email: "beta@example.com", teamNumber: 9999 }));
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, email: "alpha@example.com", teamNumber: 254 }));
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, email: "beta@example.com", teamNumber: 9999 }));
 
     const filtered = await store.list({ q: "9999" });
     expect(filtered.map((row) => row.email)).toEqual(["beta@example.com"]);

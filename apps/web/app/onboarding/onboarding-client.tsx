@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { VantageLogo } from "../../components/brand";
+import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
 import { PENDING_INVITE_KEY } from "../invite/invite-client";
 import "./onboarding-flow.css";
 
@@ -113,6 +114,7 @@ export default function OnboardingClient() {
   const [orgDescription, setOrgDescription] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [checking, setChecking] = useState(false);
 
   function hydrate(data: OnboardingState) {
@@ -187,6 +189,7 @@ export default function OnboardingClient() {
           primaryFocus,
           displayName: displayName.trim() || undefined,
           themePreference,
+          termsAccepted,
           city: isTeamHead ? orgCity.trim() || null : undefined,
           stateProv: isTeamHead ? orgStateProv.trim() || null : undefined,
           description: isTeamHead ? orgDescription.trim() || null : undefined,
@@ -376,13 +379,14 @@ export default function OnboardingClient() {
               <label className="check-field"><input type="radio" name="theme" checked={themePreference === "light"} onChange={() => setThemePreference("light")} /> Light</label>
               <label className="check-field"><input type="radio" name="theme" checked={themePreference === "dark"} onChange={() => setThemePreference("dark")} /> Dark</label>
             </fieldset>
+            <LegalAgreementCheckbox id="onboarding-terms" checked={termsAccepted} onChange={setTermsAccepted} className="onboarding-legal-accept" />
             <div className="onboarding-security-note">
               <b aria-hidden="true">✓</b>
               <p><strong>Submitting does not grant access.</strong><span>Your verified request goes to a team owner or administrator. Approval creates membership, ends this temporary session, and emails you a fresh sign-in link.</span></p>
             </div>
             <div className="onboarding-actions">
               <button type="button" className="signin-link" onClick={() => setStep("team")}>Back</button>
-              <button className="signin-submit" type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit access request"}</button>
+              <button className="signin-submit" type="submit" disabled={busy || !termsAccepted}>{busy ? "Submitting…" : "Submit access request"}</button>
             </div>
           </form>
         ) : null}
