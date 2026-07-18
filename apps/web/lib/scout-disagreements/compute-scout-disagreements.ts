@@ -9,15 +9,14 @@ import type {
   ScoutDisagreementValue,
 } from "./types";
 import { resolveScoutOrg } from "../scout-org-access";
+import {
+  scoutDisagreementsSetupSteps,
+  type ScoutDisagreementsSetupStep,
+} from "./scout-disagreements-related";
 
 export const SCOUT_DISAGREEMENT_STATUSES: ScoutDisagreementStatus[] = ["open", "resolved", "dismissed"];
 
-export type ScoutDisagreementsSetupStep = {
-  id: string;
-  label: string;
-  detail: string;
-  href: string;
-};
+export type { ScoutDisagreementsSetupStep };
 
 export type ScoutDisagreementsView =
   | {
@@ -134,9 +133,7 @@ export async function computeScoutDisagreementsView(
     return {
       status: "setup_required",
       message: "Select a team workspace to review scouting disagreements.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: scoutDisagreementsSetupSteps(null),
       orgId: null,
       seasonYear,
     };
