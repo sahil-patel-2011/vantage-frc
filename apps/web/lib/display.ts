@@ -175,6 +175,22 @@ export function hasReadinessSignal(readiness: DisplayReadiness | null): boolean 
   );
 }
 
+/** True only when scouting rows exist — hides zero tiles that look like DEMO coverage. */
+export function hasScoutingCoverageSignal(scouting: DisplayScouting | null | undefined): boolean {
+  if (!scouting) return false;
+  return scouting.assignments > 0 || scouting.reports > 0 || scouting.openDisagreements > 0;
+}
+
+/** True when Event Command has at least one real match, rank/record, or scout alert. */
+export function hasEventCommandSignal(
+  snapshot: Pick<DisplaySnapshot, "nextMatch" | "eventStatus" | "scouting">,
+): boolean {
+  if (snapshot.nextMatch) return true;
+  if (snapshot.eventStatus?.rank != null) return true;
+  if (snapshot.eventStatus?.wins != null || snapshot.eventStatus?.losses != null) return true;
+  return snapshot.scouting.openDisagreements > 0;
+}
+
 export function widgetValue(
   type: string,
   snapshot: Pick<DisplaySnapshot, "nextMatch" | "prediction" | "scouting" | "eventStatus" | "readiness" | "strategyHeadline">,

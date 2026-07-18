@@ -2,7 +2,9 @@
 import {
   countdownState,
   formatAlliance,
+  hasEventCommandSignal,
   hasReadinessSignal,
+  hasScoutingCoverageSignal,
   isDisplayPreset,
   isDisplayWidgetType,
   matchLabel,
@@ -88,5 +90,26 @@ describe("display helpers", () => {
     expect(widgetValue("robot_readiness", empty)).toMatch(/No readiness data/i);
     expect(widgetValue("event_status", empty)).toMatch(/Rank not synced/i);
     expect(widgetValue("alerts", empty)).toMatch(/No open scout/i);
+  });
+
+  it("hides scouting and event-command tiles until real rows exist", () => {
+    expect(hasScoutingCoverageSignal(null)).toBe(false);
+    expect(hasScoutingCoverageSignal({ assignments: 0, reports: 0, openDisagreements: 0 })).toBe(false);
+    expect(hasScoutingCoverageSignal({ assignments: 2, reports: 0, openDisagreements: 0 })).toBe(true);
+
+    expect(
+      hasEventCommandSignal({
+        nextMatch: null,
+        eventStatus: null,
+        scouting: { assignments: 0, reports: 0, openDisagreements: 0 },
+      }),
+    ).toBe(false);
+    expect(
+      hasEventCommandSignal({
+        nextMatch: null,
+        eventStatus: { rank: 4, wins: 2, losses: 1, ties: 0, source: "tba" },
+        scouting: { assignments: 0, reports: 0, openDisagreements: 0 },
+      }),
+    ).toBe(true);
   });
 });
