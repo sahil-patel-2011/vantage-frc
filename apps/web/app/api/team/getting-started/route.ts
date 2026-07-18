@@ -80,6 +80,7 @@ export async function GET(request: Request) {
         teamNumber: membership.rows[0]!.teamNumber,
         orgName: membership.rows[0]!.orgName,
         signals: {
+          hasLocation,
           members,
           pendingInvites,
           knowledgeChars: knowledgeLen,

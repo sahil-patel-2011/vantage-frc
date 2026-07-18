@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateOnboardingPayload } from "./onboarding";
+import { normalizeOrgLocationFields, validateOnboardingPayload } from "./onboarding";
 
 describe("onboarding validation", () => {
   const base = {
@@ -27,5 +27,22 @@ describe("onboarding validation", () => {
     expect(() =>
       validateOnboardingPayload({ ...base, displayName: "x".repeat(81) }),
     ).toThrow(/80/);
+  });
+});
+
+describe("normalizeOrgLocationFields", () => {
+  it("requires city and state when team head", () => {
+    expect(() => normalizeOrgLocationFields({}, { requireLocation: true })).toThrow(/City/i);
+    expect(() => normalizeOrgLocationFields({ city: "Austin" }, { requireLocation: true })).toThrow(/State/i);
+    const ok = normalizeOrgLocationFields({ city: "Austin", stateProv: "TX", description: "  " }, { requireLocation: true });
+    expect(ok).toEqual({ city: "Austin", stateProv: "TX", description: null });
+  });
+
+  it("allows empty location when not required", () => {
+    expect(normalizeOrgLocationFields({}, { requireLocation: false })).toEqual({
+      city: null,
+      stateProv: null,
+      description: null,
+    });
   });
 });

@@ -13,3 +13,8 @@
 .onboarding-pending-help{margin:0;padding:13px 15px;border-left:3px solid #86a8df;color:#56657a;background:#f7f9fc;font-size:12px;line-height:1.5}.onboarding-pending-actions{display:flex;align-items:center;justify-content:space-between;gap:14px}.onboarding-pending-actions .signin-submit{width:auto;min-width:190px}
 @media(max-width:620px){.onboarding-flow-page{padding:18px 10px}.onboarding-flow-card{padding:24px 17px;border-radius:18px}.onboarding-focus-grid,.onboarding-review-card{grid-template-columns:1fr}.onboarding-focus-grid label{min-height:auto}.onboarding-pending-actions{align-items:stretch;flex-direction:column}.onboarding-pending-actions .signin-submit{width:100%}}
 @media(prefers-reduced-motion:reduce){.onboarding-focus-grid label{transition:none}}
+
+.onboarding-team-profile{margin:0;padding:14px;border:1px solid var(--soft-line,#dce3ec);border-radius:14px;background:#f8fafc}
+.onboarding-team-profile legend{font-size:13px;font-weight:700;padding:0 4px}
+.onboarding-team-profile-hint{margin:0 0 12px;color:var(--soft-muted,#6b7280);font-size:12px;line-height:1.45}
+.onboarding-team-profile textarea{width:100%;min-height:72px;resize:vertical}
