@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { TeamOpsNav } from "../../components/team-ops-nav";
 import { formatGoalValue, goalCategoryLabel, goalStatusLabel } from "../../lib/goals";
 import {
   GOAL_CATEGORIES,
@@ -103,8 +104,8 @@ export default function GoalsClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs="Team / Season Goals"
-        title="Season Goals & Objectives"
+        breadcrumbs="Team / Goals"
+        title="Goals"
         description={
           <>
             Set the measurable objectives that define a successful season — competition, technical, outreach, and
@@ -132,6 +133,7 @@ export default function GoalsClient() {
           </label>
         ) : null}
       </PageHeader>
+      <TeamOpsNav orgId={orgId} active="goals" />
 
       {error ? (
         <p className="telemetry-status" role="alert">

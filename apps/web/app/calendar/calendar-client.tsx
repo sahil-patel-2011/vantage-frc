@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
   daysUntil,
   groupByMonth,
@@ -163,10 +164,11 @@ export default function CalendarClient() {
       <main className="module-page cal-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Season / Calendar</span>
+            <span className="breadcrumbs">Team / Season Calendar</span>
             <h1>Season Calendar</h1>
           </div>
         </header>
+        <TeamOpsNav active="calendar" />
         <div className="app-card cal-empty">
           {fetchFailed ? (
             <>
@@ -189,11 +191,12 @@ export default function CalendarClient() {
       <main className="module-page cal-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Season / Calendar</span>
+            <span className="breadcrumbs">Team / Season Calendar</span>
             <h1>Season Calendar</h1>
             <p>Build-season milestones and countdowns from Kickoff through competition.</p>
           </div>
         </header>
+        <TeamOpsNav active="calendar" />
         <div className="app-card cal-empty">
           <strong>Select a team workspace</strong>
           <p className="app-muted">{view.message}</p>
@@ -240,16 +243,17 @@ export default function CalendarClient() {
     <main className="module-page cal-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Season / Calendar</span>
+          <span className="breadcrumbs">Team / Season Calendar</span>
           <h1>Season Calendar</h1>
           <p>
             Build-season milestones for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — from Kickoff through competition.
             For practices and subteam schedules, open{" "}
-            <a href={orgId ? `/team/calendar?orgId=${encodeURIComponent(orgId)}` : "/team/calendar"}>Team Calendar</a>.
+            <a href={orgId ? `/team/calendar?orgId=${encodeURIComponent(orgId)}` : "/team/calendar"}>Calendar</a>.
           </p>
         </div>
       </header>
+      <TeamOpsNav orgId={orgId} active="calendar" />
 
       {error ? (
         <p className="telemetry-status" role="alert">

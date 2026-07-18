@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { TeamOpsNav } from "../../components/team-ops-nav";
 import { priorityLabel, statusLabel } from "../../lib/tasks";
 import {
   SUBSYSTEM_SUGGESTIONS,
@@ -94,8 +95,8 @@ export default function TasksClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs="Build / Task Board"
-        title="Build Task Board"
+        breadcrumbs="Team / Todos"
+        title="Todos"
         description={
           <>
             Plan and track build-season work by subsystem — priorities, owners, due dates, and progress. A focused
@@ -123,6 +124,7 @@ export default function TasksClient() {
           </label>
         ) : null}
       </PageHeader>
+      <TeamOpsNav orgId={orgId} active="todos" />
 
       {error ? (
         <p className="telemetry-status" role="alert">

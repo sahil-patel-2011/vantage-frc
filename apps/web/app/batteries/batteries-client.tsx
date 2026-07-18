@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { TeamOpsNav } from "../../components/team-ops-nav";
 import { BATTERY_LOG_KINDS, type BatteryStatus, type HealthStatus } from "../../lib/battery";
 
 type Pack = {
@@ -200,10 +201,11 @@ export default function BatteriesClient() {
       <main className="module-page batt-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Pit / Batteries</span>
-            <h1>Battery Fleet</h1>
+            <span className="breadcrumbs">Team / Batteries</span>
+            <h1>Batteries</h1>
           </div>
         </header>
+        <TeamOpsNav active="batteries" />
         <div className="app-card batt-empty">
           {fetchFailed ? (
             <>
@@ -226,11 +228,12 @@ export default function BatteriesClient() {
       <main className="module-page batt-page">
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Pit / Batteries</span>
-            <h1>Battery Fleet</h1>
+            <span className="breadcrumbs">Team / Batteries</span>
+            <h1>Batteries</h1>
             <p>Track charge cycles, assignment, and competition readiness for every pack.</p>
           </div>
         </header>
+        <TeamOpsNav active="batteries" />
         <div className="app-card batt-empty">
           <strong>Select a team workspace</strong>
           <p className="app-muted">{view.message}</p>
@@ -253,8 +256,8 @@ export default function BatteriesClient() {
     <main className="module-page batt-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Pit / Batteries</span>
-          <h1>Battery Fleet</h1>
+          <span className="breadcrumbs">Team / Batteries</span>
+          <h1>Batteries</h1>
           <p>
             Charge cycles, assignment, and event readiness for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""}.
@@ -269,6 +272,7 @@ export default function BatteriesClient() {
           </a>
         </div>
       </header>
+      <TeamOpsNav orgId={orgId} active="batteries" />
 
       {error ? (
         <p className="batt-alert" role="alert">

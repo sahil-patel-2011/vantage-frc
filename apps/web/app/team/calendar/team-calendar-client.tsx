@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { TeamOpsNav } from "../../../components/team-ops-nav";
 import {
   filterEventsBySubteam,
   groupEventsByDay,
@@ -467,9 +468,10 @@ export default function TeamCalendarClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Team / Calendar</span>
-            <h1>Team Calendar</h1>
+            <h1>Calendar</h1>
           </div>
         </header>
+        <TeamOpsNav active="calendar" />
         <div className="app-card tc-empty">
           {fetchFailed ? (
             <>
@@ -493,10 +495,11 @@ export default function TeamCalendarClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Team / Calendar</span>
-            <h1>Team Calendar</h1>
+            <h1>Calendar</h1>
             <p>Subteam calendars for practices, build sessions, and deadlines.</p>
           </div>
         </header>
+        <TeamOpsNav active="calendar" />
         <div className="app-card tc-empty">
           <strong>Select a team workspace</strong>
           <p className="app-muted">{view.message}</p>
@@ -517,13 +520,14 @@ export default function TeamCalendarClient() {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Team / Calendar</span>
-          <h1>Team Calendar</h1>
+          <h1>Calendar</h1>
           <p>
             {teamLabel} — filter by subteam or view the combined schedule. Season milestones stay on{" "}
             <a href={withOrg("/calendar", orgId)}>Season Calendar</a>.
           </p>
         </div>
       </header>
+      <TeamOpsNav orgId={orgId} active="calendar" />
 
       {error ? <p className="tc-error">{error}</p> : null}
 

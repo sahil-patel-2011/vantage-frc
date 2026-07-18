@@ -1,3 +1,5 @@
+import { EmptyState, PageHeader } from "../../components/ui";
+import { TeamOpsNav } from "../../components/team-ops-nav";
 import TeamAdminClient from "./team-admin-client";
 
 export default async function TeamPage({
@@ -8,11 +10,18 @@ export default async function TeamPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="content soft-gate">
-        <span className="eyebrow">VANTAGE / TEAM ADMIN</span>
-        <h1>Select a workspace</h1>
-        <p>Membership, invites, and provider settings are org-scoped. Choose a team workspace to continue.</p>
-        <a href="/workspace">Select workspace</a>
+      <main className="module-page">
+        <PageHeader
+          breadcrumbs="Team / Admin"
+          title="Team admin"
+          description="Membership, invites, and provider settings are org-scoped. Choose a team workspace to continue."
+        />
+        <TeamOpsNav active="admin" />
+        <EmptyState title="Select a workspace" description="Open a team workspace to manage membership and integrations." badge="Setup" badgeTone="setup">
+          <a className="app-button" href="/workspace">
+            Select workspace
+          </a>
+        </EmptyState>
       </main>
     );
   }

@@ -11,6 +11,7 @@
   padding:28px clamp(15px,3vw,42px) 96px;
   color:var(--app-ink);
 }
+.practice-page > .team-ops-nav{margin-bottom:16px}
 .practice-page input,.practice-page select,.practice-page textarea{
   width:100%;min-height:38px;padding:8px 10px;color:var(--app-ink);
   background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;font:inherit;

@@ -38,7 +38,6 @@ const groups: NavGroup[] = [
       { href: "/repairs", label: "Repair Log", icon: "gear" },
       { href: "/intel", label: "Matches", icon: "swords" },
       { href: "/workspace", label: "Schedule", icon: "calendar" },
-      { href: "/team/calendar", label: "Team Calendar", icon: "calendar" },
       { href: "/calendar", label: "Season Calendar", icon: "calendar" },
     ],
   },
@@ -76,10 +75,14 @@ const groups: NavGroup[] = [
     toneBg: "#e8eefc",
     icon: "gear",
     items: [
+      { href: "/practice", label: "Practice", icon: "target" },
+      { href: "/tasks", label: "Todos", icon: "clipboard" },
+      { href: "/messages", label: "Messages", icon: "chat" },
+      { href: "/team/calendar", label: "Calendar", icon: "calendar" },
+      { href: "/attendance", label: "Attendance", icon: "users" },
+      { href: "/goals", label: "Goals", icon: "target" },
       { href: "/business", label: "Business", icon: "clipboard" },
       { href: "/costs", label: "Season Costs", icon: "stats" },
-      { href: "/attendance", label: "Attendance", icon: "users" },
-      { href: "/practice", label: "Practice Planner", icon: "target" },
       { href: "/hours", label: "Build Hours", icon: "calendar" },
       { href: "/training", label: "Training Matrix", icon: "users" },
       { href: "/season-rollover", label: "Season Rollover", icon: "calendar" },
@@ -93,10 +96,21 @@ const groups: NavGroup[] = [
       { href: "/team/data", label: "Data analytics", icon: "stats" },
       { href: "/exports", label: "Exports", icon: "clipboard" },
       { href: "/team/usage", label: "AI usage", icon: "stats" },
-      { href: "/messages", label: "Messages", icon: "chat" },
-      { href: "/account", label: "Account", icon: "users" },
-      { href: "/security", label: "Security", icon: "gear" },
       { href: "/chat", label: "Vantage AI", icon: "bolt" },
+    ],
+  },
+  {
+    label: "Settings",
+    tone: "#1f4fd6",
+    toneBg: "#e8eefc",
+    icon: "gear",
+    items: [
+      { href: "/account", label: "Account", icon: "users" },
+      { href: "/notifications", label: "Notifications", icon: "bell" },
+      { href: "/security", label: "Security", icon: "gear" },
+      { href: "/team/security", label: "Team security", icon: "gear" },
+      { href: "/team/budgets", label: "API budgets", icon: "stats" },
+      { href: "/team", label: "API keys & admin", icon: "gear" },
     ],
   },
 ];
@@ -136,7 +150,7 @@ function Icon({ name }: { name: IconName }) {
 
 function withOrg(href: string, orgId: string) {
   if (!orgId) return href;
-  if (["/dashboard", "/account", "/security", "/admin"].includes(href)) return href;
+  if (["/dashboard", "/account", "/security", "/admin", "/notifications"].includes(href)) return href;
   const join = href.includes("?") ? "&" : "?";
   return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
 }
@@ -211,16 +225,27 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
     }
     return items;
   }, [me.platformAdmin]);
-  const showBack = pathname.startsWith("/account") || pathname.startsWith("/team") || pathname.startsWith("/admin") || pathname.startsWith("/security");
+  const showBack =
+    pathname.startsWith("/account") ||
+    pathname.startsWith("/team") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/security") ||
+    pathname.startsWith("/notifications");
   const title = pathname.startsWith("/account")
     ? "Account"
-    : pathname.startsWith("/admin")
-      ? "Admin"
-      : pathname.startsWith("/team")
+    : pathname.startsWith("/notifications")
+      ? "Notifications"
+      : pathname.startsWith("/admin")
         ? "Admin"
-        : pathname.startsWith("/security")
-          ? "Security"
-          : null;
+        : pathname.startsWith("/team/security")
+          ? "Team security"
+          : pathname.startsWith("/team/budgets")
+            ? "API budgets"
+            : pathname.startsWith("/team")
+              ? "Admin"
+              : pathname.startsWith("/security")
+                ? "Security"
+                : null;
 
   async function handleSignOut() {
     if (signingOut) return;
@@ -282,8 +307,11 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                 <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
                   Account settings
                 </a>
+                <a role="menuitem" href="/account?tab=notifications" onClick={() => setAccountMenuOpen(false)}>
+                  Notification &amp; email prefs
+                </a>
                 <a role="menuitem" href="/notifications" onClick={() => setAccountMenuOpen(false)}>
-                  Notifications
+                  Inbox
                   {unreadCount >= 1 ? <b>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
                 </a>
                 <a role="menuitem" href={withOrg("/messages", orgId)} onClick={() => setAccountMenuOpen(false)}>
@@ -293,6 +321,11 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                 <a role="menuitem" href="/security" onClick={() => setAccountMenuOpen(false)}>
                   Security
                 </a>
+                {orgId ? (
+                  <a role="menuitem" href={withOrg("/team", orgId)} onClick={() => setAccountMenuOpen(false)}>
+                    API keys &amp; team admin
+                  </a>
+                ) : null}
                 <button
                   role="menuitem"
                   type="button"
@@ -340,6 +373,12 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
           <div className="soft-profile-actions">
             <a href="/account" onClick={() => setOpen(false)}>
               Account
+            </a>
+            <a href="/account?tab=notifications" onClick={() => setOpen(false)}>
+              Prefs
+            </a>
+            <a href="/security" onClick={() => setOpen(false)}>
+              Security
             </a>
             <button type="button" disabled={signingOut} onClick={() => void handleSignOut()}>
               {signingOut ? "Signing out…" : "Sign out"}
