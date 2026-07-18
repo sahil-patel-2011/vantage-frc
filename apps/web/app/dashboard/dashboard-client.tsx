@@ -18,6 +18,7 @@ import {
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { Icon } from "../../components/app-shell";
 import { countdownLabel, DashboardWidgetView } from "./widgets";
+import type { HomeStripItem } from "../../lib/home-workflows";
 import "react-grid-layout/css/styles.css";
 import "./dashboard-editor.css";
 import "./dashboard-dnd.css";
@@ -28,6 +29,7 @@ type Me = {
   orgName?: string | null;
   teamNumber?: number | null;
   role?: string | null;
+  teamRole?: string | null;
   tbaConfigured?: boolean;
 };
 
@@ -605,6 +607,14 @@ export default function DashboardClient() {
   const setupRequired = Boolean(context.setupRequired);
   const hasScoutingSchemas = Boolean(context.hasScoutingSchemas);
   const hasAiProvider = Boolean(context.hasAiProvider);
+  const homeStripRaw = context.homeStrip as
+    | { audience?: string; items?: HomeStripItem[] }
+    | undefined;
+  const homeStripItems = Array.isArray(homeStripRaw?.items) ? homeStripRaw.items : [];
+  const homeAudience =
+    homeStripRaw?.audience === "mentor" || homeStripRaw?.audience === "student"
+      ? homeStripRaw.audience
+      : null;
   const nextMatchPayload = widgets.next_match;
   const nextMatchData =
     nextMatchPayload?.status === "live" ? (nextMatchPayload.data as Record<string, unknown> | undefined) : undefined;
@@ -709,6 +719,37 @@ export default function DashboardClient() {
           ) : null}
         </div>
       </header>
+
+      {orgId && !editing && homeStripItems.length > 0 ? (
+        <section
+          className="dash-role-strip"
+          data-audience={homeAudience ?? "student"}
+          aria-label={homeAudience === "mentor" ? "Mentor focus" : "Student focus"}
+        >
+          <header className="dash-role-strip-head">
+            <span>{homeAudience === "mentor" ? "Mentor focus" : "Student focus"}</span>
+            <a
+              href={
+                homeAudience === "mentor"
+                  ? `/logistics?orgId=${encodeURIComponent(orgId)}`
+                  : `/kickoff?orgId=${encodeURIComponent(orgId)}`
+              }
+            >
+              {homeAudience === "mentor" ? "Open logistics" : "Kickoff summary"}
+            </a>
+          </header>
+          <ul>
+            {homeStripItems.map((item) => (
+              <li key={item.key} data-tone={item.tone}>
+                <a href={item.href}>
+                  <span>{item.label}</span>
+                  <strong>{item.detail}</strong>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {message ? (
         <p className={`telemetry-status${messageKind === "success" ? " success" : ""}`} role="status">

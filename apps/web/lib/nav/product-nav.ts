@@ -69,6 +69,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     icon: "home",
     items: [
       { href: "/dashboard", label: "Home", icon: "home" },
+      { href: "/start", label: "Your path", icon: "pin" },
       { href: "/workspace", label: "Workspace", icon: "grid" },
       { href: "/chat", label: "Vantage AI", icon: "bolt" },
       { href: "/announcements", label: "Announcements", icon: "bell" },
@@ -80,6 +81,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     icon: "swords",
     items: [
       { href: "/command", label: "Event Day", icon: "target" },
+      { href: "/my-day", label: "My Day", icon: "calendar" },
       { href: "/pit", label: "Pit Command", icon: "cube" },
       { href: "/batteries", label: "Batteries", icon: "bolt" },
       { href: "/incidents", label: "Incidents", icon: "gear" },
@@ -144,13 +146,13 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     ...TONE,
     icon: "users",
     items: [
-      // Soft-UI board at `/todos`; `/tasks` remains the build-season task board.
-      { href: "/todos", label: "Todos", icon: "clipboard" },
-      { href: "/tasks", label: "Task board", icon: "clipboard" },
+      // `/tasks` is the live Todos board; Soft-UI `/todos` can replace it when shipped.
+      { href: "/tasks", label: "Todos", icon: "clipboard" },
       { href: "/messages", label: "Messages", icon: "chat" },
       { href: "/goals", label: "Goals", icon: "target" },
       { href: "/risks", label: "Risk Register", icon: "bolt" },
       { href: "/roles", label: "Roles", icon: "users" },
+      { href: "/team/getting-started", label: "Team setup", icon: "pin" },
       { href: "/team/knowledge", label: "Knowledge Base", icon: "clipboard" },
       { href: "/team/alumni", label: "Alumni", icon: "users" },
       { href: "/team", label: "Admin", icon: "gear" },
@@ -172,14 +174,19 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/logistics", label: "Event Logistics", icon: "pin" },
       { href: "/packing", label: "Packing List", icon: "grid" },
       { href: "/duties", label: "Duty Roster", icon: "users" },
-      { href: "/travel", label: "Event Travel", icon: "pin", state: "planned" },
+      { href: "/visit-invites", label: "Visit Invites", icon: "users" },
+      { href: "/logistics", label: "Event Travel", icon: "pin" },
     ],
   },
   {
     label: "Kickoff",
     ...TONE,
     icon: "bolt",
-    items: [{ href: "/kickoff", label: "Kickoff Summary", icon: "clipboard" }],
+    items: [
+      { href: "/kickoff", label: "Kickoff Summary", icon: "clipboard" },
+      { href: "/calendar", label: "Season milestones", icon: "calendar" },
+      { href: "/cad", label: "CAD Brief", icon: "cube", state: "setup" },
+    ],
   },
   {
     label: "Business",
@@ -187,6 +194,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     icon: "clipboard",
     items: [
       { href: "/business", label: "Business Hub", icon: "clipboard" },
+      { href: "/orders", label: "Orders", icon: "clipboard" },
       { href: "/costs", label: "Season Costs", icon: "stats" },
       { href: "/team/finance", label: "Finance", icon: "stats" },
       { href: "/team/sponsors", label: "Sponsors", icon: "users" },
@@ -247,6 +255,7 @@ export function findNavMatch(
       if (!exact && !nested) continue;
       if (href === "/team" && nested) continue;
       if (exact && href === "/intel" && group.label === "Scouting") continue;
+      if (exact && href === "/my-day" && group.label !== "Competition") continue;
       if (exact && href === "/calendar" && group.label !== "Calendar") continue;
       const score = href.length + (exact ? 1_000 : 0);
       if (!best || score > best.score) best = { group, item, score };

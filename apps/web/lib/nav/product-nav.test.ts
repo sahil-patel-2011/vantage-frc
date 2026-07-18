@@ -31,9 +31,9 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/team/calendar")).toBe("Calendar / Team Calendar");
     expect(breadcrumbForPath("/calendar")).toBe("Calendar / Season Calendar");
     expect(breadcrumbForPath("/shifts")).toBe("Calendar / Shifts");
-    expect(breadcrumbForPath("/todos")).toBe("Team / Todos");
-    expect(breadcrumbForPath("/tasks")).toBe("Team / Task board");
+    expect(breadcrumbForPath("/tasks")).toBe("Team / Todos");
     expect(breadcrumbForPath("/command")).toBe("Competition / Event Day");
+    expect(breadcrumbForPath("/my-day")).toBe("Competition / My Day");
     expect(breadcrumbForPath("/business")).toBe("Business / Business Hub");
     expect(breadcrumbForPath("/team/security")).toBe("Settings / Team security");
     expect(breadcrumbForPath("/intel")).toBe("Competition / Matches");
@@ -62,7 +62,6 @@ describe("product-nav", () => {
     const planned = PRODUCT_NAV_GROUPS.flatMap((group) =>
       group.items.filter((item) => item.state === "planned").map((item) => item.href),
     );
-    expect(planned).toContain("/travel");
     expect(planned).toContain("/parts-relay");
     expect(planned).not.toContain("/repairs");
     expect(planned).not.toContain("/knowledge");
