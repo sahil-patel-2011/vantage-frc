@@ -1,9 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import type { OpponentWatchlistView } from "../../lib/opponent-watchlist/compute-opponent-watchlist";
+import {
+  OPPONENT_WATCHLIST_RELATED_INCLUDE,
+  classifyOpponentWatchlistShell,
+  formatOpponentWatchlistMetric,
+  opponentWatchlistNextActions,
+  opponentWatchlistRelatedLinks,
+  opponentWatchlistShellCopy,
+  shouldShowOpponentWatchlistSummaryTiles,
+  type OpponentWatchlistNextAction,
+  type OpponentWatchlistShellKind,
+} from "../../lib/opponent-watchlist/opponent-watchlist-related";
 import type { WatchlistAlertType } from "../../lib/opponent-watchlist/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./opponent-watchlist.css";
 
 type LiveView = Extract<OpponentWatchlistView, { status: "live" }>;
 
@@ -21,13 +35,140 @@ function formatTime(value: string | null): string {
   return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+function WatchlistRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = opponentWatchlistRelatedLinks(orgId, {
+    include: [...OPPONENT_WATCHLIST_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related opponent-watchlist-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function WatchlistNextActionsPanel({ actions }: { actions: OpponentWatchlistNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions opponent-watchlist-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy, EPA Trend Alerts, and Scouting — never DEMO opponent metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function WatchlistShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: OpponentWatchlistShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = opponentWatchlistNextActions({ orgId, shell });
+  const copy = opponentWatchlistShellCopy(shell);
+  const competitionHref = hubHref("/competition", "opponent-watchlist", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const epaAlertsHref = hubHref("/competition", "epa-trend-alerts", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+
+  return (
+    <main className="module-page opponent-watchlist-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Opponent Watchlist"}
+          </>
+        }
+        title="Opponent Watchlist"
+        description={description}
+      >
+        <WatchlistRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "Empty watchlist"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#opponent-watchlist-watch">
+              Watch a team
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={epaAlertsHref}>
+              Open EPA Trend Alerts
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <WatchlistNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function OpponentWatchlistClient() {
   const [view, setView] = useState<OpponentWatchlistView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -51,6 +192,33 @@ export default function OpponentWatchlistClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const entryCount = view?.status === "live" ? view.entries.length : 0;
+  const alertCount = view?.status === "live" ? view.alerts.length : 0;
+  const summary = view?.status === "live" ? view.summary : null;
+
+  const shell = classifyOpponentWatchlistShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    entryCount,
+  });
+  const shellCopy = opponentWatchlistShellCopy(shell);
+  const nextActions = opponentWatchlistNextActions({
+    orgId,
+    shell,
+    entryCount,
+    alertCount,
+  });
+  const relatedLinks = opponentWatchlistRelatedLinks(orgId, {
+    include: [...OPPONENT_WATCHLIST_RELATED_INCLUDE],
+  });
+  const competitionHref = hubHref("/competition", "opponent-watchlist", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const epaAlertsHref = hubHref("/competition", "epa-trend-alerts", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -78,18 +246,56 @@ export default function OpponentWatchlistClient() {
     [orgId, busy],
   );
 
+  if (shell === "loading") {
+    return <WatchlistShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <WatchlistShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <WatchlistShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <WatchlistShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page opponent-watchlist-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Opponent Watchlist"}
           </>
         }
         title="Opponent Watchlist"
-        description="Track opponent teams personally and get notified when their EPA or next scheduled match changes."
-      />
+        description="Track opponent teams personally and get notified when their reference EPA or next scheduled match changes — never DEMO opponent metrics. Cross-check Strategy, EPA Trend Alerts, and Scouting."
+      >
+        <div className="opponent-watchlist-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -97,61 +303,81 @@ export default function OpponentWatchlistClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <WatchlistNextActionsPanel actions={nextActions} />
+
+      {shouldShowOpponentWatchlistSummaryTiles(entryCount) && summary ? (
+        <SummaryTiles summary={summary} loaded />
+      ) : null}
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load Opponent Watchlist"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="Empty watchlist"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href="#opponent-watchlist-watch">
+            Watch a team
+          </a>
+          <a className="app-button secondary" href={strategyHref}>
+            Open Strategy
+          </a>
+          <a className="app-button secondary" href={epaAlertsHref}>
+            Open EPA Trend Alerts
+          </a>
+          <a className="app-button secondary" href={scoutingHref}>
+            Open Scouting
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <AddEntryForm busy={busy} mutate={mutate} />
-          <AlertsPanel view={view} />
-          <WatchedTeams view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      ) : null}
+
+      <div className="opponent-watchlist-layout">
+        <AddEntryForm busy={busy} mutate={mutate} />
+        {shell === "ready" ? (
+          <>
+            <AlertsPanel view={view} />
+            <WatchedTeams view={view} busy={busy} mutate={mutate} />
+          </>
+        ) : null}
+        <Panel className="opponent-watchlist-tip" aria-label="Opponent Watchlist tip">
+          <span className="eyebrow">Grounding path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Keep{" "}
+            <a href={strategyHref}>Strategy</a> picks grounded in scouted and reference metrics, pair{" "}
+            <a href={epaAlertsHref}>EPA Trend Alerts</a> for event-to-event swings, and confirm field
+            notes in <a href={scoutingHref}>Scouting</a> — never invent DEMO opponent rankings.
+          </p>
+        </Panel>
+      </div>
     </main>
   );
 }
 
-function SummaryTiles({ view }: { view: LiveView }) {
+function SummaryTiles({
+  summary,
+  loaded,
+}: {
+  summary: LiveView["summary"];
+  loaded: boolean;
+}) {
   const tiles = [
-    { label: "Watched teams", value: String(view.summary.totalWatched) },
-    { label: "EPA alerts", value: String(view.summary.epaAlerts) },
-    { label: "Schedule alerts", value: String(view.summary.scheduleAlerts) },
-    { label: "Upcoming matches", value: String(view.summary.upcomingMatches) },
+    { label: "Watched teams", value: formatOpponentWatchlistMetric(summary.totalWatched, loaded) },
+    { label: "EPA alerts", value: formatOpponentWatchlistMetric(summary.epaAlerts, loaded) },
+    { label: "Schedule alerts", value: formatOpponentWatchlistMetric(summary.scheduleAlerts, loaded) },
+    { label: "Upcoming matches", value: formatOpponentWatchlistMetric(summary.upcomingMatches, loaded) },
   ];
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <section className="opponent-watchlist-stats" aria-label="Opponent Watchlist counts">
+      {tiles.map((tile) => (
+        <div key={tile.label}>
+          <strong>{tile.value}</strong>
+          <span className="app-muted" style={{ display: "block" }}>
+            {tile.label}
+          </span>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -159,21 +385,24 @@ function AlertsPanel({ view }: { view: LiveView }) {
   if (view.alerts.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No changes"
         badgeTone="good"
         title="No EPA or schedule changes yet"
-        description="Alerts appear here once a watched team's EPA moves or their next match is scheduled or rescheduled."
+        description="Alerts appear here once a watched team's reference EPA moves or their next match is scheduled or rescheduled — never DEMO forecasts."
       />
     );
   }
   return (
-    <Panel>
+    <Panel id="opponent-watchlist-alerts" className="opponent-watchlist-panel">
       <h2 style={{ marginTop: 0 }}>Alerts</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul className="opponent-watchlist-list">
         {view.alerts.map((alert, index) => (
-          <li key={`${alert.entryId}-${alert.type}-${index}`}>
-            <span className={`app-badge ${ALERT_TONE[alert.type]}`}>{alert.type.replace("_", " ")}</span>
-            <span style={{ marginLeft: 8 }}>{alert.message}</span>
+          <li key={`${alert.entryId}-${alert.type}-${index}`} className="opponent-watchlist-card">
+            <div>
+              <span className={`app-badge ${ALERT_TONE[alert.type]}`}>{alert.type.replace("_", " ")}</span>
+              <span style={{ marginLeft: 8 }}>{alert.message}</span>
+            </div>
           </li>
         ))}
       </ul>
@@ -191,21 +420,14 @@ function WatchedTeams({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   if (view.entries.length === 0) {
-    return (
-      <EmptyState
-        badge="Empty watchlist"
-        badgeTone="setup"
-        title="Add your first opponent to watch"
-        description="Track a team's EPA and upcoming schedule ahead of an event or alliance selection."
-      />
-    );
+    return null;
   }
   return (
-    <Panel>
+    <Panel id="opponent-watchlist-list" className="opponent-watchlist-panel">
       <h2 style={{ marginTop: 0 }}>Watched teams</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul className="opponent-watchlist-list">
         {view.entries.map((entry) => (
-          <li key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={entry.id} className="opponent-watchlist-card">
             <div>
               <strong>
                 #{entry.teamNumber ?? "?"} {entry.nickname ?? entry.teamKey}
@@ -213,14 +435,18 @@ function WatchedTeams({
               <small className="app-muted" style={{ display: "block" }}>
                 {entry.current
                   ? `EPA ${entry.current.epaTotal != null ? entry.current.epaTotal.toFixed(1) : "—"} · rank ${entry.current.rank ?? "—"} at ${entry.current.eventKey}`
-                  : "No EPA data yet"}
+                  : "No reference EPA data yet"}
               </small>
               <small className="app-muted" style={{ display: "block" }}>
                 {entry.nextMatch
                   ? `Next: ${entry.nextMatch.compLevel.toUpperCase()} ${entry.nextMatch.matchNumber} · ${formatTime(entry.nextMatch.scheduledTime)}`
                   : "No upcoming match scheduled"}
               </small>
-              {entry.note ? <small className="app-muted" style={{ display: "block" }}>{entry.note}</small> : null}
+              {entry.note ? (
+                <small className="app-muted" style={{ display: "block" }}>
+                  {entry.note}
+                </small>
+              ) : null}
             </div>
             <button
               type="button"
@@ -249,7 +475,9 @@ function AddEntryForm({
 
   return (
     <Panel
+      id="opponent-watchlist-watch"
       as="form"
+      className="opponent-watchlist-panel"
       onSubmit={(event) => {
         event.preventDefault();
         const trimmed = teamKey.trim().toLowerCase();
@@ -258,17 +486,20 @@ function AddEntryForm({
         setTeamKey("");
         setNote("");
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Watch a team</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Alerts use only reference EPA and scheduled matches for teams you watch — never DEMO opponent
+        rankings.
+      </p>
+      <FormGrid min={160}>
         <FormRow label="Team key" hint="e.g. frc254">
           <input value={teamKey} onChange={(event) => setTeamKey(event.target.value)} placeholder="frc254" required />
         </FormRow>
         <FormRow label="Note (optional)">
           <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Alliance-selection watch" />
         </FormRow>
-      </div>
+      </FormGrid>
       <div>
         <button type="submit" className="app-button" disabled={busy || !/^frc\d+$/.test(teamKey.trim().toLowerCase())}>
           Add to watchlist

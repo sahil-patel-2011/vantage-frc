@@ -1,4 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { alertMessage, classifyEpaChange, classifyScheduleChange, round1, summarizeWatchlist, teamLabel } from ".";
 import type { WatchlistAlert, WatchlistEntry, WatchlistSummary } from "./types";
 
@@ -25,6 +27,44 @@ export type OpponentWatchlistView =
       summary: WatchlistSummary;
       computedAt: string;
     };
+
+function setupSteps(orgId: string | null): WatchlistSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Opponent Watchlist is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "strategy",
+      label: "Open Strategy",
+      detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+      href: hubHref("/competition", "strategy", orgId),
+    },
+    {
+      id: "epa-trend-alerts",
+      label: "Open EPA Trend Alerts",
+      detail: "EPA swings stay blank until you watch real teams — never DEMO forecasts.",
+      href: hubHref("/competition", "epa-trend-alerts", orgId),
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      href: hubHref("/competition", "scouting", orgId),
+    },
+  ];
+}
+
+function setupRequiredView(orgId: string | null = null): OpponentWatchlistView {
+  return {
+    status: "setup_required",
+    message: "Select a team workspace to build an opponent watchlist.",
+    steps: setupSteps(orgId),
+    orgId,
+  };
+}
 
 async function resolveOrg(
   client: PoolClient,
@@ -87,16 +127,7 @@ export async function computeOpponentWatchlistView(
   input: { userId: string; requestedOrg: string | null },
 ): Promise<OpponentWatchlistView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
-  if (!org) {
-    return {
-      status: "setup_required",
-      message: "Select a team workspace to build an opponent watchlist.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
-      orgId: null,
-    };
-  }
+  if (!org) return setupRequiredView();
 
   const entryResult = await client.query<EntryRow>(
     `SELECT id, team_key AS "teamKey", team_number AS "teamNumber", note,

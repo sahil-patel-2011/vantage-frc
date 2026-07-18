@@ -1,0 +1,17 @@
+/* Soft-UI Opponent Watchlist — .opponent-watchlist-* + shared Soft-UI tokens. Never DEMO metrics. */
+.opponent-watchlist-page{display:grid;gap:16px}
+.opponent-watchlist-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.opponent-watchlist-related{display:flex;flex-wrap:wrap;gap:8px}
+.opponent-watchlist-next-actions{margin:0}
+.opponent-watchlist-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.opponent-watchlist-stats strong{font-size:1.5rem}
+.opponent-watchlist-layout{display:grid;gap:16px}
+.opponent-watchlist-panel{display:grid;gap:12px}
+.opponent-watchlist-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.opponent-watchlist-card{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.opponent-watchlist-tip{margin:0}
+@media(max-width:900px){
+  .opponent-watchlist-header-actions{justify-content:flex-start}
+  .opponent-watchlist-next-actions li{flex-direction:column;align-items:stretch}
+  .opponent-watchlist-card{flex-direction:column}
+}
