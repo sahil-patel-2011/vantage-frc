@@ -1,0 +1,28 @@
+/* Soft-UI Spare Forecast — .spare-forecast-* + shared Soft-UI tokens. Never DEMO spare counts. */
+.spare-forecast-page{display:grid;gap:16px}
+.spare-forecast-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.spare-forecast-season{display:flex;gap:6px;align-items:center}
+.spare-forecast-related{display:flex;flex-wrap:wrap;gap:8px}
+.spare-forecast-next-actions{margin:0}
+.spare-forecast-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.spare-forecast-stats strong{font-size:1.5rem}
+.spare-forecast-layout{display:grid;gap:16px;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+.spare-forecast-panel{display:grid;gap:12px}
+.spare-forecast-panel-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.spare-forecast-draft-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spare-forecast-draft-actions input{min-width:220px}
+.spare-forecast-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.spare-forecast-card{display:grid;gap:6px}
+.spare-forecast-card-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.spare-forecast-line-items{list-style:none;padding:0;display:grid;gap:4px}
+.spare-forecast-line-items li{display:flex;justify-content:space-between;gap:8px}
+.spare-forecast-status-actions{display:flex;gap:8px;flex-wrap:wrap}
+.spare-forecast-tip{margin:0}
+.spare-forecast-requests{margin:0}
+@media(max-width:900px){
+  .spare-forecast-layout{grid-template-columns:1fr}
+  .spare-forecast-header-actions{justify-content:flex-start}
+  .spare-forecast-next-actions li{flex-direction:column;align-items:stretch}
+  .spare-forecast-draft-actions{width:100%}
+  .spare-forecast-draft-actions input{min-width:0;flex:1}
+}

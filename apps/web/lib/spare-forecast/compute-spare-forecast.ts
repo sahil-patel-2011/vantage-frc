@@ -33,6 +33,8 @@ export type SpareForecastView =
       teamNumber: number | null;
       seasonYear: number;
       seasons: number[];
+      /** Real spare-category inventory rows only — never DEMO spare counts. */
+      spareBinCount: number;
       forecastLines: SpareForecastLine[];
       purchaseRequests: PurchaseRequestDraft[];
       computedAt: string;
@@ -109,7 +111,7 @@ async function loadForecastLines(
   client: PoolClient,
   orgId: string,
   seasonYear: number,
-): Promise<SpareForecastLine[]> {
+): Promise<{ spareBinCount: number; forecastLines: SpareForecastLine[] }> {
   const { daysElapsed, daysRemaining } = seasonWindow(seasonYear);
 
   const [inventoryResult, fmeaResult] = await Promise.all([
@@ -161,7 +163,10 @@ async function loadForecastLines(
       forecast,
     });
   }
-  return sortForecastLines(lines);
+  return {
+    spareBinCount: inventoryResult.rows.length,
+    forecastLines: sortForecastLines(lines),
+  };
 }
 
 export async function computeSpareForecastView(
@@ -180,8 +185,14 @@ export async function computeSpareForecastView(
         {
           id: "inventory",
           label: "Stock spare parts",
-          detail: "Add spare-category items in Inventory so they can be forecast",
+          detail: "Add spare-category items in Inventory so they can be forecast — never DEMO bins",
           href: "/inventory",
+        },
+        {
+          id: "subsystems",
+          label: "Name subsystems",
+          detail: "Match spare bin tags to Subsystems so FMEA cadence can apply",
+          href: "/subsystems",
         },
       ],
       orgId: null,
@@ -189,7 +200,7 @@ export async function computeSpareForecastView(
     };
   }
 
-  const [forecastLines, purchaseRequestResult, seasonResult] = await Promise.all([
+  const [forecastBundle, purchaseRequestResult, seasonResult] = await Promise.all([
     loadForecastLines(client, org.orgId, seasonYear),
     client.query<PurchaseRequestRow>(
       `SELECT id, season_year AS "seasonYear", title, status, line_items AS "lineItems",
@@ -215,7 +226,8 @@ export async function computeSpareForecastView(
     teamNumber: org.teamNumber,
     seasonYear,
     seasons,
-    forecastLines,
+    spareBinCount: forecastBundle.spareBinCount,
+    forecastLines: forecastBundle.forecastLines,
     purchaseRequests: purchaseRequestResult.rows.map(mapPurchaseRequest),
     computedAt: new Date().toISOString(),
   };
@@ -227,7 +239,7 @@ export async function draftPurchaseRequest(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear: number; title: string },
 ): Promise<void> {
-  const forecastLines = await loadForecastLines(client, input.orgId, input.seasonYear);
+  const { forecastLines } = await loadForecastLines(client, input.orgId, input.seasonYear);
 
   const drafted = await meteredAI({
     client,
