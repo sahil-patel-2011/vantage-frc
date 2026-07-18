@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FINANCE_IN_AI_ACK_VERSION } from "@vantage/billing";
+import { AiHubRelated } from "../../components/ai-hub-related";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import { hubHref } from "../../lib/nav/hubs";
 
 type PolicySnapshot = {
   financeInAiEnabled: boolean;
@@ -65,6 +68,7 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
 
   return (
     <section className="product-hub-finance" aria-label="Finance in AI">
+      <AiHubRelated orgId={orgId} active="finance" />
       <div className="app-card soft-panel">
         <h2 style={{ marginTop: 0 }}>Finance in AI</h2>
         <p className="app-muted">
@@ -109,11 +113,17 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
         <button type="button" className="app-button" disabled={busy} onClick={() => void save()}>
           {busy ? "Saving…" : "Save finance toggle"}
         </button>
-        <a className="app-button secondary" href={`/business?orgId=${encodeURIComponent(orgId)}&tab=orders`}>
+        <a className="app-button secondary" href={withOrgHref("/business?tab=orders", orgId)}>
           Open orders
         </a>
-        <a className="app-button secondary" href={`/ai?orgId=${encodeURIComponent(orgId)}&tab=governance`}>
+        <a className="app-button secondary" href={hubHref("/ai", "governance", orgId)}>
           Full governance
+        </a>
+        <a className="app-button secondary" href={withOrgHref("/competition", orgId)}>
+          Competition
+        </a>
+        <a className="app-button secondary" href={withOrgHref("/build", orgId)}>
+          Build
         </a>
       </div>
       {message ? <p role="status" className="app-muted">{message}</p> : null}

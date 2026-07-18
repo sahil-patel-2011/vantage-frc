@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AiHubRelated } from "../../components/ai-hub-related";
+import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
+import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { composeGrantAnswer, composeSponsorEmail, emailKindLabel, grantFocusLabel } from "../../lib/writer";
 import { DRAFT_STATUSES, WRITER_TONES, type WriterView } from "../../lib/writer/compute-writer";
 import type {
@@ -12,6 +15,7 @@ import type {
   WriterProfile,
   WriterTone,
 } from "../../lib/writer/types";
+import { withOrgHref } from "../../lib/nav/product-nav";
 
 type LiveView = Extract<WriterView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -87,7 +91,7 @@ export default function WriterClient() {
     <main className="module-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Team / Writing Assistant</span>
+          <span className="breadcrumbs">AI / Writing Assistant</span>
           <h1>Grant &amp; Sponsorship Writer</h1>
           <p>
             Draft grant answers and sponsor pitches from this team&apos;s profile and business data only — template or
@@ -114,6 +118,8 @@ export default function WriterClient() {
           </label>
         ) : null}
       </header>
+
+      {orgId ? <AiHubRelated orgId={orgId} active="writer" /> : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -370,6 +376,11 @@ function Composer({
   const [draftSource, setDraftSource] = useState<"template" | "ai" | null>(null);
   const [aiMeta, setAiMeta] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [providerSetup, setProviderSetup] = useState<{
+    message: string;
+    steps: Array<{ id: string; label: string; detail: string; href: string }>;
+  } | null>(null);
 
   const isGrant = kind === "grant";
 
@@ -404,6 +415,8 @@ function Composer({
     if (busy) return;
     setBusy(true);
     setError("");
+    setCutoffCode(null);
+    setProviderSetup(null);
     void fetch("/api/writer", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -434,9 +447,30 @@ function Composer({
       }),
     })
       .then(async (response) => {
-        const data = (await response.json()) as PitchResponse | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "FRC Assistant draft failed.");
+        const data = (await response.json()) as
+          | PitchResponse
+          | {
+              error?: string;
+              code?: string;
+              status?: string;
+              message?: string;
+              steps?: Array<{ id: string; label: string; detail: string; href: string }>;
+            };
+        if (!response.ok || !("status" in data) || data.status === "setup_required") {
+          const cutoff = resolveCutoffErrorCode(response.status, data);
+          if (cutoff) setCutoffCode(cutoff);
+          if (data.code === "setup_required" || data.status === "setup_required") {
+            setProviderSetup({
+              message:
+                ("message" in data && data.message) ||
+                ("error" in data && data.error) ||
+                "Configure an AI provider key before using FRC Assistant drafts.",
+              steps: "steps" in data && Array.isArray(data.steps) ? data.steps : [],
+            });
+            setError("");
+          } else {
+            setError("error" in data && data.error ? data.error : "FRC Assistant draft failed.");
+          }
           return;
         }
         setView(data);
@@ -472,6 +506,32 @@ function Composer({
   return (
     <section className="app-card soft-panel" style={{ display: "grid", gap: 12 }}>
       <h2 style={{ margin: 0 }}>Compose a draft</h2>
+      <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
+      {providerSetup ? (
+        <div className="product-hub-setup" role="status" style={{ padding: 0 }}>
+          <span className="app-badge setup">Setup required</span>
+          <p className="app-muted" style={{ margin: "8px 0" }}>
+            {providerSetup.message}
+          </p>
+          <p className="app-muted" style={{ marginTop: 0 }}>
+            Use <strong>Compose from template</strong> for org-scoped drafts without a model key — FRC Assistant never
+            invents text when providers are missing.
+          </p>
+          {providerSetup.steps.length > 0 ? (
+            <ol className="strategy-setup-steps">
+              {providerSetup.steps.map((step) => (
+                <li key={step.id}>
+                  <div>
+                    <strong>{step.label}</strong>
+                    <span>{step.detail}</span>
+                  </div>
+                  <a href={withOrgHref(step.href, orgId)}>Open</a>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+        </div>
+      ) : null}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {(["grant", ...EMAIL_KINDS] as DraftKind[]).map((k) => (
           <button

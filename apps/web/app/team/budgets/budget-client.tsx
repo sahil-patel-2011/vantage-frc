@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AiHubRelated } from "../../../components/ai-hub-related";
 import { PageHeader } from "../../../components/ui";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
+import { hubHref } from "../../../lib/nav/hubs";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 
 const blank = {
   dailySpendLimitUsd: "",
@@ -56,7 +59,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   const [members, setMembers] = useState<Array<{ userId: string; name: string; email: string }>>([]);
   const [message, setMessage] = useState("");
 
-  const q = `?orgId=${encodeURIComponent(orgId)}`;
+  const chatHref = hubHref("/ai", "chat", orgId);
+  const usageHref = withOrgHref("/team/usage", orgId);
+  const adminHref = withOrgHref("/team/admin", orgId);
 
   async function load() {
     const response = await fetch(`/api/billing/budgets?orgId=${orgId}`);
@@ -120,18 +125,21 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   return (
     <main className="module-page budget-page">
       <PageHeader
-        breadcrumbs="Team / API budgets"
+        breadcrumbs="AI / API budgets"
         title="API budgets"
         description="Hard spend and token limits checked before every metered AI call. Included plan allowance hard-stops unless you buy Usage Credits or enable PAYG — no silent overage."
       >
         <nav className="settings-inline-links" aria-label="Related settings">
-          <a href={`/team${q}`}>Team admin</a>
-          <a href={`/team${q}#custom-providers`}>API keys</a>
-          <a href={`/team/security${q}`}>Team security</a>
-          <a href={`/team/usage${q}`}>AI usage</a>
+          <a href={adminHref}>Team admin</a>
+          <a href={`${adminHref}#custom-providers`}>API keys</a>
+          <a href={withOrgHref("/team/security", orgId)}>Team security</a>
+          <a href={usageHref}>AI usage</a>
+          <a href={chatHref}>Chat</a>
           <a href="/pricing">Pricing</a>
         </nav>
       </PageHeader>
+
+      <AiHubRelated orgId={orgId} active="budgets" />
 
       {message ? <p className="telemetry-status">{message}</p> : null}
 
@@ -183,7 +191,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
         <p className="app-muted" style={{ marginTop: 0 }}>
           When enabled, the assistant adapter can cache long-lived system/context prefixes to lower input cost. Turn off
           when you need the freshest team context on every call. Cache read/write tokens appear on{" "}
-          <a href={`/team/usage${q}`}>AI usage</a>.
+          <a href={usageHref}>AI usage</a>.
         </p>
         <label className="check-field">
           <input
@@ -207,7 +215,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
           >
             Save caching preference
           </button>
-          <a className="app-button secondary" href={`/chat${q}`}>
+          <a className="app-button secondary" href={chatHref}>
             Open assistant
           </a>
         </div>

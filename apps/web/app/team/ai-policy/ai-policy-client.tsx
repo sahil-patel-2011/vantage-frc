@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AiHubRelated } from "../../../components/ai-hub-related";
+import { hubHref } from "../../../lib/nav/hubs";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 
 type PolicyForm = {
   featureAllowlistEnabled: boolean;
@@ -213,7 +216,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
     <main className="intel-app">
       <header className="intel-header">
         <div>
-          <span className="eyebrow">VANTAGE / AI GOVERNANCE</span>
+          <span className="eyebrow">AI / GOVERNANCE</span>
           <h1>Org policy for models, tools, and spend</h1>
           <p className="app-muted">
             Control which assistant features and tools members may use, set absolute spend alerts, and
@@ -222,14 +225,16 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           </p>
         </div>
         <nav className="intel-actions" aria-label="Governance links">
-          <a href={`/team/budgets?orgId=${orgId}`}>API budgets</a>
-          <a href={`/team/usage?orgId=${orgId}`}>AI usage</a>
-          <a href={`/team/ai-runs?orgId=${orgId}`}>AI runs</a>
-          <a href={`/team/ai-memory?orgId=${orgId}`}>AI memory</a>
-          <a href={`/team/finance?orgId=${orgId}`}>Team finance</a>
-          <a href={`/team?orgId=${orgId}`}>Team admin</a>
+          <a href={hubHref("/ai", "budgets", orgId)}>API budgets</a>
+          <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
+          <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
+          <a href={hubHref("/ai", "memory", orgId)}>AI memory</a>
+          <a href={hubHref("/ai", "finance", orgId)}>Finance in AI</a>
+          <a href={withOrgHref("/team/admin", orgId)}>Team admin</a>
         </nav>
       </header>
+
+      <AiHubRelated orgId={orgId} active="governance" />
 
       {message && <p role="status" className="telemetry-status">{message}</p>}
       {loading && <p className="app-muted">Loading AI governance…</p>}
