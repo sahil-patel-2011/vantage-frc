@@ -1,15 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
-import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, Panel } from "../../components/ui";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import {
-  strategyCoverageLinks,
-  strategySetupNextActions,
-} from "../../lib/strategy/competition-related";
+  PICK_DESK_RELATED_INCLUDE,
+  classifyPickDeskShell,
+  formatPickDeskMetric,
+  pickDeskNextActions,
+  pickDeskRelatedLinks,
+  pickDeskSetupSteps,
+  pickDeskShellCopy,
+  shouldShowPickDeskSummaryTiles,
+  type PickDeskNextAction,
+  type PickDeskShellKind,
+} from "../../lib/strategy/pick-desk-related";
 import type { PickDeskEntry, PickDeskList, PickDeskView } from "../../lib/strategy/pick-desk";
+import "./pick-desk.css";
 
 const TIERS: Array<{ id: PickTier; label: string; hint: string }> = [
   { id: "first", label: "First picks", hint: "Alliance anchors / top partners" },
@@ -40,6 +50,160 @@ function metricLine(candidate: PickCandidate | undefined) {
   return parts.join(" · ") || "Metrics incomplete";
 }
 
+function PickDeskRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = pickDeskRelatedLinks(orgId, {
+    include: [...PICK_DESK_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related pick-desk-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function PickDeskNextActionsPanel({ actions }: { actions: PickDeskNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions pick-desk-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy, Scouting, and Coverage — never DEMO picks.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function PickDeskShell({
+  orgId,
+  shell,
+  error,
+  onRetry,
+  embedded,
+  children,
+}: {
+  orgId?: string | null;
+  shell: PickDeskShellKind;
+  error?: string;
+  onRetry?: () => void;
+  embedded?: boolean;
+  children?: ReactNode;
+}) {
+  const actions = pickDeskNextActions({ orgId, shell });
+  const copy = pickDeskShellCopy(shell);
+  const steps = shell === "setup" ? pickDeskSetupSteps(orgId) : [];
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const coverageHref = withOrgHref("/scouting/lineup", orgId);
+  const commandHref = hubHref("/competition", "command", orgId);
+  const teamDataHref = withOrgHref("/team/data", orgId);
+
+  return (
+    <section
+      className={`strategy-pick-desk pick-desk-workbench soft-gate${embedded ? " embedded" : ""}`}
+      aria-label="Pick list setup"
+    >
+      <header className="pick-desk-heading">
+        <div>
+          <h2 style={{ marginTop: 0 }}>Event pick desk</h2>
+          <p className="app-muted">
+            First / second / third pick tiers from synced TBA/Statbotics rows and scout depth — never DEMO
+            picks.
+          </p>
+        </div>
+        <PickDeskRelatedStrip orgId={orgId} />
+      </header>
+      {children}
+      <EmptyState
+        soft
+        className="pick-desk-empty"
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No event metrics yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? commandHref : "/workspace"}>
+            {orgId ? "Set active event" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={teamDataHref}>
+              Sync event metrics
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+            <a className="app-button secondary" href={coverageHref}>
+              Open Coverage
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="pick-desk-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Strategy, Scouting, and Coverage — never DEMO picks.</p>
+          </header>
+          <ul className="pick-desk-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <PickDeskNextActionsPanel actions={actions} />
+    </section>
+  );
+}
+
 export function PickListWorkbench({
   orgId,
   embedded,
@@ -48,6 +212,8 @@ export function PickListWorkbench({
   embedded?: boolean;
 }) {
   const [desk, setDesk] = useState<PickDeskView | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchFailed, setFetchFailed] = useState(false);
   const [setupMessage, setSetupMessage] = useState("");
   const [setupOrgId, setSetupOrgId] = useState<string | null>(orgId);
   const [setupEventKey, setSetupEventKey] = useState<string | null>(null);
@@ -61,6 +227,8 @@ export function PickListWorkbench({
 
   const load = useCallback(() => {
     const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+    setLoading(true);
+    setFetchFailed(false);
     void fetch(`/api/strategy/pick-desk${qs}`)
       .then(async (response) => {
         const data = await response.json();
@@ -87,12 +255,32 @@ export function PickListWorkbench({
           return null;
         });
       })
-      .catch(() => setSetupMessage("Could not load pick desk."));
+      .catch(() => {
+        setDesk(null);
+        setSetupMessage("");
+        setFetchFailed(true);
+      })
+      .finally(() => setLoading(false));
   }, [orgId]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const shell = classifyPickDeskShell({
+    loading,
+    fetchFailed,
+    status: setupMessage
+      ? "setup_required"
+      : desk
+        ? "live"
+        : !loading && !fetchFailed
+          ? "setup_required"
+          : null,
+    orgId: desk?.orgId ?? setupOrgId ?? orgId,
+    eventKey: desk?.eventKey ?? setupEventKey,
+    candidateCount: desk?.candidates.length ?? 0,
+  });
 
   const byKey = useMemo(() => {
     const map = new Map<string, PickCandidate>();
@@ -255,93 +443,73 @@ export function PickListWorkbench({
     setEntries(list.entries);
   }
 
-  if (setupMessage) {
-    const nextActions = strategySetupNextActions({
-      orgId: setupOrgId ?? orgId,
-      eventKey: setupEventKey,
-      hasMetrics: false,
-    });
+  if (shell !== "ready") {
     return (
-      <section className={`strategy-pick-desk${embedded ? " embedded" : ""}`} aria-label="Pick list setup">
-        <EmptyState
-          badge="Setup required"
-          badgeTone="setup"
-          title="Event pick desk"
-          description={`${setupMessage} Pick ranks stay empty until real event metrics exist — no filler teams.`}
-        >
-          <ol className="strategy-setup-steps">
-            {nextActions.slice(0, 5).map((action) => (
-              <li key={action.id}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <a href={action.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-          <CompetitionHubRelated
-            orgId={setupOrgId ?? orgId}
-            include={["strategy", "scouting", "forms", "match-checklist", "pick-clock", "draft"]}
-          />
-        </EmptyState>
-      </section>
+      <PickDeskShell
+        orgId={desk?.orgId ?? setupOrgId ?? orgId}
+        shell={shell}
+        error={
+          shell === "error"
+            ? "Could not load pick desk."
+            : shell === "setup" && setupMessage
+              ? `${setupMessage} Pick ranks stay empty until real event metrics exist — never DEMO picks.`
+              : undefined
+        }
+        onRetry={shell === "error" ? () => load() : undefined}
+        embedded={embedded}
+      />
     );
   }
 
   if (!desk) {
     return (
-      <section className={`app-card strategy-pick-desk${embedded ? " embedded" : ""}`}>
-        <h2>Loading pick desk…</h2>
-        <p className="app-muted">Pulling TBA/Statbotics event metrics and durable pick lists.</p>
-      </section>
+      <PickDeskShell orgId={setupOrgId ?? orgId} shell="loading" embedded={embedded} />
     );
   }
 
+  const showTiles = shouldShowPickDeskSummaryTiles(desk.candidates.length);
+  const readyActions = pickDeskNextActions({
+    orgId: desk.orgId,
+    shell: "ready",
+    eventKey: desk.eventKey,
+    candidateCount: desk.candidates.length,
+    listCount: desk.pickLists.length,
+  });
+  const coverageHref = withOrgHref("/scouting/lineup", desk.orgId);
+  const pickClockHref = withOrgHref("/pick-clock", desk.orgId);
+  const draftHref = withOrgHref("/strategy/draft", desk.orgId);
+
   return (
-    <section className={`strategy-pick-desk${embedded ? " embedded" : ""}`} aria-label="Pick list workbench">
+    <section
+      className={`strategy-pick-desk pick-desk-workbench${embedded ? " embedded" : ""}`}
+      aria-label="Pick list workbench"
+    >
       <DataSourceDegradedBanner health={desk.dataSourceHealth} compact />
-      <CompetitionHubRelated
-        orgId={desk.orgId}
-        include={["scouting", "forms", "match-checklist", "pick-clock", "chemistry", "draft", "coverage"]}
-      />
-      {desk.pickMode === "low_data_tba" ? (
-        <p className="strategy-pick-coverage-hint app-muted" role="status">
-          Thin scout depth —{" "}
-          <a href={strategyCoverageLinks(desk.orgId, { eventKey: desk.eventKey }).find((l) => l.id === "coverage")?.href}>
-            open scout coverage
-          </a>{" "}
-          or add notes in Scouting / Form builder before trusting pick explainability.
-        </p>
-      ) : null}
-      <header className="strategy-pick-header app-card">
+      <header className="pick-desk-heading">
         <div>
           {desk.pickMode === "low_data_tba" ? (
             <span className="app-badge setup">Low-data TBA</span>
           ) : (
             <span className="app-badge good">Real event inputs</span>
           )}
-          <h2>First / second / third pick desk</h2>
+          <h2 style={{ marginTop: 8 }}>First / second / third pick desk</h2>
           <p className="app-muted">
             {desk.eventName ?? desk.eventKey}
             {desk.sources.length ? ` · ${desk.sources.join(" + ")}` : " · no metrics synced yet"}
             {" · "}
-            {desk.candidates.length} teams with reference rows
+            {formatPickDeskMetric(desk.candidates.length, true)} teams with reference rows
             {desk.pickMode === "low_data_tba" && desk.pickModeReason ? ` · ${desk.pickModeReason}` : ""}
-            {desk.epaDrifts?.length ? ` · ${desk.epaDrifts.length} EPA-drift callout${desk.epaDrifts.length === 1 ? "" : "s"}` : ""}
+            {desk.epaDrifts?.length
+              ? ` · ${formatPickDeskMetric(desk.epaDrifts.length, true)} EPA-drift callout${desk.epaDrifts.length === 1 ? "" : "s"}`
+              : ""}
           </p>
         </div>
         <div className="strategy-pick-actions">
-          <a
-            className="app-button secondary"
-            href={`/pick-clock${desk.orgId ? `?orgId=${encodeURIComponent(desk.orgId)}` : ""}`}
-          >
+          <PickDeskRelatedStrip orgId={desk.orgId} />
+          <a className="app-button secondary" href={pickClockHref}>
             Pick clock
           </a>
-          <a
-            className="app-button secondary"
-            href={`/strategy/draft${desk.orgId ? `?orgId=${encodeURIComponent(desk.orgId)}` : ""}`}
-          >
+          <a className="app-button secondary" href={draftHref}>
             Open draft day
           </a>
           {desk.canEdit ? (
@@ -359,6 +527,31 @@ export function PickListWorkbench({
           </button>
         </div>
       </header>
+
+      {desk.pickMode === "low_data_tba" ? (
+        <p className="strategy-pick-coverage-hint app-muted" role="status">
+          Thin scout depth —{" "}
+          <a href={coverageHref}>open scout coverage</a> or add notes in Scouting before trusting pick
+          explainability — never DEMO picks.
+        </p>
+      ) : null}
+
+      {showTiles ? (
+        <div className="pick-desk-kpis" aria-label="Pick desk counts">
+          <article>
+            <strong>{formatPickDeskMetric(desk.candidates.length, true)}</strong>
+            <small>event teams</small>
+          </article>
+          <article>
+            <strong>{formatPickDeskMetric(desk.scoutedTeams, true)}</strong>
+            <small>with scout depth</small>
+          </article>
+          <article>
+            <strong>{formatPickDeskMetric(desk.pickLists.length, true)}</strong>
+            <small>saved lists</small>
+          </article>
+        </div>
+      ) : null}
 
       <article className="app-card strategy-pick-seats" aria-label="Strategy meeting seats">
         <header>
@@ -470,7 +663,9 @@ export function PickListWorkbench({
                 );
               })}
               {!entriesForTier(tier.id).length ? (
-                <li className="strategy-pick-empty">Drop teams from the pool — empty tiers stay empty (no filler).</li>
+                <li className="strategy-pick-empty">
+                  Drop teams from the pool — empty tiers stay empty (never DEMO picks).
+                </li>
               ) : null}
             </ul>
           </article>
@@ -480,7 +675,10 @@ export function PickListWorkbench({
       <article className="app-card strategy-pick-pool">
         <header>
           <h3>Event pool</h3>
-          <small>Only teams with synced TBA/Statbotics rows. Suggestions use event EPA percentiles + scout reliability.</small>
+          <small>
+            Only teams with synced TBA/Statbotics rows. Suggestions use event EPA percentiles + scout
+            reliability — never DEMO picks.
+          </small>
         </header>
         {!pool.length ? (
           <p className="app-muted">
@@ -513,6 +711,8 @@ export function PickListWorkbench({
           </ul>
         )}
       </article>
+
+      <PickDeskNextActionsPanel actions={readyActions} />
     </section>
   );
 }

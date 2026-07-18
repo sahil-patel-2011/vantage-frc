@@ -1,0 +1,72 @@
+/* Soft-UI Pick desk — .pick-desk-* + shared Soft-UI tokens. Never DEMO picks. */
+.pick-desk-workbench{
+  display:grid;
+  gap:16px;
+}
+.pick-desk-heading{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:4px;
+}
+.pick-desk-related{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:flex-end;
+}
+.pick-desk-next-actions{margin:0}
+.pick-desk-setup-steps{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  gap:10px;
+}
+.pick-desk-setup-steps li{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px solid var(--soft-line,#d7dde3);
+}
+.pick-desk-setup-steps li:last-child{border-bottom:0}
+.pick-desk-setup-steps p{margin:4px 0 0}
+.pick-desk-empty{
+  margin:0;
+  padding:14px;
+  border-radius:14px;
+  border:1px dashed var(--soft-line,#d7dde3);
+}
+.pick-desk-kpis{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.pick-desk-kpis article{
+  display:grid;
+  gap:4px;
+  padding:14px 16px;
+  border:1px solid var(--soft-line,#d5dde8);
+  border-radius:var(--soft-radius-sm,12px);
+  background:var(--soft-card,#fff);
+  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+}
+.pick-desk-kpis strong{
+  font:700 22px/1.1 var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
+  color:var(--soft-ink,#132033);
+  letter-spacing:-.02em;
+}
+.pick-desk-kpis small{
+  color:var(--soft-muted,#5a6578);
+  font:600 12px var(--font-source-sans),ui-sans-serif;
+}
+@media (max-width:800px){
+  .pick-desk-heading{flex-direction:column}
+  .pick-desk-related{justify-content:flex-start}
+  .pick-desk-kpis{grid-template-columns:1fr}
+}
