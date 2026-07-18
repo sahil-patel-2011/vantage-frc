@@ -1,3 +1,4 @@
+/* Soft-UI Lineup & Coverage — .lineup-* + shared Soft-UI tokens. Never DEMO %. */
 .lineup-page{
   max-width:1120px;
   margin:0 auto;
@@ -10,7 +11,18 @@
   flex-wrap:wrap;
   gap:10px;
   align-items:center;
+  justify-content:flex-end;
 }
+.lineup-related{display:flex;flex-wrap:wrap;gap:8px}
+.lineup-next-actions{margin:0}
+.lineup-tip{margin:0}
+.lineup-setup-steps{
+  list-style:none;padding:0;margin:0;display:grid;gap:10px;
+}
+.lineup-setup-steps li{
+  display:flex;justify-content:space-between;gap:12px;align-items:center;
+}
+.lineup-footer-links{margin:0}
 .lineup-live-pill{
   display:inline-flex;
   align-items:center;
@@ -133,6 +145,10 @@
   letter-spacing:.05em;text-transform:uppercase;
 }
 .lineup-board span{font-size:20px;font-weight:800;color:var(--soft-ink,#132033)}
+@media (max-width:900px){
+  .lineup-header-meta{justify-content:flex-start}
+  .lineup-next-actions li,.lineup-setup-steps li{flex-direction:column;align-items:stretch}
+}
 @media (max-width:860px){
   .lineup-kpis{grid-template-columns:1fr 1fr}
   .lineup-split{grid-template-columns:1fr}
