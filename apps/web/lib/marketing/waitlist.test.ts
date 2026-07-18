@@ -41,3 +41,30 @@ describe("duplicate-safe persistence", () => {
     expect(store.get("a@example.com")?.smsConsent).toBe(true);
   });
 });
+
+describe("admin waitlist tools", () => {
+  const store = new MemoryWaitlistStore();
+  beforeEach(() => store.clear());
+
+  it("lists, filters, and marks entries without assuming sort order for equal timestamps", async () => {
+    await store.upsert(waitlistSchema.parse({ email: "alpha@example.com", teamNumber: 254 }));
+    await store.upsert(waitlistSchema.parse({ email: "beta@example.com", teamNumber: 9999 }));
+
+    const filtered = await store.list({ q: "9999" });
+    expect(filtered.map((row) => row.email)).toEqual(["beta@example.com"]);
+
+    const all = await store.list();
+    expect(new Set(all.map((row) => row.email))).toEqual(new Set(["alpha@example.com", "beta@example.com"]));
+
+    const invited = await store.markLaunchInvited("alpha@example.com");
+    expect(invited?.launchInvitedAt).toBeTruthy();
+    expect((await store.markLaunchInvited("missing@example.com"))).toBeNull();
+
+    const converted = await store.markConverted("beta@example.com");
+    expect(converted?.convertedAt).toBeTruthy();
+
+    const refreshed = await store.list({ q: "alpha" });
+    expect(refreshed[0]?.launchInvitedAt).toBeTruthy();
+    expect(refreshed[0]?.convertedAt).toBeNull();
+  });
+});
