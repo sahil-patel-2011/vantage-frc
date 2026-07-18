@@ -1,6 +1,4 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery-reliability";
-import { loadBatteryFleet } from "../load-battery-fleet";
 import { evaluateFailure, summarizeFailures } from ".";
 import type {
   FmeaContext,
@@ -37,8 +35,6 @@ export type FmeaView =
       summary: FmeaSummary;
       /** CD #42 — subsystems with >=2 failures this season. */
       repeatAlerts: RepeatFailureAlert[];
-      /** CD #48 — battery fleet reliability feeding FMEA (evidence-only). */
-      batterySignals: BatteryFmeaSignal[];
       subsystems: SubsystemOption[];
       inspectionItems: InspectionOption[];
       computedAt: string;

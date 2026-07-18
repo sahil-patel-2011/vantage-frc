@@ -15,6 +15,9 @@ export type ScoutEntryRecord = {
   payload: Record<string, unknown>;
   confidence: "high" | "normal" | "low";
   updatedAt?: string | null;
+  source?: "manual" | "voice" | "import" | "video";
+  videoReviewId?: string | null;
+  videoAtSeconds?: number | null;
 };
 
 export type ScoutInfluence =
@@ -26,7 +29,10 @@ export type ScoutInfluence =
   | "defense"
   | "pit_note"
   | "quality_downweight"
-  | "excluded_low_confidence";
+  | "excluded_low_confidence"
+  | "video_rescore"
+  /** Field stripped because TBA/Statbotics official result contradicted the scout value. */
+  | "tba_conflict_excluded";
 
 export type ScoutProvenanceRef = {
   entryId: string;
@@ -36,6 +42,9 @@ export type ScoutProvenanceRef = {
   scoutUserId?: string | null;
   influence: ScoutInfluence;
   weight: number;
+  source?: "manual" | "voice" | "import" | "video";
+  videoReviewId?: string | null;
+  videoAtSeconds?: number | null;
 };
 
 export type ScoutCapabilityProfile = {
@@ -83,6 +92,8 @@ export type BuiltOperationalSignal = {
   provenance: ScoutProvenanceRef[];
   quality: ScoutQualityReport;
   capabilityEvidence: string[];
+  videoRescoutCount?: number;
+  videoReviewIds?: string[];
 };
 
 const SCORE_KEYS = ["totalPoints", "score", "cycles", "gamePieces", "teleopCycles"] as const;
@@ -305,19 +316,31 @@ export function computeScoutQuality(entries: ScoutEntryRecord[]): ScoutQualityRe
   let weightSum = 0;
   for (const entry of entries) {
     const scoutId = entry.scoutUserId ?? `anon:${entry.id}`;
-    const anomaly = scoutWeightById.get(scoutId) ?? 1;
-    const weight = clamp(confidenceBaseWeight(entry.confidence) * anomaly, 0.2, 1);
+    const rawAnomaly = scoutWeightById.get(scoutId) ?? 1;
+    const anomaly =
+      entry.source === "video"
+        ? clamp(rawAnomaly + (1 - rawAnomaly) * 0.35, rawAnomaly, 1)
+        : rawAnomaly;
+    let weight = clamp(confidenceBaseWeight(entry.confidence) * anomaly, 0.2, 1);
+    if (entry.source === "video") weight = clamp(weight * 1.12, 0.2, 1);
     byEntryId[entry.id] = weight;
     weightSum += weight;
   }
 
   const meanWeight = entries.length ? weightSum / entries.length : 1;
+  const videoRescoutCount = entries.filter((entry) => entry.source === "video").length;
   const transparency = scoutReports
     .filter((report) => report.weight < 0.95)
     .map(
       (report) =>
         `Scout ${shortId(report.scoutUserId)} downweighted to ${Math.round(report.weight * 100)}%: ${report.reason}`,
     );
+
+  if (videoRescoutCount > 0) {
+    transparency.unshift(
+      `${videoRescoutCount} video-rescored ${videoRescoutCount === 1 ? "entry" : "entries"} weighted +12% with softened anomaly checks.`,
+    );
+  }
 
   if (!transparency.length && entries.length) {
     transparency.push(
@@ -418,8 +441,16 @@ export function buildTeamOperationalSignal(
       scoutUserId: entry.scoutUserId ?? null,
       influence,
       weight: round2(weight),
+      source: entry.source,
+      videoReviewId: entry.videoReviewId ?? null,
+      videoAtSeconds: entry.videoAtSeconds ?? null,
     });
   };
+
+  const videoEntries = teamEntries.filter((entry) => entry.source === "video");
+  for (const entry of videoEntries) {
+    pushProv(entry, "video_rescore");
+  }
 
   for (const entry of usableMatch) {
     if (reliability != null) pushProv(entry, "reliability");
@@ -455,6 +486,9 @@ export function buildTeamOperationalSignal(
     (sum, entry) => sum + (quality.byEntryId[entry.id] ?? 1),
     0,
   );
+  const videoReviewIds = [
+    ...new Set(videoEntries.map((entry) => entry.videoReviewId).filter((id): id is string => Boolean(id))),
+  ];
 
   return {
     teamKey,
@@ -470,6 +504,8 @@ export function buildTeamOperationalSignal(
     provenance,
     quality,
     capabilityEvidence: capabilities.evidence,
+    videoRescoutCount: videoEntries.length || undefined,
+    videoReviewIds: videoReviewIds.length ? videoReviewIds : undefined,
   };
 }
 
@@ -489,10 +525,10 @@ export function formatScoutProvenance(refs: ScoutProvenanceRef[], limit = 6) {
   const influential = refs.filter((ref) => ref.influence !== "excluded_low_confidence");
   const slice = (influential.length ? influential : refs).slice(0, limit);
   return slice
-    .map(
-      (ref) =>
-        `${ref.entryType}:${shortId(ref.entryId)}/${ref.influence}${ref.weight < 0.95 ? `@${Math.round(ref.weight * 100)}%` : ""}`,
-    )
+    .map((ref) => {
+      const prefix = ref.source === "video" ? "video:" : "";
+      return `${prefix}${ref.entryType}:${shortId(ref.entryId)}/${ref.influence}${ref.weight < 0.95 ? `@${Math.round(ref.weight * 100)}%` : ""}`;
+    })
     .join(", ");
 }
 

@@ -1,6 +1,19 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { deriveFoulRisk, deriveReliability } from "@vantage/intel-research";
-import { rankPickCandidates, type PickCandidate, type PickTier } from "@vantage/prediction-strategy";
+import {
+  detectPickDataMode,
+  rankPickCandidates,
+  type PickCandidate,
+  type PickDataMode,
+  type PickTier,
+} from "@vantage/prediction-strategy";
+import { observationsForStrategyTrust } from "@vantage/scouting/trust";
+import {
+  buildEpaDriftCallouts,
+  loadRecentAllianceShares,
+  pickModeSources,
+  type PickAssistDrift,
+} from "./pick-assist";
 
 export type PickDeskEntry = {
   teamKey: string;
@@ -28,6 +41,25 @@ export type PickDeskView = {
   candidates: PickCandidate[];
   pickLists: PickDeskList[];
   sources: string[];
+  /** full when scouting coverage is usable; low_data_tba for TBA/Statbotics quick pick. */
+  pickMode: PickDataMode;
+  pickModeReason: string | null;
+  scoutedTeams: number;
+  teamCount: number;
+  /** Divergent last-3 alliance-share vs season EPA callouts (real matches only). */
+  epaDrifts: PickAssistDrift[];
+  /** Top-accurate scouts rotated into today's pick-desk conversation. */
+  strategySeats: PickDeskStrategySeat[];
+  /** TBA/Statbotics ingest health — pick desk keeps using Neon last-good when degraded. */
+  dataSourceHealth?: import("../reference-health").DataSourceHealthView;
+};
+
+export type PickDeskStrategySeat = {
+  userId: string;
+  name: string;
+  meetingOn: string;
+  reason: string;
+  isMe: boolean;
 };
 
 export async function loadPickDesk(
@@ -113,18 +145,52 @@ export async function loadPickDesk(
   const teamKeys = metrics.rows.map((item) => item.teamKey);
   const scoutRows = teamKeys.length
     ? await client.query<{
+        id: string;
         teamKey: string;
         payload: Record<string, unknown>;
         confidence: string | null;
       }>(
-        `SELECT team_key AS "teamKey", payload, confidence
+        `SELECT id, team_key AS "teamKey", payload, confidence
          FROM match_scout_entries
          WHERE org_id = $1 AND event_key = $2 AND team_key = ANY($3::text[])
          ORDER BY updated_at DESC
          LIMIT 800`,
         [row.orgId, row.eventKey, teamKeys],
       )
-    : { rows: [] as Array<{ teamKey: string; payload: Record<string, unknown>; confidence: string | null }> };
+    : {
+        rows: [] as Array<{
+          id: string;
+          teamKey: string;
+          payload: Record<string, unknown>;
+          confidence: string | null;
+        }>,
+      };
+
+  const { conflictCountByTeam, loadEntryValidations, trustScoutPayloads } = await import(
+    "../scouting-trust"
+  );
+  const validations = await loadEntryValidations(
+    client,
+    row.orgId,
+    scoutRows.rows.map((scout) => scout.id),
+  );
+  const trustedByEntry = trustScoutPayloads(
+    scoutRows.rows.map((scout) => ({ id: scout.id, payload: scout.payload ?? {} })),
+    validations,
+  );
+  const conflictsByTeam = conflictCountByTeam(
+    validations
+      .map((validation) => {
+        const entry = scoutRows.rows.find((scout) => scout.id === validation.entryId);
+        return entry
+          ? { teamKey: entry.teamKey, fieldKey: validation.fieldKey, status: validation.status }
+          : null;
+      })
+      .filter(
+        (item): item is { teamKey: string; fieldKey: string; status: (typeof validations)[number]["status"] } =>
+          Boolean(item),
+      ),
+  );
 
   const byTeam = new Map<
     string,
@@ -134,15 +200,19 @@ export async function loadPickDesk(
     const confidence =
       scout.confidence === "high" || scout.confidence === "low" ? scout.confidence : "normal";
     const list = byTeam.get(scout.teamKey) ?? [];
-    list.push({ payload: scout.payload ?? {}, confidence });
+    const trusted = trustedByEntry.get(scout.id);
+    list.push({ payload: trusted?.trustedPayload ?? scout.payload ?? {}, confidence });
     byTeam.set(scout.teamKey, list);
   }
 
   const baseCandidates = metrics.rows.map((metric) => {
     const observations = byTeam.get(metric.teamKey) ?? [];
-    const reliability = observations.length ? deriveReliability(observations) : null;
-    const foulRisk = observations.length ? deriveFoulRisk(observations) : null;
+    // Disagreement resolutions demote losing entries to low confidence; prefer trusted rows.
+    const trusted = observationsForStrategyTrust(observations);
+    const reliability = trusted.length ? deriveReliability(trusted) : null;
+    const foulRisk = trusted.length ? deriveFoulRisk(trusted) : null;
     const hasRecord = metric.wins != null || metric.losses != null || metric.ties != null;
+    const conflicts = conflictsByTeam.get(metric.teamKey);
     return {
       teamKey: metric.teamKey,
       teamNumber: metric.teamNumber,
@@ -155,37 +225,66 @@ export async function loadPickDesk(
         ? `${metric.wins ?? 0}-${metric.losses ?? 0}-${metric.ties ?? 0}`
         : null,
       rank: metric.rank,
-      scoutSample: observations.length,
+      scoutSample: trusted.length,
       reliability: reliability?.score ?? null,
       foulRate: foulRisk?.rate ?? null,
+      tbaConflictCount: conflicts?.conflictCount ?? 0,
+      tbaConflictFields: conflicts?.conflictFields ?? [],
     };
   });
 
-  const candidates = rankPickCandidates(baseCandidates);
-  const lists = await client.query<{
-    id: string;
-    name: string;
-    eventKey: string;
-    updatedAt: string | null;
-    entries: PickDeskEntry[] | string;
-  }>(
-    `SELECT l.id, l.name, l.event_key AS "eventKey", l.updated_at::text AS "updatedAt",
-            COALESCE(json_agg(json_build_object(
-              'teamKey', e.team_key,
-              'teamNumber', t.team_number,
-              'nickname', t.nickname,
-              'rank', e.rank,
-              'tier', e.tier,
-              'notes', e.notes
-            ) ORDER BY e.rank) FILTER (WHERE e.id IS NOT NULL), '[]') AS entries
-     FROM pick_lists l
-     LEFT JOIN pick_list_entries e ON e.pick_list_id = l.id
-     LEFT JOIN teams_ref t ON t.team_key = e.team_key
-     WHERE l.org_id = $1 AND l.event_key = $2
-     GROUP BY l.id
-     ORDER BY l.updated_at DESC`,
-    [row.orgId, row.eventKey],
+  const modeInfo = detectPickDataMode(baseCandidates);
+  const candidates = rankPickCandidates(baseCandidates, { mode: modeInfo.mode });
+  const recentShares = await loadRecentAllianceShares(
+    client,
+    row.eventKey,
+    candidates.map((item) => item.teamKey),
   );
+  const epaDrifts = buildEpaDriftCallouts(candidates, recentShares);
+
+  const [lists, seats] = await Promise.all([
+    client.query<{
+      id: string;
+      name: string;
+      eventKey: string;
+      updatedAt: string | null;
+      entries: PickDeskEntry[] | string;
+    }>(
+      `SELECT l.id, l.name, l.event_key AS "eventKey", l.updated_at::text AS "updatedAt",
+              COALESCE(json_agg(json_build_object(
+                'teamKey', e.team_key,
+                'teamNumber', t.team_number,
+                'nickname', t.nickname,
+                'rank', e.rank,
+                'tier', e.tier,
+                'notes', e.notes
+              ) ORDER BY e.rank) FILTER (WHERE e.id IS NOT NULL), '[]') AS entries
+       FROM pick_lists l
+       LEFT JOIN pick_list_entries e ON e.pick_list_id = l.id
+       LEFT JOIN teams_ref t ON t.team_key = e.team_key
+       WHERE l.org_id = $1 AND l.event_key = $2
+       GROUP BY l.id
+       ORDER BY l.updated_at DESC`,
+      [row.orgId, row.eventKey],
+    ),
+    client
+      .query<{ userId: string; name: string; meetingOn: string; reason: string }>(
+        `SELECT s.user_id AS "userId", COALESCE(u.name, 'Team scout') AS name,
+                s.meeting_on::text AS "meetingOn", s.reason
+         FROM scout_strategy_seats s
+         JOIN users u ON u.id = s.user_id
+         WHERE s.org_id = $1 AND s.event_key = $2
+           AND s.meeting_on >= (CURRENT_DATE - INTERVAL '1 day')
+         ORDER BY s.meeting_on DESC, u.name ASC
+         LIMIT 12`,
+        [row.orgId, row.eventKey],
+      )
+      .catch(() => ({
+        rows: [] as Array<{ userId: string; name: string; meetingOn: string; reason: string }>,
+      })),
+  ]);
+
+  const baseSources = [...new Set(metrics.rows.map((item) => item.source).filter(Boolean))];
 
   return {
     orgId: row.orgId,
@@ -198,7 +297,16 @@ export async function loadPickDesk(
       ...list,
       entries: typeof list.entries === "string" ? JSON.parse(list.entries) : list.entries,
     })),
-    sources: [...new Set(metrics.rows.map((item) => item.source).filter(Boolean))],
+    sources: pickModeSources(modeInfo.mode, baseSources),
+    pickMode: modeInfo.mode,
+    pickModeReason: modeInfo.reason,
+    scoutedTeams: modeInfo.scoutedTeams,
+    teamCount: modeInfo.teamCount,
+    epaDrifts,
+    strategySeats: seats.rows.map((seat) => ({
+      ...seat,
+      isMe: seat.userId === input.userId,
+    })),
   };
 }
 

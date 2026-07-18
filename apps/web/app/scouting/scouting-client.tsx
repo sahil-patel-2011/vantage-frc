@@ -14,6 +14,8 @@ import {
   syncMediaOutbox,
   syncOutbox,
 } from "../../lib/scout-offline";
+import ScoutHandoffPanel from "./scout-handoff-panel";
+import "./scouting-qr.css";
 
 type Bootstrap = {
   eventKey: string | null;
@@ -52,7 +54,14 @@ type SpeechRecognitionLike = {
   start(): void;
 };
 
-type ScoutTab = "match" | "pit" | "conflicts";
+type ScoutTab = "match" | "pit" | "conflicts" | "handoff";
+
+type ConflictCandidate = {
+  entryId: string;
+  value: unknown;
+  scoutName?: string | null;
+  confidence?: string | null;
+};
 
 type OfficialFlag = {
   fieldKey: string;
@@ -78,6 +87,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   const [counts, setCounts] = useState({ entries: 0, media: 0 });
   const [message, setMessage] = useState("");
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
+  const [selectedWinners, setSelectedWinners] = useState<Record<string, string>>({});
   const [officialFlags, setOfficialFlags] = useState<OfficialFlag[]>([]);
   const [formulaName, setFormulaName] = useState("");
   const [formulaWeights, setFormulaWeights] = useState<Record<string, number>>({});
@@ -157,6 +167,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
     const deepTeam = searchParams.get("teamKey");
     if (deepMatch) setMatchKey(deepMatch);
     if (deepTeam) setTeamKey(deepTeam);
+    if (searchParams.get("handoff") || searchParams.get("code")) setTab("handoff");
   }, [searchParams]);
 
   useEffect(() => {
@@ -325,13 +336,34 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   }
 
   async function reviewConflict(id: string, status: "resolved" | "dismissed") {
+    if (status === "resolved" && !selectedWinners[id]) {
+      setMessage("Pick which scout was right before resolving — that updates pick-desk trust.");
+      return;
+    }
     const response = await fetch("/api/scouting/disagreements", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId, id, status, resolution: { reviewedIn: "scouting-ui" } }),
+      body: JSON.stringify({
+        orgId,
+        id,
+        status,
+        winningEntryId: status === "resolved" ? selectedWinners[id] : undefined,
+        resolution: { reviewedIn: "scouting-ui" },
+      }),
     });
-    if (response.ok) await loadConflicts();
-    else setMessage("Coach role is required to review conflicts");
+    if (response.ok) {
+      setSelectedWinners((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      await loadConflicts();
+      setMessage(
+        status === "resolved"
+          ? "Resolved · pick-desk trust updated · coordinators notified"
+          : "Dismissed · coordinators notified",
+      );
+    } else setMessage("Coach role is required to review conflicts");
   }
 
   function onTabChange(id: string) {
@@ -385,7 +417,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
         </EmptyState>
       ) : null}
 
-      {data?.eventKey && !schema && tab !== "conflicts" ? (
+      {data?.eventKey && !schema && tab !== "conflicts" && tab !== "handoff" ? (
         <EmptyState
           badge="Forms required"
           badgeTone="setup"
@@ -418,50 +450,91 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
         tabs={[
           { id: "match", label: "Match" },
           { id: "pit", label: "Pit" },
+          { id: "handoff", label: "QR handoff" },
           { id: "conflicts", label: "Conflicts" },
         ]}
       />
 
-      {tab === "conflicts" ? (
+      {tab === "handoff" ? (
+        <ScoutHandoffPanel
+          orgId={orgId}
+          eventKey={data?.eventKey ?? null}
+          schemaId={schema?.id ?? null}
+          entryType={type === "pit" ? "pit" : "match"}
+          onSynced={() => {
+            void refreshCounts();
+            void sync();
+          }}
+          onMessage={setMessage}
+        />
+      ) : tab === "conflicts" ? (
         <Panel>
-          <h2 style={{ marginTop: 0 }}>Cross-scout disagreements</h2>
+          <h2 style={{ marginTop: 0 }}>Which scout was right?</h2>
+          <p className="app-muted">
+            Resolving promotes the winning entry for pick-desk/strategy and notifies owners/admins.
+          </p>
           {conflicts.length === 0 ? (
             <p className="app-muted">
               No open disagreements for this event. Load again after scouts submit overlapping fields.
             </p>
           ) : (
             <ul className="scout-conflict-list">
-              {conflicts.map((conflict) => (
-                <li key={String(conflict.id)}>
-                  <strong>
-                    {String(conflict.matchKey)} · {String(conflict.teamKey)}
-                  </strong>
-                  <span>
-                    {String(conflict.fieldKey)}: {JSON.stringify(conflict.values)}
-                  </span>
-                  <small className="app-muted">
-                    Status: {String(conflict.status)} · entry attribution retained
-                  </small>
-                  {conflict.status === "open" ? (
-                    <div className="scout-conflict-actions">
-                      <button
-                        type="button"
-                        className="app-button secondary"
-                        onClick={() => void reviewConflict(String(conflict.id), "resolved")}
-                      >
-                        Resolve
-                      </button>
-                      <button
-                        type="button"
-                        className="app-button secondary"
-                        onClick={() => void reviewConflict(String(conflict.id), "dismissed")}
-                      >
-                        Dismiss
-                      </button>
-                    </div>
-                  ) : null}
-                </li>
-              ))}
+              {conflicts.map((conflict) => {
+                const id = String(conflict.id);
+                const candidates = (Array.isArray(conflict.candidates)
+                  ? conflict.candidates
+                  : []) as ConflictCandidate[];
+                return (
+                  <li key={id}>
+                    <strong>
+                      {String(conflict.matchKey)} · {String(conflict.teamKey)}
+                    </strong>
+                    <span>{String(conflict.fieldKey)}</span>
+                    <small className="app-muted">Status: {String(conflict.status)}</small>
+                    {conflict.status === "open" ? (
+                      <div className="scout-conflict-actions" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                        <div role="radiogroup" aria-label="Which scout was right">
+                          {candidates.map((candidate) => (
+                            <label key={candidate.entryId} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                              <input
+                                type="radio"
+                                name={`winner-${id}`}
+                                checked={selectedWinners[id] === candidate.entryId}
+                                onChange={() =>
+                                  setSelectedWinners((prev) => ({ ...prev, [id]: candidate.entryId }))
+                                }
+                              />
+                              <span>
+                                <strong>{candidate.scoutName ?? "Scout"}</strong>
+                                <span className="app-muted"> · {JSON.stringify(candidate.value)}</span>
+                              </span>
+                            </label>
+                          ))}
+                          {!candidates.length ? (
+                            <p className="app-muted">Entry candidates load after refresh.</p>
+                          ) : null}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            className="app-button secondary"
+                            onClick={() => void reviewConflict(id, "resolved")}
+                          >
+                            Resolve &amp; update trust
+                          </button>
+                          <button
+                            type="button"
+                            className="app-button secondary"
+                            onClick={() => void reviewConflict(id, "dismissed")}
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Panel>

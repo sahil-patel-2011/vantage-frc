@@ -1,6 +1,8 @@
 import { auth } from "@vantage/core";
 import { ScoutingRepository } from "@vantage/scouting/repository";
 import type { SchemaDefinition } from "@vantage/scouting";
+import { lintSchemaBudget } from "@vantage/scouting/trust";
+import { assertSchemaIdentityLock, stripScoutIdentityFields } from "@vantage/scouting/identity";
 import { headers } from "next/headers";
 import {
   scoutingErrorResponse,
@@ -17,6 +19,7 @@ export async function POST(request: Request) {
       year?: number;
       type?: "match" | "pit";
       definition?: SchemaDefinition;
+      acknowledgeBudget?: boolean;
     };
     if (!body.orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
 
@@ -43,6 +46,10 @@ export async function POST(request: Request) {
     if (!body.year || !body.type || !body.definition?.fields.length) {
       return Response.json({ error: "Invalid schema" }, { status: 400 });
     }
+    const budget = lintSchemaBudget(body.definition);
+    if (budget.status === "over_budget" && body.acknowledgeBudget !== true) {
+      return Response.json({ error: budget.message, budget, acknowledgeRequired: true }, { status: 422 });
+    }
     const schema = await withScoutingRequest(body.orgId, async (client) => {
       const allowed = await client.query(
         `SELECT has_org_role($1, ARRAY['owner','admin']::org_role[]) AS allowed`,
@@ -55,13 +62,13 @@ export async function POST(request: Request) {
          FROM scout_schemas WHERE org_id=$1 AND year=$2 AND type=$3
          RETURNING id,version`,
         [
-          body.orgId, body.year, body.type, JSON.stringify(body.definition),
+          body.orgId, body.year, body.type, JSON.stringify(lockedDefinition),
           session.user.id,
         ],
       );
       return result.rows[0];
     });
-    return Response.json(schema, { status: 201 });
+    return Response.json({ ...schema, budget }, { status: 201 });
   } catch (error) {
     return scoutingErrorResponse(error);
   }

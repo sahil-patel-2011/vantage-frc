@@ -257,6 +257,24 @@ describe("chat auto-tool planning", () => {
     expect(empty.status).toBe("empty");
   });
 
+  it("plans finance.summary for budget/spend questions and annotates deny", async () => {
+    const { planChatToolCalls, annotateToolOutput } = await import("../src/auto-tools");
+    const calls = planChatToolCalls("How much did we spend this season against budget?");
+    expect(calls.some((call) => call.name === "finance.summary")).toBe(true);
+    const denied = annotateToolOutput(
+      "finance.summary",
+      {
+        denied: true,
+        setup_required: true,
+        reason: "finance_in_ai.disabled",
+        message: "Finance-in-AI is off.",
+      },
+      { seasonYear: 2026 },
+    );
+    expect(denied.status).toBe("setup_required");
+    expect(denied.summary).toContain("Finance-in-AI");
+  });
+
   it("plans finance.create_purchase_request when CAD needs a part", async () => {
     const { planChatToolCalls } = await import("../src/auto-tools");
     const calls = planChatToolCalls("Need part NEO 550 for the intake roller", { capability: "cad" });

@@ -26,6 +26,9 @@ function metricLine(candidate: PickCandidate | undefined) {
     candidate.scoutSample > 0
       ? `scout n=${candidate.scoutSample}${candidate.reliability != null ? ` · rel ${Math.round(candidate.reliability)}%` : ""}`
       : null,
+    (candidate.tbaConflictCount ?? 0) > 0
+      ? `TBA conflict×${candidate.tbaConflictCount}${candidate.tbaConflictFields?.length ? ` (${candidate.tbaConflictFields.slice(0, 3).join(", ")})` : ""}`
+      : null,
   ].filter(Boolean);
   return parts.join(" · ") || "Metrics incomplete";
 }
@@ -44,6 +47,7 @@ export function PickListWorkbench({
   const [entries, setEntries] = useState<PickDeskEntry[]>([]);
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [seating, setSeating] = useState(false);
   const [filter, setFilter] = useState("");
 
   const load = useCallback(() => {
@@ -181,13 +185,55 @@ export function PickListWorkbench({
         })),
       }),
     });
-    const data = await response.json();
-    setStatus(response.ok ? "Pick list saved." : data.error ?? "Save failed");
-    setSaving(false);
+    const data = (await response.json()) as {
+      id?: string;
+      error?: string;
+      influence?: { attributed?: number; notified?: number };
+    };
     if (response.ok) {
+      const attributed = data.influence?.attributed ?? 0;
+      const notified = data.influence?.notified ?? 0;
+      setStatus(
+        attributed > 0
+          ? `Pick list saved. Told ${notified} scout${notified === 1 ? "" : "s"} where ${attributed} entr${attributed === 1 ? "y" : "ies"} went.`
+          : "Pick list saved. No scout entries to attribute yet.",
+      );
       if (data.id) setActiveListId(data.id);
       load();
+    } else {
+      setStatus(data.error ?? "Save failed");
     }
+    setSaving(false);
+  }
+
+  async function seatTopScouts() {
+    if (!desk?.canEdit) {
+      setStatus("Owner or admin role required to seat scouts.");
+      return;
+    }
+    setSeating(true);
+    setStatus("Seating top accurate scouts…");
+    const response = await fetch("/api/scouting/trust", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        orgId: desk.orgId,
+        eventKey: desk.eventKey,
+        action: "seat-top-accurate",
+        seatCount: 3,
+      }),
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      strategySeats?: unknown[];
+    };
+    setStatus(
+      response.ok
+        ? `Seated top accurate scouts into the pick-desk conversation (${data.strategySeats?.length ?? 0} seat${(data.strategySeats?.length ?? 0) === 1 ? "" : "s"}).`
+        : data.error ?? "Could not seat scouts",
+    );
+    setSeating(false);
+    if (response.ok) load();
   }
 
   function selectList(list: PickDeskList) {

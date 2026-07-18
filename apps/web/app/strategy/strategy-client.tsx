@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { runWhatIf } from "@vantage/prediction-strategy";
+import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { strategyFixture } from "../../lib/marketing/strategy-demo";
 import type { StrategyView } from "../../lib/strategy/types";
@@ -358,9 +359,13 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
                 {view.scoutProvenance.slice(0, 12).map((ref) => (
                   <li key={`${ref.entryId}-${ref.influence}`}>
                     <strong>{ref.teamKey.replace(/^frc/, "")}</strong>
+                    {ref.source === "video" || ref.influence === "video_rescore" ? (
+                      <span className="app-badge setup">VIDEO</span>
+                    ) : null}
                     <span>
                       {ref.entryType} · {ref.influence}
                       {ref.influence === "tba_conflict_excluded" ? " (TBA contradicted — excluded)" : ""}
+                      {ref.videoAtSeconds != null ? ` @${ref.videoAtSeconds}s` : ""}
                     </span>
                   </li>
                 ))}
@@ -561,7 +566,9 @@ export default function StrategyClient() {
           ) : view?.status === "setup_required" ? (
             <span className="app-badge setup">Setup required</span>
           ) : view?.status === "live" ? (
-            <span className="app-badge good">Live inputs</span>
+            <span className={`app-badge ${view.dataSourceHealth?.degraded ? "setup" : "good"}`}>
+              {view.dataSourceHealth?.usingLastGoodCache ? "Last-good cache" : "Live inputs"}
+            </span>
           ) : null}
         </div>
       </PageHeader>
@@ -581,6 +588,8 @@ export default function StrategyClient() {
           {error}
         </p>
       ) : null}
+
+      <DataSourceDegradedBanner health={view?.dataSourceHealth} />
 
       {view ? <TbaKeyHint view={view} /> : null}
 
