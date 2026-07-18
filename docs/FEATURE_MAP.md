@@ -7,28 +7,26 @@ Single map of product surfaces for humans and agents. Nav labels come from
 
 | Pillar | Job | Primary routes |
 |---|---|---|
-| **Home** | Daily landing + workspace switcher + AI | `/dashboard`, `/start` (role/subteam onboarding path), `/workspace`, `/chat`, `/announcements` |
-| **Competition** | Event-day ops, pit, match flow | `/command`, `/my-day`, `/pit`, `/batteries`, `/incidents`, `/match-checklist`, `/intel`, `/schedule`, `/briefing`, `/match-debrief`, `/inspection` |
-| **Scouting** | Collect + use match intel | `/scouting`, `/scouting/lineup`, `/strategy`, `/pick-clock`, `/chemistry`, `/dossier`, `/rankings`, `/video` |
-| **Calendar** | Time: team calendar, season milestones, practice, shifts, attendance, hours | `/team/calendar`, `/my-day`, `/calendar`, `/practice`, `/shifts`, `/attendance`, `/hours` |
-| **Build** | Robot design/build tooling | `/cad`, `/code`, `/robot`, `/subsystems`, `/fmea`, `/display`, `/inventory`, `/vendors`, `/control-map`, `/software-versions` |
-| **Team** | People ops, todos, knowledge, admin | `/tasks` (Todos), `/messages`, `/goals`, `/risks`, `/roles`, `/team/knowledge`, `/team/discord`, `/team/alumni`, `/team`, `/team/discord`, `/team/data`, `/team/usage` |
+| **Home** | Daily landing + workspace switcher | `/dashboard`, `/start` (role/subteam onboarding path), `/workspace`, `/announcements` |
+| **Competition** | Event-day ops, scouting, pit, match flow, kickoff | `/command`, `/my-day`, `/scouting`, `/scouting/lineup`, `/intel`, `/schedule`, `/pick-clock`, `/chemistry`, `/dossier`, `/rankings`, `/video`, `/pit`, `/batteries`, `/incidents`, `/match-checklist`, `/briefing`, `/match-debrief`, `/inspection`, `/kickoff` |
+| **Team** | People ops + calendar (dated work) | `/team/calendar`, `/calendar`, `/practice`, `/shifts`, `/attendance`, `/hours`, `/tasks` (Todos), `/messages`, `/goals`, `/risks`, `/roles`, `/team/knowledge`, `/team/alumni`, `/team`, `/team/discord`, `/team/data` |
 | **Logistics** | Get-there-and-back trip times, lodging, packing, duties, visit invites | `/logistics`, `/packing`, `/duties`, `/visit-invites` (+ Team Calendar → My trip) |
-| **Kickoff** | Season start / game manual | `/kickoff` |
-| **Business** | Money, sponsors, awards, impact, exports | `/business`, `/orders`, `/costs`, `/team/finance`, `/team/sponsors`, `/sponsorship`, `/team/grants`, `/team/awards`, `/fundraisers`, `/impact`, `/writer`, `/recognition`, `/exports` |
+| **Business** | Money, sponsors, awards, impact, exports | `/business`, `/orders`, `/costs`, `/team/finance`, `/team/sponsors`, `/sponsorship`, `/team/grants`, `/team/awards`, `/fundraisers`, `/impact`, `/recognition`, `/exports` |
+| **Build** | Robot design/build tooling | `/cad`, `/code`, `/robot`, `/subsystems`, `/fmea`, `/display`, `/inventory`, `/vendors`, `/control-map`, `/software-versions`, `/decisions` |
+| **AI** | Assistant + strategy + writers + usage | `/chat`, `/strategy`, `/writer`, `/team/usage` |
 | **Settings** | Account + org security + budgets | `/account`, `/help`, `/notifications`, `/security`, `/team/security`, `/team/budgets` |
 
-Bottom island tabs: **Home · Event Day · Scout · Calendar** (+ More → full drawer).
+Bottom island tabs: **Home · Event · Scout · Team** (+ More sheet → My Day glance, pillar shortcuts, unread badges; Full menu → drawer).
 
-## Calendar vs Team vs Competition vs Business
+## Team vs Competition vs Logistics vs Business vs AI
 
-- **Calendar** = anything dated (team/subteam calendar, season milestones, practice planner, shifts, attendance roll, build hours).
-- **Team** = people and org continuity (todos, messages, goals, risks, roles, knowledge, alumni, admin).
-- **Competition** = at-the-event execution (command, pit, batteries, incidents, checklists, matches).
+- **Team** = people continuity **and** dated work (calendar, practice, shifts, attendance, hours, todos, messages).
+- **Competition** = at-the-event execution **and** scouting/intel (command, My Day, pit, matches, pick desk).
 - **Logistics** = timed leave/hotel/venue/return legs, lodging, packing, duties, visit invites (sibling to Competition; trip times also on `/team/calendar` → My trip).
-- **Business** = fundraising, sponsors, costs, awards writing, community impact — not “team admin”.
+- **Business** = fundraising, sponsors, costs, community impact — not “team admin”.
+- **AI** = Vantage chat, strategy assist, award writer, metered usage — not a laundry list of every AI touchpoint.
 
-Cross-links inside Calendar/Team surfaces use `TeamOpsNav`
+Cross-links inside Team surfaces use `TeamOpsNav`
 (`apps/web/components/team-ops-nav.tsx`): Your path · Practice · Todos · Messages · Calendar · Attendance · Goals · Admin.
 
 ## Role onboarding (CD #28)
@@ -44,7 +42,7 @@ Templates live in `apps/web/lib/role-onboarding/`; progress in `member_onboardin
 
 | Route | What it is |
 |---|---|
-| `/team/calendar` | Subteam / practice / build / meeting calendar (default Calendar tab) |
+| `/team/calendar` | Subteam / practice / build / meeting calendar (default Calendar / Team tab) |
 | `/calendar` | Season milestones (kickoff, stop-build, events) |
 
 Deep links between them live in `apps/web/lib/subteam-calendar.ts` (`eventWorkflowLinks`).
@@ -68,7 +66,7 @@ Configured in `apps/web/next.config.ts`:
 | `/config` | `/robot` | Robot blueprint / configuration |
 | `/changes` | `/decisions` | Decision / change history |
 
-Planned (shown disabled in nav, no page yet): Event Travel, Parts Relay, Training Matrix, Leadership Continuity, Retrospective, Season Rollover, Mock Judging.
+Planned (shown disabled in nav, no page yet): Parts Relay, Training Matrix, Leadership Continuity, Retrospective, Season Rollover, Mock Judging.
 
 ## Org context
 
@@ -88,5 +86,6 @@ Breadcrumbs: `breadcrumbForPath(pathname)` from `product-nav.ts`.
 | `packages/billing` | `/team/usage`, `/team/budgets` |
 | `packages/export-center` | `/exports` |
 | Pit / batteries / incidents | Competition |
-| Season + subteam calendars | Calendar |
+| Season + subteam calendars | Team |
 | Business / impact / awards | Business |
+| Vantage AI / strategy / writer | AI |
