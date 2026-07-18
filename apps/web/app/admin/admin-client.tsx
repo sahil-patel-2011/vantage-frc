@@ -66,6 +66,7 @@ function AdminClientInner() {
       >
         <nav className="settings-inline-links" aria-label="Platform shortcuts">
           <a href="/admin/waitlist">Waitlist</a>
+          <a href="/admin/plans">Org plans</a>
           <a href="/admin/connectors">Connectors / API keys</a>
           <a href="/admin/models">Models</a>
           <a href="/admin/audit">Audit log</a>
