@@ -73,6 +73,18 @@ export async function POST(request: Request) {
            updated_by=excluded.updated_by, updated_at=now()`,
         [orgId, content, body.enabled ?? true, current.user.id],
       );
+      // Snapshot a revision for history/rollback. Guarded so a not-yet-migrated
+      // revisions table can never block saving the doc itself.
+      try {
+        if (content.trim()) {
+          await client.query(
+            `INSERT INTO team_knowledge_revisions(org_id, content, edited_by) VALUES($1, $2, $3)`,
+            [orgId, content, current.user.id],
+          );
+        }
+      } catch {
+        // team_knowledge_revisions not migrated yet — skip snapshot.
+      }
     });
     return Response.json({ success: true });
   } catch (error) {

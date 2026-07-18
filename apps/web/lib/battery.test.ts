@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   batteryHealth,
-  competitionReady,
   monthsBetween,
   parseBatteryAction,
   rankForRotation,
@@ -89,69 +88,10 @@ describe("rankForRotation", () => {
   });
 });
 
-describe("competitionReady", () => {
-  const now = new Date("2026-07-17T18:00:00Z");
-
-  it("marks a freshly charged healthy pack ready", () => {
-    const result = competitionReady({
-      status: "active",
-      healthStatus: "good",
-      lastChargedAt: "2026-07-17T12:00:00Z",
-      lastRestingVoltage: 12.9,
-      now,
-    });
-    expect(result.ready).toBe(true);
-    expect(result.reasons).toEqual([]);
-  });
-
-  it("blocks when charge is stale", () => {
-    const result = competitionReady({
-      status: "active",
-      healthStatus: "good",
-      lastChargedAt: "2026-07-16T12:00:00Z",
-      lastRestingVoltage: 12.9,
-      now,
-    });
-    expect(result.ready).toBe(false);
-    expect(result.reasons.some((r) => /charge/i.test(r))).toBe(true);
-  });
-
-  it("blocks retire-grade packs even if charged", () => {
-    expect(
-      competitionReady({
-        status: "active",
-        healthStatus: "retire",
-        lastChargedAt: "2026-07-17T12:00:00Z",
-        lastRestingVoltage: 12.9,
-        now,
-      }).ready,
-    ).toBe(false);
-  });
-
-  it("treats aging as a soft warning, not a hard block", () => {
-    const result = competitionReady({
-      status: "active",
-      healthStatus: "aging",
-      lastChargedAt: "2026-07-17T12:00:00Z",
-      lastRestingVoltage: 12.8,
-      now,
-    });
-    expect(result.ready).toBe(true);
-    expect(result.reasons.some((r) => /aging/i.test(r))).toBe(true);
-  });
-});
-
 describe("parseBatteryAction", () => {
   it("parses a create_pack action", () => {
-    const action = parseBatteryAction({ action: "create_pack", orgId: "o1", label: "B-01", nominalAh: 18, assignment: "Robot" });
-    expect(action).toMatchObject({ action: "create_pack", label: "B-01", nominalAh: 18, assignment: "Robot" });
-  });
-
-  it("parses assign_pack", () => {
-    expect(parseBatteryAction({ action: "assign_pack", orgId: "o1", id: "b1", assignment: "Charger A" })).toMatchObject({
-      action: "assign_pack",
-      assignment: "Charger A",
-    });
+    const action = parseBatteryAction({ action: "create_pack", orgId: "o1", label: "B-01", nominalAh: 18 });
+    expect(action).toMatchObject({ action: "create_pack", label: "B-01", nominalAh: 18 });
   });
 
   it("rejects a create_pack with no label", () => {

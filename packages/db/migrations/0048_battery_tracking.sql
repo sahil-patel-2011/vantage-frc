@@ -12,7 +12,6 @@ CREATE TABLE battery_packs (
   nominal_ah numeric(6, 2) CHECK (nominal_ah IS NULL OR nominal_ah > 0),
   purchase_date date,
   status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'quarantine', 'retired')),
-  assignment text NOT NULL DEFAULT '',
   notes text NOT NULL DEFAULT '',
   created_by uuid NOT NULL REFERENCES users(id),
   created_at timestamptz NOT NULL DEFAULT now(),

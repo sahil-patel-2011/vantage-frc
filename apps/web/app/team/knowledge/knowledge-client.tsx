@@ -98,7 +98,10 @@ export default function KnowledgeClient({ orgId }: { orgId: string }) {
         </div>
         <nav className="intel-actions" aria-label="AI links">
           <a href={`/chat?orgId=${orgId}`}>Open assistant</a>
+          <a href={`/team/knowledge/history?orgId=${orgId}`}>History</a>
+          <a href={`/team/prompts?orgId=${orgId}`}>Prompt library</a>
           <a href={`/team/ai-memory?orgId=${orgId}`}>AI memory</a>
+          <a href={`/team/budgets?orgId=${orgId}#prompt-caching`}>Prompt caching</a>
           <a href={`/team?orgId=${orgId}`}>Team admin</a>
         </nav>
       </header>
