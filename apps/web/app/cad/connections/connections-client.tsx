@@ -38,6 +38,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
   const [onshapeConnections, setOnshapeConnections] = useState<
     Array<{ id: string; status: string; label: string }>
   >([]);
+  const [onshapeSetupMessage, setOnshapeSetupMessage] = useState("");
   const [osSupport, setOsSupport] = useState<OsRow[]>([]);
   const [busy, setBusy] = useState(false);
 
@@ -46,8 +47,13 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     const d = await r.json();
     if (r.ok) {
       setDevices(d.devices ?? []);
-      setOnshapeConfigured(Boolean(d.onshapeConfigured));
+      setOnshapeConfigured(Boolean(d.onshapeConfigured ?? d.onshape?.configured));
       setOnshapeConnections(d.onshapeConnections ?? []);
+      setOnshapeSetupMessage(
+        d.onshape?.setupRequired
+          ? String(d.onshape.message ?? "Setup required — configure Onshape OAuth on the server.")
+          : "",
+      );
       setOsSupport(d.osSupport ?? []);
     } else setMessage(d.error);
   }
@@ -121,6 +127,17 @@ export default function CadConnections({ orgId }: { orgId: string }) {
         <p role="status" className="telemetry-status">
           {message}
         </p>
+      ) : null}
+
+      {onshapeSetupMessage ? (
+        <aside className="cad-setup-required" role="status">
+          <strong>Setup required · Onshape OAuth</strong>
+          <p>
+            {onshapeSetupMessage} Set <code>ONSHAPE_OAUTH_CLIENT_ID</code> and{" "}
+            <code>ONSHAPE_OAUTH_CLIENT_SECRET</code> on Vercel, then redeploy. Fusion stays a local desktop relay —
+            never hosted.
+          </p>
+        </aside>
       ) : null}
 
       <section className="cad-connection-strip">

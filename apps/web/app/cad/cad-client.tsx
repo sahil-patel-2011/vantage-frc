@@ -150,6 +150,7 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
   const [busy, setBusy] = useState(false);
   const [onshapeConfigured, setOnshapeConfigured] = useState(false);
   const [onshapeConnected, setOnshapeConnected] = useState(false);
+  const [onshapeSetupMessage, setOnshapeSetupMessage] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [workspaceId, setWorkspaceId] = useState("");
   const [elementId, setElementId] = useState("");
@@ -171,8 +172,13 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
       setDetail(data.detail);
       setDevices(data.devices ?? []);
       setUsage(data.usage ?? []);
-      setOnshapeConfigured(Boolean(data.onshapeConfigured));
+      setOnshapeConfigured(Boolean(data.onshapeConfigured ?? data.onshape?.configured));
       setOnshapeConnected((data.onshapeConnections ?? []).some((c: { status: string }) => c.status === "connected"));
+      setOnshapeSetupMessage(
+        data.onshape?.setupRequired
+          ? String(data.onshape.message ?? "Setup required — configure Onshape OAuth on the server.")
+          : "",
+      );
     } else setMessage(data.error);
   }
 
@@ -216,6 +222,8 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
   const render = detail?.artifacts.find((item) => item.type === "render_checkpoint");
   const onlineDevice = devices.find((device) => !device.revokedAt && isOnline(device));
   const fusionReady = Boolean(onlineDevice);
+  /** Live execute needs OAuth connected; brief/plan can start once admin OAuth env is set. */
+  const onshapeSelectable = onshapeConfigured;
   const onshapeReady = onshapeConfigured && onshapeConnected;
   const needsSetup = !jobs.length && !onshapeReady && !fusionReady;
   const activeExplainStep =
@@ -318,6 +326,15 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
         <p className="telemetry-status" role="status">
           {message}
         </p>
+      ) : null}
+
+      {onshapeSetupMessage ? (
+        <aside className="cad-setup-required" role="status">
+          <strong>Setup required · Onshape hosted</strong>
+          <p>
+            {onshapeSetupMessage} Mock jobs and Fusion local relay still work. Fusion is never hosted on Vercel.
+          </p>
+        </aside>
       ) : null}
 
       <section className="cad-connection-strip" aria-label="CAD connection status">
@@ -464,16 +481,16 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
                       type="radio"
                       name="platform"
                       checked={platform === "onshape"}
-                      disabled={!onshapeReady}
+                      disabled={!onshapeSelectable}
                       onChange={() => setPlatform("onshape")}
                     />
                     <span>
                       <strong>Onshape hosted</strong>
                       <small>
                         {!onshapeConfigured
-                          ? "Admin must set ONSHAPE_OAUTH_* then redeploy"
+                          ? "Setup required — admin must set ONSHAPE_OAUTH_* then redeploy"
                           : !onshapeConnected
-                            ? "Connect OAuth in Connections first"
+                            ? "OAuth ready — connect in Connections before Run Onshape"
                             : "OAuth connected · bind document after brief"}
                       </small>
                     </span>
@@ -713,14 +730,27 @@ export default function CadWorkspace({ orgId }: { orgId: string }) {
                       {step.approvalStatus === "approved" &&
                         step.status === "planned" &&
                         job?.platform === "onshape" && (
-                          <button type="button" disabled={busy} onClick={() => void act("execute-onshape", { jobId: job!.id, stepId: step.id })}>
-                            Run Onshape
+                          <button
+                            type="button"
+                            disabled={busy || !onshapeConnected}
+                            title={
+                              !onshapeConnected
+                                ? "Connect Onshape OAuth in Connections first"
+                                : "Execute approved step via hosted Onshape API"
+                            }
+                            onClick={() => void act("execute-onshape", { jobId: job!.id, stepId: step.id })}
+                          >
+                            {!onshapeConnected ? "Connect OAuth to run" : "Run Onshape"}
                           </button>
                         )}
                       {step.approvalStatus === "approved" &&
                         step.status === "planned" &&
                         job?.platform === "fusion360" && (
-                          <small className="app-muted">Waiting for vantage-cad relay claim on your desktop…</small>
+                          <span className="app-muted" style={{ fontSize: 11 }}>
+                            {fusionReady
+                              ? "Waiting for local relay claim…"
+                              : "Setup required — pair Fusion desktop relay (never hosted)"}
+                          </span>
                         )}
                       {(step.status === "failed" || step.status === "cancelled") && (
                         <button type="button" disabled={busy} onClick={() => void act("retry", { jobId: job!.id, stepId: step.id })}>

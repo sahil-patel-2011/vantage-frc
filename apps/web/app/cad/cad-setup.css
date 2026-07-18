@@ -1,4 +1,37 @@
-/* CAD setup / pair — Soft-UI helpers. */
+/* CAD setup / connections / pair — Soft-UI helpers. */
+.cad-connections-page .path-number,
+.cad-module .path-number {
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--app-muted);
+  font: 700 11px/1 ui-monospace, monospace;
+  letter-spacing: 0.06em;
+}
+.cad-connections-page .cad-connection-tile ol {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.cad-setup-required {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--app-warning, #b8860b) 40%, var(--app-line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-warning, #b8860b) 8%, var(--app-surface));
+}
+.cad-setup-required strong {
+  font-size: 13px;
+}
+.cad-setup-required p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
 .cad-setup-page .cad-setup-steps {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
