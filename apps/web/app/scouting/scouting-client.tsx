@@ -1,6 +1,16 @@
 "use client";
 
-import type { SchemaDefinition, ScoutSchema, SyncEntry } from "@vantage/scouting";
+import { useOnline } from "../../lib/offline/use-online";
+
+import { OfflineBanner } from "../../components/offline-banner";
+
+import type { SchemaDefinition, ScoutSchema, SyncEntry, ScoutIdentity } from "@vantage/scouting";
+import { isScoutIdentityField } from "@vantage/scouting/identity";
+import {
+  fieldConfidenceHint,
+  lintSchemaBudget,
+  type FieldTrustSummary,
+} from "@vantage/scouting/trust";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
@@ -44,7 +54,9 @@ type Bootstrap = {
     source: string;
     updatedAt: string;
     scoutName: string;
+    scoutUserId?: string;
   }>;
+  scoutIdentity?: ScoutIdentity;
 };
 
 type SpeechRecognitionLike = {
@@ -62,6 +74,19 @@ type ConflictCandidate = {
   value: unknown;
   scoutName?: string | null;
   confidence?: string | null;
+};
+
+type TrustSnapshot = {
+  fieldTrust: FieldTrustSummary[];
+  leaderboard: Array<{
+    userId: string;
+    name: string;
+    entries: number;
+    checks: number;
+    matches: number;
+    conflicts: number;
+    accuracy: number | null;
+  }>;
 };
 
 type OfficialFlag = {
@@ -84,7 +109,8 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   const [confidence, setConfidence] = useState<"high" | "normal" | "low">("normal");
   const [source, setSource] = useState<"manual" | "voice">("manual");
   const [voiceDraft, setVoiceDraft] = useState("");
-  const [online, setOnline] = useState(true);
+  const online = useOnline();
+  const [fromCache, setFromCache] = useState(false);
   const [counts, setCounts] = useState({ entries: 0, media: 0 });
   const [message, setMessage] = useState("");
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
@@ -93,10 +119,23 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   const [formulaName, setFormulaName] = useState("");
   const [formulaWeights, setFormulaWeights] = useState<Record<string, number>>({});
   const [showFormula, setShowFormula] = useState(false);
+  const [trust, setTrust] = useState<TrustSnapshot | null>(null);
 
   const type = tab === "pit" ? "pit" : "match";
 
   const refreshCounts = useCallback(async () => setCounts(await pendingCounts()), []);
+  const loadTrust = useCallback(async (eventKey: string | null | undefined) => {
+    if (!orgId || !eventKey || !navigator.onLine) return;
+    try {
+      const params = new URLSearchParams({ orgId, eventKey });
+      const response = await fetch(`/api/scouting/trust?${params}`);
+      if (!response.ok) return;
+      const body = (await response.json()) as TrustSnapshot;
+      setTrust({ fieldTrust: body.fieldTrust ?? [], leaderboard: body.leaderboard ?? [] });
+    } catch {
+      /* keep last-good field confidence */
+    }
+  }, [orgId]);
   const sync = useCallback(async () => {
     if (!orgId || !navigator.onLine) return;
     try {
@@ -143,6 +182,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
           const fresh = (await response.json()) as Bootstrap;
           setData(fresh);
           await cacheEvent(orgId, fresh);
+          await loadTrust(fresh.eventKey);
         }
       } catch {
         setMessage(cached ? "Using cached event data" : "No cached event data available");
@@ -221,6 +261,22 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
     () => data?.schemas.find((candidate) => candidate.type === type),
     [data, type],
   );
+
+  const formFields = useMemo(
+    () => schema?.definition.fields.filter((field) => !isScoutIdentityField(field)) ?? [],
+    [schema],
+  );
+
+  const schemaBudget = useMemo(
+    () => (schema ? lintSchemaBudget(schema.definition) : null),
+    [schema],
+  );
+
+  const trustByField = useMemo(() => {
+    const map = new Map<string, FieldTrustSummary>();
+    for (const row of trust?.fieldTrust ?? []) map.set(row.fieldKey, row);
+    return map;
+  }, [trust]);
 
   async function submit() {
     if (!data?.eventKey || !schema || !teamKey || (type === "match" && !matchKey)) {
@@ -401,6 +457,16 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
         </div>
       </PageHeader>
 
+      <OfflineBanner
+        feature="Scouting"
+        fromCache={fromCache || Boolean(data)}
+        detail={
+          !online
+            ? `Forms keep working on this device. ${counts.entries + counts.media} item${counts.entries + counts.media === 1 ? "" : "s"} waiting to sync.`
+            : undefined
+        }
+      />
+
       <nav className="scout-related" aria-label="Related data tools" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
         <a className="app-button secondary" href={`/scouting/lineup?orgId=${encodeURIComponent(orgId)}`}>
           Lineup &amp; coverage
@@ -464,10 +530,13 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
           { id: "pit", label: "Pit" },
           { id: "handoff", label: "QR handoff" },
           { id: "conflicts", label: "Conflicts" },
+          { id: "trust", label: "Trust & coverage" },
         ]}
       />
 
-      {tab === "handoff" ? (
+      {tab === "trust" ? (
+        <ScoutingTrustPanel orgId={orgId} eventKey={data?.eventKey ?? null} />
+      ) : tab === "handoff" ? (
         <ScoutHandoffPanel
           orgId={orgId}
           eventKey={data?.eventKey ?? null}
@@ -480,59 +549,90 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
           onMessage={setMessage}
         />
       ) : tab === "conflicts" ? (
-        <Panel>
-          <h2 style={{ marginTop: 0 }}>Which scout was right?</h2>
-          <p className="app-muted">
-            Resolving promotes the winning entry for pick-desk/strategy and notifies owners/admins.
-          </p>
+        <Panel className="scout-conflicts-panel">
+          <header className="scout-conflicts-heading">
+            <div>
+              <h2>Which scout was right?</h2>
+              <p className="app-muted">
+                Pick the winning entry for each field conflict. Coaches resolve; every decision is audited.
+              </p>
+            </div>
+            <button type="button" className="app-button secondary" onClick={() => void loadConflicts()}>
+              Refresh
+            </button>
+          </header>
           {conflicts.length === 0 ? (
             <p className="app-muted">
-              No open disagreements for this event. Load again after scouts submit overlapping fields.
+              No disagreements for this event yet. They appear when two scouts submit overlapping fields.
             </p>
           ) : (
             <ul className="scout-conflict-list">
               {conflicts.map((conflict) => {
                 const id = String(conflict.id);
+                const status = String(conflict.status);
                 const candidates = (Array.isArray(conflict.candidates)
                   ? conflict.candidates
                   : []) as ConflictCandidate[];
+                const selected = selectedWinners[id];
+                const selectedCandidate = candidates.find((c) => c.entryId === selected);
+                const audit = (Array.isArray(conflict.audit) ? conflict.audit : []) as Array<{
+                  id: string;
+                  action: string;
+                  actorName: string;
+                  createdAt: string;
+                }>;
                 return (
-                  <li key={id}>
-                    <strong>
-                      {String(conflict.matchKey)} · {String(conflict.teamKey)}
-                    </strong>
-                    <span>{String(conflict.fieldKey)}</span>
-                    <small className="app-muted">Status: {String(conflict.status)}</small>
-                    {conflict.status === "open" ? (
-                      <div className="scout-conflict-actions" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
-                        <div role="radiogroup" aria-label="Which scout was right">
-                          {candidates.map((candidate) => (
-                            <label key={candidate.entryId} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-                              <input
-                                type="radio"
-                                name={`winner-${id}`}
-                                checked={selectedWinners[id] === candidate.entryId}
-                                onChange={() =>
+                  <li key={id} className={`scout-conflict-card status-${status}`}>
+                    <div className="scout-conflict-meta">
+                      <strong>
+                        {String(conflict.matchKey)} · {String(conflict.teamKey)}
+                      </strong>
+                      <span className="app-badge">{String(conflict.fieldKey)}</span>
+                      <span className={`scout-conflict-status ${status}`}>{status}</span>
+                    </div>
+                    {status === "open" ? (
+                      <>
+                        <p className="scout-conflict-prompt">Who got this field right?</p>
+                        <div className="scout-winner-grid" role="radiogroup" aria-label="Which scout was right">
+                          {candidates.map((candidate) => {
+                            const active = selected === candidate.entryId;
+                            return (
+                              <button
+                                key={candidate.entryId}
+                                type="button"
+                                role="radio"
+                                aria-checked={active}
+                                className={`scout-winner-option${active ? " selected" : ""}`}
+                                onClick={() =>
                                   setSelectedWinners((prev) => ({ ...prev, [id]: candidate.entryId }))
                                 }
-                              />
-                              <span>
-                                <strong>{candidate.scoutName ?? "Scout"}</strong>
-                                <span className="app-muted"> · {JSON.stringify(candidate.value)}</span>
-                              </span>
-                            </label>
-                          ))}
-                          {!candidates.length ? (
-                            <p className="app-muted">Entry candidates load after refresh.</p>
-                          ) : null}
+                              >
+                                <em>{candidate.scoutName ?? "Scout"}</em>
+                                <strong>
+                                  {typeof candidate.value === "string" ||
+                                  typeof candidate.value === "number" ||
+                                  typeof candidate.value === "boolean"
+                                    ? String(candidate.value)
+                                    : JSON.stringify(candidate.value)}
+                                </strong>
+                                <small>{active ? "Selected as right" : "Tap if this scout was right"}</small>
+                              </button>
+                            );
+                          })}
                         </div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {!candidates.length ? (
+                          <p className="app-muted">Entry candidates load after refresh.</p>
+                        ) : null}
+                        <div className="scout-conflict-actions">
                           <button
                             type="button"
-                            className="app-button secondary"
+                            className="app-button"
+                            disabled={!selected}
                             onClick={() => void reviewConflict(id, "resolved")}
                           >
-                            Resolve &amp; update trust
+                            {selectedCandidate
+                              ? `${selectedCandidate.scoutName ?? "Scout"} was right`
+                              : "Pick a scout"}
                           </button>
                           <button
                             type="button"
@@ -542,7 +642,38 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
                             Dismiss
                           </button>
                         </div>
+                      </>
+                    ) : (
+                      <div className="scout-conflict-resolved">
+                        <p>
+                          {conflict.winningScoutName
+                            ? `${String(conflict.winningScoutName)} was right`
+                            : `Marked ${status}`}
+                        </p>
+                        <small className="app-muted">
+                          {conflict.reviewedByName
+                            ? `Reviewed by ${String(conflict.reviewedByName)}`
+                            : "Reviewed"}
+                          {conflict.reviewedAt
+                            ? ` · ${new Date(String(conflict.reviewedAt)).toLocaleString()}`
+                            : ""}
+                        </small>
                       </div>
+                    )}
+                    {audit.length ? (
+                      <details className="scout-conflict-audit">
+                        <summary>Audit trail ({audit.length})</summary>
+                        <ol>
+                          {audit.map((event) => (
+                            <li key={event.id}>
+                              <strong>{event.action}</strong>
+                              <span>
+                                {event.actorName} · {new Date(event.createdAt).toLocaleString()}
+                              </span>
+                            </li>
+                          ))}
+                        </ol>
+                      </details>
                     ) : null}
                   </li>
                 );
@@ -560,6 +691,22 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
               </div>
               <span className="app-badge">v{schema?.version ?? "—"}</span>
             </header>
+
+            <div className="scout-identity-lock" role="status">
+              <span className="eyebrow">Scout identity locked</span>
+              <strong>{data?.scoutIdentity?.displayName ?? "Signed-in member"}</strong>
+              <small className="app-muted">
+                Bound to membership userId
+                {data?.scoutIdentity?.userId ? ` · ${data.scoutIdentity.userId.slice(0, 8)}…` : ""}.
+                Free-text scout names are rejected.
+              </small>
+            </div>
+
+            {schemaBudget && schemaBudget.status !== "healthy" ? (
+              <p className={`scout-budget-banner ${schemaBudget.status}`} role="status">
+                {schemaBudget.message}
+              </p>
+            ) : null}
 
             {type === "match" ? (
               <FormRow
@@ -619,12 +766,14 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
               </div>
             ) : null}
 
-            {schema?.definition.fields.map((field) => (
+            {formFields.map((field) => (
               <Field
                 key={field.key}
                 field={field}
                 value={payload[field.key]}
                 flags={flagsByField.get(field.key) ?? []}
+                historyHint={fieldConfidenceHint(trustByField.get(field.key))}
+                disagreementRate={trustByField.get(field.key)?.disagreementRate ?? null}
                 onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))}
               />
             ))}
@@ -683,6 +832,31 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
           </Panel>
 
           <aside className="scout-side">
+            <Panel className="scout-activity" style={{ minHeight: "auto" }}>
+              <h2 style={{ marginTop: 0 }}>Accuracy leaderboard</h2>
+              <p className="app-muted">
+                Ranked by TBA-checked accuracy, not form volume. Full board lives under Trust &amp; coverage.
+              </p>
+              {trust?.leaderboard?.length ? (
+                <ol className="scout-accuracy-mini">
+                  {trust.leaderboard.slice(0, 5).map((scout, index) => (
+                    <li key={scout.userId}>
+                      <span className="scout-accuracy-rank">{index + 1}</span>
+                      <div>
+                        <strong>{scout.name}</strong>
+                        <small className="app-muted">
+                          {scout.checks} TBA checks · {scout.entries} entries
+                        </small>
+                      </div>
+                      <b>{scout.accuracy == null ? "—" : `${Math.round(scout.accuracy * 100)}%`}</b>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="app-muted">Accuracy ranks appear after TBA score breakdowns validate entries.</p>
+              )}
+            </Panel>
+
             <Panel className="scout-activity" style={{ minHeight: "auto" }}>
               <h2 style={{ marginTop: 0 }}>Recent entries</h2>
               <p className="app-muted">
@@ -761,17 +935,30 @@ function Field({
   field,
   value,
   flags,
+  historyHint,
+  disagreementRate,
   onChange,
 }: {
   field: SchemaDefinition["fields"][number];
   value: unknown;
   flags: OfficialFlag[];
+  historyHint: string | null;
+  disagreementRate: number | null;
   onChange(value: unknown): void;
 }) {
   const conflict = flags.find((flag) => flag.status === "conflict");
   const soft = flags.find((flag) => flag.soft);
-  const hint = conflict?.detail ?? soft?.detail;
-  const tone = conflict ? "conflict" : soft ? "soft" : flags.some((flag) => flag.status === "match") ? "match" : undefined;
+  const liveHint = conflict?.detail ?? soft?.detail;
+  const historyWarn = (disagreementRate ?? 0) >= 0.18;
+  const tone = conflict
+    ? "conflict"
+    : soft
+      ? "soft"
+      : flags.some((flag) => flag.status === "match")
+        ? "match"
+        : historyWarn
+          ? "history-warn"
+          : undefined;
   const body = (() => {
     if (field.type === "boolean") {
       return (
@@ -809,9 +996,14 @@ function Field({
   return (
     <div className={`scout-field-wrap${tone ? ` is-${tone}` : ""}`}>
       {body}
-      {hint ? (
+      {liveHint ? (
         <p className={`scout-field-flag ${tone ?? ""}`} role="status">
-          {hint}
+          {liveHint}
+        </p>
+      ) : null}
+      {historyHint ? (
+        <p className={`scout-field-trust ${historyWarn ? "warn" : "ok"}`} role="status">
+          {historyHint}
         </p>
       ) : null}
     </div>

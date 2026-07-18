@@ -330,8 +330,8 @@ export async function POST(request: Request) {
 
       if (action === "create") {
         const input = parseCreateOnePager(body, seasonYear);
-        const seed = await loadSeed(client, org.orgId, input.seasonYear);
-        const whoWeAre = input.whoWeAre || seed.mission || "";
+        const seed = await loadSeed(client, org, input.seasonYear);
+        const whoWeAre = input.whoWeAre || seed.seedWhoWeAre || "";
         await client.query(
           `INSERT INTO sponsorship_value_props(
              org_id, season_year, title, who_we_are, what_we_do,
@@ -347,7 +347,7 @@ export async function POST(request: Request) {
             input.seasonYear,
             input.title || defaultTitle(org.teamNumber, input.seasonYear),
             whoWeAre,
-            input.whatWeDo || seed.fundingNeed || "",
+            input.whatWeDo || seed.seedFundingNeed || "",
             input.askCashUsd,
             input.askParts,
             input.askMentorship,
