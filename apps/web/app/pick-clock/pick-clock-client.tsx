@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { EmptyState, PageHeader } from "../../components/ui";
+import {
+  strategySetupNextActions,
+} from "../../lib/strategy/competition-related";
 import {
   clockRemaining,
   clockUrgency,
@@ -117,22 +121,40 @@ export default function PickClockClient() {
   }
 
   if (view.status === "setup_required") {
+    const nextActions = strategySetupNextActions({
+      orgId: view.orgId,
+      eventKey: view.eventKey,
+      hasMetrics: false,
+    });
     return (
       <main className="app-shell-page pck-page">
         <PageHeader
           navPath="/pick-clock"
           title="Pick Clock"
-          description="Next best pick + why — built for the 45-second alliance selection timer."
+          description="Next best pick + why — built for the 45-second alliance selection timer. Never invents EPA."
         />
-        <EmptyState title="Setup needed" description={view.message} badge="Setup" badgeTone="setup">
-          <div className="pck-setup-links">
-            <Link className="app-button" href="/strategy">
-              Open Strategy
-            </Link>
-            <Link className="app-button secondary" href="/workspace">
-              Workspace
-            </Link>
-          </div>
+        <EmptyState
+          title="Setup needed"
+          description={view.message}
+          badge="Setup"
+          badgeTone="setup"
+        >
+          <ol className="strategy-setup-steps pck-setup-steps">
+            {nextActions.slice(0, 5).map((action) => (
+              <li key={action.id}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a href={action.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+          <CompetitionHubRelated
+            orgId={view.orgId}
+            active="pick-clock"
+            include={["strategy", "scouting", "forms", "match-checklist", "draft", "chemistry"]}
+          />
         </EmptyState>
       </main>
     );
@@ -143,6 +165,12 @@ export default function PickClockClient() {
     : [];
   const active = queue[Math.min(skipOffset, Math.max(0, queue.length - 1))] ?? null;
   const orgQs = `?orgId=${encodeURIComponent(view.orgId)}`;
+  const nextActions = strategySetupNextActions({
+    orgId: view.orgId,
+    eventKey: view.eventKey,
+    tbaConfigured: true,
+    hasMetrics: true,
+  }).filter((action) => ["scouting", "forms", "checklist", "coverage"].includes(action.id));
 
   return (
     <main className="app-shell-page pck-page">
@@ -159,7 +187,7 @@ export default function PickClockClient() {
           <button type="button" className="app-button secondary" onClick={() => void load()}>
             Refresh
           </button>
-          <Link className="app-button secondary" href={`/strategy${orgQs}`}>
+          <Link className="app-button secondary" href={`/strategy?tab=picks&orgId=${encodeURIComponent(view.orgId)}`}>
             Pick desk
           </Link>
           <Link className="app-button secondary" href={`/strategy/draft${orgQs}`}>
@@ -167,6 +195,12 @@ export default function PickClockClient() {
           </Link>
         </div>
       </PageHeader>
+
+      <CompetitionHubRelated
+        orgId={view.orgId}
+        active="pick-clock"
+        include={["strategy", "scouting", "forms", "match-checklist", "chemistry", "draft", "coverage"]}
+      />
 
       {view.pickMode === "low_data_tba" ? (
         <p className="pck-mode-banner" role="status">
@@ -204,13 +238,18 @@ export default function PickClockClient() {
           description={
             view.excludedCount
               ? `${view.excludedCount} already taken on the draft board. Clear slots or refresh after updates.`
-              : "Load event metrics or build a pick list on Strategy first."
+              : "Load event metrics or build a pick list on Strategy first — no invented rankings."
           }
           badge="Empty"
         >
-          <Link className="app-button" href={`/strategy/draft${orgQs}`}>
-            Draft board
-          </Link>
+          <div className="pck-setup-links">
+            <Link className="app-button" href={`/strategy?tab=picks&orgId=${encodeURIComponent(view.orgId)}`}>
+              Pick desk
+            </Link>
+            <Link className="app-button secondary" href={`/strategy/draft${orgQs}`}>
+              Draft board
+            </Link>
+          </div>
         </EmptyState>
       ) : (
         <section className="pck-hero soft-panel" aria-label="Next best pick">
@@ -218,6 +257,9 @@ export default function PickClockClient() {
             Next pick
             {view.pickListName ? ` · ${view.pickListName}` : ""}
             {view.availableCount ? ` · ${view.availableCount} available` : ""}
+            {view.scoutedTeams != null && view.teamCount
+              ? ` · ${view.scoutedTeams}/${view.teamCount} scouted`
+              : ""}
           </p>
           <h2 className="pck-team-number">{teamDisplay(active)}</h2>
           {active.nickname ? <p className="pck-nickname">{active.nickname}</p> : null}
@@ -244,6 +286,9 @@ export default function PickClockClient() {
             >
               Dossier
             </Link>
+            <Link className="app-button secondary" href={`/chemistry${orgQs}&teams=${encodeURIComponent(teamDisplay(active))}`}>
+              Chemistry
+            </Link>
           </div>
         </section>
       )}
@@ -268,6 +313,26 @@ export default function PickClockClient() {
           </ul>
         </section>
       ) : null}
+
+      <section className="pck-next-actions soft-panel" aria-label="Deepen pick explainability">
+        <h3>Next actions</h3>
+        <p className="app-muted">
+          Strengthen “why” lines with real scout depth — never DEMO metrics.
+        </p>
+        <ul className="pck-next-list">
+          {nextActions.map((action) => (
+            <li key={action.id}>
+              <div>
+                <strong>{action.label}</strong>
+                <span>{action.detail}</span>
+              </div>
+              <a className="app-button secondary" href={action.href}>
+                Open
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {view.sources.length ? (
         <p className="pck-sources app-muted">
