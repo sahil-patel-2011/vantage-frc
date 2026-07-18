@@ -1,0 +1,17 @@
+.product-hub-tabs { margin: 0 0 16px; }
+.product-hub-panel > main.module-page,
+.product-hub-panel > main.intel-app,
+.product-hub-panel > main.workspace-page,
+.product-hub-panel > main { display: contents; }
+.product-hub-panel > main .app-page-header,
+.product-hub-panel > main .intel-header,
+.product-hub-panel .app-page-header { display: none; }
+.product-hub-panel .team-ops-nav { display: none; }
+.product-hub-setup { display: grid; gap: 12px; justify-items: start; padding: 20px; }
+.product-hub-setup h2 { margin: 0; font-size: 1.25rem; }
+.product-hub-finance { display: grid; gap: 14px; max-width: 52rem; }
+.product-hub-finance .state-control {
+  display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px;
+  border: 1px solid var(--soft-line); border-radius: var(--soft-radius-sm); background: var(--soft-card);
+}
+.product-hub-finance .state-control small { display: block; margin-top: 4px; color: var(--soft-muted); }
