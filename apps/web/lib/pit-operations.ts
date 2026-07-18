@@ -1,7 +1,9 @@
+import { classifyMatchReady, type PitBatteryStatus } from "./battery-reliability";
+
 export const PIT_SEVERITIES = ["minor", "degraded", "disabled", "safety"] as const;
 export const BATTERY_STATUSES = ["active", "service", "retired"] as const;
 type Severity = (typeof PIT_SEVERITIES)[number];
-type BatteryStatus = (typeof BATTERY_STATUSES)[number];
+type BatteryStatus = PitBatteryStatus;
 
 export type PitAction =
   | { action: "report_issue"; orgId: string; subsystem: string; severity: Severity; symptoms: string; matchKey: string | null }
@@ -66,10 +68,9 @@ export function parsePitAction(input: unknown): PitAction {
   throw new Error("Unsupported pit action");
 }
 
+/** @deprecated Prefer classifyMatchReady from battery-reliability; kept for pit tests/call sites. */
 export function classifyBattery(input: { status: string; voltage: number | null; resistanceMilliohms: number | null; measuredAt?: string | null; now?: number }) {
-  if (input.status !== "active" || (input.voltage == null && input.resistanceMilliohms == null)) return "unread" as const;
-  if (input.measuredAt && (input.now ?? Date.now()) - new Date(input.measuredAt).getTime() > 18 * 60 * 60 * 1_000) return "review" as const;
-  return (input.voltage == null || input.voltage >= 12.5) && (input.resistanceMilliohms == null || input.resistanceMilliohms <= 25) ? "ready" as const : "review" as const;
+  return classifyMatchReady(input);
 }
 
 export function computeReleaseGate(input: { safetyIssues: number; disabledIssues: number; overdueMaintenance: number; readyBatteries: number; activeBatteries: number }) {

@@ -124,6 +124,54 @@ export function monthsBetween(fromIso: string | null, now: Date): number | null 
   return Math.max(0, months);
 }
 
+/** Pit / event-day go window: reading age, resting voltage, and IR gates. */
+export const READINESS_MAX_AGE_MS = 18 * 60 * 60 * 1_000;
+export const READINESS_MIN_VOLTAGE = 12.5;
+export const READINESS_MAX_RESISTANCE_MOHM = 25;
+
+/**
+ * Competition readiness for a single pack — same gates Pit Command uses so
+ * `/batteries` and `/pit` never disagree about "event ready".
+ */
+export function competitionReadiness(input: {
+  status: BatteryStatus;
+  health: BatteryHealth;
+  lastMeasuredAt: string | null;
+  lastRestingVoltage: number | null;
+  lastInternalResistanceMohm: number | null;
+  now?: Date;
+}): { ready: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+  const nowMs = (input.now ?? new Date()).getTime();
+
+  if (input.status !== "active") {
+    reasons.push(input.status === "quarantine" ? "Pack is quarantined" : "Pack is retired");
+  }
+  if (input.health.status === "retire") reasons.push("Health grade says retire");
+  else if (input.health.status === "aging") reasons.push("Health grade is aging");
+
+  if (input.lastRestingVoltage == null && input.lastInternalResistanceMohm == null) {
+    reasons.push("No voltage or resistance reading yet");
+  } else {
+    if (input.lastMeasuredAt) {
+      const age = nowMs - new Date(input.lastMeasuredAt).getTime();
+      if (Number.isFinite(age) && age > READINESS_MAX_AGE_MS) {
+        reasons.push("Last reading is older than 18 hours");
+      }
+    } else {
+      reasons.push("Last reading time is unknown");
+    }
+    if (input.lastRestingVoltage != null && input.lastRestingVoltage < READINESS_MIN_VOLTAGE) {
+      reasons.push(`Resting voltage ${input.lastRestingVoltage} V is below ${READINESS_MIN_VOLTAGE} V`);
+    }
+    if (input.lastInternalResistanceMohm != null && input.lastInternalResistanceMohm > READINESS_MAX_RESISTANCE_MOHM) {
+      reasons.push(`Internal resistance ${input.lastInternalResistanceMohm} mΩ is above ${READINESS_MAX_RESISTANCE_MOHM} mΩ`);
+    }
+  }
+
+  return { ready: reasons.length === 0, reasons };
+}
+
 /**
  * Ranks active packs for the next match: healthiest first, and among equals the
  * one used longest ago, so the fleet wears evenly. Non-active packs drop out.
@@ -142,8 +190,9 @@ export function rankForRotation<T extends { status: BatteryStatus; health: Batte
 // ---- request validation -------------------------------------------------
 
 export type BatteryAction =
-  | { action: "create_pack"; orgId: string; label: string; brand: string | null; nominalAh: number | null; purchaseDate: string | null; notes: string; initialResistanceMohm: number | null; initialVoltage: number | null }
-  | { action: "update_pack"; orgId: string; id: string; patch: { label?: string; brand?: string | null; nominalAh?: number | null; purchaseDate?: string | null; notes?: string } }
+  | { action: "create_pack"; orgId: string; label: string; brand: string | null; nominalAh: number | null; purchaseDate: string | null; assignment: string; notes: string; initialResistanceMohm: number | null; initialVoltage: number | null }
+  | { action: "update_pack"; orgId: string; id: string; patch: { label?: string; brand?: string | null; nominalAh?: number | null; purchaseDate?: string | null; assignment?: string; notes?: string } }
+  | { action: "assign_pack"; orgId: string; id: string; assignment: string }
   | { action: "set_status"; orgId: string; id: string; status: BatteryStatus; note: string }
   | { action: "delete_pack"; orgId: string; id: string }
   | { action: "log_event"; orgId: string; batteryId: string; kind: BatteryLogKind; restingVoltage: number | null; internalResistanceMohm: number | null; matchKey: string | null; note: string };
@@ -185,20 +234,24 @@ export function parseBatteryAction(raw: unknown): BatteryAction {
         brand: optStr(body.brand) || null,
         nominalAh: optNum(body.nominalAh, "nominalAh"),
         purchaseDate: nullableDate(body.purchaseDate),
+        assignment: optStr(body.assignment),
         notes: optStr(body.notes),
         initialResistanceMohm: optNum(body.initialResistanceMohm, "initialResistanceMohm"),
         initialVoltage: optNum(body.initialVoltage, "initialVoltage"),
       };
     case "update_pack": {
-      const patch: { label?: string; brand?: string | null; nominalAh?: number | null; purchaseDate?: string | null; notes?: string } = {};
+      const patch: { label?: string; brand?: string | null; nominalAh?: number | null; purchaseDate?: string | null; assignment?: string; notes?: string } = {};
       if (body.label !== undefined) patch.label = reqStr(body.label, "label");
       if (body.brand !== undefined) patch.brand = optStr(body.brand) || null;
       if (body.nominalAh !== undefined) patch.nominalAh = optNum(body.nominalAh, "nominalAh");
       if (body.purchaseDate !== undefined) patch.purchaseDate = nullableDate(body.purchaseDate);
+      if (body.assignment !== undefined) patch.assignment = optStr(body.assignment);
       if (body.notes !== undefined) patch.notes = optStr(body.notes);
       if (Object.keys(patch).length === 0) throw new Error("No changes provided");
       return { action, orgId, id: reqStr(body.id, "id"), patch };
     }
+    case "assign_pack":
+      return { action, orgId, id: reqStr(body.id, "id"), assignment: optStr(body.assignment) };
     case "set_status": {
       const status = reqStr(body.status, "status");
       if (!BATTERY_STATUSES.includes(status as BatteryStatus)) throw new Error("Invalid status");
