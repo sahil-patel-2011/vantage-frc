@@ -13,14 +13,14 @@ export function isDatabaseConfigured() {
   return Boolean(process.env.DATABASE_AUTH_URL || process.env.DATABASE_URL || process.env.DATABASE_ADMIN_URL);
 }
 
-export function isEmailProviderConfigured() {
-  if (process.env.NODE_ENV !== "production") return true;
-  return Boolean(process.env.RESEND_API_KEY && process.env.AUTH_EMAIL_FROM);
-}
-
 /** Avoid Next.js build-time inlining of `process.env.NAME` so Sensitive Vercel secrets remain runtime-readable. */
 export function runtimeEnv(name: string) {
   return process.env[name]?.trim() || "";
+}
+
+export function isEmailProviderConfigured() {
+  if (process.env.NODE_ENV !== "production") return true;
+  return Boolean(runtimeEnv("RESEND_API_KEY") && runtimeEnv("AUTH_EMAIL_FROM"));
 }
 
 export function isGoogleAuthConfigured() {
@@ -101,7 +101,7 @@ export function getAuthCapabilities(): AuthCapabilityReport {
   const passwordSignInAvailable = databaseConfigured;
   const ownerEmail = configuredPlatformOwnerEmail();
   const google = getGoogleAuthEnvDiagnostics();
-  const bypass = process.env.ENABLE_EMAIL_2FA_BYPASS?.trim() === "true";
+  const bypass = runtimeEnv("ENABLE_EMAIL_2FA_BYPASS") === "true";
   const email2faEnforced = emailOtpAvailable && !bypass;
   return {
     waitlistOnly: true,
