@@ -344,7 +344,12 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   }
 
   function navItemBadge(itemHref: string) {
-    if (itemHref === "/messages" && unreadMessages >= 1) {
+    const path = itemHref.split("?")[0] || itemHref;
+    const isMessages =
+      itemHref === "/messages" ||
+      itemHref.startsWith("/messages?") ||
+      (path === "/team" && itemHref.includes("tab=messages"));
+    if (isMessages && unreadMessages >= 1) {
       return <b className="soft-nav-badge">{unreadMessages > 99 ? "99+" : unreadMessages}</b>;
     }
     if (itemHref === "/notifications" && unreadCount >= 1) {
@@ -432,7 +437,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                   Inbox
                   {unreadCount >= 1 ? <b>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
                 </a>
-                <a role="menuitem" href={withOrgHref("/messages", orgId)} onClick={() => setAccountMenuOpen(false)}>
+                <a role="menuitem" href={withOrgHref("/team?tab=messages", orgId)} onClick={() => setAccountMenuOpen(false)}>
                   Team messages
                   {unreadMessages >= 1 ? <b>{unreadMessages > 99 ? "99+" : unreadMessages}</b> : null}
                 </a>
@@ -440,7 +445,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                   Security
                 </a>
                 {orgId ? (
-                  <a role="menuitem" href={withOrgHref("/team", orgId)} onClick={() => setAccountMenuOpen(false)}>
+                  <a role="menuitem" href={withOrgHref("/team/admin", orgId)} onClick={() => setAccountMenuOpen(false)}>
                     API keys &amp; team admin
                   </a>
                 ) : null}
@@ -658,7 +663,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
               <Icon name={link.icon} />
               {link.label}
-              {link.href === "/messages" && unreadMessages >= 1 ? (
+              {link.href.includes("tab=messages") && unreadMessages >= 1 ? (
                 <b>{unreadMessages > 99 ? "99+" : unreadMessages}</b>
               ) : null}
             </a>

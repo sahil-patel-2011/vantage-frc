@@ -86,7 +86,7 @@ export async function recordPickListInfluence(
         eventKey: input.eventKey,
         pickListId: input.pickListId,
         teamKey: attribution.teamKey,
-        href: `/scouting?orgId=${encodeURIComponent(input.orgId)}&tab=trust`,
+        href: `/competition?tab=scouting&orgId=${encodeURIComponent(input.orgId)}&scoutTab=trust`,
         message: attribution.reason,
       },
     });

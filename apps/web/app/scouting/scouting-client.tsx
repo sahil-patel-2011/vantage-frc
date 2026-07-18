@@ -201,18 +201,25 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   useEffect(() => {
     const deepMatch = searchParams.get("matchKey");
     const deepTeam = searchParams.get("teamKey");
-    const deepTab = searchParams.get("tab");
+    // Hub owns `tab=` (e.g. competition?tab=scouting). Prefer scoutTab; accept legacy
+    // tab=trust|conflicts|… including duplicate tab keys after redirects.
+    const scoutTabCandidates = [
+      searchParams.get("scoutTab"),
+      ...searchParams.getAll("tab"),
+    ];
+    const deepTab = scoutTabCandidates.find(
+      (value): value is ScoutTab | "impact" =>
+        value === "match" ||
+        value === "pit" ||
+        value === "conflicts" ||
+        value === "handoff" ||
+        value === "trust" ||
+        value === "impact",
+    );
     if (deepMatch) setMatchKey(deepMatch);
     if (deepTeam) setTeamKey(deepTeam);
     if (searchParams.get("handoff") || searchParams.get("code")) setTab("handoff");
-    else if (
-      deepTab === "match" ||
-      deepTab === "pit" ||
-      deepTab === "conflicts" ||
-      deepTab === "handoff" ||
-      deepTab === "trust" ||
-      deepTab === "impact"
-    ) {
+    else if (deepTab) {
       setTab(deepTab === "impact" ? "trust" : deepTab);
     }
   }, [searchParams]);

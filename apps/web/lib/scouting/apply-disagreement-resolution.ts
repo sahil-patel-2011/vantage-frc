@@ -217,7 +217,7 @@ export async function applyDisagreementResolution(
         winningScoutUserId,
         winningScoutName,
         trustAdjustments: adjustments.length,
-        href: `/scouting?orgId=${encodeURIComponent(input.orgId)}&tab=conflicts`,
+        href: `/competition?tab=scouting&orgId=${encodeURIComponent(input.orgId)}&scoutTab=conflicts`,
       },
     });
     coordinatorsNotified += 1;

@@ -64,9 +64,9 @@ export function objectAppHref(orgId: string, objectType: DiscordObjectType, obje
     case "risk":
       return withOrgQuery("/risks", orgId, { riskId: objectId });
     case "knowledge":
-      return withOrgQuery("/team/knowledge", orgId, { revisionId: objectId });
+      return withOrgQuery("/team", orgId, { tab: "knowledge", pageId: objectId });
     default:
-      return withOrgQuery("/messages", orgId);
+      return withOrgQuery("/team", orgId, { tab: "messages" });
   }
 }
 
@@ -79,11 +79,12 @@ export function discussInMessagesHref(
 ): string {
   const params = new URLSearchParams({
     orgId,
+    tab: "messages",
     linkType: objectType,
     linkId: objectId,
     linkLabel: label,
   });
-  return `/messages?${params.toString()}`;
+  return `/team?${params.toString()}`;
 }
 
 export function parseObjectLinkInput(raw: unknown): MessageObjectLink | null {

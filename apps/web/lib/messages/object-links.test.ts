@@ -42,8 +42,12 @@ describe("normalizeObjectType and href helpers", () => {
     expect(objectAppHref(ORG, "event", "evt-1")).toContain("/team/calendar");
     expect(objectAppHref(ORG, "event", "evt-1")).toContain("eventId=evt-1");
     const discuss = discussInMessagesHref(ORG, "event", "evt-1", "Shop night");
+    expect(discuss).toContain("/team?");
+    expect(discuss).toContain("tab=messages");
     expect(discuss).toContain("linkType=event");
     expect(discuss).toContain("linkLabel=Shop");
+    expect(objectAppHref(ORG, "knowledge", "page-1")).toContain("tab=knowledge");
+    expect(objectAppHref(ORG, "knowledge", "page-1")).toContain("pageId=page-1");
   });
 
   it("parses composer prefill from search params", () => {
