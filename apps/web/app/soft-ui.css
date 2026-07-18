@@ -1911,6 +1911,16 @@ body.has-app-shell .strategy-demo-optin{
 .scout-workbench{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px}
 .scout-form-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
 .scout-form-heading h2{margin:0 0 4px}
+.scout-identity-lock,.sfb-identity-lock{
+  display:grid;gap:4px;margin:0 0 14px;padding:14px 16px;
+  border:1px solid color-mix(in srgb,var(--soft-accent) 28%,var(--soft-line));
+  border-radius:14px;background:color-mix(in srgb,var(--soft-accent-soft) 70%,var(--soft-card));
+}
+.scout-identity-lock .eyebrow,.sfb-identity-lock .eyebrow{
+  font:700 10px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.05em;text-transform:uppercase;color:var(--soft-accent);
+}
+.scout-identity-lock strong,.sfb-identity-lock strong{font-size:1.02rem;letter-spacing:-.01em;color:var(--soft-ink)}
+.scout-identity-lock small,.sfb-identity-lock small{display:block;line-height:1.4}
 .scout-form-panel .soft-form-row{margin:10px 0}
 .scout-form-panel input,.scout-form-panel select,.scout-form-panel textarea,
 .intel-lookup input,.dossier-search-row input,.chem-form input{
@@ -1922,6 +1932,11 @@ body.has-app-shell .strategy-demo-optin{
 .scout-voice small{display:block;margin-top:2px}
 .scout-media{display:grid;gap:6px;margin:12px 0;color:var(--soft-muted);font:600 12px var(--font-source-sans),ui-sans-serif}
 .scout-media input{padding:10px}
+.scout-robot-images{display:grid;gap:10px}
+.scout-robot-image-list{display:flex;flex-wrap:wrap;gap:10px;margin:0;padding:0;list-style:none}
+.scout-robot-image-list li{display:grid;gap:6px;justify-items:center;padding:8px;border:1px solid var(--soft-line);border-radius:14px;background:var(--soft-card)}
+.scout-robot-image-list img{width:72px;height:72px;object-fit:cover;border-radius:10px;background:var(--soft-bg)}
+.scout-robot-capture{margin:0}
 .scout-side{display:grid;gap:12px;align-content:start}
 .scout-entry-list,.scout-conflict-list,.intel-findings,.intel-similar,.intel-trajectory,.intel-h2h{margin:0;padding:0;list-style:none;display:grid;gap:10px}
 .scout-entry-list li,.intel-findings li{display:grid;gap:4px;padding-top:10px;border-top:1px solid var(--soft-line)}
