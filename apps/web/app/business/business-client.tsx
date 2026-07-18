@@ -240,6 +240,15 @@ export default function BusinessClient() {
           <a className="app-button secondary" href={`/team/sponsors${q}`}>
             Sponsors CRM
           </a>
+          <a className="app-button secondary" href={`/exports?orgId=${encodeURIComponent(live.orgId)}&domains=usage,wallet,membership`}>
+            Exports
+          </a>
+          <a className="app-button secondary" href={`/team/data${q}`}>
+            Data analytics
+          </a>
+          <a className="app-button secondary" href={`/team/usage${q}`}>
+            AI usage
+          </a>
         </nav>
       ) : null}
 
