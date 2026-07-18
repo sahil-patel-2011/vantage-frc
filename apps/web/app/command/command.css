@@ -1,0 +1,51 @@
+/* Event Day Command Soft-UI residual — empty/setup shells + related strip. */
+
+.edc-page.soft-gate {
+  display: grid;
+  gap: 14px;
+}
+
+.edc-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+
+.edc-empty {
+  display: grid;
+  gap: 12px;
+  padding: 18px 16px;
+}
+
+.edc-empty p {
+  margin: 0;
+  color: var(--soft-muted);
+  font: 400 15px/1.45 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.edc-shell-actions {
+  margin: 0;
+}
+
+.edc-freshness {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--soft-line);
+  background: color-mix(in srgb, var(--soft-card) 92%, #eef2f7);
+  color: var(--soft-muted);
+  font: 600 13px/1.35 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.edc-myday-links a,
+.edc-link {
+  color: var(--soft-accent);
+  font: 700 13px var(--font-source-sans), ui-sans-serif;
+  text-decoration: none;
+}
+
+.edc-myday-links a:hover,
+.edc-link:hover {
+  text-decoration: underline;
+}

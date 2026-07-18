@@ -1,14 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Icon } from "../../components/app-shell";
-import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
-import { PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { countdownLabel } from "../dashboard/widgets";
 import { eventDayNextActions } from "../../lib/command/event-day-actions";
+import {
+  EVENT_DAY_RELATED_INCLUDE,
+  classifyEventDayShell,
+  eventDayRelatedLinks,
+  eventDaySetupSteps,
+  eventDayShellCopy,
+  eventDayShellNextActions,
+  formatEventDayMatchCount,
+  type EventDayShellKind,
+  type EventDayShellNextAction,
+} from "../../lib/command/event-day-related";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { formatMyDayWhen } from "../../lib/my-day";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./command.css";
 
 type Me = {
   orgId?: string | null;
@@ -60,11 +73,172 @@ function AllianceChips({
   );
 }
 
+function EventDayRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = eventDayRelatedLinks(orgId, {
+    include: [...EVENT_DAY_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related edc-related" aria-label="Related live ops tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function EventDayNextActionsPanel({ actions }: { actions: EventDayShellNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <Panel className="edc-next-actions edc-shell-actions soft-panel">
+      <header>
+        <h2>Next actions</h2>
+        <p>My Day, Schedule, Strategy, and Scouting — never DEMO schedule.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
+
+function EventDayShell({
+  orgId,
+  shell,
+  hasActiveEvent,
+  error,
+  onRetry,
+  onSelectEvent,
+  canSetEvent,
+  children,
+}: {
+  orgId?: string | null;
+  shell: EventDayShellKind;
+  hasActiveEvent?: boolean;
+  error?: string;
+  onRetry?: () => void;
+  onSelectEvent?: () => void;
+  canSetEvent?: boolean;
+  children?: ReactNode;
+}) {
+  const actions = eventDayShellNextActions({
+    orgId,
+    shell,
+    hasActiveEvent,
+  });
+  const copy = eventDayShellCopy(shell);
+  const steps = shell === "setup" ? eventDaySetupSteps(orgId) : [];
+  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const teamDataHref = withOrgHref("/team/data", orgId);
+  const myDayHref = hubHref("/competition", "my-day", orgId);
+  const scheduleHref = withOrgHref("/schedule", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+
+  return (
+    <main className="edc-page soft-gate">
+      <PageHeader
+        breadcrumbs="Competition / Event Day"
+        title="Event Day Command"
+        description="Next match, scout gaps, and labeled model briefs from real TBA rows — never DEMO schedule."
+      >
+        <EventDayRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        className="edc-empty"
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? copy.badge
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <>
+            {canSetEvent && onSelectEvent ? (
+              <button type="button" className="app-button" onClick={onSelectEvent}>
+                Select event
+              </button>
+            ) : (
+              <a className="app-button" href={orgId ? teamDataHref : workspaceHref}>
+                {orgId ? "Sync Team Data" : "Select workspace"}
+              </a>
+            )}
+            <a className="app-button secondary" href={myDayHref}>
+              Open My Day
+            </a>
+            <a className="app-button secondary" href={scheduleHref}>
+              Open Schedule
+            </a>
+          </>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={scheduleHref}>
+              Open Schedule
+            </a>
+            <a className="app-button secondary" href={myDayHref}>
+              Open My Day
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+          </>
+        ) : null}
+        {shell === "setup" && steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </EmptyState>
+      {shell !== "loading" ? <EventDayNextActionsPanel actions={actions} /> : null}
+    </main>
+  );
+}
+
 export default function CommandClient() {
   const [me, setMe] = useState<Me>({});
   const [orgId, setOrgId] = useState("");
   const [snap, setSnap] = useState<CommandSnapshot | null>(null);
   const [error, setError] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [eventOpen, setEventOpen] = useState(false);
   const [eventQ, setEventQ] = useState("");
@@ -89,19 +263,28 @@ export default function CommandClient() {
     if (!id) {
       setLoading(false);
       setSnap(null);
+      setFetchFailed(false);
       return;
     }
-    const response = await fetch(`/api/command?orgId=${encodeURIComponent(id)}`);
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      setError(body.error ?? "Could not load Event Day Command");
+    try {
+      const response = await fetch(`/api/command?orgId=${encodeURIComponent(id)}`);
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setError(body.error ?? "Could not load Event Day Command");
+        setFetchFailed(true);
+        setLoading(false);
+        return;
+      }
+      const data = (await response.json()) as CommandSnapshot;
+      setSnap(data);
+      setError("");
+      setFetchFailed(false);
       setLoading(false);
-      return;
+    } catch {
+      setError("Could not load Event Day Command");
+      setFetchFailed(true);
+      setLoading(false);
     }
-    const data = (await response.json()) as CommandSnapshot;
-    setSnap(data);
-    setError("");
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -164,38 +347,143 @@ export default function CommandClient() {
   const next = snap?.matches[0] ?? null;
   const after = snap?.matches[1] ?? null;
   const countdown = useMemo(() => countdownLabel(next?.scheduledTime), [next?.scheduledTime, tick]);
-  const nextActions = useMemo(() => eventDayNextActions(snap, { orgId: orgId || null }), [snap, orgId]);
+  const liveActions = useMemo(() => eventDayNextActions(snap, { orgId: orgId || null }), [snap, orgId]);
+  const myDayHref = snap?.links.myDay ?? hubHref("/competition", "my-day", orgId || null);
+  const scheduleHref = snap?.links.schedule ?? withOrgHref("/schedule", orgId || null);
+  const strategyHref = snap?.links.strategy ?? hubHref("/competition", "strategy", orgId || null);
+  const scoutingHref = snap?.links.scouting ?? hubHref("/competition", "scouting", orgId || null);
+  const teamDataHref = snap?.links.teamData ?? withOrgHref("/team/data", orgId || null);
+  const matchChecklistHref =
+    snap?.links.matchChecklist ?? hubHref("/competition", "match-checklist", orgId || null);
+  const logisticsHref = snap?.links.logistics ?? withOrgHref("/logistics", orgId || null);
+  const pitHref = snap?.links.pit ?? withOrgHref("/pit", orgId || null);
+  const batteriesHref = snap?.links.batteries ?? withOrgHref("/batteries", orgId || null);
+  const intelHref = snap?.links.intel ?? withOrgHref("/intel", orgId || null);
+  const chemistryHref = snap?.links.chemistry ?? hubHref("/competition", "chemistry", orgId || null);
+
+  const eventPicker = eventOpen ? (
+    <div className="edc-modal" role="dialog" aria-modal="true" aria-labelledby="edc-event-title">
+      <div>
+        <header>
+          <h2 id="edc-event-title">Select active event</h2>
+          <button type="button" aria-label="Close" onClick={() => setEventOpen(false)}>
+            ×
+          </button>
+        </header>
+        <p className="edc-muted">
+          Only owners and admins can set the event. Lists come from the TBA reference cache — empty means sync
+          first. Never DEMO events.
+        </p>
+        <input
+          className="edc-search"
+          value={eventQ}
+          onChange={(e) => setEventQ(e.target.value)}
+          placeholder="Search event name, key, or city"
+          aria-label="Search events"
+        />
+        <ul className="edc-event-list">
+          {events.length ? (
+            events.map((event) => (
+              <li key={event.eventKey}>
+                <button type="button" disabled={eventBusy} onClick={() => void setActiveEvent(event.eventKey)}>
+                  <strong>{event.name}</strong>
+                  <span>
+                    {event.eventKey}
+                    {event.city ? ` · ${event.city}` : ""}
+                    {event.stateProv ? `, ${event.stateProv}` : ""}
+                  </span>
+                </button>
+              </li>
+            ))
+          ) : (
+            <li className="edc-empty-events">
+              No events in cache for this year.{" "}
+              <a href={teamDataHref}>Open Team → Data to sync TBA</a>
+            </li>
+          )}
+        </ul>
+        {snap?.eventKey ? (
+          <button
+            className="app-button secondary"
+            type="button"
+            disabled={eventBusy}
+            onClick={() => void setActiveEvent(null)}
+          >
+            Clear active event
+          </button>
+        ) : null}
+      </div>
+    </div>
+  ) : null;
+
+  if (loading && !snap && orgId) {
+    return <EventDayShell orgId={orgId || null} shell={classifyEventDayShell({ loading: true })} />;
+  }
 
   if (!orgId && !loading) {
     return (
-      <main className="edc-page">
-        <PageHeader
-          breadcrumbs="Competition / Event Day"
-          title="Select a team workspace"
-          description="Open Home to choose your organization, then return here for the field-side command center."
-        >
-          <a className="app-button" href="/dashboard">
-            Go to Home
-          </a>
-        </PageHeader>
-        <CompetitionHubRelated active="command" include={["my-day", "strategy", "scouting", "match-checklist"]} />
-        <section className="edc-next-actions soft-panel" aria-label="Next actions">
-          <h2>Next actions</h2>
-          <ol>
-            {nextActions.map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </main>
+      <>
+        <EventDayShell orgId={null} shell="setup" hasActiveEvent={false} />
+        {eventPicker}
+      </>
+    );
+  }
+
+  if ((fetchFailed || error) && !snap) {
+    return (
+      <>
+        <EventDayShell
+          orgId={orgId || null}
+          shell="error"
+          error={error || undefined}
+          onRetry={() => {
+            setLoading(true);
+            setFetchFailed(false);
+            void load(orgId);
+          }}
+        />
+        {eventPicker}
+      </>
+    );
+  }
+
+  const shell = classifyEventDayShell({
+    orgId: orgId || null,
+    status: snap?.status ?? null,
+    eventKey: snap?.eventKey ?? null,
+    matchCount: snap?.matches.length ?? 0,
+  });
+
+  if (shell === "setup") {
+    return (
+      <>
+        <EventDayShell
+          orgId={orgId || null}
+          shell="setup"
+          hasActiveEvent={Boolean(snap?.eventKey)}
+          error={snap?.status === "setup_required" ? snap.message : undefined}
+          canSetEvent={snap?.canSetEvent}
+          onSelectEvent={snap?.canSetEvent ? () => setEventOpen(true) : undefined}
+        />
+        {eventPicker}
+      </>
+    );
+  }
+
+  if (shell === "empty") {
+    return (
+      <>
+        <EventDayShell orgId={orgId || null} shell="empty" hasActiveEvent={Boolean(snap?.eventKey)}>
+          <p className="edc-freshness" role="status">
+            {snap?.eventName ?? snap?.eventKey ?? "Active event"}
+            {" · "}
+            {formatEventDayMatchCount(snap?.matches.length ?? 0, Boolean(snap))} upcoming matches
+            {" — never DEMO schedule"}
+          </p>
+          <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
+        </EventDayShell>
+        {eventPicker}
+      </>
     );
   }
 
@@ -210,7 +498,7 @@ export default function CommandClient() {
             {snap?.teamNumber ? ` · Team ${snap.teamNumber}` : ""}
             {snap?.eventKey ? ` · ${snap.eventKey}` : ""}
             {" — "}
-            Next match, scout gaps, and labeled model briefs. No demo data.
+            Next match, scout gaps, and labeled model briefs. Never DEMO schedule.
           </>
         }
       >
@@ -229,24 +517,20 @@ export default function CommandClient() {
         </div>
       </PageHeader>
 
+      <EventDayRelatedStrip orgId={orgId || null} />
+
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
       <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
 
-      <CompetitionHubRelated
-        orgId={orgId}
-        active="command"
-        include={["my-day", "strategy", "scouting", "match-checklist", "coverage"]}
-      />
-
-      {nextActions.length ? (
+      {liveActions.length ? (
         <section className="edc-next-actions soft-panel" aria-label="Next actions">
           <header>
             <h2>Next actions</h2>
-            <p>Clear field-side steps from real schedule, scout gaps, and setup — never invents metrics.</p>
+            <p>Clear field-side steps from real schedule, scout gaps, and setup — never invents DEMO metrics.</p>
           </header>
           <ol>
-            {nextActions.slice(0, 5).map((action) => (
+            {liveActions.slice(0, 5).map((action) => (
               <li key={action.id} className={action.primary ? "primary" : undefined}>
                 <div>
                   <strong>{action.label}</strong>
@@ -255,36 +539,6 @@ export default function CommandClient() {
                 <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
                   Open
                 </a>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
-
-      {snap?.status === "setup_required" || (!snap?.eventKey && snap) ? (
-        <section className="edc-setup dash-setup-banner" aria-label="Setup required">
-          <div>
-            <span className="edc-kicker">Setup</span>
-            <h2>{snap.message ?? "Finish setup to go live"}</h2>
-            <p>No demo data — Event Day Command only shows TBA-synced schedule, your scout coverage, and labeled model briefs.</p>
-          </div>
-          <ol className="dash-setup-steps">
-            {snap.setupSteps.map((step, index) => (
-              <li key={step.id} className={step.done ? "done" : index === snap.setupSteps.findIndex((s) => !s.done) ? "current" : ""}>
-                <b>{step.done ? "✓" : index + 1}</b>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                {step.id === "event" && snap.canSetEvent ? (
-                  <button type="button" onClick={() => setEventOpen(true)}>
-                    Select
-                  </button>
-                ) : step.done ? (
-                  <em>Done</em>
-                ) : (
-                  <a href={step.href}>Open</a>
-                )}
               </li>
             ))}
           </ol>
@@ -378,9 +632,10 @@ export default function CommandClient() {
                 </ul>
               ) : null}
               <footer className="edc-after edc-myday-links">
-                <a href={snap?.links.myDay ?? "/my-day"}>My Day</a>
-                <a href={snap?.links.matchChecklist ?? "/match-checklist"}>Checklist</a>
-                <a href={snap?.links.logistics ?? "/logistics"}>Logistics</a>
+                <a href={myDayHref}>My Day</a>
+                <a href={scheduleHref}>Schedule</a>
+                <a href={matchChecklistHref}>Checklist</a>
+                <a href={logisticsHref}>Logistics</a>
                 {after ? (
                   <span>
                     After · {after.compLevel.toUpperCase()} {after.matchNumber}
@@ -392,9 +647,9 @@ export default function CommandClient() {
           ) : (
             <div className="dash-empty">
               <strong>No upcoming match</strong>
-              <p>{snap?.message ?? "Sync TBA and select your event to load the queue."}</p>
-              <a className="dash-empty-cta" href={snap?.links.teamData ?? "/team/data"}>
-                Open TBA sync
+              <p>{snap?.message ?? "Sync TBA and select your event to load the queue — never DEMO times."}</p>
+              <a className="dash-empty-cta" href={scheduleHref}>
+                Open Schedule
               </a>
             </div>
           )}
@@ -438,8 +693,8 @@ export default function CommandClient() {
                   ? "Upcoming alliance partners and opponents already have coverage, or no matches are queued."
                   : "Select an event to build the scout queue from schedule gaps."}
               </p>
-              <a className="dash-empty-cta" href={snap?.links.scouting ?? "/scouting"}>
-                Open scouting
+              <a className="dash-empty-cta" href={scoutingHref}>
+                Open Scouting
               </a>
             </div>
           )}
@@ -482,16 +737,16 @@ export default function CommandClient() {
                 ))}
               </ul>
               {snap.prediction.caveats[0] ? <p className="edc-caveat">{snap.prediction.caveats[0]}</p> : null}
-              <a className="edc-link" href={snap.links.strategy}>
+              <a className="edc-link" href={strategyHref}>
                 Open full strategy →
               </a>
             </>
           ) : (
             <div className="dash-empty calm">
               <strong>No prediction yet</strong>
-              <p>Needs an upcoming match plus TBA/Statbotics metrics. Never shown as a TBA fact.</p>
-              <a className="dash-empty-cta" href={snap?.links.strategy ?? "/strategy"}>
-                Open strategy
+              <p>Needs an upcoming match plus TBA/Statbotics metrics. Never shown as a TBA fact or DEMO win rate.</p>
+              <a className="dash-empty-cta" href={strategyHref}>
+                Open Strategy
               </a>
             </div>
           )}
@@ -539,17 +794,20 @@ export default function CommandClient() {
               {snap.coverage.coordinatorNudge?.message ? (
                 <p className="edc-muted">{snap.coverage.coordinatorNudge.message}</p>
               ) : null}
-              <a
-                className="edc-link"
-                href={orgId ? `/scouting?orgId=${encodeURIComponent(orgId)}` : "/scouting"}
-              >
-                Open scouting →
+              <a className="edc-link" href={scoutingHref}>
+                Open Scouting →
               </a>
             </>
           ) : (
             <div className="dash-empty calm">
               <strong>No live match rows yet</strong>
-              <p>When TBA puts your next matches on the board, uncovered vs double-scouted robots appear here in real time.</p>
+              <p>
+                When TBA puts your next matches on the board, uncovered vs double-scouted robots appear here — never
+                DEMO coverage zeros.
+              </p>
+              <a className="dash-empty-cta" href={scoutingHref}>
+                Open Scouting
+              </a>
             </div>
           )}
         </article>
@@ -671,100 +929,61 @@ export default function CommandClient() {
           ) : (
             <div className="dash-empty calm">
               <strong>No event metrics yet</strong>
-              <p>Rank and EPA appear after TBA/Statbotics sync for your team at this event.</p>
+              <p>Rank and EPA appear after TBA/Statbotics sync for your team at this event — never DEMO stats.</p>
             </div>
           )}
         </article>
       </section>
 
       <nav className="edc-actions" aria-label="Primary competition links">
-        <a href={snap?.links.strategy ?? "/strategy"}>
+        <a href={myDayHref}>
+          <Icon name="calendar" />
+          <strong>My Day</strong>
+          <span>Personal next match</span>
+        </a>
+        <a href={scheduleHref}>
+          <Icon name="calendar" />
+          <strong>Schedule</strong>
+          <span>Full event board</span>
+        </a>
+        <a href={strategyHref}>
           <Icon name="bolt" />
           <strong>Strategy</strong>
           <span>Playbook & prediction</span>
         </a>
-        <a href={snap?.links.scouting ?? "/scouting"}>
+        <a href={scoutingHref}>
           <Icon name="clipboard" />
           <strong>Scouting</strong>
           <span>Match & pit forms</span>
         </a>
-        <a href={snap?.links.pit ?? (orgId ? `/pit?orgId=${encodeURIComponent(orgId)}` : "/pit")}>
+        <a href={pitHref}>
           <Icon name="cube" />
           <strong>Pit</strong>
           <span>Release gate & batteries</span>
         </a>
-        <a href={snap?.links.batteries ?? (orgId ? `/batteries?orgId=${encodeURIComponent(orgId)}` : "/batteries")}>
+        <a href={batteriesHref}>
           <Icon name="bolt" />
           <strong>Batteries</strong>
           <span>Fleet readiness</span>
         </a>
-        <a href={snap?.links.logistics ?? (orgId ? `/logistics?orgId=${encodeURIComponent(orgId)}` : "/logistics")}>
+        <a href={logisticsHref}>
           <Icon name="pin" />
           <strong>Logistics</strong>
           <span>Hotel & travel</span>
         </a>
-        <a href={snap?.links.intel ?? "/intel"}>
+        <a href={intelHref}>
           <Icon name="stats" />
           <strong>Intel</strong>
           <span>Team lookup</span>
         </a>
-        <a href={snap?.links.chemistry ?? (orgId ? `/chemistry?orgId=${encodeURIComponent(orgId)}` : "/chemistry")}>
+        <a href={chemistryHref}>
           <Icon name="users" />
           <strong>Chemistry</strong>
           <span>Alliance fit</span>
         </a>
       </nav>
 
-      {eventOpen ? (
-        <div className="edc-modal" role="dialog" aria-modal="true" aria-labelledby="edc-event-title">
-          <div>
-            <header>
-              <h2 id="edc-event-title">Select active event</h2>
-              <button type="button" aria-label="Close" onClick={() => setEventOpen(false)}>
-                ×
-              </button>
-            </header>
-            <p className="edc-muted">Only owners and admins can set the event. Lists come from the TBA reference cache — empty means sync first.</p>
-            <input
-              className="edc-search"
-              value={eventQ}
-              onChange={(e) => setEventQ(e.target.value)}
-              placeholder="Search event name, key, or city"
-              aria-label="Search events"
-            />
-            <ul className="edc-event-list">
-              {events.length ? (
-                events.map((event) => (
-                  <li key={event.eventKey}>
-                    <button type="button" disabled={eventBusy} onClick={() => void setActiveEvent(event.eventKey)}>
-                      <strong>{event.name}</strong>
-                      <span>
-                        {event.eventKey}
-                        {event.city ? ` · ${event.city}` : ""}
-                        {event.stateProv ? `, ${event.stateProv}` : ""}
-                      </span>
-                    </button>
-                  </li>
-                ))
-              ) : (
-                <li className="edc-empty-events">
-                  No events in cache for this year.{" "}
-                  <a href={snap?.links.teamData ?? withOrgFallback(orgId)}>Open Team → Data to sync TBA</a>
-                </li>
-              )}
-            </ul>
-            {snap?.eventKey ? (
-              <button className="app-button secondary" type="button" disabled={eventBusy} onClick={() => void setActiveEvent(null)}>
-                Clear active event
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+      {eventPicker}
     </main>
   );
-}
-
-function withOrgFallback(orgId: string) {
-  return orgId ? `/team/data?orgId=${encodeURIComponent(orgId)}` : "/team/data";
 }

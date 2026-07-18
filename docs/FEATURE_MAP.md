@@ -3,6 +3,7 @@
 | Hub | Route | Tabs |
 |---|---|---|
 | Competition | `/competition` | Command · My Day · Strategy · Scouting · Form builder · Match checklist · Pick clock · Chemistry (+ More tools) |
+| Event Day Soft-UI | `/command` (also `/competition?tab=command`) | Field-side command; empty/setup + next actions; cross-links to My Day / Schedule / Strategy / Scouting — never DEMO schedule |
 | My Day Soft-UI | `/my-day` (also `/competition?tab=my-day`) | Live ops / now-next match; empty/setup + next actions; cross-links to Event Day / Schedule / Strategy — never DEMO matches |
 | Strategy Soft-UI | `/strategy`, `/strategy/draft`, `/pick-clock`, `/chemistry` | Pick desk / draft board / explainability + coverage links to Scouting, Form builder, Match checklist; empty/setup never invents DEMO metrics |
 | Scouting forms | `/scouting/forms` (also `/competition?tab=forms`) | Soft-UI custom form builder (MC / short / free / dropdown / drivetrain / robot image) → `POST /api/scouting/schemas` |
