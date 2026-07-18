@@ -1,7 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import {
+  UsageCutoffBanner,
+  resolveCutoffErrorCode,
+} from "../../components/usage-cutoff-banner";
 import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import {
+  INTEL_RELATED_INCLUDE,
+  classifyIntelShell,
+  intelNextActions,
+  intelRelatedLinks,
+  intelSetupSteps,
+  intelShellCopy,
+  type IntelNextAction,
+  type IntelShellKind,
+} from "../../lib/intel/intel-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./intel.css";
 
 type SearchTeam = {
   teamKey: string;
@@ -61,6 +78,158 @@ function fmt(value: number | null | undefined, digits = 1) {
   return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "—";
 }
 
+function IntelRelatedStrip({
+  orgId,
+  teamNumber,
+}: {
+  orgId?: string | null;
+  teamNumber?: number | null;
+}) {
+  const links = intelRelatedLinks(orgId, {
+    include: [...INTEL_RELATED_INCLUDE],
+    teamNumber,
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related intel-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function IntelNextActionsPanel({ actions }: { actions: IntelNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions intel-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy, Dossier, and Scouting — never DEMO research.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function IntelShell({
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  orgId?: string | null;
+  shell: IntelShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = intelNextActions({ orgId, shell });
+  const copy = intelShellCopy(shell);
+  const steps = shell === "setup" ? intelSetupSteps(orgId) : [];
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const dossierHref = withOrgHref("/dossier", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const teamDataHref = withOrgHref("/team/data", orgId);
+
+  return (
+    <main className="module-page intel-page soft-gate">
+      <PageHeader
+        breadcrumbs="Competition / Matches & Teams"
+        title="Team Intel"
+        description="Search the global team index. Metrics and research stay blank until TBA/Statbotics or source-linked findings exist — never DEMO research."
+      >
+        <IntelRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        className="intel-empty"
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "Look up a team"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? teamDataHref : "/workspace"}>
+            {orgId ? "Sync Team Data" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={teamDataHref}>
+              Sync season metrics
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={dossierHref}>
+              Open Team Dossier
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="intel-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Strategy, Dossier, and Scouting — never DEMO research.</p>
+          </header>
+          <ul className="intel-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <IntelNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function IntelClient({ orgId }: { orgId: string }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchTeam[]>([]);
@@ -75,42 +244,115 @@ export default function IntelClient({ orgId }: { orgId: string }) {
   const [messageKind, setMessageKind] = useState<"success" | "error">("error");
   const [submitting, setSubmitting] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [loadingTeam, setLoadingTeam] = useState(false);
+
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const dossierHref = intel
+    ? withOrgHref(`/dossier?team=${encodeURIComponent(String(intel.team.teamNumber))}`, orgId)
+    : withOrgHref("/dossier", orgId);
+  const chemistryHref = comparison
+    ? withOrgHref(
+        `/chemistry?teams=${comparison.teams.map((t) => t.teamNumber).join(",")}`,
+        orgId,
+      )
+    : withOrgHref("/chemistry", orgId);
 
   async function search(event: React.FormEvent) {
     event.preventDefault();
     setStatus("Searching global team index…");
-    const response = await fetch(`/api/intel/teams?orgId=${orgId}&q=${encodeURIComponent(query)}`);
-    const data = await response.json();
-    setResults(data.teams ?? []);
-    setStatus(response.ok ? "" : data.error);
-    setMessageKind(response.ok ? "success" : "error");
+    setFetchFailed(false);
+    setCutoffCode(null);
+    try {
+      const response = await fetch(`/api/intel/teams?orgId=${orgId}&q=${encodeURIComponent(query)}`);
+      const data = (await response.json()) as { teams?: SearchTeam[]; error?: string };
+      if (!response.ok) {
+        setFetchFailed(true);
+        setResults([]);
+        setStatus(data.error ?? "Could not search teams");
+        setMessageKind("error");
+        return;
+      }
+      setResults(data.teams ?? []);
+      setStatus("");
+      setMessageKind("success");
+    } catch {
+      setFetchFailed(true);
+      setResults([]);
+      setStatus("Network error — please try again.");
+      setMessageKind("error");
+    }
   }
 
   async function select(teamNumber: number) {
     setStatus(`Loading Team ${teamNumber}…`);
-    const response = await fetch(`/api/intel/teams?orgId=${orgId}&team=${teamNumber}`);
-    const data = await response.json();
-    setIntel(data.team ?? null);
-    setSimilar(data.similarTeams ?? []);
-    setSummary("");
-    setComparison(null);
-    setStatus(response.ok ? "" : data.error);
-    setMessageKind(response.ok ? "success" : "error");
+    setLoadingTeam(true);
+    setFetchFailed(false);
+    setCutoffCode(null);
+    try {
+      const response = await fetch(`/api/intel/teams?orgId=${orgId}&team=${teamNumber}`);
+      const data = (await response.json()) as {
+        team?: Intel;
+        similarTeams?: Array<SearchTeam & { epaTotal: number }>;
+        error?: string;
+      };
+      if (!response.ok) {
+        setFetchFailed(true);
+        setIntel(null);
+        setSimilar([]);
+        setStatus(data.error ?? "Could not load team");
+        setMessageKind("error");
+        return;
+      }
+      setIntel(data.team ?? null);
+      setSimilar(data.similarTeams ?? []);
+      setSummary("");
+      setComparison(null);
+      setStatus("");
+      setMessageKind("success");
+    } catch {
+      setFetchFailed(true);
+      setIntel(null);
+      setStatus("Network error — please try again.");
+      setMessageKind("error");
+    } finally {
+      setLoadingTeam(false);
+    }
   }
 
   async function action(path: string, label: string) {
     if (!intel) return;
     setStatus(label);
-    const response = await fetch(path, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, teamNumber: intel.team.teamNumber }),
-    });
-    const data = await response.json();
-    if (path.includes("summary") && data.summary) setSummary(data.summary);
-    setStatus(response.ok ? (path.includes("research") ? "Research sweep completed." : "") : data.error);
-    setMessageKind(response.ok ? "success" : "error");
-    if (response.ok && path.includes("research")) await select(intel.team.teamNumber);
+    setCutoffCode(null);
+    try {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, teamNumber: intel.team.teamNumber }),
+      });
+      const data = (await response.json()) as {
+        summary?: string;
+        error?: string;
+        code?: string;
+        reason?: string;
+      };
+      const cutoff = resolveCutoffErrorCode(response.status, data);
+      if (cutoff) {
+        setCutoffCode(cutoff);
+        setStatus(data.error ?? "Usage cutoff — research paused until credits or PAYG.");
+        setMessageKind("error");
+        return;
+      }
+      if (path.includes("summary") && data.summary) setSummary(data.summary);
+      setStatus(response.ok ? (path.includes("research") ? "Research sweep completed." : "") : data.error ?? "");
+      setMessageKind(response.ok ? "success" : "error");
+      if (response.ok && path.includes("research")) await select(intel.team.teamNumber);
+    } catch {
+      setStatus("Network error — please try again.");
+      setMessageKind("error");
+    }
   }
 
   async function runComparison(event: React.FormEvent) {
@@ -121,16 +363,24 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       .filter(Number.isInteger);
     if (intel && !numbers.includes(intel.team.teamNumber)) numbers.unshift(intel.team.teamNumber);
     setSubmitting(true);
-    const response = await fetch("/api/intel/compare", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, teamNumbers: numbers.slice(0, 3) }),
-    });
-    const data = await response.json();
-    setComparison(response.ok ? (data as CompareResult) : null);
-    setStatus(response.ok ? "" : data.error);
-    setMessageKind(response.ok ? "success" : "error");
-    setSubmitting(false);
+    setCutoffCode(null);
+    try {
+      const response = await fetch("/api/intel/compare", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, teamNumbers: numbers.slice(0, 3) }),
+      });
+      const data = (await response.json()) as CompareResult & { error?: string };
+      setComparison(response.ok ? (data as CompareResult) : null);
+      setStatus(response.ok ? "" : data.error ?? "Compare failed");
+      setMessageKind(response.ok ? "success" : "error");
+    } catch {
+      setComparison(null);
+      setStatus("Network error — please try again.");
+      setMessageKind("error");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function savePick() {
@@ -141,38 +391,102 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       return;
     }
     setSubmitting(true);
-    const response = await fetch("/api/intel/pick-lists", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        orgId,
-        eventKey: pickEvent,
-        name: pickName,
-        entries: [{ teamKey: intel.team.teamKey, rank: 1, tier: "review" }],
-      }),
-    });
-    const data = await response.json();
-    setStatus(response.ok ? `Saved ${intel.team.teamNumber} to ${pickName}.` : data.error);
-    setMessageKind(response.ok ? "success" : "error");
-    setSubmitting(false);
+    try {
+      const response = await fetch("/api/intel/pick-lists", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          eventKey: pickEvent,
+          name: pickName,
+          entries: [{ teamKey: intel.team.teamKey, rank: 1, tier: "review" }],
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+      setStatus(response.ok ? `Saved ${intel.team.teamNumber} to ${pickName}.` : data.error ?? "Save failed");
+      setMessageKind(response.ok ? "success" : "error");
+    } catch {
+      setStatus("Network error — please try again.");
+      setMessageKind("error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const shell = classifyIntelShell({
+    loading: loadingTeam && !intel,
+    fetchFailed: fetchFailed && !intel && results.length === 0,
+    orgId,
+    hasSelectedTeam: intel != null,
+  });
+
+  if (shell === "loading" || shell === "error") {
+    return (
+      <IntelShell
+        orgId={orgId}
+        shell={shell}
+        error={shell === "error" ? status || "Could not load Team Intel." : undefined}
+        onRetry={
+          shell === "error"
+            ? () => {
+                setFetchFailed(false);
+                setStatus("");
+              }
+            : undefined
+        }
+      />
+    );
   }
 
   const metric = intel?.metrics[0];
+  const findingCount = intel?.findings.length ?? 0;
+  const readyActions = intelNextActions({
+    orgId,
+    shell: intel ? "ready" : "empty",
+    teamNumber: intel?.team.teamNumber ?? null,
+    findingCount,
+  });
+  const emptyCopy = intelShellCopy("empty");
 
   return (
     <main className="module-page intel-page">
       <PageHeader
-        breadcrumbs="Competition / Matches"
+        breadcrumbs="Competition / Matches & Teams"
         title="Team Intel"
-        description="Search the global team index. Metrics stay blank until TBA/Statbotics data exists — never fabricated."
+        description="Search the global team index. Metrics stay blank until TBA/Statbotics data exists; research findings stay blank until a metered sweep — never DEMO research."
       >
-        <a className="app-button secondary" href={`/scouting?orgId=${encodeURIComponent(orgId)}`}>
-          Open scouting
-        </a>
+        <div className="intel-heading">
+          <IntelRelatedStrip orgId={orgId} teamNumber={intel?.team.teamNumber ?? null} />
+          <div className="edc-header-actions">
+            <a className="app-button secondary" href={strategyHref}>
+              Strategy
+            </a>
+            <a className="app-button secondary" href={dossierHref}>
+              Dossier
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Scouting
+            </a>
+          </div>
+        </div>
       </PageHeader>
 
+      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
+
       <Panel as="form" className="intel-lookup" onSubmit={search} style={{ minHeight: "auto" }}>
-        <FormRow label="Global team lookup" hint="Teams at your active event appear first.">
+        <FormRow
+          label="Global team lookup"
+          hint={
+            <>
+              Teams at your active event appear first.{" "}
+              <a href={strategyHref}>Strategy</a>
+              {" · "}
+              <a href={dossierHref}>Dossier</a>
+              {" · "}
+              <a href={scoutingHref}>Scouting</a>
+            </>
+          }
+        >
           <div className="intel-lookup-row">
             <input
               id="team-search"
@@ -207,11 +521,29 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       ) : null}
 
       {!intel && results.length === 0 ? (
-        <EmptyState
-          soft
-          title="Look up a team"
-          description="Search by number or name to open metrics, research, and dossier links. Empty cells mean the cache has no data yet."
-        />
+        <>
+          <EmptyState
+            soft
+            badge={emptyCopy.badge}
+            badgeTone="setup"
+            title={emptyCopy.title}
+            description={emptyCopy.description}
+          >
+            <a className="app-button" href={withOrgHref("/team/data", orgId)}>
+              Sync season metrics
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={dossierHref}>
+              Open Team Dossier
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+          </EmptyState>
+          <IntelNextActionsPanel actions={readyActions} />
+        </>
       ) : null}
 
       {intel ? (
@@ -227,10 +559,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                 </p>
               </div>
               <div className="intel-primary-actions">
-                <a
-                  className="app-button secondary"
-                  href={`/dossier?orgId=${encodeURIComponent(orgId)}&team=${intel.team.teamNumber}`}
-                >
+                <a className="app-button secondary" href={dossierHref}>
                   Season dossier
                 </a>
                 <button
@@ -289,7 +618,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                     </span>
                   ))
                 ) : (
-                  <p className="app-muted">Insufficient data for archetypes.</p>
+                  <p className="app-muted">Insufficient data for archetypes — never DEMO research.</p>
                 )}
               </div>
               <h4>Reliability</h4>
@@ -311,7 +640,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                   ))}
                 </ul>
               ) : (
-                <p className="app-muted">No year metrics in cache yet.</p>
+                <p className="app-muted">No year metrics in cache yet — never DEMO research.</p>
               )}
             </Panel>
 
@@ -330,14 +659,17 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                   ))}
                 </ul>
               ) : (
-                <p className="app-muted">No comparable year metrics.</p>
+                <p className="app-muted">No comparable year metrics — never DEMO research.</p>
               )}
             </Panel>
           </div>
 
           <Panel>
             <h3 style={{ marginTop: 0 }}>Source-linked research</h3>
-            <p className="app-muted">Web findings are context, never hard performance data.</p>
+            <p className="app-muted">
+              Web findings are context, never hard performance data or DEMO research.
+              {findingCount > 0 ? ` ${findingCount} finding${findingCount === 1 ? "" : "s"} on file.` : ""}
+            </p>
             {intel.findings.length ? (
               <ul className="intel-findings">
                 {intel.findings.map((finding) => (
@@ -357,7 +689,9 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                 ))}
               </ul>
             ) : (
-              <p className="app-muted">No research findings yet. Use Research above to run a metered sweep.</p>
+              <p className="app-muted">
+                No research findings yet. Use Research above to run a metered sweep — never DEMO research.
+              </p>
             )}
           </Panel>
 
@@ -414,12 +748,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
                         ) : null}
                       </p>
                     ) : null}
-                    <a
-                      className="text-button"
-                      href={`/chemistry?orgId=${encodeURIComponent(orgId)}&teams=${comparison.teams
-                        .map((t) => t.teamNumber)
-                        .join(",")}`}
-                    >
+                    <a className="text-button" href={chemistryHref}>
                       Open Alliance Chemistry →
                     </a>
                   </div>
@@ -453,6 +782,8 @@ export default function IntelClient({ orgId }: { orgId: string }) {
               </div>
             ) : null}
           </Panel>
+
+          <IntelNextActionsPanel actions={readyActions} />
         </div>
       ) : null}
     </main>
