@@ -1,4 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { sortVendors, summarizeVendors } from ".";
 import type { Vendor, VendorCategory, VendorsSummary } from "./types";
 
@@ -14,6 +16,30 @@ export const VENDOR_CATEGORIES: VendorCategory[] = [
 ];
 
 export type VendorsSetupStep = { id: string; label: string; detail: string; href: string };
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO vendor metrics. */
+function setupStepsFor(orgId: string | null): VendorsSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Vendor Directory is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "orders",
+      label: "Open Orders",
+      detail: "Purchase orders stay empty until drafted — never DEMO PO totals.",
+      href: hubHref("/business", "orders", orgId),
+    },
+    {
+      id: "vendor-lead-times",
+      label: "Open Vendor Lead Times",
+      detail: "Reorder-by dates stay blank until lead times land — never DEMO urgency.",
+      href: hubHref("/business", "vendor-lead-times", orgId),
+    },
+  ];
+}
 
 export type VendorsView =
   | {
@@ -90,9 +116,7 @@ export async function computeVendorsView(
     return {
       status: "setup_required",
       message: "Select a team workspace to keep a vendor directory.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: setupStepsFor(null),
       orgId: null,
     };
   }
