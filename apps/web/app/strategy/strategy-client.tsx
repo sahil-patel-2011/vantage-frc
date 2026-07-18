@@ -1,17 +1,67 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { runWhatIf } from "@vantage/prediction-strategy";
-import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { strategyFixture } from "../../lib/marketing/strategy-demo";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import { strategyCoverageLinks } from "../../lib/strategy/competition-related";
 import {
-  strategyCoverageLinks,
-  strategySetupNextActions,
-} from "../../lib/strategy/competition-related";
+  STRATEGY_RELATED_INCLUDE,
+  classifyStrategyShell,
+  strategyNextActions,
+  strategyRelatedLinks,
+  strategyShellCopy,
+  strategyShellSetupSteps,
+  type StrategyShellKind,
+  type StrategyShellNextAction,
+} from "../../lib/strategy/strategy-related";
 import type { StrategyView } from "../../lib/strategy/types";
 import { PickListWorkbench } from "./pick-list-workbench";
+import "./strategy.css";
+
+function StrategyRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = strategyRelatedLinks(orgId, {
+    include: [...STRATEGY_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related strategy-related" aria-label="Related strategy tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function StrategyNextActionsPanel({ actions }: { actions: StrategyShellNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <Panel className="strategy-next-actions-panel">
+      <header>
+        <h2>Next actions</h2>
+        <p>Pick desk, Scouting, and Event Day — never DEMO win rates.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
 
 function DemoPanel({ onHide }: { onHide: () => void }) {
   const { prediction, scenario, playbook } = strategyFixture;
@@ -215,11 +265,24 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
       ? `Qualification ${view.matchNumber}`
       : `${view.compLevel.toUpperCase()} ${view.matchNumber}`;
   const ourWin = view.ourAlliance === "red" ? view.prediction.pRed : view.prediction.pBlue;
-  const cadHref = `/cad?orgId=${encodeURIComponent(view.orgId)}&matchKey=${encodeURIComponent(view.matchKey)}&title=${encodeURIComponent(`${title} strategy mechanism`)}&request=${encodeURIComponent(`Engineer for ${title}. Priorities: ${view.playbook.priorities.slice(0, 3).join("; ")}`)}`;
+  const cadHref = withOrgHref(
+    `/cad?matchKey=${encodeURIComponent(view.matchKey)}&title=${encodeURIComponent(`${title} strategy mechanism`)}&request=${encodeURIComponent(`Engineer for ${title}. Priorities: ${view.playbook.priorities.slice(0, 3).join("; ")}`)}`,
+    view.orgId,
+  );
+  const relatedLinks = strategyRelatedLinks(view.orgId, {
+    include: [...STRATEGY_RELATED_INCLUDE],
+  });
   const coverageLinks = strategyCoverageLinks(view.orgId, { eventKey: view.eventKey });
 
   return (
     <section className="strategy-workbench strategy-live-grid">
+      <nav className="strategy-coverage-links product-hub-related" aria-label="Pick desk, Scouting, Event Day">
+        {relatedLinks.map((link) => (
+          <a key={link.id} className="app-button secondary" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
       <nav className="strategy-coverage-links product-hub-related" aria-label="Explainability and coverage">
         {coverageLinks.map((link) => (
           <a key={link.id} className="app-button secondary" href={link.href}>
@@ -384,7 +447,7 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
         ) : (
           <p className="app-muted">
             No pick ranks yet. Use the Pick lists tab or{" "}
-            <a href={`/intel?orgId=${encodeURIComponent(view.orgId)}`}>Intel</a>.
+            <a href={withOrgHref("/intel", view.orgId)}>Intel</a>.
           </p>
         )}
         {view.scoutProvenance.length > 0 || view.operations.some((op) => (op.pitNotes?.length ?? 0) > 0) ? (
@@ -465,7 +528,9 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
                 ) : (
                   <small>No geometry artifact yet — strategy should treat this capability as unverified.</small>
                 )}
-                <a href={`/cad?orgId=${encodeURIComponent(view.orgId)}&jobId=${encodeURIComponent(item.jobId)}`}>Open engineering job</a>
+                <a href={withOrgHref(`/cad?jobId=${encodeURIComponent(item.jobId)}`, view.orgId)}>
+                  Open engineering job
+                </a>
               </li>
             ))}
           </ul>
@@ -606,16 +671,114 @@ function TbaKeyHint({ view }: { view: StrategyView }) {
 
 type StrategyTab = "matchup" | "picks";
 
+function StrategyShell({
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  orgId?: string | null;
+  shell: StrategyShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = strategyNextActions({ orgId, shell });
+  const copy = strategyShellCopy(shell);
+  const steps = shell === "setup" ? strategyShellSetupSteps(orgId) : [];
+  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const teamDataHref = withOrgHref("/team/data", orgId);
+  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const commandHref = hubHref("/competition", "command", orgId);
+
+  return (
+    <main className="module-page strategy-page soft-gate">
+      <PageHeader
+        breadcrumbs="Competition / Strategy"
+        title="Strategy & AI"
+        description="Win/loss and pick desks run only on synced TBA/Statbotics metrics and your scout notes — never DEMO win rates."
+      >
+        <div className="strategy-header-actions">
+          <StrategyRelatedStrip orgId={orgId} />
+        </div>
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        className="strategy-shell-empty"
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? copy.badge
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? commandHref : workspaceHref}>
+            {orgId ? "Set active event" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={teamDataHref}>
+              Sync Team Data
+            </a>
+            <a className="app-button secondary" href={pickDeskHref}>
+              Open Pick desk
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+            <a className="app-button secondary" href={commandHref}>
+              Open Event Day
+            </a>
+          </>
+        ) : null}
+        {shell === "setup" && steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </EmptyState>
+      {shell !== "loading" ? <StrategyNextActionsPanel actions={actions} /> : null}
+    </main>
+  );
+}
+
 export default function StrategyClient() {
   const [view, setView] = useState<StrategyView | null>(null);
   const [demo, setDemo] = useState(false);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<StrategyTab>("matchup");
 
   const loadStrategy = useCallback(() => {
     setFetchFailed(false);
     setError("");
+    setLoading(true);
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     const requestedTab = params.get("tab");
@@ -627,26 +790,19 @@ export default function StrategyClient() {
           const message = "error" in data ? data.error : undefined;
           if (!message) {
             setFetchFailed(true);
+            setView(null);
             return;
           }
           setError(message);
           setView({
             status: "setup_required",
             message: "Select a team workspace before running win/loss strategy.",
-            steps: [
-              {
-                id: "workspace",
-                label: "Select workspace and event",
-                detail: "Choose your team organization and active event",
-                href: "/workspace",
-              },
-              {
-                id: "tba",
-                label: "Sync TBA",
-                detail: "Match schedule and team metrics from TBA/Statbotics",
-                href: "/team/data",
-              },
-            ],
+            steps: strategyShellSetupSteps(null).map((step) => ({
+              id: step.id,
+              label: step.label,
+              detail: step.detail,
+              href: step.href,
+            })),
             orgId: null,
             eventKey: null,
             eventName: null,
@@ -659,6 +815,10 @@ export default function StrategyClient() {
       })
       .catch(() => {
         setFetchFailed(true);
+        setView(null);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, []);
 
@@ -667,37 +827,81 @@ export default function StrategyClient() {
   }, [loadStrategy]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  const shell = classifyStrategyShell({
+    loading,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+  });
+
+  if (tab !== "picks" && !demo && shell !== "ready") {
+    return (
+      <StrategyShell orgId={orgId} shell={shell} error={error || undefined} onRetry={loadStrategy}>
+        {error && shell !== "error" ? (
+          <p className="telemetry-status" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {shell === "empty" || shell === "setup" ? (
+          <Panel className="strategy-demo-optin" style={{ minHeight: "auto" }}>
+            <h2 style={{ marginTop: 0 }}>Try demo scenario</h2>
+            <p className="app-muted">
+              Optional illustrative fixture only. Labeled non-factual — never your default Strategy view
+              and never DEMO win rates on the live desk.
+            </p>
+            <button type="button" className="app-button secondary" onClick={() => setDemo(true)}>
+              Try demo scenario
+            </button>
+          </Panel>
+        ) : null}
+      </StrategyShell>
+    );
+  }
+
+  const nextActions =
+    view && view.status === "live"
+      ? strategyNextActions({
+          orgId: view.orgId,
+          shell: "ready",
+          eventKey: view.eventKey,
+          tbaConfigured: view.tbaConfigured ?? view.tbaAccess?.tbaConfigured,
+          hasMetrics: view.referenceAccess?.statbotics.cacheHasMetrics,
+        })
+      : strategyNextActions({
+          orgId,
+          shell: shell === "ready" ? "ready" : shell,
+          eventKey: view && "eventKey" in view ? view.eventKey : null,
+          tbaConfigured: view?.tbaConfigured ?? view?.tbaAccess?.tbaConfigured,
+          hasMetrics: view?.referenceAccess?.statbotics.cacheHasMetrics,
+        });
 
   return (
     <main className="module-page strategy-page">
       <PageHeader
         breadcrumbs="Competition / Strategy"
         title="Strategy & AI"
-        description="Win/loss and pick desks run only on synced TBA/Statbotics metrics and your scout notes — never invented."
+        description="Win/loss and pick desks run only on synced TBA/Statbotics metrics and your scout notes — never DEMO win rates."
       >
         <div className="strategy-header-actions">
+          <StrategyRelatedStrip orgId={orgId} />
           {orgId ? (
             <>
-              <a className="app-button secondary" href={`/strategy/draft?orgId=${encodeURIComponent(orgId)}`}>
+              <a className="app-button secondary" href={withOrgHref("/strategy/draft", orgId)}>
                 Draft board
               </a>
               <a
                 className="app-button secondary"
-                href={`/exports?orgId=${encodeURIComponent(orgId)}&domains=pick-lists,reference-metrics,research`}
+                href={withOrgHref("/exports?domains=pick-lists,reference-metrics,research", orgId)}
               >
                 Export
               </a>
-              <a className="app-button secondary" href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>
+              <a className="app-button secondary" href={withOrgHref("/team/data", orgId)}>
                 Data provenance
               </a>
             </>
           ) : null}
           {demo ? (
             <span className="app-badge demo">Demo mode</span>
-          ) : view?.status === "empty" ? (
-            <span className="app-badge setup">No prediction yet</span>
-          ) : view?.status === "setup_required" ? (
-            <span className="app-badge setup">Setup required</span>
           ) : view?.status === "live" ? (
             <span className={`app-badge ${view.dataSourceHealth?.degraded ? "setup" : "good"}`}>
               {view.dataSourceHealth?.usingLastGoodCache ? "Last-good cache" : "Live inputs"}
@@ -705,8 +909,6 @@ export default function StrategyClient() {
           ) : null}
         </div>
       </PageHeader>
-
-      <CompetitionHubRelated orgId={orgId} active="strategy" />
 
       <TabBar
         aria-label="Strategy sections"
@@ -731,82 +933,16 @@ export default function StrategyClient() {
       {tab === "picks" ? (
         <PickListWorkbench orgId={orgId} embedded />
       ) : demo ? (
-        <DemoPanel onHide={() => setDemo(false)} />
-      ) : fetchFailed ? (
-        <EmptyState
-          title="Could not load strategy"
-          description="A network or server issue prevented loading your strategy context."
-        >
-          <button type="button" className="app-button secondary" onClick={loadStrategy}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking workspace, event, and TBA/reference metrics." aria-busy />
-      ) : view.status === "live" ? (
-        <LivePanel view={view} />
-      ) : (
-        <section className="strategy-setup" aria-label="Strategy setup">
-          <EmptyState
-            badge={view.status === "empty" ? "No prediction yet" : "Setup required"}
-            badgeTone="setup"
-            title={view.message}
-            description="No fabricated win probability until TBA/Statbotics (and optional scouting) inputs exist for a real match. Pick lists still work once an event is selected."
-          >
-            {view.engine ? (
-              <p className="app-muted strategy-engine-soft">
-                Active engine for your plan ({view.engine.planCode.replace(/_/g, " ")}):{" "}
-                <strong>{view.engine.label}</strong>
-                {view.productVersion ? ` · product ${view.productVersion}` : ""}
-              </p>
-            ) : null}
-            <ol className="strategy-setup-steps">
-              {view.steps.map((step) => (
-                <li key={step.id} className={step.done ? "done" : undefined}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  {step.done ? <em>Done</em> : <a href={step.href}>Open</a>}
-                </li>
-              ))}
-            </ol>
-            <div className="strategy-next-actions" aria-label="Next actions">
-              <h3>Also useful now</h3>
-              <ul>
-                {strategySetupNextActions({
-                  orgId: view.orgId,
-                  eventKey: view.eventKey,
-                  tbaConfigured: view.tbaConfigured ?? view.tbaAccess?.tbaConfigured,
-                  hasMetrics: view.referenceAccess?.statbotics.cacheHasMetrics,
-                })
-                  .filter((action) => !view.steps.some((step) => step.id === action.id && !step.done))
-                  .slice(0, 5)
-                  .map((action) => (
-                    <li key={action.id}>
-                      <div>
-                        <strong>{action.label}</strong>
-                        <span>{action.detail}</span>
-                      </div>
-                      <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
-                        Open
-                      </a>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          </EmptyState>
-          <Panel className="strategy-demo-optin" style={{ minHeight: "auto" }}>
-            <h2 style={{ marginTop: 0 }}>Try demo scenario</h2>
-            <p className="app-muted">
-              Optional illustrative fixture only. Labeled non-factual — never your default Strategy view.
-            </p>
-            <button type="button" className="app-button secondary" onClick={() => setDemo(true)}>
-              Try demo scenario
-            </button>
-          </Panel>
-        </section>
-      )}
+        <>
+          <DemoPanel onHide={() => setDemo(false)} />
+          <StrategyNextActionsPanel actions={nextActions} />
+        </>
+      ) : view?.status === "live" ? (
+        <>
+          <LivePanel view={view} />
+          <StrategyNextActionsPanel actions={nextActions} />
+        </>
+      ) : null}
     </main>
   );
 }
