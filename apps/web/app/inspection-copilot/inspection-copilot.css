@@ -1,0 +1,25 @@
+/* Soft-UI Inspection Copilot — .inspection-copilot-* + shared Soft-UI tokens. Never DEMO risk scores. */
+.inspection-copilot-page{display:grid;gap:16px}
+.inspection-copilot-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.inspection-copilot-season{display:flex;gap:6px;align-items:center}
+.inspection-copilot-related{display:flex;flex-wrap:wrap;gap:8px}
+.inspection-copilot-next-actions{margin:0}
+.inspection-copilot-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.inspection-copilot-stats strong{font-size:1.5rem}
+.inspection-copilot-layout{display:grid;gap:16px}
+.inspection-copilot-panel{display:grid;gap:12px}
+.inspection-copilot-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.inspection-copilot-card{display:grid;gap:6px}
+.inspection-copilot-card-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.inspection-copilot-flags{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.inspection-copilot-flags li{display:flex;justify-content:space-between;gap:8px}
+.inspection-copilot-weight-rows{display:grid;gap:8px;margin-top:6px}
+.inspection-copilot-weight-row{display:grid;grid-template-columns:1fr 120px auto;gap:8px;align-items:center}
+.inspection-copilot-checks{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0 0}
+.inspection-copilot-checks label{display:flex;gap:6px;align-items:center}
+.inspection-copilot-tip{margin:0}
+@media(max-width:900px){
+  .inspection-copilot-header-actions{justify-content:flex-start}
+  .inspection-copilot-next-actions li{flex-direction:column;align-items:stretch}
+  .inspection-copilot-weight-row{grid-template-columns:1fr;gap:6px}
+}

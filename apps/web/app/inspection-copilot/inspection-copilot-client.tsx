@@ -1,20 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { inspectionFlagSeverityLabel } from "../../lib/inspection-copilot";
 import type { InspectionCopilotView } from "../../lib/inspection-copilot/compute-inspection-copilot";
+import {
+  INSPECTION_COPILOT_RELATED_INCLUDE,
+  classifyInspectionCopilotShell,
+  formatInspectionCopilotMetric,
+  formatInspectionRiskPct,
+  inspectionCopilotNextActions,
+  inspectionCopilotRelatedLinks,
+  inspectionCopilotShellCopy,
+  type InspectionCopilotNextAction,
+  type InspectionCopilotShellKind,
+} from "../../lib/inspection-copilot/inspection-copilot-related";
 import type { InspectionFlagSeverity } from "../../lib/inspection-copilot/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./inspection-copilot.css";
 
 const SEVERITY_TONE: Record<InspectionFlagSeverity, string> = {
-  critical: "demo",
-  warning: "setup",
+  critical: "danger",
+  warning: "demo",
   info: "good",
 };
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 type LiveView = Extract<InspectionCopilotView, { status: "live" }>;
 
@@ -22,14 +32,141 @@ type WeightItemDraft = { name: string; weightLbs: string };
 
 const emptyWeightRow = (): WeightItemDraft => ({ name: "", weightLbs: "" });
 
+function InspectionRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = inspectionCopilotRelatedLinks(orgId, {
+    include: [...INSPECTION_COPILOT_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related inspection-copilot-related" aria-label="Related build tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function InspectionNextActionsPanel({ actions }: { actions: InspectionCopilotNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions inspection-copilot-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Batteries, FMEA, and Subsystems — never DEMO risk scores.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function InspectionShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: InspectionCopilotShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = inspectionCopilotNextActions({ orgId, shell });
+  const copy = inspectionCopilotShellCopy(shell);
+  const buildHref = hubHref("/build", "fmea", orgId);
+  const batteriesHref = hubHref("/team", "batteries", orgId);
+  const fmeaHref = hubHref("/build", "fmea", orgId);
+  const subsystemsHref = withOrgHref("/subsystems", orgId);
+
+  return (
+    <main className="module-page inspection-copilot-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Inspection Copilot"}
+          </>
+        }
+        title="Inspection-Readiness Copilot"
+        description={description}
+      >
+        <InspectionRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No checks yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#inspection-copilot-form">
+              Run a check
+            </a>
+            <a className="app-button secondary" href={batteriesHref}>
+              Open Batteries
+            </a>
+            <a className="app-button secondary" href={fmeaHref}>
+              Open FMEA
+            </a>
+            <a className="app-button secondary" href={subsystemsHref}>
+              Open Subsystems
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <InspectionNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function InspectionCopilotClient() {
   const [view, setView] = useState<InspectionCopilotView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -56,6 +193,43 @@ export default function InspectionCopilotClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const checkCount = view?.status === "live" ? view.checks.length : 0;
+  const flaggedCount =
+    view?.status === "live" ? view.checks.filter((check) => check.flags.length > 0).length : 0;
+  const criticalCount =
+    view?.status === "live"
+      ? view.checks.reduce(
+          (sum, check) => sum + check.flags.filter((flag) => flag.severity === "critical").length,
+          0,
+        )
+      : 0;
+  const latestRisk =
+    view?.status === "live" && view.checks[0] ? view.checks[0].riskScore : null;
+
+  const shell = classifyInspectionCopilotShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    checkCount,
+  });
+  const shellCopy = inspectionCopilotShellCopy(shell);
+  const nextActions = inspectionCopilotNextActions({
+    orgId,
+    shell,
+    checkCount,
+    flaggedCount,
+    criticalCount,
+  });
+  const relatedLinks = inspectionCopilotRelatedLinks(orgId, {
+    include: [...INSPECTION_COPILOT_RELATED_INCLUDE],
+  });
+  const buildHref = hubHref("/build", "fmea", orgId);
+  const batteriesHref = hubHref("/team", "batteries", orgId);
+  const fmeaHref = hubHref("/build", "fmea", orgId);
+  const subsystemsHref = withOrgHref("/subsystems", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -84,37 +258,78 @@ export default function InspectionCopilotClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return (
+      <InspectionShell description={shellCopy.description} orgId={null} shell="loading" />
+    );
+  }
+
+  if (shell === "error") {
+    return (
+      <InspectionShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <InspectionShell
+        description={
+          view?.status === "setup_required" ? view.message : shellCopy.description
+        }
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <InspectionShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page inspection-copilot-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
+            <a href={buildHref}>Build</a>
             {" / Inspection Copilot"}
           </>
         }
         title="Inspection-Readiness Copilot"
-        description="Compare your declared weight budget, frame/bumper limits, and wiring/power limits against the measured robot to predict inspection failures before you travel."
+        description="Compare declared weight, frame/bumper, and wiring limits against measured robot values before you travel. Cross-check Batteries, FMEA, and Subsystems — never DEMO risk scores."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="inspection-copilot-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted inspection-copilot-season">
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -123,47 +338,107 @@ export default function InspectionCopilotClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <InspectionNextActionsPanel actions={nextActions} />
+
+      <SummaryTiles
+        checkCount={checkCount}
+        flaggedCount={flaggedCount}
+        criticalCount={criticalCount}
+        latestRisk={latestRisk}
+        loaded
+      />
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load the inspection copilot"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No checks yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href="#inspection-copilot-form">
+            Run a check
+          </a>
+          <a className="app-button secondary" href={batteriesHref}>
+            Open Batteries
+          </a>
+          <a className="app-button secondary" href={fmeaHref}>
+            Open FMEA
+          </a>
+          <a className="app-button secondary" href={subsystemsHref}>
+            Open Subsystems
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <NewCheckForm busy={busy} mutate={mutate} />
-          {view.checks.length > 0 ? (
+      ) : null}
+
+      <div className="inspection-copilot-layout">
+        <NewCheckForm busy={busy} mutate={mutate} />
+        {shell === "ready" ? (
+          <>
             <ChecksList view={view} busy={busy} mutate={mutate} />
-          ) : (
-            <EmptyState
-              badge="No checks yet"
-              badgeTone="setup"
-              title="Run your first inspection-readiness check"
-              description="Enter your weight budget, frame/bumper limits, and wiring/power limits alongside the measured robot to get a grounded failure prediction."
-            />
-          )}
-        </div>
-      )}
+            <Panel className="inspection-copilot-tip" aria-label="Readiness tip">
+              <span className="eyebrow">Before travel</span>
+              <p className="app-muted" style={{ marginTop: 8 }}>
+                Resolve critical flags from logged measurements first. Keep{" "}
+                <a href={batteriesHref}>Batteries</a>, <a href={fmeaHref}>FMEA</a>, and{" "}
+                <a href={subsystemsHref}>Subsystems</a> aligned with weigh-in rows — never invent DEMO
+                risk scores.
+              </p>
+            </Panel>
+          </>
+        ) : null}
+      </div>
     </main>
+  );
+}
+
+function SummaryTiles({
+  checkCount,
+  flaggedCount,
+  criticalCount,
+  latestRisk,
+  loaded,
+}: {
+  checkCount: number;
+  flaggedCount: number;
+  criticalCount: number;
+  latestRisk: number | null;
+  loaded: boolean;
+}) {
+  const hasChecks = checkCount > 0;
+  const tiles = [
+    { label: "Checks", value: formatInspectionCopilotMetric(checkCount, loaded) },
+    { label: "Flagged", value: formatInspectionCopilotMetric(flaggedCount, loaded) },
+    { label: "Critical flags", value: formatInspectionCopilotMetric(criticalCount, loaded) },
+    {
+      label: "Latest risk",
+      value: formatInspectionRiskPct(latestRisk, loaded, hasChecks),
+    },
+  ];
+  return (
+    <Panel className="inspection-copilot-coverage" aria-label="Inspection Copilot summary">
+      <div className="inspection-copilot-stats">
+        <div>
+          <span
+            className={`app-badge ${
+              checkCount === 0 ? "setup" : criticalCount > 0 ? "danger" : flaggedCount > 0 ? "demo" : "good"
+            }`}
+          >
+            {checkCount === 0 ? "EMPTY" : criticalCount > 0 ? "CRITICAL" : flaggedCount > 0 ? "FLAGS" : "CLEAN"}
+          </span>
+          <h2 style={{ margin: "6px 0 0" }}>Season readiness</h2>
+          <small className="app-muted">Logged measurements only — never DEMO risk scores</small>
+        </div>
+        {tiles.map((tile) => (
+          <div key={tile.label}>
+            <strong>{tile.value}</strong>
+            <small className="app-muted" style={{ display: "block" }}>
+              {tile.label}
+            </small>
+          </div>
+        ))}
+      </div>
+    </Panel>
   );
 }
 
@@ -177,19 +452,25 @@ function ChecksList({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel>
+    <Panel id="inspection-copilot-checks" className="inspection-copilot-panel">
       <h2 style={{ marginTop: 0 }}>Inspection checks</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <p className="app-muted" style={{ marginTop: 0 }}>
+        Flags and risk come only from limits and measurements you logged.
+      </p>
+      <ul className="inspection-copilot-list">
         {view.checks.map((check) => (
-          <li key={check.id} className="app-card soft-panel" style={{ display: "grid", gap: 6 }}>
-            <header style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={check.id} className="app-card soft-panel inspection-copilot-card">
+            <header className="inspection-copilot-card-head">
               <div>
-                <span className={`app-badge ${check.flags.length === 0 ? "good" : "demo"}`}>
-                  {check.flags.length === 0 ? "Clean" : `${check.flags.length} flag(s)`}
+                <span className={`app-badge ${check.flags.length === 0 ? "good" : "danger"}`}>
+                  {check.flags.length === 0
+                    ? "Clean"
+                    : `${formatInspectionCopilotMetric(check.flags.length, true)} flag(s)`}
                 </span>
                 <strong style={{ display: "block", marginTop: 4 }}>{check.robotName}</strong>
                 <small className="app-muted">
-                  {check.totalWeightLbs} lbs · risk {pct(check.riskScore)}
+                  {check.totalWeightLbs} lbs · risk{" "}
+                  {formatInspectionRiskPct(check.riskScore, true, true)}
                 </small>
               </div>
               <button
@@ -207,9 +488,9 @@ function ChecksList({
             </header>
             <p style={{ margin: 0 }}>{check.summary}</p>
             {check.flags.length > 0 ? (
-              <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+              <ul className="factor-table inspection-copilot-flags">
                 {check.flags.map((flag, index) => (
-                  <li key={`${check.id}-${index}`} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                  <li key={`${check.id}-${index}`}>
                     <span>
                       <span className={`app-badge ${SEVERITY_TONE[flag.severity]}`}>
                         {inspectionFlagSeverityLabel(flag.severity)}
@@ -264,7 +545,9 @@ function NewCheckForm({
 
   return (
     <Panel
+      id="inspection-copilot-form"
       as="form"
+      className="inspection-copilot-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!canSubmit) return;
@@ -307,9 +590,11 @@ function NewCheckForm({
         setRadioPowerOk(false);
         setBypassSwitchAccessible(false);
       }}
-      style={{ display: "grid", gap: 12 }}
     >
       <h2 style={{ margin: 0 }}>Run an inspection-readiness check</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Enter real manual limits and measured robot values — predictions stay blank until you submit.
+      </p>
       <FormGrid min={200}>
         <FormRow label="Robot name">
           <input value={robotName} onChange={(e) => setRobotName(e.target.value)} placeholder="2026 Competition Bot" required />
@@ -321,9 +606,9 @@ function NewCheckForm({
 
       <div>
         <strong className="app-muted">Weight budget (itemized weigh-in)</strong>
-        <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
+        <div className="inspection-copilot-weight-rows">
           {weightItems.map((row, index) => (
-            <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 120px auto", gap: 8, alignItems: "center" }}>
+            <div key={index} className="inspection-copilot-weight-row">
               <input
                 placeholder="Component (e.g. Chassis)"
                 value={row.name}
@@ -422,20 +707,20 @@ function NewCheckForm({
             />
           </FormRow>
         </FormGrid>
-        <fieldset style={{ border: "none", padding: 0, margin: "8px 0 0", display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
+          <label>
             <input type="checkbox" checked={batterySecured} onChange={(e) => setBatterySecured(e.target.checked)} />
             Battery secured
           </label>
-          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <label>
             <input type="checkbox" checked={wiresLabeled} onChange={(e) => setWiresLabeled(e.target.checked)} />
             Wires labeled
           </label>
-          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <label>
             <input type="checkbox" checked={radioPowerOk} onChange={(e) => setRadioPowerOk(e.target.checked)} />
             Radio power OK
           </label>
-          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <label>
             <input
               type="checkbox"
               checked={bypassSwitchAccessible}
