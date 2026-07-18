@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related Business surfaces for sponsor CRM / placements. */
+/** Soft-UI related Business surfaces for sponsor CRM / placements / grant writing. */
 export const BUSINESS_RELATED_LINKS = [
   { id: "sponsors", label: "Sponsor CRM", kind: "hub" as const, tab: "sponsors" },
   { id: "placements", label: "Partner packages", kind: "hub" as const, tab: "placements" },
@@ -9,6 +9,8 @@ export const BUSINESS_RELATED_LINKS = [
   { id: "orders", label: "Orders", kind: "hub" as const, tab: "orders" },
   { id: "grants", label: "Grants", kind: "hub" as const, tab: "grants" },
   { id: "fundraisers", label: "Fundraisers", kind: "path" as const, path: "/fundraisers" },
+  { id: "writer", label: "Grant & sponsor writer", kind: "path" as const, path: "/writer" },
+  { id: "grant-workbench", label: "Grant writing workbench", kind: "path" as const, path: "/team/grants" },
   { id: "finance-ai", label: "Finance-in-AI", kind: "path" as const, path: "/ai?tab=finance" },
   { id: "budget", label: "Budget", kind: "hub" as const, tab: "budget" },
 ] as const;
@@ -36,6 +38,24 @@ export const PLACEMENTS_RELATED_INCLUDE: BusinessRelatedId[] = [
   "sponsorship",
   "fundraisers",
   "orders",
+  "finance-ai",
+];
+
+/** Grant writing Soft-UI strip (`/team/grants`) — sponsors, fundraising, writer. */
+export const GRANTS_WRITING_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "sponsors",
+  "fundraisers",
+  "writer",
+  "grants",
+  "finance-ai",
+];
+
+/** Business hub Grants tab Soft-UI strip. */
+export const BUSINESS_GRANTS_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "grant-workbench",
+  "sponsors",
+  "fundraisers",
+  "writer",
   "finance-ai",
 ];
 

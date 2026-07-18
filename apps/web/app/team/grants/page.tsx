@@ -1,4 +1,5 @@
 import GrantsClient from "./grants-client";
+import { EmptyState } from "../../../components/ui";
 
 export default async function GrantsPage({
   searchParams,
@@ -8,14 +9,24 @@ export default async function GrantsPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="content soft-gate">
-        <span className="eyebrow">VANTAGE / GRANTS</span>
-        <h1>Select a workspace</h1>
-        <p>
-          Grant opportunities, applications, and essay items are org-scoped. Choose a team workspace to open the
-          writing workbench.
-        </p>
-        <a href="/workspace">Select workspace</a>
+      <main className="module-page gwe-page content soft-gate">
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">Business / Grants</span>
+            <h1>Grant writing</h1>
+          </div>
+        </header>
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title="Select a workspace"
+          description="Grant narratives are org-scoped. Choose a team workspace to open the writing workbench — award amounts stay blank until you record them."
+        >
+          <a className="app-button" href="/workspace">
+            Select workspace
+          </a>
+        </EmptyState>
       </main>
     );
   }

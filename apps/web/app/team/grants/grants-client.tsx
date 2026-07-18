@@ -1,6 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BusinessRelated } from "../../../components/business-related";
+import { MeteredAiCutoffBanner } from "../../../components/metered-ai-cutoff-banner";
+import { resolveCutoffErrorCode } from "../../../components/usage-cutoff-banner";
+import { EmptyState } from "../../../components/ui";
+import { GRANTS_WRITING_RELATED_INCLUDE } from "../../../lib/business/business-related";
+import { grantsWritingNextActions } from "../../../lib/business/grants-writing-next-actions";
 import {
   GRANT_DRAFT_STATUSES,
   type GrantDraftStatus,
@@ -50,6 +56,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [season, setSeason] = useState<number | null>(null);
   const [templateKey, setTemplateKey] = useState<GrantTemplateKey>("community_foundation");
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
@@ -78,6 +85,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
     (seasonOverride?: number) => {
       setFetchFailed(false);
       setError("");
+      setCutoffCode(null);
       const params = new URLSearchParams(window.location.search);
       const urlOrg = orgIdProp ?? params.get("orgId");
       const seasonQuery = seasonOverride ?? (params.get("seasonYear") ? Number(params.get("seasonYear")) : null);
@@ -122,6 +130,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
     setBusy(true);
     setError("");
     setNotice("");
+    if (payload.action === "ai_assist") setCutoffCode(null);
     try {
       const response = await fetch("/api/grants/writing", {
         method: "POST",
@@ -132,15 +141,27 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
           ...payload,
         }),
       });
-      const data = (await response.json()) as GrantWritingView | { error?: string };
+      const data = (await response.json()) as GrantWritingView | { error?: string; code?: string; reason?: string };
       if (!response.ok || !("status" in data)) {
-        setError("error" in data && data.error ? data.error : "Something went wrong.");
+        const cutoff = resolveCutoffErrorCode(response.status, {
+          code: "code" in data ? data.code : undefined,
+          reason: "reason" in data ? data.reason : undefined,
+          error: "error" in data ? data.error : undefined,
+        });
+        if (cutoff) {
+          setCutoffCode(cutoff);
+          setError("");
+        } else {
+          setError("error" in data && data.error ? data.error : "Something went wrong.");
+        }
         return;
       }
       setView(data);
       setSeason(data.seasonYear);
       if (data.status === "live") {
         if (payload.action === "compose" && data.drafts[0]) {
+          applyDraft(data.drafts[0]);
+        } else if (payload.action === "ai_assist" && data.drafts[0]) {
           applyDraft(data.drafts[0]);
         } else if (payload.action === "delete") {
           const next = data.drafts[0] ?? null;
@@ -187,11 +208,16 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
             <p className="app-muted">Could not load grant writing — check your connection and try again.</p>
           </div>
         </header>
-        <section className="app-card soft-panel">
+        <EmptyState
+          soft
+          badge="Retry"
+          title="Grant writing unavailable"
+          description="A network or server issue prevented loading. Award totals stay blank until real applications are recorded — nothing is fabricated."
+        >
           <button type="button" className="app-button secondary" onClick={() => load()}>
             Retry
           </button>
-        </section>
+        </EmptyState>
       </main>
     );
   }
@@ -203,14 +229,16 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
           <div>
             <span className="breadcrumbs">Business / Grants</span>
             <h1>Grant writing</h1>
-            <p className="app-muted">Loading grant writing workspace…</p>
           </div>
         </header>
+        <EmptyState soft title="Loading grant writing…" description="Opening this workspace’s narrative drafts." aria-busy />
       </main>
     );
   }
 
   if (view.status === "setup_required") {
+    const setupOrg = view.orgId ?? orgIdProp ?? null;
+    const nextActions = grantsWritingNextActions({ orgId: setupOrg, draftCount: 0 });
     return (
       <main className="module-page gwe-page">
         <header className="app-page-header">
@@ -219,17 +247,18 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
             <h1>Grant writing</h1>
             <p className="app-muted">
               Guided need · impact · budget · timeline narratives from THIS organization&apos;s profile and impact log
-              only.
+              only — never DEMO award dollars.
             </p>
           </div>
-          <nav className="intel-actions" aria-label="Grant writing links">
-            <a href={businessGrantsHref(view.orgId ?? orgIdProp)}>Business · Grants</a>
-            <a href={`/impact${orgQuery(view.orgId ?? orgIdProp)}`}>Impact</a>
-          </nav>
         </header>
-        <section className="app-card soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
+        {setupOrg ? (
+          <BusinessRelated
+            orgId={setupOrg}
+            include={GRANTS_WRITING_RELATED_INCLUDE}
+            ariaLabel="Related fundraising tools"
+          />
+        ) : null}
+        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -241,7 +270,22 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
               </li>
             ))}
           </ol>
-        </section>
+          {nextActions.length ? (
+            <ol className="gwe-next-actions">
+              {nextActions.map((action) => (
+                <li key={action.id} className={action.primary ? "primary" : undefined}>
+                  <div>
+                    <strong>{action.label}</strong>
+                    <span>{action.detail}</span>
+                  </div>
+                  <a className="app-button secondary" href={action.href}>
+                    Open
+                  </a>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -253,6 +297,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
       busy={busy}
       error={error}
       notice={notice}
+      cutoffCode={cutoffCode}
       templateKey={templateKey}
       activeTemplate={activeTemplate}
       selectedDraft={selectedDraft}
@@ -269,6 +314,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
         setSelectedDraftId(null);
         setFields(EMPTY_FIELDS);
         setBody("");
+        setCutoffCode(null);
         load(next);
       }}
       onSelectTemplate={selectTemplate}
@@ -287,6 +333,7 @@ function GrantWritingWorkspace({
   busy,
   error,
   notice,
+  cutoffCode,
   templateKey,
   activeTemplate,
   selectedDraft,
@@ -311,6 +358,7 @@ function GrantWritingWorkspace({
   busy: boolean;
   error: string;
   notice: string;
+  cutoffCode: string | null;
   templateKey: GrantTemplateKey;
   activeTemplate: GrantTemplate | null;
   selectedDraft: GrantWritingDraft | null;
@@ -333,6 +381,14 @@ function GrantWritingWorkspace({
   const teamLabel =
     view.teamNumber != null ? `FRC ${view.teamNumber}` : view.orgName ?? "This workspace";
 
+  const nextActions = grantsWritingNextActions({
+    orgId: view.orgId,
+    draftCount: view.drafts.length,
+    readyCount,
+    impactActivities: view.impactSummary.activities,
+    communityHours: view.communityHours,
+  });
+
   return (
     <main className="module-page gwe-page">
       <header className="app-page-header">
@@ -341,7 +397,8 @@ function GrantWritingWorkspace({
           <h1>Grant writing</h1>
           <p className="app-muted">
             Compose org-isolated grant narratives from guided fields — onboarding location, team description, and
-            Community Impact evidence for {teamLabel}. Nothing is invented across organizations.
+            Community Impact evidence for {teamLabel}. Asks and awards stay blank until you enter real amounts — never
+            DEMO dollars.
           </p>
         </div>
         <div className="gwe-toolbar">
@@ -360,12 +417,17 @@ function GrantWritingWorkspace({
           </label>
           <nav className="intel-actions" aria-label="Grant writing links">
             <a href={businessGrantsHref(resolvedOrgId)}>Business · Grants</a>
-            <a href={`/team/awards${orgQuery(resolvedOrgId)}`}>Awards workbench</a>
             <a href={`/impact${orgQuery(resolvedOrgId)}`}>Impact</a>
-            <a href={`/goals${orgQuery(resolvedOrgId)}`}>Season goals</a>
+            <a href={`/writer${orgQuery(resolvedOrgId)}`}>Writer</a>
           </nav>
         </div>
       </header>
+
+      <BusinessRelated
+        orgId={view.orgId}
+        include={GRANTS_WRITING_RELATED_INCLUDE}
+        ariaLabel="Related fundraising tools"
+      />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -378,32 +440,55 @@ function GrantWritingWorkspace({
         </p>
       ) : null}
 
+      {nextActions.length ? (
+        <section className="app-card soft-panel gwe-next-actions-panel" aria-label="Next actions">
+          <header>
+            <span className="eyebrow">Next actions</span>
+            <h2>Keep writing grounded in this team&apos;s evidence</h2>
+            <p className="app-muted">Only impact, awards, and asks you recorded — metered AI hard-stops at plan cutoffs.</p>
+          </header>
+          <ol className="gwe-next-actions">
+            {nextActions.map((action) => (
+              <li key={action.id} className={action.primary ? "primary" : undefined}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a className="app-button secondary" href={action.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
       <section className="gwe-kpis" aria-label="Grant writing summary">
-        <article>
+        <article className="gwe-kpi">
           <span>Saved drafts</span>
           <strong>{view.drafts.length}</strong>
         </article>
-        <article>
+        <article className="gwe-kpi">
           <span>Ready to submit</span>
           <strong>{readyCount}</strong>
         </article>
-        <article>
+        <article className="gwe-kpi">
           <span>Impact activities</span>
           <strong>{view.impactSummary.activities}</strong>
         </article>
-        <article>
+        <article className="gwe-kpi">
           <span>Community hours</span>
           <strong>{view.communityHours}</strong>
         </article>
-        <article>
+        <article className="gwe-kpi">
           <span>Season goals</span>
           <strong>{view.seasonGoals.length}</strong>
         </article>
-        <article>
+        <article className="gwe-kpi">
           <span>Awards on file</span>
           <strong>{view.awardCount}</strong>
         </article>
-        <article>
+        <article className="gwe-kpi">
           <span>Location</span>
           <strong>{view.location ?? "—"}</strong>
         </article>
@@ -434,6 +519,13 @@ function GrantWritingWorkspace({
           <h2>{activeTemplate?.label ?? "Narrative"}</h2>
           {activeTemplate ? <p className="app-muted">{activeTemplate.summary}</p> : null}
 
+          <MeteredAiCutoffBanner
+            orgId={view.orgId}
+            errorCode={cutoffCode}
+            compact
+            className="gwe-cutoff"
+          />
+
           <div className="gwe-meta">
             <label className="gwe-field">
               <span>Funder</span>
@@ -451,8 +543,9 @@ function GrantWritingWorkspace({
                 step="0.01"
                 value={askAmountUsd}
                 onChange={(event) => onAskAmountChange(event.target.value)}
-                placeholder="1500"
+                placeholder="Enter your ask"
               />
+              <small>Optional — leave blank rather than inventing an award total.</small>
             </label>
           </div>
 
@@ -511,7 +604,7 @@ function GrantWritingWorkspace({
                 )
               }
             >
-              AI assist (metered)
+              {busy ? "Assisting…" : "AI assist (metered)"}
             </button>
             {selectedDraft ? (
               <>
@@ -557,7 +650,7 @@ function GrantWritingWorkspace({
             ) : (
               <p className="app-muted">
                 Compose from at least one guided field to generate a draft. Evidence from Impact and onboarding profile
-                is woven in automatically.
+                is woven in automatically — award $ never appears unless you enter an ask.
               </p>
             )}
           </div>
@@ -587,7 +680,24 @@ function GrantWritingWorkspace({
           </p>
           <div className="gwe-draft-list">
             {view.drafts.length === 0 ? (
-              <p className="app-muted">Compose your first narrative from the editor — newest drafts appear here.</p>
+              <EmptyState
+                soft
+                className="gwe-empty"
+                title="No drafts yet"
+                description="Compose from the editor or open Writer for a metered grant answer. Amounts stay empty until you type them."
+              >
+                <div className="gwe-links">
+                  <a className="app-button secondary" href={businessGrantsHref(view.orgId)}>
+                    Business · Grants
+                  </a>
+                  <a className="app-button secondary" href={`/writer${orgQuery(view.orgId)}`}>
+                    Writer
+                  </a>
+                  <a className="app-button secondary" href={`/fundraisers${orgQuery(view.orgId)}`}>
+                    Fundraisers
+                  </a>
+                </div>
+              </EmptyState>
             ) : (
               view.drafts.map((draft) => (
                 <button
@@ -602,7 +712,10 @@ function GrantWritingWorkspace({
                     {moneyLabel(draft.askAmountUsd)}
                     {draft.funderName ? ` · ${draft.funderName}` : ""}
                   </span>
-                  <span>Updated {new Date(draft.updatedAt).toLocaleDateString()}</span>
+                  <span>
+                    {draft.source === "ai" ? "AI assist" : "Template"} · Updated{" "}
+                    {new Date(draft.updatedAt).toLocaleDateString()}
+                  </span>
                 </button>
               ))
             )}

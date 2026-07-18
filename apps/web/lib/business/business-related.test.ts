@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   businessRelatedLinks,
+  BUSINESS_GRANTS_RELATED_INCLUDE,
+  GRANTS_WRITING_RELATED_INCLUDE,
   PLACEMENTS_RELATED_INCLUDE,
   SPONSOR_CRM_RELATED_INCLUDE,
 } from "./business-related";
@@ -26,6 +28,26 @@ describe("business-related Soft-UI helpers", () => {
       "fundraisers",
       "finance-ai",
     ]);
+  });
+
+  it("builds grant writing cross-links to sponsors, fundraisers, and writer", () => {
+    const links = businessRelatedLinks("org-1", { include: GRANTS_WRITING_RELATED_INCLUDE });
+    expect(links.map((l) => l.id)).toEqual([
+      "sponsors",
+      "grants",
+      "fundraisers",
+      "writer",
+      "finance-ai",
+    ]);
+    expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
+    expect(links.find((l) => l.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
+    expect(links.find((l) => l.id === "writer")?.href).toBe("/writer?orgId=org-1");
+  });
+
+  it("builds Business Grants hub links to the writing workbench", () => {
+    const links = businessRelatedLinks("org-1", { include: BUSINESS_GRANTS_RELATED_INCLUDE });
+    expect(links.find((l) => l.id === "grant-workbench")?.href).toBe("/team/grants?orgId=org-1");
+    expect(links.find((l) => l.id === "writer")?.href).toBe("/writer?orgId=org-1");
   });
 
   it("never uses DEMO labels", () => {
