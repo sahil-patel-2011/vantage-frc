@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { isPayingOrgEntitlement } from "../../../lib/paid-plan";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
 
 export async function GET() {
@@ -73,16 +74,38 @@ export async function GET() {
         firstName: string | null;
         displayName: string | null;
         preferredTeamNumber: number | null;
+        primaryFocus: string | null;
+        teamRole: string | null;
         onboardingCompletedAt: string | null;
       }>(
         `SELECT first_name AS "firstName",
                 display_name AS "displayName",
                 preferred_team_number AS "preferredTeamNumber",
+                primary_focus AS "primaryFocus",
+                team_role AS "teamRole",
                 onboarding_completed_at::text AS "onboardingCompletedAt"
          FROM profiles WHERE user_id=$1`,
         [session.user.id],
       );
       const tba = await resolveTbaConfigured(client, membership.rows[0]?.orgId ?? null);
+      let planCode: string | null = null;
+      let planStatus: string | null = null;
+      if (membership.rows[0]?.orgId) {
+        try {
+          const entitlement = await client.query<{ planCode: string; status: string }>(
+            `SELECT e.plan_code AS "planCode", e.status
+             FROM org_entitlements e
+             WHERE e.org_id = $1::uuid
+             LIMIT 1`,
+            [membership.rows[0].orgId],
+          );
+          planCode = entitlement.rows[0]?.planCode ?? null;
+          planStatus = entitlement.rows[0]?.status ?? null;
+        } catch {
+          planCode = null;
+          planStatus = null;
+        }
+      }
       return {
         platformAdmin: Boolean(platform.rowCount),
         membership: membership.rows[0] ?? null,
@@ -91,6 +114,9 @@ export async function GET() {
         unreadMessageCount,
         profile: profileRow.rows[0] ?? null,
         tbaConfigured: tba.tbaConfigured,
+        planCode,
+        planStatus,
+        paidOrg: isPayingOrgEntitlement({ planCode, status: planStatus }),
       };
     });
 
@@ -114,7 +140,12 @@ export async function GET() {
       unreadNotificationCount: profile.unreadNotificationCount,
       unreadMessageCount: profile.unreadMessageCount,
       onboardingComplete: Boolean(profile.profile?.onboardingCompletedAt),
+      primaryFocus: profile.profile?.primaryFocus ?? "competition",
+      teamRole: profile.profile?.teamRole ?? null,
       tbaConfigured: profile.tbaConfigured,
+      planCode: profile.planCode,
+      planStatus: profile.planStatus,
+      paidOrg: profile.paidOrg,
     });
   } catch {
     return Response.json({ authenticated: false }, { status: 401 });
