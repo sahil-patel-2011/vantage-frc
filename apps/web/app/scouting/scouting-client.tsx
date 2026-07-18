@@ -3,6 +3,7 @@
 import type { SchemaDefinition, ScoutSchema, SyncEntry } from "@vantage/scouting";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
 import {
   cacheEvent,
   getCachedEvent,
@@ -51,10 +52,12 @@ type SpeechRecognitionLike = {
   start(): void;
 };
 
+type ScoutTab = "match" | "pit" | "conflicts";
+
 export default function ScoutingClient({ orgId }: { orgId: string }) {
   const searchParams = useSearchParams();
   const [data, setData] = useState<Bootstrap | null>(null);
-  const [type, setType] = useState<"match" | "pit">("match");
+  const [tab, setTab] = useState<ScoutTab>("match");
   const [matchKey, setMatchKey] = useState("");
   const [teamKey, setTeamKey] = useState("");
   const [payload, setPayload] = useState<Record<string, unknown>>({});
@@ -67,6 +70,9 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
   const [formulaName, setFormulaName] = useState("");
   const [formulaWeights, setFormulaWeights] = useState<Record<string, number>>({});
+  const [showFormula, setShowFormula] = useState(false);
+
+  const type = tab === "pit" ? "pit" : "match";
 
   const refreshCounts = useCallback(async () => setCounts(await pendingCounts()), []);
   const sync = useCallback(async () => {
@@ -143,11 +149,11 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
         ...(match.blueAlliance?.teamKeys ?? []),
       ];
       const comp = match.compLevel?.toUpperCase() ?? "MATCH";
-      for (const teamKey of teams) {
+      for (const key of teams) {
         options.push({
           matchKey: match.matchKey,
-          teamKey,
-          label: `${comp} ${match.matchNumber} · ${teamKey}`,
+          teamKey: key,
+          label: `${comp} ${match.matchNumber} · ${key}`,
         });
       }
     }
@@ -274,13 +280,13 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ orgId, action: "ensure_defaults" }),
     });
-    const payload = (await response.json().catch(() => ({}))) as Bootstrap & { error?: string };
+    const body = (await response.json().catch(() => ({}))) as Bootstrap & { error?: string };
     if (!response.ok) {
-      setMessage(payload.error ?? "Could not create starter forms.");
+      setMessage(body.error ?? "Could not create starter forms.");
       return;
     }
-    setData(payload);
-    await cacheEvent(orgId, payload);
+    setData(body);
+    await cacheEvent(orgId, body);
     setMessage("Starter match and pit forms are ready.");
   }
 
@@ -294,140 +300,301 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
     else setMessage("Coach role is required to review conflicts");
   }
 
+  function onTabChange(id: string) {
+    const next = id as ScoutTab;
+    setTab(next);
+    if (next === "conflicts") void loadConflicts();
+  }
+
   return (
-    <main className="scout-app">
-      <header className="scout-header">
-        <div>
-          <span className="eyebrow">VANTAGE / SCOUT</span>
-          <h1>Event scouting</h1>
-          <p className="app-muted">Match and pit forms cache on this device. Empty until an active event and schema are set — no fake coverage.</p>
+    <main className="module-page scout-page">
+      <PageHeader
+        breadcrumbs="Competition / Scouting"
+        title="Scouting Hub"
+        description="Match and pit forms cache on this device. Coverage stays empty until an active event and schema exist — nothing is fabricated."
+      >
+        <div className="scout-header-meta">
+          <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
+            {online ? "Online" : "Offline"} · {counts.entries} entries · {counts.media} media
+          </span>
+          <button type="button" className="app-button secondary" onClick={() => void sync()}>
+            Sync now
+          </button>
         </div>
-        <div className={`network ${online ? "online" : "offline"}`}>
-          {online ? "ONLINE" : "OFFLINE"} · {counts.entries} entries · {counts.media} media queued
-        </div>
-      </header>
+      </PageHeader>
+
       {!data?.eventKey ? (
-        <section className="app-empty" style={{ marginBottom: 16 }}>
-          <span className="app-badge setup">Setup required</span>
-          <h2>No active event</h2>
-          <p>Select an event in Command before assignments and forms can load. Offline queue still works once an event is cached.</p>
+        <EmptyState
+          badge="Setup required"
+          badgeTone="setup"
+          title="No active event"
+          description="Select an event in Event Day before assignments and forms can load. Offline queue still works once an event is cached."
+        >
           <a className="app-button secondary" href={`/command?orgId=${encodeURIComponent(orgId)}`}>
             Select event
           </a>
-        </section>
+        </EmptyState>
       ) : null}
-      {data?.eventKey && !schema ? (
-        <section className="app-empty" style={{ marginBottom: 16 }}>
-          <span className="app-badge setup">Forms required</span>
-          <h2>No {type} scouting form yet</h2>
-          <p>
-            {data.canManageSchemas
+
+      {data?.eventKey && !schema && tab !== "conflicts" ? (
+        <EmptyState
+          badge="Forms required"
+          badgeTone="setup"
+          title={`No ${type} scouting form yet`}
+          description={
+            data.canManageSchemas
               ? "Create starter match and pit forms for this season, or publish a custom schema from Team settings."
-              : "Ask an owner or admin to publish scouting forms for this event."}
-          </p>
+              : "Ask an owner or admin to publish scouting forms for this event."
+          }
+        >
           {data.canManageSchemas ? (
             <button className="app-button secondary" type="button" onClick={() => void createStarterForms()}>
               Create starter forms
             </button>
           ) : null}
-        </section>
+        </EmptyState>
       ) : null}
-      <section className="event-strip">
-        <strong>{data?.eventKey ?? "No active event"}</strong>
-        <span>Forms and assignments are cached on this device.</span>
-        <button onClick={() => void sync()}>Sync now</button>
-      </section>
-      <nav className="scout-tabs" aria-label="Scouting views">
-        <button className={type === "match" ? "active" : ""} onClick={() => setType("match")}>Match</button>
-        <button className={type === "pit" ? "active" : ""} onClick={() => setType("pit")}>Pit</button>
-        <button onClick={() => void loadConflicts()}>Conflict review</button>
-      </nav>
-      {conflicts.length > 0 && (
-        <section className="conflict-panel">
-          <h2>Cross-scout disagreements</h2>
-          {conflicts.map((conflict) => (
-            <article key={String(conflict.id)}>
-              <strong>{String(conflict.matchKey)} · {String(conflict.teamKey)}</strong>
-              <span>{String(conflict.fieldKey)}: {JSON.stringify(conflict.values)}</span>
-              <small>Status: {String(conflict.status)} · entry attribution retained</small>
-              {conflict.status === "open" && <div><button onClick={() => void reviewConflict(String(conflict.id), "resolved")}>Resolve</button> <button onClick={() => void reviewConflict(String(conflict.id), "dismissed")}>Dismiss</button></div>}
-            </article>
-          ))}
-        </section>
-      )}
-      <div className="scout-grid">
-        <section className="scout-form">
-          <div className="form-heading">
-            <div><span className="eyebrow">PINNED FORM</span><h2>{schema?.definition.title ?? `No ${type} schema`}</h2></div>
-            <span>v{schema?.version ?? "—"}</span>
-          </div>
-          {type === "match" && (
-            <label>Assignment
-              <select value={`${matchKey}|${teamKey}`} onChange={(event) => {
-                const [match, team] = event.target.value.split("|");
-                setMatchKey(match ?? "");
-                setTeamKey(team ?? "");
-              }}>
-                <option value="|">Select match and team</option>
-                {matchOptions.map((option) => (
-                  <option key={`${option.matchKey}-${option.teamKey}`} value={`${option.matchKey}|${option.teamKey}`}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {!matchOptions.length ? (
-                <small>No assignments or synced matches yet — sync TBA after the schedule is published.</small>
-              ) : null}
-            </label>
+
+      {data?.eventKey ? (
+        <Panel className="scout-event-strip" style={{ minHeight: "auto", marginBottom: 14 }}>
+          <strong>{data.eventKey}</strong>
+          <span className="app-muted">Forms and assignments are cached on this device.</span>
+        </Panel>
+      ) : null}
+
+      <TabBar
+        aria-label="Scouting views"
+        value={tab}
+        onChange={onTabChange}
+        tabs={[
+          { id: "match", label: "Match" },
+          { id: "pit", label: "Pit" },
+          { id: "conflicts", label: "Conflicts" },
+        ]}
+      />
+
+      {tab === "conflicts" ? (
+        <Panel>
+          <h2 style={{ marginTop: 0 }}>Cross-scout disagreements</h2>
+          {conflicts.length === 0 ? (
+            <p className="app-muted">
+              No open disagreements for this event. Load again after scouts submit overlapping fields.
+            </p>
+          ) : (
+            <ul className="scout-conflict-list">
+              {conflicts.map((conflict) => (
+                <li key={String(conflict.id)}>
+                  <strong>
+                    {String(conflict.matchKey)} · {String(conflict.teamKey)}
+                  </strong>
+                  <span>
+                    {String(conflict.fieldKey)}: {JSON.stringify(conflict.values)}
+                  </span>
+                  <small className="app-muted">
+                    Status: {String(conflict.status)} · entry attribution retained
+                  </small>
+                  {conflict.status === "open" ? (
+                    <div className="scout-conflict-actions">
+                      <button
+                        type="button"
+                        className="app-button secondary"
+                        onClick={() => void reviewConflict(String(conflict.id), "resolved")}
+                      >
+                        Resolve
+                      </button>
+                      <button
+                        type="button"
+                        className="app-button secondary"
+                        onClick={() => void reviewConflict(String(conflict.id), "dismissed")}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           )}
-          {type === "pit" && <label>Team key<input value={teamKey} onChange={(event) => setTeamKey(event.target.value)} placeholder="frc254" /></label>}
-          {schema?.definition.fields.map((field) => (
-            <Field key={field.key} field={field} value={payload[field.key]} onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))} />
-          ))}
-          <label>Scout confidence
-            <select value={confidence} onChange={(event) => setConfidence(event.target.value as typeof confidence)}>
-              <option value="high">High</option><option value="normal">Normal</option><option value="low">Low — downweighted</option>
-            </select>
-          </label>
-          <div className="voice-box">
-            <div><strong>Voice draft</strong><small>Transcription remains a draft until you confirm and save.</small></div>
-            <button onClick={startVoiceDraft}>Record</button>
-            <textarea value={voiceDraft} onChange={(event) => {
-              const transcript = event.target.value;
-              setVoiceDraft(transcript);
-              setSource("voice");
-              const draftField = schema?.definition.fields.find((field) => field.type === "text");
-              if (draftField) setPayload((current) => ({ ...current, [draftField.key]: transcript }));
-            }} placeholder="Voice notes (copied into the first text field)…" />
-          </div>
-          {type === "pit" && <label className="media-button">Queue pit photo/video<input type="file" accept="image/*,video/*" onChange={(event) => event.target.files?.[0] && void attachMedia(event.target.files[0])} /></label>}
-          <button className="primary-action" onClick={() => void submit()}>Save {online ? "& sync" : "offline"}</button>
-          {message && <p className="form-message" role="status">{message}</p>}
-        </section>
-        <aside className="activity-panel">
-          <span className="eyebrow">ATTRIBUTION / LWW</span>
-          <h2>Recent entries</h2>
-          <p>Latest timestamp wins per stable client entry. Scout identity, confidence, source, and conflicts stay visible.</p>
-          {data?.recentEntries.map((entry) => (
-            <article key={entry.id}>
-              <strong>{entry.matchKey ?? "PIT"} · {entry.teamKey}</strong>
-              <span>{entry.scoutName} · {entry.source}</span>
-              <small>{entry.confidence} confidence · {new Date(entry.updatedAt).toLocaleTimeString()}</small>
-            </article>
-          ))}
-          <section className="formula-builder">
-            <span className="eyebrow">COACH VALUE FORMULA</span>
-            <h2>Weighted score</h2>
-            <input aria-label="Formula name" placeholder="e.g. Pick value" value={formulaName} onChange={(event) => setFormulaName(event.target.value)} />
-            {schema?.definition.fields.filter((field) => field.type === "number").map((field) => (
-              <label key={field.key}>{field.label} weight
-                <input type="number" value={formulaWeights[field.key] ?? 0} onChange={(event) => setFormulaWeights((current) => ({ ...current, [field.key]: event.target.valueAsNumber }))} />
-              </label>
+        </Panel>
+      ) : (
+        <div className="scout-workbench">
+          <Panel as="section" className="scout-form-panel">
+            <header className="scout-form-heading">
+              <div>
+                <h2>{schema?.definition.title ?? `No ${type} form`}</h2>
+                <p className="app-muted">Primary action: fill the form, then save.</p>
+              </div>
+              <span className="app-badge">v{schema?.version ?? "—"}</span>
+            </header>
+
+            {type === "match" ? (
+              <FormRow
+                label="Assignment"
+                hint={
+                  !matchOptions.length
+                    ? "No assignments or synced matches yet — sync TBA after the schedule is published."
+                    : undefined
+                }
+              >
+                <select
+                  value={`${matchKey}|${teamKey}`}
+                  onChange={(event) => {
+                    const [match, team] = event.target.value.split("|");
+                    setMatchKey(match ?? "");
+                    setTeamKey(team ?? "");
+                  }}
+                >
+                  <option value="|">Select match and team</option>
+                  {matchOptions.map((option) => (
+                    <option key={`${option.matchKey}-${option.teamKey}`} value={`${option.matchKey}|${option.teamKey}`}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </FormRow>
+            ) : (
+              <FormRow label="Team key">
+                <input
+                  value={teamKey}
+                  onChange={(event) => setTeamKey(event.target.value)}
+                  placeholder="frc254"
+                />
+              </FormRow>
+            )}
+
+            {schema?.definition.fields.map((field) => (
+              <Field
+                key={field.key}
+                field={field}
+                value={payload[field.key]}
+                onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))}
+              />
             ))}
-            <button onClick={() => void saveFormula()}>Save formula</button>
-          </section>
-        </aside>
-      </div>
+
+            <FormRow label="Scout confidence">
+              <select
+                value={confidence}
+                onChange={(event) => setConfidence(event.target.value as typeof confidence)}
+              >
+                <option value="high">High</option>
+                <option value="normal">Normal</option>
+                <option value="low">Low — downweighted</option>
+              </select>
+            </FormRow>
+
+            <div className="scout-voice">
+              <div>
+                <strong>Voice draft</strong>
+                <small className="app-muted">Stays a draft until you confirm and save.</small>
+              </div>
+              <button type="button" className="app-button secondary" onClick={startVoiceDraft}>
+                Record
+              </button>
+              <textarea
+                value={voiceDraft}
+                onChange={(event) => {
+                  const transcript = event.target.value;
+                  setVoiceDraft(transcript);
+                  setSource("voice");
+                  const draftField = schema?.definition.fields.find((field) => field.type === "text");
+                  if (draftField) setPayload((current) => ({ ...current, [draftField.key]: transcript }));
+                }}
+                placeholder="Voice notes (copied into the first text field)…"
+              />
+            </div>
+
+            {type === "pit" ? (
+              <label className="scout-media">
+                Queue pit photo/video
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(event) => event.target.files?.[0] && void attachMedia(event.target.files[0])}
+                />
+              </label>
+            ) : null}
+
+            <button type="button" className="app-button" onClick={() => void submit()}>
+              Save {online ? "& sync" : "offline"}
+            </button>
+            {message ? (
+              <p className="form-message" role="status">
+                {message}
+              </p>
+            ) : null}
+          </Panel>
+
+          <aside className="scout-side">
+            <Panel className="scout-activity" style={{ minHeight: "auto" }}>
+              <h2 style={{ marginTop: 0 }}>Recent entries</h2>
+              <p className="app-muted">
+                Latest timestamp wins per entry. Scout identity, confidence, and source stay visible.
+              </p>
+              {data?.recentEntries?.length ? (
+                <ul className="scout-entry-list">
+                  {data.recentEntries.map((entry) => (
+                    <li key={entry.id}>
+                      <strong>
+                        {entry.matchKey ?? "PIT"} · {entry.teamKey}
+                      </strong>
+                      <span>
+                        {entry.scoutName} · {entry.source}
+                      </span>
+                      <small className="app-muted">
+                        {entry.confidence} confidence · {new Date(entry.updatedAt).toLocaleTimeString()}
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="app-muted">No entries yet for this event.</p>
+              )}
+            </Panel>
+
+            <Panel style={{ minHeight: "auto" }}>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setShowFormula((open) => !open)}
+              >
+                {showFormula ? "Hide coach formula" : "Coach value formula"}
+              </button>
+              {showFormula ? (
+                <div className="scout-formula">
+                  <p className="app-muted">Optional weighted score from numeric fields. Coach role required to save.</p>
+                  <FormRow label="Formula name">
+                    <input
+                      aria-label="Formula name"
+                      placeholder="e.g. Pick value"
+                      value={formulaName}
+                      onChange={(event) => setFormulaName(event.target.value)}
+                    />
+                  </FormRow>
+                  {schema?.definition.fields
+                    .filter((field) => field.type === "number")
+                    .map((field) => (
+                      <FormRow key={field.key} label={`${field.label} weight`}>
+                        <input
+                          type="number"
+                          value={formulaWeights[field.key] ?? 0}
+                          onChange={(event) =>
+                            setFormulaWeights((current) => ({
+                              ...current,
+                              [field.key]: event.target.valueAsNumber,
+                            }))
+                          }
+                        />
+                      </FormRow>
+                    ))}
+                  <button type="button" className="app-button secondary" onClick={() => void saveFormula()}>
+                    Save formula
+                  </button>
+                </div>
+              ) : null}
+            </Panel>
+          </aside>
+        </div>
+      )}
     </main>
   );
 }
@@ -442,10 +609,35 @@ function Field({
   onChange(value: unknown): void;
 }) {
   if (field.type === "boolean") {
-    return <label className="check-field"><input type="checkbox" checked={Boolean(value)} onChange={(event) => onChange(event.target.checked)} />{field.label}</label>;
+    return (
+      <label className="soft-form-row check-field">
+        <span className="app-muted">{field.label}</span>
+        <input type="checkbox" checked={Boolean(value)} onChange={(event) => onChange(event.target.checked)} />
+      </label>
+    );
   }
   if (field.type === "select") {
-    return <label>{field.label}<select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}><option value="">Select…</option>{field.options?.map((option) => <option key={option}>{option}</option>)}</select></label>;
+    return (
+      <FormRow label={field.label}>
+        <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
+          <option value="">Select…</option>
+          {field.options?.map((option) => (
+            <option key={option}>{option}</option>
+          ))}
+        </select>
+      </FormRow>
+    );
   }
-  return <label>{field.label}<input type={field.type === "number" ? "number" : "text"} value={String(value ?? "")} required={field.required} onChange={(event) => onChange(field.type === "number" ? event.target.valueAsNumber : event.target.value)} /></label>;
+  return (
+    <FormRow label={field.label}>
+      <input
+        type={field.type === "number" ? "number" : "text"}
+        value={String(value ?? "")}
+        required={field.required}
+        onChange={(event) =>
+          onChange(field.type === "number" ? event.target.valueAsNumber : event.target.value)
+        }
+      />
+    </FormRow>
+  );
 }

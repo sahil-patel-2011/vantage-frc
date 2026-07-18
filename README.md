@@ -20,6 +20,13 @@ pricing controls, and durable private/team agent context.
 - `packages/agent` — configurable model router, bounded context selection, private/team memory repository,
   and a deterministic local chat adapter.
 
+## Local clone path
+
+On this machine the preferred checkout folder is `C:\Users\sahil\Cursor Projects\Vantage`
+(short brand name). Older names (`Vantage FRC Robotics AIO APP`, `…-business-portal`) referred to
+the same `vantage-frc` GitHub remote; business features live under `apps/web` `/business`, not a
+second app. See `archive/business-portal-legacy/README.md`.
+
 ## Local setup
 
 1. Install Node 22+ and run `npm install`.

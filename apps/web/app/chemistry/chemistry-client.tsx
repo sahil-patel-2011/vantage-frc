@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Icon } from "../../components/app-shell";
+import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
 import type { ChemistryView } from "../../lib/chemistry/load-chemistry";
 
 type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null };
@@ -71,16 +72,15 @@ export default function ChemistryClient() {
   if (!orgId && !loading) {
     return (
       <main className="edc-page chem-page">
-        <header className="edc-header">
-          <div>
-            <p className="edc-kicker">Alliance Chemistry</p>
-            <h1>Select a team workspace</h1>
-            <p>Open Home to choose your organization first.</p>
-          </div>
+        <PageHeader
+          breadcrumbs="Competition / Chemistry"
+          title="Select a team workspace"
+          description="Open Home to choose your organization first."
+        >
           <a className="app-button" href="/dashboard">
             Go to Home
           </a>
-        </header>
+        </PageHeader>
       </main>
     );
   }
@@ -89,15 +89,11 @@ export default function ChemistryClient() {
 
   return (
     <main className="edc-page chem-page">
-      <header className="edc-header">
-        <div>
-          <p className="edc-kicker">Alliance Chemistry</p>
-          <h1>Compatibility scorer</h1>
-          <p>
-            Score how well 2–3 robots complement each other — roles, EPA balance, scout reliability —
-            labeled as MODEL, never a TBA pick fact.
-          </p>
-        </div>
+      <PageHeader
+        breadcrumbs="Competition / Chemistry"
+        title="Alliance Chemistry"
+        description="Score how well 2–3 robots complement each other — roles, EPA balance, scout reliability. Labeled MODEL, never a TBA pick fact."
+      >
         <div className="edc-header-actions">
           <a className="app-button secondary" href={orgId ? `/command?orgId=${encodeURIComponent(orgId)}` : "/command"}>
             Event Day
@@ -106,14 +102,25 @@ export default function ChemistryClient() {
             Strategy
           </a>
         </div>
-      </header>
+      </PageHeader>
 
       {error ? <p className="edc-banner error">{error}</p> : null}
 
-      <section className="chem-compose edc-card">
+      <Panel
+        as="form"
+        className="chem-compose"
+        style={{ minHeight: "auto" }}
+        onSubmit={(event: React.FormEvent) => {
+          event.preventDefault();
+          void load(orgId, draft);
+        }}
+      >
         <header>
           <div className="edc-card-title">
-            <span className="edc-icon" style={{ ["--tone" as string]: "#1f4fd6", ["--tone-bg" as string]: "#e4ecfc" }}>
+            <span
+              className="edc-icon"
+              style={{ ["--tone" as string]: "#1f4fd6", ["--tone-bg" as string]: "#e4ecfc" }}
+            >
               <Icon name="users" />
             </span>
             <div>
@@ -126,38 +133,30 @@ export default function ChemistryClient() {
             </div>
           </div>
         </header>
-        <form
-          className="chem-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void load(orgId, draft);
-          }}
-        >
-          <label>
-            Team numbers (2–3)
+        <div className="chem-form">
+          <FormRow label="Team numbers (2–3)">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="254, 1678, 118"
               aria-label="Alliance team numbers"
             />
-          </label>
+          </FormRow>
           <button className="app-button" type="submit" disabled={loading || !orgId}>
             Score chemistry
           </button>
-        </form>
-      </section>
+        </div>
+      </Panel>
 
       {view?.status === "setup_required" ? (
-        <section className="dash-setup-banner">
-          <div>
-            <span className="edc-kicker">Setup</span>
-            <h2>{view.message}</h2>
-            <p>No demo alliances — chemistry needs a real event context and reference metrics.</p>
-          </div>
-          <ol className="dash-setup-steps">
-            <li className="current">
-              <b>1</b>
+        <EmptyState
+          badge="Setup required"
+          badgeTone="setup"
+          title={view.message}
+          description="No demo alliances — chemistry needs a real event context and reference metrics."
+        >
+          <ol className="strategy-setup-steps">
+            <li>
               <div>
                 <strong>Select active event</strong>
                 <span>Event Day Command → Change event</span>
@@ -165,7 +164,6 @@ export default function ChemistryClient() {
               <a href={orgId ? `/command?orgId=${encodeURIComponent(orgId)}` : "/command"}>Open</a>
             </li>
             <li>
-              <b>2</b>
               <div>
                 <strong>Sync TBA / Statbotics</strong>
                 <span>Metrics power role complementarity</span>
@@ -173,7 +171,7 @@ export default function ChemistryClient() {
               <a href={orgId ? `/team/data?orgId=${encodeURIComponent(orgId)}` : "/team/data"}>Open</a>
             </li>
           </ol>
-        </section>
+        </EmptyState>
       ) : null}
 
       {chemistry ? (
@@ -181,7 +179,10 @@ export default function ChemistryClient() {
           <article className={`edc-card chem-score ${scoreTone(chemistry.score)}`}>
             <header>
               <div className="edc-card-title">
-                <span className="edc-icon" style={{ ["--tone" as string]: "#1f4fd6", ["--tone-bg" as string]: "#e4ecfc" }}>
+                <span
+                  className="edc-icon"
+                  style={{ ["--tone" as string]: "#1f4fd6", ["--tone-bg" as string]: "#e4ecfc" }}
+                >
                   <Icon name="bolt" />
                 </span>
                 <div>
@@ -218,7 +219,10 @@ export default function ChemistryClient() {
           <article className="edc-card">
             <header>
               <div className="edc-card-title">
-                <span className="edc-icon" style={{ ["--tone" as string]: "#0f766e", ["--tone-bg" as string]: "#ccfbf1" }}>
+                <span
+                  className="edc-icon"
+                  style={{ ["--tone" as string]: "#0f766e", ["--tone-bg" as string]: "#ccfbf1" }}
+                >
                   <Icon name="target" />
                 </span>
                 <div>
@@ -243,7 +247,10 @@ export default function ChemistryClient() {
           <article className="edc-card">
             <header>
               <div className="edc-card-title">
-                <span className="edc-icon" style={{ ["--tone" as string]: "#15803d", ["--tone-bg" as string]: "#dcfce7" }}>
+                <span
+                  className="edc-icon"
+                  style={{ ["--tone" as string]: "#15803d", ["--tone-bg" as string]: "#dcfce7" }}
+                >
                   <Icon name="stats" />
                 </span>
                 <div>
@@ -256,31 +263,30 @@ export default function ChemistryClient() {
               <div>
                 <h3>Strengths</h3>
                 <ul>
-                  {chemistry.strengths.length ? chemistry.strengths.map((s) => <li key={s}>{s}</li>) : <li className="edc-muted">None flagged yet</li>}
+                  {chemistry.strengths.length ? (
+                    chemistry.strengths.map((s) => <li key={s}>{s}</li>)
+                  ) : (
+                    <li className="edc-muted">None flagged yet</li>
+                  )}
                 </ul>
               </div>
               <div>
                 <h3>Risks</h3>
                 <ul>
-                  {chemistry.risks.length ? chemistry.risks.map((s) => <li key={s}>{s}</li>) : <li className="edc-muted">None flagged yet</li>}
+                  {chemistry.risks.length ? (
+                    chemistry.risks.map((s) => <li key={s}>{s}</li>)
+                  ) : (
+                    <li className="edc-muted">None flagged yet</li>
+                  )}
                 </ul>
               </div>
             </div>
-            <ul className="edc-factors">
-              {chemistry.provenance.map((line) => (
-                <li key={line}>
-                  <strong>Provenance</strong>
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
           </article>
         </section>
       ) : view?.status === "empty" ? (
-        <div className="dash-empty" style={{ minHeight: 160 }}>
-          <strong>{view.message}</strong>
-          <p>Enter team numbers above, or set an event so we can default to your next alliance.</p>
-        </div>
+        <EmptyState soft title={view.message} description="Enter team numbers above, or set an event so we can default to your next alliance." />
+      ) : loading ? (
+        <EmptyState title="Loading…" description="Scoring alliance chemistry." aria-busy />
       ) : null}
 
       {view?.teams.length ? (
@@ -317,8 +323,8 @@ export default function ChemistryClient() {
 
       {view?.suggestions.length ? (
         <section className="chem-suggest">
-          <h2>High-EPA seats at this event</h2>
-          <p className="edc-muted">Not a pick list — just event metrics to try in the scorer.</p>
+          <h2>Try high-EPA seats</h2>
+          <p className="edc-muted">Not a pick list — event metrics you can add to the scorer.</p>
           <ul className="edc-queue">
             {view.suggestions.map((s) => (
               <li key={s.teamKey}>

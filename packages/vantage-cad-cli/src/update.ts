@@ -41,8 +41,13 @@ export async function findVantageRepoRoot(
     if (parent === dir) break;
     dir = parent;
   }
-  const homeGuess = join(homedir(), "Cursor Projects", "Vantage FRC Robotics AIO APP");
-  if (await isRepoRoot(homeGuess)) return homeGuess;
+  const homeGuesses = [
+    join(homedir(), "Cursor Projects", "Vantage"),
+    join(homedir(), "Cursor Projects", "Vantage FRC Robotics AIO APP"),
+  ];
+  for (const homeGuess of homeGuesses) {
+    if (await isRepoRoot(homeGuess)) return homeGuess;
+  }
   return null;
 }
 

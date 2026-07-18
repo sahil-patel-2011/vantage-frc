@@ -1,3 +1,4 @@
+import { EmptyState } from "../../components/ui";
 import ScoutingClient from "./scouting-client";
 
 export default async function ScoutingPage({
@@ -8,11 +9,17 @@ export default async function ScoutingPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="content soft-gate">
-        <span className="eyebrow">VANTAGE / SCOUT</span>
-        <h1>Select a workspace</h1>
-        <p>Open scouting from your team workspace so the active event can be cached for offline match and pit entry.</p>
-        <a href="/workspace">Select workspace</a>
+      <main className="module-page">
+        <EmptyState
+          badge="Workspace"
+          badgeTone="setup"
+          title="Select a workspace"
+          description="Open scouting from your team workspace so the active event can be cached for offline match and pit entry."
+        >
+          <a className="app-button" href="/workspace">
+            Select workspace
+          </a>
+        </EmptyState>
       </main>
     );
   }

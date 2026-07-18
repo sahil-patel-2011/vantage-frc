@@ -104,6 +104,6 @@ describe("local update repo discovery", () => {
   it("resolves the monorepo root from cwd", async () => {
     const root = await findVantageRepoRoot(process.env, process.cwd());
     expect(root).toBeTruthy();
-    expect(String(root)).toMatch(/Vantage FRC Robotics AIO APP$/i);
+    expect(String(root).replace(/\\/g, "/")).toMatch(/\/(Vantage|Vantage FRC Robotics AIO APP)$/i);
   });
 });
