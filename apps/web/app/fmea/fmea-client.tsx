@@ -6,22 +6,100 @@ import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { fmeaContextLabel, fmeaLevelLabel, fmeaStatusLabel } from "../../lib/fmea";
 import { FMEA_CONTEXTS, FMEA_STATUSES, type FmeaView } from "../../lib/fmea/compute-fmea";
+import {
+  FMEA_BUILD_RELATED_INCLUDE,
+  FMEA_TEAM_RELATED_INCLUDE,
+  fmeaNextActions,
+  fmeaRelatedLinks,
+  formatOsdFactors,
+  formatRpnDisplay,
+} from "../../lib/fmea/fmea-related";
 import type { FmeaContext, FmeaEvaluation, FmeaLevel, FmeaStatus } from "../../lib/fmea/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./fmea.css";
 
 type LiveView = Extract<FmeaView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
 
-const LEVEL_COLOR: Record<FmeaLevel, string> = {
-  low: "#2f9e57",
-  moderate: "#c9a900",
-  high: "#d9822b",
-  critical: "#c02626",
-};
-
 const SCALES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
+function useHubEmbed(): "team" | "build" | null {
+  const [embed, setEmbed] = useState<"team" | "build" | null>(null);
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith("/team")) setEmbed("team");
+    else if (path.startsWith("/build")) setEmbed("build");
+    else setEmbed(null);
+  }, []);
+  return embed;
+}
+
+function FmeaRelated({ orgId }: { orgId: string }) {
+  const primary = fmeaRelatedLinks(orgId, { include: ["knowledge", "cad", "prototype"] });
+  return (
+    <div className="fmea-related">
+      <nav className="product-hub-related fmea-hub-related" aria-label="Related reliability tools">
+        {primary.map((link) => (
+          <a key={link.id} className="app-button secondary" href={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
+      <TeamHubRelated orgId={orgId} active="fmea" include={[...FMEA_TEAM_RELATED_INCLUDE]} />
+      <BuildHubRelated orgId={orgId} active="fmea" include={[...FMEA_BUILD_RELATED_INCLUDE]} />
+    </div>
+  );
+}
+
+function NextActions({
+  orgId,
+  failureCount,
+  activeCount,
+  needsFixCount,
+  highestRpn,
+  topTitle,
+}: {
+  orgId?: string | null;
+  failureCount: number;
+  activeCount: number;
+  needsFixCount: number;
+  highestRpn: number;
+  topTitle?: string | null;
+}) {
+  const actions = fmeaNextActions({
+    orgId,
+    failureCount,
+    activeCount,
+    needsFixCount,
+    highestRpn,
+    topTitle,
+  });
+  return (
+    <section className="fmea-next-actions app-card soft-panel" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>Prioritized from logged failures — RPN stays blank until you score real O×S×D.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function FmeaClient() {
+  const embed = useHubEmbed();
   const [view, setView] = useState<FmeaView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -29,6 +107,7 @@ export default function FmeaClient() {
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  const crumbs = embed === "build" ? "Build / FMEA" : "Team / FMEA";
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -81,22 +160,85 @@ export default function FmeaClient() {
     [orgId, season, busy],
   );
 
-  const orgQuery = orgId ? `?orgId=${orgId}` : "";
+  if (fetchFailed || view == null) {
+    return (
+      <main className="module-page fmea-page">
+        <PageHeader
+          breadcrumbs={crumbs}
+          title="Failure Log (FMEA)"
+          description="Capture in-match and pit failures with real O×S×D scores — never demo RPN."
+        />
+        <EmptyState
+          soft
+          title={fetchFailed ? "Could not load the failure log" : "Loading failure log…"}
+          description={
+            fetchFailed
+              ? "A network or server issue prevented loading. Try again."
+              : "Checking your workspace."
+          }
+          aria-busy={!fetchFailed}
+        >
+          {fetchFailed ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
+      </main>
+    );
+  }
+
+  if (view.status === "setup_required") {
+    return (
+      <main className="module-page fmea-page">
+        <PageHeader
+          breadcrumbs={crumbs}
+          title="Failure Log (FMEA)"
+          description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection from real events only."
+        />
+        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
+          <ol className="fmea-setup-steps">
+            {view.steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ol>
+        </EmptyState>
+        <NextActions
+          orgId={view.orgId}
+          failureCount={0}
+          activeCount={0}
+          needsFixCount={0}
+          highestRpn={0}
+        />
+      </main>
+    );
+  }
+
+  const hasFailures = view.evaluations.length > 0;
+  const topTitle = view.summary.topFailures[0]?.failure.title ?? null;
 
   return (
-    <main className="module-page">
+    <main className="module-page fmea-page">
       <PageHeader
-        breadcrumbs="Team / FMEA"
+        breadcrumbs={crumbs}
         title="Failure Log (FMEA)"
         description={
           <>
             Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and
-            detection, record root cause and fix — so the weakest system is queryable, not tribal knowledge.
+            detection, record root cause and fix — RPN only from logged scores, never demo numbers.
           </>
         }
       >
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
+        <div className="fmea-header-actions">
+          {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
@@ -115,84 +257,80 @@ export default function FmeaClient() {
               </select>
             </label>
           ) : null}
-          <a className="app-button secondary" href={`/subsystems${orgQuery}`}>
-            Subsystems
-          </a>
-          <a className="app-button secondary" href={`/inspection${orgQuery}`}>
-            Inspection
-          </a>
           <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
             Knowledge
           </a>
-          <a className="app-button secondary" href={hubHref("/team", "batteries", orgId)}>
-            Batteries
+          <a className="app-button secondary" href={hubHref("/build", "cad", orgId)}>
+            CAD
+          </a>
+          <a className="app-button secondary" href={hubHref("/build", "prototype", orgId)}>
+            Prototypes
+          </a>
+          <a className="app-button secondary" href={withOrgHref("/inspection", orgId)}>
+            Inspection
           </a>
         </div>
       </PageHeader>
-      {orgId ? <BuildHubRelated orgId={orgId} active="fmea" /> : null}
-      {orgId ? <TeamHubRelated orgId={orgId} active="fmea" /> : null}
+
+      {orgId ? <FmeaRelated orgId={orgId} /> : null}
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p className="fmea-alert" role="alert">
           {error}
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState title="Could not load the failure log" description="A network or server issue prevented loading. Try again.">
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+      <NextActions
+        orgId={orgId}
+        failureCount={view.summary.total}
+        activeCount={view.summary.active}
+        needsFixCount={view.summary.needsFix.length}
+        highestRpn={view.summary.highestRpn}
+        topTitle={topTitle}
+      />
+
+      <SummaryTiles view={view} />
+      <BatteryReliabilitySignals view={view} />
+
+      {!hasFailures ? (
+        <EmptyState
+          soft
+          title="No failures logged yet"
+          description="When something breaks in the pit or on the field, log it with O/S/D scores. Highest RPN stays blank until then — nothing is invented."
+        >
+          <div className="fmea-risk-links">
+            <a href={hubHref("/team", "knowledge", orgId)}>Knowledge →</a>
+            <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
+            <a href={hubHref("/build", "prototype", orgId)}>Prototypes →</a>
+          </div>
         </EmptyState>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <BatteryReliabilitySignals view={view} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, alignItems: "start" }}>
-            <SubsystemHotspots view={view} orgQuery={orgQuery} />
-            <TopFailures view={view} />
-          </div>
-          <AddFailureForm view={view} busy={busy} mutate={mutate} />
-          <FailureList view={view} busy={busy} mutate={mutate} />
+        <div className="fmea-layout">
+          <SubsystemHotspots view={view} orgId={orgId} />
+          <TopFailures view={view} />
         </div>
       )}
+
+      <AddFailureForm view={view} busy={busy} mutate={mutate} />
+      {hasFailures ? <FailureList view={view} busy={busy} mutate={mutate} orgId={orgId} /> : null}
     </main>
   );
 }
 
-
 function BatteryReliabilitySignals({ view }: { view: LiveView }) {
   if (!view.batterySignals?.length) return null;
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Battery reliability → FMEA</h2>
-      <p className="app-muted" style={{ marginTop: 0 }}>
-        Derived from logged pack measurements — not invented. Promote into the failure log when you confirm a mode.
-      </p>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 10 }}>
+    <Panel className="fmea-panel">
+      <h2>Battery reliability → FMEA</h2>
+      <p>Derived from logged pack measurements — not invented. Promote into the failure log when you confirm a mode.</p>
+      <ul className="fmea-battery-signals">
         {view.batterySignals.map((signal) => (
-          <li key={signal.id} style={{ borderTop: "1px solid var(--app-border, #e5e7eb)", paddingTop: 10 }}>
+          <li key={signal.id}>
             <strong>{signal.title}</strong>
-            <span className="app-muted" style={{ display: "block" }}>
+            <span className="meta">
               L{signal.likelihood} × I{signal.impact} · {signal.category}
             </span>
-            <span style={{ display: "block" }}>{signal.detail}</span>
+            <span>{signal.detail}</span>
             <a href={signal.href}>Open Batteries</a>
           </li>
         ))}
@@ -203,61 +341,66 @@ function BatteryReliabilitySignals({ view }: { view: LiveView }) {
 
 function SummaryTiles({ view }: { view: LiveView }) {
   const s = view.summary;
+  const hasActive = s.active > 0;
   const tiles = [
-    { label: "Active failures", value: String(s.active) },
-    { label: "Critical + high", value: String(s.byLevel.critical + s.byLevel.high) },
-    { label: "Top RPN", value: String(s.highestRpn) },
-    { label: "Needs fix", value: String(s.needsFix.length) },
+    { label: "Active failures", value: String(s.active), tone: s.active > 0 ? "warn" : "" },
+    {
+      label: "Critical + high",
+      value: String(s.byLevel.critical + s.byLevel.high),
+      tone: s.byLevel.critical + s.byLevel.high > 0 ? "critical" : "",
+    },
+    { label: "Top RPN", value: formatRpnDisplay(s.highestRpn, hasActive), tone: "" },
+    { label: "Needs fix", value: String(s.needsFix.length), tone: s.needsFix.length > 0 ? "warn" : "" },
   ];
   return (
     <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
+      <section className="fmea-summary" aria-label="Season risk summary">
         {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
+          <article key={tile.label} className={`fmea-summary-tile${tile.tone ? ` ${tile.tone}` : ""}`}>
+            <strong>{tile.value}</strong>
+            <span>{tile.label}</span>
+          </article>
         ))}
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-        {(["critical", "high", "moderate", "low"] as FmeaLevel[]).map((level) => (
-          <span
-            key={level}
-            className="app-badge"
-            style={{ background: LEVEL_COLOR[level], color: "#fff" }}
-            title={`${s.byLevel[level]} active`}
-          >
-            {fmeaLevelLabel(level)}: {s.byLevel[level]}
-          </span>
-        ))}
-      </div>
+      </section>
+      {hasActive ? (
+        <div className="fmea-level-row">
+          {(["critical", "high", "moderate", "low"] as FmeaLevel[]).map((level) => (
+            <span key={level} className={`fmea-badge ${level}`} title={`${s.byLevel[level]} active`}>
+              {fmeaLevelLabel(level)}: {s.byLevel[level]}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </Panel>
   );
 }
 
-function SubsystemHotspots({ view, orgQuery }: { view: LiveView; orgQuery: string }) {
+function SubsystemHotspots({ view, orgId }: { view: LiveView; orgId: string | null }) {
   if (view.summary.bySubsystem.length === 0) {
     return (
-      <Panel>
-        <h2 style={{ marginTop: 0 }}>Failure-prone subsystems</h2>
-        <p className="app-muted">No failures logged yet. Link entries to subsystems to see the ranking.</p>
-        <a href={`/subsystems${orgQuery}`}>Open subsystems →</a>
+      <Panel className="fmea-panel">
+        <h2>Failure-prone subsystems</h2>
+        <p>No failures logged yet. Link entries to subsystems to see the ranking.</p>
+        <a href={withOrgHref("/subsystems", orgId)}>Open subsystems →</a>
       </Panel>
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Failure-prone subsystems</h2>
-      <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 8 }}>
+    <Panel className="fmea-panel">
+      <h2>Failure-prone subsystems</h2>
+      <ol className="fmea-hotspots">
         {view.summary.bySubsystem.slice(0, 8).map((row) => (
           <li key={`${row.subsystemId ?? row.subsystemName}`}>
-            <strong>{row.subsystemName}</strong>{" "}
-            <span className="app-badge" style={{ background: LEVEL_COLOR[row.level], color: "#fff" }}>
-              {row.count}× · avg RPN {row.avgRpn}
-            </span>
-            {row.openCount > 0 ? (
-              <small className="app-muted"> · {row.openCount} open</small>
-            ) : null}
+            <div className="who">
+              <strong>{row.subsystemName}</strong>
+              <span className={`fmea-badge ${row.level}`}>
+                {row.count}× · avg RPN {row.avgRpn}
+              </span>
+            </div>
+            <div className="meta">
+              max RPN {row.maxRpn}
+              {row.openCount > 0 ? ` · ${row.openCount} open` : ""}
+            </div>
           </li>
         ))}
       </ol>
@@ -268,26 +411,26 @@ function SubsystemHotspots({ view, orgQuery }: { view: LiveView; orgQuery: strin
 function TopFailures({ view }: { view: LiveView }) {
   if (view.summary.topFailures.length === 0) {
     return (
-      <Panel>
-        <h2 style={{ marginTop: 0 }}>Highest RPN</h2>
-        <p className="app-muted">No active failures — keep logging when something breaks.</p>
+      <Panel className="fmea-panel">
+        <h2>Highest RPN</h2>
+        <p>No active failures — keep logging when something breaks. No demo RPN is shown.</p>
       </Panel>
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Highest RPN</h2>
-      <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
+    <Panel className="fmea-panel">
+      <h2>Highest RPN</h2>
+      <ol className="fmea-top-list">
         {view.summary.topFailures.map((evaluation) => (
           <li key={evaluation.failure.id}>
-            <strong>{evaluation.failure.title}</strong>{" "}
-            <span className="app-badge" style={{ background: LEVEL_COLOR[evaluation.level], color: "#fff" }}>
-              {evaluation.rpn}
-            </span>
-            <small className="app-muted">
-              {" "}
-              · {evaluation.failure.subsystemName} · {fmeaContextLabel(evaluation.failure.context)}
-            </small>
+            <div className="who">
+              <strong>{evaluation.failure.title}</strong>
+              <span className={`fmea-badge ${evaluation.level}`}>RPN {evaluation.rpn}</span>
+            </div>
+            <div className="meta">
+              {evaluation.failure.subsystemName} · {fmeaContextLabel(evaluation.failure.context)} ·{" "}
+              {formatOsdFactors(evaluation.failure)}
+            </div>
           </li>
         ))}
       </ol>
@@ -319,8 +462,9 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
     (Number(form.occurrence) || 1) * (Number(form.severity) || 1) * (Number(form.detection) || 1);
 
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Log a failure</h2>
+    <Panel className="fmea-panel">
+      <h2>Log a failure</h2>
+      <p>Preview RPN updates from the O/S/D you pick — it is not saved until you add the entry.</p>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -477,12 +621,17 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             </FormRow>
           ) : null}
         </FormGrid>
-        <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 12, flexWrap: "wrap" }}>
+        <div className="fmea-form-actions">
           <button type="submit" className="app-button" disabled={busy}>
             {busy ? "Saving…" : "Add failure"}
           </button>
-          <span className="app-muted">
-            Preview RPN: <strong>{previewRpn}</strong>
+          <span className="fmea-preview">
+            Preview RPN: <strong>{previewRpn}</strong>{" "}
+            <span className="app-muted">({formatOsdFactors({
+              occurrence: Number(form.occurrence) || 1,
+              severity: Number(form.severity) || 1,
+              detection: Number(form.detection) || 1,
+            })})</span>
           </span>
         </div>
       </form>
@@ -490,22 +639,30 @@ function AddFailureForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
   );
 }
 
-function FailureList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
-  if (view.evaluations.length === 0) {
-    return (
-      <EmptyState
-        title="No failures logged"
-        description="When something breaks in the pit or on the field, log it here with O/S/D scores so the team can see patterns across events."
-      />
-    );
-  }
-
+function FailureList({
+  view,
+  busy,
+  mutate,
+  orgId,
+}: {
+  view: LiveView;
+  busy: boolean;
+  mutate: Mutate;
+  orgId: string | null;
+}) {
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Season log</h2>
-      <div style={{ display: "grid", gap: 12 }}>
+    <Panel className="fmea-panel">
+      <h2>Season log</h2>
+      <p>Risk rows ranked by RPN from logged O×S×D — empty fields stay blank.</p>
+      <div className="fmea-risk-list">
         {view.evaluations.map((evaluation) => (
-          <FailureCard key={evaluation.failure.id} evaluation={evaluation} busy={busy} mutate={mutate} />
+          <FailureCard
+            key={evaluation.failure.id}
+            evaluation={evaluation}
+            busy={busy}
+            mutate={mutate}
+            orgId={orgId}
+          />
         ))}
       </div>
     </Panel>
@@ -516,50 +673,63 @@ function FailureCard({
   evaluation,
   busy,
   mutate,
+  orgId,
 }: {
   evaluation: FmeaEvaluation;
   busy: boolean;
   mutate: Mutate;
+  orgId: string | null;
 }) {
   const f = evaluation.failure;
+  const rowClass = [
+    "fmea-risk-row",
+    evaluation.level,
+    evaluation.needsFix ? "needs-fix" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <article
-      style={{
-        borderTop: "1px solid color-mix(in srgb, var(--app-border, #d7dde8) 80%, transparent)",
-        paddingTop: 12,
-        display: "grid",
-        gap: 8,
-      }}
-    >
-      <header style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
-        <strong style={{ fontSize: "1.05rem" }}>{f.title}</strong>
-        <span className="app-badge" style={{ background: LEVEL_COLOR[evaluation.level], color: "#fff" }}>
-          RPN {evaluation.rpn}
-        </span>
-        <span className="app-muted">
-          O{f.occurrence} · S{f.severity} · D{f.detection}
-        </span>
-        <span className="app-muted">
-          · {f.subsystemName} · {fmeaContextLabel(f.context)}
-        </span>
+    <article className={rowClass}>
+      <header className="fmea-risk-top">
+        <div className="fmea-risk-title">
+          <strong>{f.title}</strong>
+          {f.failureMode ? <p className="mode">{f.failureMode}</p> : null}
+          <div className="fmea-risk-meta">
+            <span className={`fmea-badge ${evaluation.level}`}>{fmeaLevelLabel(evaluation.level)}</span>
+            <span>{f.subsystemName}</span>
+            <span>{fmeaContextLabel(f.context)}</span>
+            {evaluation.needsFix ? <span className="fmea-badge needs-fix">Needs fix</span> : null}
+          </div>
+        </div>
+        <div className="fmea-risk-scores">
+          <span className="fmea-rpn" title="Risk priority number from logged O×S×D">
+            <em>RPN</em>
+            <strong>{evaluation.rpn}</strong>
+          </span>
+          <span className="fmea-osd">{formatOsdFactors(f)}</span>
+        </div>
       </header>
-      {f.failureMode ? <p style={{ margin: 0 }}>{f.failureMode}</p> : null}
-      {f.rootCause ? (
-        <p style={{ margin: 0 }}>
-          <span className="app-muted">Root cause: </span>
-          {f.rootCause}
-        </p>
-      ) : null}
-      {f.fix ? (
-        <p style={{ margin: 0 }}>
-          <span className="app-muted">Fix: </span>
-          {f.fix}
-        </p>
-      ) : evaluation.needsFix ? (
-        <p style={{ margin: 0, color: "#c02626" }}>No fix recorded yet.</p>
-      ) : null}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+
+      <div className="fmea-risk-body">
+        {f.rootCause ? (
+          <p>
+            <span className="label">Root cause: </span>
+            {f.rootCause}
+          </p>
+        ) : null}
+        {f.fix ? (
+          <p>
+            <span className="label">Fix: </span>
+            {f.fix}
+          </p>
+        ) : evaluation.needsFix ? (
+          <p className="warn">No fix recorded yet.</p>
+        ) : null}
+      </div>
+
+      <div className="fmea-risk-actions">
+        <label>
           Status
           <select
             disabled={busy}
@@ -588,6 +758,12 @@ function FailureCard({
           Delete
         </button>
         {f.recordedByName ? <small className="app-muted">Logged by {f.recordedByName}</small> : null}
+      </div>
+
+      <div className="fmea-risk-links">
+        <a href={hubHref("/team", "knowledge", orgId)}>Document in Knowledge</a>
+        <a href={hubHref("/build", "cad", orgId)}>Review in CAD</a>
+        <a href={hubHref("/build", "prototype", orgId)}>Prototype the fix</a>
       </div>
     </article>
   );
