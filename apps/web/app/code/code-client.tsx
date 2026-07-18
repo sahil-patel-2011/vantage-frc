@@ -3,16 +3,20 @@
 import { useState } from "react";
 import { buildDiffProposal, reviewFrcCode } from "@vantage/agent/coding-assistant";
 import { AiHubRelated } from "../../components/ai-hub-related";
-import { withOrgHref } from "../../lib/nav/product-nav";
-import { hubHref } from "../../lib/nav/hubs";
 import { BuildHubRelated } from "../../components/build-hub-related";
+import { EmptyState } from "../../components/ui";
+import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import {
+  CODE_COACH_RELATED_INCLUDE,
+  CODE_COACH_SAMPLE,
+  codeCoachNextActions,
+  codeCoachRelatedLinks,
+  groundedCodeCoachProposal,
+} from "../../lib/code/code-related";
 
-const SAMPLE = `public void periodic() {
-  Timer.delay(0.02);
-  driveMotor.set(3);
-}`;
-
-/** Teach-not-do lessons keyed by coding-assistant pattern ids. */
+/** Teach-not-do lessons keyed by coding-assistant pattern ids — only shown when a rule matched. */
 const COACH_LESSONS: Record<string, { flag: string; explain: string; habit: string }> = {
   "blocking-robot-loop": {
     flag: "Blocking call inside the robot loop",
@@ -53,20 +57,31 @@ export function CodeClient({
   related?: "build" | "ai";
 }) {
   const [path, setPath] = useState("src/main/java/frc/robot/subsystems/DriveSubsystem.java");
-  const [content, setContent] = useState(SAMPLE);
+  const [content, setContent] = useState(CODE_COACH_SAMPLE);
   const [review, setReview] = useState<Review | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const q = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
-  const budgetsHref = orgId ? hubHref("/ai", "budgets", orgId) : "/ai?tab=budgets";
+  const hasSource = Boolean(content.trim());
+  const showMeteredBanner = Boolean(orgId) && related === "ai";
+  const relatedLinks = codeCoachRelatedLinks(orgId || null, { include: [...CODE_COACH_RELATED_INCLUDE] });
+  const nextActions = codeCoachNextActions({
+    orgId: orgId || null,
+    hasSource,
+    hasReview: Boolean(review),
+  });
   const chatHref = orgId ? hubHref("/ai", "chat", orgId) : "/ai?tab=chat";
-  const usageHref = withOrgHref("/team/usage", orgId);
-  const buildCadHref = withOrgHref("/build?tab=cad", orgId);
-  const competitionHref = withOrgHref("/competition", orgId);
+  const cadHref = orgId ? hubHref("/build", "cad", orgId) : "/build?tab=cad";
+  const budgetsHref = orgId ? hubHref("/ai", "budgets", orgId) : "/ai?tab=budgets";
 
   function runReview() {
+    if (!content.trim()) {
+      setReview(null);
+      setProposal(null);
+      setMessage("Paste robot source (or load the sample) before running a review.");
+      return;
+    }
     setBusy(true);
     setMessage(null);
     setProposal(null);
@@ -75,13 +90,13 @@ export function CodeClient({
       setReview(next);
       setMessage(
         next.risks.length
-          ? `Flagged ${next.risks.length} pattern${next.risks.length === 1 ? "" : "s"} — read the teaching notes before changing code.`
-          : "Review complete — no local risk patterns matched.",
+          ? `Flagged ${next.risks.length} matched pattern${next.risks.length === 1 ? "" : "s"} — teaching notes only for rules that hit. No invented findings.`
+          : "Review complete — no local risk patterns matched in this source.",
       );
       void fetch("/api/code", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "review", path, content }),
+        body: JSON.stringify({ action: "review", path, content, orgId: orgId || undefined }),
       }).catch(() => undefined);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Review failed");
@@ -91,29 +106,33 @@ export function CodeClient({
   }
 
   function runPropose() {
+    if (!content.trim()) {
+      setMessage("Paste robot source before building a proposal.");
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
       const nextReview = reviewFrcCode({ path, content });
-      const unifiedDiff = [
-        `--- a/${path}`,
-        `+++ b/${path}`,
-        "@@ -1,4 +1,4 @@",
-        " public void periodic() {",
-        "-  Timer.delay(0.02);",
-        "-  driveMotor.set(3);",
-        "+  driveMotor.set(MathUtil.clamp(demand, -1.0, 1.0));",
-        " }",
-      ].join("\n");
+      setReview(nextReview);
+      const grounded = groundedCodeCoachProposal({ path, content });
+      if (!grounded) {
+        setProposal(null);
+        setMessage(
+          nextReview.risks.length
+            ? `Matched ${nextReview.risks.length} pattern${nextReview.risks.length === 1 ? "" : "s"} — coach will not invent a unified diff for this source. Mentors write the change after reading the teaching notes.`
+            : "No matched patterns and no grounded sample diff — nothing to propose.",
+        );
+        return;
+      }
       const nextProposal = buildDiffProposal({
         path,
-        summary: "Clamp motor output and remove blocking sleep",
-        unifiedDiff,
+        summary: grounded.summary,
+        unifiedDiff: grounded.unifiedDiff,
         review: nextReview,
       });
-      setReview(nextReview);
       setProposal(nextProposal);
-      setMessage("Proposal created — human approval required. Vantage does not deploy to a robot.");
+      setMessage("Proposal created from the teaching sample — human approval required. Vantage does not deploy to a robot.");
       void fetch("/api/code", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -122,7 +141,8 @@ export function CodeClient({
           path,
           content,
           summary: nextProposal.title,
-          unifiedDiff,
+          unifiedDiff: grounded.unifiedDiff,
+          orgId: orgId || undefined,
         }),
       }).catch(() => undefined);
     } catch (error) {
@@ -140,14 +160,14 @@ export function CodeClient({
           <h1>FRC Code Coach</h1>
           <p>
             Flag risky robot-code patterns, explain why they fail under match pressure, then suggest a safer habit.
-            Proposed changes stay human-approved unified diffs. It does not write your whole robot for you — and never
-            deploys to a robot. Pattern review runs locally — no invented AI output and no provider key required.
+            Pattern review runs locally — findings only come from matched rules, never invented AI output. Proposed
+            changes stay human-approved unified diffs. It never deploys to a robot.
           </p>
         </div>
         <div className="cdc-header-actions">
-          <span className="app-badge good">Coach · proposal-only</span>
+          <span className="app-badge good">Local · proposal-only</span>
           {orgId ? (
-            <a className="app-button secondary" href={`/editor/pair${q}`}>
+            <a className="app-button secondary" href={withOrgHref("/editor/pair", orgId)}>
               Pair VS Code
             </a>
           ) : null}
@@ -160,27 +180,86 @@ export function CodeClient({
         <BuildHubRelated orgId={orgId} active="code" />
       )}
 
-      {orgId ? (
-        <nav className="cdc-gov" aria-label="AI and build links">
-          <a href={chatHref}>Assistant</a>
-          <a href={`${budgetsHref}#prompt-caching`}>Prompt caching</a>
-          <a href={usageHref}>AI usage</a>
-          <a href={withOrgHref("/team/admin", orgId)}>GitHub context</a>
-          <a href={buildCadHref}>Build · CAD</a>
-          <a href={competitionHref}>Competition</a>
-        </nav>
-      ) : (
-        <section className="app-card soft-panel product-hub-setup">
-          <span className="app-badge setup">Select workspace</span>
-          <h2>Choose a team to coach code</h2>
-          <p className="app-muted">
-            Local pattern review works without a model key. Pairing VS Code and GitHub context need a workspace.
-          </p>
+      {!orgId ? (
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title="Choose a team to coach code"
+          description="Local pattern review works without a model key. Pairing VS Code, GitHub context, CAD, and AI chat need a workspace."
+          className="product-hub-setup"
+        >
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
-        </section>
+        </EmptyState>
+      ) : (
+        <nav className="cdc-gov" aria-label="CAD, GitHub, and AI chat">
+          {relatedLinks.map((link) => (
+            <a key={link.id} href={link.href}>
+              {link.label}
+            </a>
+          ))}
+          <a href={budgetsHref}>Budgets</a>
+          <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
+        </nav>
       )}
+
+      <section className="cdc-billing" aria-label="Local versus metered">
+        <article className="cdc-billing-local">
+          <span className="app-badge good">Local · free</span>
+          <h2>Code Coach pattern review</h2>
+          <p>
+            Risk rules run in the browser against pasted or loaded source. No provider key, no plan credits, and no
+            findings unless a rule matches evidence in your file.
+          </p>
+        </article>
+        <article className="cdc-billing-metered">
+          <span className="app-badge">Metered AI</span>
+          <h2>AI chat &amp; CAD briefs</h2>
+          <p>
+            Team Assistant and CAD planning use your plan allowance / credits. Open them from the links below when you
+            need generative help — they are separate from this local coach pass.
+          </p>
+          <div className="cdc-billing-actions">
+            <a className="app-button secondary" href={chatHref}>
+              AI chat
+            </a>
+            <a className="app-button secondary" href={cadHref}>
+              Build · CAD
+            </a>
+            {orgId ? (
+              <a className="app-button secondary" href={withOrgHref("/team", orgId) + "#github-connection"}>
+                GitHub context
+              </a>
+            ) : null}
+          </div>
+        </article>
+      </section>
+
+      {showMeteredBanner ? (
+        <MeteredAiCutoffBanner orgId={orgId} className="cdc-cutoff" />
+      ) : null}
+
+      <section className="cdc-next-actions app-card soft-panel" aria-label="Next actions">
+        <header>
+          <h2>Next actions</h2>
+          <p className="app-muted">Setup and cross-links — never placeholder review findings.</p>
+        </header>
+        <ol>
+          {nextActions.map((action) => (
+            <li key={action.id} className={action.primary ? "primary" : undefined}>
+              <div>
+                <strong>{action.label}</strong>
+                <span>{action.detail}</span>
+              </div>
+              <a className="app-button secondary" href={action.href}>
+                Open
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <section className="cdc-flow" aria-label="Teach, don't just do">
         <article>
@@ -207,14 +286,36 @@ export function CodeClient({
       ) : null}
 
       <section className="cdc-workbench">
-        <div className="cdc-source">
+        <div className="cdc-source" id="cdc-source">
           <article className="cdc-panel">
             <header>
               <div>
-                <span className="app-badge">Repository input</span>
+                <span className="app-badge good">Local review</span>
                 <h2>Paste / edit source</h2>
               </div>
             </header>
+            {!hasSource ? (
+              <EmptyState
+                soft
+                badge="Empty"
+                badgeTone="setup"
+                title="No source yet"
+                description="Paste subsystem code, or load the teaching sample. Findings stay empty until a review matches real rules."
+              >
+                <button
+                  type="button"
+                  className="app-button"
+                  onClick={() => {
+                    setContent(CODE_COACH_SAMPLE);
+                    setReview(null);
+                    setProposal(null);
+                    setMessage(null);
+                  }}
+                >
+                  Load teaching sample
+                </button>
+              </EmptyState>
+            ) : null}
             <label>
               Path
               <input value={path} onChange={(event) => setPath(event.target.value)} />
@@ -223,16 +324,25 @@ export function CodeClient({
               Source
               <textarea
                 value={content}
-                onChange={(event) => setContent(event.target.value)}
+                onChange={(event) => {
+                  setContent(event.target.value);
+                  setReview(null);
+                  setProposal(null);
+                }}
                 rows={14}
                 aria-label="Source code"
               />
             </label>
             <footer className="cdc-actions">
-              <button type="button" className="primary-action" disabled={busy} onClick={runReview}>
+              <button type="button" className="primary-action" disabled={busy || !hasSource} onClick={runReview}>
                 Run risk review
               </button>
-              <button type="button" className="app-button secondary" disabled={busy} onClick={runPropose}>
+              <button
+                type="button"
+                className="app-button secondary"
+                disabled={busy || !hasSource}
+                onClick={runPropose}
+              >
                 Build proposal (diff)
               </button>
               <button
@@ -240,7 +350,7 @@ export function CodeClient({
                 className="app-button secondary"
                 disabled={busy}
                 onClick={() => {
-                  setContent(SAMPLE);
+                  setContent(CODE_COACH_SAMPLE);
                   setReview(null);
                   setProposal(null);
                   setMessage(null);
@@ -266,14 +376,13 @@ export function CodeClient({
 
             {review ? (
               review.risks.length === 0 ? (
-                <div className="soft-empty">
-                  <span className="app-badge good">Clear</span>
-                  <h2>No risk patterns matched</h2>
-                  <p>
-                    This pass found nothing in the local coach rules. Still run simulation tests before enabling on a
-                    robot.
-                  </p>
-                </div>
+                <EmptyState
+                  soft
+                  badge="Clear"
+                  badgeTone="good"
+                  title="No risk patterns matched"
+                  description="This pass found nothing in the local coach rules. Still run simulation tests before enabling on a robot — empty is not certification."
+                />
               ) : (
                 <ul className="cdc-findings">
                   {review.risks.map((risk) => {
@@ -302,14 +411,13 @@ export function CodeClient({
                 </ul>
               )
             ) : (
-              <div className="soft-empty">
-                <span className="app-badge setup">Idle</span>
-                <h2>No review yet</h2>
-                <p>
-                  Paste robot code or use the sample, then run a review. AI assistance is a coach — not engineering
-                  certification. Vantage never deploys to a robot.
-                </p>
-              </div>
+              <EmptyState
+                soft
+                badge="Idle"
+                badgeTone="setup"
+                title="No review yet"
+                description="Paste robot code or use the sample, then run a review. Findings appear only when a local rule matches — never invented AI diagnoses. Vantage never deploys to a robot."
+              />
             )}
           </article>
 
@@ -340,7 +448,8 @@ export function CodeClient({
                   : "Proposal only · human approval required"}
               </strong>
               <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
-                No autonomous robot deploy. Mentors or students approve every diff.
+                No autonomous robot deploy. Mentors or students approve every grounded diff — coach never invents
+                fixes for unmatched source.
               </p>
               {proposal ? <pre aria-label="Unified diff proposal">{proposal.unifiedDiff}</pre> : null}
             </div>

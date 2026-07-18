@@ -28,6 +28,86 @@
 .cdc-gov a:hover {
   text-decoration: underline;
 }
+.cdc-billing {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cdc-billing article {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 14px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+}
+.cdc-billing h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.cdc-billing p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.cdc-billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.cdc-billing-local {
+  border-color: color-mix(in srgb, var(--app-good, #15803d) 28%, var(--app-line));
+}
+.cdc-cutoff {
+  margin: 0;
+}
+.cdc-next-actions {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+.cdc-next-actions header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.cdc-next-actions header p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+.cdc-next-actions ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cdc-next-actions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+}
+.cdc-next-actions li.primary {
+  border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
+}
+.cdc-next-actions li strong {
+  display: block;
+  font-size: 13px;
+}
+.cdc-next-actions li span {
+  display: block;
+  margin-top: 2px;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
 .cdc-flow {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -232,10 +312,17 @@
   line-height: 1.4;
 }
 @media (max-width: 900px) {
+  .cdc-billing {
+    grid-template-columns: 1fr;
+  }
   .cdc-flow {
     grid-template-columns: 1fr;
   }
   .cdc-workbench {
     grid-template-columns: 1fr;
+  }
+  .cdc-next-actions li {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
