@@ -1,37 +1,197 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { scoutAccuracyTierLabel } from "../../lib/scout-accuracy";
 import type { ScoutAccuracyView } from "../../lib/scout-accuracy/compute-scout-accuracy";
 import type { ScoutAccuracyScoutStat, ScoutAccuracyTier } from "../../lib/scout-accuracy/types";
+import {
+  SCOUT_ACCURACY_RELATED_INCLUDE,
+  classifyScoutAccuracyShell,
+  formatScoutAccuracyMetric,
+  formatScoutAccuracyRate,
+  formatScoutAccuracyScore,
+  scoutAccuracyNextActions,
+  scoutAccuracyRelatedLinks,
+  scoutAccuracySetupSteps,
+  scoutAccuracyShellCopy,
+  shouldShowScoutAccuracySummaryTiles,
+  type ScoutAccuracyNextAction,
+  type ScoutAccuracyShellKind,
+} from "../../lib/scout-accuracy/scout-accuracy-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./scout-accuracy.css";
 
-function tierTone(tier: ScoutAccuracyTier): string {
+function tierTone(tier: ScoutAccuracyTier): "good" | "setup" | "" {
   if (tier === "lead") return "good";
   if (tier === "core") return "setup";
-  if (tier === "developing") return "demo";
-  return "demo";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
+  return "";
 }
 
 type LiveView = Extract<ScoutAccuracyView, { status: "live" }>;
 
-export default function ScoutAccuracyClient() {
+function ScoutAccuracyRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = scoutAccuracyRelatedLinks(orgId, {
+    include: [...SCOUT_ACCURACY_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related scout-accuracy-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function ScoutAccuracyNextActionsPanel({ actions }: { actions: ScoutAccuracyNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions scout-accuracy-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Scouting, Coverage, and Strategy — never DEMO scores.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ScoutAccuracyShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: ScoutAccuracyShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = scoutAccuracyNextActions({ orgId, shell });
+  const copy = scoutAccuracyShellCopy(shell);
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const steps = shell === "setup" ? scoutAccuracySetupSteps(orgId) : [];
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const coverageHref = withOrgHref("/scouting/lineup", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+
+  return (
+    <main className="module-page scout-accuracy-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Scout Accuracy"}
+          </>
+        }
+        title="Scout Accuracy"
+        description={description}
+      >
+        <ScoutAccuracyRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No scores yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
+            {orgId ? "Open Scouting" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={scoutingHref}>
+              Log scout entries
+            </a>
+            <a className="app-button secondary" href={coverageHref}>
+              Open Coverage
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="scout-accuracy-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Scouting, Coverage, and Strategy — never DEMO scores.</p>
+          </header>
+          <ul className="scout-accuracy-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted scout-accuracy-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <ScoutAccuracyNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
+export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: string }) {
   const [view, setView] = useState<ScoutAccuracyView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
+  const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
   const load = useCallback((eventOverride?: string) => {
     setFetchFailed(false);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+    const urlOrg = initialOrgId ?? params.get("orgId");
     const eventQuery = eventOverride ?? params.get("eventKey");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
@@ -41,12 +201,17 @@ export default function ScoutAccuracyClient() {
         const data = (await response.json()) as ScoutAccuracyView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setFetchFailed(true);
+          setError("error" in data && data.error ? data.error : "Could not load scout accuracy.");
           return;
         }
         setView(data);
+        setFetchFailed(false);
       })
-      .catch(() => setFetchFailed(true));
-  }, []);
+      .catch(() => {
+        setFetchFailed(true);
+        setError("Network error — please try again.");
+      });
+  }, [initialOrgId]);
 
   useEffect(() => {
     load();
@@ -78,40 +243,86 @@ export default function ScoutAccuracyClient() {
     [orgId, busy],
   );
 
+  const totalEntries = view?.status === "live" ? view.summary.totalEntries : 0;
+  const suggestedPromotions = view?.status === "live" ? view.summary.suggestedPromotions : 0;
+  const eventKey = view?.status === "live" ? view.eventKey : null;
+
+  const shell = classifyScoutAccuracyShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    eventKey,
+    totalEntries,
+  });
+  const shellCopy = scoutAccuracyShellCopy(shell);
+  const nextActions = scoutAccuracyNextActions({
+    orgId,
+    shell,
+    totalEntries,
+    suggestedPromotions,
+  });
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const showTiles =
+    view?.status === "live" &&
+    shouldShowScoutAccuracySummaryTiles({
+      totalEntries: view.summary.totalEntries,
+      totalScouts: view.summary.totalScouts,
+    });
+  const loaded = view?.status === "live";
+
+  if (shell === "loading") {
+    return <ScoutAccuracyShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <ScoutAccuracyShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <ScoutAccuracyShell
+        description={
+          view?.status === "setup_required" ? view.message : shellCopy.description
+        }
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (shell === "empty" || view?.status !== "live") {
+    return <ScoutAccuracyShell description={shellCopy.description} orgId={orgId} shell="empty" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page scout-accuracy-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Scout accuracy"}
+            <a href={competitionHref}>Competition</a>
+            {" / Scout Accuracy"}
           </>
         }
-        title="Scout accuracy"
-        description="Post-event, each scout's reported totals are scored against cached TBA results — ranking the roster and suggesting who's ready for the pick-desk rotation."
+        title="Scout Accuracy"
+        description="Post-event, each scout's reported totals are scored against cached TBA results — ranking the roster for pick-desk rotation. Scores never invent DEMO values."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.events.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Event
-              <select
-                value={view.eventKey ?? ""}
-                onChange={(event) => load(event.target.value)}
-              >
-                {view.events.map((eventKey) => (
-                  <option key={eventKey} value={eventKey}>
-                    {eventKey}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          {view?.status === "live" && view.eventKey ? (
+        <div className="scout-accuracy-header-meta">
+          <ScoutAccuracyRelatedStrip orgId={orgId} />
+          {view.eventKey ? (
             <button
               type="button"
               className="app-button secondary"
               disabled={busy}
-              onClick={() => mutate({ action: "record-snapshot", eventKey: view.eventKey })}
+              onClick={() => void mutate({ action: "record-snapshot", eventKey: view.eventKey })}
             >
               Record snapshot
             </button>
@@ -120,83 +331,92 @@ export default function ScoutAccuracyClient() {
       </PageHeader>
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p className="form-message" role="status">
           {error}
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load scout accuracy"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : view.eventKey == null ? (
-        <EmptyState
-          badge="No scouting data yet"
-          badgeTone="setup"
-          title="No scouted matches to score"
-          description="Once your team logs match-scout entries for an event with cached TBA results, accuracy scoring appears here."
-        />
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <Leaderboard view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      {view.events.length > 0 ? (
+        <section className="scout-accuracy-event" aria-label="Event filter">
+          <label>
+            Event
+            <select
+              value={view.eventKey ?? ""}
+              onChange={(event) => load(event.target.value)}
+            >
+              {view.events.map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="app-muted">{view.eventKey}</span>
+        </section>
+      ) : null}
+
+      {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
+      <Leaderboard view={view} busy={busy} mutate={mutate} loaded={loaded} />
+      <ScoutAccuracyNextActionsPanel actions={nextActions} />
+      <p className="app-muted scout-accuracy-footer-links">
+        Also see{" "}
+        <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+        {" · "}
+        <a href={withOrgHref("/scouting/lineup", orgId)}>Coverage</a>
+        {" · "}
+        <a href={hubHref("/competition", "strategy", orgId)}>Strategy</a>
+      </p>
     </main>
   );
 }
 
-function SummaryTiles({ view }: { view: LiveView }) {
+function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
   const { summary, lastSnapshot } = view;
-  const tiles = [
-    { label: "Entries scored", value: String(summary.totalEntries) },
-    { label: "Verifiable entries", value: String(summary.verifiableEntries) },
-    { label: "Scouts ranked", value: String(summary.totalScouts) },
-    { label: "Avg accuracy score", value: `${summary.avgAccuracyScore}` },
-    { label: "Suggested promotions", value: String(summary.suggestedPromotions) },
-  ];
+  const hasVerifiable = summary.verifiableEntries > 0;
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
+    <section className="scout-accuracy-kpis" aria-label="Accuracy summary">
+      <article>
+        <span>Entries scored</span>
+        <strong>{formatScoutAccuracyMetric(summary.totalEntries, loaded)}</strong>
+        <small>match scout rows</small>
+      </article>
+      <article>
+        <span>Verifiable</span>
+        <strong>{formatScoutAccuracyMetric(summary.verifiableEntries, loaded)}</strong>
+        <small>vs TBA totals</small>
+      </article>
+      <article>
+        <span>Scouts ranked</span>
+        <strong>{formatScoutAccuracyMetric(summary.totalScouts, loaded)}</strong>
+        <small>membership-bound</small>
+      </article>
+      <article>
+        <span>Avg accuracy</span>
+        <strong>
+          {formatScoutAccuracyScore(summary.avgAccuracyScore, loaded, { hasVerifiable })}
+        </strong>
+        <small>0–100 · never DEMO</small>
+      </article>
+      <article>
+        <span>Suggested promotions</span>
+        <strong>{formatScoutAccuracyMetric(summary.suggestedPromotions, loaded)}</strong>
+        <small>pick-desk ready</small>
+      </article>
       {lastSnapshot ? (
-        <p className="app-muted" style={{ marginTop: 12, marginBottom: 0 }}>
+        <p className="app-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
           Last recorded snapshot: {new Date(lastSnapshot.computedAt).toLocaleString()} ·{" "}
-          {lastSnapshot.scoutsScored} scout(s), avg score {Math.round(lastSnapshot.avgAccuracyScore)}
+          {lastSnapshot.scoutsScored} scout(s), avg score{" "}
+          {formatScoutAccuracyScore(lastSnapshot.avgAccuracyScore, true, {
+            hasVerifiable: lastSnapshot.scoutsScored > 0,
+          })}
         </p>
       ) : (
-        <p className="app-muted" style={{ marginTop: 12, marginBottom: 0 }}>
-          No snapshot recorded yet for this event — scores below are computed live.
+        <p className="app-muted" style={{ gridColumn: "1 / -1", margin: 0 }}>
+          No snapshot recorded yet for this event — scores below are computed live from real
+          TBA-verified rows.
         </p>
       )}
-    </Panel>
+    </section>
   );
 }
 
@@ -204,27 +424,52 @@ function Leaderboard({
   view,
   busy,
   mutate,
+  loaded,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  loaded: boolean;
 }) {
   if (view.stats.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No verifiable entries yet"
         badgeTone="setup"
         title="No scout accuracy data yet"
-        description="Scouted totals will be scored once matches have cached official results."
-      />
+        description="Scouted totals will be scored once matches have cached official TBA results — never DEMO scores."
+      >
+        <a className="app-button" href={hubHref("/competition", "scouting", view.orgId)}>
+          Open Scouting
+        </a>
+        <a className="app-button secondary" href={withOrgHref("/scouting/lineup", view.orgId)}>
+          Open Coverage
+        </a>
+        <a className="app-button secondary" href={hubHref("/competition", "strategy", view.orgId)}>
+          Open Strategy
+        </a>
+      </EmptyState>
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Leaderboard &amp; pick-desk rotation</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel className="scout-accuracy-panel" id="accuracy-leaderboard">
+      <header>
+        <h2>Leaderboard &amp; pick-desk rotation</h2>
+        <p className="app-muted">
+          Quality before volume — ranks use TBA-verified totals only, never DEMO scores.
+        </p>
+      </header>
+      <ul className="scout-accuracy-list">
         {view.stats.map((stat) => (
-          <LeaderboardRow key={stat.scoutUserId} stat={stat} busy={busy} eventKey={view.eventKey} mutate={mutate} />
+          <LeaderboardRow
+            key={stat.scoutUserId}
+            stat={stat}
+            busy={busy}
+            eventKey={view.eventKey}
+            mutate={mutate}
+            loaded={loaded}
+          />
         ))}
       </ul>
     </Panel>
@@ -236,28 +481,38 @@ function LeaderboardRow({
   busy,
   eventKey,
   mutate,
+  loaded,
 }: {
   stat: ScoutAccuracyScoutStat;
   busy: boolean;
   eventKey: string | null;
   mutate: (payload: Record<string, unknown>) => void;
+  loaded: boolean;
 }) {
+  const hasVerifiable = stat.verifiableEntries > 0;
   return (
-    <li style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+    <li>
       <div>
         <strong>
-          #{stat.rank} {stat.scoutName}
+          <span className="scout-accuracy-rank">{stat.rank}</span>
+          {stat.scoutName}
         </strong>
-        <span className={`app-badge ${tierTone(stat.tier)}`} style={{ marginLeft: 8 }}>
+        <span className={`app-badge ${tierTone(stat.tier)}`.trim()} style={{ marginLeft: 8 }}>
           {scoutAccuracyTierLabel(stat.tier)}
         </span>
-        <small className="app-muted" style={{ display: "block" }}>
-          {stat.entriesScored} entries · {stat.verifiableEntries} verifiable · {stat.accurateEntries} accurate ·{" "}
-          {pct(stat.accuracyRate)} accuracy rate
+        <small>
+          {formatScoutAccuracyMetric(stat.entriesScored, loaded)} entries ·{" "}
+          {formatScoutAccuracyMetric(stat.verifiableEntries, loaded)} verifiable ·{" "}
+          {formatScoutAccuracyMetric(stat.accurateEntries, loaded)} accurate ·{" "}
+          {hasVerifiable ? formatScoutAccuracyRate(stat.accuracyRate, loaded) : "—"} accuracy rate
         </small>
-        <small className="app-muted">
-          Accuracy score {stat.accuracyScore}/100
-          {stat.avgAbsErrorPct != null ? ` · avg error ${pct(stat.avgAbsErrorPct)}` : ""}
+        <small>
+          Accuracy score{" "}
+          {formatScoutAccuracyScore(stat.accuracyScore, loaded, { hasVerifiable })}
+          /100
+          {stat.avgAbsErrorPct != null
+            ? ` · avg error ${formatScoutAccuracyRate(stat.avgAbsErrorPct, loaded)}`
+            : ""}
           {stat.suggestedPromote ? " · suggested for pick-desk rotation" : ""}
         </small>
       </div>
@@ -267,7 +522,7 @@ function LeaderboardRow({
           className="app-button secondary"
           disabled={busy}
           onClick={() =>
-            mutate({
+            void mutate({
               action: "set-promotion",
               eventKey,
               scoutUserId: stat.scoutUserId,
