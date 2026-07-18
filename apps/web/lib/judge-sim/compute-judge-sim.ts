@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { JUDGE_SIM_CATEGORIES, gradeAnswer, pickJudgeQuestion } from ".";
 import type {
   JudgeSimCategory,
@@ -18,6 +20,36 @@ export type JudgeSimSetupStep = {
   detail: string;
   href: string;
 };
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO judge metrics. */
+function setupStepsFor(orgId: string | null): JudgeSimSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Judge-Pitch is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "impact",
+      label: "Open Community Impact",
+      detail: "Outreach claims stay blank until real activities exist — never DEMO hours.",
+      href: hubHref("/business", "impact", orgId),
+    },
+    {
+      id: "impact-essay",
+      label: "Open Impact Essay",
+      detail: "Essay drafts stay empty until real impact rows exist — never DEMO awards.",
+      href: hubHref("/business", "impact-essay", orgId),
+    },
+    {
+      id: "evidence",
+      label: "Open Awards",
+      detail: "Award packets stay blank until your team uploads evidence — never DEMO packets.",
+      href: hubHref("/business", "evidence", orgId),
+    },
+  ];
+}
 
 export type JudgeSimView =
   | {
@@ -143,10 +175,9 @@ export async function computeJudgeSimView(
   if (!org) {
     return {
       status: "setup_required",
-      message: "Select a team workspace to practice judge Q&A grounded in your own logged evidence.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      message:
+        "Select a team workspace to practice judge Q&A grounded in your own logged evidence — never DEMO judge metrics.",
+      steps: setupStepsFor(null),
       orgId: null,
       seasonYear,
     };

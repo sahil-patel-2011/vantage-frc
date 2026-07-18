@@ -1,0 +1,13 @@
+/* Soft-UI Judge-Pitch Simulator — .judge-sim-* + shared Soft-UI tokens. Never DEMO judge metrics. */
+.judge-sim-page{display:grid;gap:16px}
+.judge-sim-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.judge-sim-related{display:flex;flex-wrap:wrap;gap:8px}
+.judge-sim-next-actions{margin:0}
+.judge-sim-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.judge-sim-stats strong{font-size:1.5rem}
+.judge-sim-layout{display:grid;gap:16px}
+.judge-sim-tip{margin:0}
+@media(max-width:900px){
+  .judge-sim-header-actions{justify-content:flex-start}
+  .judge-sim-next-actions li{flex-direction:column;align-items:stretch}
+}

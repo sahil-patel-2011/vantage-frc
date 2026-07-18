@@ -1,10 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { judgeSimCategoryLabel, judgeSimVerdictLabel } from "../../lib/judge-sim";
 import { JUDGE_SIM_CATEGORIES, type JudgeSimView } from "../../lib/judge-sim/compute-judge-sim";
+import {
+  JUDGE_SIM_RELATED_INCLUDE,
+  classifyJudgeSimShell,
+  formatJudgeSimMetric,
+  formatJudgeSimReadiness,
+  judgeSimNextActions,
+  judgeSimRelatedLinks,
+  judgeSimShellCopy,
+  shouldShowJudgeSimSummaryTiles,
+  type JudgeSimNextAction,
+  type JudgeSimShellKind,
+} from "../../lib/judge-sim/judge-sim-related";
 import type { JudgeSimCategory, JudgeSimVerdict } from "../../lib/judge-sim/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./judge-sim.css";
 
 function verdictTone(verdict: JudgeSimVerdict): string {
   if (verdict === "well_backed") return "good";
@@ -12,11 +27,133 @@ function verdictTone(verdict: JudgeSimVerdict): string {
   return "demo";
 }
 
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
+type LiveView = Extract<JudgeSimView, { status: "live" }>;
+
+function JudgeSimRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = judgeSimRelatedLinks(orgId, {
+    include: [...JUDGE_SIM_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related judge-sim-related" aria-label="Related business tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
 }
 
-type LiveView = Extract<JudgeSimView, { status: "live" }>;
+function JudgeSimNextActionsPanel({ actions }: { actions: JudgeSimNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions judge-sim-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Community Impact, Impact Essay, and Awards — never DEMO judge metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function JudgeSimShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: JudgeSimShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = judgeSimNextActions({ orgId, shell });
+  const copy = judgeSimShellCopy(shell);
+  const businessHref = hubHref("/business", "judge-sim", orgId);
+  const impactHref = hubHref("/business", "impact", orgId);
+  const essayHref = hubHref("/business", "impact-essay", orgId);
+  const awardsHref = hubHref("/business", "evidence", orgId);
+
+  return (
+    <main className="module-page judge-sim-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={businessHref}>Business</a>
+            {" / Judge-Pitch Simulator"}
+          </>
+        }
+        title="Judge-Pitch Simulator"
+        description={description}
+      >
+        <JudgeSimRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No sessions yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={impactHref}>
+              Open Community Impact
+            </a>
+            <a className="app-button secondary" href={essayHref}>
+              Open Impact Essay
+            </a>
+            <a className="app-button secondary" href={awardsHref}>
+              Open Awards
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <JudgeSimNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function JudgeSimClient() {
   const [view, setView] = useState<JudgeSimView | null>(null);
@@ -24,8 +161,6 @@ export default function JudgeSimClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -52,6 +187,35 @@ export default function JudgeSimClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const sessionCount = view?.status === "live" ? view.sessions.length : 0;
+  const evidenceCount = view?.status === "live" ? view.evidence.length : 0;
+  const wellBackedCount = view?.status === "live" ? view.readiness.wellBackedCount : 0;
+  const unbackedCount = view?.status === "live" ? view.readiness.unbackedCount : 0;
+  const readinessScore = view?.status === "live" ? view.readiness.score : 0;
+
+  const shell = classifyJudgeSimShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    sessionCount,
+  });
+  const shellCopy = judgeSimShellCopy(shell);
+  const nextActions = judgeSimNextActions({
+    orgId,
+    shell,
+    sessionCount,
+    evidenceCount,
+  });
+  const relatedLinks = judgeSimRelatedLinks(orgId, {
+    include: [...JUDGE_SIM_RELATED_INCLUDE],
+  });
+  const businessHref = hubHref("/business", "judge-sim", orgId);
+  const impactHref = hubHref("/business", "impact", orgId);
+  const essayHref = hubHref("/business", "impact-essay", orgId);
+  const awardsHref = hubHref("/business", "evidence", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -80,20 +244,64 @@ export default function JudgeSimClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <JudgeSimShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <JudgeSimShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <JudgeSimShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      >
+        {view?.status === "setup_required" && view.steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {view.steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </JudgeSimShell>
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <JudgeSimShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page judge-sim-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
+            <a href={businessHref}>Business</a>
             {" / Judge-Pitch Simulator"}
           </>
         }
         title="Judge-Pitch Simulator"
-        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it."
+        description="Practice judge Q&A and get graded against your own logged evidence — any claim you can't back gets flagged before a real judge catches it. Never DEMO judge metrics. Cross-check Community Impact, Impact Essay, and Awards."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
+        <div className="judge-sim-header-actions">
+          {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
@@ -112,6 +320,11 @@ export default function JudgeSimClient() {
               </select>
             </label>
           ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
       </PageHeader>
 
@@ -121,77 +334,78 @@ export default function JudgeSimClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the judge-pitch simulator"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <ReadinessPanel view={view} />
-          <RunSessionForm busy={busy} mutate={mutate} />
-          <SessionsList view={view} busy={busy} mutate={mutate} />
-          <EvidenceLogForm busy={busy} mutate={mutate} />
-          <EvidenceList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
+      <JudgeSimNextActionsPanel actions={nextActions} />
 
-function ReadinessPanel({ view }: { view: LiveView }) {
-  const { readiness } = view;
-  const tiles = [
-    { label: "Sessions graded", value: String(readiness.totalSessions) },
-    { label: "Well backed", value: String(readiness.wellBackedCount) },
-    { label: "Unbacked", value: String(readiness.unbackedCount) },
-    { label: "Evidence logged", value: String(readiness.evidenceCount) },
-  ];
-  return (
-    <Panel aria-label="Judge-readiness score">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-        <div>
-          <h2 style={{ margin: "0" }}>Judge-readiness</h2>
-          <small className="app-muted">Share of graded answers judged well-backed this season</small>
-        </div>
-        <strong style={{ fontSize: "2rem" }}>{pct(readiness.score)}</strong>
-      </header>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-          gap: 12,
-          marginTop: 12,
-        }}
-      >
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.4rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {shouldShowJudgeSimSummaryTiles(sessionCount) ? (
+        <section className="judge-sim-stats" aria-label="Judge-Pitch counts">
+          <div>
+            <strong>{formatJudgeSimReadiness(readinessScore, sessionCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Well-backed share
+            </span>
           </div>
-        ))}
+          <div>
+            <strong>{formatJudgeSimMetric(sessionCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Sessions graded
+            </span>
+          </div>
+          <div>
+            <strong>{formatJudgeSimMetric(wellBackedCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Well backed
+            </span>
+          </div>
+          <div>
+            <strong>{formatJudgeSimMetric(unbackedCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Unbacked
+            </span>
+          </div>
+          <div>
+            <strong>{formatJudgeSimMetric(evidenceCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Evidence logged
+            </span>
+          </div>
+        </section>
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No sessions yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href={impactHref}>
+            Open Community Impact
+          </a>
+          <a className="app-button secondary" href={essayHref}>
+            Open Impact Essay
+          </a>
+          <a className="app-button secondary" href={awardsHref}>
+            Open Awards
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div className="judge-sim-layout">
+        <RunSessionForm busy={busy} mutate={mutate} />
+        <SessionsList view={view} busy={busy} mutate={mutate} />
+        <EvidenceLogForm busy={busy} mutate={mutate} />
+        <EvidenceList view={view} busy={busy} mutate={mutate} />
+        <Panel className="judge-sim-tip" aria-label="Judge-Pitch tip">
+          <span className="eyebrow">Grounding path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Keep outreach facts in <a href={impactHref}>Community Impact</a>, draft award language in{" "}
+            <a href={essayHref}>Impact Essay</a>, and upload packets in <a href={awardsHref}>Awards</a> —
+            never invent DEMO verdicts, readiness scores, or evidence.
+          </p>
+        </Panel>
       </div>
-    </Panel>
+    </main>
   );
 }
 
@@ -208,6 +422,7 @@ function RunSessionForm({
 
   return (
     <Panel
+      id="judge-sim-session"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -226,7 +441,7 @@ function RunSessionForm({
       <h2 style={{ margin: 0 }}>Ask a judge question</h2>
       <p className="app-muted" style={{ margin: 0 }}>
         Leave the question blank to get one picked for you from the judging category, then answer it like you would
-        in a real interview. Your answer is graded against evidence you've logged below.
+        in a real interview. Your answer is graded against evidence you&apos;ve logged below — never DEMO verdicts.
       </p>
       <FormGrid min={160}>
         <FormRow label="Category">
@@ -272,15 +487,16 @@ function SessionsList({
   if (view.sessions.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No sessions yet"
         badgeTone="setup"
         title="Run your first judge Q&A"
-        description="Ask yourself a judging question above and see which claims are backed by your evidence log."
+        description="Ask yourself a judging question above and see which claims are backed by your evidence log — never DEMO verdicts."
       />
     );
   }
   return (
-    <Panel>
+    <Panel id="judge-sim-sessions">
       <h2 style={{ marginTop: 0 }}>Graded sessions</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
         {view.sessions.slice(0, 20).map((item) => (
@@ -290,7 +506,7 @@ function SessionsList({
                 <span className={`app-badge ${verdictTone(item.verdict)}`}>{judgeSimVerdictLabel(item.verdict)}</span>
                 <strong style={{ display: "block", marginTop: 4 }}>{item.question}</strong>
                 <small className="app-muted" style={{ display: "block" }}>
-                  {judgeSimCategoryLabel(item.category)} · confidence {pct(item.confidence)}
+                  {judgeSimCategoryLabel(item.category)} · confidence {Math.round(item.confidence * 100)}%
                 </small>
               </div>
               <button
@@ -349,6 +565,7 @@ function EvidenceLogForm({
 
   return (
     <Panel
+      id="judge-sim-evidence"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -371,8 +588,8 @@ function EvidenceLogForm({
     >
       <h2 style={{ margin: 0 }}>Log evidence</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Facts you can actually point to for judges — numbers, events, outcomes. Answers are only graded as "backed"
-        against what's logged here.
+        Facts you can actually point to for judges — numbers, events, outcomes. Answers are only graded as
+        &quot;backed&quot; against what&apos;s logged here — never DEMO evidence.
       </p>
       <FormGrid min={160}>
         <FormRow label="Title">
@@ -427,10 +644,11 @@ function EvidenceList({
   if (view.evidence.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No evidence yet"
         badgeTone="setup"
         title="Log your first piece of evidence"
-        description="Without logged evidence, every claim in an answer will be flagged as unbacked."
+        description="Without logged evidence, every claim in an answer will be flagged as unbacked — never invent DEMO facts."
       />
     );
   }
