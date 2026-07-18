@@ -238,6 +238,25 @@ html[data-theme="light"] .auth-page .primary-action,html[data-theme="light"] .au
 .messages-page .messages-mention-menu button:hover{background:color-mix(in srgb,var(--soft-accent,#16d9e8) 14%,transparent)}
 .messages-page .messages-mention-menu strong{font:600 13px/1.3 var(--font-source-sans),sans-serif}
 .messages-page .messages-mention-menu small{color:var(--soft-muted,#829198);font:11px/1.3 var(--font-source-sans),sans-serif}
+.messages-page .messages-composer-hint{font:11px/1.35 var(--font-source-sans),sans-serif;color:var(--soft-muted,#829198)}
+.messages-page .messages-link-chip-row{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 8px}
+.messages-page .messages-link-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid color-mix(in srgb,var(--soft-accent,#16d9e8) 35%,var(--soft-line,#29363d));border-radius:999px;background:color-mix(in srgb,var(--soft-accent,#16d9e8) 10%,transparent);font:12px/1.2 var(--font-source-sans),sans-serif}
+.messages-page .messages-link-chip-kind{font:700 10px var(--font-ibm-mono),monospace;color:var(--soft-accent,#16d9e8);text-transform:uppercase;letter-spacing:.04em}
+.messages-page .messages-link-chip-clear{padding:0 4px;color:inherit;background:transparent;border:0;cursor:pointer;font-size:16px;line-height:1}
+.messages-page .message-object-link{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:6px 10px;border:1px solid var(--soft-line,#29363d);border-radius:8px;color:inherit;text-decoration:none;font:12px/1.3 var(--font-source-sans),sans-serif}
+.messages-page .message-object-link-kind{font:700 10px var(--font-ibm-mono),monospace;color:var(--soft-accent,#16d9e8);text-transform:uppercase}
+.messages-page .messages-link-toggle{padding:8px 12px;color:var(--soft-accent,#16d9e8);background:transparent;border:1px solid color-mix(in srgb,var(--soft-accent,#16d9e8) 35%,var(--soft-line,#29363d));border-radius:8px;cursor:pointer;font:11px var(--font-ibm-mono),monospace}
+.messages-page .messages-link-picker{position:absolute;left:0;right:0;bottom:calc(100% + 6px);z-index:6;display:grid;gap:8px;padding:10px;border:1px solid var(--soft-line,#29363d);border-radius:12px;background:var(--soft-card,#10181d);box-shadow:0 12px 28px rgba(0,0,0,.28)}
+.messages-page .messages-link-picker-head{display:flex;flex-wrap:wrap;gap:6px}
+.messages-page .messages-link-picker-head button{padding:5px 8px;color:inherit;background:transparent;border:1px solid var(--soft-line,#29363d);border-radius:999px;cursor:pointer;font:10px var(--font-ibm-mono),monospace}
+.messages-page .messages-link-picker-head button.active{color:var(--soft-accent,#16d9e8);border-color:color-mix(in srgb,var(--soft-accent,#16d9e8) 45%,var(--soft-line,#29363d))}
+.messages-page .messages-link-picker-search{width:100%;padding:8px 10px;border:1px solid var(--soft-line,#29363d);border-radius:8px;background:transparent;color:inherit}
+.messages-page .messages-link-picker-list{margin:0;padding:0;list-style:none;display:grid;gap:4px;max-height:220px;overflow:auto}
+.messages-page .messages-link-picker-list button{display:grid;gap:2px;width:100%;padding:8px 10px;text-align:left;color:inherit;background:transparent;border:0;border-radius:8px;cursor:pointer}
+.messages-page .messages-link-picker-list button:hover{background:color-mix(in srgb,var(--soft-accent,#16d9e8) 14%,transparent)}
+.messages-page .messages-link-picker-empty{padding:8px 10px;color:var(--soft-muted,#829198);font-size:12px}
+.messages-page .messages-link-picker-close{justify-self:start;padding:4px 8px;color:var(--soft-muted,#829198);background:transparent;border:0;cursor:pointer;font:10px var(--font-ibm-mono),monospace}
+.chat-composer{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}
 .dash-notif-preview{display:block;margin-top:2px;color:var(--soft-muted,#829198);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-theme="light"] .messages-page .messages-pins{background:#eef5f8}
 html[data-theme="light"] .messages-page .messages-pins article{background:#fff;border-color:#d5dad8}
