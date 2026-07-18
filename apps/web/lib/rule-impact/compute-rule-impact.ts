@@ -186,12 +186,29 @@ export async function computeRuleImpactView(
       status: "setup_required",
       message: "Select a team workspace to analyze rule-change impact against your subsystem library.",
       steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        {
+          id: "workspace",
+          label: "Select workspace",
+          detail: "Rule Impact is org-scoped — pick a team before logging game-manual deltas.",
+          href: "/workspace",
+        },
+        {
+          id: "kickoff",
+          label: "Open Kickoff",
+          detail: "Rule notes stay blank until answered — never DEMO rule text.",
+          href: "/build?tab=kickoff",
+        },
+        {
+          id: "cad",
+          label: "Open CAD",
+          detail: "Mechanism geometry stays blank until connected — never DEMO models.",
+          href: "/build?tab=cad",
+        },
         {
           id: "subsystems",
-          label: "Log robot subsystems",
-          detail: "Add prior-season subsystems on the Build spec sheet",
-          href: "/build",
+          label: "Open Subsystems",
+          detail: "Prior-season mechanisms stay empty until you author them — never DEMO systems.",
+          href: "/subsystems",
         },
       ],
       orgId: null,
