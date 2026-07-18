@@ -4,6 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { VantageLogo } from "../../components/brand";
 import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
+import {
+  buildOnboardingStepMeta,
+  onboardingCanSubmit,
+  onboardingLoadCopy,
+  onboardingMembershipNote,
+  onboardingProgressLabel,
+  onboardingTermsRequired,
+  type OnboardingFlowStep,
+} from "../../lib/onboarding";
 import { PENDING_INVITE_KEY } from "../invite/invite-client";
 import { safeAppPath } from "../../lib/security/safe-navigation";
 import "./onboarding-flow.css";
@@ -35,6 +44,7 @@ type OnboardingState = {
   orgCity: string | null;
   orgStateProv: string | null;
   orgDescription: string | null;
+  termsAcceptedAt: string | null;
   currentStep: "profile" | "team" | "preferences" | "complete";
   startedAt: string | null;
   savedAt: string | null;
@@ -68,8 +78,6 @@ const FOCUS_OPTIONS: Array<{
   { value: "leadership", index: "04", label: "Leadership", description: "Team coordination, safety, access, and season planning" },
 ];
 
-type Step = "profile" | "team" | "preferences" | "pending";
-
 function pendingInviteDestination() {
   try {
     const token = sessionStorage.getItem(PENDING_INVITE_KEY);
@@ -98,7 +106,7 @@ function githubConnectionHref(orgId: string | null | undefined) {
 export default function OnboardingClient() {
   const searchParams = useSearchParams();
   const [state, setState] = useState<OnboardingState | null>(null);
-  const [step, setStep] = useState<Step>("profile");
+  const [step, setStep] = useState<OnboardingFlowStep>("profile");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -115,6 +123,8 @@ export default function OnboardingClient() {
   const [busy, setBusy] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadStatus, setLoadStatus] = useState<"loading" | "ready" | "error" | "setup_required">("loading");
 
   function hydrate(data: OnboardingState) {
     setState(data);
@@ -130,6 +140,7 @@ export default function OnboardingClient() {
     setOrgCity(data.orgCity ?? "");
     setOrgStateProv(data.orgStateProv ?? "");
     setOrgDescription(data.orgDescription ?? "");
+    if (data.termsAcceptedAt) setTermsAccepted(true);
   }
 
   function routeCompleteState(data: OnboardingState) {
@@ -147,24 +158,55 @@ export default function OnboardingClient() {
     setStep("pending");
   }
 
-  useEffect(() => {
-    void fetch("/api/onboarding")
-      .then(async (response) => (response.ok ? ((await response.json()) as OnboardingState) : null))
-      .then((data) => {
-        if (!data) {
-          setMessage("Could not load your secure onboarding session.");
-          return;
+  function loadSession() {
+    setLoadStatus("loading");
+    setLoadError(null);
+    void fetch("/api/onboarding", { cache: "no-store" })
+      .then(async (response) => {
+        if (response.status === 401) {
+          setLoadStatus("setup_required");
+          setLoadError("Sign in again to continue secure onboarding.");
+          setState(null);
+          return null;
         }
+        if (!response.ok) {
+          const data = (await response.json().catch(() => ({}))) as { error?: string };
+          setLoadStatus("error");
+          setLoadError(data.error ?? "Could not load your secure onboarding session.");
+          setState(null);
+          return null;
+        }
+        return (await response.json()) as OnboardingState;
+      })
+      .then((data) => {
+        if (!data) return;
         hydrate(data);
+        setLoadStatus("ready");
         if (data.complete) routeCompleteState(data);
         else if (data.currentStep === "team" || data.currentStep === "preferences") setStep(data.currentStep);
+        else setStep("profile");
       })
-      .catch(() => setMessage("Could not load onboarding."));
+      .catch(() => {
+        setLoadStatus("error");
+        setLoadError("Could not load onboarding. Check your connection and try again.");
+        setState(null);
+      });
+  }
+
+  useEffect(() => {
+    loadSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial secure session load only
   }, []);
 
   const locked = state?.lockedTeamNumber != null;
-  const setupSteps = useMemo(() => ["profile", "team", "preferences"] as const, []);
-  const stepIndex = step === "pending" ? setupSteps.length : setupSteps.indexOf(step);
+  const termsNeeded = onboardingTermsRequired(state?.termsAcceptedAt);
+  const canSubmit = onboardingCanSubmit({
+    termsAccepted,
+    termsAcceptedAt: state?.termsAcceptedAt,
+  });
+  const stepMeta = useMemo(() => buildOnboardingStepMeta(step), [step]);
+  const progressLabel = onboardingProgressLabel(step);
+  const membershipNote = onboardingMembershipNote(state?.accessStatus ?? "none");
 
   async function saveProgress(completedStep: "profile" | "team") {
     setBusy(true);
@@ -202,6 +244,11 @@ export default function OnboardingClient() {
     setBusy(true);
     setMessage("");
     try {
+      if (!canSubmit) {
+        setMessage("Please agree to the Terms of Service and Privacy Policy to submit your request.");
+        setBusy(false);
+        return;
+      }
       const isTeamHead = Boolean(state?.isTeamHead);
       if (isTeamHead && (!orgCity.trim() || !orgStateProv.trim())) {
         setMessage("Add your team's city and state so sponsors and partners know where you compete from.");
@@ -221,7 +268,7 @@ export default function OnboardingClient() {
           primaryFocus,
           displayName: displayName.trim() || undefined,
           themePreference,
-          termsAccepted,
+          termsAccepted: true,
           city: isTeamHead ? orgCity.trim() || null : undefined,
           stateProv: isTeamHead ? orgStateProv.trim() || null : undefined,
           description: isTeamHead ? orgDescription.trim() || null : undefined,
@@ -276,6 +323,44 @@ export default function OnboardingClient() {
     window.location.assign("/signin");
   }
 
+  if (loadStatus !== "ready" || !state) {
+    const copy = onboardingLoadCopy(
+      loadStatus === "setup_required" ? "setup_required" : loadStatus === "error" ? "error" : "loading",
+      loadError,
+    );
+    return (
+      <main className="onboarding-page onboarding-flow-page">
+        <section className="onboarding-card onboarding-flow-card" aria-labelledby="onboarding-load-title" aria-busy={copy.kind === "loading"}>
+          <header className="onboarding-flow-header">
+            <div className="onboarding-brand"><VantageLogo /></div>
+            <span>{copy.eyebrow}</span>
+            <h1 id="onboarding-load-title">{copy.title}</h1>
+            <p className="onboarding-sub">{copy.description}</p>
+          </header>
+          <div className={`onboarding-load-shell${copy.kind === "loading" ? " loading" : ""}`}>
+            {copy.badge ? <span className={`onboarding-load-badge${copy.kind === "setup_required" ? " setup" : ""}`}>{copy.badge}</span> : null}
+            <p className="onboarding-membership-blurb">
+              <strong>{membershipNote.title}</strong>
+              <span>{membershipNote.body}</span>
+            </p>
+            {copy.kind === "error" || copy.kind === "setup_required" ? (
+              <div className="onboarding-pending-actions">
+                {copy.kind === "error" ? (
+                  <button type="button" className="signin-submit" onClick={() => loadSession()}>Try again</button>
+                ) : (
+                  <a className="signin-submit" href="/signin">Sign in</a>
+                )}
+                <a className="signin-link" href="/invite">Have an invite?</a>
+              </div>
+            ) : (
+              <p className="onboarding-load-progress" role="status">Checking saved steps…</p>
+            )}
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="onboarding-page onboarding-flow-page">
       <section className={`onboarding-card onboarding-flow-card${step === "pending" ? " pending" : ""}`} aria-labelledby="onboarding-title">
@@ -293,17 +378,26 @@ export default function OnboardingClient() {
         </header>
 
         {step !== "pending" ? (
-          <ol className="onboarding-steps onboarding-steps-simple" aria-label="Onboarding progress">
-            {["You", "Team & focus", "Review"].map((label, index) => (
-              <li key={label} className={index <= stepIndex ? "active" : undefined} aria-current={index === stepIndex ? "step" : undefined}>
-                <b>{index + 1}</b><span>{label}</span>
-              </li>
-            ))}
-          </ol>
+          <div className="onboarding-progress-block">
+            <p className="onboarding-progress-label" aria-live="polite">{progressLabel}</p>
+            <ol className="onboarding-steps onboarding-steps-simple" aria-label="Onboarding progress">
+              {stepMeta.map((item) => (
+                <li
+                  key={item.id}
+                  className={item.phase}
+                  aria-current={item.phase === "current" ? "step" : undefined}
+                >
+                  <b aria-hidden="true">{item.phase === "done" ? "✓" : item.index + 1}</b>
+                  <span>{item.label}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="onboarding-step-hint">{stepMeta.find((item) => item.phase === "current")?.description}</p>
+          </div>
         ) : null}
 
         {message ? <p className="onboarding-message" role="status">{message}</p> : null}
-        {state?.savedAt && step !== "pending" ? (
+        {state.savedAt && step !== "pending" ? (
           <p className="onboarding-resume-note">
             <b>Progress restored</b>
             <span>Securely saved {new Date(state.savedAt).toLocaleString()}. Finish from here—your earlier steps are already set.</span>
@@ -340,7 +434,7 @@ export default function OnboardingClient() {
               </label>
               <p>
                 {locked
-                  ? `${state?.lockedOrgName ?? "Your team"} is already tied to this invitation or request.`
+                  ? `${state.lockedOrgName ?? "Your team"} is already tied to this invitation or request.`
                   : "We use this to route your request to the correct team leaders. It does not unlock the workspace."}
               </p>
             </div>
@@ -350,11 +444,11 @@ export default function OnboardingClient() {
                 {ROLES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
-            {state?.isTeamHead ? (
+            {state.isTeamHead ? (
               <fieldset className="onboarding-team-profile">
                 <legend>Team location</legend>
                 <p className="onboarding-team-profile-hint">
-                  Required for owners and admins. Used in sponsorship one-pagers and grant proposals ? this workspace only.
+                  Required for owners and admins. Used in sponsorship one-pagers and grant proposals — this workspace only.
                 </p>
                 <div className="onboarding-row">
                   <label>
@@ -368,7 +462,7 @@ export default function OnboardingClient() {
                 </div>
                 <label>
                   Describe your FRC team <small>Optional</small>
-                  <textarea maxLength={2000} rows={3} value={orgDescription} onChange={(event) => setOrgDescription(event.target.value)} placeholder="A short blurb about who you are ? students served, focus areas, community." />
+                  <textarea maxLength={2000} rows={3} value={orgDescription} onChange={(event) => setOrgDescription(event.target.value)} placeholder="A short blurb about who you are — students served, focus areas, community." />
                 </label>
               </fieldset>
             ) : null}
@@ -403,7 +497,7 @@ export default function OnboardingClient() {
                   <span>
                     {" "}
                     Owners/admins link the robot-code repo under{" "}
-                    <a href={githubConnectionHref(state?.workspaceOrgId)}>Team → GitHub</a> (OAuth or encrypted PAT).
+                    <a href={githubConnectionHref(state.workspaceOrgId)}>Team → GitHub</a> (OAuth or encrypted PAT).
                   </span>
                 </p>
               </div>
@@ -417,36 +511,52 @@ export default function OnboardingClient() {
               <label className="check-field"><input type="radio" name="theme" checked={themePreference === "light"} onChange={() => setThemePreference("light")} /> Light</label>
               <label className="check-field"><input type="radio" name="theme" checked={themePreference === "dark"} onChange={() => setThemePreference("dark")} /> Dark</label>
             </fieldset>
-            <LegalAgreementCheckbox id="onboarding-terms" checked={termsAccepted} onChange={setTermsAccepted} className="onboarding-legal-accept" />
+            {termsNeeded ? (
+              <div className="onboarding-terms-block">
+                <p className="onboarding-terms-required-label">Required before submit</p>
+                <LegalAgreementCheckbox
+                  id="onboarding-terms"
+                  checked={termsAccepted}
+                  onChange={setTermsAccepted}
+                  className="onboarding-legal-accept"
+                  required
+                />
+              </div>
+            ) : (
+              <p className="onboarding-terms-already" role="status">
+                <b>✓</b>
+                <span>Terms already accepted for this account. You can submit your closed-membership access request.</span>
+              </p>
+            )}
             <div className="onboarding-security-note">
               <b aria-hidden="true">✓</b>
-              <p><strong>Submitting does not grant access.</strong><span>Your verified request goes to a team owner or administrator. Approval creates membership, ends this temporary session, and emails you a fresh sign-in link.</span></p>
+              <p><strong>Submitting does not grant access.</strong><span>Your verified request goes to a team owner or administrator. Approval creates membership, ends this temporary session, and emails you a fresh sign-in link. Prefer an invite? Use the invitation email instead.</span></p>
             </div>
             <div className="onboarding-actions">
               <button type="button" className="signin-link" onClick={() => setStep("team")}>Back</button>
-              <button className="signin-submit" type="submit" disabled={busy || !termsAccepted}>{busy ? "Submitting…" : "Submit access request"}</button>
+              <button className="signin-submit" type="submit" disabled={busy || !canSubmit}>{busy ? "Submitting…" : "Submit access request"}</button>
             </div>
           </form>
         ) : null}
 
         {step === "pending" ? (
           <div className="onboarding-pending-panel">
-            <div className={`onboarding-request-status ${state?.accessStatus ?? "pending"}`}>
+            <div className={`onboarding-request-status ${state.accessStatus}`}>
               <i aria-hidden="true" />
               <div>
-                <span>{state?.accessStatus === "declined" ? "REQUEST NEEDS ATTENTION" : state?.accessStatus === "invited" ? "INVITATION READY" : "AWAITING TEAM APPROVAL"}</span>
-                <strong>{state?.workspaceOrgName ?? (state?.preferredTeamNumber ? `FRC Team ${state.preferredTeamNumber}` : "Your team workspace")}</strong>
+                <span>{state.accessStatus === "declined" ? "REQUEST NEEDS ATTENTION" : state.accessStatus === "invited" ? "INVITATION READY" : "AWAITING TEAM APPROVAL"}</span>
+                <strong>{state.workspaceOrgName ?? (state.preferredTeamNumber ? `FRC Team ${state.preferredTeamNumber}` : "Your team workspace")}</strong>
               </div>
             </div>
 
             <ol className="onboarding-approval-path">
               <li className="done"><b>1</b><div><strong>Profile submitted</strong><span>Your identity and preferences are saved privately.</span></div></li>
-              <li className={state?.accessStatus === "invited" ? "done" : "current"}><b>2</b><div><strong>Team leader review</strong><span>An owner or administrator confirms you belong in the workspace.</span></div></li>
+              <li className={state.accessStatus === "invited" ? "done" : "current"}><b>2</b><div><strong>Team leader review</strong><span>An owner or administrator confirms you belong in the workspace.</span></div></li>
               <li><b>3</b><div><strong>Secure email handoff</strong><span>Approval ends this onboarding session and sends a link to sign in again.</span></div></li>
             </ol>
 
             <p className="onboarding-pending-help">
-              {state?.accessStatus === "declined"
+              {state.accessStatus === "declined"
                 ? "If you selected the wrong team, update the request and submit it again."
                 : "You can close this page. We will not open any team data while the request is pending."}
             </p>
@@ -455,7 +565,7 @@ export default function OnboardingClient() {
               <p><strong>Your private profile stays private.</strong><span>Team leaders review your verified email, requested role, and focus. They do not receive your birth date or gender.</span></p>
             </div>
             <div className="onboarding-pending-actions">
-              {state?.accessStatus === "declined" ? <button type="button" className="signin-submit" onClick={() => { setMessage(""); setStep("team"); }}>Update request</button> : <button type="button" className="signin-submit" disabled={checking} onClick={() => void refreshApproval()}>{checking ? "Checking…" : "Check approval status"}</button>}
+              {state.accessStatus === "declined" ? <button type="button" className="signin-submit" onClick={() => { setMessage(""); setStep("team"); }}>Update request</button> : <button type="button" className="signin-submit" disabled={checking} onClick={() => void refreshApproval()}>{checking ? "Checking…" : "Check approval status"}</button>}
               <button type="button" className="signin-link" disabled={busy} onClick={() => void signOut()}>Sign out</button>
             </div>
           </div>
