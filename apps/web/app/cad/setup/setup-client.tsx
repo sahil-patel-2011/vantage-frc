@@ -55,21 +55,29 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
     [devices],
   );
 
+  const q = `?orgId=${encodeURIComponent(orgId)}`;
+
   return (
-    <main className="intel-app">
-      <header className="intel-header">
+    <main className="module-page cad-setup-page">
+      <header className="app-page-header">
         <div>
-          <span className="eyebrow">CAD / SETUP WIZARD</span>
+          <span className="breadcrumbs">CAD / Setup</span>
           <h1>Connect CAD + AI brain</h1>
           <p>
             Pick a CAD path and an AI execution mode. Geometry mutations stay allowlisted and approval-gated. This is not
             certified engineering software.
           </p>
         </div>
-        <nav className="intel-actions">
-          <a href={`/cad?orgId=${orgId}`}>← CAD Builder</a>
-          <a href={`/cad/connections?orgId=${orgId}`}>Connections</a>
-          <a href={`/cad/pair?orgId=${orgId}`}>Pair desktop</a>
+        <nav className="cad-header-actions">
+          <a className="app-button secondary" href={`/cad${q}`}>
+            ← CAD Builder
+          </a>
+          <a className="app-button secondary" href={`/cad/connections${q}`}>
+            Connections
+          </a>
+          <a className="app-button secondary" href={`/cad/pair${q}`}>
+            Pair desktop
+          </a>
         </nav>
       </header>
 
@@ -79,33 +87,49 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
         </p>
       ) : null}
 
-      <ol className="onboarding-steps" aria-label="CAD setup progress">
-        {["CAD target", "AI brain", "Install & pair", "Verify"].map((label, index) => (
-          <li key={label} className={index < step ? "active" : undefined} aria-current={index + 1 === step ? "step" : undefined}>
-            <b>{index + 1}</b>
-            <span>{label}</span>
-          </li>
-        ))}
+      <ol className="cad-setup-steps" aria-label="CAD setup progress">
+        {["CAD target", "AI brain", "Install & pair", "Verify"].map((label, index) => {
+          const n = (index + 1) as Step;
+          return (
+            <li
+              key={label}
+              className={n < step ? "active" : undefined}
+              aria-current={n === step ? "step" : undefined}
+            >
+              <b>{n}</b>
+              <span>{label}</span>
+            </li>
+          );
+        })}
       </ol>
 
       {step === 1 ? (
-        <section className="intel-panel">
+        <section className="cad-setup-panel">
           <h2>1. CAD platform</h2>
-          <label className="state-control">
+          <p className="app-muted" style={{ margin: 0 }}>
+            Start with mock to learn the approval loop. Connect Onshape (hosted) or Fusion (local relay) when you need
+            live geometry.
+          </p>
+          <label className="cad-choice">
             <input type="radio" name="cad" checked={cadTarget === "mock"} onChange={() => setCadTarget("mock")} />
             <span>
               <strong>Mock (recommended first)</strong>
               <small>CI / demo path with deterministic topology + render. No Autodesk or Onshape credentials.</small>
             </span>
           </label>
-          <label className="state-control">
-            <input type="radio" name="cad" checked={cadTarget === "fusion360"} onChange={() => setCadTarget("fusion360")} />
+          <label className="cad-choice">
+            <input
+              type="radio"
+              name="cad"
+              checked={cadTarget === "fusion360"}
+              onChange={() => setCadTarget("fusion360")}
+            />
             <span>
               <strong>Fusion 360 local relay</strong>
               <small>Jobs stay on your machine via vantage-cad + official connector. Vercel never runs Fusion.</small>
             </span>
           </label>
-          <label className="state-control">
+          <label className="cad-choice">
             <input
               type="radio"
               name="cad"
@@ -122,70 +146,91 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
               </small>
             </span>
           </label>
-          <button className="primary-action" type="button" onClick={() => setStep(2)}>
-            Continue
-          </button>
+          <div className="cad-setup-actions">
+            <button className="primary-action" type="button" onClick={() => setStep(2)}>
+              Continue
+            </button>
+            <a className="app-button secondary" href={`/cad/connections${q}`}>
+              Open Connections
+            </a>
+          </div>
         </section>
       ) : null}
 
       {step === 2 ? (
-        <section className="intel-panel">
+        <section className="cad-setup-panel">
           <h2>2. AI brain / billing path</h2>
-          <label className="state-control">
-            <input type="radio" name="brain" checked={brain === "terminal_cli"} onChange={() => setBrain("terminal_cli")} />
+          <label className="cad-choice">
+            <input
+              type="radio"
+              name="brain"
+              checked={brain === "terminal_cli"}
+              onChange={() => setBrain("terminal_cli")}
+            />
             <span>
               <strong>Terminal / local CLI</strong>
               <small>
-                No Vantage model charge (`key_source=local_cli`). Uses Claude Code / Codex CLI / local OpenAI-compatible via
-                your official CLI login — not ChatGPT Plus / Claude Pro scrapes.
+                No Vantage model charge (`key_source=local_cli`). Uses Claude Code / Codex CLI / local OpenAI-compatible
+                via your official CLI login — not ChatGPT Plus / Claude Pro scrapes.
               </small>
             </span>
           </label>
-          <label className="state-control">
-            <input type="radio" name="brain" checked={brain === "managed_api"} onChange={() => setBrain("managed_api")} />
+          <label className="cad-choice">
+            <input
+              type="radio"
+              name="brain"
+              checked={brain === "managed_api"}
+              onChange={() => setBrain("managed_api")}
+            />
             <span>
               <strong>Vantage managed API</strong>
-              <small>Meters Vantage credits / org limits as usual.</small>
+              <small>Meters Vantage credits / org limits as usual. See Prompt caching under API budgets.</small>
             </span>
           </label>
-          <label className="state-control">
+          <label className="cad-choice">
             <input type="radio" name="brain" checked={brain === "team_byok"} onChange={() => setBrain("team_byok")} />
             <span>
               <strong>Team / personal BYOK API</strong>
               <small>Official provider API keys only (encrypted in Admin). Consumer subscriptions are not keys.</small>
             </span>
           </label>
-          <label className="state-control">
+          <label className="cad-choice">
             <input type="radio" name="brain" checked={brain === "mock"} onChange={() => setBrain("mock")} />
             <span>
               <strong>Mock brain</strong>
               <small>Deterministic brief/planner stubs for demos and CI.</small>
             </span>
           </label>
-          <div className="onboarding-actions">
-            <button type="button" className="signin-link" onClick={() => setStep(1)}>
+          <div className="cad-setup-actions">
+            <button type="button" className="app-button secondary" onClick={() => setStep(1)}>
               Back
             </button>
             <button className="primary-action" type="button" onClick={() => setStep(3)}>
               Continue
             </button>
+            {brain === "managed_api" ? (
+              <a className="app-button secondary" href={`/team/budgets${q}#prompt-caching`}>
+                Prompt caching
+              </a>
+            ) : null}
           </div>
         </section>
       ) : null}
 
       {step === 3 ? (
-        <section className="intel-panel">
-          <h2>3. Install commands</h2>
-          <p>
+        <section className="cad-setup-panel">
+          <h2>3. Install & pair</h2>
+          <p style={{ margin: 0 }}>
             Target: <strong>{cadTarget}</strong> · Brain: <strong>{brain}</strong>
           </p>
-          <div className="panel-heading">
+          <div className="cad-setup-actions" style={{ justifyContent: "space-between" }}>
             <div>
-              <span className="eyebrow">WINDOWS / MACOS / LINUX</span>
-              <h3>vantage-cad CLI</h3>
+              <span className="eyebrow">Windows / macOS / Linux</span>
+              <h3 style={{ margin: "4px 0 0", fontSize: 15 }}>vantage-cad CLI</h3>
             </div>
             <button
               type="button"
+              className="app-button secondary"
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(install);
@@ -199,9 +244,9 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             </button>
           </div>
           <pre className="install-command">{install}</pre>
-          <ol>
+          <ol style={{ margin: 0, paddingLeft: 18, color: "var(--app-muted)", fontSize: 13 }}>
             <li>
-              Open <a href={`/cad/pair?orgId=${orgId}`}>/cad/pair</a> after `vantage-cad setup` shows a code.
+              Open <a href={`/cad/pair${q}`}>Pair desktop</a> after `vantage-cad setup` shows a code.
             </li>
             <li>Approve the desktop for this organization and CAD platform.</li>
             <li>
@@ -212,22 +257,25 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
                   : "For mock path, keep using Deterministic mock in CAD Builder until you pair Fusion."}
             </li>
           </ol>
-          <div className="onboarding-actions">
-            <button type="button" className="signin-link" onClick={() => setStep(2)}>
+          <div className="cad-setup-actions">
+            <button type="button" className="app-button secondary" onClick={() => setStep(2)}>
               Back
             </button>
             <button className="primary-action" type="button" onClick={() => setStep(4)}>
               Continue to verify
             </button>
+            <a className="app-button secondary" href={`/cad/pair${q}`}>
+              Pair desktop
+            </a>
           </div>
         </section>
       ) : null}
 
       {step === 4 ? (
-        <section className="intel-panel">
+        <section className="cad-setup-panel">
           <h2>4. Verify heartbeat</h2>
           {online ? (
-            <p role="status" className="telemetry-status success">
+            <p role="status" className="telemetry-status">
               Paired desktop online: {online.machineName} · {online.platform} · last seen{" "}
               {online.lastSeenAt ? new Date(online.lastSeenAt).toLocaleString() : "now"}
             </p>
@@ -236,21 +284,28 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
               Waiting for `vantage-cad start` heartbeat… Open the pair page if setup is unfinished.
             </p>
           )}
-          <ul>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
             {devices.length === 0 ? <li>No devices paired yet.</li> : null}
             {devices.map((device) => (
               <li key={device.id}>
                 {device.machineName} · {device.platform} ·{" "}
-                {device.revokedAt ? "revoked" : device.lastSeenAt ? `seen ${new Date(device.lastSeenAt).toLocaleString()}` : "never seen"}
+                {device.revokedAt
+                  ? "revoked"
+                  : device.lastSeenAt
+                    ? `seen ${new Date(device.lastSeenAt).toLocaleString()}`
+                    : "never seen"}
               </li>
             ))}
           </ul>
-          <div className="onboarding-actions">
-            <button type="button" className="signin-link" onClick={() => setStep(3)}>
+          <div className="cad-setup-actions">
+            <button type="button" className="app-button secondary" onClick={() => setStep(3)}>
               Back
             </button>
-            <a className="primary-action" href={`/cad?orgId=${orgId}`}>
+            <a className="primary-action" href={`/cad${q}`}>
               Open CAD Builder
+            </a>
+            <a className="app-button secondary" href={`/cad/connections${q}`}>
+              Connections
             </a>
           </div>
         </section>
