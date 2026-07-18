@@ -4,11 +4,9 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 const links = [
-  ["/features", "Showcase"],
-  ["/workflow", "Workflow"],
-  ["/features/cad", "AI CAD"],
-  ["/features/code", "Code"],
+  ["/features", "Product"],
   ["/features/strategy", "Assistant"],
+  ["/features/cad", "CAD"],
   ["/pricing", "Pricing"],
 ] as const;
 
@@ -33,10 +31,10 @@ export function SiteHeader() {
     <header className="nav">
       <BrandLink />
       <nav aria-label="Primary navigation">{nav()}</nav>
-      <div className="nav-actions"><a className="sign-in-link" href="/signin">Sign in</a><a className="button compact waitlist-nav" href="/#hero-email">Join waitlist</a></div>
+      <div className="nav-actions"><a className="sign-in-link" href="/signin">Sign in</a><a className="button compact waitlist-nav" href="/#waitlist">Join waitlist</a></div>
       <details className="mobile-menu">
         <summary aria-label="Open navigation"><span /><span /><span /></summary>
-        <nav aria-label="Mobile navigation">{nav(true)}<a href="/signin">Sign in</a><a href="/#hero-email">Join waitlist</a></nav>
+        <nav aria-label="Mobile navigation">{nav(true)}<a href="/signin">Sign in</a><a href="/#waitlist">Join waitlist</a></nav>
       </details>
     </header>
   );

@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "Does Vantage work offline at competitions?",
-    a: "Yes. Scouting and event operations are offline-first: forms keep working when venue Wi-Fi drops and sync automatically when the connection returns.",
+    a: "Yes. Scouting and event operations are offline-first: forms keep working when venue Wi-Fi drops, QR handoffs move scout assignments between devices, and sync resumes automatically when the connection returns.",
   },
   {
     q: "Where does the match data come from?",
@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     q: "How much does Vantage cost?",
-    a: "The complete non-AI competition core is free, with bring-your-own-key or local AI. Paid plans: Individual Pro $35/mo ($30 API), Individual Max $60/mo ($52 API), Team Pro $120/mo ($105 pooled API), Team Max $240/mo ($220 pooled API). Usage is debited at provider list rates with no Vantage markup; after the included allowance, usage hard-stops unless you buy Usage Credits or enable PAYG. Access ($25/mo) unlocks managed routing without a large included bucket. There is no per-seat student pricing.",
+    a: "The complete non-AI competition core is free, with bring-your-own-key or local AI. Paid plans: Individual Pro $49/mo ($40 API), Individual Max $79/mo ($68 API), Team Pro $149/mo ($130 pooled API), Team Max $299/mo ($260 pooled API). Usage is debited at provider list rates with no Vantage markup; after the included allowance, usage hard-stops unless you buy Usage Credits or enable PAYG. Access ($35/mo) unlocks managed routing without a large included bucket. There is no per-seat student pricing.",
   },
   {
     q: "Is our team's data private?",

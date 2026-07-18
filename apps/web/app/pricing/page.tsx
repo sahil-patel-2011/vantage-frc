@@ -14,16 +14,14 @@ export default function PricingPage() {
     <div className="marketing-site marketing-v2 marketing-dense">
       <SiteHeader />
       <main className="pricing-page">
-        <section className="pricing-hero">
-          <div className="showcase-kicker">
-            <span className="brand-chip">Vantage</span>
-            <span className="section-id">PRICING / INDIVIDUAL OR TEAM</span>
-          </div>
+        <section className="pricing-hero brand-route-hero">
+          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
+          <span className="section-id">PRICING / INDIVIDUAL OR TEAM</span>
           <h1>Fund private work or the whole team—deliberately.</h1>
           <p>
-            Free keeps the competition core useful with BYOK/local AI. Paid plans add Vantage managed routing, tools,
-            and context with included API allowance at published provider rates—then a hard stop unless you buy Usage
-            Credits or enable PAYG. No per-seat student pricing and no surprise charges.
+            Free keeps the competition core useful with BYOK/local AI. Raised paid plans add Vantage managed routing,
+            tools, and context with included API allowance at published provider rates—then a hard stop unless you buy
+            Usage Credits or enable PAYG. No per-seat student pricing and no surprise charges.
           </p>
         </section>
 
@@ -57,8 +55,8 @@ export default function PricingPage() {
               periods with notice; active paid periods keep their snapshotted terms.
             </p>
             <p className="pricing-note">
-              Catalog defaults: Free $0 / $0 API · Individual Pro $35 / $30 · Individual Max $60 / $52 · Team Pro $120 /
-              $105 · Team Max $240 / $220 · Access $25 + PAYG · Week team trial $20 API / 7 days.
+              Catalog defaults: Free $0 / $0 API · Individual Pro $49 / $40 · Individual Max $79 / $68 · Team Pro $149 /
+              $130 · Team Max $299 / $260 · Access $35 + PAYG · Week team trial $20 API / 7 days.
             </p>
             <p className="pricing-footnote">
               <strong>Free vs FRC Assistant:</strong> Free includes offline scouting, cached reference data, manual
