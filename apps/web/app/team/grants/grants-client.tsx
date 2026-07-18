@@ -1,640 +1,614 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { GRANT_ITEM_KINDS, GRANT_STATUSES, grantStatusLabel } from "../../../lib/grants";
-import { GrantNarrativePanel } from "./grant-narrative-panel";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  GRANT_DRAFT_STATUSES,
+  type GrantDraftStatus,
+  type GrantTemplate,
+  type GrantTemplateKey,
+  type GrantWritingDraft,
+  type GrantWritingView,
+  type GuidedFields,
+} from "../../../lib/grant-writing";
+import "./grants.css";
 
-type Opportunity = {
-  id: string;
-  name: string;
-  funder: string | null;
-  amountMinUsd: string | null;
-  amountMaxUsd: string | null;
-  deadline: string | null;
-  applicationUrl: string | null;
+const EMPTY_FIELDS: GuidedFields = { need: "", impact: "", budget: "", timeline: "" };
+
+const FIELD_KEYS = ["need", "impact", "budget", "timeline"] as const;
+
+const STATUS_LABEL: Record<GrantDraftStatus, string> = {
+  draft: "Draft",
+  ready: "Ready to submit",
+  submitted: "Submitted",
+  archived: "Archived",
 };
 
-type Application = {
-  id: string;
-  opportunityName: string | null;
-  seasonYear: number;
-  status: string;
-  amountRequestedUsd: string | null;
-  amountAwardedUsd: string | null;
-};
+type LiveView = Extract<GrantWritingView, { status: "live" }>;
 
-type Item = {
-  id: string;
-  kind: string;
-  prompt: string | null;
-  content: string | null;
-  charLimit: number | null;
-  done: boolean;
-};
-
-type Draft = { subject: string; body: string };
-
-function money(value: string | number | null | undefined) {
-  const amount = Number(value ?? 0);
-  if (!Number.isFinite(amount) || amount <= 0) return "—";
-  return `$${amount.toLocaleString()}`;
+function moneyLabel(amount: number | null | undefined): string {
+  if (amount == null || !Number.isFinite(amount) || amount <= 0) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount);
 }
 
-function statusLabel(status: string) {
-  return GRANT_STATUSES.includes(status as (typeof GRANT_STATUSES)[number])
-    ? grantStatusLabel(status as (typeof GRANT_STATUSES)[number])
-    : status;
+function orgQuery(orgId: string | null | undefined): string {
+  return orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
 }
 
-export default function GrantsClient({ orgId }: { orgId: string }) {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [items, setItems] = useState<Item[]>([]);
-  const [message, setMessage] = useState("");
-  const [messageTone, setMessageTone] = useState<"ok" | "error">("ok");
-  const [loading, setLoading] = useState(true);
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [evidenceNote, setEvidenceNote] = useState("");
-  const [oppForm, setOppForm] = useState({
-    name: "",
-    funder: "",
-    description: "",
-    amountMinUsd: "",
-    amountMaxUsd: "",
-    deadline: "",
-    applicationUrl: "",
-  });
-  const [appForm, setAppForm] = useState({ grantOpportunityId: "", amountRequestedUsd: "" });
-  const [itemForm, setItemForm] = useState({ kind: "essay", prompt: "", charLimit: "" });
-  const [awardedAmount, setAwardedAmount] = useState("");
+function businessGrantsHref(orgId: string | null | undefined): string {
+  const params = new URLSearchParams({ tab: "grants" });
+  if (orgId) params.set("orgId", orgId);
+  return `/business?${params.toString()}`;
+}
 
-  async function load() {
-    setLoading(true);
-    const seasonYear = new Date().getFullYear();
-    const [oppRes, appRes, evidenceRes] = await Promise.all([
-      fetch(`/api/grants/opportunities?orgId=${encodeURIComponent(orgId)}`),
-      fetch(`/api/grants/applications?orgId=${encodeURIComponent(orgId)}`),
-      fetch(
-        `/api/grants/assist?orgId=${encodeURIComponent(orgId)}&seasonYear=${encodeURIComponent(String(seasonYear))}`,
-      ),
-    ]);
-    const oppData = await oppRes.json();
-    const appData = await appRes.json();
-    const evidenceData = await evidenceRes.json();
-    setOpportunities(oppData.opportunities ?? []);
-    setApplications(appData.applications ?? []);
-    if (evidenceRes.ok) {
-      const hours = Number(evidenceData.communityHours ?? 0);
-      const goals = Array.isArray(evidenceData.seasonGoals) ? evidenceData.seasonGoals.length : 0;
-      const activities = Number(evidenceData.impact?.activities ?? 0);
-      setEvidenceNote(
-        `This org only: ${activities} impact activities · ${hours} community hours · ${goals} season goals · ${
-          Array.isArray(evidenceData.awards) ? evidenceData.awards.length : 0
-        } awards. AI assist is metered.`,
-      );
-    } else {
-      setEvidenceNote("");
-    }
-    if (!oppRes.ok) {
-      setMessageTone("error");
-      setMessage(oppData.error ?? "Unable to load grant opportunities");
-    } else if (!appRes.ok) {
-      setMessageTone("error");
-      setMessage(appData.error ?? "Unable to load grant applications");
-    } else {
-      setMessage("");
-    }
-    setLoading(false);
-  }
+export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
+  const [view, setView] = useState<GrantWritingView | null>(null);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [season, setSeason] = useState<number | null>(null);
+  const [templateKey, setTemplateKey] = useState<GrantTemplateKey>("community_foundation");
+  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
+  const [funderName, setFunderName] = useState("");
+  const [askAmountUsd, setAskAmountUsd] = useState("");
+  const [fields, setFields] = useState<GuidedFields>(EMPTY_FIELDS);
+  const [body, setBody] = useState("");
+
+  const resolvedOrgId =
+    view && view.status === "live"
+      ? view.orgId
+      : view && view.orgId
+        ? view.orgId
+        : orgIdProp ?? null;
+
+  const applyDraft = useCallback((draft: GrantWritingDraft) => {
+    setSelectedDraftId(draft.id);
+    setTemplateKey(draft.templateKey);
+    setFunderName(draft.funderName ?? "");
+    setAskAmountUsd(draft.askAmountUsd != null ? String(draft.askAmountUsd) : "");
+    setFields(draft.fields);
+    setBody(draft.body);
+  }, []);
+
+  const load = useCallback(
+    (seasonOverride?: number) => {
+      setFetchFailed(false);
+      setError("");
+      const params = new URLSearchParams(window.location.search);
+      const urlOrg = orgIdProp ?? params.get("orgId");
+      const seasonQuery = seasonOverride ?? (params.get("seasonYear") ? Number(params.get("seasonYear")) : null);
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (seasonQuery) query.set("seasonYear", String(seasonQuery));
+      void fetch(`/api/grants/writing${query.toString() ? `?${query.toString()}` : ""}`)
+        .then(async (response) => {
+          const data = (await response.json()) as GrantWritingView | { error?: string };
+          if (!response.ok || !("status" in data)) {
+            setFetchFailed(true);
+            return;
+          }
+          setView(data);
+          setSeason(data.seasonYear);
+        })
+        .catch(() => setFetchFailed(true));
+    },
+    [orgIdProp],
+  );
 
   useEffect(() => {
-    void load();
-  }, [orgId]);
+    load();
+  }, [load]);
 
-  async function loadItems(applicationId: string) {
-    setSelectedId(applicationId);
-    setDraft(null);
-    setAwardedAmount("");
-    const response = await fetch(
-      `/api/grants/items?orgId=${encodeURIComponent(orgId)}&applicationId=${encodeURIComponent(applicationId)}`,
-    );
-    const data = await response.json();
-    setItems(data.items ?? []);
-    if (!response.ok) {
-      setMessageTone("error");
-      setMessage(data.error ?? "Unable to load application items");
-    }
-  }
+  const live = view?.status === "live" ? view : null;
 
-  function flash(ok: boolean, text: string) {
-    setMessageTone(ok ? "ok" : "error");
-    setMessage(text);
-  }
+  const selectedDraft = useMemo(() => {
+    if (!live || !selectedDraftId) return null;
+    return live.drafts.find((draft) => draft.id === selectedDraftId) ?? null;
+  }, [live, selectedDraftId]);
 
-  async function addOpportunity(event: React.FormEvent) {
-    event.preventDefault();
-    const response = await fetch("/api/grants/opportunities", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, ...oppForm }),
-    });
-    const data = await response.json();
-    flash(response.ok, response.ok ? "Grant opportunity saved." : (data.error ?? "Could not save opportunity"));
-    if (response.ok) {
-      setOppForm({
-        name: "",
-        funder: "",
-        description: "",
-        amountMinUsd: "",
-        amountMaxUsd: "",
-        deadline: "",
-        applicationUrl: "",
+  const activeTemplate = useMemo((): GrantTemplate | null => {
+    if (!live) return null;
+    return live.templates.find((template) => template.key === templateKey) ?? live.templates[0] ?? null;
+  }, [live, templateKey]);
+
+  const provenance = selectedDraft?.provenance ?? [];
+
+  async function mutate(payload: Record<string, unknown>, okMessage?: string) {
+    if (!live || busy) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/grants/writing", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId: live.orgId,
+          seasonYear: season ?? live.seasonYear,
+          ...payload,
+        }),
       });
-      await load();
+      const data = (await response.json()) as GrantWritingView | { error?: string };
+      if (!response.ok || !("status" in data)) {
+        setError("error" in data && data.error ? data.error : "Something went wrong.");
+        return;
+      }
+      setView(data);
+      setSeason(data.seasonYear);
+      if (data.status === "live") {
+        if (payload.action === "compose" && data.drafts[0]) {
+          applyDraft(data.drafts[0]);
+        } else if (payload.action === "delete") {
+          const next = data.drafts[0] ?? null;
+          if (next) applyDraft(next);
+          else {
+            setSelectedDraftId(null);
+            setFields(EMPTY_FIELDS);
+            setBody("");
+            setFunderName("");
+            setAskAmountUsd("");
+          }
+        } else if (typeof payload.draftId === "string") {
+          const draft = data.drafts.find((item) => item.id === payload.draftId) ?? data.drafts[0] ?? null;
+          if (draft) applyDraft(draft);
+        }
+      }
+      if (okMessage) setNotice(okMessage);
+    } catch {
+      setError("Network error — please try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
-  async function startApplication(event: React.FormEvent) {
-    event.preventDefault();
-    const response = await fetch("/api/grants/applications", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        orgId,
-        seasonYear: new Date().getFullYear(),
-        grantOpportunityId: appForm.grantOpportunityId || null,
-        amountRequestedUsd: appForm.amountRequestedUsd || null,
-      }),
-    });
-    const data = await response.json();
-    flash(response.ok, response.ok ? "Application started." : (data.error ?? "Could not start application"));
-    if (response.ok) {
-      setAppForm({ grantOpportunityId: "", amountRequestedUsd: "" });
-      await load();
-      if (data.application?.id) await loadItems(data.application.id as string);
-    }
+  function selectTemplate(template: GrantTemplate) {
+    setTemplateKey(template.key);
+    setNotice("");
   }
 
-  async function updateStatus(id: string, status: string, amountAwardedUsd?: string) {
-    const response = await fetch("/api/grants/applications", {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        orgId,
-        id,
-        status,
-        amountAwardedUsd: status === "awarded" && amountAwardedUsd ? amountAwardedUsd : undefined,
-      }),
-    });
-    const data = await response.json();
-    flash(response.ok, response.ok ? "Status updated." : (data.error ?? "Could not update status"));
-    if (response.ok) await load();
+  function selectDraft(draft: GrantWritingDraft) {
+    applyDraft(draft);
+    setNotice("");
   }
 
-  async function addItem(event: React.FormEvent) {
-    event.preventDefault();
-    if (!selectedId) return;
-    const response = await fetch("/api/grants/items", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        orgId,
-        applicationId: selectedId,
-        kind: itemForm.kind,
-        prompt: itemForm.prompt,
-        charLimit: itemForm.charLimit || null,
-      }),
-    });
-    const data = await response.json();
-    flash(response.ok, response.ok ? "Item added." : (data.error ?? "Could not add item"));
-    if (response.ok) {
-      setItemForm({ kind: "essay", prompt: "", charLimit: "" });
-      await loadItems(selectedId);
-    }
+  const readyCount = live?.drafts.filter((draft) => draft.status === "ready").length ?? 0;
+
+  if (fetchFailed) {
+    return (
+      <main className="module-page gwe-page">
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">Business / Grants</span>
+            <h1>Grant writing</h1>
+            <p className="app-muted">Could not load grant writing — check your connection and try again.</p>
+          </div>
+        </header>
+        <section className="app-card soft-panel">
+          <button type="button" className="app-button secondary" onClick={() => load()}>
+            Retry
+          </button>
+        </section>
+      </main>
+    );
   }
 
-  async function saveItem(id: string, content: string) {
-    const response = await fetch("/api/grants/items", {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, id, content }),
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      flash(false, data.error ?? "Could not save item");
-      return;
-    }
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, content } : item)));
+  if (!view) {
+    return (
+      <main className="module-page gwe-page">
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">Business / Grants</span>
+            <h1>Grant writing</h1>
+            <p className="app-muted">Loading grant writing workspace…</p>
+          </div>
+        </header>
+      </main>
+    );
   }
 
-  async function toggleDone(id: string, done: boolean) {
-    const response = await fetch("/api/grants/items", {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, id, done }),
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      flash(false, data.error ?? "Could not update item");
-      return;
-    }
-    if (selectedId) await loadItems(selectedId);
+  if (view.status === "setup_required") {
+    return (
+      <main className="module-page gwe-page">
+        <header className="app-page-header">
+          <div>
+            <span className="breadcrumbs">Business / Grants</span>
+            <h1>Grant writing</h1>
+            <p className="app-muted">
+              Guided need · impact · budget · timeline narratives from THIS organization&apos;s profile and impact log
+              only.
+            </p>
+          </div>
+          <nav className="intel-actions" aria-label="Grant writing links">
+            <a href={businessGrantsHref(view.orgId ?? orgIdProp)}>Business · Grants</a>
+            <a href={`/impact${orgQuery(view.orgId ?? orgIdProp)}`}>Impact</a>
+          </nav>
+        </header>
+        <section className="app-card soft-panel">
+          <span className="app-badge setup">Setup required</span>
+          <h2>{view.message}</h2>
+          <ol className="strategy-setup-steps">
+            {view.steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </main>
+    );
   }
-
-  async function draftFollowup() {
-    if (!selectedId) return;
-    const response = await fetch("/api/outreach", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, kind: "grant_followup", grantApplicationId: selectedId }),
-    });
-    const data = await response.json();
-    if (response.ok) {
-      setDraft(data.message);
-      flash(true, "Follow-up draft ready.");
-    } else {
-      flash(false, data.error ?? "Could not draft follow-up");
-    }
-  }
-
-  const selectedApp = applications.find((a) => a.id === selectedId) ?? null;
-  const openApps = applications.filter((a) => !["awarded", "declined"].includes(a.status)).length;
-  const awardedApps = applications.filter((a) => a.status === "awarded");
-  const totalAwarded = awardedApps.reduce((sum, a) => sum + Number(a.amountAwardedUsd ?? 0), 0);
-  const doneItems = items.filter((item) => item.done).length;
 
   return (
-    <main className="intel-app">
-      <header className="intel-header">
+    <GrantWritingWorkspace
+      view={view}
+      season={season}
+      busy={busy}
+      error={error}
+      notice={notice}
+      templateKey={templateKey}
+      activeTemplate={activeTemplate}
+      selectedDraft={selectedDraft}
+      selectedDraftId={selectedDraftId}
+      funderName={funderName}
+      askAmountUsd={askAmountUsd}
+      fields={fields}
+      body={body}
+      provenance={provenance}
+      readyCount={readyCount}
+      resolvedOrgId={resolvedOrgId}
+      onSeasonChange={(next) => {
+        setSeason(next);
+        setSelectedDraftId(null);
+        setFields(EMPTY_FIELDS);
+        setBody("");
+        load(next);
+      }}
+      onSelectTemplate={selectTemplate}
+      onSelectDraft={selectDraft}
+      onFunderNameChange={setFunderName}
+      onAskAmountChange={setAskAmountUsd}
+      onFieldsChange={setFields}
+      onMutate={mutate}
+    />
+  );
+}
+
+function GrantWritingWorkspace({
+  view,
+  season,
+  busy,
+  error,
+  notice,
+  templateKey,
+  activeTemplate,
+  selectedDraft,
+  selectedDraftId,
+  funderName,
+  askAmountUsd,
+  fields,
+  body,
+  provenance,
+  readyCount,
+  resolvedOrgId,
+  onSeasonChange,
+  onSelectTemplate,
+  onSelectDraft,
+  onFunderNameChange,
+  onAskAmountChange,
+  onFieldsChange,
+  onMutate,
+}: {
+  view: LiveView;
+  season: number | null;
+  busy: boolean;
+  error: string;
+  notice: string;
+  templateKey: GrantTemplateKey;
+  activeTemplate: GrantTemplate | null;
+  selectedDraft: GrantWritingDraft | null;
+  selectedDraftId: string | null;
+  funderName: string;
+  askAmountUsd: string;
+  fields: GuidedFields;
+  body: string;
+  provenance: GrantWritingDraft["provenance"];
+  readyCount: number;
+  resolvedOrgId: string | null;
+  onSeasonChange: (season: number) => void;
+  onSelectTemplate: (template: GrantTemplate) => void;
+  onSelectDraft: (draft: GrantWritingDraft) => void;
+  onFunderNameChange: (value: string) => void;
+  onAskAmountChange: (value: string) => void;
+  onFieldsChange: (fields: GuidedFields) => void;
+  onMutate: (payload: Record<string, unknown>, okMessage?: string) => Promise<void>;
+}) {
+  const teamLabel =
+    view.teamNumber != null ? `FRC ${view.teamNumber}` : view.orgName ?? "This workspace";
+
+  return (
+    <main className="module-page gwe-page">
+      <header className="app-page-header">
         <div>
-          <span className="eyebrow">VANTAGE / GRANTS</span>
-          <h1>Grant tracker &amp; writing workspace</h1>
+          <span className="breadcrumbs">Business / Grants</span>
+          <h1>Grant writing</h1>
           <p className="app-muted">
-            Track funders, draft prompt-by-prompt essays with character limits, and keep the Business portal
-            pipeline in sync. Empty lists are real — nothing is invented until you add it.
+            Compose org-isolated grant narratives from guided fields — onboarding location, team description, and
+            Community Impact evidence for {teamLabel}. Nothing is invented across organizations.
           </p>
         </div>
-        <nav className="intel-actions" aria-label="Grants workbench links">
-          <a href={`#grant-narratives`}>Narrative drafts</a>
-          <a href={`/sponsorship?orgId=${encodeURIComponent(orgId)}`}>Sponsorship one-pagers</a>
-          <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>Business · Grants</a>
-          <a href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>Awards workbench</a>
-          <a href={`/team/sponsors?orgId=${encodeURIComponent(orgId)}`}>Sponsors</a>
-          <a href={`/team/background?orgId=${encodeURIComponent(orgId)}`}>Team background</a>
-          <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team admin</a>
-        </nav>
+        <div className="gwe-toolbar">
+          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            Season
+            <select
+              value={season ?? view.seasonYear}
+              onChange={(event) => onSeasonChange(Number(event.target.value))}
+            >
+              {(view.seasons.length ? view.seasons : [view.seasonYear]).map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
+          <nav className="intel-actions" aria-label="Grant writing links">
+            <a href={businessGrantsHref(resolvedOrgId)}>Business · Grants</a>
+            <a href={`/team/awards${orgQuery(resolvedOrgId)}`}>Awards workbench</a>
+            <a href={`/impact${orgQuery(resolvedOrgId)}`}>Impact</a>
+            <a href={`/goals${orgQuery(resolvedOrgId)}`}>Season goals</a>
+          </nav>
+        </div>
       </header>
 
-      {message ? (
-        <p role="status" className={`telemetry-status${messageTone === "ok" ? " success" : ""}`}>
-          {message}
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
         </p>
       ) : null}
-      {loading ? <p className="app-muted">Loading grants…</p> : null}
-      {!loading && evidenceNote ? (
-        <p className="app-muted" role="status">
-          {evidenceNote}{" "}
-          <a href={`/team/awards?orgId=${encodeURIComponent(orgId)}`}>Open awards workbench →</a>
+      {notice ? (
+        <p className="telemetry-status" role="status">
+          {notice}
         </p>
       ) : null}
 
-      {!loading ? (
-        <section className="metric-grid">
-          <article>
-            <span>Open applications</span>
-            <strong>{openApps}</strong>
-          </article>
-          <article>
-            <span>Awarded</span>
-            <strong>{awardedApps.length}</strong>
-          </article>
-          <article>
-            <span>Total awarded</span>
-            <strong>{money(totalAwarded)}</strong>
-          </article>
-          <article>
-            <span>Grant sources</span>
-            <strong>{opportunities.length}</strong>
-          </article>
-        </section>
-      ) : null}
+      <section className="gwe-kpis" aria-label="Grant writing summary">
+        <article>
+          <span>Saved drafts</span>
+          <strong>{view.drafts.length}</strong>
+        </article>
+        <article>
+          <span>Ready to submit</span>
+          <strong>{readyCount}</strong>
+        </article>
+        <article>
+          <span>Impact activities</span>
+          <strong>{view.impactSummary.activities}</strong>
+        </article>
+        <article>
+          <span>Community hours</span>
+          <strong>{view.communityHours}</strong>
+        </article>
+        <article>
+          <span>Season goals</span>
+          <strong>{view.seasonGoals.length}</strong>
+        </article>
+        <article>
+          <span>Awards on file</span>
+          <strong>{view.awardCount}</strong>
+        </article>
+        <article>
+          <span>Location</span>
+          <strong>{view.location ?? "—"}</strong>
+        </article>
+      </section>
 
-      {!loading && opportunities.length === 0 && applications.length === 0 ? (
-        <section className="app-empty">
-          <span className="eyebrow">EMPTY PIPELINE</span>
-          <h2>No grant work tracked yet</h2>
-          <p>
-            Start by saving a funder opportunity, then open an application. You can also add quick pipeline rows from{" "}
-            <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>Business · Grants</a> and finish
-            essays here.
-          </p>
-        </section>
-      ) : null}
+      <div className="gwe-layout">
+        <aside className="gwe-templates app-card soft-panel">
+          <span className="eyebrow">Templates</span>
+          <p className="app-muted">Pick a funder style — prompts update in the editor.</p>
+          <ul className="gwe-template-list">
+            {view.templates.map((template) => (
+              <li key={template.key}>
+                <button
+                  type="button"
+                  className={template.key === templateKey ? "gwe-template active" : "gwe-template"}
+                  onClick={() => onSelectTemplate(template)}
+                >
+                  <strong>{template.label}</strong>
+                  <span>{template.summary}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </aside>
 
-      {!loading ? (
-        <section className="admin-grid">
-          <form className="intel-panel" onSubmit={addOpportunity}>
-            <span className="eyebrow">TRACK A GRANT OPPORTUNITY</span>
-            <label>
-              Name
+        <section className="gwe-editor app-card soft-panel">
+          <span className="eyebrow">Guided fields</span>
+          <h2>{activeTemplate?.label ?? "Narrative"}</h2>
+          {activeTemplate ? <p className="app-muted">{activeTemplate.summary}</p> : null}
+
+          <div className="gwe-meta">
+            <label className="gwe-field">
+              <span>Funder</span>
               <input
-                required
-                value={oppForm.name}
-                onChange={(e) => setOppForm({ ...oppForm, name: e.target.value })}
-                placeholder="NASA HUNCH robotics grant"
-              />
-            </label>
-            <label>
-              Funder
-              <input
-                value={oppForm.funder}
-                onChange={(e) => setOppForm({ ...oppForm, funder: e.target.value })}
+                value={funderName}
+                onChange={(event) => onFunderNameChange(event.target.value)}
                 placeholder="Community Foundation"
               />
             </label>
-            <div className="budget-fields">
-              <label>
-                Min amount ($)
-                <input
-                  type="number"
-                  min="0"
-                  value={oppForm.amountMinUsd}
-                  onChange={(e) => setOppForm({ ...oppForm, amountMinUsd: e.target.value })}
-                />
-              </label>
-              <label>
-                Max amount ($)
-                <input
-                  type="number"
-                  min="0"
-                  value={oppForm.amountMaxUsd}
-                  onChange={(e) => setOppForm({ ...oppForm, amountMaxUsd: e.target.value })}
-                />
-              </label>
-            </div>
-            <label>
-              Deadline
-              <input
-                type="date"
-                value={oppForm.deadline}
-                onChange={(e) => setOppForm({ ...oppForm, deadline: e.target.value })}
-              />
-            </label>
-            <label>
-              Application URL
-              <input
-                type="url"
-                value={oppForm.applicationUrl}
-                onChange={(e) => setOppForm({ ...oppForm, applicationUrl: e.target.value })}
-                placeholder="https://…"
-              />
-            </label>
-            <label>
-              Notes
-              <input
-                value={oppForm.description}
-                onChange={(e) => setOppForm({ ...oppForm, description: e.target.value })}
-                placeholder="Eligibility, reporting, attachments…"
-              />
-            </label>
-            <button className="primary-action" type="submit">
-              Save opportunity
-            </button>
-          </form>
-
-          <section className="intel-panel invite-list">
-            <span className="eyebrow">GRANT OPPORTUNITIES</span>
-            {opportunities.length === 0 ? (
-              <p className="app-muted">No opportunities yet — save one on the left, or add a grant from Business.</p>
-            ) : (
-              opportunities.map((o) => (
-                <article key={o.id}>
-                  <div>
-                    <strong>{o.name}</strong>
-                    <small>
-                      {[o.funder, o.deadline ? new Date(o.deadline).toLocaleDateString() : "no deadline"]
-                        .filter(Boolean)
-                        .join(" · ")}
-                      {o.amountMinUsd || o.amountMaxUsd
-                        ? ` · $${o.amountMinUsd ?? "?"}–$${o.amountMaxUsd ?? "?"}`
-                        : ""}
-                    </small>
-                  </div>
-                  {o.applicationUrl ? (
-                    <a href={o.applicationUrl} target="_blank" rel="noreferrer">
-                      Source ↗
-                    </a>
-                  ) : null}
-                </article>
-              ))
-            )}
-          </section>
-        </section>
-      ) : null}
-
-      {!loading ? (
-        <section className="admin-grid">
-          <form className="intel-panel" onSubmit={startApplication}>
-            <span className="eyebrow">START AN APPLICATION</span>
-            <label>
-              Opportunity
-              <select
-                value={appForm.grantOpportunityId}
-                onChange={(e) => setAppForm({ ...appForm, grantOpportunityId: e.target.value })}
-              >
-                <option value="">Not linked / general grant</option>
-                {opportunities.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Amount requested ($)
+            <label className="gwe-field">
+              <span>Ask amount ($)</span>
               <input
                 type="number"
                 min="0"
-                value={appForm.amountRequestedUsd}
-                onChange={(e) => setAppForm({ ...appForm, amountRequestedUsd: e.target.value })}
+                step="0.01"
+                value={askAmountUsd}
+                onChange={(event) => onAskAmountChange(event.target.value)}
+                placeholder="1500"
               />
             </label>
-            <button className="primary-action" type="submit">
-              Start application
+          </div>
+
+          {FIELD_KEYS.map((key) => (
+            <label key={key} className="gwe-field">
+              <span>{activeTemplate?.headings[key] ?? key}</span>
+              <textarea
+                rows={4}
+                value={fields[key]}
+                placeholder={activeTemplate?.prompts[key]}
+                onChange={(event) => onFieldsChange({ ...fields, [key]: event.target.value })}
+              />
+            </label>
+          ))}
+
+          <div className="gwe-actions">
+            <button
+              type="button"
+              className="app-button"
+              disabled={busy}
+              onClick={() =>
+                void onMutate(
+                  {
+                    action: "compose",
+                    templateKey,
+                    funderName: funderName || undefined,
+                    askAmountUsd: askAmountUsd || undefined,
+                    need: fields.need,
+                    impact: fields.impact,
+                    budget: fields.budget,
+                    timeline: fields.timeline,
+                  },
+                  "Narrative composed and saved.",
+                )
+              }
+            >
+              {busy ? "Composing…" : "Compose & save"}
             </button>
-          </form>
-
-          <section className="intel-panel invite-list">
-            <span className="eyebrow">APPLICATIONS</span>
-            {applications.length === 0 ? (
-              <p className="app-muted">No applications yet. Start one here after you have an opportunity, or open Business · Grants.</p>
-            ) : (
-              applications.map((a) => (
-                <article
-                  key={a.id}
-                  onClick={() => void loadItems(a.id)}
-                  style={{ cursor: "pointer" }}
-                  data-selected={selectedId === a.id ? "true" : undefined}
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy}
+              onClick={() =>
+                void onMutate(
+                  {
+                    action: "ai_assist",
+                    templateKey,
+                    funderName: funderName || undefined,
+                    askAmountUsd: askAmountUsd || undefined,
+                    need: fields.need,
+                    impact: fields.impact,
+                    budget: fields.budget,
+                    timeline: fields.timeline,
+                  },
+                  "Metered AI assist draft saved (this org only).",
+                )
+              }
+            >
+              AI assist (metered)
+            </button>
+            {selectedDraft ? (
+              <>
+                <select
+                  aria-label="Draft status"
+                  value={selectedDraft.status}
+                  disabled={busy}
+                  onChange={(event) =>
+                    void onMutate(
+                      {
+                        action: "set_status",
+                        draftId: selectedDraft.id,
+                        status: event.target.value,
+                      },
+                      "Status updated.",
+                    )
+                  }
                 >
-                  <div>
-                    <strong>{a.opportunityName ?? "General grant application"}</strong>
-                    <small>
-                      {a.seasonYear} · {statusLabel(a.status)}
-                      {a.amountRequestedUsd ? ` · ${money(a.amountRequestedUsd)} requested` : ""}
-                      {a.status === "awarded" && a.amountAwardedUsd ? ` · ${money(a.amountAwardedUsd)} awarded` : ""}
-                    </small>
-                  </div>
-                  <select
-                    value={a.status}
-                    aria-label={`Status for ${a.opportunityName ?? "application"}`}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      void updateStatus(a.id, e.target.value);
-                    }}
-                  >
-                    {GRANT_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {grantStatusLabel(s)}
-                      </option>
-                    ))}
-                  </select>
-                </article>
-              ))
-            )}
-          </section>
-        </section>
-      ) : null}
-
-      {selectedApp ? (
-        <section className="compare-panel">
-          <span className="eyebrow">
-            {(selectedApp.opportunityName ?? "APPLICATION").toUpperCase()} — WRITING ITEMS
-          </span>
-          <p className="app-muted">
-            {doneItems}/{items.length} items marked done · click another application to switch.
-          </p>
-
-          <div className="intel-panel">
-            {items.length === 0 ? (
-              <p className="app-muted">
-                No prompts yet. Add essay questions, attachments, or requirements below — or paste requirements when
-                creating the grant in Business.
-              </p>
-            ) : (
-              items.map((item) => (
-                <article key={item.id}>
-                  <div>
-                    <strong>{item.kind}</strong>
-                    {item.prompt ? <small>{item.prompt}</small> : null}
-                  </div>
-                  <textarea
-                    rows={4}
-                    defaultValue={item.content ?? ""}
-                    key={`${item.id}-${item.content ?? ""}`}
-                    onBlur={(e) => void saveItem(item.id, e.target.value)}
-                    maxLength={item.charLimit ?? undefined}
-                    placeholder="Draft response…"
-                  />
-                  {item.charLimit ? (
-                    <small>
-                      {(item.content ?? "").length}/{item.charLimit} characters
-                    </small>
-                  ) : null}
-                  <label className="check-field">
-                    <input
-                      type="checkbox"
-                      checked={item.done}
-                      onChange={(e) => void toggleDone(item.id, e.target.checked)}
-                    />{" "}
-                    Done
-                  </label>
-                </article>
-              ))
-            )}
-
-            <form onSubmit={addItem}>
-              <label>
-                Kind
-                <select value={itemForm.kind} onChange={(e) => setItemForm({ ...itemForm, kind: e.target.value })}>
-                  {GRANT_ITEM_KINDS.map((kind) => (
-                    <option key={kind} value={kind}>
-                      {kind}
+                  {GRANT_DRAFT_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {STATUS_LABEL[status]}
                     </option>
                   ))}
                 </select>
-              </label>
-              <label>
-                Prompt
-                <input
-                  value={itemForm.prompt}
-                  onChange={(e) => setItemForm({ ...itemForm, prompt: e.target.value })}
-                  placeholder="Describe the team’s community impact…"
-                />
-              </label>
-              <label>
-                Character limit
-                <input
-                  type="number"
-                  min="0"
-                  value={itemForm.charLimit}
-                  onChange={(e) => setItemForm({ ...itemForm, charLimit: e.target.value })}
-                />
-              </label>
-              <button className="primary-action" type="submit">
-                Add item
-              </button>
-            </form>
-          </div>
-
-          <div className="intel-panel">
-            <span className="eyebrow">STATUS &amp; FOLLOW-UP</span>
-            {selectedApp.status === "awarded" || selectedApp.status === "submitted" ? (
-              <div className="budget-fields">
-                <label>
-                  Amount awarded ($)
-                  <input
-                    type="number"
-                    min="0"
-                    value={awardedAmount || selectedApp.amountAwardedUsd || ""}
-                    onChange={(e) => setAwardedAmount(e.target.value)}
-                    placeholder={selectedApp.amountRequestedUsd ?? "0"}
-                  />
-                </label>
                 <button
                   type="button"
-                  className="primary-action"
-                  onClick={() => void updateStatus(selectedApp.id, "awarded", awardedAmount || selectedApp.amountRequestedUsd || "")}
+                  className="app-button secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    void onMutate({ action: "delete", draftId: selectedDraft.id }, "Draft deleted.")
+                  }
                 >
-                  Record as awarded
+                  Delete draft
                 </button>
-              </div>
+              </>
             ) : null}
-            <button type="button" onClick={() => void draftFollowup()}>
-              Draft follow-up email
-            </button>
-            {draft ? (
-              <div>
-                <label>
-                  Subject
-                  <input value={draft.subject} readOnly />
-                </label>
-                <label>
-                  Body
-                  <textarea rows={8} value={draft.body} readOnly />
-                </label>
-              </div>
-            ) : null}
-            <p className="app-muted">
-              Pipeline overview stays on{" "}
-              <a href={`/business?orgId=${encodeURIComponent(orgId)}&tab=grants`}>Business · Grants</a>.
-            </p>
           </div>
-        </section>
-      ) : null}
 
-      {!loading ? <GrantNarrativePanel orgId={orgId} /> : null}
+          <div className="gwe-preview">
+            <span className="eyebrow">Composed narrative</span>
+            {body ? (
+              <textarea rows={14} value={body} readOnly aria-label="Composed grant narrative" />
+            ) : (
+              <p className="app-muted">
+                Compose from at least one guided field to generate a draft. Evidence from Impact and onboarding profile
+                is woven in automatically.
+              </p>
+            )}
+          </div>
+
+          {provenance.length ? (
+            <div className="gwe-prov">
+              <span className="eyebrow">Provenance</span>
+              <ul>
+                {provenance.map((item, index) => (
+                  <li key={`${item.label}-${index}`}>
+                    <strong>{item.label}</strong>
+                    <span>{item.value}</span>
+                    <small>{item.source}</small>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+
+        <aside className="gwe-drafts app-card soft-panel">
+          <span className="eyebrow">Draft library</span>
+          <p className="app-muted">
+            {view.drafts.length
+              ? `${view.drafts.length} saved for ${season ?? view.seasonYear}`
+              : `No drafts for ${season ?? view.seasonYear} yet.`}
+          </p>
+          <div className="gwe-draft-list">
+            {view.drafts.length === 0 ? (
+              <p className="app-muted">Compose your first narrative from the editor — newest drafts appear here.</p>
+            ) : (
+              view.drafts.map((draft) => (
+                <button
+                  key={draft.id}
+                  type="button"
+                  className={draft.id === selectedDraftId ? "gwe-draft-item active" : "gwe-draft-item"}
+                  onClick={() => onSelectDraft(draft)}
+                >
+                  <strong>{draft.title}</strong>
+                  <span className={`gwe-status gwe-status-${draft.status}`}>{STATUS_LABEL[draft.status]}</span>
+                  <span>
+                    {moneyLabel(draft.askAmountUsd)}
+                    {draft.funderName ? ` · ${draft.funderName}` : ""}
+                  </span>
+                  <span>Updated {new Date(draft.updatedAt).toLocaleDateString()}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </aside>
+      </div>
     </main>
   );
 }
