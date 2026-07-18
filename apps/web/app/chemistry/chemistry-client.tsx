@@ -1,19 +1,179 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Icon } from "../../components/app-shell";
-import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
 import type { ChemistryView } from "../../lib/chemistry/load-chemistry";
-import { strategySetupNextActions } from "../../lib/strategy/competition-related";
+import {
+  CHEMISTRY_RELATED_INCLUDE,
+  classifyChemistryShell,
+  chemistryNextActions,
+  chemistryRelatedLinks,
+  chemistrySetupSteps,
+  chemistryShellCopy,
+  formatChemistryMetric,
+  shouldShowChemistrySummaryTiles,
+  type ChemistryNextAction,
+  type ChemistryShellKind,
+} from "../../lib/chemistry/chemistry-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./chemistry.css";
 
 type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null };
+
+function ChemistryRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = chemistryRelatedLinks(orgId, {
+    include: [...CHEMISTRY_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related chem-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function ChemistryNextActionsPanel({ actions }: { actions: ChemistryNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions chem-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy, Pick desk, and Draft — never DEMO chemistry scores.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ChemistryShell({
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  orgId?: string | null;
+  shell: ChemistryShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = chemistryNextActions({ orgId, shell });
+  const copy = chemistryShellCopy(shell);
+  const steps = shell === "setup" ? chemistrySetupSteps(orgId) : [];
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
+  const draftHref = withOrgHref("/strategy/draft", orgId);
+  const commandHref = hubHref("/competition", "command", orgId);
+  const teamDataHref = withOrgHref("/team/data", orgId);
+
+  return (
+    <main className="module-page chem-page chem-workbench soft-gate">
+      <PageHeader
+        breadcrumbs="Competition / Chemistry"
+        title="Alliance Chemistry"
+        description="Score how well 2–3 robots complement each other from synced TBA/Statbotics seats — never DEMO chemistry scores."
+      >
+        <ChemistryRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        className="chem-empty"
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No chemistry score yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? commandHref : "/workspace"}>
+            {orgId ? "Set active event" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={teamDataHref}>
+              Sync event metrics
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={pickDeskHref}>
+              Open Pick desk
+            </a>
+            <a className="app-button secondary" href={draftHref}>
+              Open Draft board
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="chem-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Strategy, Pick desk, and Draft — never DEMO chemistry scores.</p>
+          </header>
+          <ul className="chem-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <ChemistryNextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function ChemistryClient() {
   const [orgId, setOrgId] = useState("");
   const [view, setView] = useState<ChemistryView | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [fetchFailed, setFetchFailed] = useState(false);
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
@@ -23,35 +183,53 @@ export default function ChemistryClient() {
     void fetch("/api/me")
       .then(async (r) => (r.ok ? ((await r.json()) as Me) : null))
       .then((data) => {
-        if (!data) return;
+        if (!data) {
+          setLoading(false);
+          return;
+        }
         setOrgId(fromUrl || data.orgId || "");
       })
-      .catch(() => undefined);
+      .catch(() => {
+        setLoading(false);
+      });
   }, []);
 
   const load = useCallback(
     async (id: string, teams?: string) => {
       if (!id) {
         setLoading(false);
+        setFetchFailed(false);
         return;
       }
+      setLoading(true);
+      setFetchFailed(false);
       const params = new URLSearchParams({ orgId: id });
       const list = (teams ?? draft).trim();
       if (list) params.set("teams", list);
-      const response = await fetch(`/api/chemistry?${params}`);
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        setError(body.error ?? "Could not load chemistry");
+      try {
+        const response = await fetch(`/api/chemistry?${params}`);
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          setError(body.error ?? "Could not load chemistry");
+          setView(null);
+          setFetchFailed(true);
+          setLoading(false);
+          return;
+        }
+        const data = (await response.json()) as ChemistryView;
+        setView(data);
+        if (!list && data.teamKeys.length) {
+          setDraft(data.teamKeys.map((key) => key.replace(/^frc/i, "")).join(", "));
+        }
+        setError("");
+        setFetchFailed(false);
+      } catch {
+        setError("Could not load chemistry");
+        setView(null);
+        setFetchFailed(true);
+      } finally {
         setLoading(false);
-        return;
       }
-      const data = (await response.json()) as ChemistryView;
-      setView(data);
-      if (!list && data.teamKeys.length) {
-        setDraft(data.teamKeys.map((key) => key.replace(/^frc/i, "")).join(", "));
-      }
-      setError("");
-      setLoading(false);
     },
     [draft],
   );
@@ -71,66 +249,107 @@ export default function ChemistryClient() {
     return "risk";
   }
 
-  if (!orgId && !loading) {
-    const nextActions = strategySetupNextActions({});
+  const chemistry = view?.chemistry ?? null;
+  const hasScore = chemistry?.score != null;
+  const seatCount = view?.teamKeys.length ?? 0;
+  const shell = classifyChemistryShell({
+    loading,
+    fetchFailed,
+    status: view?.status ?? (!orgId && !loading ? "setup_required" : null),
+    orgId: view?.orgId ?? (orgId || null),
+    eventKey: view?.eventKey ?? null,
+    seatCount,
+    hasScore,
+  });
+
+  // Full Soft-UI shells when the surface cannot score yet (setup / error / initial empty without event).
+  if (shell === "loading" || shell === "error" || shell === "setup") {
     return (
-      <main className="edc-page chem-page">
-        <PageHeader
-          breadcrumbs="Competition / Chemistry"
-          title="Select a team workspace"
-          description="Open Home to choose your organization first — no demo alliances."
-        />
-        <EmptyState badge="Setup required" badgeTone="setup" title="Workspace required" description="Alliance chemistry scores real TBA/Statbotics seats only.">
-          <ol className="strategy-setup-steps">
-            {nextActions.map((action) => (
-              <li key={action.id}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <a href={action.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      </main>
+      <ChemistryShell
+        orgId={view?.orgId ?? (orgId || null)}
+        shell={shell}
+        error={
+          shell === "error"
+            ? error || "Could not load alliance chemistry."
+            : shell === "setup" && view?.message
+              ? `${view.message} Scores stay blank until real event metrics exist — never DEMO chemistry scores.`
+              : undefined
+        }
+        onRetry={
+          shell === "error" && orgId
+            ? () => {
+                void load(orgId);
+              }
+            : undefined
+        }
+      />
     );
   }
 
-  const chemistry = view?.chemistry;
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
+  const draftHref = withOrgHref("/strategy/draft", orgId);
+  const showTiles = shouldShowChemistrySummaryTiles(seatCount, hasScore);
+  const readyActions = chemistryNextActions({
+    orgId,
+    shell: hasScore ? "ready" : "empty",
+    eventKey: view?.eventKey,
+    seatCount,
+    hasScore,
+  });
+  const emptyCopy = chemistryShellCopy("empty");
 
   return (
-    <main className="edc-page chem-page">
+    <main className="module-page chem-page chem-workbench">
       <PageHeader
         breadcrumbs="Competition / Chemistry"
         title="Alliance Chemistry"
-        description="Score how well 2–3 robots complement each other — roles, EPA balance, scout reliability. Labeled MODEL, never a TBA pick fact."
+        description={
+          view?.eventName
+            ? `${view.eventName} · MODEL fit from synced EPA and scout reliability — never DEMO chemistry scores.`
+            : "Score how well 2–3 robots complement each other — roles, EPA balance, scout reliability. Labeled MODEL, never a TBA pick fact."
+        }
       >
-        <div className="edc-header-actions">
-          <a className="app-button secondary" href={orgId ? `/command?orgId=${encodeURIComponent(orgId)}` : "/command"}>
-            Event Day
-          </a>
-          <a className="app-button secondary" href={orgId ? `/strategy?orgId=${encodeURIComponent(orgId)}` : "/strategy"}>
-            Strategy
-          </a>
-          <a className="app-button secondary" href={orgId ? `/pick-clock?orgId=${encodeURIComponent(orgId)}` : "/pick-clock"}>
-            Pick clock
-          </a>
+        <div className="chem-heading">
+          <ChemistryRelatedStrip orgId={orgId} />
+          <div className="edc-header-actions">
+            <a className="app-button secondary" href={strategyHref}>
+              Strategy
+            </a>
+            <a className="app-button secondary" href={pickDeskHref}>
+              Pick desk
+            </a>
+            <a className="app-button secondary" href={draftHref}>
+              Draft
+            </a>
+          </div>
         </div>
       </PageHeader>
 
-      <CompetitionHubRelated
-        orgId={orgId || null}
-        active="chemistry"
-        include={["strategy", "scouting", "forms", "match-checklist", "pick-clock", "draft", "coverage"]}
-      />
-
       {error ? <p className="edc-banner error">{error}</p> : null}
+
+      {showTiles && chemistry ? (
+        <div className="chem-kpis" aria-label="Chemistry counts">
+          <article>
+            <strong>{formatChemistryMetric(seatCount, true)}</strong>
+            <small>alliance seats</small>
+          </article>
+          <article>
+            <strong>{formatChemistryMetric(chemistry.score, true)}</strong>
+            <small>chemistry / 100</small>
+          </article>
+          <article>
+            <strong>
+              {chemistry.totalEpa != null ? String(Math.round(chemistry.totalEpa * 10) / 10) : "—"}
+            </strong>
+            <small>total EPA</small>
+          </article>
+        </div>
+      ) : null}
 
       <Panel
         as="form"
-        className="chem-compose"
-        style={{ minHeight: "auto" }}
+        className="chem-compose chem-panel"
         onSubmit={(event: React.FormEvent) => {
           event.preventDefault();
           void load(orgId, draft);
@@ -169,35 +388,7 @@ export default function ChemistryClient() {
         </div>
       </Panel>
 
-      {view?.status === "setup_required" ? (
-        <EmptyState
-          badge="Setup required"
-          badgeTone="setup"
-          title={view.message}
-          description="No demo alliances — chemistry needs a real event context and reference metrics."
-        >
-          <ol className="strategy-setup-steps">
-            {strategySetupNextActions({
-              orgId,
-              eventKey: view.eventKey,
-              tbaConfigured: view.tbaConfigured,
-              hasMetrics: false,
-            })
-              .slice(0, 5)
-              .map((action) => (
-                <li key={action.id}>
-                  <div>
-                    <strong>{action.label}</strong>
-                    <span>{action.detail}</span>
-                  </div>
-                  <a href={action.href}>Open</a>
-                </li>
-              ))}
-          </ol>
-        </EmptyState>
-      ) : null}
-
-      {chemistry ? (
+      {hasScore && chemistry ? (
         <section className="chem-result">
           <article className={`edc-card chem-score ${scoreTone(chemistry.score)}`}>
             <header>
@@ -306,21 +497,30 @@ export default function ChemistryClient() {
             </div>
           </article>
         </section>
-      ) : view?.status === "empty" ? (
+      ) : (
         <EmptyState
           soft
-          title={view.message}
-          description="Enter team numbers above, or set an event so we can default to your next alliance. Scores stay blank until real metrics exist."
+          className="chem-empty"
+          badge={emptyCopy.badge}
+          badgeTone="setup"
+          title={view?.message ?? emptyCopy.title}
+          description={
+            view?.status === "empty"
+              ? `${view.message} Cross-check Strategy, Pick desk, and Draft — never DEMO chemistry scores.`
+              : emptyCopy.description
+          }
         >
-          <CompetitionHubRelated
-            orgId={orgId}
-            active="chemistry"
-            include={["strategy", "pick-clock", "scouting", "coverage"]}
-          />
+          <a className="app-button secondary" href={strategyHref}>
+            Open Strategy
+          </a>
+          <a className="app-button secondary" href={pickDeskHref}>
+            Open Pick desk
+          </a>
+          <a className="app-button secondary" href={draftHref}>
+            Open Draft board
+          </a>
         </EmptyState>
-      ) : loading ? (
-        <EmptyState title="Loading…" description="Scoring alliance chemistry." aria-busy />
-      ) : null}
+      )}
 
       {view?.teams.length ? (
         <section className="chem-teams">
@@ -357,7 +557,7 @@ export default function ChemistryClient() {
       {view?.suggestions.length ? (
         <section className="chem-suggest">
           <h2>Try high-EPA seats</h2>
-          <p className="edc-muted">Not a pick list — event metrics you can add to the scorer.</p>
+          <p className="edc-muted">Not a pick list — event metrics you can add to the scorer. Never DEMO seats.</p>
           <ul className="edc-queue">
             {view.suggestions.map((s) => (
               <li key={s.teamKey}>
@@ -388,6 +588,8 @@ export default function ChemistryClient() {
           </ul>
         </section>
       ) : null}
+
+      <ChemistryNextActionsPanel actions={readyActions} />
     </main>
   );
 }
