@@ -9,6 +9,7 @@ import {
   type KnowledgeTemplateKind,
   type KnowledgeWikiView,
 } from "../../../lib/knowledge";
+import { TeamHubRelated } from "../../../components/team-hub-related";
 import "./knowledge.css";
 
 type Tab = "wiki" | "search" | "templates" | "ai";
@@ -165,17 +166,23 @@ export default function KnowledgeClient() {
         <div className="kb-hero-actions">
           {orgId && (
             <>
-              <a className="button secondary" href={`/team/getting-started?orgId=${orgId}`}>
-                Getting started
-              </a>
-              <a className="button secondary" href={`/team/calendar?orgId=${orgId}`}>
+              <a className="button secondary" href={`/team?tab=calendar&orgId=${encodeURIComponent(orgId)}`}>
                 Calendar
               </a>
-              <a className="button secondary" href={`/logistics?orgId=${orgId}`}>
-                Logistics
+              <a className="button secondary" href={`/team?tab=practice&orgId=${encodeURIComponent(orgId)}`}>
+                Practice
               </a>
-              <a className="button secondary" href={`/kickoff?orgId=${orgId}`}>
-                Kickoff
+              <a className="button secondary" href={`/team?tab=attendance&orgId=${encodeURIComponent(orgId)}`}>
+                Attendance
+              </a>
+              <a className="button secondary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
+                Messages
+              </a>
+              <a className="button secondary" href={`/team?tab=fmea&orgId=${encodeURIComponent(orgId)}`}>
+                FMEA
+              </a>
+              <a className="button secondary" href={`/team/getting-started?orgId=${orgId}`}>
+                Getting started
               </a>
               <a className="button secondary" href={`/chat?orgId=${orgId}`}>
                 FRC Assistant
@@ -183,13 +190,12 @@ export default function KnowledgeClient() {
               <a className="button secondary" href={`/decisions?orgId=${orgId}`}>
                 Decisions
               </a>
-              <a className="button secondary" href={`/reviews?orgId=${orgId}`}>
-                Reviews
-              </a>
             </>
           )}
         </div>
       </header>
+
+      {orgId ? <TeamHubRelated orgId={orgId} active="knowledge" /> : null}
 
       <div className="kb-tabs" role="tablist" aria-label="Knowledge sections">
         {(

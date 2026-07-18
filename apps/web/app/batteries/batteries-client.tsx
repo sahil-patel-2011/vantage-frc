@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { BATTERY_LOG_KINDS, type BatteryStatus, type HealthStatus } from "../../lib/battery";
+import "./batteries.css";
 
 type Pack = {
   id: string;
@@ -200,7 +202,7 @@ export default function BatteriesClient() {
   if (fetchFailed || !view) {
     return (
       <main className="module-page batt-page">
-        <PageHeader breadcrumbs="Competition / Batteries" title="Batteries" />
+        <PageHeader breadcrumbs="Team / Batteries" title="Batteries" />
         <TeamOpsNav active="batteries" />
         <EmptyState
           title={fetchFailed ? "Could not load batteries" : "Loading batteries…"}
@@ -222,7 +224,7 @@ export default function BatteriesClient() {
     return (
       <main className="module-page batt-page">
         <PageHeader
-          breadcrumbs="Competition / Batteries"
+          breadcrumbs="Team / Batteries"
           title="Batteries"
           description="Track charge cycles, assignment, and competition readiness for every pack."
         />
@@ -246,7 +248,7 @@ export default function BatteriesClient() {
   return (
     <main className="module-page batt-page">
       <PageHeader
-        breadcrumbs="Competition / Batteries"
+        breadcrumbs="Team / Batteries"
         title="Batteries"
         description={
           <>
@@ -265,6 +267,7 @@ export default function BatteriesClient() {
         </div>
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="batteries" />
+      <TeamHubRelated orgId={orgId} active="batteries" />
 
       {error ? (
         <p className="batt-alert" role="alert">
