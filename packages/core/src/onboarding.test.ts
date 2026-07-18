@@ -9,6 +9,7 @@ describe("onboarding validation", () => {
     gender: "prefer_not_to_say" as const,
     preferredTeamNumber: 254,
     teamRole: "student" as const,
+    primaryFocus: "build" as const,
     termsAccepted: true,
   };
 
@@ -16,6 +17,7 @@ describe("onboarding validation", () => {
     const result = validateOnboardingPayload(base);
     expect(result.displayName).toBe("Sahil Patel");
     expect(result.preferredTeamNumber).toBe(254);
+    expect(result.primaryFocus).toBe("build");
   });
 
   it("requires explicit terms acceptance", () => { expect(() => validateOnboardingPayload({ ...base, termsAccepted: false })).toThrow(/Terms of Service/i); });
@@ -30,6 +32,10 @@ describe("onboarding validation", () => {
     expect(() =>
       validateOnboardingPayload({ ...base, displayName: "x".repeat(81) }),
     ).toThrow(/80/);
+  });
+
+  it("requires a supported personalization focus", () => {
+    expect(() => validateOnboardingPayload({ ...base, primaryFocus: "random" as never })).toThrow(/focus/i);
   });
 });
 

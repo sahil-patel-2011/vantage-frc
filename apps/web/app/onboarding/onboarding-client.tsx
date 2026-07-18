@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { VantageLogo } from "../../components/brand";
 import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
 import { PENDING_INVITE_KEY } from "../invite/invite-client";
+import { safeAppPath } from "../../lib/security/safe-navigation";
 import "./onboarding-flow.css";
 
 type PrimaryFocus = "competition" | "build" | "business" | "leadership";
@@ -34,6 +35,9 @@ type OnboardingState = {
   orgCity: string | null;
   orgStateProv: string | null;
   orgDescription: string | null;
+  currentStep: "profile" | "team" | "preferences" | "complete";
+  startedAt: string | null;
+  savedAt: string | null;
 };
 
 const GENDERS = [
@@ -66,11 +70,6 @@ const FOCUS_OPTIONS: Array<{
 
 type Step = "profile" | "team" | "preferences" | "pending";
 
-function safeRelativePath(value: string | null | undefined, fallback = "/workspace") {
-  if (!value?.startsWith("/") || value.startsWith("//")) return fallback;
-  return value;
-}
-
 function pendingInviteDestination() {
   try {
     const token = sessionStorage.getItem(PENDING_INVITE_KEY);
@@ -81,7 +80,7 @@ function pendingInviteDestination() {
 }
 
 function approvedDestination(state: OnboardingState, nextParam: string | null) {
-  if (nextParam) return safeRelativePath(nextParam);
+  if (nextParam) return safeAppPath(nextParam, "/workspace");
   // Build & code focus → deep-link Team GitHub connection for robot-code AI context.
   if (state.workspaceOrgId && state.primaryFocus === "build") {
     return `/team?orgId=${encodeURIComponent(state.workspaceOrgId)}#github-connection`;
@@ -158,6 +157,7 @@ export default function OnboardingClient() {
         }
         hydrate(data);
         if (data.complete) routeCompleteState(data);
+        else if (data.currentStep === "team" || data.currentStep === "preferences") setStep(data.currentStep);
       })
       .catch(() => setMessage("Could not load onboarding."));
   }, []);
@@ -165,6 +165,38 @@ export default function OnboardingClient() {
   const locked = state?.lockedTeamNumber != null;
   const setupSteps = useMemo(() => ["profile", "team", "preferences"] as const, []);
   const stepIndex = step === "pending" ? setupSteps.length : setupSteps.indexOf(step);
+
+  async function saveProgress(completedStep: "profile" | "team") {
+    setBusy(true);
+    setMessage("");
+    const body = completedStep === "profile"
+      ? { step: "profile" as const, firstName, lastName, dateOfBirth, gender }
+      : {
+          step: "team" as const,
+          preferredTeamNumber: Number(teamNumber),
+          teamRole,
+          primaryFocus,
+        };
+    try {
+      const response = await fetch("/api/onboarding", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = (await response.json()) as OnboardingState & { error?: string };
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not save your progress.");
+        return;
+      }
+      hydrate(data);
+      setStep(completedStep === "profile" ? "team" : "preferences");
+      setMessage("Progress saved securely. You can return on another device and continue here.");
+    } catch {
+      setMessage("Could not save your progress. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function finish() {
     setBusy(true);
@@ -271,9 +303,15 @@ export default function OnboardingClient() {
         ) : null}
 
         {message ? <p className="onboarding-message" role="status">{message}</p> : null}
+        {state?.savedAt && step !== "pending" ? (
+          <p className="onboarding-resume-note">
+            <b>Progress restored</b>
+            <span>Securely saved {new Date(state.savedAt).toLocaleString()}. Finish from here—your earlier steps are already set.</span>
+          </p>
+        ) : null}
 
         {step === "profile" ? (
-          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); setMessage(""); setStep("team"); }}>
+          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void saveProgress("profile"); }}>
             <div className="onboarding-row">
               <label>First name<input required maxLength={60} value={firstName} onChange={(event) => setFirstName(event.target.value)} autoComplete="given-name" /></label>
               <label>Last name<input required maxLength={60} value={lastName} onChange={(event) => setLastName(event.target.value)} autoComplete="family-name" /></label>
@@ -289,12 +327,12 @@ export default function OnboardingClient() {
                 {GENDERS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
-            <button className="signin-submit" type="submit">Continue to team</button>
+            <button className="signin-submit" type="submit" disabled={busy}>{busy ? "Saving…" : "Save and continue to team"}</button>
           </form>
         ) : null}
 
         {step === "team" ? (
-          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); setMessage(""); setStep("preferences"); }}>
+          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void saveProgress("team"); }}>
             <div className={`onboarding-team-lock${locked ? " locked" : ""}`}>
               <label>
                 FRC team number
@@ -345,7 +383,7 @@ export default function OnboardingClient() {
             </fieldset>
             <div className="onboarding-actions">
               <button type="button" className="signin-link" onClick={() => setStep("profile")}>Back</button>
-              <button className="signin-submit" type="submit">Review request</button>
+              <button className="signin-submit" type="submit" disabled={busy}>{busy ? "Saving…" : "Save and review request"}</button>
             </div>
           </form>
         ) : null}
@@ -412,6 +450,10 @@ export default function OnboardingClient() {
                 ? "If you selected the wrong team, update the request and submit it again."
                 : "You can close this page. We will not open any team data while the request is pending."}
             </p>
+            <div className="onboarding-security-note">
+              <b aria-hidden="true">✓</b>
+              <p><strong>Your private profile stays private.</strong><span>Team leaders review your verified email, requested role, and focus. They do not receive your birth date or gender.</span></p>
+            </div>
             <div className="onboarding-pending-actions">
               {state?.accessStatus === "declined" ? <button type="button" className="signin-submit" onClick={() => { setMessage(""); setStep("team"); }}>Update request</button> : <button type="button" className="signin-submit" disabled={checking} onClick={() => void refreshApproval()}>{checking ? "Checking…" : "Check approval status"}</button>}
               <button type="button" className="signin-link" disabled={busy} onClick={() => void signOut()}>Sign out</button>

@@ -1,26 +1,60 @@
-import { auth, completeOnboarding, getOnboardingState } from "@vantage/core";
+import { auth, completeOnboarding, getOnboardingState, saveOnboardingProgress } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
+import { parseSecureJson, securityErrorResponse } from "../../../lib/security/request";
+
+const mutationLimiter = createRateLimiter({ limit: 30, windowMs: 10 * 60_000, namespace: "onboarding" });
 
 async function session() {
   return auth.api.getSession({ headers: await headers() });
 }
 
+const focus = z.enum(["competition", "build", "business", "leadership"]);
+const role = z.enum(["student", "mentor", "coach", "parent", "other"]);
 const completeSchema = z.object({
-  firstName: z.string(),
-  lastName: z.string(),
-  dateOfBirth: z.string(),
+  firstName: z.string().trim().min(1).max(60),
+  lastName: z.string().trim().min(1).max(60),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gender: z.enum(["female", "male", "non_binary", "prefer_not_to_say", "other"]),
-  preferredTeamNumber: z.number().int(),
-  teamRole: z.enum(["student", "mentor", "coach", "parent", "other"]).nullable().optional(),
-  displayName: z.string().nullable().optional(),
+  preferredTeamNumber: z.number().int().min(1).max(99999),
+  teamRole: role.nullable().optional(),
+  primaryFocus: focus,
+  displayName: z.string().trim().max(80).nullable().optional(),
   themePreference: z.enum(["light", "dark"]).optional(),
-  city: z.string().nullable().optional(),
-  stateProv: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
+  city: z.string().trim().max(120).nullable().optional(),
+  stateProv: z.string().trim().max(80).nullable().optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
   termsAccepted: z.literal(true),
-});
+}).strict();
+
+const draftSchema = z.discriminatedUnion("step", [
+  z.object({
+    step: z.literal("profile"),
+    firstName: z.string().trim().min(1).max(60),
+    lastName: z.string().trim().min(1).max(60),
+    dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    gender: z.enum(["female", "male", "non_binary", "prefer_not_to_say", "other"]),
+  }).strict(),
+  z.object({
+    step: z.literal("team"),
+    preferredTeamNumber: z.number().int().min(1).max(99999),
+    teamRole: role.nullable().optional(),
+    primaryFocus: focus,
+  }).strict(),
+  z.object({
+    step: z.literal("preferences"),
+    displayName: z.string().trim().max(80).nullable().optional(),
+    themePreference: z.enum(["light", "dark"]).optional(),
+  }).strict(),
+]);
+
+function privateJson(value: unknown, init?: ResponseInit) {
+  const response = Response.json(value, init);
+  response.headers.set("cache-control", "private, no-store, max-age=0");
+  return response;
+}
 
 export async function GET() {
   const current = await session();
@@ -29,7 +63,7 @@ export async function GET() {
     const state = await withRls({ userId: current.user.id }, (client) =>
       getOnboardingState(client, current.user.id),
     );
-    return Response.json(state);
+    return privateJson(state);
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Could not load onboarding state." },
@@ -41,19 +75,31 @@ export async function GET() {
 export async function POST(request: Request) {
   const current = await session();
   if (!current) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const body = completeSchema.safeParse(await request.json());
-  if (!body.success) {
-    return Response.json({ error: "Invalid onboarding payload." }, { status: 400 });
-  }
   try {
+    const key = `${current.user.id}:${anonymizeIp(clientIp(request))}`;
+    if (!(await mutationLimiter.allow(key))) return rateLimitedResponse("Too many onboarding changes. Wait a moment and try again.");
+    const body = await parseSecureJson(request, completeSchema);
     const state = await withRls({ userId: current.user.id }, (client) =>
-      completeOnboarding(client, current.user.id, body.data),
+      completeOnboarding(client, current.user.id, body),
     );
-    return Response.json({ ok: true, ...state });
+    return privateJson({ ok: true, ...state });
   } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Could not complete onboarding." },
-      { status: 400 },
+    return securityErrorResponse(error, "Could not complete onboarding.");
+  }
+}
+
+export async function PATCH(request: Request) {
+  const current = await session();
+  if (!current) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const key = `${current.user.id}:${anonymizeIp(clientIp(request))}`;
+    if (!(await mutationLimiter.allow(key))) return rateLimitedResponse("Too many onboarding changes. Wait a moment and try again.");
+    const body = await parseSecureJson(request, draftSchema);
+    const state = await withRls({ userId: current.user.id }, (client) =>
+      saveOnboardingProgress(client, current.user.id, body),
     );
+    return privateJson({ ok: true, ...state });
+  } catch (error) {
+    return securityErrorResponse(error, "Could not save onboarding progress.");
   }
 }

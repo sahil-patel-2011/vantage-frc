@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { safeAppPath } from "../../lib/security/safe-navigation";
 
 type Device = {
   id: string;
@@ -50,7 +51,7 @@ export default function SecurityClient({
     const response = await fetch("/api/security/mfa", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: nextAction, code, ...extra }),
+      body: JSON.stringify({ action: nextAction, ...(code ? { code } : {}), ...extra }),
     });
     const data = await response.json();
     if (!response.ok) {
@@ -66,7 +67,7 @@ export default function SecurityClient({
     );
     setCode("");
     await load();
-    if (nextAction === "step-up" && returnTo) location.assign(returnTo);
+    if (nextAction === "step-up") location.assign(safeAppPath(returnTo, "/workspace"));
   }
 
   async function revoke(body: Record<string, unknown>) {

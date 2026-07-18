@@ -48,6 +48,28 @@
   border-radius: inherit;
 }
 
+.start-launchpad {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--start-accent) 24%, var(--start-line));
+  border-radius: 18px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--start-accent) 7%, var(--start-card)), var(--start-card));
+}
+
+.start-launch-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.start-launch-head span { color: var(--start-accent); font: 700 10px/1 var(--font-ibm-mono), monospace; letter-spacing: .11em; }
+.start-launch-head h2 { margin: 5px 0 0; font: 700 1.15rem/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif; }
+.start-launch-head > strong { flex: none; padding: 6px 9px; border-radius: 999px; color: var(--start-accent); background: color-mix(in srgb, var(--start-accent) 10%, #fff); font-size: 12px; }
+.start-launch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.start-launch-grid article { display: grid; grid-template-columns: 28px 1fr; gap: 10px; min-height: 112px; padding: 13px; border: 1px solid var(--start-line); border-radius: 14px; background: var(--start-card); }
+.start-launch-grid article > b { display: grid; place-items: center; align-self: start; width: 27px; height: 27px; border-radius: 999px; color: var(--start-accent); background: color-mix(in srgb, var(--start-accent) 10%, #fff); font-size: 12px; }
+.start-launch-grid article.done > b, .start-launch-grid article.security > b { color: #fff; background: var(--start-ok); }
+.start-launch-grid article div { display: grid; align-content: start; gap: 4px; }
+.start-launch-grid article strong { font-size: 14px; }
+.start-launch-grid article span { color: var(--start-muted); font-size: 12px; line-height: 1.4; }
+.start-launch-grid article a { margin-top: 3px; color: var(--start-accent); font-size: 12px; font-weight: 700; text-decoration: none; }
+
 .start-actions {
   display: flex;
   flex-wrap: wrap;
@@ -188,4 +210,10 @@
 /* Shared polish for Team setup (/team/getting-started) */
 .getting-started-page .start-track {
   margin: 0;
+}
+
+@media (max-width: 620px) {
+  .start-launch-grid { grid-template-columns: 1fr; }
+  .start-launch-grid article { min-height: auto; }
+  .start-launch-head { flex-direction: column; }
 }

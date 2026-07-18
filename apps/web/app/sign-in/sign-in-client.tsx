@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { VantageLogo } from "../../components/brand";
+import { safeAppPath } from "../../lib/security/safe-navigation";
 
 const WAITLIST_ONLY_MESSAGE =
   "Vantage is waitlist-only right now. Join the waitlist for access, or sign in with an authorized account.";
+const SIGN_IN_FAILED_MESSAGE =
+  "We could not sign you in. Check the email and code/password, or request a fresh email code.";
 
 type AuthStatus = {
   waitlistOnly: true;
@@ -12,12 +15,10 @@ type AuthStatus = {
   databaseConfigured: boolean;
   emailOtpAvailable: boolean;
   email2faEnforced: boolean;
-  email2faBypassEnabled: boolean;
   passwordSignInAvailable: boolean;
   googleSignInAvailable: boolean;
   emailOtpReason: string | null;
   passwordReason: string | null;
-  ownerEmailHint: string;
 };
 
 function oauthErrorMessage(code: string | null) {
@@ -36,12 +37,39 @@ function oauthErrorMessage(code: string | null) {
 }
 
 async function destinationAfterAuth(nextPath: string) {
+  const safeNext = safeAppPath(nextPath, "/dashboard");
   const onboarding = await fetch("/api/onboarding");
   if (onboarding.ok) {
     const state = (await onboarding.json()) as { complete?: boolean; accessStatus?: string };
-    return state.complete && state.accessStatus === "approved" ? nextPath : "/onboarding";
+    return state.complete && state.accessStatus === "approved"
+      ? safeNext
+      : `/onboarding?next=${encodeURIComponent(safeNext)}`;
   }
-  return nextPath;
+  return safeNext;
+}
+
+function codeExpiry(seconds = 300) {
+  return Date.now() + Math.max(30, seconds) * 1_000;
+}
+
+function timeLabel(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+let callbackCodeRequest: Promise<{ ok: boolean; payload: Record<string, unknown> }> | null = null;
+function requestCallbackVerificationCode() {
+  if (!callbackCodeRequest) {
+    callbackCodeRequest = fetch("/api/auth/email-2fa", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "request" }),
+    }).then(async (response) => ({
+      ok: response.ok,
+      payload: (await response.json().catch(() => ({}))) as Record<string, unknown>,
+    }));
+  }
+  return callbackCodeRequest;
 }
 
 export default function SignInClient({
@@ -65,6 +93,25 @@ export default function SignInClient({
   const [code, setCode] = useState("");
   const [verifyStep, setVerifyStep] = useState(false);
   const [emailHint, setEmailHint] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
+  const [codeExpiresAt, setCodeExpiresAt] = useState<number | null>(null);
+  const [clock, setClock] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!codeExpiresAt) return;
+    const timer = window.setInterval(() => setClock(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [codeExpiresAt]);
+
+  const secondsLeft = codeExpiresAt ? Math.max(0, Math.ceil((codeExpiresAt - clock) / 1_000)) : 0;
+  const codeExpired = Boolean(codeExpiresAt && secondsLeft === 0);
+  const resendCoolingDown = secondsLeft > 270;
+
+  function beginCodeTimer(seconds?: number) {
+    setClock(Date.now());
+    setCodeExpiresAt(codeExpiry(seconds));
+  }
 
   useEffect(() => {
     void fetch("/api/auth/status")
@@ -90,14 +137,12 @@ export default function SignInClient({
             return;
           }
           setEmailHint(data.emailHint ?? "");
-          void fetch("/api/auth/email-2fa", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ action: "request" }),
-          }).then(async (response) => {
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok) setMessage(payload.error ?? "Could not send verification email.");
-            else setMessage("Enter the code we emailed you to finish signing in.");
+          void requestCallbackVerificationCode().then(({ ok, payload }) => {
+            if (!ok) setMessage(typeof payload.error === "string" ? payload.error : "Could not send verification email.");
+            else {
+              beginCodeTimer(Number(payload.expiresInSeconds ?? 300));
+              setMessage("Enter the code we emailed you to finish signing in.");
+            }
           });
         })
         .catch(() => undefined);
@@ -107,7 +152,7 @@ export default function SignInClient({
   async function continueAfterFirstFactor() {
     const elev = await fetch("/api/auth/email-2fa");
     if (!elev.ok) {
-      window.location.assign(nextPath);
+      window.location.assign(safeAppPath(nextPath, "/dashboard"));
       return;
     }
     const data = await elev.json();
@@ -124,6 +169,7 @@ export default function SignInClient({
         setMessage(payload.error ?? status.emailOtpReason ?? "Could not send verification email.");
         return;
       }
+      beginCodeTimer(Number(payload.expiresInSeconds ?? 300));
       setMessage("Enter the code we emailed you to finish signing in.");
       return;
     }
@@ -148,7 +194,7 @@ export default function SignInClient({
         await continueAfterFirstFactor();
         return;
       }
-      setMessage(WAITLIST_ONLY_MESSAGE);
+      setMessage(SIGN_IN_FAILED_MESSAGE);
     } finally {
       setBusy(false);
     }
@@ -166,7 +212,7 @@ export default function SignInClient({
     setBusy(true);
     setMessage("");
     try {
-      if (!otpSent) {
+      if (!otpSent || codeExpired) {
         const response = await fetch("/api/auth/email-otp/send-verification-otp", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -182,6 +228,8 @@ export default function SignInClient({
           return;
         }
         setOtpSent(true);
+        setCode("");
+        beginCodeTimer(300);
         setMessage("If that email is authorized, a 6-digit sign-in code is on the way.");
         return;
       }
@@ -195,7 +243,7 @@ export default function SignInClient({
         window.location.assign(await destinationAfterAuth(nextPath));
         return;
       }
-      setMessage(WAITLIST_ONLY_MESSAGE);
+      setMessage(SIGN_IN_FAILED_MESSAGE);
     } finally {
       setBusy(false);
     }
@@ -231,6 +279,10 @@ export default function SignInClient({
 
   async function verifyEmail2fa(event: React.FormEvent) {
     event.preventDefault();
+    if (codeExpired) {
+      setMessage("That code expired. Request a new code to continue.");
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
@@ -260,10 +312,20 @@ export default function SignInClient({
         body: JSON.stringify({ action: "request" }),
       });
       const data = await response.json();
+      if (response.ok) {
+        beginCodeTimer(Number(data.expiresInSeconds ?? 300));
+        setCode("");
+      }
       setMessage(response.ok ? "A new code is on the way." : data.error ?? "Could not resend code.");
     } finally {
       setBusy(false);
     }
+  }
+
+  async function restartSignIn() {
+    setBusy(true);
+    await fetch("/api/auth/sign-out", { method: "POST" }).catch(() => undefined);
+    window.location.assign(`/signin?next=${encodeURIComponent(safeAppPath(nextPath, "/dashboard"))}`);
   }
 
   async function resetPassword(event: React.FormEvent) {
@@ -274,13 +336,16 @@ export default function SignInClient({
     }
     setBusy(true);
     try {
-      if (!resetSent) {
+      if (!resetSent || codeExpired) {
         await fetch("/api/auth/email-otp/request-password-reset", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ email }),
         });
         setResetSent(true);
+        setPassword("");
+        setCode("");
+        beginCodeTimer(300);
         setMessage("If the authorized account exists, a short-lived reset code is on the way.");
         return;
       }
@@ -298,6 +363,9 @@ export default function SignInClient({
         setMode("password");
         setResetSent(false);
         setCode("");
+        setPassword("");
+        setShowPassword(false);
+        setCodeExpiresAt(null);
       }
     } finally {
       setBusy(false);
@@ -310,6 +378,10 @@ export default function SignInClient({
     setOtpSent(false);
     setResetSent(false);
     setCode("");
+    setPassword("");
+    setShowPassword(false);
+    setCapsLock(false);
+    setCodeExpiresAt(null);
   }
 
   const googleReady = status.googleSignInAvailable || googleEnabled;
@@ -321,6 +393,7 @@ export default function SignInClient({
           <div className="signin-brand">
             <VantageLogo />
           </div>
+          <SignInProgress active={2} />
           <h1 id="signin-title">Check your email</h1>
           <p className="signin-sub">
             Default 2FA: enter the one-time code we sent{emailHint ? ` to ${emailHint}` : ""}. Password or Google was
@@ -348,8 +421,13 @@ export default function SignInClient({
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                   />
                 </span>
+                {codeExpiresAt ? (
+                  <small className={codeExpired ? "signin-expiry expired" : "signin-expiry"}>
+                    {codeExpired ? "Code expired — request a new one." : `Code expires in ${timeLabel(secondsLeft)}.`}
+                  </small>
+                ) : null}
               </label>
-              <button className="signin-submit" disabled={busy}>
+              <button className="signin-submit" disabled={busy || code.length !== 6 || codeExpired}>
                 {busy ? "Verifying…" : "Verify and continue"}
               </button>
             </form>
@@ -360,19 +438,16 @@ export default function SignInClient({
             </p>
           ) : null}
           <div className="signin-footer">
-            <button type="button" className="signin-link" disabled={busy || !status.emailOtpAvailable} onClick={() => void resendCode()}>
-              Resend code
+            <button type="button" className="signin-link" disabled={busy || !status.emailOtpAvailable || resendCoolingDown} onClick={() => void resendCode()}>
+              {resendCoolingDown ? `Resend in ${secondsLeft - 270}s` : "Resend code"}
             </button>
             <button
               type="button"
               className="signin-link"
-              onClick={() => {
-                setVerifyStep(false);
-                setCode("");
-                setMessage("");
-              }}
+              disabled={busy}
+              onClick={() => void restartSignIn()}
             >
-              Back to sign in
+              Use another account
             </button>
           </div>
         </section>
@@ -386,6 +461,7 @@ export default function SignInClient({
         <div className="signin-brand">
           <VantageLogo />
         </div>
+        <SignInProgress active={otpSent || resetSent ? 2 : 1} />
         <h1 id="signin-title">Welcome to Vantage</h1>
         <p className="signin-sub">
           {status.email2faEnforced
@@ -394,6 +470,7 @@ export default function SignInClient({
               ? "Sign in with password, Google, or an email code."
               : "Sign in to continue"}
         </p>
+        <p className="signin-access-note"><b>Closed team access</b><span>Sign-in proves who you are. An invite or team-leader approval controls which workspace you can enter.</span></p>
 
         {googleReady ? (
           <button className="signin-google" type="button" onClick={google} disabled={busy}>
@@ -422,9 +499,12 @@ export default function SignInClient({
                   type="email"
                   required
                   autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   placeholder="you@example.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  onBlur={() => setEmail((value) => value.trim().toLowerCase())}
                 />
               </span>
             </label>
@@ -433,13 +513,19 @@ export default function SignInClient({
               <span className="signin-field">
                 <LockIcon />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   autoComplete="current-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+                  onKeyDown={(event) => setCapsLock(event.getModifierState("CapsLock"))}
+                  onKeyUp={(event) => setCapsLock(event.getModifierState("CapsLock"))}
                 />
+                <button type="button" className="signin-password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>
+                  {showPassword ? "Hide" : "Show"}
+                </button>
               </span>
+              {capsLock ? <small className="signin-expiry expired">Caps Lock is on.</small> : null}
             </label>
             <button className="signin-submit" disabled={busy || !status.passwordSignInAvailable}>
               {busy ? "Signing in…" : "Sign in"}
@@ -457,13 +543,16 @@ export default function SignInClient({
                   type="email"
                   required
                   autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   placeholder="you@example.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  onBlur={() => setEmail((value) => value.trim().toLowerCase())}
                 />
               </span>
             </label>
-            {otpSent ? (
+            {otpSent && !codeExpired ? (
               <label>
                 Sign-in code
                 <span className="signin-field">
@@ -479,17 +568,20 @@ export default function SignInClient({
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                   />
                 </span>
+                <small className="signin-expiry">Code expires in {timeLabel(secondsLeft)}.</small>
               </label>
             ) : null}
+            {otpSent && codeExpired ? <p className="signin-status">That sign-in code expired. Send a new code to continue.</p> : null}
             {!status.emailOtpAvailable ? (
               <p className="signin-status" role="status">
                 {status.emailOtpReason ??
                   "Email code sign-in requires RESEND_API_KEY and AUTH_EMAIL_FROM on the Vercel project."}
               </p>
             ) : null}
-            <button className="signin-submit" disabled={busy || !status.emailOtpAvailable}>
-              {busy ? "Working…" : otpSent ? "Verify code" : "Email me a code"}
+            <button className="signin-submit" disabled={busy || !status.emailOtpAvailable || (otpSent && !codeExpired && code.length !== 6)}>
+              {busy ? "Working…" : otpSent && !codeExpired ? "Verify code" : codeExpired ? "Send a new code" : "Email me a code"}
             </button>
+            {otpSent ? <button type="button" className="signin-link signin-inline-link" onClick={() => { setOtpSent(false); setCode(""); setCodeExpiresAt(null); setMessage(""); }}>Use a different email</button> : null}
           </form>
         ) : null}
 
@@ -499,10 +591,10 @@ export default function SignInClient({
               Email
               <span className="signin-field">
                 <MailIcon />
-                <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" required autoComplete="email" autoCapitalize="none" spellCheck={false} value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => setEmail((value) => value.trim().toLowerCase())} />
               </span>
             </label>
-            {resetSent && (
+            {resetSent && !codeExpired && (
               <>
                 <label>
                   Reset code
@@ -523,24 +615,27 @@ export default function SignInClient({
                   <span className="signin-field">
                     <LockIcon />
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       minLength={12}
                       required
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
+                    <button type="button" className="signin-password-toggle" onClick={() => setShowPassword((value) => !value)}>{showPassword ? "Hide" : "Show"}</button>
                   </span>
+                  <small className="signin-expiry">Use 12+ characters and a password you do not reuse elsewhere.</small>
                 </label>
               </>
             )}
+            {resetSent ? <small className={codeExpired ? "signin-expiry expired" : "signin-expiry"}>{codeExpired ? "Reset code expired." : `Reset code expires in ${timeLabel(secondsLeft)}.`}</small> : null}
             {!status.emailOtpAvailable ? (
               <p className="signin-status" role="status">
                 {status.emailOtpReason}
               </p>
             ) : null}
-            <button className="signin-submit" disabled={busy || !status.emailOtpAvailable}>
-              {resetSent ? "Reset password" : "Send reset code"}
+            <button className="signin-submit" disabled={busy || !status.emailOtpAvailable || (resetSent && !codeExpired && (code.length !== 6 || password.length < 12))}>
+              {resetSent && !codeExpired ? "Reset password" : codeExpired ? "Send a new reset code" : "Send reset code"}
             </button>
           </form>
         ) : null}
@@ -582,6 +677,16 @@ export default function SignInClient({
         </div>
       </section>
     </main>
+  );
+}
+
+function SignInProgress({ active }: { active: 1 | 2 }) {
+  return (
+    <ol className="signin-progress" aria-label="Account setup progress">
+      <li className="active" aria-current={active === 1 ? "step" : undefined}><b>{active > 1 ? "✓" : "1"}</b><span>Identity</span></li>
+      <li className={active >= 2 ? "active" : undefined} aria-current={active === 2 ? "step" : undefined}><b>2</b><span>Verify</span></li>
+      <li><b>3</b><span>Team setup</span></li>
+    </ol>
   );
 }
 

@@ -14,6 +14,7 @@ import {
   type InventoryView,
   type TxReason,
 } from "../../lib/inventory";
+import InventoryLabelTools from "./inventory-label-tools";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<InventoryView, { status: "ready" }>;
@@ -480,6 +481,7 @@ export default function InventoryClient() {
   const [lowOnly, setLowOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
 
   const load = useCallback(async () => {
     setFetchFailed(false);
@@ -596,7 +598,7 @@ export default function InventoryClient() {
     if (lowOnly && !isLowStock(item)) return false;
     if (category !== "all" && item.category !== category) return false;
     if (query) {
-      const hay = `${item.name} ${item.partNumber ?? ""} ${item.vendor ?? ""} ${item.subsystem ?? ""}`.toLowerCase();
+      const hay = `${item.name} ${item.partNumber ?? ""} ${item.vendor ?? ""} ${item.subsystem ?? ""} ${item.locationName ?? ""}`.toLowerCase();
       if (!hay.includes(query)) return false;
     }
     return true;
@@ -618,6 +620,9 @@ export default function InventoryClient() {
           {summary.lowStock > 0 ? <span className="app-badge setup">{summary.lowStock} low</span> : null}
           <button type="button" className="app-button" onClick={() => setShowAdd((value) => !value)}>
             {showAdd ? "Close" : "Add item"}
+          </button>
+          <button type="button" className="app-button secondary" onClick={() => setShowLabels((value) => !value)}>
+            Scan / labels
           </button>
         </div>
       </header>
@@ -654,6 +659,21 @@ export default function InventoryClient() {
           busy={busyKey === "create-item"}
           onCreate={(body) => void run(body, "create-item")}
           onClose={() => setShowAdd(false)}
+        />
+      ) : null}
+
+      {showLabels ? (
+        <InventoryLabelTools
+          orgId={orgId}
+          locations={locations}
+          onClose={() => setShowLabels(false)}
+          onLocate={(location) => {
+            setSearch(location.name);
+            setCategory("all");
+            setLowOnly(false);
+            setShowArchived(false);
+            setTab("stock");
+          }}
         />
       ) : null}
 

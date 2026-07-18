@@ -227,7 +227,7 @@ function LintRow({
         {lint.phases.map((phase) => (
           <li key={phase.phase} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
             <span>{fieldBudgetPhaseLabel(phase.phase)}</span>
-            <small className={phase.overBudget ? "app-muted" : "app-muted"} style={{ color: phase.overBudget ? "var(--app-danger, #dc2626)" : undefined }}>
+            <small className="app-muted" style={{ color: phase.overBudget ? "var(--app-danger, #dc2626)" : undefined }}>
               {phase.count} / {phase.budget}
               {phase.overBudget ? ` (+${phase.overBy})` : ""}
             </small>
