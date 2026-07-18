@@ -15,6 +15,7 @@ import {
 } from "./inspection";
 import { bomCoverage, isLowStock, type BomEntry, type InventoryItem } from "./inventory";
 import { pointsPerSecond, rankActions, type DesignPriority, type ScoringAction } from "./kickoff";
+import { robotRollup, subsystemReadiness, type EnrichedSubsystem } from "./robot-blueprint";
 import { daysUntil, type Milestone } from "./season-calendar";
 import { fmtTimestamp, tagCounts, type VideoReview } from "./video-review";
 
@@ -27,11 +28,12 @@ export const INSIGHT_KINDS = [
   "video_scout_summary",
   "engagement_digest",
   "model_accuracy",
+  "robot_blueprint",
 ] as const;
 export type InsightKind = (typeof INSIGHT_KINDS)[number];
 
 /** Capability routing per insight (must be a capability the orchestrator accepts). */
-export const INSIGHT_CAPABILITY: Record<InsightKind, "strategy" | "maintenance" | "team_intel" | "prediction"> = {
+export const INSIGHT_CAPABILITY: Record<InsightKind, "strategy" | "maintenance" | "team_intel" | "prediction" | "cad"> = {
   practice_coach: "strategy",
   inspection_advisor: "maintenance",
   stock_advisor: "maintenance",
@@ -40,6 +42,7 @@ export const INSIGHT_CAPABILITY: Record<InsightKind, "strategy" | "maintenance" 
   video_scout_summary: "team_intel",
   engagement_digest: "team_intel",
   model_accuracy: "prediction",
+  robot_blueprint: "cad",
 };
 
 export const INSIGHT_TITLES: Record<InsightKind, string> = {
@@ -51,6 +54,7 @@ export const INSIGHT_TITLES: Record<InsightKind, string> = {
   video_scout_summary: "Video scout summary",
   engagement_digest: "Engagement digest",
   model_accuracy: "Prediction accuracy",
+  robot_blueprint: "Blueprint review",
 };
 
 /** Shape accepted by the orchestrator's contextSources (subset we produce). */
@@ -665,6 +669,76 @@ export function buildModelAccuracyInsight(outcomes: PredictionOutcome[], pending
 
   return {
     message: "Evaluate the match-prediction model against actual results: accuracy, calibration, and the biggest miss.",
+    sources,
+    localText: lines.join(" "),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Blueprint review — where is the robot weakest, and which links are missing?
+// ---------------------------------------------------------------------------
+
+export function buildRobotBlueprintInsight(subsystems: EnrichedSubsystem[], robotLabel: string): BuiltInsight {
+  const rollup = robotRollup(subsystems);
+  const scored = subsystems
+    .map((subsystem) => ({ subsystem, readiness: subsystemReadiness(subsystem) }))
+    .sort((a, b) => a.readiness.percent - b.readiness.percent);
+  const weakest = scored.slice(0, 3).filter((entry) => entry.readiness.percent < 100);
+
+  const sources: InsightSource[] = [
+    {
+      type: "module_data",
+      id: `blueprint:rollup:${robotLabel}`,
+      content: JSON.stringify(rollup),
+      importance: 1,
+      classification: "hard_metric",
+    },
+    ...scored.slice(0, 12).map((entry) => ({
+      type: "module_data" as const,
+      id: `blueprint:subsystem:${entry.subsystem.id}`,
+      content: JSON.stringify({
+        name: entry.subsystem.name,
+        status: entry.subsystem.status,
+        readiness: entry.readiness.percent,
+        blockers: entry.readiness.blockers,
+        cad: Boolean(entry.subsystem.cadUrl),
+        code: Boolean(entry.subsystem.codeRef.trim()),
+        priority: entry.subsystem.priorityCapability,
+        practiceReps: entry.subsystem.ops.practice?.reps ?? 0,
+      }),
+      importance: 0.9,
+      classification: "hard_metric" as const,
+    })),
+  ];
+
+  const lines: string[] = [];
+  if (subsystems.length === 0) {
+    lines.push(`No subsystems are registered for "${robotLabel}" — seed the standard set and link CAD, code, and strategy per mechanism.`);
+  } else {
+    lines.push(
+      `"${robotLabel}" robot is ${rollup.percent}% ready: ${rollup.ready}/${rollup.total} subsystems competition-ready, ${rollup.blockers} active blocker${rollup.blockers === 1 ? "" : "s"}.`,
+    );
+    if (weakest.length) {
+      lines.push(
+        `Weakest: ${weakest
+          .map((entry) => `${entry.subsystem.name} (${entry.readiness.percent}%${entry.readiness.blockers.length ? ` — ${entry.readiness.blockers.join(", ")}` : ""})`)
+          .join("; ")}.`,
+      );
+    }
+    const gaps: string[] = [];
+    if (rollup.missingCad) gaps.push(`${rollup.missingCad} without a CAD link`);
+    if (rollup.missingCode) gaps.push(`${rollup.missingCode} without a code ref`);
+    if (rollup.unlinkedStrategy) gaps.push(`${rollup.unlinkedStrategy} not tied to a strategy priority`);
+    if (rollup.untested) gaps.push(`${rollup.untested} with zero practice reps`);
+    if (gaps.length) {
+      lines.push(`Traceability gaps: ${gaps.join(", ")} — close these so design, software, and strategy stay in lockstep.`);
+    } else if (rollup.blockers === 0 && rollup.percent >= 100) {
+      lines.push("Every subsystem is linked and competition-ready — run a full-robot practice session to confirm.");
+    }
+  }
+
+  return {
+    message: `Review the "${robotLabel}" robot blueprint: weakest subsystems, active blockers, and missing CAD/code/strategy links.`,
     sources,
     localText: lines.join(" "),
   };

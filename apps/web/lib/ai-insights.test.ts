@@ -5,6 +5,7 @@ import {
   buildKickoffStrategistInsight,
   buildModelAccuracyInsight,
   buildPracticeCoachInsight,
+  buildRobotBlueprintInsight,
   buildScheduleRiskInsight,
   buildStockAdvisorInsight,
   buildVideoScoutSummaryInsight,
@@ -352,6 +353,51 @@ describe("buildModelAccuracyInsight", () => {
   });
 });
 
+describe("buildRobotBlueprintInsight", () => {
+  const twin = (over: Partial<import("./robot-blueprint").EnrichedSubsystem>): import("./robot-blueprint").EnrichedSubsystem => ({
+    id: Math.random().toString(36).slice(2),
+    robotLabel: "competition",
+    name: "Drivetrain",
+    description: "",
+    status: "tested",
+    cadUrl: "https://cad.onshape.com/d/x",
+    codeRef: "src/subsystems/Drivetrain.java",
+    priorityId: "22222222-2222-4222-8222-222222222222",
+    priorityCapability: "Fast cycles",
+    priorityStatus: "committed",
+    practiceAction: "Full cycle",
+    bomSubsystem: "",
+    sortOrder: 0,
+    ops: { practice: { reps: 10, successRate: 80, avgSeconds: 5 }, bom: { buildable: true, shortCount: 0 }, failures7d: 0, openMaintenance: 0 },
+    ...over,
+  });
+  it("prompts when empty", () => {
+    expect(buildRobotBlueprintInsight([], "competition").localText).toMatch(/No subsystems are registered/);
+  });
+  it("names the weakest subsystems with blockers and traceability gaps", () => {
+    const built = buildRobotBlueprintInsight(
+      [
+        twin({ status: "competition_ready" }),
+        twin({
+          name: "Climber",
+          status: "prototyping",
+          cadUrl: null,
+          codeRef: "",
+          priorityId: null,
+          ops: { practice: { reps: 0, successRate: null, avgSeconds: null }, bom: { buildable: false, shortCount: 2 }, failures7d: 1, openMaintenance: 0 },
+        }),
+      ],
+      "competition",
+    );
+    expect(built.localText).toMatch(/1\/2 subsystems competition-ready/);
+    expect(built.localText).toMatch(/Weakest: Climber \(40% — 2 BOM parts short, 1 failure in 7d\)/);
+    expect(built.localText).toMatch(/1 without a CAD link/);
+    expect(built.localText).toMatch(/1 without a code ref/);
+    expect(built.localText).toMatch(/1 not tied to a strategy priority/);
+    expect(built.localText).toMatch(/1 with zero practice reps/);
+  });
+});
+
 describe("parseInsightRequest + capability map", () => {
   it("validates kind and defaults robot label", () => {
     expect(parseInsightRequest({ orgId: ORG, kind: "practice_coach" })).toEqual({
@@ -372,5 +418,6 @@ describe("parseInsightRequest + capability map", () => {
     expect(INSIGHT_CAPABILITY.video_scout_summary).toBe("team_intel");
     expect(INSIGHT_CAPABILITY.engagement_digest).toBe("team_intel");
     expect(INSIGHT_CAPABILITY.model_accuracy).toBe("prediction");
+    expect(INSIGHT_CAPABILITY.robot_blueprint).toBe("cad");
   });
 });
