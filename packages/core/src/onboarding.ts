@@ -218,3 +218,19 @@ export async function completeOnboarding(
 
   return getOnboardingState(client, userId);
 }
+
+/** Lightweight gate for proxy/middleware: profile complete + workspace membership. */
+export async function getOnboardingGate(client: PoolClient, userId: string) {
+  const complete = await isOnboardingComplete(client, userId);
+  const membership = await client.query(
+    `SELECT 1 FROM organization_memberships WHERE user_id=$1::uuid LIMIT 1`,
+    [userId],
+  );
+  const admin = await client.query(`SELECT 1 FROM platform_admins WHERE user_id=$1::uuid`, [userId]);
+  const hasWorkspace = Boolean(membership.rowCount) || Boolean(admin.rowCount);
+  return {
+    onboardingComplete: complete,
+    workspaceApproved: hasWorkspace,
+    accessStatus: hasWorkspace ? ("approved" as const) : ("none" as const),
+  };
+}
