@@ -7,15 +7,15 @@ Single map of product surfaces for humans and agents. Nav labels come from
 
 | Pillar | Job | Primary routes |
 |---|---|---|
-| **Home** | Daily landing + workspace switcher + AI | `/dashboard`, `/workspace`, `/chat`, `/announcements` |
-| **Competition** | Event-day ops, pit, match flow | `/command`, `/pit`, `/batteries`, `/incidents`, `/match-checklist`, `/intel`, `/schedule`, `/briefing`, `/match-debrief`, `/inspection` |
+| **Home** | Daily landing + workspace switcher + AI | `/dashboard`, `/start` (role/subteam onboarding path), `/workspace`, `/chat`, `/announcements` |
+| **Competition** | Event-day ops, pit, match flow | `/command`, `/my-day`, `/pit`, `/batteries`, `/incidents`, `/match-checklist`, `/intel`, `/schedule`, `/briefing`, `/match-debrief`, `/inspection` |
 | **Scouting** | Collect + use match intel | `/scouting`, `/scouting/lineup`, `/strategy`, `/pick-clock`, `/chemistry`, `/dossier`, `/rankings`, `/video` |
-| **Calendar** | Time: team calendar, season milestones, practice, shifts, attendance, hours | `/team/calendar`, `/calendar`, `/practice`, `/shifts`, `/attendance`, `/hours` |
+| **Calendar** | Time: team calendar, season milestones, practice, shifts, attendance, hours | `/team/calendar`, `/my-day`, `/calendar`, `/practice`, `/shifts`, `/attendance`, `/hours` |
 | **Build** | Robot design/build tooling | `/cad`, `/code`, `/robot`, `/subsystems`, `/fmea`, `/display`, `/inventory`, `/vendors`, `/control-map`, `/software-versions` |
-| **Team** | People ops, todos, knowledge, admin | `/todos`, `/tasks`, `/messages`, `/goals`, `/risks`, `/roles`, `/team/knowledge` (wiki + assistant summary + decision/review search), `/team/alumni`, `/team` (`#github-connection`), `/team/data`, `/team/usage` |
-| **Logistics** | Travel / packing / duty roster at events | `/logistics`, `/packing`, `/duties` |
+| **Team** | People ops, todos, knowledge, admin | `/tasks` (Todos), `/messages`, `/goals`, `/risks`, `/roles`, `/team/knowledge`, `/team/alumni`, `/team`, `/team/discord`, `/team/data`, `/team/usage` |
+| **Logistics** | Get-there-and-back trip times, lodging, packing, duties, visit invites | `/logistics`, `/packing`, `/duties`, `/visit-invites` (+ Team Calendar → My trip) |
 | **Kickoff** | Season start / game manual | `/kickoff` |
-| **Business** | Money, sponsors, awards, impact, exports | `/business`, `/costs`, `/team/finance`, `/team/sponsors`, `/team/grants`, `/team/awards`, `/fundraisers`, `/impact`, `/writer`, `/recognition`, `/exports` |
+| **Business** | Money, sponsors, awards, impact, exports | `/business`, `/orders`, `/costs`, `/team/finance`, `/team/sponsors`, `/team/grants`, `/team/awards`, `/fundraisers`, `/impact`, `/writer`, `/recognition`, `/exports` |
 | **Settings** | Account + org security + budgets | `/account`, `/help`, `/notifications`, `/security`, `/team/security`, `/team/budgets` |
 
 Bottom island tabs: **Home · Event Day · Scout · Calendar** (+ More → full drawer).
@@ -25,11 +25,20 @@ Bottom island tabs: **Home · Event Day · Scout · Calendar** (+ More → full 
 - **Calendar** = anything dated (team/subteam calendar, season milestones, practice planner, shifts, attendance roll, build hours).
 - **Team** = people and org continuity (todos, messages, goals, risks, roles, knowledge, alumni, admin).
 - **Competition** = at-the-event execution (command, pit, batteries, incidents, checklists, matches).
-- **Logistics** = packing, duties, event logistics (sibling to Competition).
+- **Logistics** = timed leave/hotel/venue/return legs, lodging, packing, duties, visit invites (sibling to Competition; trip times also on `/team/calendar` → My trip).
 - **Business** = fundraising, sponsors, costs, awards writing, community impact — not “team admin”.
 
 Cross-links inside Calendar/Team surfaces use `TeamOpsNav`
-(`apps/web/components/team-ops-nav.tsx`): Practice · Todos · Messages · Calendar · Attendance · Goals · Admin.
+(`apps/web/components/team-ops-nav.tsx`): Your path · Practice · Todos · Messages · Calendar · Attendance · Goals · Admin.
+
+## Role onboarding (CD #28)
+
+| Route | What it is |
+|---|---|
+| `/start` | Personal Soft-UI checklists auto-assigned from `team_role`, `primary_focus`, and calendar subteam membership |
+| `/team/getting-started` | Org-wide workspace setup signals (invites, knowledge, budgets) — not the personal path |
+
+Templates live in `apps/web/lib/role-onboarding/`; progress in `member_onboarding_*` (migration `0163`).
 
 ## Two calendars (intentional)
 
@@ -44,8 +53,8 @@ Deep links between them live in `apps/web/lib/subteam-calendar.ts` (`eventWorkfl
 
 | Route | Status |
 |---|---|
-| `/todos` | Soft-UI Team todos (nav + TeamOps) |
-| `/tasks` | Build-season task board (linked from Todos) |
+| `/tasks` | Live Todos board (nav + TeamOps) |
+| `/todos` | Soft-UI package in progress — flip nav here when the page ships |
 
 ## Legacy redirects (dead-end cleanup)
 
