@@ -1,0 +1,74 @@
+/* Main Strategy Soft-UI — empty/setup + Pick desk / Scouting / Event Day links. */
+
+.strategy-page .strategy-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.strategy-next-actions-panel {
+  margin-top: 4px;
+}
+
+.strategy-next-actions-panel header {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.strategy-next-actions-panel header h2 {
+  margin: 0;
+  font: 800 15px/1.25 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.strategy-next-actions-panel header p {
+  margin: 0;
+  color: var(--soft-muted, var(--app-muted));
+  font: 600 13px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.strategy-next-actions-panel ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.strategy-next-actions-panel li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--soft-line, var(--app-line));
+}
+
+.strategy-next-actions-panel li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.strategy-next-actions-panel li.primary strong {
+  color: var(--soft-ink, var(--app-ink));
+}
+
+.strategy-next-actions-panel li div {
+  display: grid;
+  gap: 2px;
+  min-width: min(100%, 220px);
+}
+
+.strategy-next-actions-panel li span {
+  color: var(--soft-muted, var(--app-muted));
+  font: 600 12px/1.4 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.strategy-shell-empty {
+  text-align: left;
+  width: 100%;
+}
+
+.strategy-demo-optin {
+  margin-top: 0;
+}
