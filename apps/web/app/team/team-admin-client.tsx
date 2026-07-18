@@ -285,6 +285,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           <strong>API budgets</strong>
           <span>Spend and token hard limits</span>
         </a>
+        <a href={`/team/ai-policy?orgId=${orgId}`}>
+          <strong>AI governance</strong>
+          <span>Tools, spend alerts, approvals</span>
+        </a>
         <a href={`/team/budgets?orgId=${orgId}#prompt-caching`}>
           <strong>Prompt caching</strong>
           <span>Reuse stable AI context blocks</span>
