@@ -178,6 +178,42 @@ export async function revokeOrganizationInvite(
   });
 }
 
+export type InvitePreview = {
+  orgId: string;
+  orgName: string;
+  teamNumber: number;
+  role: string;
+  email: string;
+  status: string;
+  expiresAt: string;
+};
+
+export async function peekOrganizationInvite(
+  client: PoolClient,
+  token: string,
+): Promise<InvitePreview | null> {
+  const result = await client.query<{
+    org_id: string;
+    org_name: string;
+    team_number: number;
+    role: string;
+    email: string;
+    status: string;
+    expires_at: Date;
+  }>(`SELECT org_id, org_name, team_number, role, email, status, expires_at FROM peek_org_invite($1)`, [token]);
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    orgId: row.org_id,
+    orgName: row.org_name,
+    teamNumber: row.team_number,
+    role: row.role,
+    email: row.email,
+    status: row.status,
+    expiresAt: row.expires_at.toISOString(),
+  };
+}
+
 export async function acceptOrganizationInvite(
   client: PoolClient,
   actorUserId: string,
@@ -201,4 +237,100 @@ export async function listOrganizationInvites(client: PoolClient, orgId: string)
     [orgId],
   );
   return result.rows;
+}
+
+export type WorkspaceAccessRequest = {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  requestedTeamRole: string | null;
+  primaryFocus: "competition" | "build" | "business" | "leadership";
+  status: "pending" | "approved" | "declined" | "withdrawn";
+  membershipRole: OrgRole | null;
+  createdAt: string;
+  reviewedAt: string | null;
+};
+
+export async function listWorkspaceAccessRequests(
+  client: PoolClient,
+  orgId: string,
+): Promise<WorkspaceAccessRequest[]> {
+  await assertOrgCapability(client, orgId, "manage_members");
+  const result = await client.query<WorkspaceAccessRequest>(
+    `SELECT r.id,r.user_id AS "userId",u.name,u.email,
+            r.requested_team_role AS "requestedTeamRole",r.primary_focus AS "primaryFocus",
+            r.status,r.membership_role AS "membershipRole",
+            r.created_at::text AS "createdAt",r.reviewed_at::text AS "reviewedAt"
+     FROM workspace_access_requests r
+     JOIN users u ON u.id=r.user_id
+     WHERE r.org_id=$1
+     ORDER BY CASE r.status WHEN 'pending' THEN 0 ELSE 1 END,r.created_at DESC
+     LIMIT 100`,
+    [orgId],
+  );
+  return result.rows;
+}
+
+export async function reviewWorkspaceAccessRequest(
+  client: PoolClient,
+  actorUserId: string,
+  input: {
+    orgId: string;
+    requestId: string;
+    decision: "approved" | "declined";
+    role?: "scout" | "viewer";
+  },
+  provider: EmailProvider = createEmailProvider(),
+) {
+  await assertOrgCapability(client, input.orgId, "manage_members");
+  const role = input.role === "scout" ? "scout" : "viewer";
+  const result = await client.query<{
+    requestId: string;
+    applicantUserId: string;
+    applicantEmail: string;
+    applicantName: string;
+    organizationId: string;
+    organizationName: string;
+    decision: "approved" | "declined";
+    grantedRole: "scout" | "viewer" | null;
+  }>(
+    `SELECT request_id AS "requestId",applicant_user_id AS "applicantUserId",
+            applicant_email AS "applicantEmail",applicant_name AS "applicantName",
+            organization_id AS "organizationId",organization_name AS "organizationName",
+            decision,granted_role AS "grantedRole"
+     FROM review_workspace_access($1,$2,$3::org_role)`,
+    [input.requestId, input.decision, role],
+  );
+  const reviewed = result.rows[0];
+  if (!reviewed || reviewed.organizationId !== input.orgId) {
+    throw new Error("Pending access request not found");
+  }
+
+  if (reviewed.decision === "approved") {
+    const baseUrl = (process.env.BETTER_AUTH_URL ?? "http://localhost:3001").replace(/\/$/, "");
+    const nextPath = `/workspace?orgId=${encodeURIComponent(reviewed.organizationId)}`;
+    const signInUrl = `${baseUrl}/signin?next=${encodeURIComponent(nextPath)}`;
+    await provider.sendSecurityNotice({
+      email: reviewed.applicantEmail,
+      subject: `You are approved to join ${reviewed.organizationName} on Vantage`,
+      message:
+        `Your team leader approved your Vantage workspace request as ${reviewed.grantedRole}. ` +
+        `Sign in with this verified email to enter the team workspace: ${signInUrl}\n\n` +
+        "If you did not request this access, contact the team administrator.",
+    });
+  }
+
+  await audit(client, {
+    orgId: reviewed.organizationId,
+    actorUserId,
+    action: `workspace_access.${reviewed.decision}`,
+    email: reviewed.applicantEmail,
+    metadata: {
+      requestId: reviewed.requestId,
+      grantedRole: reviewed.grantedRole,
+      requestedByUserId: reviewed.applicantUserId,
+    },
+  });
+  return reviewed;
 }

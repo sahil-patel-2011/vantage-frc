@@ -1,10 +1,24 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { VantageLogo } from "../../components/brand";
 
 export const PENDING_INVITE_KEY = "vantage.pendingInviteToken";
 
-export default function InviteClient({ token }: { token: string }) {
+type InvitePreview = {
+  orgName: string;
+  teamNumber: number;
+  role: string;
+  email: string;
+  status: string;
+  expiresAt: string;
+};
+
+export default function InviteClient() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token")?.trim() ?? "";
+  const [preview, setPreview] = useState<InvitePreview | null | undefined>(undefined);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -13,9 +27,34 @@ export default function InviteClient({ token }: { token: string }) {
       try {
         sessionStorage.setItem(PENDING_INVITE_KEY, token);
       } catch {
-        // sessionStorage unavailable — user can still accept from this page
+        // sessionStorage unavailable
       }
     }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setPreview(null);
+      return;
+    }
+    let active = true;
+    void fetch(`/api/invites/preview?token=${encodeURIComponent(token)}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!active) return;
+        if (!response.ok) {
+          setMessage(data.error ?? "Could not load invitation details.");
+          setPreview(null);
+          return;
+        }
+        setPreview(data.preview ?? null);
+      })
+      .catch(() => {
+        if (active) setMessage("Could not load invitation details.");
+      });
+    return () => {
+      active = false;
+    };
   }, [token]);
 
   async function accept() {
@@ -51,21 +90,48 @@ export default function InviteClient({ token }: { token: string }) {
     }
   }
 
+  const loadingPreview = token && preview === undefined;
+
   return (
-    <main className="auth-page">
-      <section className="auth-card">
-        <span className="eyebrow">VANTAGE / TEAM INVITE</span>
-        <h1>Accept your invitation</h1>
-        <p>Sign in using the exact verified email address that received this invite.</p>
-        <button className="primary-action" disabled={busy} onClick={() => void accept()}>
+    <main className="onboarding-page">
+      <section className="onboarding-card" aria-labelledby="invite-title">
+        <div className="onboarding-brand">
+          <VantageLogo />
+        </div>
+        <span className="eyebrow">Team invitation</span>
+        <h1 id="invite-title">Accept your invitation</h1>
+        <p className="onboarding-sub">Sign in with the verified email that received this invite before accepting.</p>
+
+        {loadingPreview ? <p className="onboarding-sub">Loading invitation…</p> : null}
+
+        {preview ? (
+          <div className="onboarding-callout invite">
+            <strong>
+              {preview.orgName} · Team {preview.teamNumber}
+            </strong>
+            <p>
+              Role: {preview.role} · Sent to {preview.email} · Status {preview.status}
+              {preview.expiresAt ? ` · Expires ${new Date(preview.expiresAt).toLocaleString()}` : ""}
+            </p>
+          </div>
+        ) : null}
+
+        {!token ? (
+          <div className="onboarding-callout">
+            <strong>Missing token</strong>
+            <p>Open the full invite link from your email, or finish onboarding if you arrived here early.</p>
+          </div>
+        ) : null}
+
+        <button className="signin-submit" disabled={busy || !token} onClick={() => void accept()}>
           {busy ? "Accepting…" : "Accept invitation"}
         </button>
-        {!token && <p className="auth-message">This invitation link is incomplete.</p>}
-        {message && (
-          <p className="auth-message" role="status">
+
+        {message ? (
+          <p className="signin-status" role="status">
             {message}
           </p>
-        )}
+        ) : null}
       </section>
     </main>
   );

@@ -1,6 +1,8 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { EmptyState, PageHeader, Panel } from "../../components/ui";
 
 type Organization = {
   id: string;
@@ -10,11 +12,24 @@ type Organization = {
   ownerEmail: string;
 };
 
-export default function AdminClient() {
+function AdminClientInner() {
+  const searchParams = useSearchParams();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [form, setForm] = useState({ name: "", slug: "", teamNumber: "", ownerEmail: "" });
   const [message, setMessage] = useState("");
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const ownerEmail = searchParams.get("ownerEmail")?.trim() ?? "";
+    const teamNumber = searchParams.get("teamNumber")?.trim() ?? "";
+    if (ownerEmail || teamNumber) {
+      setForm((current) => ({
+        ...current,
+        ownerEmail: ownerEmail || current.ownerEmail,
+        teamNumber: teamNumber || current.teamNumber,
+      }));
+    }
+  }, [searchParams]);
 
   async function load() {
     const response = await fetch("/api/admin/organizations");
@@ -43,13 +58,24 @@ export default function AdminClient() {
   }
 
   return (
-    <main className="content admin-control">
-      <span className="eyebrow">Platform</span>
-      <h1>Team provisioning</h1>
+    <main className="module-page admin-control">
+      <PageHeader
+        breadcrumbs="Platform / Admin"
+        title="Team provisioning"
+        description="Closed membership: provision each team workspace and seed the first owner. Launch interest lives on the waitlist surface."
+      >
+        <nav className="settings-inline-links" aria-label="Platform shortcuts">
+          <a href="/admin/waitlist">Waitlist</a>
+          <a href="/admin/connectors">Connectors / API keys</a>
+          <a href="/admin/models">Models</a>
+          <a href="/admin/audit">Audit log</a>
+        </nav>
+      </PageHeader>
+
       <div className="cards">
         <article className="card">
           <span>Organizations</span>
-          <strong>{loaded ? organizations.length : "—"}</strong>
+          <strong>{loaded ? organizations.length : "…"}</strong>
         </article>
         <article className="card">
           <span>Membership</span>
@@ -60,23 +86,24 @@ export default function AdminClient() {
           <strong>Admin only</strong>
         </article>
       </div>
+
       <section className="admin-grid">
-        <form className="intel-panel" onSubmit={create}>
+        <Panel as="form" onSubmit={create}>
           <span className="eyebrow">Create workspace</span>
           <label>
             Team number
             <input
               required
               type="number"
-              min="1"
-              max="99999"
+              min={1}
+              max={99999}
               value={form.teamNumber}
-              onChange={(e) => setForm({ ...form, teamNumber: e.target.value })}
+              onChange={(event) => setForm({ ...form, teamNumber: event.target.value })}
             />
           </label>
           <label>
             Organization name
-            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
           </label>
           <label>
             Workspace slug
@@ -84,7 +111,7 @@ export default function AdminClient() {
               required
               pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
               value={form.slug}
-              onChange={(e) => setForm({ ...form, slug: e.target.value })}
+              onChange={(event) => setForm({ ...form, slug: event.target.value })}
             />
           </label>
           <label>
@@ -93,18 +120,28 @@ export default function AdminClient() {
               required
               type="email"
               value={form.ownerEmail}
-              onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })}
+              onChange={(event) => setForm({ ...form, ownerEmail: event.target.value })}
             />
           </label>
-          <button className="primary-action">Create and seed owner</button>
+          <button className="primary-action" type="submit">
+            Create and seed owner
+          </button>
           {message ? <p className="auth-message">{message}</p> : null}
-        </form>
-        <section className="intel-panel">
+        </Panel>
+        <Panel>
           <span className="eyebrow">Provisioned teams</span>
           {!loaded ? (
-            <div className="admin-empty">Loading organizations…</div>
+            <EmptyState soft title="Loading organizations…" aria-busy />
           ) : organizations.length === 0 ? (
-            <div className="admin-empty">No teams provisioned yet. Create the first workspace on the left.</div>
+            <EmptyState
+              soft
+              title="No teams provisioned yet"
+              description="Create the first workspace on the left, or start from a waitlist entry."
+            >
+              <a className="app-button secondary" href="/admin/waitlist">
+                Open waitlist
+              </a>
+            </EmptyState>
           ) : (
             organizations.map((org) => (
               <article className="admin-org" key={org.id}>
@@ -118,8 +155,22 @@ export default function AdminClient() {
               </article>
             ))
           )}
-        </section>
+        </Panel>
       </section>
     </main>
+  );
+}
+
+export default function AdminClient() {
+  return (
+    <Suspense
+      fallback={
+        <main className="module-page admin-control">
+          <EmptyState soft title="Loading admin…" aria-busy />
+        </main>
+      }
+    >
+      <AdminClientInner />
+    </Suspense>
   );
 }

@@ -1,4 +1,4 @@
-import { assertOrgAuthentication, auth } from "@vantage/core";
+﻿import { assertOrgAuthentication, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -26,34 +26,42 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     if (memberships.rows.length === 1) {
       redirect(`/workspace?orgId=${encodeURIComponent(memberships.rows[0]!.orgId)}`);
     }
-    if (memberships.rows.length === 0) {
+        if (memberships.rows.length === 0) {
       return (
-        <main className="content">
-          <h1>Join a team workspace</h1>
-          <p>Access comes from a verified invitation. Accept an invite link, then return here.</p>
-          <a className="text-button" href="/dashboard">
-            Back to dashboard
-          </a>
+        <main className="onboarding-page">
+          <section className="onboarding-card">
+            <h1>Join a team workspace</h1>
+            <p className="onboarding-sub">Access comes from a verified invitation. Accept an invite link, then return here.</p>
+            <div className="onboarding-callout">
+              <strong>Closed membership</strong>
+              <p>Vantage does not open workspaces from team numbers alone. Ask your coach or platform admin for an invite to your verified email.</p>
+            </div>
+            <a className="signin-submit" href="/dashboard" style={{ display: "inline-flex", width: "auto", textDecoration: "none" }}>
+              Back to dashboard
+            </a>
+          </section>
         </main>
       );
     }
     return (
-      <main className="content">
-        <h1>Select your team workspace</h1>
-        <p>You belong to more than one organization. Pick one to continue.</p>
-        <ul className="dash-checklist">
-          {memberships.rows.map((row) => (
-            <li key={row.orgId}>
-              <a href={`/workspace?orgId=${encodeURIComponent(row.orgId)}`}>
-                {row.orgName}
-                {row.teamNumber ? ` · Team ${row.teamNumber}` : ""}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <a className="text-button" href="/dashboard">
-          Back to dashboard
-        </a>
+      <main className="onboarding-page">
+        <section className="onboarding-card">
+          <h1>Select your team workspace</h1>
+          <p className="onboarding-sub">You belong to more than one organization. Pick one to continue.</p>
+          <ul className="dash-checklist">
+            {memberships.rows.map((row) => (
+              <li key={row.orgId}>
+                <a href={`/workspace?orgId=${encodeURIComponent(row.orgId)}`}>
+                  {row.orgName}
+                  {row.teamNumber ? ` · Team ${row.teamNumber}` : ""}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <a className="signin-link" href="/dashboard">
+            Back to dashboard
+          </a>
+        </section>
       </main>
     );
   }
@@ -119,11 +127,11 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
       <header className="workspace-top">
         <VantageLogo href="/dashboard" />
         <a className="display-nav" href={`/display?orgId=${orgId}`} aria-label="Open TV Display Mode setup">
-          ▣ <span>DISPLAY</span>
+          Γûú <span>DISPLAY</span>
         </a>
         <SyncIndicator />
         <span>
-          {session.user.name} · {data.role.toUpperCase()}
+          {session.user.name} ┬╖ {data.role.toUpperCase()}
         </span>
       </header>
       <section className={`active-event ${data.context.eventKey ? "" : "inactive"}`}>
@@ -154,10 +162,10 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         <span>
           {data.freshness.syncedAt
             ? `Last updated ${new Date(data.freshness.syncedAt).toLocaleString()}`
-            : "Not yet synced — connect TBA and run a sync before expecting live match times."}
+            : "Not yet synced ΓÇö connect TBA and run a sync before expecting live match times."}
         </span>
         {data.freshness.lastError ? (
-          <small>Using last-known-good data · source temporarily unavailable</small>
+          <small>Using last-known-good data ┬╖ source temporarily unavailable</small>
         ) : null}
       </aside>
       <section className="now-next">
