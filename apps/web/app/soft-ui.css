@@ -1992,3 +1992,38 @@ body.has-app-shell .strategy-demo-optin{
   .intel-lookup-row,.dossier-search-row{grid-template-columns:1fr}
   .dossier-hero{flex-direction:column;align-items:flex-start}
 }
+
+/* Usage hard cut-off Soft-UI banners (budgets / usage / AI surfaces) */
+.usage-cutoff-banner{
+  display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:14px;
+  margin:0 0 16px;padding:14px 16px;border-radius:14px;border:1px solid #f1dfb0;
+  background:#fff8e8;color:#69420a;font:500 13px var(--font-source-sans),ui-sans-serif;line-height:1.45;
+}
+.usage-cutoff-banner.tone-at{
+  border-color:color-mix(in srgb,#b91c1c 40%,var(--soft-line,#d5dde8));
+  background:#fff0ee;color:#8f1d1d;
+}
+.usage-cutoff-banner.compact{padding:10px 12px;margin-bottom:12px}
+.usage-cutoff-banner-copy{display:grid;gap:4px;min-width:min(100%,280px);flex:1}
+.usage-cutoff-banner-copy strong{
+  font:800 11px var(--font-source-sans),ui-sans-serif;letter-spacing:.04em;text-transform:uppercase;
+}
+.usage-cutoff-banner-title{font:700 15px var(--font-source-sans),ui-sans-serif;color:inherit}
+.usage-cutoff-banner p{margin:0;color:inherit;opacity:.92}
+.usage-cutoff-banner-ctas{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.usage-cutoff-hint{margin:8px 0 0;width:100%;font-size:12px;opacity:.9}
+.budget-page .budget-cutoff-panel{margin:0 0 16px}
+.budget-page .metric-grid{margin-bottom:14px}
+html[data-theme="dark"] .usage-cutoff-banner{
+  background:color-mix(in srgb,#a16207 18%,var(--soft-card,#1a1f24));
+  border-color:color-mix(in srgb,#fbbf24 35%,var(--soft-line));
+  color:#fde68a;
+}
+html[data-theme="dark"] .usage-cutoff-banner.tone-at{
+  background:color-mix(in srgb,#b91c1c 22%,var(--soft-card,#1a1f24));
+  border-color:color-mix(in srgb,#f87171 40%,var(--soft-line));
+  color:#fecaca;
+}
+@media(max-width:700px){
+  .usage-cutoff-banner{flex-direction:column}
+}

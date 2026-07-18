@@ -27,16 +27,32 @@ export async function POST(request: Request) {
       };
       if (body.action === "subscription") {
         if (!body.planCode) throw new Error("planCode is required");
-        return createPlanCheckout(client, { ...urls, planCode: body.planCode });
+        return createPlanCheckout(client, {
+          ...urls,
+          planCode: body.planCode,
+          successUrl: `${origin}/team/budgets?orgId=${body.orgId}`,
+          cancelUrl: `${origin}/team/budgets?orgId=${body.orgId}`,
+        });
       }
       if (body.action === "credits") {
         if (!body.packCode) throw new Error("packCode is required");
-        return createCreditPackCheckout(client, { ...urls, packCode: body.packCode });
+        return createCreditPackCheckout(client, {
+          ...urls,
+          packCode: body.packCode,
+          successUrl: `${origin}/team/budgets?orgId=${body.orgId}`,
+          cancelUrl: `${origin}/team/budgets?orgId=${body.orgId}`,
+        });
       }
-      if (body.action === "payg") return createPaygEnrollment(client, urls);
+      if (body.action === "payg") {
+        return createPaygEnrollment(client, {
+          ...urls,
+          successUrl: `${origin}/team/budgets?orgId=${body.orgId}`,
+          cancelUrl: `${origin}/team/budgets?orgId=${body.orgId}`,
+        });
+      }
       return createCustomerPortal(client, {
         orgId: body.orgId!,
-        returnUrl: `${origin}/workspace?orgId=${body.orgId}`,
+        returnUrl: `${origin}/team/budgets?orgId=${body.orgId}`,
       });
     });
     return Response.json({ url: checkout.url });

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "../../../components/ui";
+import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
+import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
 
 const blank = {
   dailySpendLimitUsd: "",
@@ -17,6 +19,19 @@ const fieldLabel: Record<keyof typeof blank, string> = {
   monthlyTokenLimit: "Monthly token limit",
 };
 
+type CutoffPayload = {
+  planCode?: string | null;
+  includedAllowanceUsd?: number;
+  usedUsd?: number;
+  walletBalanceUsd?: number;
+  paygEnabled?: boolean;
+  spendCapUsd?: number | null;
+  killSwitch?: boolean;
+  monthlySpendUsd?: number;
+  monthlySpendLimitUsd?: number | null;
+  warningThresholds?: number[];
+};
+
 export default function BudgetClient({ orgId }: { orgId: string }) {
   const [policy, setPolicy] = useState({
     ...blank,
@@ -29,6 +44,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   });
   const [usage, setUsage] = useState<Record<string, string>>({});
   const [projected, setProjected] = useState<number | null>(null);
+  const [cutoff, setCutoff] = useState<CutoffPayload | null>(null);
   const [layer, setLayer] = useState({
     scope: "feature",
     identifier: "research",
@@ -55,6 +71,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     setUsage(data.usage ?? {});
     setProjected(data.projectedExhaustionDays ?? null);
     setMembers(data.members ?? []);
+    setCutoff(data.cutoff ?? null);
     if (!response.ok) setMessage(data.error);
   }
 
@@ -81,24 +98,46 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     if (response.ok) await load();
   }
 
+  const snapshot = cutoff
+    ? buildUsageCutoffSnapshot({
+        planCode: cutoff.planCode,
+        includedAllowanceUsd: cutoff.includedAllowanceUsd,
+        usedUsd: cutoff.usedUsd,
+        walletBalanceUsd: cutoff.walletBalanceUsd,
+        paygEnabled: cutoff.paygEnabled,
+        spendCapUsd: cutoff.spendCapUsd,
+        killSwitch: cutoff.killSwitch || policy.killSwitch,
+        monthlySpendUsd: cutoff.monthlySpendUsd ?? usage.monthlySpend,
+        monthlySpendLimitUsd: cutoff.monthlySpendLimitUsd ?? policy.monthlySpendLimitUsd,
+        warningThresholds: cutoff.warningThresholds ??
+          policy.warningThresholds.split(",").map(Number).filter(Number.isFinite),
+      })
+    : null;
+
+  const allowanceLabel =
+    snapshot?.allowancePercent != null ? `${Math.round(snapshot.allowancePercent)}%` : "—";
+
   return (
     <main className="module-page budget-page">
       <PageHeader
         breadcrumbs="Team / API budgets"
         title="API budgets"
-        description="Hard spend and token limits checked before every metered AI call. Pair with Team admin API keys and Team security delegation."
+        description="Hard spend and token limits checked before every metered AI call. Included plan allowance hard-stops unless you buy Usage Credits or enable PAYG — no silent overage."
       >
         <nav className="settings-inline-links" aria-label="Related settings">
           <a href={`/team${q}`}>Team admin</a>
           <a href={`/team${q}#custom-providers`}>API keys</a>
           <a href={`/team/security${q}`}>Team security</a>
           <a href={`/team/usage${q}`}>AI usage</a>
+          <a href="/pricing">Pricing</a>
         </nav>
       </PageHeader>
 
       {message ? <p className="telemetry-status">{message}</p> : null}
 
-      <section className="metric-grid">
+      {snapshot ? <UsageCutoffBanner orgId={orgId} snapshot={snapshot} /> : null}
+
+      <section className="metric-grid" aria-label="Usage snapshot">
         <article>
           <span>Spend today</span>
           <strong>${Number(usage.dailySpend ?? 0).toFixed(2)}</strong>
@@ -108,6 +147,14 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
           <strong>${Number(usage.monthlySpend ?? 0).toFixed(2)}</strong>
         </article>
         <article>
+          <span>Included allowance used</span>
+          <strong>{allowanceLabel}</strong>
+        </article>
+        <article>
+          <span>Usage Credits</span>
+          <strong>${Number(cutoff?.walletBalanceUsd ?? 0).toFixed(2)}</strong>
+        </article>
+        <article>
           <span>Tokens today</span>
           <strong>{Number(usage.dailyTokens ?? 0).toLocaleString()}</strong>
         </article>
@@ -115,6 +162,19 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
           <span>Projected exhaustion</span>
           <strong>{projected === null ? "—" : `${projected.toFixed(1)}d`}</strong>
         </article>
+      </section>
+
+      <section className="intel-panel budget-cutoff-panel" aria-label="Hard cut-off options">
+        <span className="eyebrow">Hard cut-offs</span>
+        <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>After included allowance</h2>
+        <p className="app-muted" style={{ marginTop: 0 }}>
+          Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} included API allowance hard-stops at 100%. Resume with
+          prepaid Usage Credits (1 credit = $1 provider API at list rates), explicit PAYG + spend cap, or a higher plan.
+          BYOK / local does not consume the managed allowance.
+        </p>
+        <div className="usage-cutoff-banner-ctas" style={{ marginTop: 4 }}>
+          <UsageCutoffQuickActions orgId={orgId} paygEnabled={Boolean(cutoff?.paygEnabled)} />
+        </div>
       </section>
 
       <section className="intel-panel" id="prompt-caching" style={{ marginBottom: 16 }}>
@@ -307,5 +367,65 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
         </form>
       </section>
     </main>
+  );
+}
+
+function UsageCutoffQuickActions({ orgId, paygEnabled }: { orgId: string; paygEnabled: boolean }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [hint, setHint] = useState("");
+
+  async function checkout(action: "credits" | "payg" | "subscription", extra?: { packCode?: string; planCode?: string }) {
+    setBusy(action);
+    setHint("");
+    try {
+      const response = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action, ...extra }),
+      });
+      const data = (await response.json()) as { url?: string; error?: string };
+      if (response.ok && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      setHint(data.error ?? "Checkout is not configured yet — open Pricing.");
+    } catch {
+      setHint("Checkout unavailable. Open Pricing instead.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="primary-action"
+        disabled={busy != null}
+        onClick={() => void checkout("credits", { packCode: "credits_100" })}
+      >
+        {busy === "credits" ? "Opening…" : "Buy Usage Credits"}
+      </button>
+      <button
+        type="button"
+        className="app-button secondary"
+        disabled={busy != null || paygEnabled}
+        onClick={() => void checkout("payg")}
+      >
+        {paygEnabled ? "PAYG enabled" : busy === "payg" ? "Opening…" : "Enable PAYG"}
+      </button>
+      <button
+        type="button"
+        className="app-button secondary"
+        disabled={busy != null}
+        onClick={() => void checkout("subscription", { planCode: "team_pro" })}
+      >
+        {busy === "subscription" ? "Opening…" : "Upgrade plan"}
+      </button>
+      <a className="app-button secondary" href="/pricing">
+        View pricing
+      </a>
+      {hint ? <p className="usage-cutoff-hint">{hint}</p> : null}
+    </>
   );
 }

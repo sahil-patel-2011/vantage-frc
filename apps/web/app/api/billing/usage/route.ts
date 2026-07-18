@@ -30,7 +30,20 @@ export async function GET(request: Request) {
       return {
         members: members.rows, models: models.rows, entitlement: entitlement.rows[0] ?? null,
         wallet: wallet.rows[0], policy: policy.rows[0] ?? null,
-        allowancePercent: allowance > 0 ? Math.min(100, (used / allowance) * 100) : null,
+        allowancePercent: allowance > 0 ? Math.min(999, (used / allowance) * 100) : null,
+        cutoff: {
+          planCode: entitlement.rows[0]?.planCode ?? null,
+          includedAllowanceUsd: allowance,
+          usedUsd: used,
+          allowancePercent: allowance > 0 ? Math.min(999, (used / allowance) * 100) : null,
+          walletBalanceUsd: Number(wallet.rows[0]?.balance ?? 0),
+          paygEnabled: Boolean(policy.rows[0]?.paygEnabled),
+          spendCapUsd: policy.rows[0]?.spendCap == null ? null : Number(policy.rows[0].spendCap),
+          killSwitch: Boolean(policy.rows[0]?.killSwitch),
+          monthlySpendUsd: used,
+          monthlySpendLimitUsd: null,
+          warningThresholds: [50, 75, 90],
+        },
       };
     });
     return Response.json(data);
