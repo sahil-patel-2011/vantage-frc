@@ -22,9 +22,19 @@ export function notificationHref(
     case "export_ready":
       return orgId ? `/exports${orgQuery}` : "/exports";
     case "dm_message":
+    case "direct_message":
+    case "message_mention":
     case "org_message":
-    case "message":
+    case "message": {
+      const conversationId =
+        typeof payload.conversationId === "string" && payload.conversationId
+          ? payload.conversationId
+          : null;
+      if (orgId && conversationId) {
+        return `/messages?orgId=${encodeURIComponent(orgId)}&conversationId=${encodeURIComponent(conversationId)}`;
+      }
       return orgId ? `/messages${orgQuery}` : "/messages";
+    }
     case "invite_accepted":
       return orgId ? `/team${orgQuery}` : "/team";
     case "billing":

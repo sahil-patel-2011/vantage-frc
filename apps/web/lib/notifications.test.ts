@@ -15,6 +15,9 @@ describe("notification helpers", () => {
   it("builds org-scoped hrefs for known types", () => {
     expect(notificationHref("export_ready", {}, "org-1")).toBe("/exports?orgId=org-1");
     expect(notificationHref("dm_message", {}, "org-1")).toBe("/messages?orgId=org-1");
+    expect(
+      notificationHref("message_mention", { conversationId: "c1" }, "org-1"),
+    ).toBe("/messages?orgId=org-1&conversationId=c1");
     expect(notificationHref("unknown", {})).toBeNull();
     expect(notificationHref("x", { href: "/custom" })).toBe("/custom");
   });
