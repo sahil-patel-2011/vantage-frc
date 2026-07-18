@@ -106,12 +106,12 @@ export default function TasksClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs="Team / Todos"
-        title="Todos"
+        breadcrumbs="Team / Task board"
+        title="Build-season task board"
         description={
           <>
-            Plan and track build-season work by subsystem — priorities, owners, due dates, and progress. A focused
-            &quot;do next&quot; list surfaces the highest-leverage open tasks.
+            Plan build-season work by subsystem — priorities, owners, due dates, and progress. Separate from Soft-UI
+            Team Todos; this board only shows tasks your org adds (never DEMO lists).
           </>
         }
       >
@@ -323,7 +323,7 @@ function Board({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: 
         badge="Empty board"
         badgeTone="setup"
         title="No tasks yet"
-        description="Add your first build task above to start the board."
+        description="Add your first build task above to start the board. Vantage does not invent DEMO task lists."
       />
     );
   }

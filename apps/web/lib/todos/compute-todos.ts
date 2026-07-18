@@ -140,6 +140,8 @@ export async function computeTodosView(
       message: "Select a team workspace to manage shared todos.",
       steps: [
         { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "calendar", label: "Open Calendar", detail: "Plan due dates and subteams once the workspace is set", href: "/team?tab=calendar" },
+        { id: "messages", label: "Open Messages", detail: "Ask teammates for owners when assignments are unclear", href: "/team?tab=messages" },
       ],
       orgId: null,
     };
@@ -172,6 +174,7 @@ export async function computeTodosView(
       message: "Could not load team todos. Confirm database migrations have been applied.",
       steps: [
         { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
+        { id: "practice", label: "Open Practice", detail: "Drive sessions often create follow-up todos after logs exist", href: "/team?tab=practice" },
       ],
       orgId: org.orgId,
     };

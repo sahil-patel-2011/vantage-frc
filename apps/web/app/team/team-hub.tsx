@@ -10,9 +10,10 @@ import "../attendance/attendance.css";
 import "../practice/practice.css";
 import "./knowledge/knowledge.css";
 import "../batteries/batteries.css";
+import "../todos/todos.css";
 
 const TeamCalendarClient = dynamic(() => import("./calendar/team-calendar-client"), { ssr: false });
-const TasksClient = dynamic(() => import("../tasks/tasks-client"), { ssr: false });
+const TodosClient = dynamic(() => import("../todos/todos-client"), { ssr: false });
 const MessagesClient = dynamic(() => import("../messages/messages-client"), { ssr: false });
 const PracticeClient = dynamic(() => import("../practice/practice-client"), { ssr: false });
 const KnowledgeClient = dynamic(() => import("./knowledge/knowledge-client"), { ssr: false });
@@ -60,7 +61,7 @@ export default function TeamHub() {
     <ProductHubShell hubId="team" headerActions={<TeamAdminLink />}>
       {({ tab, orgId }) => {
         if (tab === "calendar") return <TeamCalendarClient />;
-        if (tab === "todos") return <TasksClient />;
+        if (tab === "todos") return <TodosClient />;
         if (tab === "practice") return <PracticeClient />;
         if (tab === "knowledge") return <KnowledgeClient />;
         if (tab === "attendance") return <AttendanceClient />;

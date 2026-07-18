@@ -45,6 +45,8 @@ describe("product hubs", () => {
       "batteries",
       "fmea",
     ]);
+    expect(hubMoreTabs(team).map((tab) => tab.id)).toContain("task-board");
+    expect(team.tabs.find((tab) => tab.id === "todos")?.legacyHref).toBe("/todos");
   });
 
   it("surfaces Build shop tabs including prototypes", () => {
