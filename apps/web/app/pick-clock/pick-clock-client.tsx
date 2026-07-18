@@ -1,18 +1,28 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { CompetitionHubRelated } from "../../components/competition-hub-related";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import {
-  strategySetupNextActions,
-} from "../../lib/strategy/competition-related";
+  PICK_CLOCK_RELATED_INCLUDE,
+  classifyPickClockShell,
+  formatPickClockMetric,
+  pickClockNextActions,
+  pickClockRelatedLinks,
+  pickClockSetupSteps,
+  pickClockShellCopy,
+  shouldShowPickClockSummaryTiles,
+  type PickClockNextAction,
+  type PickClockShellKind,
+} from "../../lib/strategy/pick-clock-related";
 import {
   clockRemaining,
   clockUrgency,
   PICK_CLOCK_SECONDS,
   type PickClockRecommendation,
 } from "../../lib/strategy/pick-clock";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./pick-clock.css";
 
 type PickClockView =
   | {
@@ -42,6 +52,8 @@ type PickClockView =
       eventKey: string | null;
     };
 
+type Me = { orgId?: string | null };
+
 function teamDisplay(rec: PickClockRecommendation): string {
   if (rec.teamNumber != null) return String(rec.teamNumber);
   return rec.teamKey.replace(/^frc/i, "") || rec.teamKey;
@@ -60,36 +72,221 @@ function ReasonList({ reasons }: { reasons: PickClockRecommendation["reasons"] }
   );
 }
 
+function PickClockRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = pickClockRelatedLinks(orgId, {
+    include: [...PICK_CLOCK_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related pck-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function PickClockNextActionsPanel({ actions }: { actions: PickClockNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions pck-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy, Pick desk, and Chemistry — never DEMO picks.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function PickClockShell({
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  orgId?: string | null;
+  shell: PickClockShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = pickClockNextActions({ orgId, shell });
+  const copy = pickClockShellCopy(shell);
+  const steps = shell === "setup" ? pickClockSetupSteps(orgId) : [];
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
+  const chemistryHref = hubHref("/competition", "chemistry", orgId);
+  const commandHref = hubHref("/competition", "command", orgId);
+  const teamDataHref = withOrgHref("/team/data", orgId);
+
+  return (
+    <main className="module-page app-shell-page pck-page pck-workbench soft-gate">
+      <PageHeader
+        breadcrumbs="Competition / Pick clock"
+        title="Pick Clock"
+        description="Next best pick + why — built for the 45-second alliance selection timer. Never invents DEMO picks or EPA."
+      >
+        <PickClockRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        className="pck-empty"
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No teams left to recommend"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? commandHref : "/workspace"}>
+            {orgId ? "Set active event" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={teamDataHref}>
+              Sync event metrics
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={pickDeskHref}>
+              Open Pick desk
+            </a>
+            <a className="app-button secondary" href={chemistryHref}>
+              Open Chemistry
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="pck-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Strategy, Pick desk, and Chemistry — never DEMO picks.</p>
+          </header>
+          <ul className="pck-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <PickClockNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function PickClockClient() {
+  const [orgId, setOrgId] = useState("");
   const [view, setView] = useState<PickClockView | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [fetchFailed, setFetchFailed] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [skipOffset, setSkipOffset] = useState(0);
 
-  const load = useCallback(async () => {
-    const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("orgId") ?? "";
+    void fetch("/api/me")
+      .then(async (r) => (r.ok ? ((await r.json()) as Me) : null))
+      .then((data) => {
+        if (!data) {
+          setLoading(false);
+          return;
+        }
+        setOrgId(fromUrl || data.orgId || "");
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const load = useCallback(async (id: string) => {
+    if (!id) {
+      setLoading(false);
+      setFetchFailed(false);
+      return;
+    }
+    setLoading(true);
+    setFetchFailed(false);
     try {
       const response = await fetch(
-        `/api/strategy/pick-clock${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`,
+        `/api/strategy/pick-clock?orgId=${encodeURIComponent(id)}`,
       );
       const data = (await response.json()) as PickClockView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load pick clock.");
+        setView(null);
+        setFetchFailed(true);
+        setLoading(false);
         return;
       }
       setError("");
       setView(data);
+      setFetchFailed(false);
       setSkipOffset(0);
+      if (data.status === "ready" && data.orgId) setOrgId(data.orgId);
+      if (data.status === "setup_required" && data.orgId) setOrgId(data.orgId);
     } catch {
       setError("Could not reach the pick clock API.");
+      setView(null);
+      setFetchFailed(true);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!orgId) {
+      setLoading(false);
+      return;
+    }
+    void load(orgId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial / org change only
+  }, [orgId]);
 
   useEffect(() => {
     if (startedAt == null) return;
@@ -100,63 +297,74 @@ export default function PickClockClient() {
   const remaining = clockRemaining(startedAt, now);
   const urgency = clockUrgency(remaining);
 
-  if (!view && !error) {
+  const hasRecommendation =
+    view?.status === "ready" ? Boolean(view.recommendation) : false;
+  const availableCount = view?.status === "ready" ? view.availableCount : 0;
+  const excludedCount = view?.status === "ready" ? view.excludedCount : 0;
+
+  const shell = classifyPickClockShell({
+    loading,
+    fetchFailed,
+    status: view?.status ?? (!orgId && !loading ? "setup_required" : null),
+    orgId: view?.status === "ready" ? view.orgId : view?.orgId ?? (orgId || null),
+    eventKey: view?.status === "ready" ? view.eventKey : view?.eventKey ?? null,
+    hasRecommendation,
+    availableCount,
+  });
+
+  if (shell === "loading" || shell === "error" || shell === "setup") {
     return (
-      <main className="app-shell-page pck-page">
-        <EmptyState title="Loading pick clock…" soft aria-busy />
-      </main>
+      <PickClockShell
+        orgId={
+          view?.status === "ready"
+            ? view.orgId
+            : view?.orgId ?? (orgId || null)
+        }
+        shell={shell}
+        error={
+          shell === "error"
+            ? error || "Could not load pick clock."
+            : shell === "setup" && view?.status === "setup_required" && view.message
+              ? `${view.message} Recommendations stay blank until real event metrics exist — never DEMO picks.`
+              : undefined
+        }
+        onRetry={
+          shell === "error" && orgId
+            ? () => {
+                void load(orgId);
+              }
+            : undefined
+        }
+      />
     );
   }
 
-  if (error || !view) {
-    return (
-      <main className="app-shell-page pck-page">
-        <EmptyState title="Pick clock unavailable" description={error || "Unknown error."} badge="Error" badgeTone="">
-          <button type="button" className="app-button" onClick={() => void load()}>
-            Retry
-          </button>
-        </EmptyState>
-      </main>
-    );
-  }
+  const resolvedOrgId =
+    view?.status === "ready" ? view.orgId : view?.orgId ?? (orgId || null);
+  const strategyHref = hubHref("/competition", "strategy", resolvedOrgId);
+  const pickDeskHref = withOrgHref("/strategy?tab=picks", resolvedOrgId);
+  const chemistryHref = hubHref("/competition", "chemistry", resolvedOrgId);
+  const showTiles = shouldShowPickClockSummaryTiles(availableCount);
+  const readyActions = pickClockNextActions({
+    orgId: resolvedOrgId,
+    shell: hasRecommendation && availableCount > 0 ? "ready" : "empty",
+    eventKey: view?.status === "ready" ? view.eventKey : view?.eventKey,
+    hasRecommendation,
+    availableCount,
+    excludedCount,
+  });
 
-  if (view.status === "setup_required") {
-    const nextActions = strategySetupNextActions({
-      orgId: view.orgId,
-      eventKey: view.eventKey,
-      hasMetrics: false,
-    });
+  if (shell === "empty" || !view || view.status !== "ready") {
     return (
-      <main className="app-shell-page pck-page">
-        <PageHeader
-          navPath="/pick-clock"
-          title="Pick Clock"
-          description="Next best pick + why — built for the 45-second alliance selection timer. Never invents EPA."
-        />
-        <EmptyState
-          title="Setup needed"
-          description={view.message}
-          badge="Setup"
-          badgeTone="setup"
-        >
-          <ol className="strategy-setup-steps pck-setup-steps">
-            {nextActions.slice(0, 5).map((action) => (
-              <li key={action.id}>
-                <div>
-                  <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
-                </div>
-                <a href={action.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-          <CompetitionHubRelated
-            orgId={view.orgId}
-            active="pick-clock"
-            include={["strategy", "scouting", "forms", "match-checklist", "draft", "chemistry"]}
-          />
-        </EmptyState>
-      </main>
+      <PickClockShell
+        orgId={resolvedOrgId}
+        shell="empty"
+        error={
+          excludedCount > 0
+            ? `${excludedCount} already taken on the draft board. Clear slots or refresh after updates — never DEMO picks.`
+            : undefined
+        }
+      />
     );
   }
 
@@ -164,48 +372,69 @@ export default function PickClockClient() {
     ? [view.recommendation, ...view.alternates]
     : [];
   const active = queue[Math.min(skipOffset, Math.max(0, queue.length - 1))] ?? null;
-  const orgQs = `?orgId=${encodeURIComponent(view.orgId)}`;
-  const nextActions = strategySetupNextActions({
-    orgId: view.orgId,
-    eventKey: view.eventKey,
-    tbaConfigured: true,
-    hasMetrics: true,
-  }).filter((action) => ["scouting", "forms", "checklist", "coverage"].includes(action.id));
 
   return (
-    <main className="app-shell-page pck-page">
+    <main className="module-page app-shell-page pck-page pck-workbench">
       <PageHeader
-        navPath="/pick-clock"
+        breadcrumbs="Competition / Pick clock"
         title="Pick Clock"
         description={
           view.eventName
-            ? `${view.eventName} · ${PICK_CLOCK_SECONDS}s selection clock`
-            : `${PICK_CLOCK_SECONDS}-second alliance pick assistant`
+            ? `${view.eventName} · ${PICK_CLOCK_SECONDS}s selection clock — never DEMO picks.`
+            : `${PICK_CLOCK_SECONDS}-second alliance pick assistant — never DEMO picks.`
         }
       >
-        <div className="pck-header-actions">
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
-            Refresh
-          </button>
-          <Link className="app-button secondary" href={`/strategy?tab=picks&orgId=${encodeURIComponent(view.orgId)}`}>
-            Pick desk
-          </Link>
-          <Link className="app-button secondary" href={`/strategy/draft${orgQs}`}>
-            Draft board
-          </Link>
+        <div className="pck-heading">
+          <PickClockRelatedStrip orgId={resolvedOrgId} />
+          <div className="pck-header-actions">
+            <button
+              type="button"
+              className="app-button secondary"
+              onClick={() => {
+                if (resolvedOrgId) void load(resolvedOrgId);
+              }}
+            >
+              Refresh
+            </button>
+            <a className="app-button secondary" href={strategyHref}>
+              Strategy
+            </a>
+            <a className="app-button secondary" href={pickDeskHref}>
+              Pick desk
+            </a>
+            <a className="app-button secondary" href={chemistryHref}>
+              Chemistry
+            </a>
+          </div>
         </div>
       </PageHeader>
 
-      <CompetitionHubRelated
-        orgId={view.orgId}
-        active="pick-clock"
-        include={["strategy", "scouting", "forms", "match-checklist", "chemistry", "draft", "coverage"]}
-      />
+      {error ? <p className="edc-banner error">{error}</p> : null}
+
+      {showTiles ? (
+        <div className="pck-kpis" aria-label="Pick clock counts">
+          <article>
+            <strong>{formatPickClockMetric(availableCount, true)}</strong>
+            <small>available</small>
+          </article>
+          <article>
+            <strong>
+              {formatPickClockMetric(view.scoutedTeams, true)}/
+              {formatPickClockMetric(view.teamCount, true)}
+            </strong>
+            <small>scouted</small>
+          </article>
+          <article>
+            <strong>{formatPickClockMetric(excludedCount, true)}</strong>
+            <small>already taken</small>
+          </article>
+        </div>
+      ) : null}
 
       {view.pickMode === "low_data_tba" ? (
         <p className="pck-mode-banner" role="status">
           <span className="app-badge setup">Low-data TBA</span>
-          {view.pickModeReason ?? "Ranking from TBA/Statbotics until scouting coverage improves."}
+          {view.pickModeReason ?? "Ranking from TBA/Statbotics until scouting coverage improves — never DEMO picks."}
         </p>
       ) : null}
 
@@ -214,7 +443,14 @@ export default function PickClockClient() {
         <strong className="pck-clock-value">{remaining == null ? PICK_CLOCK_SECONDS : remaining}</strong>
         <div className="pck-clock-actions">
           {startedAt == null ? (
-            <button type="button" className="app-button" onClick={() => { setStartedAt(Date.now()); setNow(Date.now()); }}>
+            <button
+              type="button"
+              className="app-button"
+              onClick={() => {
+                setStartedAt(Date.now());
+                setNow(Date.now());
+              }}
+            >
               Start {PICK_CLOCK_SECONDS}s
             </button>
           ) : (
@@ -234,21 +470,27 @@ export default function PickClockClient() {
 
       {!active ? (
         <EmptyState
+          soft
+          className="pck-empty"
           title="No teams left to recommend"
           description={
-            view.excludedCount
-              ? `${view.excludedCount} already taken on the draft board. Clear slots or refresh after updates.`
+            excludedCount
+              ? `${excludedCount} already taken on the draft board. Clear slots or refresh after updates — never DEMO picks.`
               : "Load event metrics or build a pick list on Strategy first — no invented rankings."
           }
-          badge="Empty"
+          badge="No teams left to recommend"
+          badgeTone="setup"
         >
           <div className="pck-setup-links">
-            <Link className="app-button" href={`/strategy?tab=picks&orgId=${encodeURIComponent(view.orgId)}`}>
-              Pick desk
-            </Link>
-            <Link className="app-button secondary" href={`/strategy/draft${orgQs}`}>
-              Draft board
-            </Link>
+            <a className="app-button" href={pickDeskHref}>
+              Open Pick desk
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={chemistryHref}>
+              Open Chemistry
+            </a>
           </div>
         </EmptyState>
       ) : (
@@ -280,15 +522,28 @@ export default function PickClockClient() {
             >
               Show alternate
             </button>
-            <Link
+            <a
               className="app-button secondary"
-              href={`/dossier${orgQs}&team=${encodeURIComponent(active.teamNumber != null ? String(active.teamNumber) : active.teamKey.replace(/^frc/i, ""))}`}
+              href={withOrgHref(
+                `/dossier?team=${encodeURIComponent(
+                  active.teamNumber != null
+                    ? String(active.teamNumber)
+                    : active.teamKey.replace(/^frc/i, ""),
+                )}`,
+                resolvedOrgId,
+              )}
             >
               Dossier
-            </Link>
-            <Link className="app-button secondary" href={`/chemistry${orgQs}&teams=${encodeURIComponent(teamDisplay(active))}`}>
+            </a>
+            <a
+              className="app-button secondary"
+              href={withOrgHref(
+                `/chemistry?teams=${encodeURIComponent(teamDisplay(active))}`,
+                resolvedOrgId,
+              )}
+            >
               Chemistry
-            </Link>
+            </a>
           </div>
         </section>
       )}
@@ -314,31 +569,16 @@ export default function PickClockClient() {
         </section>
       ) : null}
 
-      <section className="pck-next-actions soft-panel" aria-label="Deepen pick explainability">
-        <h3>Next actions</h3>
-        <p className="app-muted">
-          Strengthen “why” lines with real scout depth — never DEMO metrics.
-        </p>
-        <ul className="pck-next-list">
-          {nextActions.map((action) => (
-            <li key={action.id}>
-              <div>
-                <strong>{action.label}</strong>
-                <span>{action.detail}</span>
-              </div>
-              <a className="app-button secondary" href={action.href}>
-                Open
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <PickClockNextActionsPanel actions={readyActions} />
 
       {view.sources.length ? (
         <p className="pck-sources app-muted">
           Signals: {view.sources.join(" · ")}
           {view.pickMode === "low_data_tba" ? " · quick-pick mode" : " · pick-desk scoring"}
-          {view.epaDrifts.length ? ` · ${view.epaDrifts.length} EPA-drift callout${view.epaDrifts.length === 1 ? "" : "s"}` : ""}
+          {view.epaDrifts.length
+            ? ` · ${view.epaDrifts.length} EPA-drift callout${view.epaDrifts.length === 1 ? "" : "s"}`
+            : ""}
+          {" · never DEMO picks"}
         </p>
       ) : null}
     </main>
