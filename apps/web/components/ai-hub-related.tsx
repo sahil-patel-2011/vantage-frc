@@ -11,6 +11,7 @@ const AI_TABS = [
   { id: "memory", label: "Memory" },
   { id: "governance", label: "Governance" },
   { id: "finance", label: "Finance" },
+  { id: "usage", label: "Usage" },
 ] as const;
 
 const CROSS_HUB = [

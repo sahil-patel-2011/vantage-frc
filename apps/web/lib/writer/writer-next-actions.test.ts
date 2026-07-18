@@ -27,7 +27,7 @@ describe("writerNextActions Soft-UI helpers", () => {
       hasAchievements: true,
     });
     expect(actions.map((a) => a.id)).toEqual(["grants", "awards", "knowledge"]);
-    expect(actions.find((a) => a.id === "grants")?.href).toBe("/team/grants?orgId=org-1");
+    expect(actions.find((a) => a.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
     expect(actions.find((a) => a.id === "awards")?.href).toBe("/team/awards?orgId=org-1");
     expect(actions.find((a) => a.id === "knowledge")?.href).toBe("/team?tab=knowledge&orgId=org-1");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
@@ -42,8 +42,19 @@ describe("writerNextActions Soft-UI helpers", () => {
       hasAchievements: true,
     });
     expect(actions[0]).toMatchObject({ id: "compose", primary: true });
+    expect(actions[0]?.href).toBe("/ai?tab=writer&orgId=org-1");
     expect(actions.map((a) => a.id)).toContain("grants");
     expect(actions.map((a) => a.id)).toContain("awards");
     expect(actions.map((a) => a.id)).toContain("knowledge");
+  });
+
+  it("routes thin-profile handoff into the AI hub Writer tab", () => {
+    const actions = writerNextActions({
+      orgId: "org-1",
+      draftCount: 0,
+      hasMission: false,
+      hasAchievements: true,
+    });
+    expect(actions[0]).toMatchObject({ id: "profile", href: "/ai?tab=writer&orgId=org-1", primary: true });
   });
 });
