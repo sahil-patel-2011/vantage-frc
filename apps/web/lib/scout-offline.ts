@@ -99,11 +99,22 @@ export async function pendingCounts(): Promise<{ entries: number; media: number 
   return { entries, media };
 }
 
-export async function syncOutbox(orgId: string): Promise<number> {
-  if (!navigator.onLine) return 0;
+export async function syncOutbox(orgId: string): Promise<{
+  count: number;
+  validations: Array<{
+    fieldKey: string;
+    status: string;
+    scoutValue: unknown;
+    officialValue: unknown;
+    officialSource: string;
+    detail: string;
+    soft?: boolean;
+  }>;
+}> {
+  if (!navigator.onLine) return { count: 0, validations: [] };
   const objectStore = await store("readwrite", OUTBOX);
   const entries = await requestValue<SyncEntry[]>(objectStore.getAll());
-  if (!entries.length) return 0;
+  if (!entries.length) return { count: 0, validations: [] };
   const response = await fetch("/api/scouting/sync", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -111,13 +122,25 @@ export async function syncOutbox(orgId: string): Promise<number> {
   });
   if (!response.ok) throw new Error((await response.json()).error ?? "Sync failed");
   const result = (await response.json()) as {
-    acknowledgements: Array<{ clientId: string }>;
+    acknowledgements: Array<{
+      clientId: string;
+      validations?: Array<{
+        fieldKey: string;
+        status: string;
+        scoutValue: unknown;
+        officialValue: unknown;
+        officialSource: string;
+        detail: string;
+        soft?: boolean;
+      }>;
+    }>;
   };
+  const validations = result.acknowledgements.flatMap((ack) => ack.validations ?? []);
   for (const acknowledgement of result.acknowledgements) {
     const deleteStore = await store("readwrite", OUTBOX);
     await requestValue(deleteStore.delete(acknowledgement.clientId));
   }
-  return result.acknowledgements.length;
+  return { count: result.acknowledgements.length, validations };
 }
 
 export async function syncMediaOutbox(orgId: string): Promise<number> {

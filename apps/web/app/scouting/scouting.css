@@ -1,0 +1,13 @@
+.scout-official-flags{display:grid;gap:8px;margin:12px 0;padding:12px 14px;border:1px solid color-mix(in srgb,var(--app-warning,#b45309) 45%,var(--soft-line,#d7dde7));border-radius:12px;background:color-mix(in srgb,var(--app-warning,#b45309) 8%,var(--soft-card,#fff))}
+.scout-official-flags ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.scout-official-flags li{display:grid;gap:2px}
+.scout-official-flags li[data-status="conflict"] b{color:#a23a2c}
+.scout-official-flags li[data-soft="true"] b{color:#8a6a1a}
+.scout-official-flags span,.scout-official-flags small{font-size:12px;color:var(--soft-muted,#667085)}
+.scout-field-wrap{display:grid;gap:4px}
+.scout-field-wrap.is-conflict{padding:8px;margin:0 -8px;border-radius:12px;background:color-mix(in srgb,#dc786f 10%,transparent)}
+.scout-field-wrap.is-soft{padding:8px;margin:0 -8px;border-radius:12px;background:color-mix(in srgb,#d9a742 10%,transparent)}
+.scout-field-wrap.is-match .scout-field-flag{color:#2f6b45}
+.scout-field-flag{margin:0;font-size:12px;line-height:1.35;color:var(--soft-muted,#667085)}
+.scout-field-flag.conflict{color:#a23a2c}
+.scout-field-flag.soft{color:#8a6a1a}

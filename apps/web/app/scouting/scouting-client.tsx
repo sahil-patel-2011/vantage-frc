@@ -54,6 +54,16 @@ type SpeechRecognitionLike = {
 
 type ScoutTab = "match" | "pit" | "conflicts";
 
+type OfficialFlag = {
+  fieldKey: string;
+  status: string;
+  scoutValue: unknown;
+  officialValue: unknown;
+  officialSource: string;
+  detail: string;
+  soft?: boolean;
+};
+
 export default function ScoutingClient({ orgId }: { orgId: string }) {
   const searchParams = useSearchParams();
   const [data, setData] = useState<Bootstrap | null>(null);
@@ -68,6 +78,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   const [counts, setCounts] = useState({ entries: 0, media: 0 });
   const [message, setMessage] = useState("");
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
+  const [officialFlags, setOfficialFlags] = useState<OfficialFlag[]>([]);
   const [formulaName, setFormulaName] = useState("");
   const [formulaWeights, setFormulaWeights] = useState<Record<string, number>>({});
   const [showFormula, setShowFormula] = useState(false);
@@ -80,12 +91,35 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
     try {
       const entries = await syncOutbox(orgId);
       const media = await syncMediaOutbox(orgId);
-      if (entries || media) setMessage(`Synced ${entries} entries and ${media} media files`);
+      if (entries.validations.length) setOfficialFlags(entries.validations);
+      if (entries.count || media) {
+        const conflictCount = entries.validations.filter((flag) => flag.status === "conflict").length;
+        setMessage(
+          conflictCount
+            ? `Synced ${entries.count} entries · ${conflictCount} TBA contradiction${conflictCount === 1 ? "" : "s"} flagged`
+            : `Synced ${entries.count} entries and ${media} media files`,
+        );
+      }
       await refreshCounts();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Sync paused");
     }
   }, [orgId, refreshCounts]);
+
+  const flagsByField = useMemo(() => {
+    const map = new Map<string, OfficialFlag[]>();
+    for (const flag of officialFlags) {
+      const list = map.get(flag.fieldKey) ?? [];
+      list.push(flag);
+      map.set(flag.fieldKey, list);
+    }
+    return map;
+  }, [officialFlags]);
+
+  const liveConflicts = useMemo(
+    () => officialFlags.filter((flag) => flag.status === "conflict" || (flag.soft && flag.detail)),
+    [officialFlags],
+  );
 
   useEffect(() => {
     setOnline(navigator.onLine);
@@ -477,11 +511,35 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
               </FormRow>
             )}
 
+            {liveConflicts.length ? (
+              <div className="scout-official-flags" role="status">
+                <strong>Live official checks</strong>
+                <ul>
+                  {liveConflicts.map((flag) => (
+                    <li
+                      key={`${flag.fieldKey}-${flag.officialSource}-${flag.status}`}
+                      data-status={flag.status}
+                      data-soft={flag.soft ? "true" : "false"}
+                    >
+                      <b>{flag.fieldKey}</b>
+                      <span>{flag.detail}</span>
+                      {flag.status === "conflict" ? (
+                        <small>
+                          Scout {JSON.stringify(flag.scoutValue)} · Official {JSON.stringify(flag.officialValue)}
+                        </small>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
             {schema?.definition.fields.map((field) => (
               <Field
                 key={field.key}
                 field={field}
                 value={payload[field.key]}
+                flags={flagsByField.get(field.key) ?? []}
                 onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))}
               />
             ))}
@@ -617,42 +675,60 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
 function Field({
   field,
   value,
+  flags,
   onChange,
 }: {
   field: SchemaDefinition["fields"][number];
   value: unknown;
+  flags: OfficialFlag[];
   onChange(value: unknown): void;
 }) {
-  if (field.type === "boolean") {
-    return (
-      <label className="soft-form-row check-field">
-        <span className="app-muted">{field.label}</span>
-        <input type="checkbox" checked={Boolean(value)} onChange={(event) => onChange(event.target.checked)} />
-      </label>
-    );
-  }
-  if (field.type === "select") {
+  const conflict = flags.find((flag) => flag.status === "conflict");
+  const soft = flags.find((flag) => flag.soft);
+  const hint = conflict?.detail ?? soft?.detail;
+  const tone = conflict ? "conflict" : soft ? "soft" : flags.some((flag) => flag.status === "match") ? "match" : undefined;
+  const body = (() => {
+    if (field.type === "boolean") {
+      return (
+        <label className="soft-form-row check-field">
+          <span className="app-muted">{field.label}</span>
+          <input type="checkbox" checked={Boolean(value)} onChange={(event) => onChange(event.target.checked)} />
+        </label>
+      );
+    }
+    if (field.type === "select") {
+      return (
+        <FormRow label={field.label}>
+          <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
+            <option value="">Select…</option>
+            {field.options?.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
+        </FormRow>
+      );
+    }
     return (
       <FormRow label={field.label}>
-        <select value={String(value ?? "")} onChange={(event) => onChange(event.target.value)}>
-          <option value="">Select…</option>
-          {field.options?.map((option) => (
-            <option key={option}>{option}</option>
-          ))}
-        </select>
+        <input
+          type={field.type === "number" ? "number" : "text"}
+          value={String(value ?? "")}
+          required={field.required}
+          onChange={(event) =>
+            onChange(field.type === "number" ? event.target.valueAsNumber : event.target.value)
+          }
+        />
       </FormRow>
     );
-  }
+  })();
   return (
-    <FormRow label={field.label}>
-      <input
-        type={field.type === "number" ? "number" : "text"}
-        value={String(value ?? "")}
-        required={field.required}
-        onChange={(event) =>
-          onChange(field.type === "number" ? event.target.valueAsNumber : event.target.value)
-        }
-      />
-    </FormRow>
+    <div className={`scout-field-wrap${tone ? ` is-${tone}` : ""}`}>
+      {body}
+      {hint ? (
+        <p className={`scout-field-flag ${tone ?? ""}`} role="status">
+          {hint}
+        </p>
+      ) : null}
+    </div>
   );
 }
