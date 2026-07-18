@@ -1,0 +1,113 @@
+/* Soft-UI Scout Disagreements — .scout-disagreements-* + shared Soft-UI tokens. Never DEMO conflicts. */
+.scout-disagreements-page{
+  max-width:1120px;
+  margin:0 auto;
+  padding:clamp(18px,3vw,32px) 16px 40px;
+  display:grid;
+  gap:18px;
+}
+.scout-disagreements-header-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  justify-content:flex-end;
+}
+.scout-disagreements-related{display:flex;flex-wrap:wrap;gap:8px}
+.scout-disagreements-next-actions{margin:0}
+.scout-disagreements-tip{margin:0}
+.scout-disagreements-setup-steps{
+  list-style:none;padding:0;margin:0;display:grid;gap:10px;
+}
+.scout-disagreements-setup-steps li{
+  display:flex;justify-content:space-between;gap:12px;align-items:center;
+}
+.scout-disagreements-footer-links{margin:0}
+.scout-disagreements-season{
+  display:flex;flex-wrap:wrap;gap:14px;align-items:end;
+  padding:14px 16px;
+  border:1px solid var(--soft-line,#d5dde8);
+  border-radius:var(--soft-radius,16px);
+  background:var(--soft-card,#fff);
+  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+}
+.scout-disagreements-season label{
+  display:grid;gap:6px;
+  font:600 12px var(--font-source-sans),ui-sans-serif;
+  color:var(--soft-muted,#5a6578);
+}
+.scout-disagreements-season select{
+  min-height:40px;min-width:120px;padding:0 12px;
+  border:1px solid var(--soft-line,#d5dde8);
+  border-radius:12px;background:#fff;color:var(--soft-ink,#132033);
+}
+.scout-disagreements-kpis{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px;
+}
+.scout-disagreements-kpis article{
+  display:grid;gap:4px;
+  padding:16px;
+  border:1px solid var(--soft-line,#d5dde8);
+  border-radius:var(--soft-radius-sm,12px);
+  background:var(--soft-card,#fff);
+  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+}
+.scout-disagreements-kpis span,.scout-disagreements-kpis small{
+  color:var(--soft-muted,#5a6578);
+  font:700 10px/1.2 var(--font-ibm-mono),ui-monospace,monospace;
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.scout-disagreements-kpis strong{
+  font-size:clamp(24px,3.6vw,32px);
+  letter-spacing:-.03em;color:var(--soft-ink,#132033);
+}
+.scout-disagreements-panel{
+  padding:16px 18px;
+  border:1px solid var(--soft-line,#d5dde8);
+  border-radius:var(--soft-radius,16px);
+  background:var(--soft-card,#fff);
+  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+}
+.scout-disagreements-panel header{margin-bottom:12px}
+.scout-disagreements-panel h2{
+  margin:0 0 4px;font-size:18px;letter-spacing:-.02em;color:var(--soft-ink,#132033);
+}
+.scout-disagreements-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.scout-disagreements-list li{
+  display:grid;gap:8px;
+  padding:12px 14px;border-radius:12px;border:1px solid var(--soft-line,#d5dde8);
+  background:#f8fafc;
+}
+.scout-disagreements-list strong{font-size:15px;color:var(--soft-ink,#132033)}
+.scout-disagreements-list small{display:block;color:var(--soft-muted,#5a6578);font-size:12px;margin-top:2px}
+.scout-disagreements-row-head{
+  display:flex;justify-content:space-between;gap:8px;align-items:flex-start;
+}
+.scout-disagreements-actions{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+}
+.scout-disagreements-actions select,
+.scout-disagreements-actions input{
+  min-height:40px;padding:0 12px;
+  border:1px solid var(--soft-line,#d5dde8);
+  border-radius:12px;background:#fff;color:var(--soft-ink,#132033);
+}
+.scout-disagreements-actions input{flex:1;min-width:160px}
+.scout-disagreements-form{display:grid;gap:10px}
+.scout-disagreements-audit{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.scout-disagreements-audit li{
+  display:flex;justify-content:space-between;gap:8px;
+  padding:8px 0;border-bottom:1px solid var(--soft-line,#e6ebf2);
+}
+.scout-disagreements-audit li:last-child{border-bottom:0}
+@media (max-width:900px){
+  .scout-disagreements-header-meta{justify-content:flex-start}
+  .scout-disagreements-next-actions li,.scout-disagreements-setup-steps li{flex-direction:column;align-items:stretch}
+  .scout-disagreements-kpis{grid-template-columns:1fr 1fr}
+}
+@media (max-width:520px){
+  .scout-disagreements-kpis{grid-template-columns:1fr}
+  .scout-disagreements-row-head{flex-direction:column}
+}
