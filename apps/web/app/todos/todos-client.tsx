@@ -1,5 +1,9 @@
 "use client";
 
+import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
+
+import { OfflineBanner } from "../../components/offline-banner";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
@@ -25,6 +29,9 @@ function withOrg(href: string, orgId: string | null) {
 }
 
 export default function TodosClient() {
+  const online = useOnline();
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [view, setView] = useState<TodosView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -66,6 +73,10 @@ export default function TodosClient() {
   const mutate = useCallback<Mutate>(
     (payload) => {
       if (!orgId || busy) return;
+      if (!navigator.onLine) {
+        setError("You're offline — changes will save when you reconnect.");
+        return;
+      }
       setBusy(true);
       setError("");
       void fetch("/api/todos", {
@@ -106,6 +117,7 @@ export default function TodosClient() {
         ) : null}
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="todos" />
+      <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
