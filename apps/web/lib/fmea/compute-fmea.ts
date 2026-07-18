@@ -1,4 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery-reliability";
+import { loadBatteryFleet } from "../load-battery-fleet";
 import { evaluateFailure, summarizeFailures } from ".";
 import type {
   FmeaContext,
@@ -35,6 +37,8 @@ export type FmeaView =
       summary: FmeaSummary;
       /** CD #42 — subsystems with >=2 failures this season. */
       repeatAlerts: RepeatFailureAlert[];
+      /** CD #48 — battery fleet reliability feeding FMEA (evidence-only). */
+      batterySignals: BatteryFmeaSignal[];
       subsystems: SubsystemOption[];
       inspectionItems: InspectionOption[];
       computedAt: string;
@@ -129,7 +133,7 @@ export async function computeFmeaView(
     };
   }
 
-  const [failureResult, seasonResult, subsystemResult, inspectionResult] = await Promise.all([
+  const [failureResult, seasonResult, subsystemResult, inspectionResult, fleet] = await Promise.all([
     client.query<FailureRow>(
       `SELECT f.id, f.title, f.failure_mode AS "failureMode", f.context,
               f.subsystem_id AS "subsystemId", f.subsystem_name AS "subsystemName",
@@ -165,12 +169,14 @@ export async function computeFmeaView(
        LIMIT 100`,
       [org.orgId],
     ),
+    loadBatteryFleet(client, org.orgId),
   ]);
 
   const failures = failureResult.rows.map(mapFailure);
   const evaluations = failures.map((failure) => evaluateFailure(failure));
   const summary = summarizeFailures(failures);
   const repeatAlerts = detectRepeatFailures(failures, { seasonYear });
+  const batterySignals = batteryFmeaSignals(fleet, org.orgId);
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
@@ -183,6 +189,7 @@ export async function computeFmeaView(
     evaluations,
     summary,
     repeatAlerts,
+    batterySignals,
     subsystems: subsystemResult.rows,
     inspectionItems: inspectionResult.rows,
     computedAt: new Date().toISOString(),

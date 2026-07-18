@@ -145,6 +145,7 @@ export default function RisksClient() {
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <SummaryTiles view={view} />
+          <BatteryReliabilitySignals view={view} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, alignItems: "start" }}>
             <RiskMatrix view={view} />
             <TopRisks view={view} />
@@ -154,6 +155,31 @@ export default function RisksClient() {
         </div>
       )}
     </main>
+  );
+}
+
+
+function BatteryReliabilitySignals({ view }: { view: LiveView }) {
+  if (!view.batterySignals?.length) return null;
+  return (
+    <Panel>
+      <h2 style={{ marginTop: 0 }}>Battery reliability signals</h2>
+      <p className="app-muted" style={{ marginTop: 0 }}>
+        From the canonical battery fleet — add as a formal risk when the failure mode is season-relevant.
+      </p>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 10 }}>
+        {view.batterySignals.map((signal) => (
+          <li key={signal.id} style={{ borderTop: "1px solid var(--app-border, #e5e7eb)", paddingTop: 10 }}>
+            <strong>{signal.title}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              L{signal.likelihood} × I{signal.impact} · {signal.category}
+            </span>
+            <span style={{ display: "block" }}>{signal.detail}</span>
+            <a href={signal.href}>Open Batteries</a>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }
 

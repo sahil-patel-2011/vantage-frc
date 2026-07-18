@@ -11,6 +11,7 @@ import {
   type BatteryStatus,
   type HealthStatus,
 } from "../../../lib/battery";
+import { ensureBatteryRetireFailure } from "../../../lib/battery-fmea";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -233,13 +234,24 @@ export async function POST(request: Request) {
         }
 
         case "log_event": {
-          const pack = await client.query(`SELECT 1 FROM battery_packs WHERE id = $1 AND org_id = $2`, [action.batteryId, action.orgId]);
+          const pack = await client.query<{ label: string }>(
+            `SELECT label FROM battery_packs WHERE id = $1 AND org_id = $2`,
+            [action.batteryId, action.orgId],
+          );
           if (!pack.rowCount) throw new HttpError(404, "Battery not found");
           const inserted = await client.query<{ id: string }>(
             `INSERT INTO battery_logs (org_id, battery_id, kind, resting_voltage, internal_resistance_mohm, match_key, note, logged_by)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
             [action.orgId, action.batteryId, action.kind, action.restingVoltage, action.internalResistanceMohm, action.matchKey, action.note, userId],
           );
+          if (action.internalResistanceMohm != null) {
+            await ensureBatteryRetireFailure(client, {
+              orgId: action.orgId,
+              userId,
+              label: pack.rows[0]!.label,
+              resistanceMohm: action.internalResistanceMohm,
+            });
+          }
           return { id: inserted.rows[0]!.id };
         }
 
