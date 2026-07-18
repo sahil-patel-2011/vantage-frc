@@ -1,0 +1,59 @@
+/* Robot Inspection — co-located so styling survives independently of the shared
+   global stylesheet. All selectors are .insp-* prefixed and theme-aware. */
+.insp-page input,.insp-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.insp-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.app-button.sm{min-height:32px;padding:5px 12px;font-size:11px}
+.insp-empty{display:grid;gap:12px;justify-items:start;padding:26px}
+.insp-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
+.insp-link.danger{color:var(--app-critical)}
+.insp-summary{display:grid;grid-template-columns:1.3fr .7fr;gap:12px;margin-bottom:16px}
+.insp-summary-tile{display:grid;gap:6px;padding:16px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
+.insp-summary-tile strong{font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+.insp-summary-tile span{color:var(--app-muted);font-size:11px}
+.insp-summary-tile.warn strong{color:var(--app-critical)}
+.insp-track{display:block;height:7px;background:var(--app-soft);border-radius:999px;overflow:hidden}
+.insp-track i{display:block;height:100%;background:var(--app-positive)}
+.insp-track i.warn{background:var(--app-warning)}
+.insp-layout{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;align-items:start}
+.insp-panel{display:grid;gap:12px;align-content:start;min-width:0}
+.insp-group h2{margin:0 0 10px;font-size:15px}
+.insp-group ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+.insp-item{display:grid;gap:5px;padding:9px 0;border-top:1px solid var(--app-line)}
+.insp-item-main{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.insp-req{font-size:13px;min-width:0}
+.insp-item.s-pass .insp-req{color:var(--app-muted)}
+.insp-item.s-fail .insp-req{color:var(--app-critical);font-weight:600}
+.insp-custom{font-style:normal;margin-left:6px;padding:1px 6px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:999px;font-size:9px;font-weight:800;color:var(--app-muted);text-transform:uppercase}
+.insp-buttons{display:flex;align-items:center;gap:5px;flex:none}
+.insp-btn{min-height:30px;padding:4px 10px;border-radius:7px;border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-muted);font-size:11px;font-weight:800;cursor:pointer}
+.insp-btn.pass.active{color:#fff;background:var(--app-positive);border-color:var(--app-positive)}
+.insp-btn.fail.active{color:#fff;background:var(--app-critical);border-color:var(--app-critical)}
+.insp-btn.na.active{color:var(--app-ink);background:var(--app-soft);border-color:var(--app-muted)}
+.insp-meta{color:var(--app-muted);font-size:10px}
+.insp-note-form{display:flex;gap:8px}
+.insp-note-form input{flex:1}
+.insp-add h2{margin:0 0 10px;font-size:15px}
+.insp-add-row{display:flex;gap:8px;flex-wrap:wrap}
+.insp-add-row input:first-child{width:170px}
+.insp-add-row input:nth-child(2){flex:1;min-width:200px}
+.insp-tools{display:flex;gap:16px;margin-top:12px}
+.insp-weigh h2{margin:0 0 10px;font-size:15px}
+.insp-weigh-form,.insp-limit-form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.insp-weigh-form input[type=number],.insp-limit-form input{width:120px}
+.insp-weigh-form input:not([type=number]){flex:1;min-width:130px}
+.insp-weights{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.insp-weights li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;background:var(--app-bg);border:1px solid var(--app-line);border-radius:10px;font-size:13px}
+.insp-weights li.over{border-color:var(--app-critical)}
+.insp-weights li.over b{color:var(--app-critical)}
+.insp-weights b{font-variant-numeric:tabular-nums}
+@media(max-width:900px){.insp-layout,.insp-summary{grid-template-columns:1fr}.insp-item-main{flex-direction:column;align-items:flex-start}}
+
+/* AI insight panel (shared .aii-* contract used by components/ai-insight-panel) */
+.aii-panel{display:grid;gap:10px;margin-top:16px}
+.aii-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.aii-head h2{margin:0 0 4px;font-size:15px}
+.aii-head h2 span{color:var(--app-accent)}
+.aii-head p{margin:0;font-size:12px;max-width:520px}
+.aii-error{margin:0;color:var(--app-critical);font-size:12px;font-weight:600}
+.aii-text{margin:0;padding:12px 14px;background:var(--app-bg);border:1px solid var(--app-line);border-left:3px solid var(--app-accent);border-radius:10px;font-size:13px;line-height:1.6;white-space:pre-wrap}
+.aii-meta{color:var(--app-muted);font-size:10px}
