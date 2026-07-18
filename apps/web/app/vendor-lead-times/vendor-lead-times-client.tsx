@@ -1,13 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { reorderStatusLabel, reorderUrgencyLabel } from "../../lib/vendor-lead-times";
 import type { VendorLeadTimesView } from "../../lib/vendor-lead-times/compute-vendor-lead-times";
+import {
+  VENDOR_LEAD_TIMES_RELATED_INCLUDE,
+  classifyVendorLeadTimesShell,
+  formatVendorLeadTimesMetric,
+  shouldShowVendorLeadTimesSummaryTiles,
+  vendorLeadTimesNextActions,
+  vendorLeadTimesRelatedLinks,
+  vendorLeadTimesShellCopy,
+  type VendorLeadTimesNextAction,
+  type VendorLeadTimesShellKind,
+} from "../../lib/vendor-lead-times/vendor-lead-times-related";
 import type { ReorderStatus, ReorderUrgency } from "../../lib/vendor-lead-times/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./vendor-lead-times.css";
 
 function urgencyTone(urgency: ReorderUrgency): string {
-  if (urgency === "overdue") return "demo";
+  if (urgency === "overdue") return "danger";
   if (urgency === "due_soon") return "setup";
   if (urgency === "resolved") return "";
   return "good";
@@ -15,13 +29,137 @@ function urgencyTone(urgency: ReorderUrgency): string {
 
 type LiveView = Extract<VendorLeadTimesView, { status: "live" }>;
 
+function VendorLeadTimesRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = vendorLeadTimesRelatedLinks(orgId, {
+    include: [...VENDOR_LEAD_TIMES_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related vendor-lead-times-related" aria-label="Related procurement tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function VendorLeadTimesNextActionsPanel({ actions }: { actions: VendorLeadTimesNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions vendor-lead-times-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Orders, Spare Forecast, and Vendors — never DEMO reorder metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function VendorLeadTimesShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: VendorLeadTimesShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = vendorLeadTimesNextActions({ orgId, shell });
+  const copy = vendorLeadTimesShellCopy(shell);
+  const businessHref = hubHref("/business", "vendor-lead-times", orgId);
+  const ordersHref = hubHref("/business", "orders", orgId);
+  const spareHref = hubHref("/build", "spare-forecast", orgId);
+  const vendorsHref = withOrgHref("/vendors", orgId);
+
+  return (
+    <main className="module-page vendor-lead-times-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={businessHref}>Business</a>
+            {" / Vendor Lead Times"}
+          </>
+        }
+        title="Vendor Lead Times"
+        description={description}
+      >
+        <VendorLeadTimesRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No vendors yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={ordersHref}>
+              Open Orders
+            </a>
+            <a className="app-button secondary" href={spareHref}>
+              Open Spare Forecast
+            </a>
+            <a className="app-button secondary" href={vendorsHref}>
+              Open Vendors
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      <VendorLeadTimesNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function VendorLeadTimesClient() {
   const [view, setView] = useState<VendorLeadTimesView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -45,6 +183,34 @@ export default function VendorLeadTimesClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const vendorCount = view?.status === "live" ? view.vendors.length : 0;
+  const openReorderCount = view?.status === "live" ? view.summary.totalOpen : 0;
+  const overdueCount = view?.status === "live" ? view.summary.overdueCount : 0;
+
+  const shell = classifyVendorLeadTimesShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    vendorCount,
+  });
+  const shellCopy = vendorLeadTimesShellCopy(shell);
+  const nextActions = vendorLeadTimesNextActions({
+    orgId,
+    shell,
+    vendorCount,
+    openReorderCount,
+    overdueCount,
+  });
+  const relatedLinks = vendorLeadTimesRelatedLinks(orgId, {
+    include: [...VENDOR_LEAD_TIMES_RELATED_INCLUDE],
+  });
+  const businessHref = hubHref("/business", "vendor-lead-times", orgId);
+  const ordersHref = hubHref("/business", "orders", orgId);
+  const spareHref = hubHref("/build", "spare-forecast", orgId);
+  const vendorsHref = withOrgHref("/vendors", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -72,38 +238,32 @@ export default function VendorLeadTimesClient() {
     [orgId, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
-            {" / Vendor Lead Times"}
-          </>
-        }
-        title="Vendor Lead Times"
-        description="Track vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time."
+  if (shell === "loading") {
+    return (
+      <VendorLeadTimesShell description={shellCopy.description} orgId={null} shell="loading" />
+    );
+  }
+
+  if (shell === "error") {
+    return (
+      <VendorLeadTimesShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
       />
+    );
+  }
 
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Vendor Lead Times"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+  if (shell === "setup") {
+    return (
+      <VendorLeadTimesShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      >
+        {view?.status === "setup_required" && view.steps.length > 0 ? (
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -115,25 +275,84 @@ export default function VendorLeadTimesClient() {
               </li>
             ))}
           </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <AddVendorForm busy={busy} mutate={mutate} />
-          {view.vendors.length > 0 ? (
-            <AddReorderForm view={view} busy={busy} mutate={mutate} />
-          ) : (
-            <EmptyState
-              badge="No vendors yet"
-              badgeTone="setup"
-              title="Add a vendor to start tracking reorders"
-              description="Once a vendor has a lead time, you can log reorders and see order-by dates."
-            />
-          )}
-          <VendorList view={view} busy={busy} mutate={mutate} />
-          <ReorderList view={view} busy={busy} mutate={mutate} />
+        ) : null}
+      </VendorLeadTimesShell>
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <VendorLeadTimesShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
+  return (
+    <main className="module-page vendor-lead-times-page">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={businessHref}>Business</a>
+            {" / Vendor Lead Times"}
+          </>
+        }
+        title="Vendor Lead Times"
+        description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time. Cross-check Orders, Spare Forecast, and Vendors — never DEMO reorder metrics."
+      >
+        <div className="vendor-lead-times-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
-      )}
+      </PageHeader>
+
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <VendorLeadTimesNextActionsPanel actions={nextActions} />
+
+      {shouldShowVendorLeadTimesSummaryTiles(vendorCount) ? (
+        <SummaryTiles view={view} />
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No vendors yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href={ordersHref}>
+            Open Orders
+          </a>
+          <a className="app-button secondary" href={spareHref}>
+            Open Spare Forecast
+          </a>
+          <a className="app-button secondary" href={vendorsHref}>
+            Open Vendors
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div className="vendor-lead-times-layout">
+        <AddVendorForm busy={busy} mutate={mutate} />
+        {view.vendors.length > 0 ? (
+          <AddReorderForm view={view} busy={busy} mutate={mutate} />
+        ) : null}
+        <VendorList view={view} busy={busy} mutate={mutate} />
+        <ReorderList view={view} busy={busy} mutate={mutate} />
+        <Panel className="vendor-lead-times-tip" aria-label="Vendor lead times tip">
+          <span className="eyebrow">Procurement path</span>
+          <p className="app-muted" style={{ marginTop: 8 }}>
+            Place due reorders through <a href={ordersHref}>Orders</a>, align restock windows with{" "}
+            <a href={spareHref}>Spare Forecast</a>, and keep contacts in <a href={vendorsHref}>Vendors</a>{" "}
+            — never invent DEMO lead times, order-by dates, or urgency counts.
+          </p>
+        </Panel>
+      </div>
     </main>
   );
 }
@@ -141,23 +360,23 @@ export default function VendorLeadTimesClient() {
 function SummaryTiles({ view }: { view: LiveView }) {
   const { summary } = view;
   const tiles = [
-    { label: "Vendors", value: String(view.vendors.length) },
-    { label: "Open reorders", value: String(summary.totalOpen) },
-    { label: "Overdue", value: String(summary.overdueCount) },
-    { label: "Due soon", value: String(summary.dueSoonCount) },
-    { label: "On track", value: String(summary.okCount) },
+    { label: "Vendors", value: formatVendorLeadTimesMetric(view.vendors.length, true) },
+    { label: "Open reorders", value: formatVendorLeadTimesMetric(summary.totalOpen, true) },
+    { label: "Overdue", value: formatVendorLeadTimesMetric(summary.overdueCount, true) },
+    { label: "Due soon", value: formatVendorLeadTimesMetric(summary.dueSoonCount, true) },
+    { label: "On track", value: formatVendorLeadTimesMetric(summary.okCount, true) },
   ];
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <section className="vendor-lead-times-stats" aria-label="Real vendor and reorder counts">
+      {tiles.map((tile) => (
+        <div key={tile.label}>
+          <strong>{tile.value}</strong>
+          <span className="app-muted" style={{ display: "block" }}>
+            {tile.label}
+          </span>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -178,6 +397,7 @@ function AddVendorForm({
 
   return (
     <Panel
+      id="vendor-lead-times-add-vendor"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -194,6 +414,9 @@ function AddVendorForm({
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add vendor</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Lead time and safety buffer come from real supplier quotes — never DEMO shipping days.
+      </p>
       <FormGrid min={160}>
         <FormRow label="Vendor name">
           <input value={form.name} onChange={set("name")} placeholder="AndyMark" required />
@@ -236,6 +459,7 @@ function AddReorderForm({
 
   return (
     <Panel
+      id="vendor-lead-times-add-reorder"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -253,6 +477,9 @@ function AddReorderForm({
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Log reorder</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Order-by date = needed-by minus lead time and safety buffer — never invent DEMO dates.
+      </p>
       <FormGrid min={160}>
         <FormRow label="Vendor">
           <select value={form.vendorId} onChange={set("vendorId")} required>
@@ -302,9 +529,9 @@ function VendorList({
   return (
     <Panel>
       <h2 style={{ marginTop: 0 }}>Vendors</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul className="vendor-lead-times-list">
         {view.vendors.map((vendor) => (
-          <li key={vendor.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={vendor.id} className="vendor-lead-times-row">
             <div>
               <strong>{vendor.name}</strong>
               <small className="app-muted" style={{ display: "block" }}>
@@ -342,20 +569,23 @@ function ReorderList({
 }) {
   if (view.reorders.length === 0) {
     return (
-      <EmptyState
-        badge="No reorders yet"
-        badgeTone="setup"
-        title="Log a reorder to see its order-by date"
-        description="Reorder-by date = needed-by date minus vendor lead time and safety buffer."
-      />
+      <div id="vendor-lead-times-reorders">
+        <EmptyState
+          soft
+          badge="No reorders yet"
+          badgeTone="setup"
+          title="Log a reorder to see its order-by date"
+          description="Reorder-by date = needed-by date minus vendor lead time and safety buffer — never invent DEMO urgency."
+        />
+      </div>
     );
   }
   return (
-    <Panel>
+    <Panel id="vendor-lead-times-reorders">
       <h2 style={{ marginTop: 0 }}>Reorders</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul className="vendor-lead-times-list">
         {view.reorders.map((reorder) => (
-          <li key={reorder.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={reorder.id} className="vendor-lead-times-row">
             <div>
               <span className={`app-badge ${urgencyTone(reorder.calc.urgency)}`}>
                 {reorderUrgencyLabel(reorder.calc.urgency)}
@@ -375,7 +605,7 @@ function ReorderList({
                 </small>
               ) : null}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+            <div className="vendor-lead-times-row-actions">
               <select
                 value={reorder.status}
                 disabled={busy}

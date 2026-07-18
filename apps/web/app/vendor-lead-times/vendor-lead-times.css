@@ -1,0 +1,18 @@
+/* Soft-UI Vendor Lead Times — .vendor-lead-times-* + shared Soft-UI tokens. Never DEMO reorder metrics. */
+.vendor-lead-times-page{display:grid;gap:16px}
+.vendor-lead-times-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.vendor-lead-times-related{display:flex;flex-wrap:wrap;gap:8px}
+.vendor-lead-times-next-actions{margin:0}
+.vendor-lead-times-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.vendor-lead-times-stats strong{font-size:1.5rem}
+.vendor-lead-times-layout{display:grid;gap:16px}
+.vendor-lead-times-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.vendor-lead-times-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.vendor-lead-times-row-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.vendor-lead-times-tip{margin:0}
+@media(max-width:900px){
+  .vendor-lead-times-header-actions{justify-content:flex-start}
+  .vendor-lead-times-next-actions li{flex-direction:column;align-items:stretch}
+  .vendor-lead-times-row{flex-direction:column}
+  .vendor-lead-times-row-actions{align-items:stretch}
+}

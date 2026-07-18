@@ -1,4 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { computeReorderByDate, sortReorderLines, summarizeReorders } from ".";
 import type { ReorderLine, ReorderStatus, ReorderSummary, VendorLeadTime } from "./types";
 
@@ -8,6 +10,36 @@ export type VendorLeadTimesSetupStep = {
   detail: string;
   href: string;
 };
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO reorder metrics. */
+function setupStepsFor(orgId: string | null): VendorLeadTimesSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Vendor Lead Times is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "orders",
+      label: "Open Orders",
+      detail: "Purchase orders stay empty until drafted — never DEMO PO totals.",
+      href: hubHref("/business", "orders", orgId),
+    },
+    {
+      id: "spare-forecast",
+      label: "Open Spare Forecast",
+      detail: "Spare shortfalls stay blank until inventory + FMEA land — never DEMO counts.",
+      href: hubHref("/build", "spare-forecast", orgId),
+    },
+    {
+      id: "vendors",
+      label: "Open Vendors",
+      detail: "Supplier contacts stay empty until you add them — never DEMO vendors.",
+      href: withOrgHref("/vendors", orgId),
+    },
+  ];
+}
 
 export type VendorLeadTimesView =
   | {
@@ -102,10 +134,6 @@ async function resolveOrg(
   return membership.rows[0] ?? null;
 }
 
-const SETUP_STEPS: VendorLeadTimesSetupStep[] = [
-  { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-];
-
 export async function computeVendorLeadTimesView(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null; asOf?: Date },
@@ -116,7 +144,7 @@ export async function computeVendorLeadTimesView(
     return {
       status: "setup_required",
       message: "Select a team workspace to track vendor lead times and reorders.",
-      steps: SETUP_STEPS,
+      steps: setupStepsFor(null),
       orgId: null,
     };
   }
