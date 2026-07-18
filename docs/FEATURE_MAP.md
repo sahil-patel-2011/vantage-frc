@@ -23,6 +23,7 @@
 | Business Soft-UI fundraisers | `/fundraisers` · Overview fundraising glance | Soft-UI events + goal progress from recorded deposits/goals only; empty/setup + next actions; cross-links to Sponsors / Grants / Orders — never DEMO raised totals |
 | Business Soft-UI impact & awards | `/impact` · `/team/awards` · Business · Awards | Soft-UI outreach log + readiness from recorded activities; award essays from catalog submissions; empty/setup + next actions; cross-links to Business hub / Grants / Sponsors — never DEMO hours or win rates |
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Prototypes · Batteries (+ More tools) |
+| Code Coach Soft-UI | `/build?tab=code`, `/ai?tab=code` (also `/code`) | Local free pattern review + teach-not-do lessons; empty/setup + next actions; clear local-vs-metered strip; UsageCutoffBanner on AI hub (metered neighbors); cross-links to CAD / GitHub / AI chat — never invented review findings |
 | AI | `/ai` | Chat · Budgets · Writer · Code assist · Memory · Governance · Finance (+ More tools) |
 
 Team admin: `/team/admin`. Redirects: `apps/web/next.config.ts`.

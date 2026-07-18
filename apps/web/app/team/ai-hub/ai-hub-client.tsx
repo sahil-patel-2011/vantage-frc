@@ -75,9 +75,9 @@ function cards(data: Data, orgId: string): Card[] {
     },
     {
       title: "Code Coach",
-      blurb: "Flag risky robot-code patterns, teach safer habits — proposal-only diffs.",
+      blurb: "Local pattern review (free) — teach safer habits; AI chat/CAD stay metered.",
       href: `/code${q}`,
-      status: "Coach",
+      status: "Local",
     },
     {
       title: "CAD Builder",
