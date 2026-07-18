@@ -14,6 +14,7 @@ type NotificationPrefs = {
   todoCompleted: boolean;
   dutyAssigned: boolean;
   calendarEvents: boolean;
+  sponsorReminders: boolean;
 };
 
 type EmailPrefs = {
