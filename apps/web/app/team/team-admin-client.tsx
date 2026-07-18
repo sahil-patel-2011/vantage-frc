@@ -3,7 +3,20 @@
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import {
+  GITHUB_RELATED_INCLUDE,
+  classifyGitHubShell,
+  formatGitHubRepoMetric,
+  githubNextActions,
+  githubRelatedLinks,
+  githubSetupSteps,
+  githubShellCopy,
+  shouldShowGitHubSummaryTiles,
+  type GitHubNextAction,
+} from "../../lib/github/github-related";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { TeamProfilePanel } from "./team-profile-panel";
+import "./github-connection.css";
 import "./team-access-requests.css";
 
 type Invite = {
@@ -49,6 +62,31 @@ type GitHubRepo = {
   description: string | null;
 };
 
+function GitHubNextActionsPanel({ actions }: { actions: GitHubNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel github-next-actions" aria-label="GitHub next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Pair VS Code, Code Coach, and Account Connections — never DEMO repos.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
@@ -81,9 +119,14 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
   const [githubPat, setGithubPat] = useState("");
   const [githubBusy, setGithubBusy] = useState(false);
+  const [githubLoading, setGithubLoading] = useState(true);
+  const [githubFetchFailed, setGithubFetchFailed] = useState(false);
+  const [githubReposLoaded, setGithubReposLoaded] = useState(false);
   const [defaultRepo, setDefaultRepo] = useState("");
 
   async function load() {
+    setGithubLoading(true);
+    setGithubFetchFailed(false);
     const response = await fetch(`/api/organizations/invites?orgId=${orgId}`);
     const data = await response.json();
     setInvites(data.invites ?? []);
@@ -109,11 +152,26 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       if (githubData.connection) {
         const reposResponse = await fetch(`/api/github/repos?orgId=${encodeURIComponent(orgId)}`);
         const reposData = await reposResponse.json();
-        if (reposResponse.ok) setGithubRepos(reposData.repos ?? []);
+        if (reposResponse.ok) {
+          setGithubRepos(Array.isArray(reposData.repos) ? reposData.repos : []);
+          setGithubReposLoaded(true);
+        } else {
+          setGithubRepos([]);
+          setGithubReposLoaded(true);
+        }
       } else {
         setGithubRepos([]);
+        setGithubReposLoaded(true);
       }
+      setGithubFetchFailed(false);
+    } else {
+      setGithubFetchFailed(true);
+      setGithubConnection(null);
+      setGithubRepos([]);
+      setGithubReposLoaded(false);
+      setMessage(githubData.error ?? "Could not load GitHub context");
     }
+    setGithubLoading(false);
   }
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -267,12 +325,38 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     }
   }
 
+  const githubConnected = Boolean(githubConnection);
+  const githubShell = classifyGitHubShell({
+    loading: githubLoading,
+    fetchFailed: githubFetchFailed,
+    hasOrgs: true,
+    orgId,
+    connected: githubConnected,
+  });
+  const githubCopy = githubShellCopy(githubShell);
+  const githubActions = githubNextActions({
+    orgId,
+    shell: githubShell,
+    connected: githubConnected,
+    hasDefaultRepo: Boolean(githubConnection?.defaultRepoFullName),
+    oauthSetupRequired: githubOAuthSetupRequired,
+    repoCount: githubRepos.length,
+  });
+  const githubRelated = githubRelatedLinks(orgId, {
+    include: [...GITHUB_RELATED_INCLUDE],
+  });
+  const githubSteps = githubShell === "setup" ? githubSetupSteps(orgId) : [];
+  const showGithubTiles = shouldShowGitHubSummaryTiles({
+    connected: githubConnected,
+    repoCount: githubRepos.length,
+  });
+
   return (
     <main className="module-page team-admin-page">
       <PageHeader
         breadcrumbs="Team / Admin"
         title="Team admin"
-        description="Invite exact emails, manage roles, configure GitHub robot-code context, and BYO model providers (API keys)."
+        description="Invite exact emails, manage roles, configure GitHub robot-code context, and BYO model providers (API keys). Repo lists stay blank until a real link exists — never DEMO repositories."
       />
       <TeamOpsNav orgId={orgId} active="admin" />
 
@@ -317,7 +401,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </a>
         <a href={`#github-connection`}>
           <strong>GitHub</strong>
-          <span>Robot-code context for AI</span>
+          <span>Robot-code context for AI — never DEMO repos</span>
         </a>
         <a href={`/account?tab=notifications`}>
           <strong>Notification prefs</strong>
@@ -416,24 +500,98 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           )}
         </Panel>
       </section>
-      <section className="compare-panel" id="github-connection">
+      <section className="compare-panel github-panel" id="github-connection">
         <span className="eyebrow">GITHUB ROBOT-CODE CONTEXT</span>
+        <nav className="product-hub-related github-related" aria-label="Related code tools">
+          {githubRelated.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+
+        {githubShell === "loading" || githubShell === "error" ? (
+          <EmptyState
+            soft
+            badge={githubShell === "error" ? "Unavailable" : undefined}
+            badgeTone="setup"
+            title={githubCopy.title}
+            description={githubCopy.description}
+            aria-busy={githubShell === "loading"}
+          >
+            {githubShell === "error" ? (
+              <button type="button" className="app-button secondary" onClick={() => void load()}>
+                Retry
+              </button>
+            ) : null}
+          </EmptyState>
+        ) : null}
+
+        {githubShell === "empty" ? (
+          <EmptyState
+            soft
+            badge={githubCopy.badge}
+            badgeTone="setup"
+            title={githubCopy.title}
+            description={githubEmptyReason || githubCopy.description}
+          >
+            <p className="app-muted">
+              OAuth is optional when server credentials are missing — encrypt a PAT below. Pair VS Code, Code Coach, and
+              Account Connections stay honest until a real link exists.
+            </p>
+          </EmptyState>
+        ) : null}
+
+        {githubSteps.length > 0 ? (
+          <Panel className="github-panel" aria-label="GitHub setup steps">
+            <header>
+              <h2>Setup steps</h2>
+              <p className="app-muted">Workspace, PAT, Code Coach, and Pair VS Code — never DEMO repos.</p>
+            </header>
+            <ul className="github-setup-steps">
+              {githubSteps.map((step) => (
+                <li key={step.id}>
+                  <div>
+                    <strong>{step.label}</strong>
+                    <p className="app-muted github-tip">{step.detail}</p>
+                  </div>
+                  <a className="app-button secondary" href={step.href}>
+                    Open
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        ) : null}
+
+        <GitHubNextActionsPanel actions={githubActions} />
+
+        {showGithubTiles ? (
+          <div className="github-metrics" aria-label="GitHub connection metrics">
+            <article>
+              <strong>{formatGitHubRepoMetric(githubRepos.length, githubReposLoaded)}</strong>
+              <span>Real repositories</span>
+            </article>
+            <article>
+              <strong>{githubConnection?.defaultRepoFullName ? "1" : "0"}</strong>
+              <span>Default robot-code repo</span>
+            </article>
+          </div>
+        ) : null}
+
         <div className="admin-grid">
           <section className="intel-panel">
             <p>
               Link one GitHub account to this workspace so AI chat/code assist can pull size-capped file snippets from your
               robot-code repo. Tokens are encrypted at rest. Vantage never pushes and never requests the <code>workflow</code>{" "}
-              scope.
+              scope. Repo pickers stay blank until the linked account returns real repositories — never DEMO repos.
             </p>
             {githubOAuthSetupRequired && (
-              <p className="app-muted">
+              <p className="app-muted github-oauth-note">
                 One-click OAuth is optional on this deployment (server missing{" "}
                 <code>GITHUB_OAUTH_CLIENT_ID</code> / <code>GITHUB_OAUTH_CLIENT_SECRET</code>). Use an encrypted personal
                 access token below — that path is fully production-ready without those env vars.
               </p>
-            )}
-            {!githubConnection && (
-              <p className="app-muted">{githubEmptyReason || "No GitHub connection for this workspace yet."}</p>
             )}
             {githubConnection && (
               <article className="admin-org">
@@ -453,7 +611,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
               <button
                 type="button"
                 className={githubOAuthSetupRequired ? undefined : "primary-action"}
-                disabled={githubBusy || githubOAuthSetupRequired}
+                disabled={githubBusy || githubOAuthSetupRequired || githubLoading}
                 onClick={() => void connectGitHubOAuth()}
                 title={
                   githubOAuthSetupRequired
@@ -468,6 +626,12 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                   Disconnect
                 </button>
               )}
+              <a className="app-button secondary" href={withOrgHref("/editor/pair", orgId)}>
+                Pair VS Code
+              </a>
+              <a className="app-button secondary" href="/account?tab=integrations">
+                Account Connections
+              </a>
             </div>
           </section>
           <section className="intel-panel">
@@ -493,7 +657,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
               </button>
             </form>
             {githubConnection && (
-              <form onSubmit={setGitHubDefaultRepo} style={{ marginTop: "1.25rem" }}>
+              <form id="github-default-repo" onSubmit={setGitHubDefaultRepo} style={{ marginTop: "1.25rem" }}>
                 <span className="eyebrow">DEFAULT ROBOT-CODE REPO</span>
                 <label>
                   Repository
@@ -508,7 +672,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                   </select>
                 </label>
                 {!githubRepos.length && (
-                  <p className="app-muted">No repositories returned for this account yet.</p>
+                  <p className="app-muted">
+                    No repositories returned for this account yet — the list stays blank, never DEMO repos.
+                  </p>
                 )}
                 <button className="primary-action" disabled={githubBusy || !defaultRepo}>
                   Set default repo

@@ -305,7 +305,7 @@ export default function PairClient({
           </a>
           <a
             className="app-button secondary"
-            href={withOrgHref("/team", orgId) + "#github-connection"}
+            href={withOrgHref("/team/admin", orgId) + "#github-connection"}
           >
             GitHub context
           </a>
