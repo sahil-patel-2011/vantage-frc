@@ -38,6 +38,7 @@ const PRIVATE_DISALLOW = [
   "/safety",
   "/hours",
   "/calendar",
+  "/team/calendar",
   "/assets",
   "/alumni",
   "/briefing",
