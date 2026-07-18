@@ -29,7 +29,7 @@ function fail(error: unknown) {
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
-    const orgId = new URL(request.url).searchParams.get("orgId");
+    const orgId = new URL(request.url).searchParams.get("orgId") ?? undefined;
 
     const view = await withRls({ userId: session.user.id, orgId }, async (client) =>
       loadMyDay(client, { userId: session.user.id, orgId }),
