@@ -34,6 +34,7 @@ function session(id: string, cycles: Array<{ action: string; seconds: number | n
     notes: "",
     attendanceEventId: null,
     attendanceEventTitle: null,
+    attendanceOccurredOn: null,
     buildTaskId: null,
     buildTaskTitle: null,
     createdAt: "2026-02-01T00:00:00.000Z",

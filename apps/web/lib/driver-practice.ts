@@ -37,6 +37,8 @@ export type DriverSession = {
   notes: string;
   attendanceEventId: string | null;
   attendanceEventTitle: string | null;
+  /** YYYY-MM-DD from attendance_events.occurred_on when linked — never invented. */
+  attendanceOccurredOn: string | null;
   buildTaskId: string | null;
   buildTaskTitle: string | null;
   createdAt: string;
@@ -47,7 +49,7 @@ export type DriverSession = {
 export type DriverPracticeMember = { userId: string; name: string | null };
 
 /** Lightweight pickers for optional Team links (empty when those modules are unavailable). */
-export type LinkableAttendance = { id: string; title: string; startsAt: string; kind: string };
+export type LinkableAttendance = { id: string; title: string; occurredOn: string; kind: string };
 export type LinkableBuildTask = { id: string; title: string; status: string; subsystem: string };
 
 export type DriverPracticeContext = {

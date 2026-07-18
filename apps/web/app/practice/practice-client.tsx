@@ -15,6 +15,13 @@ import {
   type LinkableAttendance,
   type LinkableBuildTask,
 } from "../../lib/driver-practice";
+import {
+  PRACTICE_TEAM_RELATED_INCLUDE,
+  attendanceRollCallHref,
+  formatAttendanceOption,
+  formatSessionEvidence,
+  practiceNextActions,
+} from "../../lib/practice/practice-related";
 import "./practice.css";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
@@ -36,6 +43,31 @@ function driverLabel(session: DriverSession, membersById: Map<string, DriverPrac
 
 function teamTab(tab: string, orgId: string) {
   return hubHref("/team", tab, orgId);
+}
+
+function PracticeNextActions({ actions }: { actions: ReturnType<typeof practiceNextActions> }) {
+  if (actions.length === 0) return null;
+  return (
+    <section className="practice-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p>From your real sessions and roll calls — empty until those exist. Never DEMO attendance %.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
 }
 
 function Stopwatch({ onStop, disabled }: { onStop: (seconds: number) => void; disabled?: boolean }) {
@@ -125,7 +157,7 @@ function CycleList({
   cycles: DriverCycle[]; orgId: string; busy: boolean;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
-  if (cycles.length === 0) return <p className="practice-muted">No reps yet — log the first cycle above.</p>;
+  if (cycles.length === 0) return <p className="practice-muted">No reps yet — log the first cycle above. Success rate stays blank until then.</p>;
   return (
     <ul className="practice-cycles">
       {[...cycles].reverse().map((cycle) => (
@@ -160,6 +192,13 @@ function SessionDetail({
   const stats = useMemo(() => sessionStats(session.cycles), [session.cycles]);
   const breakdown = useMemo(() => actionBreakdown(session.cycles), [session.cycles]);
   const busy = busyKey != null;
+  const linkedAttendance = session.attendanceEventId
+    ? attendanceEvents.find((event) => event.id === session.attendanceEventId)
+    : undefined;
+  const rollOccurredOn = session.attendanceOccurredOn ?? linkedAttendance?.occurredOn ?? null;
+  const rollHref = session.attendanceEventId
+    ? attendanceRollCallHref(orgId, { eventId: session.attendanceEventId, occurredOn: rollOccurredOn })
+    : teamTab("attendance", orgId);
 
   return (
     <section className="practice-panel practice-detail">
@@ -170,7 +209,9 @@ function SessionDetail({
             {fmtDate(session.sessionDate)} · Driver: {driverLabel(session, membersById)}
             {session.location ? ` · ${session.location}` : ""}
           </p>
-          {session.goal ? <p className="practice-goal">{session.goal}</p> : null}
+          {session.goal ? <p className="practice-goal">{session.goal}</p> : (
+            <p className="practice-muted">No session goal yet — add one so the drive team knows the target for the day.</p>
+          )}
         </div>
         <button
           type="button"
@@ -186,46 +227,61 @@ function SessionDetail({
         </button>
       </header>
 
-      {(attendanceEvents.length > 0 || buildTasks.length > 0) && (
-        <div className="practice-links-row">
+      <div className="practice-links-row">
+        <label className="practice-link-card">
+          <span>Attendance roll call</span>
           {attendanceEvents.length > 0 ? (
-            <label className="practice-link-card">
-              <span>Attendance roll</span>
-              <select
-                value={session.attendanceEventId ?? ""}
-                disabled={busy}
-                onChange={(e) => void run({ action: "update_session", orgId, id: session.id, attendanceEventId: e.target.value || null }, `link:${session.id}`)}
-              >
-                <option value="">Not linked</option>
-                {attendanceEvents.map((event) => (
-                  <option key={event.id} value={event.id}>{event.title} · {fmtDate(event.startsAt)}</option>
-                ))}
-              </select>
-              {session.attendanceEventId ? <a href={teamTab("attendance", orgId)}>Open attendance →</a> : <span className="practice-muted">Optional link to who showed up</span>}
-            </label>
-          ) : null}
+            <select
+              value={session.attendanceEventId ?? ""}
+              disabled={busy}
+              onChange={(e) => void run({ action: "update_session", orgId, id: session.id, attendanceEventId: e.target.value || null }, `link:${session.id}`)}
+            >
+              <option value="">Not linked</option>
+              {attendanceEvents.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {formatAttendanceOption(event, fmtDate)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="practice-muted">No attendance events yet — create one with an occurred_on date.</p>
+          )}
+          {session.attendanceEventId ? (
+            <a href={rollHref}>
+              Open roll call
+              {rollOccurredOn ? ` · ${fmtDate(rollOccurredOn)}` : ""} →
+            </a>
+          ) : (
+            <a href={teamTab("attendance", orgId)}>Open Attendance →</a>
+          )}
+        </label>
+        <label className="practice-link-card">
+          <span>Build task</span>
           {buildTasks.length > 0 ? (
-            <label className="practice-link-card">
-              <span>Build task</span>
-              <select
-                value={session.buildTaskId ?? ""}
-                disabled={busy}
-                onChange={(e) => void run({ action: "update_session", orgId, id: session.id, buildTaskId: e.target.value || null }, `link:${session.id}`)}
-              >
-                <option value="">Not linked</option>
-                {buildTasks.map((task) => (
-                  <option key={task.id} value={task.id}>{task.title} · {task.subsystem}</option>
-                ))}
-              </select>
-              {session.buildTaskId ? <a href={teamTab("todos", orgId)}>Open task board →</a> : <span className="practice-muted">Optional link to shop work</span>}
-            </label>
-          ) : null}
-        </div>
-      )}
+            <select
+              value={session.buildTaskId ?? ""}
+              disabled={busy}
+              onChange={(e) => void run({ action: "update_session", orgId, id: session.id, buildTaskId: e.target.value || null }, `link:${session.id}`)}
+            >
+              <option value="">Not linked</option>
+              {buildTasks.map((task) => (
+                <option key={task.id} value={task.id}>{task.title} · {task.subsystem}</option>
+              ))}
+            </select>
+          ) : (
+            <p className="practice-muted">No open build tasks — optional shop-work link.</p>
+          )}
+          {session.buildTaskId ? (
+            <a href={teamTab("todos", orgId)}>Open task board →</a>
+          ) : (
+            <a href={teamTab("batteries", orgId)}>Batteries for practice packs →</a>
+          )}
+        </label>
+      </div>
 
       <div className="practice-stats">
         <div className="practice-stat"><strong>{stats.reps}</strong><span>reps</span></div>
-        <div className="practice-stat"><strong>{stats.successRate == null ? "—" : `${stats.successRate}%`}</strong><span>success</span></div>
+        <div className="practice-stat"><strong>{stats.successRate == null ? "—" : `${stats.successRate}%`}</strong><span>made</span></div>
         <div className="practice-stat"><strong>{fmtSeconds(stats.avgSeconds)}</strong><span>avg cycle</span></div>
         <div className="practice-stat"><strong>{fmtSeconds(stats.bestSeconds)}</strong><span>best</span></div>
       </div>
@@ -310,10 +366,14 @@ function NewSessionForm({
         </label>
         {attendanceEvents.length > 0 ? (
           <label className="practice-field">
-            <span>Link attendance</span>
+            <span>Link attendance (occurred_on)</span>
             <select value={attendanceEventId} disabled={busy} onChange={(e) => setAttendanceEventId(e.target.value)}>
               <option value="">None</option>
-              {attendanceEvents.map((event) => <option key={event.id} value={event.id}>{event.title}</option>)}
+              {attendanceEvents.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {formatAttendanceOption(event, fmtDate)}
+                </option>
+              ))}
             </select>
           </label>
         ) : null}
@@ -412,6 +472,7 @@ export default function PracticeClient() {
   }
 
   if (view.status === "setup_required") {
+    const setupActions = practiceNextActions({ sessions: [], attendanceEventCount: 0 });
     return (
       <main className="practice-page">
         <TeamOpsNav active="practice" />
@@ -427,6 +488,7 @@ export default function PracticeClient() {
           <p className="practice-muted">{view.message}</p>
           <a className="app-button" href="/workspace">Choose workspace</a>
         </div>
+        <PracticeNextActions actions={setupActions} />
       </main>
     );
   }
@@ -437,42 +499,56 @@ export default function PracticeClient() {
   const selected = sessions.find((session) => session.id === selectedId) ?? sessions[0] ?? null;
   const overall = sessionStats(sessions.flatMap((session) => session.cycles));
   const withGoals = sessions.filter((session) => session.goal.trim()).length;
+  const withRollCalls = sessions.filter((session) => session.attendanceEventId).length;
+  const nextActions = practiceNextActions({
+    orgId,
+    sessions,
+    attendanceEventCount: attendanceEvents.length,
+  });
 
   return (
     <main className="practice-page">
       <TeamOpsNav orgId={orgId} active="practice" />
-      <TeamHubRelated orgId={orgId} active="practice" />
+      <TeamHubRelated orgId={orgId} active="practice" include={[...PRACTICE_TEAM_RELATED_INCLUDE]} />
       <header className="practice-hero">
         <div>
           <p className="practice-kicker">Team / Practice{context.teamNumber ? ` · ${context.teamNumber}` : ""}</p>
           <h1>Practice</h1>
           <p>
-            Schedule drive sessions, write the goal for the day, time every cycle, and keep attendance and build tasks
-            in the same loop for {context.orgName ?? "your team"}.
+            Schedule drive sessions, write the goal for the day, time every cycle, and link roll calls by occurred_on
+            for {context.orgName ?? "your team"} — never DEMO attendance %.
           </p>
           <div className="practice-hero-links">
-            <a href={teamTab("todos", orgId)}>Todos</a>
-            <a href={teamTab("messages", orgId)}>Messages</a>
             <a href={teamTab("calendar", orgId)}>Calendar</a>
             <a href={teamTab("attendance", orgId)}>Attendance</a>
-            <a href={teamTab("knowledge", orgId)}>Knowledge</a>
             <a href={teamTab("batteries", orgId)}>Batteries</a>
+            <a href={teamTab("todos", orgId)}>Todos</a>
+            <a href={teamTab("messages", orgId)}>Messages</a>
           </div>
         </div>
         <div className="practice-hero-score">
-          <strong>{overall.reps}</strong>
-          <span>reps logged this season</span>
+          <strong>{overall.reps > 0 ? overall.reps : "—"}</strong>
+          <span>{overall.reps > 0 ? "reps logged this season" : "no reps logged yet"}</span>
           <button type="button" onClick={() => setShowNew((value) => !value)}>{showNew ? "Close form" : "New session"}</button>
         </div>
       </header>
 
       {error ? <p className="practice-alert error" role="alert">{error}</p> : null}
 
+      <PracticeNextActions actions={nextActions} />
+
       <section className="practice-kpis">
         <article><span>Sessions</span><strong>{sessions.length}</strong></article>
         <article><span>With goals</span><strong>{withGoals}</strong></article>
-        <article><span>Success</span><strong>{overall.successRate == null ? "—" : `${overall.successRate}%`}</strong></article>
-        <article><span>Avg cycle</span><strong>{fmtSeconds(overall.avgSeconds)}</strong></article>
+        <article><span>Roll calls linked</span><strong>{withRollCalls}</strong></article>
+        <article>
+          <span>Made / avg</span>
+          <strong>
+            {overall.successRate == null && overall.avgSeconds == null
+              ? "—"
+              : `${overall.successRate == null ? "—" : `${overall.successRate}%`} · ${fmtSeconds(overall.avgSeconds)}`}
+          </strong>
+        </article>
       </section>
 
       {showNew ? (
@@ -490,19 +566,31 @@ export default function PracticeClient() {
       {sessions.length === 0 ? (
         <div className="practice-panel practice-empty center">
           <strong>No practice sessions yet</strong>
-          <p className="practice-muted">Start a session with a clear goal, then log each scoring rep — time it with the built-in stopwatch.</p>
-          <button type="button" className="app-button" onClick={() => setShowNew(true)}>Start your first session</button>
+          <p className="practice-muted">
+            Start a session with a clear goal, link an attendance roll call by occurred_on when ready, then log each
+            scoring rep with the stopwatch. Totals stay empty until you log real work.
+          </p>
+          <div className="practice-empty-actions">
+            <button type="button" className="app-button" onClick={() => setShowNew(true)}>Start your first session</button>
+            <a className="app-button secondary" href={teamTab("calendar", orgId)}>Open Calendar</a>
+            <a className="app-button secondary" href={teamTab("attendance", orgId)}>Open Attendance</a>
+            <a className="app-button secondary" href={teamTab("batteries", orgId)}>Open Batteries</a>
+          </div>
         </div>
       ) : (
         <div className="practice-layout">
-          <aside className="practice-list">
+          <aside className="practice-list" aria-label="Practice sessions">
+            <header className="practice-list-head">
+              <h2>Sessions</h2>
+              <p className="practice-muted">{sessions.length} scheduled · evidence from logged reps only</p>
+            </header>
             {sessions.map((session) => {
-              const stats = sessionStats(session.cycles);
+              const isActive = session.id === selected?.id;
               return (
                 <button
                   key={session.id}
                   type="button"
-                  className={session.id === selected?.id ? "practice-list-item active" : "practice-list-item"}
+                  className={isActive ? "practice-list-item active" : "practice-list-item"}
                   onClick={() => setSelectedId(session.id)}
                 >
                   <div className="practice-list-top">
@@ -511,15 +599,16 @@ export default function PracticeClient() {
                   </div>
                   <div className="practice-list-sub">
                     <span>{driverLabel(session, membersById)}</span>
-                    <span>
-                      {stats.reps} reps
-                      {stats.avgSeconds != null ? ` · ${fmtSeconds(stats.avgSeconds)}` : ""}
-                      {stats.successRate != null ? ` · ${stats.successRate}%` : ""}
-                    </span>
                   </div>
-                  {(session.attendanceEventTitle || session.buildTaskTitle) && (
+                  <p className="practice-list-evidence">{formatSessionEvidence(session)}</p>
+                  {(session.attendanceEventTitle || session.buildTaskTitle || session.attendanceOccurredOn) && (
                     <div className="practice-list-links">
-                      {session.attendanceEventTitle ? <span className="practice-chip">Roll call</span> : null}
+                      {session.attendanceEventId ? (
+                        <span className="practice-chip">
+                          Roll call
+                          {session.attendanceOccurredOn ? ` · ${fmtDate(session.attendanceOccurredOn)}` : ""}
+                        </span>
+                      ) : null}
                       {session.buildTaskTitle ? <span className="practice-chip">Task</span> : null}
                     </div>
                   )}

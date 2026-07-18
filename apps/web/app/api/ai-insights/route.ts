@@ -82,6 +82,7 @@ async function loadInsight(client: PoolClient, request: InsightRequest): Promise
                   s.driver_user_id AS "driverUserId", s.driver_name AS "driverName",
                   s.location, s.goal, s.notes,
                   NULL AS "attendanceEventId", NULL AS "attendanceEventTitle",
+                  NULL AS "attendanceOccurredOn",
                   NULL AS "buildTaskId", NULL AS "buildTaskTitle",
                   s.created_at::text AS "createdAt", s.updated_at::text AS "updatedAt"
            FROM driver_sessions s WHERE s.org_id = $1
