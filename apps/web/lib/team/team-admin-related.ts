@@ -1,0 +1,384 @@
+import { withOrgHref } from "../nav/product-nav";
+
+/** Soft-UI related surfaces for Team admin membership (never DEMO members). */
+export const TEAM_ADMIN_RELATED_LINKS = [
+  { id: "account", label: "Account", kind: "account" as const, path: "/account?tab=profile" },
+  { id: "discord", label: "Discord", kind: "path" as const, path: "/team/discord" },
+  {
+    id: "connections",
+    label: "Account Connections",
+    kind: "account" as const,
+    path: "/account?tab=integrations",
+  },
+  { id: "security", label: "Security & delegation", kind: "path" as const, path: "/team/security" },
+  { id: "admin", label: "Team admin", kind: "path" as const, path: "/team/admin" },
+] as const;
+
+export type TeamAdminRelatedId = (typeof TEAM_ADMIN_RELATED_LINKS)[number]["id"];
+
+export type TeamAdminRelatedLink = {
+  id: TeamAdminRelatedId;
+  label: string;
+  href: string;
+};
+
+/** Focused Soft-UI strip — Account · Discord · Connections. */
+export const TEAM_ADMIN_RELATED_INCLUDE: TeamAdminRelatedId[] = [
+  "account",
+  "discord",
+  "connections",
+];
+
+/**
+ * Soft-UI cross-links from Team admin → Account / Discord / Connections.
+ * Build with withOrgHref (and account tabs) — never broken JSX href templates.
+ */
+export function teamAdminRelatedLinks(
+  orgId?: string | null,
+  options?: { active?: TeamAdminRelatedId; include?: TeamAdminRelatedId[] },
+): TeamAdminRelatedLink[] {
+  const include = options?.include ? new Set(options.include) : null;
+  return TEAM_ADMIN_RELATED_LINKS.filter((link) => {
+    if (link.id === options?.active) return false;
+    if (include && !include.has(link.id)) return false;
+    return true;
+  }).map((link) => {
+    if (link.kind === "account") {
+      return { id: link.id, label: link.label, href: link.path };
+    }
+    return { id: link.id, label: link.label, href: withOrgHref(link.path, orgId) };
+  });
+}
+
+export type TeamAdminShellKind = "loading" | "error" | "setup" | "empty" | "ready";
+
+export type TeamAdminNextAction = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+  primary?: boolean;
+};
+
+export type TeamAdminEmptyCopy = {
+  kind: TeamAdminShellKind;
+  badge?: string;
+  title: string;
+  description: string;
+};
+
+/** Soft-UI setup steps — withOrgHref only; never DEMO members. */
+export type TeamAdminSetupStep = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+};
+
+export function teamAdminSetupSteps(orgId?: string | null): TeamAdminSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — membership and invites are org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "invite",
+      label: "Invite an exact email",
+      detail: "Team numbers never grant access — send a real invite; the ledger stays blank until then.",
+      href: orgId ? withOrgHref("/team/admin", orgId) + "#membership" : "/team/admin#membership",
+    },
+    {
+      id: "discord",
+      label: "Link Discord",
+      detail: "Guild / webhook bridge stays empty until configured — never DEMO sync %.",
+      href: withOrgHref("/team/discord", orgId),
+    },
+    {
+      id: "connections",
+      label: "Account Connections",
+      detail: "Honest connector status for TBA, Onshape, Discord, and GitHub.",
+      href: "/account?tab=integrations",
+    },
+  ];
+}
+
+/** Real member / invite counts only — never invent DEMO totals. */
+export function formatTeamAdminMetric(value: unknown, loaded: boolean): string {
+  if (!loaded) return "…";
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n) || n < 0) return "0";
+  return Math.floor(n).toLocaleString();
+}
+
+/** Hide zeroed membership tiles when nothing real is loaded. */
+export function shouldShowTeamAdminSummaryTiles(input: {
+  memberCount: number;
+  inviteCount: number;
+}): boolean {
+  return input.memberCount > 0 || input.inviteCount > 0;
+}
+
+/** True when the workspace has no real members — Soft-UI empty (never DEMO). */
+export function isTeamAdminBoardEmpty(input: { memberCount: number }): boolean {
+  return input.memberCount <= 0;
+}
+
+/** Classify Team admin membership Soft-UI shell — never invents DEMO members. */
+export function classifyTeamAdminShell(input: {
+  loading?: boolean;
+  fetchFailed?: boolean;
+  hasOrgs?: boolean;
+  orgId?: string | null;
+  memberCount?: number;
+}): TeamAdminShellKind {
+  if (input.loading) return "loading";
+  if (input.fetchFailed) return "error";
+  if (!input.hasOrgs || !input.orgId) return "setup";
+  if (isTeamAdminBoardEmpty({ memberCount: input.memberCount ?? 0 })) return "empty";
+  return "ready";
+}
+
+/** Soft-UI empty / setup / error copy — never DEMO members. */
+export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy {
+  switch (kind) {
+    case "loading":
+      return {
+        kind,
+        title: "Loading membership…",
+        description:
+          "Checking workspace membership and real invites — never DEMO members.",
+      };
+    case "error":
+      return {
+        kind,
+        badge: "Unavailable",
+        title: "Could not load membership",
+        description:
+          "A network or server issue blocked the members ledger. Retry, or open Account / Discord / Connections while it reloads — never invent DEMO members.",
+      };
+    case "setup":
+      return {
+        kind,
+        badge: "Setup required",
+        title: "Select a team workspace",
+        description:
+          "Invites and member roles are org-scoped. Join or pick a workspace before managing access — nothing is pre-seeded.",
+      };
+    case "empty":
+      return {
+        kind,
+        badge: "No members yet",
+        title: "Membership stays blank until real people join",
+        description:
+          "The members list and invite ledger stay empty until real people join. Cross-check Account, Discord, and Connections — never DEMO members.",
+      };
+    default:
+      return {
+        kind: "ready",
+        title: "Members and invites",
+        description:
+          "Only real membership rows and invites appear here — never DEMO members.",
+      };
+  }
+}
+
+/**
+ * Soft-UI next actions for Team admin membership empty/setup shells.
+ * Points at Account / Discord / Connections — never invents DEMO members.
+ */
+export function teamAdminNextActions(input: {
+  orgId?: string | null;
+  shell: TeamAdminShellKind;
+  memberCount?: number;
+  pendingInviteCount?: number;
+  pendingAccessCount?: number;
+}): TeamAdminNextAction[] {
+  const orgId = input.orgId ?? null;
+  const pendingInvites = input.pendingInviteCount ?? 0;
+  const pendingAccess = input.pendingAccessCount ?? 0;
+
+  if (!orgId || input.shell === "setup") {
+    if (!orgId) {
+      return [
+        {
+          id: "workspace",
+          label: "Select workspace",
+          detail: "Membership and invites are org-scoped — pick a team before sending access.",
+          href: "/workspace",
+          primary: true,
+        },
+        {
+          id: "account",
+          label: "Account profile",
+          detail: "Display name and notification prefs still save for this login without a workspace.",
+          href: "/account?tab=profile",
+        },
+        {
+          id: "connections",
+          label: "Account Connections",
+          detail: "Honest connector status — Connected only from real rows.",
+          href: "/account?tab=integrations",
+        },
+        {
+          id: "discord",
+          label: "Discord",
+          detail: "Guild bridge settings need a workspace too — never DEMO sync %.",
+          href: withOrgHref("/team/discord", null),
+        },
+      ];
+    }
+    return [
+      {
+        id: "workspace",
+        label: "Open Workspace",
+        detail: "Finish membership setup so Team admin can resolve your organization.",
+        href: withOrgHref("/workspace", orgId),
+        primary: true,
+      },
+      {
+        id: "account",
+        label: "Account profile",
+        detail: "Confirm your login identity before inviting teammates.",
+        href: "/account?tab=profile",
+      },
+      {
+        id: "discord",
+        label: "Open Discord",
+        detail: "Optional guild bridge stays blank until configured — never DEMO sync %.",
+        href: withOrgHref("/team/discord", orgId),
+      },
+      {
+        id: "connections",
+        label: "Account Connections",
+        detail: "TBA, Onshape, Discord, and GitHub status for this workspace.",
+        href: "/account?tab=integrations",
+      },
+    ];
+  }
+
+  if (input.shell === "empty") {
+    return [
+      {
+        id: "invite",
+        label: "Invite an exact email",
+        detail: "Team numbers never grant access — send a real invite; never seed DEMO members.",
+        href: "#membership",
+        primary: true,
+      },
+      {
+        id: "account",
+        label: "Account profile",
+        detail: "Confirm the admin identity that will send invites.",
+        href: "/account?tab=profile",
+      },
+      {
+        id: "discord",
+        label: "Open Discord",
+        detail: "Announce access policy in a linked channel after membership exists.",
+        href: withOrgHref("/team/discord", orgId),
+      },
+      {
+        id: "connections",
+        label: "Account Connections",
+        detail: "Workspace connectors stay honest until linked — never DEMO Connected.",
+        href: "/account?tab=integrations",
+      },
+    ];
+  }
+
+  if (pendingAccess > 0) {
+    return [
+      {
+        id: "access",
+        label: `Review ${pendingAccess} access request${pendingAccess === 1 ? "" : "s"}`,
+        detail: "Verified applicants wait here — approval ends onboarding sessions and emails a fresh sign-in link.",
+        href: "#team-access-title",
+        primary: true,
+      },
+      {
+        id: "invite",
+        label: "Invite another email",
+        detail: "Exact-email invites still work alongside access requests.",
+        href: "#membership",
+      },
+      {
+        id: "discord",
+        label: "Open Discord",
+        detail: "Optional guild announcements after you approve real members.",
+        href: withOrgHref("/team/discord", orgId),
+      },
+      {
+        id: "connections",
+        label: "Account Connections",
+        detail: "Confirm connectors for the workspace these members will use.",
+        href: "/account?tab=integrations",
+      },
+    ];
+  }
+
+  if (pendingInvites > 0) {
+    return [
+      {
+        id: "ledger",
+        label: "Review pending invites",
+        detail: `${pendingInvites} real invitation${pendingInvites === 1 ? "" : "s"} in the ledger — resend or revoke; never DEMO rows.`,
+        href: "#invitation-ledger",
+        primary: true,
+      },
+      {
+        id: "account",
+        label: "Account profile",
+        detail: "Notification prefs control invite-related emails for this login.",
+        href: "/account?tab=profile",
+      },
+      {
+        id: "discord",
+        label: "Open Discord",
+        detail: "Bridge stays blank until a webhook or bot is configured.",
+        href: withOrgHref("/team/discord", orgId),
+      },
+      {
+        id: "connections",
+        label: "Account Connections",
+        detail: "Honest TBA / Onshape / Discord / GitHub status for this team.",
+        href: "/account?tab=integrations",
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "invite",
+      label: "Invite another teammate",
+      detail: "Exact emails only — the ledger grows from real sends, never DEMO members.",
+      href: "#membership",
+      primary: true,
+    },
+    {
+      id: "security",
+      label: "Security & delegation",
+      detail: "Delegate manage_members or other capabilities without inventing roles.",
+      href: withOrgHref("/team/security", orgId),
+    },
+    {
+      id: "discord",
+      label: "Open Discord",
+      detail: "Guild / chat bridge for announcements after membership is set.",
+      href: withOrgHref("/team/discord", orgId),
+    },
+    {
+      id: "connections",
+      label: "Account Connections",
+      detail: "Workspace connectors stay Connected only from real rows.",
+      href: "/account?tab=integrations",
+    },
+    {
+      id: "account",
+      label: "Account profile",
+      detail: "Personal prefs for the admin managing this roster.",
+      href: "/account?tab=profile",
+    },
+  ];
+}

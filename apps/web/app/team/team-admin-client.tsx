@@ -15,9 +15,21 @@ import {
   type GitHubNextAction,
 } from "../../lib/github/github-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import {
+  TEAM_ADMIN_RELATED_INCLUDE,
+  classifyTeamAdminShell,
+  formatTeamAdminMetric,
+  teamAdminNextActions,
+  teamAdminRelatedLinks,
+  teamAdminSetupSteps,
+  teamAdminShellCopy,
+  shouldShowTeamAdminSummaryTiles,
+  type TeamAdminNextAction,
+} from "../../lib/team/team-admin-related";
 import { TeamProfilePanel } from "./team-profile-panel";
 import "./github-connection.css";
 import "./team-access-requests.css";
+import "./team-admin.css";
 
 type Invite = {
   id: string;
@@ -27,6 +39,14 @@ type Invite = {
   expiresAt: string;
   acceptedAt: string | null;
   lastSentAt: string;
+};
+
+type Member = {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  joinedAt: string;
 };
 
 type AccessRequest = {
@@ -87,8 +107,37 @@ function GitHubNextActionsPanel({ actions }: { actions: GitHubNextAction[] }) {
   );
 }
 
+function MembershipNextActionsPanel({ actions }: { actions: TeamAdminNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel team-admin-next-actions" aria-label="Membership next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Account, Discord, and Connections — never DEMO members.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [membersLoaded, setMembersLoaded] = useState(false);
+  const [membershipLoading, setMembershipLoading] = useState(true);
+  const [membershipFetchFailed, setMembershipFetchFailed] = useState(false);
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("scout");
@@ -127,14 +176,34 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   async function load() {
     setGithubLoading(true);
     setGithubFetchFailed(false);
+    setMembershipLoading(true);
+    setMembershipFetchFailed(false);
+
     const response = await fetch(`/api/organizations/invites?orgId=${orgId}`);
     const data = await response.json();
     setInvites(data.invites ?? []);
     if (!response.ok) setMessage(data.error);
+
+    const membersResponse = await fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`);
+    const membersData = await membersResponse.json();
+    if (membersResponse.ok) {
+      setMembers(Array.isArray(membersData.members) ? membersData.members : []);
+      setMembersLoaded(true);
+      setMembershipFetchFailed(false);
+    } else {
+      setMembers([]);
+      setMembersLoaded(true);
+      setMembershipFetchFailed(true);
+      setMessage(membersData.error ?? "Could not load members");
+    }
+
     const accessResponse = await fetch(`/api/organizations/access-requests?orgId=${orgId}`);
     const accessData = await accessResponse.json();
     setAccessRequests(accessData.requests ?? []);
     if (!accessResponse.ok) setMessage(accessData.error);
+
+    setMembershipLoading(false);
+
     const providerResponse = await fetch(`/api/organizations/providers?orgId=${orgId}`);
     const providerData = await providerResponse.json();
     setProviders(providerData.providers ?? []);
@@ -351,77 +420,226 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     repoCount: githubRepos.length,
   });
 
+  const pendingInvites = invites.filter((invite) => invite.status === "pending").length;
+  const pendingAccess = accessRequests.filter((request) => request.status === "pending").length;
+  const membershipShell = classifyTeamAdminShell({
+    loading: membershipLoading,
+    fetchFailed: membershipFetchFailed,
+    hasOrgs: true,
+    orgId,
+    memberCount: members.length,
+  });
+  const membershipCopy = teamAdminShellCopy(membershipShell);
+  const membershipActions = teamAdminNextActions({
+    orgId,
+    shell: membershipShell,
+    memberCount: members.length,
+    pendingInviteCount: pendingInvites,
+    pendingAccessCount: pendingAccess,
+  });
+  const membershipRelated = teamAdminRelatedLinks(orgId, {
+    include: [...TEAM_ADMIN_RELATED_INCLUDE],
+  });
+  const membershipSteps = membershipShell === "setup" ? teamAdminSetupSteps(orgId) : [];
+  const showMembershipTiles = shouldShowTeamAdminSummaryTiles({
+    memberCount: members.length,
+    inviteCount: invites.length,
+  });
+
   return (
     <main className="module-page team-admin-page">
       <PageHeader
         breadcrumbs="Team / Admin"
         title="Team admin"
-        description="Invite exact emails, manage roles, configure GitHub robot-code context, and BYO model providers (API keys). Repo lists stay blank until a real link exists — never DEMO repositories."
-      />
+        description="Invite exact emails, manage real members, configure GitHub robot-code context, and BYO model providers (API keys). Rosters and repo lists stay blank until real rows exist — never DEMO members or repositories."
+      >
+        <nav className="product-hub-related team-admin-related" aria-label="Related account tools">
+          {membershipRelated.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      </PageHeader>
       <TeamOpsNav orgId={orgId} active="admin" />
 
       <TeamProfilePanel orgId={orgId} />
 
       <nav className="settings-hub" aria-label="Workspace settings">
-        <a href={`/team/background?orgId=${orgId}`}>
+        <a href={withOrgHref("/team/background", orgId)}>
           <strong>Team background</strong>
           <span>Mission, history, demographics for sponsors</span>
         </a>
-        <a href={`/team/security?orgId=${orgId}`}>
+        <a href={withOrgHref("/team/security", orgId)}>
           <strong>Security &amp; delegation</strong>
           <span>Auth policy and API-key powers</span>
         </a>
-        <a href={`#custom-providers`}>
+        <a href="#custom-providers">
           <strong>API keys</strong>
           <span>BYOK / local model providers</span>
         </a>
-        <a href={`/team/budgets?orgId=${orgId}`}>
+        <a href={withOrgHref("/team/budgets", orgId)}>
           <strong>API budgets</strong>
           <span>Spend and token hard limits</span>
         </a>
-        <a href={`/team/ai-policy?orgId=${orgId}`}>
+        <a href={withOrgHref("/team/ai-policy", orgId)}>
           <strong>AI governance</strong>
           <span>Tools, spend alerts, approvals</span>
         </a>
-        <a href={`/team/budgets?orgId=${orgId}#prompt-caching`}>
+        <a href={`${withOrgHref("/team/budgets", orgId)}#prompt-caching`}>
           <strong>Prompt caching</strong>
           <span>Reuse stable AI context blocks</span>
         </a>
-        <a href={`/team/ai-memory?orgId=${orgId}`}>
+        <a href={withOrgHref("/team/ai-memory", orgId)}>
           <strong>AI memory</strong>
           <span>Team memory governance</span>
         </a>
-        <a href={`/team/data?orgId=${orgId}`}>
+        <a href={withOrgHref("/team/data", orgId)}>
           <strong>Live data</strong>
           <span>TBA connectors</span>
         </a>
-        <a href={`/team/discord?orgId=${orgId}`}>
+        <a href={withOrgHref("/team/discord", orgId)}>
           <strong>Discord</strong>
           <span>Guild, announcements, chat bridge</span>
         </a>
-        <a href={`#github-connection`}>
+        <a href="#github-connection">
           <strong>GitHub</strong>
           <span>Robot-code context for AI — never DEMO repos</span>
         </a>
-        <a href={`/account?tab=notifications`}>
+        <a href="/account?tab=notifications">
           <strong>Notification prefs</strong>
           <span>In-app and email opt-ins</span>
+        </a>
+        <a href="/account?tab=integrations">
+          <strong>Account Connections</strong>
+          <span>TBA, Onshape, Discord, GitHub</span>
         </a>
       </nav>
 
       <nav className="intel-actions settings-secondary-links" aria-label="More team admin links">
-        <a href={`/business?orgId=${orgId}`}>Business</a>
-        <a href={`/costs?orgId=${orgId}`}>Season costs</a>
-        <a href={`/team/grants?orgId=${orgId}`}>Grants</a>
-        <a href={`/team/awards?orgId=${orgId}`}>Awards</a>
-        <a href={`/chat?orgId=${orgId}`}>Assistant</a>
-        <a href={`/team/usage?orgId=${orgId}`}>AI usage</a>
-        <a href={`/team/ai-runs?orgId=${orgId}`}>AI runs</a>
-        <a href={`/team/knowledge?orgId=${orgId}`}>Knowledge</a>
-        <a href={`/exports?orgId=${orgId}`}>Export</a>
-        <a href={`/showcase?orgId=${orgId}`}>Showcase</a>
+        <a href={withOrgHref("/business", orgId)}>Business</a>
+        <a href={withOrgHref("/costs", orgId)}>Season costs</a>
+        <a href={withOrgHref("/team/grants", orgId)}>Grants</a>
+        <a href={withOrgHref("/team/awards", orgId)}>Awards</a>
+        <a href={withOrgHref("/chat", orgId)}>Assistant</a>
+        <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
+        <a href={withOrgHref("/team/ai-runs", orgId)}>AI runs</a>
+        <a href={withOrgHref("/team/knowledge", orgId)}>Knowledge</a>
+        <a href={withOrgHref("/exports", orgId)}>Export</a>
+        <a href={withOrgHref("/showcase", orgId)}>Showcase</a>
         <a href="/security">Personal security</a>
+        <a href="/account?tab=profile">Account</a>
+        <a href={withOrgHref("/team/discord", orgId)}>Discord</a>
+        <a href="/account?tab=integrations">Connections</a>
       </nav>
+
+      <section className="compare-panel team-admin-membership" id="membership" aria-labelledby="membership-title">
+        <span className="eyebrow">MEMBERS &amp; INVITES</span>
+        <h2 id="membership-title">{membershipCopy.title}</h2>
+        <p className="app-muted">{membershipCopy.description}</p>
+        <nav className="product-hub-related team-admin-related" aria-label="Related membership tools">
+          {membershipRelated.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+
+        {membershipShell === "loading" || membershipShell === "error" ? (
+          <EmptyState
+            soft
+            badge={membershipShell === "error" ? "Unavailable" : undefined}
+            badgeTone="setup"
+            title={membershipCopy.title}
+            description={membershipCopy.description}
+            aria-busy={membershipShell === "loading"}
+          >
+            {membershipShell === "error" ? (
+              <button type="button" className="app-button secondary" onClick={() => void load()}>
+                Retry
+              </button>
+            ) : null}
+          </EmptyState>
+        ) : null}
+
+        {membershipShell === "empty" ? (
+          <EmptyState
+            soft
+            badge={membershipCopy.badge}
+            badgeTone="setup"
+            title={membershipCopy.title}
+            description={membershipCopy.description}
+          >
+            <a className="app-button" href="#invite-form">
+              Invite an exact email
+            </a>
+          </EmptyState>
+        ) : null}
+
+        {membershipSteps.length > 0 ? (
+          <Panel className="team-admin-membership" aria-label="Membership setup steps">
+            <header>
+              <h2>Setup steps</h2>
+              <p className="app-muted">Workspace, invite, Discord, and Connections — never DEMO members.</p>
+            </header>
+            <ul className="team-admin-setup-steps">
+              {membershipSteps.map((step) => (
+                <li key={step.id}>
+                  <div>
+                    <strong>{step.label}</strong>
+                    <p className="app-muted team-admin-tip">{step.detail}</p>
+                  </div>
+                  <a className="app-button secondary" href={step.href}>
+                    Open
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        ) : null}
+
+        <MembershipNextActionsPanel actions={membershipActions} />
+
+        {showMembershipTiles ? (
+          <div className="team-admin-metrics" aria-label="Membership metrics">
+            <article>
+              <strong>{formatTeamAdminMetric(members.length, membersLoaded)}</strong>
+              <span>Real members</span>
+            </article>
+            <article>
+              <strong>{formatTeamAdminMetric(pendingInvites, membersLoaded)}</strong>
+              <span>Pending invites</span>
+            </article>
+            <article>
+              <strong>{formatTeamAdminMetric(pendingAccess, membersLoaded)}</strong>
+              <span>Access requests</span>
+            </article>
+          </div>
+        ) : null}
+
+        {membershipShell === "ready" ? (
+          <Panel className="team-admin-members invite-list" aria-label="Members list">
+            <span className="eyebrow">Members</span>
+            {members.map((member) => (
+              <article key={member.userId}>
+                <div>
+                  <strong>{member.name || member.email}</strong>
+                  <small>
+                    {member.email} · {member.role}
+                    {member.joinedAt
+                      ? ` · joined ${new Date(member.joinedAt).toLocaleDateString()}`
+                      : ""}
+                  </small>
+                </div>
+                <a className="app-button secondary" href={withOrgHref("/team/security", orgId)}>
+                  Capabilities
+                </a>
+              </article>
+            ))}
+          </Panel>
+        ) : null}
+      </section>
+
       <section className="team-access-inbox" aria-labelledby="team-access-title">
         <header>
           <div>
@@ -459,18 +677,48 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </div>
         {message ? <p className="team-access-message" role="status">{message}</p> : null}
       </section>
-      <section className="admin-grid">
+      <section className="admin-grid" id="invite-form">
         <form className="intel-panel" onSubmit={invite}>
           <span className="eyebrow">INVITE A SPECIFIC EMAIL</span>
-          <p>Team numbers never grant access. The recipient must verify this exact address.</p>
-          <label>Email<input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-          <label>Role<select value={role} onChange={(e) => setRole(e.target.value)}><option value="admin">Admin</option><option value="scout">Scout</option><option value="viewer">Viewer</option></select></label>
+          <p>
+            Team numbers never grant access. The recipient must verify this exact address — the ledger stays blank
+            until a real invite is sent, never DEMO members.
+          </p>
+          <label>
+            Email
+            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+          <label>
+            Role
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="admin">Admin</option>
+              <option value="scout">Scout</option>
+              <option value="viewer">Viewer</option>
+            </select>
+          </label>
           <button className="primary-action">Send invitation</button>
+          <div className="intel-actions" style={{ marginTop: "0.75rem" }}>
+            <a className="app-button secondary" href="/account?tab=profile">
+              Account
+            </a>
+            <a className="app-button secondary" href={withOrgHref("/team/discord", orgId)}>
+              Discord
+            </a>
+            <a className="app-button secondary" href="/account?tab=integrations">
+              Connections
+            </a>
+          </div>
         </form>
-        <Panel className="invite-list">
+        <Panel className="invite-list" id="invitation-ledger">
           <span className="eyebrow">Invitation ledger</span>
           {!invites.length ? (
-            <EmptyState soft title="No invitations yet" description="Send an invite on the left to start the ledger." />
+            <EmptyState
+              soft
+              badge="No invitations yet"
+              badgeTone="setup"
+              title="Invite ledger is empty"
+              description="Send an exact-email invite on the left. Nothing is pre-seeded — never DEMO members."
+            />
           ) : (
             invites.map((inviteRow) => (
               <article key={inviteRow.id}>
