@@ -14,6 +14,7 @@ type PolicyForm = {
   dailySpendAlertUsd: string;
   monthlySpendAlertUsd: string;
   spendAlertThresholds: string;
+  financeInAiEnabled: boolean;
 };
 
 type Approval = {
@@ -48,6 +49,7 @@ const defaultForm: PolicyForm = {
   dailySpendAlertUsd: "",
   monthlySpendAlertUsd: "",
   spendAlertThresholds: "50,75,90",
+  financeInAiEnabled: false,
 };
 
 export default function AiPolicyClient({ orgId }: { orgId: string }) {
@@ -66,6 +68,16 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [financeInAiAcceptedAt, setFinanceInAiAcceptedAt] = useState<string | null>(null);
+  const [financeInAiAckVersion, setFinanceInAiAckVersion] = useState<string | null>(null);
+  const [catalogFinanceAckVersion, setCatalogFinanceAckVersion] = useState<string | null>(null);
+  const [financeInAiRiskAccepted, setFinanceInAiRiskAccepted] = useState(false);
+  const [financeRiskModalOpen, setFinanceRiskModalOpen] = useState(false);
+
+  const financeAckCurrent =
+    Boolean(financeInAiAcceptedAt) &&
+    Boolean(catalogFinanceAckVersion) &&
+    financeInAiAckVersion === catalogFinanceAckVersion;
 
   async function load() {
     setLoading(true);
@@ -97,8 +109,16 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
         monthlySpendAlertUsd:
           policy.monthlySpendAlertUsd == null ? "" : String(policy.monthlySpendAlertUsd),
         spendAlertThresholds: (policy.spendAlertThresholds ?? [50, 75, 90]).join(","),
+        financeInAiEnabled: Boolean(policy.financeInAiEnabled),
       });
+      setFinanceInAiAcceptedAt(policy.financeInAiAcceptedAt ?? null);
+      setFinanceInAiAckVersion(policy.financeInAiAckVersion ?? null);
+    } else {
+      setFinanceInAiAcceptedAt(null);
+      setFinanceInAiAckVersion(null);
     }
+    setCatalogFinanceAckVersion(policyData.catalog?.financeInAiAckVersion ?? null);
+    setFinanceInAiRiskAccepted(false);
     setFeatures(policyData.catalog?.features ?? []);
     setTools(policyData.catalog?.tools ?? []);
     setModels(policyData.models ?? []);
@@ -114,8 +134,39 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
     void load();
   }, [orgId]);
 
+  function onFinanceToggle(checked: boolean) {
+    if (!checked) {
+      setForm({ ...form, financeInAiEnabled: false });
+      setFinanceInAiRiskAccepted(false);
+      setFinanceRiskModalOpen(false);
+      return;
+    }
+    if (financeAckCurrent || financeInAiRiskAccepted) {
+      setForm({ ...form, financeInAiEnabled: true });
+      return;
+    }
+    setFinanceRiskModalOpen(true);
+  }
+
+  function acceptFinanceRisks() {
+    setFinanceInAiRiskAccepted(true);
+    setForm((prev) => ({ ...prev, financeInAiEnabled: true }));
+    setFinanceRiskModalOpen(false);
+  }
+
+  function dismissFinanceRisks() {
+    setFinanceRiskModalOpen(false);
+    setFinanceInAiRiskAccepted(false);
+    setForm((prev) => ({ ...prev, financeInAiEnabled: false }));
+  }
+
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    if (form.financeInAiEnabled && !financeAckCurrent && !financeInAiRiskAccepted) {
+      setFinanceRiskModalOpen(true);
+      setMessage("Accept Finance-in-AI risks before enabling.");
+      return;
+    }
     setSaving(true);
     const response = await fetch("/api/organizations/ai-policy", {
       method: "POST",
@@ -129,6 +180,10 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
         spendAlertThresholds: form.spendAlertThresholds
           .split(",")
           .map((value) => Number(value.trim())),
+        financeInAiEnabled: form.financeInAiEnabled,
+        financeInAiRiskAccepted: form.financeInAiEnabled
+          ? financeInAiRiskAccepted || financeAckCurrent
+          : false,
       }),
     });
     const data = await response.json();
@@ -171,6 +226,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           <a href={`/team/usage?orgId=${orgId}`}>AI usage</a>
           <a href={`/team/ai-runs?orgId=${orgId}`}>AI runs</a>
           <a href={`/team/ai-memory?orgId=${orgId}`}>AI memory</a>
+          <a href={`/team/finance?orgId=${orgId}`}>Team finance</a>
           <a href={`/team?orgId=${orgId}`}>Team admin</a>
         </nav>
       </header>
@@ -196,6 +252,10 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
             <article>
               <span>Model allowlist</span>
               <strong>{budget?.modelAllowlistEnabled ? "On" : "Off"}</strong>
+            </article>
+            <article>
+              <span>Finance-in-AI</span>
+              <strong>{form.financeInAiEnabled ? "On" : "Off"}</strong>
             </article>
           </section>
 
@@ -252,6 +312,35 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
                 </label>
               ))}
             </div>
+
+            <span className="eyebrow" style={{ marginTop: "1.25rem", display: "block" }}>
+              FINANCE-IN-AI
+            </span>
+            <label className="state-control">
+              <input
+                type="checkbox"
+                checked={form.financeInAiEnabled}
+                onChange={(e) => onFinanceToggle(e.target.checked)}
+              />
+              <span>
+                <strong>Allow AI to read team financial summaries</strong>
+                <small>
+                  Opt-in only. Assistants may use redacted budget and order context. Manage ledger on{" "}
+                  <a href={`/team/finance?orgId=${orgId}`}>Team finance</a>.
+                  {financeInAiAcceptedAt ? (
+                    <>
+                      {" "}
+                      Last accepted {new Date(financeInAiAcceptedAt).toLocaleString()}
+                      {financeInAiAckVersion ? ` · ack ${financeInAiAckVersion}` : ""}
+                      {catalogFinanceAckVersion && financeInAiAckVersion !== catalogFinanceAckVersion
+                        ? ` (catalog ${catalogFinanceAckVersion} — re-accept required)`
+                        : ""}
+                      .
+                    </>
+                  ) : null}
+                </small>
+              </span>
+            </label>
 
             <span className="eyebrow" style={{ marginTop: "1.25rem", display: "block" }}>
               HIGH-COST APPROVAL
@@ -418,6 +507,36 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           </section>
         </>
       )}
+
+      {financeRiskModalOpen ? (
+        <div
+          className="edc-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="finance-in-ai-risk-title"
+        >
+          <div>
+            <header>
+              <h2 id="finance-in-ai-risk-title">Accept Finance-in-AI risks</h2>
+              <button type="button" aria-label="Close" onClick={dismissFinanceRisks}>
+                ×
+              </button>
+            </header>
+            <p className="edc-muted">
+              AI limited to pricing, amounts, vendor/source, purpose/category; never bank account
+              numbers, full card numbers, routing, SSN
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "1rem" }}>
+              <button type="button" className="primary-action" onClick={acceptFinanceRisks}>
+                Accept and enable
+              </button>
+              <button type="button" onClick={dismissFinanceRisks}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

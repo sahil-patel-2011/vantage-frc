@@ -201,7 +201,9 @@ export default function ScheduleClient() {
             </span>
           </div>
           <div className="sched-hero-detail">
-            <span className={`sched-alliance-chip ${nextSide}`}>{nextSide === "red" ? "Red alliance" : "Blue alliance"}</span>
+            <span className={`sched-alliance-chip ${nextSide}`}>
+              {nextSide === "red" ? "Switch to RED bumpers" : "Switch to BLUE bumpers"}
+            </span>
             <span className="sched-hero-teams">
               With {partners.length ? partners.join(" · ") : "—"}
               <em> vs {opponents.length ? opponents.join(" · ") : "—"}</em>
