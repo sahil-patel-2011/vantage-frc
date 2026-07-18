@@ -4,6 +4,7 @@ import {
   BUSINESS_GRANTS_RELATED_INCLUDE,
   FUNDRAISERS_RELATED_INCLUDE,
   GRANTS_WRITING_RELATED_INCLUDE,
+  ORDERS_RELATED_INCLUDE,
   PLACEMENTS_RELATED_INCLUDE,
   SPONSOR_CRM_RELATED_INCLUDE,
 } from "./business-related";
@@ -60,6 +61,17 @@ describe("business-related Soft-UI helpers", () => {
     expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
     expect(links.find((l) => l.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
     expect(links.find((l) => l.id === "orders")?.href).toBe("/business?tab=orders&orgId=org-1");
+  });
+
+  it("builds orders Soft-UI cross-links to sponsors and fundraisers", () => {
+    const links = businessRelatedLinks("org-1", {
+      active: "orders",
+      include: ORDERS_RELATED_INCLUDE,
+    });
+    expect(links.map((l) => l.id)).toEqual(["sponsors", "grants", "fundraisers", "finance-ai", "budget"]);
+    expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
+    expect(links.find((l) => l.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
+    expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");
   });
 
   it("never uses DEMO labels", () => {

@@ -1,11 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { BusinessRelated } from "../../components/business-related";
 import { EmptyState } from "../../components/ui/empty-state";
 import { PageHeader } from "../../components/ui/page-header";
+import { ORDERS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { showBuyPanel, statusLabel } from "../../lib/orders/evaluate";
 import type { OrdersView } from "../../lib/orders/compute-orders";
+import { ordersNextActions } from "../../lib/orders/orders-next-actions";
 import type { OrderRequest } from "../../lib/orders/types";
+import "./orders.css";
 
 type LiveView = Extract<OrdersView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -23,6 +27,63 @@ function usd(value: number): string {
     currency: "USD",
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function OrdersNextActions({
+  actions,
+}: {
+  actions: ReturnType<typeof ordersNextActions>;
+}) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions orders-next-actions" aria-label="Next actions">
+      <header>
+        <span className="biz-overline">Next actions</span>
+        <h2>Approve, then buy on the vendor site</h2>
+        <p>Estimates come from real requests only — never DEMO order totals. Card and bank details stay off Vantage.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ApprovalFlowStrip() {
+  return (
+    <section className="soft-panel orders-flow" aria-label="How ordering works">
+      <span className="biz-overline">Approve → buy link</span>
+      <h2>How purchase requests move</h2>
+      <ol className="orders-flow-steps">
+        <li>
+          <strong>1. Submit</strong>
+          <span>Student or mentor requests a part with an estimate and optional product URL.</span>
+        </li>
+        <li>
+          <strong>2. Approve</strong>
+          <span>Owner/admin reviews purpose, assigns a buyer, and unlocks ordering.</span>
+        </li>
+        <li>
+          <strong>3. Buy link</strong>
+          <span>Buyer opens the vendor page and pays there — never enter card or bank details here.</span>
+        </li>
+        <li>
+          <strong>4. Mark ordered</strong>
+          <span>Return to mark ordered, then received when the part arrives.</span>
+        </li>
+      </ol>
+    </section>
+  );
 }
 
 export default function OrdersClient({ embedded = false, seasonYear, orgId: orgIdProp }: OrdersClientProps = {}) {
@@ -92,11 +153,39 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
   );
 
   const live = view?.status === "live" ? view : null;
-  const orgQ = live ? `?orgId=${encodeURIComponent(live.orgId)}` : "";
   const seasonOptions = useMemo(() => {
     const year = live?.seasonYear ?? season ?? new Date().getFullYear();
     return [year - 1, year, year + 1];
   }, [live?.seasonYear, season]);
+
+  const nextActionCtx = useMemo(() => {
+    if (view?.status === "setup_required") {
+      return { orgId: view.orgId ?? orgIdProp ?? null, orderCount: 0, seasonYear: seasonYear ?? undefined };
+    }
+    if (!live) return { orgId: orgIdProp ?? null, orderCount: 0 };
+    const missingBuyLinkCount = live.orders.filter((o) => o.status === "approved" && !o.itemUrl).length;
+    return {
+      orgId: live.orgId,
+      isAdmin: live.isAdmin,
+      orderCount: live.orders.length,
+      pendingCount: live.metrics.pending,
+      readyToBuyCount: live.metrics.readyToBuy,
+      missingBuyLinkCount,
+      seasonYear: live.seasonYear,
+    };
+  }, [view, live, orgIdProp, seasonYear]);
+
+  const nextActions = useMemo(() => ordersNextActions(nextActionCtx), [nextActionCtx]);
+  const relatedOrg = live?.orgId ?? (view?.status === "setup_required" ? view.orgId : null) ?? orgIdProp ?? null;
+
+  const related = relatedOrg ? (
+    <BusinessRelated
+      orgId={relatedOrg}
+      active="orders"
+      include={ORDERS_RELATED_INCLUDE}
+      ariaLabel="Related business tools"
+    />
+  ) : null;
 
   const body = (
     <>
@@ -109,26 +198,32 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
       {!view ? (
         <EmptyState soft title="Opening orders…" description="Loading this season’s purchase requests." aria-busy />
       ) : view.status === "setup_required" ? (
-        <EmptyState
-          badge="Setup required"
-          badgeTone="setup"
-          title={view.message}
-          description="Choose a workspace, then return here to submit and approve purchases."
-        >
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
+        <>
+          {related}
+          <EmptyState
+            soft
+            badge="Setup required"
+            badgeTone="setup"
+            title={view.message}
+            description="Choose a workspace, then submit needs for mentor approval. Buyers only get a vendor buy link — never card or bank forms."
+          >
+            <ol className="strategy-setup-steps">
+              {view.steps.map((step) => (
+                <li key={step.id}>
+                  <div>
+                    <strong>{step.label}</strong>
+                    <span>{step.detail}</span>
+                  </div>
+                  <a href={step.href}>Open</a>
+                </li>
+              ))}
+            </ol>
+          </EmptyState>
+          <OrdersNextActions actions={nextActions} />
+        </>
       ) : (
         <>
+          {related}
           {!embedded ? (
             <label className="orders-season">
               Season
@@ -148,19 +243,33 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
               </select>
             </label>
           ) : null}
-          <MetricsPanel view={live!} />
+          <ApprovalFlowStrip />
+          <OrdersNextActions actions={nextActions} />
+          {live!.orders.length > 0 ? <MetricsPanel view={live!} /> : null}
           {live!.orders.length === 0 ? (
             <EmptyState
               soft
               title="No purchase requests yet"
-              description="Submit what the team needs below. Mentors approve here, then the buyer opens the vendor link and pays outside Vantage — card and bank details are never stored."
-            />
+              description="Submit what the team needs below. Mentors approve here, then the buyer opens the vendor link and pays outside Vantage — card and bank details are never stored. Open totals stay empty until someone submits a real estimate."
+            >
+              <BusinessRelated
+                orgId={live!.orgId}
+                include={["sponsors", "fundraisers", "budget"]}
+                ariaLabel="Empty orders links"
+              />
+            </EmptyState>
           ) : null}
           {live!.financeAiEnabled && live!.aiSummary ? <AiSummaryPanel summary={live!.aiSummary} /> : null}
           {live!.metrics.mineToBuy > 0 ? (
             <p className="orders-warn" role="status">
-              {live!.metrics.mineToBuy} approved request{live!.metrics.mineToBuy === 1 ? "" : "s"} waiting on you to
-              order.
+              {live!.metrics.mineToBuy} approved request{live!.metrics.mineToBuy === 1 ? "" : "s"} waiting on you —
+              open the buy link, pay on the vendor site, then mark ordered.
+            </p>
+          ) : null}
+          {live!.isAdmin && live!.metrics.pending > 0 ? (
+            <p className="orders-info" role="status">
+              {live!.metrics.pending} request{live!.metrics.pending === 1 ? "" : "s"} awaiting your approval before a
+              buy link is unlocked.
             </p>
           ) : null}
           <SubmitForm busy={busy} mutate={mutate} />
@@ -179,36 +288,8 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
       <PageHeader
         navPath="/orders"
         title="Purchase requests"
-        description="Tell mentors what the team needs, get approval, then buy on the vendor site. Vantage never stores card or bank details."
-      >
-        {live ? (
-          <nav className="orders-links" aria-label="Related business tools">
-            <a
-              className="app-button secondary"
-              href={
-                live.orgId
-                  ? `/business?orgId=${encodeURIComponent(live.orgId)}&tab=orders`
-                  : "/business?tab=orders"
-              }
-            >
-              Business · Orders
-            </a>
-            <a
-              className="app-button secondary"
-              href={
-                live.orgId
-                  ? `/business?orgId=${encodeURIComponent(live.orgId)}&tab=budget`
-                  : "/business?tab=budget"
-              }
-            >
-              Budget
-            </a>
-            <a className="app-button secondary" href={`/costs${orgQ}`}>
-              Season costs
-            </a>
-          </nav>
-        ) : null}
-      </PageHeader>
+        description="Tell mentors what the team needs, get approval, then buy on the vendor site. Vantage never stores card or bank details — and never invents DEMO order totals."
+      />
       {body}
     </main>
   );
@@ -221,11 +302,13 @@ function MetricsPanel({ view }: { view: LiveView }) {
     { label: "Ready to buy", value: String(m.readyToBuy) },
     { label: "Ordered", value: String(m.ordered) },
     { label: "Received", value: String(m.received) },
-    { label: "Open total", value: usd(m.openTotalUsd) },
+    { label: "Open estimates", value: usd(m.openTotalUsd) },
   ];
   return (
     <section className="soft-panel">
-      <h2>At a glance</h2>
+      <span className="biz-overline">At a glance</span>
+      <h2>This season’s real requests</h2>
+      <p className="orders-metrics-note">Counts and open $ come only from submitted estimates — never DEMO placeholders.</p>
       <div className="orders-metrics">
         {tiles.map((tile) => (
           <div key={tile.label} className="orders-metric">
@@ -266,7 +349,12 @@ function SubmitForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
 
   return (
     <section className="soft-panel">
+      <span className="biz-overline">Student purchasing</span>
       <h2>Submit a need</h2>
+      <p className="orders-form-lead">
+        Mentors approve the request first. After approval, someone opens the product URL and pays on the vendor site —
+        never paste card or bank numbers into this form.
+      </p>
       <form className="orders-form" onSubmit={onSubmit}>
         <label>
           What do you need?
@@ -291,7 +379,7 @@ function SubmitForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
             <input name="vendor" maxLength={120} placeholder="Amazon, McMaster, VEX…" />
           </label>
           <label>
-            Product URL <small>optional</small>
+            Buy link <small>optional product URL</small>
             <input name="itemUrl" type="url" placeholder="https://…" />
           </label>
         </div>
@@ -311,7 +399,11 @@ function OrdersList({ view, busy, mutate }: { view: LiveView; busy: boolean; mut
   return (
     <>
       <section className="soft-panel">
+        <span className="biz-overline">Mentor gate</span>
         <h2>Awaiting approval</h2>
+        <p className="orders-section-lead">
+          Approval assigns a buyer and unlocks the vendor buy link. Nothing is charged in Vantage.
+        </p>
         {pending.length === 0 ? (
           <p className="app-muted">No requests waiting on mentors.</p>
         ) : (
@@ -331,7 +423,11 @@ function OrdersList({ view, busy, mutate }: { view: LiveView; busy: boolean; mut
       </section>
 
       <section className="soft-panel">
+        <span className="biz-overline">Buy link → fulfillment</span>
         <h2>In progress &amp; done</h2>
+        <p className="orders-section-lead">
+          After approval, open the buy link on the vendor site, then mark ordered and received here.
+        </p>
         {active.length === 0 ? (
           <p className="app-muted">Approved and fulfilled requests appear here.</p>
         ) : (
@@ -406,12 +502,16 @@ function OrderCard({
       </div>
       {order.justification ? <p className="app-muted">{order.justification}</p> : null}
       <div className="orders-meta">
-        <span>{usd(order.totalCostUsd)}</span>
+        <span>{usd(order.totalCostUsd)} estimate</span>
         <span>{order.vendor}</span>
         <span>Requested by {order.requestedByName ?? "team member"}</span>
         {order.buyerName ? <span>Buyer: {order.buyerName}</span> : null}
         {order.reviewNotes ? <span>Note: {order.reviewNotes}</span> : null}
       </div>
+
+      {order.status === "pending" && !view.isAdmin ? (
+        <p className="orders-waiting app-muted">Waiting on an owner or admin to approve before a buy link unlocks.</p>
+      ) : null}
 
       {showBuyPanel(order.status) ? (
         <BuyPanel order={order} canBuy={canBuy} busy={busy} mutate={mutate} />
@@ -466,15 +566,15 @@ function BuyPanel({
 
   return (
     <div className="orders-buy-panel">
-      <h3>Ordering checklist</h3>
+      <h3>Buy on the vendor site</h3>
       <ol>
-        <li>Open the vendor product page and confirm part number and quantity.</li>
+        <li>Open the product page and confirm part number and quantity.</li>
         <li>Pay on the vendor site with the team card — never enter card or bank details in Vantage.</li>
         <li>Save the receipt for finance / reimbursement.</li>
         <li>Return here and mark the request ordered, then received when it arrives.</li>
       </ol>
       {order.itemUrl ? (
-        <a href={order.itemUrl} target="_blank" rel="noopener noreferrer">
+        <a className="orders-buy-link" href={order.itemUrl} target="_blank" rel="noopener noreferrer">
           Open buy link ↗
         </a>
       ) : canBuy ? (
@@ -492,14 +592,14 @@ function BuyPanel({
             value={itemUrl}
             onChange={(event) => setItemUrl(event.target.value)}
             required
-            aria-label="Product URL"
+            aria-label="Buy link URL"
           />
           <button type="submit" disabled={busy || !itemUrl.trim()}>
             Save buy link
           </button>
         </form>
       ) : (
-        <span className="app-muted">No product URL on file — ask an admin or buyer to add one.</span>
+        <span className="app-muted">No buy link on file — ask an admin or buyer to add a product URL.</span>
       )}
       {!canBuy ? <span className="app-muted">Waiting on the assigned buyer or an admin.</span> : null}
     </div>
@@ -521,52 +621,59 @@ function AdminReview({
   const [reviewNotes, setReviewNotes] = useState("");
 
   return (
-    <div className="orders-admin-row">
-      <select value={buyerUserId} onChange={(event) => setBuyerUserId(event.target.value)} aria-label="Assign buyer">
-        <option value="">Buyer defaults to requester</option>
-        {buyerOptions.map((member) => (
-          <option key={member.userId} value={member.userId}>
-            {member.name} ({member.role})
-          </option>
-        ))}
-      </select>
-      <input
-        type="text"
-        placeholder="Review note (optional)"
-        value={reviewNotes}
-        onChange={(event) => setReviewNotes(event.target.value)}
-        maxLength={1000}
-        aria-label="Review note"
-      />
-      <button
-        type="button"
-        className="primary"
-        disabled={busy}
-        onClick={() =>
-          mutate({
-            action: "approve-order",
-            orderId: order.id,
-            buyerUserId: buyerUserId || null,
-            reviewNotes: reviewNotes || null,
-          })
-        }
-      >
-        Approve
-      </button>
-      <button
-        type="button"
-        className="danger"
-        disabled={busy}
-        onClick={() =>
-          mutate({
-            action: "reject-order",
-            orderId: order.id,
-            reviewNotes: reviewNotes || null,
-          })
-        }
-      >
-        Reject
-      </button>
+    <div className="orders-approve-panel">
+      <h3>Mentor approval</h3>
+      <p>
+        Approving unlocks the buy link for the assigned buyer. Vantage does not collect payment — the buyer pays on the
+        vendor site.
+      </p>
+      <div className="orders-admin-row">
+        <select value={buyerUserId} onChange={(event) => setBuyerUserId(event.target.value)} aria-label="Assign buyer">
+          <option value="">Buyer defaults to requester</option>
+          {buyerOptions.map((member) => (
+            <option key={member.userId} value={member.userId}>
+              {member.name} ({member.role})
+            </option>
+          ))}
+        </select>
+        <input
+          type="text"
+          placeholder="Review note (optional)"
+          value={reviewNotes}
+          onChange={(event) => setReviewNotes(event.target.value)}
+          maxLength={1000}
+          aria-label="Review note"
+        />
+        <button
+          type="button"
+          className="primary"
+          disabled={busy}
+          onClick={() =>
+            mutate({
+              action: "approve-order",
+              orderId: order.id,
+              buyerUserId: buyerUserId || null,
+              reviewNotes: reviewNotes || null,
+            })
+          }
+        >
+          Approve → unlock buy link
+        </button>
+        <button
+          type="button"
+          className="danger"
+          disabled={busy}
+          onClick={() =>
+            mutate({
+              action: "reject-order",
+              orderId: order.id,
+              reviewNotes: reviewNotes || null,
+            })
+          }
+        >
+          Reject
+        </button>
+      </div>
     </div>
   );
 }

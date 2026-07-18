@@ -19,6 +19,8 @@ export {
   updateOrderItemUrl,
   type OrdersView,
 } from "./compute-orders";
+export { ordersNextActions } from "./orders-next-actions";
+export type { OrdersNextAction, OrdersNextActionContext } from "./orders-next-actions";
 export type {
   OrderAiSummary,
   OrderMember,
