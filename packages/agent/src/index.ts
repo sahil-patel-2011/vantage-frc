@@ -81,7 +81,15 @@ export function routeModel(models: ModelConfig[], request: RouteRequest) {
 }
 
 export type ContextItem = {
-  type: "private_memory" | "team_memory" | "module_data" | "module_fact" | "artifact" | "task";
+  type:
+    | "private_memory"
+    | "team_memory"
+    | "module_data"
+    | "module_fact"
+    | "artifact"
+    | "task"
+    | "github_file"
+    | "vscode_selection";
   id: string;
   content: string;
   importance: number;

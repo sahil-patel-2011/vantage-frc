@@ -241,6 +241,14 @@ export class AgentRepository {
     requestId: string;
     selected?: { teamKey?: string; matchKey?: string };
     promptCachingEnabled?: boolean;
+    /** Optional bridge context (GitHub files, VS Code selection) — never invent DEMO code. */
+    bridgeContext?: Array<
+      ContextItem & {
+        classification?: ContextSource["classification"];
+        sourceUrl?: string;
+        label?: string;
+      }
+    >;
   }) {
     const message = await this.client.query<{ id: string }>(
       `INSERT INTO agent_messages(thread_id,org_id,author_user_id,role,content,explicitly_shared)
@@ -248,6 +256,30 @@ export class AgentRepository {
       [input.threadId, input.orgId, input.userId, input.message, input.scope === "team"],
     );
     const context = await this.retrieveContext(input.userId, input.scope === "team" ? input.orgId : undefined);
+    const bridgeItems = (input.bridgeContext ?? []).filter((item) => item.content?.trim());
+    const bridgeSources: ContextSource[] = bridgeItems.map((item) => ({
+      type: item.type === "github_file" || item.type === "vscode_selection" ? item.type : "artifact",
+      id: item.id,
+      content: item.content,
+      importance: item.importance,
+      classification:
+        item.classification ??
+        (item.type === "github_file"
+          ? "github_file"
+          : item.type === "vscode_selection"
+            ? "vscode_selection"
+            : "artifact"),
+      sourceUrl: item.sourceUrl,
+      label: item.label,
+    }));
+    const memorySources: ContextSource[] = context.items.map(
+      (item) =>
+        ({
+          ...item,
+          classification: item.type === "private_memory" ? "private_memory" : "team_memory",
+        }) as ContextSource,
+    );
+    const bridgeTokens = bridgeItems.reduce((sum, item) => sum + Math.ceil(item.content.length / 4), 0);
     const orchestrated = await new AIOrchestrator(this.client, createVantageToolRegistry()).run({
       orgId: input.orgId,
       userId: input.userId,
@@ -259,14 +291,8 @@ export class AgentRepository {
       adapter: input.adapter,
       selected: input.selected,
       autoTools: true,
-      contextSources: context.items.map(
-        (item) =>
-          ({
-            ...item,
-            classification: item.type === "private_memory" ? "private_memory" : "team_memory",
-          }) as ContextSource,
-      ),
-      tokenBudget: context.estimatedTokens + 1000,
+      contextSources: [...bridgeSources, ...memorySources],
+      tokenBudget: context.estimatedTokens + bridgeTokens + 1000,
       promptCachingEnabled: input.promptCachingEnabled,
     });
     const text = orchestrated.text;
@@ -276,6 +302,12 @@ export class AgentRepository {
       [input.threadId, input.orgId, text, input.scope === "team", input.adapter.provider, input.adapter.model],
     );
     const sourceRefs: SourceRef[] = [
+      ...bridgeSources.map((item) => ({
+        type: item.type,
+        id: item.id,
+        classification: item.classification,
+        summary: item.label ?? item.id,
+      })),
       ...context.items.map((item) => ({ type: item.type, id: item.id })),
       ...orchestrated.toolOutputs.map((tool: AnnotatedToolOutput, index: number) => ({
         type: "module_fact",
@@ -296,6 +328,7 @@ export class AgentRepository {
         input.orgId ?? null,
         JSON.stringify(sourceRefs),
         context.estimatedTokens +
+          bridgeTokens +
           orchestrated.toolOutputs.reduce((sum, tool) => sum + Math.ceil(JSON.stringify(tool.output).length / 4), 0),
       ],
     );
@@ -308,6 +341,12 @@ export class AgentRepository {
       toolOutputs: orchestrated.toolOutputs,
       activeEventKey: orchestrated.activeEventKey,
       usageFeature: orchestrated.usageFeature,
+      bridgeProvenance: bridgeSources.map((item) => ({
+        type: item.type,
+        id: item.id,
+        label: item.label ?? item.id,
+        classification: item.classification,
+      })),
     };
   }
 }
