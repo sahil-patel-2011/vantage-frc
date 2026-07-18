@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { parseComposerLinkFromSearch, type MessageObjectLink } from "../../lib/messages/object-links";
 import "../product-hub.css";
 import "./calendar/team-calendar.css";
 
@@ -26,6 +27,28 @@ function TeamAdminLink() {
   );
 }
 
+function MessagesTab({ orgId }: { orgId: string }) {
+  const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
+  const [initialObjectLink, setInitialObjectLink] = useState<MessageObjectLink | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setInitialConversationId(params.get("conversationId"));
+    setInitialObjectLink(parseComposerLinkFromSearch(params, orgId));
+    setReady(true);
+  }, [orgId]);
+
+  if (!ready) return null;
+  return (
+    <MessagesClient
+      orgId={orgId}
+      initialConversationId={initialConversationId}
+      initialObjectLink={initialObjectLink}
+    />
+  );
+}
+
 export default function TeamHub() {
   return (
     <ProductHubShell hubId="team" headerActions={<TeamAdminLink />}>
@@ -38,7 +61,7 @@ export default function TeamHub() {
         if (tab === "messages") {
           return (
             <HubOrgGate orgId={orgId} label="Messages">
-              {(id) => <MessagesClient orgId={id} />}
+              {(id) => <MessagesTab orgId={id} />}
             </HubOrgGate>
           );
         }

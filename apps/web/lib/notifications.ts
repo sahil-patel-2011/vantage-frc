@@ -84,8 +84,8 @@ export function notificationHref(
     }
     case "scouting_disagreement_resolved":
       return orgId
-        ? `/scouting?orgId=${encodeURIComponent(orgId)}&tab=conflicts`
-        : "/scouting";
+        ? `/competition?tab=scouting&orgId=${encodeURIComponent(orgId)}&scoutTab=conflicts`
+        : "/competition?tab=scouting";
     default:
       return null;
   }

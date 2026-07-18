@@ -6,6 +6,8 @@
  * (+ Home entry + Settings). See docs/FEATURE_MAP.md.
  */
 
+import { PRODUCT_HUBS } from "./hubs";
+
 export type NavItemState = "setup" | "planned";
 
 export type ProductNavItem = {
@@ -85,6 +87,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/competition", label: "Competition hub", icon: "swords" },
       { href: "/competition?tab=command", label: "Command", icon: "target" },
       { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
+      { href: "/competition?tab=strategy", label: "Strategy", icon: "stats" },
       { href: "/competition?tab=scouting", label: "Scouting", icon: "scout" },
       { href: "/scouting/lineup", label: "Lineup & Coverage", icon: "target" },
       { href: "/intel", label: "Matches & Teams", icon: "swords" },
@@ -95,13 +98,11 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/rankings", label: "Rankings", icon: "stats" },
       { href: "/video", label: "Video Review", icon: "display" },
       { href: "/pit", label: "Pit Command", icon: "cube" },
-      { href: "/batteries", label: "Batteries", icon: "bolt" },
       { href: "/incidents", label: "Incidents", icon: "gear" },
       { href: "/match-checklist", label: "Match Checklist", icon: "clipboard" },
       { href: "/briefing", label: "Event Briefing", icon: "clipboard" },
       { href: "/match-debrief", label: "Match Debrief", icon: "chat" },
       { href: "/inspection", label: "Inspection", icon: "target" },
-      { href: "/kickoff", label: "Kickoff", icon: "bolt" },
     ],
   },
   {
@@ -153,7 +154,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/business", label: "Business Hub", icon: "clipboard" },
       { href: "/business?tab=orders", label: "Orders", icon: "clipboard" },
       { href: "/costs", label: "Season Costs", icon: "stats" },
-      { href: "/team/finance", label: "Finance", icon: "stats" },
+      { href: "/business?tab=budget", label: "Finance", icon: "stats" },
       { href: "/team/sponsors", label: "Sponsors", icon: "users" },
       { href: "/business?tab=sponsorship", label: "Sponsorship", icon: "clipboard" },
       { href: "/business?tab=grants", label: "Grants", icon: "clipboard" },
@@ -170,8 +171,10 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     icon: "cube",
     items: [
       { href: "/build", label: "Build hub", icon: "cube" },
+      { href: "/build?tab=kickoff", label: "Kickoff", icon: "bolt" },
       { href: "/build?tab=cad", label: "CAD", icon: "cube", state: "setup" },
       { href: "/build?tab=code", label: "Code", icon: "code" },
+      { href: "/build?tab=batteries", label: "Batteries", icon: "bolt" },
       { href: "/robot", label: "Robot Blueprint", icon: "gear" },
       { href: "/subsystems", label: "Subsystems", icon: "grid" },
       { href: "/build?tab=fmea", label: "FMEA", icon: "gear" },
@@ -194,7 +197,6 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/ai?tab=budgets", label: "Budgets", icon: "stats" },
       { href: "/ai?tab=governance", label: "Governance", icon: "gear" },
       { href: "/ai?tab=finance", label: "Finance toggle", icon: "stats" },
-      { href: "/strategy", label: "Strategy & AI", icon: "target" },
       { href: "/writer", label: "Award Writer", icon: "chat" },
       { href: "/team/usage", label: "AI usage", icon: "stats" },
     ],
@@ -228,10 +230,10 @@ export const PRIMARY_TABS: Array<{ href: string; label: string; icon: ProductNav
 export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/team?tab=messages", label: "Messages", icon: "chat" },
+  { href: "/team?tab=knowledge", label: "Knowledge", icon: "clipboard" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
-  { href: "/business", label: "Business", icon: "clipboard" },
-  { href: "/cad", label: "Build", icon: "cube" },
-  { href: "/chat", label: "AI", icon: "bolt" },
+  { href: "/build", label: "Build", icon: "cube" },
+  { href: "/ai", label: "AI", icon: "bolt" },
 ];
 
 export function withOrgHref(href: string, orgId: string | null | undefined): string {
@@ -243,25 +245,68 @@ export function withOrgHref(href: string, orgId: string | null | undefined): str
   return `${href}${join}orgId=${encodeURIComponent(orgId)}`;
 }
 
-/** Longest matching nav href wins (so /team/security beats /team). */
+/** Path portion of a nav href (hubs use ?tab=). */
+function navPathOnly(href: string): string {
+  return href.split("?")[0] || href;
+}
+
+/**
+ * Longest matching nav href wins (so /team/security beats /team).
+ * Also resolves Soft-UI hub legacy paths (/command → Competition / Command)
+ * via PRODUCT_HUBS.legacyHref when the live href is a ?tab= destination.
+ */
 export function findNavMatch(
   pathname: string,
 ): { group: ProductNavGroup; item: ProductNavItem } | null {
   const path = pathname.split("?")[0] || "/";
   let best: { group: ProductNavGroup; item: ProductNavItem; score: number } | null = null;
+
   for (const group of PRODUCT_NAV_GROUPS) {
     for (const item of group.items) {
       if (item.state === "planned") continue;
-      const href = item.href;
-      const exact = path === href;
-      const nested = href !== "/" && path.startsWith(`${href}/`);
+      const hrefPath = navPathOnly(item.href);
+      const exact = path === hrefPath;
+      const nested = hrefPath !== "/" && path.startsWith(`${hrefPath}/`);
       if (!exact && !nested) continue;
-      if (href === "/team" && nested) continue;
-      if (exact && href === "/team" && group.label === "Settings") continue;
-      const score = href.length + (exact ? 1_000 : 0);
+      // Prefer specific Team routes over the hub root for nested paths.
+      if (hrefPath === "/team" && nested) continue;
+      if (exact && hrefPath === "/team" && group.label === "Settings") continue;
+      // Prefer concrete hub tabs over bare hub roots when path is exactly the hub.
+      const score =
+        hrefPath.length +
+        (exact ? 1_000 : 0) +
+        (item.href.includes("?") ? -50 : 0) +
+        (exact && !item.href.includes("?") ? 100 : 0);
       if (!best || score > best.score) best = { group, item, score };
     }
   }
+
+  // Legacy Soft-UI redirects: /scouting, /kickoff, /messages, …
+  if (!best || best.score < 1_000) {
+    for (const hub of PRODUCT_HUBS) {
+      for (const tab of hub.tabs) {
+        if (!tab.legacyHref || path !== tab.legacyHref) continue;
+        const group = PRODUCT_NAV_GROUPS.find((entry) => entry.label === hub.label);
+        const item = group?.items.find(
+          (entry) => entry.href === `${hub.href}?tab=${tab.id}` || navPathOnly(entry.href) === tab.legacyHref,
+        );
+        if (group && item) {
+          return { group, item };
+        }
+        if (group) {
+          return {
+            group,
+            item: {
+              href: `${hub.href}?tab=${tab.id}`,
+              label: tab.label,
+              icon: group.icon,
+            },
+          };
+        }
+      }
+    }
+  }
+
   return best ? { group: best.group, item: best.item } : null;
 }
 
