@@ -1,15 +1,26 @@
-"use client";
+﻿"use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { PageHeader, Panel } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
 import {
+  AUDIENCE_LABEL,
+  CHECKLIST_AUDIENCES,
   TRAVEL_LEG_KINDS,
   TRAVEL_LEG_LABELS,
+  checklistProgress,
+  filterChecklistForViewer,
+  type ChecklistAudience,
+  type ChecklistItem,
+  type EmergencyContact,
+  type Hotel,
+  type LogisticsMember,
+  type LogisticsTrip,
   type LogisticsView,
+  type OnDutySlot,
   type TravelLegKind,
 } from "../../lib/logistics";
 
@@ -17,9 +28,9 @@ type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type Ready = Extract<LogisticsView, { status: "ready" }>;
 
 function fmtWhen(iso: string | null | undefined): string {
-  if (!iso) return "";
+  if (!iso) return "—";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
+  if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleString(undefined, {
     weekday: "short",
     month: "short",
@@ -29,16 +40,26 @@ function fmtWhen(iso: string | null | undefined): string {
   });
 }
 
+function memberLabel(m: LogisticsMember): string {
+  return m.name?.trim() || m.email?.trim() || m.userId.slice(0, 8);
+}
+
+function canActOnline(online: boolean, fromCache: boolean): boolean {
+  return online && !fromCache;
+}
+
 export default function LogisticsClient() {
   const online = useOnline();
   const [view, setView] = useState<LogisticsView | null>(null);
   const [error, setError] = useState("");
+  const [okMessage, setOkMessage] = useState("");
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setError("");
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId") ?? "";
     const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
@@ -55,16 +76,15 @@ export default function LogisticsClient() {
       setView(data);
       setFromCache(false);
       setCachedAt(null);
-      setError("");
       const cacheOrg = data.status === "ready" ? data.context.orgId : orgId;
       if (cacheOrg) await putFeatureSnapshot("logistics", cacheOrg, data);
-      if (data.status === "ready" && data.trips[0] && !selectedTripId) {
-        setSelectedTripId(data.trips[0].id);
+      if (data.status === "ready" && data.trips[0]) {
+        setSelectedTripId((prev) => prev ?? data.trips[0]?.id ?? null);
       }
     } catch (err: unknown) {
       if (!cached) setError(err instanceof Error ? err.message : "Could not load logistics");
     }
-  }, [selectedTripId]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -72,33 +92,59 @@ export default function LogisticsClient() {
 
   const run = useCallback(
     async (body: ActionBody, key: string) => {
+      if (!canActOnline(online, fromCache)) {
+        setError("Reconnect to save changes (cached copy is read-only).");
+        return;
+      }
       setBusyKey(key);
       setError("");
+      setOkMessage("");
       try {
         const response = await fetch("/api/logistics", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
         });
-        const data = (await response.json()) as { error?: string };
+        const data = (await response.json()) as LogisticsView & { error?: string };
         if (!response.ok) {
           setError(data.error ?? "Could not save");
           return;
         }
-        await load();
+        if ("status" in data) {
+          setView(data);
+          setFromCache(false);
+          setCachedAt(null);
+          if (data.status === "ready") {
+            await putFeatureSnapshot("logistics", data.context.orgId, data);
+            if (data.trips[0]) setSelectedTripId((prev) => prev ?? data.trips[0]?.id ?? null);
+          }
+        } else {
+          await load();
+        }
+        setOkMessage("Saved.");
       } catch {
         setError("Network error — changes were not saved.");
       } finally {
         setBusyKey(null);
       }
     },
-    [load],
+    [fromCache, load, online],
   );
+
+
+  const orgIdParam = view?.status === "ready" ? view.context.orgId : view?.context?.orgId ?? null;
 
   if (error && !view) {
     return (
       <main className="log-page">
         <PageHeader navPath="/logistics" title="Logistics" description={error} />
+        <TeamOpsNav active="logistics" />
+        <OfflineBanner feature="Logistics" fromCache={false} detail={!online ? "Open once online to cache trip info." : undefined} />
+        <EmptyState soft title="Could not load logistics" description={error}>
+          <button type="button" className="app-button secondary" onClick={() => void load()}>
+            Retry
+          </button>
+        </EmptyState>
       </main>
     );
   }
@@ -107,6 +153,7 @@ export default function LogisticsClient() {
     return (
       <main className="log-page">
         <PageHeader navPath="/logistics" title="Logistics" description="Loading trip times and lodging…" />
+        <TeamOpsNav active="logistics" />
       </main>
     );
   }
@@ -115,19 +162,45 @@ export default function LogisticsClient() {
     return (
       <main className="log-page">
         <PageHeader navPath="/logistics" title="Logistics" description={view.message} />
-        <a className="app-button" href="/workspace">
-          Select workspace
-        </a>
+        <TeamOpsNav orgId={orgIdParam} active="logistics" />
+        <OfflineBanner feature="Logistics" fromCache={fromCache} cachedAt={cachedAt} />
+        <EmptyState soft title="Logistics not ready yet" description="Apply the event logistics migration or pick a workspace with logistics enabled.">
+          <a className="app-button" href={orgIdParam ? withOrgHref("/workspace", orgIdParam) : "/workspace"}>
+            Workspace
+          </a>
+        </EmptyState>
       </main>
     );
   }
 
-  const ready = view as Ready;
-  const { context, trips, myLodging, myTrip, nextLeg, lodgingGaps, activeOnDuty } = ready;
-  const orgId = context.orgId!;
+  const ready = view;
+  const {
+    context,
+    trips,
+    sharedChecklist,
+    contacts,
+    members,
+    myLodging,
+    myTrip,
+    nextLeg,
+    lodgingGaps,
+    activeOnDuty,
+  } = ready;
+  const orgId = context.orgId;
   const canManage = context.canManage;
   const trip = trips.find((t) => t.id === selectedTripId) ?? trips[0] ?? null;
   const legs = trip?.travelLegs ?? [];
+  const viewerChecklist = useMemo(
+    () => filterChecklistForViewer(sharedChecklist, context.teamRole),
+    [sharedChecklist, context.teamRole],
+  );
+  const checklistStats = checklistProgress(viewerChecklist);
+  const busy = busyKey != null;
+  const act = canActOnline(online, fromCache);
+
+  const toggleChecklist = (item: ChecklistItem, checked: boolean) => {
+    void run({ action: "toggle_checklist", orgId, id: item.id, checked }, `chk:${item.id}`);
+  };
 
   return (
     <main className="log-page">
@@ -136,48 +209,52 @@ export default function LogisticsClient() {
         title="Logistics"
         description={
           canManage
-            ? `${context.orgName ?? "Team"} — plan leave / hotel / venue / return. Calendar shows when to go.`
-            : `${context.orgName ?? "Team"} — your trip times and lodging.`
+            ? `${context.orgName ?? "Team"} — plan hotels, travel legs, contacts, and day-of checklists.`
+            : `${context.orgName ?? "Team"} — your lodging, who to call, and day-of checklist.`
         }
       >
         <div className="log-header-actions">
           <a className="app-button secondary" href={withOrgHref("/team/calendar?tab=trip", orgId)}>
-            My trip calendar
+            Team calendar
           </a>
-          <a className="app-button secondary" href={withOrgHref("/packing", orgId)}>
-            Packing
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/duties", orgId)}>
-            Duties
+          <a className="app-button secondary" href={withOrgHref("/visit-invites", orgId)}>
+            Visit invites
           </a>
         </div>
       </PageHeader>
-      <TeamOpsNav orgId={orgId} />
+      <TeamOpsNav orgId={orgId} active="logistics" />
       <OfflineBanner
         feature="Logistics"
         fromCache={fromCache}
         cachedAt={cachedAt}
-        detail={!online ? "Showing cached trip times." : undefined}
+        detail={!online ? "Showing cached logistics from this device." : undefined}
       />
       {error ? <p className="log-banner error">{error}</p> : null}
+      {okMessage ? <p className="log-banner ok">{okMessage}</p> : null}
 
       {nextLeg ? (
-        <Panel>
+        <Panel className="logistics-mine">
           <span className="log-kicker">Next on my trip</span>
           <h2>
             {nextLeg.label}: {fmtWhen(nextLeg.startsAt)}
           </h2>
           <p className="app-muted">
             {nextLeg.title}
-            {nextLeg.meetingPoint ? ` · Meet ${nextLeg.meetingPoint}` : ""}
+            {nextLeg.meetingPoint ? ` · Meet at ${nextLeg.meetingPoint}` : ""}
+            {nextLeg.location ? ` · ${nextLeg.location}` : ""}
           </p>
+        </Panel>
+      ) : !canManage ? (
+        <Panel>
+          <span className="log-kicker">Next on my trip</span>
+          <p className="app-muted">No upcoming travel times published yet.</p>
         </Panel>
       ) : null}
 
       {!canManage && (myTrip?.length ?? 0) > 0 ? (
         <Panel>
           <span className="log-kicker">My trip</span>
-          <h2>When to leave & arrive</h2>
+          <h2>When to leave and arrive</h2>
           <ol className="logistics-timeline">
             {(myTrip ?? []).map((stop) => (
               <li key={stop.id} className={nextLeg?.id === stop.id ? "next" : undefined}>
@@ -193,26 +270,114 @@ export default function LogisticsClient() {
         </Panel>
       ) : null}
 
-      {!canManage && myLodging ? (
-        <Panel>
+      {myLodging ? (
+        <Panel className="logistics-mine">
           <span className="log-kicker">My lodging</span>
           <h2>
             {myLodging.hotelName} · Room {myLodging.roomLabel}
           </h2>
           <p className="app-muted">{myLodging.tripTitle}</p>
+          {myLodging.hotelAddress ? <p>{myLodging.hotelAddress}</p> : null}
+          {myLodging.hotelPhone ? (
+            <p>
+              <a href={`tel:${myLodging.hotelPhone.replace(/\s/g, "")}`}>{myLodging.hotelPhone}</a>
+            </p>
+          ) : null}
+          {(myLodging.checkInAt || myLodging.checkOutAt) && (
+            <p className="app-muted">
+              Check-in {fmtWhen(myLodging.checkInAt)} · Check-out {fmtWhen(myLodging.checkOutAt)}
+            </p>
+          )}
+        </Panel>
+      ) : !canManage ? (
+        <Panel>
+          <span className="log-kicker">My lodging</span>
+          <p className="app-muted">No room assignment yet. Mentors add hotels and rooming lists when travel is booked.</p>
         </Panel>
       ) : null}
 
       {activeOnDuty ? (
         <Panel>
-          <span className="log-kicker">Who to find</span>
-          <h2>{activeOnDuty.mentorName || "Mentor on duty"}</h2>
+          <span className="log-kicker">Mentor on duty</span>
+          <h2>{activeOnDuty.mentorName || "On-duty mentor"}</h2>
           <p>
             {fmtWhen(activeOnDuty.startsAt)}
+            {activeOnDuty.endsAt ? ` – ${fmtWhen(activeOnDuty.endsAt)}` : ""}
             {activeOnDuty.locationNote ? ` · ${activeOnDuty.locationNote}` : ""}
           </p>
+          {activeOnDuty.phone ? (
+            <p>
+              <a href={`tel:${activeOnDuty.phone.replace(/\s/g, "")}`}>{activeOnDuty.phone}</a>
+            </p>
+          ) : null}
+          {activeOnDuty.notes ? <p className="app-muted">{activeOnDuty.notes}</p> : null}
+        </Panel>
+      ) : !canManage ? (
+        <Panel>
+          <span className="log-kicker">Mentor on duty</span>
+          <p className="app-muted">No on-duty schedule posted yet.</p>
         </Panel>
       ) : null}
+
+      <Panel className="log-checklist">
+        <div className="log-section-head">
+          <div>
+            <h2>Day-of checklist</h2>
+            <p className="app-muted">Check items off as you go. Mentors see mentor items; students see student items.</p>
+          </div>
+          {checklistStats.total > 0 ? (
+            <div className="log-progress" aria-label={`${checklistStats.percent}% complete`}>
+              <div className="log-progress-bar" style={{ width: `${checklistStats.percent}%` }} />
+              <span>
+                {checklistStats.done}/{checklistStats.total}
+              </span>
+            </div>
+          ) : null}
+        </div>
+        {viewerChecklist.length === 0 ? (
+          <p className="app-muted">Nothing on your checklist yet.</p>
+        ) : (
+          <ul className="log-checklist-list">
+            {viewerChecklist.map((item) => (
+              <li key={item.id}>
+                <label className={item.checked ? "log-check-done" : undefined}>
+                  <input
+                    type="checkbox"
+                    checked={item.checked}
+                    disabled={!act || busy}
+                    onChange={(event) => toggleChecklist(item, event.target.checked)}
+                  />
+                  <span>{item.label}</span>
+                  <small className="app-muted">{AUDIENCE_LABEL[item.audience]}</small>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      <Panel>
+        <h2>Emergency contacts</h2>
+        <p className="app-muted">Call these mentors first if something goes wrong on the trip.</p>
+        {contacts.length === 0 ? (
+          <p className="app-muted">No contacts posted yet.</p>
+        ) : (
+          <ul className="logistics-list">
+            {[...contacts]
+              .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+              .map((contact) => (
+                <li key={contact.id} className={contact.isPrimary ? "log-contact-primary" : undefined}>
+                  <strong>{contact.name}</strong>
+                  {contact.roleLabel ? <span>{contact.roleLabel}</span> : null}
+                  {contact.phone ? <a href={`tel:${contact.phone.replace(/\s/g, "")}`}>{contact.phone}</a> : null}
+                  {contact.email ? <a href={`mailto:${contact.email}`}>{contact.email}</a> : null}
+                  {contact.notes ? <p className="app-muted">{contact.notes}</p> : null}
+                </li>
+              ))}
+          </ul>
+        )}
+      </Panel>
+
 
       {canManage && lodgingGaps > 0 ? (
         <p className="log-banner warn" role="status">
@@ -220,143 +385,193 @@ export default function LogisticsClient() {
         </p>
       ) : null}
 
-      <Panel>
-        <h2>Trips & travel times</h2>
-        <p className="app-muted">
-          Timed leave / hotel / venue / return sync to Team Calendar. Empty until mentors add real times.
-        </p>
-        {trips.length ? (
-          <div className="log-trip-tabs" role="tablist">
-            {trips.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={trip?.id === t.id ? "active" : undefined}
-                onClick={() => setSelectedTripId(t.id)}
-              >
-                {t.title}
-              </button>
-            ))}
+      {canManage ? (
+        <Panel>
+          <h2>Checklist planning</h2>
+          <p className="app-muted">Seed default student and mentor lists, then customize items per trip.</p>
+          <div className="log-inline-actions">
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={!act || busy}
+              onClick={() => void run({ action: "seed_checklist", orgId, tripId: trip?.id ?? null }, "seed-chk")}
+            >
+              Seed default checklist
+            </button>
           </div>
-        ) : (
-          <p className="app-muted">No trips yet.</p>
-        )}
-
-        {canManage ? (
           <form
             className="log-grid-form"
             onSubmit={(e) => {
               e.preventDefault();
-              const form = e.currentTarget;
-              const fd = new FormData(form);
+              const fd = new FormData(e.currentTarget);
               void run(
                 {
-                  action: "upsert_trip",
+                  action: "add_checklist_item",
                   orgId,
-                  title: String(fd.get("title") ?? ""),
-                  eventKey: String(fd.get("eventKey") ?? "") || null,
-                  venueName: String(fd.get("venueName") ?? ""),
-                  venueAddress: String(fd.get("venueAddress") ?? ""),
-                  travelNotes: String(fd.get("travelNotes") ?? ""),
-                  transportNotes: String(fd.get("transportNotes") ?? ""),
-                  startsOn: String(fd.get("startsOn") ?? "") || null,
-                  endsOn: String(fd.get("endsOn") ?? "") || null,
+                  tripId: String(fd.get("tripId") || "") || null,
+                  audience: String(fd.get("audience") ?? "student") as ChecklistAudience,
+                  label: String(fd.get("label") ?? ""),
                 },
-                "trip",
-              ).then(() => form.reset());
+                "add-chk",
+              ).then(() => e.currentTarget.reset());
             }}
           >
-            <input name="title" placeholder="Trip title" required />
-            <input name="eventKey" placeholder="TBA event key" />
-            <input name="venueName" placeholder="Venue" />
-            <input name="startsOn" type="date" />
-            <input name="endsOn" type="date" />
-            <textarea name="travelNotes" placeholder="Travel notes" rows={2} />
-            <button type="submit" disabled={busyKey != null}>
-              Add trip
+            <select name="tripId" defaultValue={trip?.id ?? ""}>
+              <option value="">All trips (shared)</option>
+              {trips.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+            <select name="audience" defaultValue="student">
+              {CHECKLIST_AUDIENCES.map((a) => (
+                <option key={a} value={a}>
+                  {AUDIENCE_LABEL[a]}
+                </option>
+              ))}
+            </select>
+            <input name="label" placeholder="New checklist item" required />
+            <button type="submit" disabled={!act || busy}>
+              Add item
             </button>
           </form>
-        ) : null}
+          {sharedChecklist.length === 0 ? (
+            <p className="app-muted">No checklist items yet.</p>
+          ) : (
+            <ul className="log-checklist-list log-checklist-manage">
+              {sharedChecklist.map((item) => (
+                <li key={item.id}>
+                  <span>{item.label}</span>
+                  <small className="app-muted">{AUDIENCE_LABEL[item.audience]}</small>
+                  <button
+                    type="button"
+                    className="log-link danger"
+                    disabled={!act || busy}
+                    onClick={() => {
+                      if (confirm(`Remove "${item.label}"?`)) {
+                        void run({ action: "delete_checklist_item", orgId, id: item.id }, `del-chk:${item.id}`);
+                      }
+                    }}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      ) : null}
 
-        {trip ? (
-          <div>
-            <h3>Get there & back</h3>
-            {legs.length === 0 ? (
-              <p className="app-muted">No timed legs yet.</p>
-            ) : (
-              <ol className="logistics-timeline">
-                {legs.map((leg) => (
-                  <li key={leg.id}>
-                    <span className="logistics-timeline-kind">{TRAVEL_LEG_LABELS[leg.kind]}</span>
-                    <strong>{fmtWhen(leg.startsAt)}</strong>
-                    <span>
-                      {leg.title}
-                      {leg.meetingPoint ? ` · ${leg.meetingPoint}` : ""}
-                    </span>
-                    {canManage ? (
-                      <button
-                        type="button"
-                        className="log-link danger"
-                        disabled={busyKey != null}
-                        onClick={() => {
-                          if (confirm(`Remove “${leg.title}”?`)) {
-                            void run({ action: "delete_travel_leg", orgId, id: leg.id }, `del-leg:${leg.id}`);
-                          }
-                        }}
-                      >
-                        Remove
-                      </button>
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
-            )}
-            {canManage ? (
-              <form
-                className="log-grid-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.currentTarget;
-                  const fd = new FormData(form);
-                  const starts = String(fd.get("startsAt") ?? "");
-                  void run(
-                    {
-                      action: "upsert_travel_leg",
-                      orgId,
-                      tripId: trip.id,
-                      kind: String(fd.get("kind") ?? "depart_home") as TravelLegKind,
-                      title: String(fd.get("title") ?? ""),
-                      startsAt: starts ? new Date(starts).toISOString() : "",
-                      endsAt: null,
-                      location: String(fd.get("location") ?? ""),
-                      meetingPoint: String(fd.get("meetingPoint") ?? ""),
-                      notes: String(fd.get("notes") ?? ""),
-                      subteamId: null,
-                      syncCalendar: true,
-                    },
-                    "leg",
-                  ).then(() => form.reset());
-                }}
+      {canManage ? (
+        <Panel>
+          <h2>Emergency contacts (edit)</h2>
+          <form
+            className="log-grid-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              void run(
+                {
+                  action: "upsert_contact",
+                  orgId,
+                  name: String(fd.get("name") ?? ""),
+                  roleLabel: String(fd.get("roleLabel") ?? ""),
+                  phone: String(fd.get("phone") ?? ""),
+                  email: String(fd.get("email") ?? ""),
+                  notes: String(fd.get("notes") ?? ""),
+                  isPrimary: fd.get("isPrimary") === "on",
+                  sortOrder: Number(fd.get("sortOrder") ?? 0),
+                },
+                "contact",
+              ).then(() => e.currentTarget.reset());
+            }}
+          >
+            <input name="name" placeholder="Name" required />
+            <input name="roleLabel" placeholder="Role label" />
+            <input name="phone" placeholder="Phone" />
+            <input name="email" placeholder="Email" />
+            <input name="sortOrder" type="number" placeholder="Sort order" defaultValue={0} />
+            <label className="log-check-inline">
+              <input name="isPrimary" type="checkbox" /> Primary contact
+            </label>
+            <textarea name="notes" placeholder="Notes" rows={2} />
+            <button type="submit" disabled={!act || busy}>
+              Save contact
+            </button>
+          </form>
+          {contacts.map((contact) => (
+            <div key={contact.id} className="log-manage-row">
+              <span>
+                <strong>{contact.name}</strong> {contact.phone}
+              </span>
+              <button
+                type="button"
+                className="log-link danger"
+                disabled={!act || busy}
+                onClick={() => void run({ action: "delete_contact", orgId, id: contact.id }, `del-contact:${contact.id}`)}
               >
-                <select name="kind" defaultValue="depart_home">
-                  {TRAVEL_LEG_KINDS.map((k) => (
-                    <option key={k} value={k}>
-                      {TRAVEL_LEG_LABELS[k]}
-                    </option>
-                  ))}
-                </select>
-                <input name="title" placeholder="Title (optional)" />
-                <input name="startsAt" type="datetime-local" required />
-                <input name="meetingPoint" placeholder="Meeting point" />
-                <input name="location" placeholder="Location" />
-                <button type="submit" disabled={busyKey != null}>
-                  Add travel time
-                </button>
-              </form>
-            ) : null}
-          </div>
-        ) : null}
-      </Panel>
-    </main>
-  );
-}
+                Delete
+              </button>
+            </div>
+          ))}
+        </Panel>
+      ) : null}
+
+      {canManage ? (
+        <Panel>
+          <h2>On-duty mentors</h2>
+          <form
+            className="log-grid-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const starts = String(fd.get("startsAt") ?? "");
+              const ends = String(fd.get("endsAt") ?? "");
+              void run(
+                {
+                  action: "upsert_on_duty",
+                  orgId,
+                  tripId: String(fd.get("tripId") || "") || null,
+                  mentorUserId: String(fd.get("mentorUserId") || "") || null,
+                  mentorName: String(fd.get("mentorName") ?? ""),
+                  phone: String(fd.get("phone") ?? ""),
+                  startsAt: starts ? new Date(starts).toISOString() : "",
+                  endsAt: ends ? new Date(ends).toISOString() : null,
+                  locationNote: String(fd.get("locationNote") ?? ""),
+                  notes: String(fd.get("notes") ?? ""),
+                },
+                "onduty",
+              ).then(() => e.currentTarget.reset());
+            }}
+          >
+            <select name="tripId" defaultValue={trip?.id ?? ""}>
+              <option value="">Any trip</option>
+              {trips.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
+            <select name="mentorUserId" defaultValue="">
+              <option value="">Pick mentor (optional)</option>
+              {members.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {memberLabel(m)}
+                </option>
+              ))}
+            </select>
+            <input name="mentorName" placeholder="Display name override" />
+            <input name="phone" placeholder="Phone" />
+            <input name="startsAt" type="datetime-local" required />
+            <input name="endsAt" type="datetime-local" />
+            <input name="locationNote" placeholder="Location (pit, hotel lobby…)" />
+            <textarea name="notes" placeholder="Notes" rows={2} />
+            <button type="submit" disabled={!act || busy}>
+              Save on-duty slot
+            </button>
+          </form>
+          <OnDutyManageList orgId={orgId} slots={ready.activeOnDuty ? [ready.activeOnDuty] : []} />
+        </Panel>
+      ) : null}
+

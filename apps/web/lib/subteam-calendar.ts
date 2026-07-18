@@ -281,6 +281,10 @@ export function eventWorkflowLinks(event: CalendarEvent, orgId: string): Workflo
   if (event.kind === "meeting" || event.kind === "outreach") {
     push(withOrgPath("/team/calendar", orgId), "Team calendar");
   }
+  if (event.kind === "outreach") {
+    push(withOrgPath("/visit-invites", orgId), "Visit invites");
+    push(withOrgPath("/logistics", orgId), "Event logistics");
+  }
   if (event.kind === "practice" || event.kind === "build" || event.kind === "meeting") {
     push(withOrgPath("/team/knowledge", orgId), "Knowledge wiki");
   }
