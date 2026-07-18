@@ -10,7 +10,7 @@ import {
   type ScoutSchema,
   type SyncEntry,
 } from "./index";
-import { bindScoutIdentity, lockScoutPayload, stripScoutIdentityFields } from "./identity";
+import { bindScoutIdentity, lockScoutPayload, stripScoutIdentityFields } from "./identity"; // CD4_IDENTITY_LOCK
 import { crossValidateScoutPayload, type FieldValidation } from "./trust";
 
 type StoredEntry = {
@@ -44,6 +44,22 @@ export class ScoutingRepository {
       [orgId],
     );
     const eventKey = context.rows[0]?.activeEventKey ?? null;
+    const profile = await this.client.query<{
+      name: string | null;
+      email: string | null;
+      displayName: string | null;
+    }>(
+      `SELECT u.name, u.email, p.display_name AS "displayName"
+       FROM users u
+       LEFT JOIN profiles p ON p.user_id = u.id
+       WHERE u.id = $1`,
+      [userId],
+    );
+    const scoutIdentity = bindScoutIdentity({
+      userId,
+      displayName: profile.rows[0]?.displayName || profile.rows[0]?.name,
+      email: profile.rows[0]?.email,
+    });
     if (!eventKey) {
       return {
         eventKey: null,
@@ -52,6 +68,7 @@ export class ScoutingRepository {
         matches: [],
         recentEntries: [],
         canManageSchemas,
+        scoutIdentity,
       };
     }
 
@@ -86,12 +103,13 @@ export class ScoutingRepository {
       ),
       this.client.query(
         `SELECT e.id,'match' AS type,e.match_key AS "matchKey",e.team_key AS "teamKey",
-          e.confidence,e.source,e.updated_at AS "updatedAt",u.name AS "scoutName"
+          e.confidence,e.source,e.updated_at AS "updatedAt",
+          e.scout_user_id AS "scoutUserId",u.name AS "scoutName"
          FROM match_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          UNION ALL
          SELECT e.id,'pit' AS type,NULL,e.team_key,e.confidence,e.source,
-          e.updated_at,u.name
+          e.updated_at,e.scout_user_id,u.name
          FROM pit_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          ORDER BY "updatedAt" DESC LIMIT 30`,
@@ -100,11 +118,17 @@ export class ScoutingRepository {
     ]);
     return {
       eventKey,
-      schemas: schemas.rows,
+      schemas: schemas.rows.map((row) => ({
+        ...row,
+        definition: stripScoutIdentityFields(
+          (row as { definition: Parameters<typeof stripScoutIdentityFields>[0] }).definition,
+        ).definition,
+      })),
       assignments: assignments.rows,
       matches: matches.rows,
       recentEntries: recentEntries.rows,
       canManageSchemas,
+      scoutIdentity,
     };
   }
 
@@ -141,12 +165,17 @@ export class ScoutingRepository {
     );
     const schema = result.rows[0];
     if (!schema) throw new Error("Pinned scouting schema not found");
-    return schema;
+    return {
+      ...schema,
+      definition: stripScoutIdentityFields(schema.definition).definition,
+    };
   }
 
   async syncEntry(orgId: string, userId: string, input: SyncEntry): Promise<SyncAcknowledgement> {
+    const locked: SyncEntry = { ...input, payload: lockScoutPayload(input.payload).payload };
+    const locked = lockScoutPayload(input, userId);
     const hash = createHash("sha256")
-      .update(JSON.stringify(input))
+      .update(JSON.stringify(locked))
       .digest("hex");
     const receipt = await this.client.query<{
       serverEntryId: string;
@@ -154,22 +183,22 @@ export class ScoutingRepository {
     }>(
       `SELECT server_entry_id AS "serverEntryId", payload_hash AS "payloadHash"
        FROM scout_sync_receipts WHERE org_id = $1 AND client_id = $2`,
-      [orgId, input.clientId],
+      [orgId, locked.clientId],
     );
     const existing = receipt.rows[0];
     if (existing) {
       if (existing.payloadHash === hash) {
         return {
-          clientId: input.clientId,
+          clientId: locked.clientId,
           entryId: existing.serverEntryId,
           duplicate: true,
-          validations: input.type === "match"
+          validations: locked.type === "match"
             ? await this.loadValidations(orgId, existing.serverEntryId)
             : [],
         };
       }
-      const schema = await this.getSchema(orgId, input.schemaId);
-      if (schema.type !== input.type) throw new Error("Schema type does not match entry type");
+      const schema = await this.getSchema(orgId, locked.schemaId);
+      if (schema.type !== locked.type) throw new Error("Schema type does not match entry type");
       const validationErrors = validatePayload(schema.definition, locked.payload);
       if (validationErrors.length) throw new Error(validationErrors.join("; "));
       const table = input.type === "match" ? "match_scout_entries" : "pit_scout_entries";
