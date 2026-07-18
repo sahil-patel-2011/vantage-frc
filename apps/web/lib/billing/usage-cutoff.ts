@@ -1,5 +1,8 @@
 /** Soft-UI + CTA helpers for plan allowance / credit / PAYG hard cutoffs. */
 
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
+
 export type CutoffLevel = "ok" | "near" | "at";
 
 export type CutoffReason =
@@ -33,7 +36,7 @@ export type UsageCutoffAlert = {
 };
 
 export type CutoffCta = {
-  id: "credits" | "payg" | "upgrade" | "budgets" | "pricing";
+  id: "credits" | "payg" | "upgrade" | "budgets" | "pricing" | "chat" | "account";
   label: string;
   /** Checkout action when Stripe is wired; otherwise UI falls back to /pricing. */
   checkoutAction?: "credits" | "payg" | "subscription";
@@ -41,6 +44,23 @@ export type CutoffCta = {
   planCode?: string;
   href?: string;
 };
+
+/** Soft-UI deep links for cut-off CTAs — hubHref / withOrgHref only. */
+export function cutoffBudgetsHref(orgId?: string | null): string {
+  return hubHref("/ai", "budgets", orgId);
+}
+
+export function cutoffPricingHref(orgId?: string | null): string {
+  return withOrgHref("/pricing", orgId);
+}
+
+export function cutoffChatHref(orgId?: string | null): string {
+  return hubHref("/ai", "chat", orgId);
+}
+
+export function cutoffAccountHref(orgId?: string | null): string {
+  return withOrgHref("/account", orgId);
+}
 
 /** Machine codes returned by meteredAI / evaluateManagedUsage / budget denials. */
 export const CUTOFF_ERROR_CODES = [
@@ -208,11 +228,12 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
 }
 
 export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] {
-  const q = `?orgId=${encodeURIComponent(orgId)}`;
+  const budgetsHref = cutoffBudgetsHref(orgId);
+  const pricingHref = cutoffPricingHref(orgId);
   const ctas: CutoffCta[] = [];
 
   if (alert.reason === "kill_switch" || alert.reason === "org_budget") {
-    ctas.push({ id: "budgets", label: "Open API budgets", href: `/team/budgets${q}` });
+    ctas.push({ id: "budgets", label: "Open API budgets", href: budgetsHref });
   }
 
   if (alert.reason === "allowance" || alert.reason === "payg_required" || alert.reason === "credits") {
@@ -221,13 +242,13 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
       label: "Buy Usage Credits",
       checkoutAction: "credits",
       packCode: "credits_100",
-      href: "/pricing",
+      href: pricingHref,
     });
     ctas.push({
       id: "payg",
       label: "Enable PAYG",
       checkoutAction: "payg",
-      href: "/pricing",
+      href: pricingHref,
     });
   }
 
@@ -237,9 +258,9 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
       label: "Buy Usage Credits",
       checkoutAction: "credits",
       packCode: "credits_100",
-      href: "/pricing",
+      href: pricingHref,
     });
-    ctas.push({ id: "pricing", label: "Review pricing", href: "/pricing" });
+    ctas.push({ id: "pricing", label: "Review pricing", href: pricingHref });
   }
 
   if (alert.reason === "allowance" || alert.reason === "payg_required") {
@@ -248,12 +269,16 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
       label: "Upgrade plan",
       checkoutAction: "subscription",
       planCode: "team_pro",
-      href: "/pricing",
+      href: pricingHref,
     });
   }
 
   if (!ctas.some((c) => c.id === "budgets")) {
-    ctas.push({ id: "budgets", label: "API budgets", href: `/team/budgets${q}` });
+    ctas.push({ id: "budgets", label: "API budgets", href: budgetsHref });
+  }
+
+  if (!ctas.some((c) => c.id === "pricing")) {
+    ctas.push({ id: "pricing", label: "Pricing", href: pricingHref });
   }
 
   return ctas;
@@ -267,7 +292,8 @@ export function messageForCutoffError(
   const raw = String(codeOrMessage ?? "");
   const lower = raw.toLowerCase();
   const org = orgId ?? "";
-  const budgetsHref = org ? `/team/budgets?orgId=${encodeURIComponent(org)}` : "/team/budgets";
+  const budgetsHref = cutoffBudgetsHref(org || null);
+  const pricingHref = cutoffPricingHref(org || null);
 
   const match = (needle: string) => lower.includes(needle);
 
@@ -308,8 +334,10 @@ export function messageForCutoffError(
   const ctas = org
     ? cutoffCtas(alert, org)
     : [
-        { id: "pricing" as const, label: "View pricing", href: "/pricing" },
+        { id: "pricing" as const, label: "View pricing", href: pricingHref },
         { id: "budgets" as const, label: "API budgets", href: budgetsHref },
+        { id: "chat" as const, label: "Chat", href: cutoffChatHref(null) },
+        { id: "account" as const, label: "Account", href: cutoffAccountHref(null) },
       ];
 
   return { title, body, ctas };

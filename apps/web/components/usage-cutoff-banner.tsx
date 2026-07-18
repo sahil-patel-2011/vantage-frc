@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   buildUsageCutoffSnapshot,
   cutoffCtas,
+  cutoffPricingHref,
   evaluateUsageCutoff,
   isCutoffError,
   messageForCutoffError,
@@ -36,7 +37,7 @@ async function startCheckout(orgId: string, cta: CutoffCta): Promise<string | nu
   });
   const data = (await response.json()) as { url?: string; error?: string };
   if (response.ok && data.url) return data.url;
-  return cta.href ?? "/pricing";
+  return cta.href ?? cutoffPricingHref(orgId);
 }
 
 function BannerShell({
@@ -109,7 +110,7 @@ function BannerShell({
               {busy === cta.id ? "Opening…" : cta.label}
             </button>
           ) : (
-            <a key={cta.id} className="app-button secondary" href={cta.href ?? "/pricing"}>
+            <a key={cta.id} className="app-button secondary" href={cta.href ?? cutoffPricingHref(orgId)}>
               {cta.label}
             </a>
           ),

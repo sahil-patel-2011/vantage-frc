@@ -44,6 +44,11 @@ describe("evaluateUsageCutoff", () => {
     expect(ctas.some((c) => c.id === "credits")).toBe(true);
     expect(ctas.some((c) => c.id === "payg")).toBe(true);
     expect(ctas.some((c) => c.id === "upgrade")).toBe(true);
+    expect(ctas.find((c) => c.id === "budgets")?.href).toContain("/ai?");
+    expect(ctas.find((c) => c.id === "budgets")?.href).toContain("tab=budgets");
+    expect(ctas.find((c) => c.id === "budgets")?.href).toContain("orgId=org-1");
+    expect(ctas.find((c) => c.id === "budgets")?.href).not.toMatch(/\/team\/budgets\?/);
+    expect(ctas.find((c) => c.id === "pricing")?.href).toContain("/pricing");
   });
 
   it("surfaces kill switch above allowance math", () => {
