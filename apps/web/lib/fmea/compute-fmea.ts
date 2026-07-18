@@ -7,6 +7,7 @@ import type {
   FmeaStatus,
   FmeaSummary,
 } from "./types";
+import { detectRepeatFailures, type RepeatFailureAlert } from "./repeat-failures";
 
 export const FMEA_CONTEXTS: FmeaContext[] = ["match", "pit", "practice", "inspection", "other"];
 export const FMEA_STATUSES: FmeaStatus[] = ["open", "fixing", "verified", "closed"];
@@ -32,6 +33,8 @@ export type FmeaView =
       seasons: number[];
       evaluations: FmeaEvaluation[];
       summary: FmeaSummary;
+      /** CD #42 — subsystems with >=2 failures this season. */
+      repeatAlerts: RepeatFailureAlert[];
       subsystems: SubsystemOption[];
       inspectionItems: InspectionOption[];
       computedAt: string;
@@ -167,6 +170,7 @@ export async function computeFmeaView(
   const failures = failureResult.rows.map(mapFailure);
   const evaluations = failures.map((failure) => evaluateFailure(failure));
   const summary = summarizeFailures(failures);
+  const repeatAlerts = detectRepeatFailures(failures, { seasonYear });
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
@@ -178,6 +182,7 @@ export async function computeFmeaView(
     seasons,
     evaluations,
     summary,
+    repeatAlerts,
     subsystems: subsystemResult.rows,
     inspectionItems: inspectionResult.rows,
     computedAt: new Date().toISOString(),

@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { OfflineBanner } from "../../../components/offline-banner";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import {
   googleCalendarSubscribeUrl,
   toWebcalUrl,
 } from "../../../lib/calendar-ics";
+import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../../lib/offline";
 import {
   DUTY_KIND_LABELS,
   DUTY_KINDS,
@@ -1039,9 +1041,12 @@ function CalendarSyncPanel({
 }
 
 export default function TeamCalendarClient() {
+  const online = useOnline();
   const [view, setView] = useState<SubteamCalendarView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("calendar");
   const [filterSubteamId, setFilterSubteamId] = useState<string | null>(null);
@@ -1056,11 +1061,17 @@ export default function TeamCalendarClient() {
   const load = useCallback(async () => {
     setFetchFailed(false);
     const params = new URLSearchParams(window.location.search);
-    const orgId = params.get("orgId");
+    const orgId = params.get("orgId") ?? "";
     const dutyId = params.get("dutyId");
     if (dutyId) {
       setHighlightDutyId(dutyId);
       setTab("duties");
+    }
+    const cached = await getFeatureSnapshot<SubteamCalendarView>("team-calendar", orgId);
+    if (cached?.data) {
+      setView(cached.data);
+      setFromCache(true);
+      setCachedAt(cached.cachedAt);
     }
     try {
       const query = new URLSearchParams();
@@ -1071,13 +1082,17 @@ export default function TeamCalendarClient() {
       const data = (await response.json()) as SubteamCalendarView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the team calendar.");
-        setFetchFailed(true);
+        if (!cached) setFetchFailed(true);
         return;
       }
       setError("");
       setView(data);
+      setFromCache(false);
+      setCachedAt(null);
+      const cacheOrg = data.context.orgId || orgId;
+      if (cacheOrg) await putFeatureSnapshot("team-calendar", cacheOrg, data);
     } catch {
-      setFetchFailed(true);
+      if (!cached) setFetchFailed(true);
     }
   }, [syncScope, syncSubteamId]);
 
@@ -1087,6 +1102,10 @@ export default function TeamCalendarClient() {
 
   const run = useCallback(
     async (body: ActionBody, key: string) => {
+      if (!navigator.onLine) {
+        setError("You're offline — calendar edits will save when you reconnect.");
+        return false;
+      }
       setBusyKey(key);
       setError("");
       try {
@@ -1164,11 +1183,17 @@ export default function TeamCalendarClient() {
           </div>
         </header>
         <TeamOpsNav active="calendar" />
+        <OfflineBanner feature="Calendar" fromCache={Boolean(view) && fromCache} cachedAt={cachedAt} />
         <div className="app-card tc-empty">
           {fetchFailed ? (
             <>
               <strong>Could not load the team calendar</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
+              <p className="app-muted">
+                {error ||
+                  (!online
+                    ? "No cached calendar on this device yet. Open this page once while online."
+                    : "Check your connection and try again.")}
+              </p>
               <button type="button" className="app-button secondary" onClick={() => void load()}>
                 Retry
               </button>
@@ -1192,6 +1217,7 @@ export default function TeamCalendarClient() {
           </div>
         </header>
         <TeamOpsNav active="calendar" />
+        <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card tc-empty">
           <strong>Select a team workspace</strong>
           <p className="app-muted">{view.message}</p>
@@ -1238,11 +1264,19 @@ export default function TeamCalendarClient() {
           <h1>Calendar</h1>
           <p>
             {teamLabel} — practices, duty roster, and “I’m going.” Season milestones stay on{" "}
-            <a href={withOrg("/calendar", orgId)}>Season Calendar</a>.
+            <a href={withOrg("/calendar", orgId)}>Season Calendar</a>. New members:{" "}
+            <a href={withOrg("/team/getting-started", orgId)}>Getting started</a>
+            {" · "}
+            <a href={withOrg("/team/knowledge", orgId)}>Knowledge</a>
+            {" · "}
+            <a href={withOrg("/logistics", orgId)}>Logistics</a>
+            {" · "}
+            <a href={withOrg("/kickoff", orgId)}>Kickoff</a>.
           </p>
         </div>
       </header>
       <TeamOpsNav orgId={orgId} active="calendar" />
+      <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? <p className="tc-error">{error}</p> : null}
 

@@ -265,6 +265,15 @@ export function eventWorkflowLinks(event: CalendarEvent, orgId: string): Workflo
     push(withOrgPath("/team/knowledge", orgId), "Knowledge wiki");
   }
   push(withOrgPath("/team/getting-started", orgId), "Onboarding checklist");
+  {
+    const params = new URLSearchParams({
+      orgId,
+      linkType: "event",
+      linkId: event.id,
+      linkLabel: event.title,
+    });
+    push(`/messages?${params.toString()}`, "Discuss in Messages");
+  }
   return links;
 }
 
