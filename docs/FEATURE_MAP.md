@@ -8,6 +8,7 @@
 | Scout voice notes | `/competition?tab=scouting` (`#scout-voice`) | Opt-in voice STT notes + optional Apply-to-form; cloud STT metered with UsageCutoffBanner |
 | Match checklist | `/match-checklist` (also `/competition?tab=match-checklist`) | Pre-match timed pit checklist |
 | Team | `/team` | Calendar · Todos · Messages · Practice · Knowledge · Attendance · Batteries · FMEA (+ More tools) |
+| Logistics Soft-UI | `/logistics` (also `/travel`) | Hotels, rooming, travel legs, checklist, on-duty mentors; empty/setup states; cross-links to Event Day / My Day / Team calendar; tripId/hotelId org-scoped — never DEMO lodging |
 | Business | `/business` | Overview · Budget · Orders · Sponsors · Sponsorship · Grants · … |
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Prototypes · Batteries (+ More tools) |
 | AI | `/ai` | Chat · Budgets · Writer · Code assist · Memory · Governance · Finance (+ More tools) |

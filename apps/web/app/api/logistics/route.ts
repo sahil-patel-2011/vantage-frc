@@ -235,6 +235,25 @@ async function assertChecklistItemInOrg(client: PoolClient, orgId: string, itemI
   if (!row.rowCount) throw new HttpError(400, "Checklist item not found");
 }
 
+/** Reject cross-tenant parent FKs (trip/hotel/subteam/member must belong to orgId). */
+async function assertSubteamInOrg(client: PoolClient, orgId: string, subteamId: string | null | undefined) {
+  if (!subteamId) return;
+  const row = await client.query(
+    `SELECT 1 FROM team_subteams WHERE id = $1::uuid AND org_id = $2::uuid`,
+    [subteamId, orgId],
+  );
+  if (!row.rowCount) throw new HttpError(400, "Subteam not found");
+}
+
+async function assertMemberInOrg(client: PoolClient, orgId: string, userId: string | null | undefined) {
+  if (!userId) return;
+  const row = await client.query(
+    `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+    [orgId, userId],
+  );
+  if (!row.rowCount) throw new HttpError(400, "Member not found in this organization");
+}
+
 async function handleAction(client: PoolClient, userId: string, action: ReturnType<typeof parseLogisticsAction>) {
   const membership = await client.query<{ role: string; teamRole: string | null }>(
     `SELECT m.role, p.team_role AS "teamRole" FROM memberships m LEFT JOIN profiles p ON p.user_id = m.user_id
@@ -270,6 +289,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       return;
     case "upsert_room":
       await assertHotelInOrg(client, action.orgId, action.hotelId);
+      await assertMemberInOrg(client, action.orgId, action.occupantUserId);
       if (action.id) {
         await client.query(
           `UPDATE logistics_room_assignments SET room_label = $3, occupant_user_id = $4::uuid, occupant_name = $5, notes = $6
@@ -362,6 +382,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       return;
     case "upsert_on_duty":
       await assertTripInOrg(client, action.orgId, action.tripId);
+      await assertMemberInOrg(client, action.orgId, action.mentorUserId);
       if (action.id) {
         await client.query(
           `UPDATE logistics_on_duty SET trip_id=$3::uuid, mentor_user_id=$4::uuid, mentor_name=$5, phone=$6, starts_at=$7::timestamptz,
@@ -381,6 +402,7 @@ async function handleAction(client: PoolClient, userId: string, action: ReturnTy
       return;
     case "upsert_travel_leg": {
       await assertTripInOrg(client, action.orgId, action.tripId);
+      await assertSubteamInOrg(client, action.orgId, action.subteamId);
       let legId = action.id;
       if (legId) {
         await client.query(

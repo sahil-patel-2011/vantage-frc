@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { LogisticsRelated } from "../../components/logistics-related";
+import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
@@ -15,17 +16,13 @@ import {
   filterChecklistForViewer,
   type ChecklistAudience,
   type ChecklistItem,
-  type EmergencyContact,
   type Hotel,
   type LogisticsMember,
-  type LogisticsTrip,
   type LogisticsView,
-  type OnDutySlot,
   type TravelLegKind,
 } from "../../lib/logistics";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
-type Ready = Extract<LogisticsView, { status: "ready" }>;
 
 function fmtWhen(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -78,8 +75,11 @@ export default function LogisticsClient() {
       setCachedAt(null);
       const cacheOrg = data.status === "ready" ? data.context.orgId : orgId;
       if (cacheOrg) await putFeatureSnapshot("logistics", cacheOrg, data);
-      if (data.status === "ready" && data.trips[0]) {
-        setSelectedTripId((prev) => prev ?? data.trips[0]?.id ?? null);
+      if (data.status === "ready") {
+        setSelectedTripId((prev) => {
+          if (prev && data.trips.some((t) => t.id === prev)) return prev;
+          return data.trips[0]?.id ?? null;
+        });
       }
     } catch (err: unknown) {
       if (!cached) setError(err instanceof Error ? err.message : "Could not load logistics");
@@ -116,7 +116,10 @@ export default function LogisticsClient() {
           setCachedAt(null);
           if (data.status === "ready") {
             await putFeatureSnapshot("logistics", data.context.orgId, data);
-            if (data.trips[0]) setSelectedTripId((prev) => prev ?? data.trips[0]?.id ?? null);
+            setSelectedTripId((prev) => {
+              if (prev && data.trips.some((t) => t.id === prev)) return prev;
+              return data.trips[0]?.id ?? null;
+            });
           }
         } else {
           await load();
@@ -130,7 +133,6 @@ export default function LogisticsClient() {
     },
     [fromCache, load, online],
   );
-
 
   const orgIdParam = view?.status === "ready" ? view.context.orgId : view?.context?.orgId ?? null;
 
@@ -154,6 +156,7 @@ export default function LogisticsClient() {
       <main className="log-page">
         <PageHeader navPath="/logistics" title="Logistics" description="Loading trip times and lodging…" />
         <TeamOpsNav active="logistics" />
+        <EmptyState soft title="Loading logistics…" description="Checking lodging, travel legs, and day-of checklists." aria-busy />
       </main>
     );
   }
@@ -164,10 +167,19 @@ export default function LogisticsClient() {
         <PageHeader navPath="/logistics" title="Logistics" description={view.message} />
         <TeamOpsNav orgId={orgIdParam} active="logistics" />
         <OfflineBanner feature="Logistics" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft title="Logistics not ready yet" description="Apply the event logistics migration or pick a workspace with logistics enabled.">
-          <a className="app-button" href={orgIdParam ? withOrgHref("/workspace", orgIdParam) : "/workspace"}>
-            Workspace
-          </a>
+        <EmptyState
+          soft
+          badge="Setup required"
+          badgeTone="setup"
+          title="Logistics not ready yet"
+          description="Select a team workspace, or apply the event logistics migration if this org is missing tables."
+        >
+          <div className="log-inline-actions">
+            <a className="app-button" href={orgIdParam ? withOrgHref("/workspace", orgIdParam) : "/workspace"}>
+              Workspace
+            </a>
+            <LogisticsRelated orgId={orgIdParam} include={["command", "my-day", "calendar"]} />
+          </div>
         </EmptyState>
       </main>
     );
@@ -194,6 +206,7 @@ export default function LogisticsClient() {
   const checklistStats = checklistProgress(viewerChecklist);
   const busy = busyKey != null;
   const act = canActOnline(online, fromCache);
+  const hasPlan = trips.length > 0;
 
   const toggleChecklist = (item: ChecklistItem, checked: boolean) => {
     void run({ action: "toggle_checklist", orgId, id: item.id, checked }, `chk:${item.id}`);
@@ -210,14 +223,7 @@ export default function LogisticsClient() {
             : `${context.orgName ?? "Team"} — your lodging, who to call, and day-of checklist.`
         }
       >
-        <div className="log-header-actions">
-          <a className="app-button secondary" href={withOrgHref("/team/calendar?tab=trip", orgId)}>
-            Team calendar
-          </a>
-          <a className="app-button secondary" href={withOrgHref("/visit-invites", orgId)}>
-            Visit invites
-          </a>
-        </div>
+        <LogisticsRelated orgId={orgId} />
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="logistics" />
       <OfflineBanner
@@ -228,6 +234,20 @@ export default function LogisticsClient() {
       />
       {error ? <p className="log-banner error">{error}</p> : null}
       {okMessage ? <p className="log-banner ok">{okMessage}</p> : null}
+
+      {!hasPlan ? (
+        <EmptyState
+          soft
+          title={canManage ? "No trips yet" : "Travel plan not published"}
+          description={
+            canManage
+              ? "Add a trip to publish hotels, rooming, and leave/arrive times. Nothing here invents demo lodging."
+              : "Mentors publish hotels and travel times when the event is booked. Check My Day once a plan exists."
+          }
+        >
+          <LogisticsRelated orgId={orgId} include={["command", "my-day", "calendar"]} />
+        </EmptyState>
+      ) : null}
 
       {nextLeg ? (
         <Panel className="logistics-mine">
@@ -241,7 +261,7 @@ export default function LogisticsClient() {
             {nextLeg.location ? ` · ${nextLeg.location}` : ""}
           </p>
         </Panel>
-      ) : !canManage ? (
+      ) : hasPlan && !canManage ? (
         <Panel>
           <span className="log-kicker">Next on my trip</span>
           <p className="app-muted">No upcoming travel times published yet.</p>
@@ -286,7 +306,7 @@ export default function LogisticsClient() {
             </p>
           )}
         </Panel>
-      ) : !canManage ? (
+      ) : hasPlan && !canManage ? (
         <Panel>
           <span className="log-kicker">My lodging</span>
           <p className="app-muted">No room assignment yet. Mentors add hotels and rooming lists when travel is booked.</p>
@@ -309,7 +329,7 @@ export default function LogisticsClient() {
           ) : null}
           {activeOnDuty.notes ? <p className="app-muted">{activeOnDuty.notes}</p> : null}
         </Panel>
-      ) : !canManage ? (
+      ) : hasPlan && !canManage ? (
         <Panel>
           <span className="log-kicker">Mentor on duty</span>
           <p className="app-muted">No on-duty schedule posted yet.</p>
@@ -332,7 +352,11 @@ export default function LogisticsClient() {
           ) : null}
         </div>
         {viewerChecklist.length === 0 ? (
-          <p className="app-muted">Nothing on your checklist yet.</p>
+          <EmptyState
+            soft
+            title="Nothing on your checklist yet"
+            description={canManage ? "Seed defaults or add items below." : "Mentors add checklist items before the trip."}
+          />
         ) : (
           <ul className="log-checklist-list">
             {viewerChecklist.map((item) => (
@@ -357,7 +381,7 @@ export default function LogisticsClient() {
         <h2>Emergency contacts</h2>
         <p className="app-muted">Call these mentors first if something goes wrong on the trip.</p>
         {contacts.length === 0 ? (
-          <p className="app-muted">No contacts posted yet.</p>
+          <EmptyState soft title="No contacts posted yet" description="Mentors add primary phone numbers before travel." />
         ) : (
           <ul className="logistics-list">
             {[...contacts]
@@ -374,7 +398,6 @@ export default function LogisticsClient() {
           </ul>
         )}
       </Panel>
-
 
       {canManage && lodgingGaps > 0 ? (
         <p className="log-banner warn" role="status">
@@ -588,15 +611,25 @@ export default function LogisticsClient() {
         </Panel>
       ) : null}
 
-      <Panel>
-        <h2>Trips and travel times</h2>
-        <p className="app-muted">Publish leave, hotel, venue, and return times. They sync to Team Calendar when configured.</p>
+      <Panel className="log-trip-panel">
+        <div className="log-section-head">
+          <div>
+            <h2>Trips, hotels, and travel times</h2>
+            <p className="app-muted">
+              Publish leave, hotel, venue, and return times. Legs sync to Team Calendar when configured. Counts reflect
+              saved lodging only — never demo fillers.
+            </p>
+          </div>
+        </div>
+
         {trips.length ? (
-          <div className="log-trip-tabs" role="tablist">
+          <div className="log-trip-tabs" role="tablist" aria-label="Trips">
             {trips.map((t) => (
               <button
                 key={t.id}
                 type="button"
+                role="tab"
+                aria-selected={trip?.id === t.id}
                 className={trip?.id === t.id ? "active" : undefined}
                 onClick={() => setSelectedTripId(t.id)}
               >
@@ -604,9 +637,7 @@ export default function LogisticsClient() {
               </button>
             ))}
           </div>
-        ) : (
-          <p className="app-muted">No trips yet. Mentors add one when the event is booked.</p>
-        )}
+        ) : null}
 
         {canManage ? (
           <form
@@ -664,142 +695,174 @@ export default function LogisticsClient() {
 
         {trip ? (
           <div className="log-trip-block">
-            <h3>{trip.title}</h3>
-            {(trip.venueName || trip.startsOn) && (
-              <p className="app-muted">
-                {[trip.venueName, trip.startsOn, trip.endsOn].filter(Boolean).join(" · ")}
-              </p>
-            )}
-            {trip.travelNotes ? <p className="app-muted">{trip.travelNotes}</p> : null}
+            <header className="log-trip-meta">
+              <h3>{trip.title}</h3>
+              {(trip.venueName || trip.startsOn) && (
+                <p className="app-muted">{[trip.venueName, trip.startsOn, trip.endsOn].filter(Boolean).join(" · ")}</p>
+              )}
+              {trip.travelNotes ? <p className="app-muted">{trip.travelNotes}</p> : null}
+            </header>
 
-            <h4>Hotels and rooming</h4>
-            {trip.hotels.length === 0 ? (
-              <p className="app-muted">No hotels added for this trip yet.</p>
-            ) : (
-              trip.hotels.map((hotel) => (
-                <HotelBlock
-                  key={hotel.id}
-                  hotel={hotel}
-                  orgId={orgId}
-                  members={members}
-                  canManage={canManage}
-                  act={act}
-                  busy={busy}
-                  run={run}
+            <section className="log-subpanel" aria-label="Hotels and rooming">
+              <div className="log-subpanel-head">
+                <h4>Hotels and rooming</h4>
+                <span className="app-muted">
+                  {trip.hotels.length} hotel{trip.hotels.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              {trip.hotels.length === 0 ? (
+                <EmptyState
+                  soft
+                  title="No hotels for this trip"
+                  description={
+                    canManage
+                      ? "Add the hotel block and rooming list so students can see their room."
+                      : "Mentors add lodging when the room block is confirmed."
+                  }
                 />
-              ))
-            )}
+              ) : (
+                trip.hotels.map((hotel) => (
+                  <HotelBlock
+                    key={hotel.id}
+                    hotel={hotel}
+                    orgId={orgId}
+                    members={members}
+                    canManage={canManage}
+                    act={act}
+                    busy={busy}
+                    run={run}
+                  />
+                ))
+              )}
 
-            {canManage ? (
-              <form
-                className="log-grid-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const fd = new FormData(e.currentTarget);
-                  void run(
-                    {
-                      action: "create_hotel",
-                      orgId,
-                      tripId: trip.id,
-                      name: String(fd.get("name") ?? ""),
-                      address: String(fd.get("address") ?? ""),
-                      phone: String(fd.get("phone") ?? ""),
-                      confirmationCode: String(fd.get("confirmationCode") ?? ""),
-                      checkInAt: String(fd.get("checkInAt") ?? "") || null,
-                      checkOutAt: String(fd.get("checkOutAt") ?? "") || null,
-                      roomBlockNotes: String(fd.get("roomBlockNotes") ?? ""),
-                      notes: String(fd.get("notes") ?? ""),
-                    },
-                    `hotel:${trip.id}`,
-                  ).then(() => e.currentTarget.reset());
-                }}
-              >
-                <input name="name" placeholder="Hotel name" required />
-                <input name="address" placeholder="Address" />
-                <input name="phone" placeholder="Phone" />
-                <input name="confirmationCode" placeholder="Confirmation code" />
-                <input name="checkInAt" type="datetime-local" />
-                <input name="checkOutAt" type="datetime-local" />
-                <textarea name="roomBlockNotes" placeholder="Room block notes" rows={2} />
-                <button type="submit" disabled={!act || busy}>
-                  Add hotel
-                </button>
-              </form>
-            ) : null}
+              {canManage ? (
+                <form
+                  className="log-grid-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const fd = new FormData(e.currentTarget);
+                    void run(
+                      {
+                        action: "create_hotel",
+                        orgId,
+                        tripId: trip.id,
+                        name: String(fd.get("name") ?? ""),
+                        address: String(fd.get("address") ?? ""),
+                        phone: String(fd.get("phone") ?? ""),
+                        confirmationCode: String(fd.get("confirmationCode") ?? ""),
+                        checkInAt: String(fd.get("checkInAt") ?? "") || null,
+                        checkOutAt: String(fd.get("checkOutAt") ?? "") || null,
+                        roomBlockNotes: String(fd.get("roomBlockNotes") ?? ""),
+                        notes: String(fd.get("notes") ?? ""),
+                      },
+                      `hotel:${trip.id}`,
+                    ).then(() => e.currentTarget.reset());
+                  }}
+                >
+                  <input name="name" placeholder="Hotel name" required />
+                  <input name="address" placeholder="Address" />
+                  <input name="phone" placeholder="Phone" />
+                  <input name="confirmationCode" placeholder="Confirmation code" />
+                  <input name="checkInAt" type="datetime-local" />
+                  <input name="checkOutAt" type="datetime-local" />
+                  <textarea name="roomBlockNotes" placeholder="Room block notes" rows={2} />
+                  <button type="submit" disabled={!act || busy}>
+                    Add hotel
+                  </button>
+                </form>
+              ) : null}
+            </section>
 
-            <h4>Get there and back</h4>
-            {legs.length === 0 ? (
-              <p className="app-muted">No timed legs yet.</p>
-            ) : (
-              <ol className="logistics-timeline">
-                {legs.map((leg) => (
-                  <li key={leg.id}>
-                    <span className="logistics-timeline-kind">{TRAVEL_LEG_LABELS[leg.kind]}</span>
-                    <strong>{fmtWhen(leg.startsAt)}</strong>
-                    <span>
-                      {leg.title}
-                      {leg.meetingPoint ? ` · ${leg.meetingPoint}` : ""}
-                    </span>
-                    {canManage ? (
-                      <button
-                        type="button"
-                        className="log-link danger"
-                        disabled={!act || busy}
-                        onClick={() => {
-                          if (confirm(`Remove "${leg.title}"?`)) {
-                            void run({ action: "delete_travel_leg", orgId, id: leg.id }, `del-leg:${leg.id}`);
-                          }
-                        }}
-                      >
-                        Remove
-                      </button>
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
-            )}
-            {canManage ? (
-              <form
-                className="log-grid-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const fd = new FormData(e.currentTarget);
-                  const starts = String(fd.get("startsAt") ?? "");
-                  void run(
-                    {
-                      action: "upsert_travel_leg",
-                      orgId,
-                      tripId: trip.id,
-                      kind: String(fd.get("kind") ?? "depart_home") as TravelLegKind,
-                      title: String(fd.get("title") ?? ""),
-                      startsAt: starts ? new Date(starts).toISOString() : "",
-                      endsAt: null,
-                      location: String(fd.get("location") ?? ""),
-                      meetingPoint: String(fd.get("meetingPoint") ?? ""),
-                      notes: String(fd.get("notes") ?? ""),
-                      subteamId: null,
-                      sortOrder: 0,
-                    },
-                    "leg",
-                  ).then(() => e.currentTarget.reset());
-                }}
-              >
-                <select name="kind" defaultValue="depart_home">
-                  {TRAVEL_LEG_KINDS.map((k) => (
-                    <option key={k} value={k}>
-                      {TRAVEL_LEG_LABELS[k]}
-                    </option>
+            <section className="log-subpanel" aria-label="Travel legs">
+              <div className="log-subpanel-head">
+                <h4>Get there and back</h4>
+                <span className="app-muted">
+                  {legs.length} travel time{legs.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              {legs.length === 0 ? (
+                <EmptyState
+                  soft
+                  title="No timed legs yet"
+                  description={
+                    canManage
+                      ? "Add leave / arrive times so they show on My Day and Team Calendar."
+                      : "Mentors publish leave and arrive times before departure."
+                  }
+                >
+                  <LogisticsRelated orgId={orgId} include={["my-day", "calendar"]} />
+                </EmptyState>
+              ) : (
+                <ol className="logistics-timeline">
+                  {legs.map((leg) => (
+                    <li key={leg.id}>
+                      <span className="logistics-timeline-kind">{TRAVEL_LEG_LABELS[leg.kind]}</span>
+                      <strong>{fmtWhen(leg.startsAt)}</strong>
+                      <span>
+                        {leg.title}
+                        {leg.meetingPoint ? ` · ${leg.meetingPoint}` : ""}
+                      </span>
+                      {canManage ? (
+                        <button
+                          type="button"
+                          className="log-link danger"
+                          disabled={!act || busy}
+                          onClick={() => {
+                            if (confirm(`Remove "${leg.title}"?`)) {
+                              void run({ action: "delete_travel_leg", orgId, id: leg.id }, `del-leg:${leg.id}`);
+                            }
+                          }}
+                        >
+                          Remove
+                        </button>
+                      ) : null}
+                    </li>
                   ))}
-                </select>
-                <input name="title" placeholder="Title (optional)" />
-                <input name="startsAt" type="datetime-local" required />
-                <input name="meetingPoint" placeholder="Meeting point" />
-                <input name="location" placeholder="Location" />
-                <button type="submit" disabled={!act || busy}>
-                  Add travel time
-                </button>
-              </form>
-            ) : null}
+                </ol>
+              )}
+              {canManage ? (
+                <form
+                  className="log-grid-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const fd = new FormData(e.currentTarget);
+                    const starts = String(fd.get("startsAt") ?? "");
+                    void run(
+                      {
+                        action: "upsert_travel_leg",
+                        orgId,
+                        tripId: trip.id,
+                        kind: String(fd.get("kind") ?? "depart_home") as TravelLegKind,
+                        title: String(fd.get("title") ?? ""),
+                        startsAt: starts ? new Date(starts).toISOString() : "",
+                        endsAt: null,
+                        location: String(fd.get("location") ?? ""),
+                        meetingPoint: String(fd.get("meetingPoint") ?? ""),
+                        notes: String(fd.get("notes") ?? ""),
+                        subteamId: null,
+                        sortOrder: 0,
+                      },
+                      "leg",
+                    ).then(() => e.currentTarget.reset());
+                  }}
+                >
+                  <select name="kind" defaultValue="depart_home">
+                    {TRAVEL_LEG_KINDS.map((k) => (
+                      <option key={k} value={k}>
+                        {TRAVEL_LEG_LABELS[k]}
+                      </option>
+                    ))}
+                  </select>
+                  <input name="title" placeholder="Title (optional)" />
+                  <input name="startsAt" type="datetime-local" required />
+                  <input name="meetingPoint" placeholder="Meeting point" />
+                  <input name="location" placeholder="Location" />
+                  <button type="submit" disabled={!act || busy}>
+                    Add travel time
+                  </button>
+                </form>
+              ) : null}
+            </section>
           </div>
         ) : null}
       </Panel>
@@ -824,10 +887,14 @@ function HotelBlock({
   busy: boolean;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
+  const unassigned = hotel.rooms.filter((room) => !room.occupantUserId && !room.occupantName.trim()).length;
   return (
     <div className="log-hotel-block">
       <div className="log-hotel-head">
-        <strong>{hotel.name}</strong>
+        <div>
+          <strong>{hotel.name}</strong>
+          {hotel.confirmationCode ? <span className="app-muted"> · Conf #{hotel.confirmationCode}</span> : null}
+        </div>
         {canManage ? (
           <button
             type="button"
@@ -844,28 +911,56 @@ function HotelBlock({
         ) : null}
       </div>
       {hotel.address ? <p className="app-muted">{hotel.address}</p> : null}
-      {hotel.phone ? <p>{hotel.phone}</p> : null}
+      {hotel.phone ? (
+        <p>
+          <a href={`tel:${hotel.phone.replace(/\s/g, "")}`}>{hotel.phone}</a>
+        </p>
+      ) : null}
+      {(hotel.checkInAt || hotel.checkOutAt) && (
+        <p className="app-muted">
+          Check-in {fmtWhen(hotel.checkInAt)} · Check-out {fmtWhen(hotel.checkOutAt)}
+        </p>
+      )}
+      {hotel.roomBlockNotes ? <p className="app-muted">{hotel.roomBlockNotes}</p> : null}
       {hotel.rooms.length === 0 ? (
         <p className="app-muted">No rooms in the block yet.</p>
       ) : (
-        <ul className="logistics-list">
-          {hotel.rooms.map((room) => (
-            <li key={room.id}>
-              <strong>Room {room.roomLabel}</strong>
-              <span>{room.occupantName || room.occupantUserId ? memberLabel(members.find((m) => m.userId === room.occupantUserId) ?? { userId: room.occupantUserId ?? "", name: room.occupantName, email: null, role: "" }) : "Unassigned"}</span>
-              {canManage ? (
-                <button
-                  type="button"
-                  className="log-link danger"
-                  disabled={!act || busy}
-                  onClick={() => void run({ action: "delete_room", orgId, id: room.id }, `del-room:${room.id}`)}
-                >
-                  Remove room
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+        <>
+          {unassigned > 0 && canManage ? (
+            <p className="log-banner warn" role="status">
+              {unassigned} unassigned room slot{unassigned === 1 ? "" : "s"} in this hotel.
+            </p>
+          ) : null}
+          <ul className="logistics-list">
+            {hotel.rooms.map((room) => (
+              <li key={room.id}>
+                <strong>Room {room.roomLabel}</strong>
+                <span>
+                  {room.occupantName || room.occupantUserId
+                    ? memberLabel(
+                        members.find((m) => m.userId === room.occupantUserId) ?? {
+                          userId: room.occupantUserId ?? "",
+                          name: room.occupantName,
+                          email: null,
+                          role: "",
+                        },
+                      )
+                    : "Unassigned"}
+                </span>
+                {canManage ? (
+                  <button
+                    type="button"
+                    className="log-link danger"
+                    disabled={!act || busy}
+                    onClick={() => void run({ action: "delete_room", orgId, id: room.id }, `del-room:${room.id}`)}
+                  >
+                    Remove room
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       {canManage ? (
         <form
@@ -906,4 +1001,3 @@ function HotelBlock({
     </div>
   );
 }
-
