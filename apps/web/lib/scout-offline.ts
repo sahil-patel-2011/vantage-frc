@@ -328,7 +328,7 @@ async function syncOneMedia(
   const metadataResponse = await fetch("/api/scouting/media", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ orgId, clientId: item.clientId, ...item.metadata, orgId }),
+    body: JSON.stringify({ ...item.metadata, orgId, clientId: item.clientId }),
   });
   if (!metadataResponse.ok) throw new Error("Media metadata upload failed");
   const { uploadUrl } = (await metadataResponse.json()) as { uploadUrl: string };
