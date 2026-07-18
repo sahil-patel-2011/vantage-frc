@@ -1,0 +1,21 @@
+/* Soft-UI Sketch-to-Brief — .sketch-to-brief-* + shared Soft-UI tokens. Never DEMO brief metrics. */
+.sketch-to-brief-page{display:grid;gap:16px}
+.sketch-to-brief-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.sketch-to-brief-season{display:flex;gap:6px;align-items:center}
+.sketch-to-brief-related{display:flex;flex-wrap:wrap;gap:8px}
+.sketch-to-brief-next-actions{margin:0}
+.sketch-to-brief-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.sketch-to-brief-stats strong{font-size:1.5rem}
+.sketch-to-brief-layout{display:grid;gap:16px}
+.sketch-to-brief-panel{display:grid;gap:12px}
+.sketch-to-brief-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.sketch-to-brief-card{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.sketch-to-brief-card-actions{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.sketch-to-brief-tip{margin:0}
+.sketch-to-brief-brief{padding:12px;border-radius:8px}
+.sketch-to-brief-brief-header{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+@media(max-width:900px){
+  .sketch-to-brief-header-actions{justify-content:flex-start}
+  .sketch-to-brief-next-actions li{flex-direction:column;align-items:stretch}
+  .sketch-to-brief-card{flex-direction:column}
+}
