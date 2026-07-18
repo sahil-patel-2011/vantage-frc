@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { formatGoalValue, goalCategoryLabel, goalStatusLabel } from "../../lib/goals";
 import {
   GOAL_CATEGORIES,
@@ -101,15 +102,16 @@ export default function GoalsClient() {
 
   return (
     <main className="module-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Team / Season Goals</span>
-          <h1>Season Goals &amp; Objectives</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Team / Season Goals"
+        title="Season Goals & Objectives"
+        description={
+          <>
             Set the measurable objectives that define a successful season — competition, technical, outreach, and
             business — and track progress toward each with a live scorecard.
-          </p>
-        </div>
+          </>
+        }
+      >
         {view?.status === "live" && view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
@@ -129,7 +131,7 @@ export default function GoalsClient() {
             </select>
           </label>
         ) : null}
-      </header>
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -138,22 +140,18 @@ export default function GoalsClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load season goals</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
+        <EmptyState
+          title="Could not load season goals"
+          description="A network or server issue prevented loading. Try again."
+        >
           <button type="button" className="app-button secondary" onClick={() => load()}>
             Retry
           </button>
-        </section>
+        </EmptyState>
       ) : view == null ? (
-        <section className="app-card soft-panel">
-          <h2>Loading…</h2>
-          <p className="app-muted">Checking your workspace.</p>
-        </section>
+        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -165,7 +163,7 @@ export default function GoalsClient() {
               </li>
             ))}
           </ol>
-        </section>
+        </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <Scorecard view={view} />
@@ -187,7 +185,7 @@ function Scorecard({ view }: { view: LiveView }) {
     { label: "Season progress", value: pct(s.weightedProgress) },
   ];
   return (
-    <section className="app-card soft-panel" style={{ display: "grid", gap: 12 }}>
+    <Panel style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -211,13 +209,13 @@ function Scorecard({ view }: { view: LiveView }) {
           ))}
         </div>
       ) : null}
-    </section>
+    </Panel>
   );
 }
 
 function NeedsAttention({ view }: { view: LiveView }) {
   return (
-    <section className="app-card soft-panel" style={{ borderLeft: "3px solid #b26a00" }}>
+    <Panel style={{ borderLeft: "3px solid #b26a00" }}>
       <h2 style={{ marginTop: 0 }}>Needs attention</h2>
       <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
         {view.summary.needsAttention.map((evaluation) => (
@@ -236,7 +234,7 @@ function NeedsAttention({ view }: { view: LiveView }) {
           </li>
         ))}
       </ul>
-    </section>
+    </Panel>
   );
 }
 
@@ -260,8 +258,8 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
   const isBinary = form.metricType === "binary";
 
   return (
-    <form
-      className="app-card soft-panel"
+    <Panel
+      as="form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.title.trim()) return;
@@ -280,13 +278,11 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add goal</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
-        <label style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-          <span className="app-muted">Objective</span>
+      <FormGrid min={140}>
+        <FormRow label="Objective" wide>
           <input value={form.title} onChange={set("title")} placeholder="Qualify for the district championship" required />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Category</span>
+        </FormRow>
+        <FormRow label="Category">
           <select value={form.category} onChange={set("category")}>
             {GOAL_CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -294,9 +290,8 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Measure</span>
+        </FormRow>
+        <FormRow label="Measure">
           <select value={form.metricType} onChange={set("metricType")}>
             {METRIC_TYPES.map((metric) => (
               <option key={metric} value={metric}>
@@ -304,21 +299,18 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
               </option>
             ))}
           </select>
-        </label>
+        </FormRow>
         {!isBinary ? (
-          <label style={{ display: "grid", gap: 4 }}>
-            <span className="app-muted">Target</span>
+          <FormRow label="Target">
             <input type="number" min={0} step="any" value={form.targetValue} onChange={set("targetValue")} required />
-          </label>
+          </FormRow>
         ) : null}
         {form.metricType === "count" ? (
-          <label style={{ display: "grid", gap: 4 }}>
-            <span className="app-muted">Unit (optional)</span>
+          <FormRow label="Unit (optional)">
             <input value={form.unit} onChange={set("unit")} placeholder="matches, hours…" />
-          </label>
+          </FormRow>
         ) : null}
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Priority</span>
+        <FormRow label="Priority">
           <select value={form.priority} onChange={set("priority")}>
             {GOAL_PRIORITIES.map((priority) => (
               <option key={priority} value={priority}>
@@ -326,31 +318,29 @@ function AddGoalForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Due (optional)</span>
+        </FormRow>
+        <FormRow label="Due (optional)">
           <input type="date" value={form.dueOn} onChange={set("dueOn")} />
-        </label>
-      </div>
+        </FormRow>
+      </FormGrid>
       <div>
         <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
           Add goal
         </button>
       </div>
-    </form>
+    </Panel>
   );
 }
 
 function GoalList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
   if (view.evaluations.length === 0) {
     return (
-      <section className="app-card soft-panel">
-        <span className="app-badge setup">No goals yet</span>
-        <h2>Set your season objectives</h2>
-        <p className="app-muted">
-          Add a goal above — a target you can measure (matches won, outreach hours, dollars raised, a yes/no milestone).
-        </p>
-      </section>
+      <EmptyState
+        badge="No goals yet"
+        badgeTone="setup"
+        title="Set your season objectives"
+        description="Add a goal above — a target you can measure (matches won, outreach hours, dollars raised, a yes/no milestone)."
+      />
     );
   }
   return (
@@ -365,7 +355,7 @@ function GoalList({ view, busy, mutate }: { view: LiveView; busy: boolean; mutat
 function GoalCard({ evaluation, busy, mutate }: { evaluation: GoalEvaluation; busy: boolean; mutate: Mutate }) {
   const { goal, progress, status, daysToDue } = evaluation;
   return (
-    <article className="app-card soft-panel">
+    <Panel as="article">
       <header style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
         <div>
           <span className="app-badge" style={{ background: statusColor(status), color: "#fff" }}>
@@ -440,6 +430,6 @@ function GoalCard({ evaluation, busy, mutate }: { evaluation: GoalEvaluation; bu
           Delete
         </button>
       </footer>
-    </article>
+    </Panel>
   );
 }

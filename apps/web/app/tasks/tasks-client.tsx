@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { priorityLabel, statusLabel } from "../../lib/tasks";
 import {
   SUBSYSTEM_SUGGESTIONS,
@@ -92,15 +93,16 @@ export default function TasksClient() {
 
   return (
     <main className="module-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Build / Task Board</span>
-          <h1>Build Task Board</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Build / Task Board"
+        title="Build Task Board"
+        description={
+          <>
             Plan and track build-season work by subsystem — priorities, owners, due dates, and progress. A focused
             &quot;do next&quot; list surfaces the highest-leverage open tasks.
-          </p>
-        </div>
+          </>
+        }
+      >
         {view?.status === "live" && view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season
@@ -120,7 +122,7 @@ export default function TasksClient() {
             </select>
           </label>
         ) : null}
-      </header>
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -129,22 +131,18 @@ export default function TasksClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load the task board</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
+        <EmptyState
+          title="Could not load the task board"
+          description="A network or server issue prevented loading. Try again."
+        >
           <button type="button" className="app-button secondary" onClick={() => load()}>
             Retry
           </button>
-        </section>
+        </EmptyState>
       ) : view == null ? (
-        <section className="app-card soft-panel">
-          <h2>Loading…</h2>
-          <p className="app-muted">Checking your workspace.</p>
-        </section>
+        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
-        <section className="app-card soft-panel">
-          <span className="app-badge setup">Setup required</span>
-          <h2>{view.message}</h2>
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -156,7 +154,7 @@ export default function TasksClient() {
               </li>
             ))}
           </ol>
-        </section>
+        </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <MetricsTiles view={view} />
@@ -181,7 +179,7 @@ function MetricsTiles({ view }: { view: LiveView }) {
     { label: "Open est. hrs", value: String(m.estimatedOpenHours) },
   ];
   return (
-    <section className="app-card soft-panel">
+    <Panel>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(96px, 1fr))", gap: 12 }}>
         {tiles.map((tile) => (
           <div key={tile.label}>
@@ -199,13 +197,13 @@ function MetricsTiles({ view }: { view: LiveView }) {
           ))}
         </div>
       ) : null}
-    </section>
+    </Panel>
   );
 }
 
 function FocusList({ view }: { view: LiveView }) {
   return (
-    <section className="app-card soft-panel">
+    <Panel>
       <h2 style={{ marginTop: 0 }}>Do next</h2>
       <ol style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
         {view.board.focus.map((task) => {
@@ -224,7 +222,7 @@ function FocusList({ view }: { view: LiveView }) {
           );
         })}
       </ol>
-    </section>
+    </Panel>
   );
 }
 
@@ -238,8 +236,8 @@ function CreateTaskForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
   return (
-    <form
-      className="app-card soft-panel"
+    <Panel
+      as="form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.title.trim()) return;
@@ -257,22 +255,19 @@ function CreateTaskForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add task</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-        <label style={{ display: "grid", gap: 4, gridColumn: "1 / -1" }}>
-          <span className="app-muted">Title</span>
+      <FormGrid min={150}>
+        <FormRow label="Title" wide>
           <input value={form.title} onChange={set("title")} placeholder="Mount the intake rollers" required />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Subsystem</span>
+        </FormRow>
+        <FormRow label="Subsystem">
           <input value={form.subsystem} onChange={set("subsystem")} list="subsystem-options" placeholder="general" />
           <datalist id="subsystem-options">
             {SUBSYSTEM_SUGGESTIONS.map((s) => (
               <option key={s} value={s} />
             ))}
           </datalist>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Priority</span>
+        </FormRow>
+        <FormRow label="Priority">
           <select value={form.priority} onChange={set("priority")}>
             {TASK_PRIORITIES.map((p) => (
               <option key={p} value={p}>
@@ -280,43 +275,41 @@ function CreateTaskForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
               </option>
             ))}
           </select>
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Owner</span>
+        </FormRow>
+        <FormRow label="Owner">
           <input value={form.assignee} onChange={set("assignee")} placeholder="Optional" />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Est. hours</span>
+        </FormRow>
+        <FormRow label="Est. hours">
           <input type="number" min={0} step="0.5" value={form.estimateHours} onChange={set("estimateHours")} />
-        </label>
-        <label style={{ display: "grid", gap: 4 }}>
-          <span className="app-muted">Due</span>
+        </FormRow>
+        <FormRow label="Due">
           <input type="date" value={form.dueOn} onChange={set("dueOn")} />
-        </label>
-      </div>
+        </FormRow>
+      </FormGrid>
       <div>
         <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
           Add task
         </button>
       </div>
-    </form>
+    </Panel>
   );
 }
 
 function Board({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: Mutate }) {
   if (view.board.metrics.total === 0) {
     return (
-      <section className="app-card soft-panel">
-        <span className="app-badge setup">Empty board</span>
-        <h2>No tasks yet</h2>
-        <p className="app-muted">Add your first build task above to start the board.</p>
-      </section>
+      <EmptyState
+        badge="Empty board"
+        badgeTone="setup"
+        title="No tasks yet"
+        description="Add your first build task above to start the board."
+      />
     );
   }
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, alignItems: "start" }}>
       {view.board.columns.map((column) => (
-        <section key={column.status} className="app-card soft-panel" style={{ display: "grid", gap: 10 }}>
+        <Panel key={column.status} style={{ display: "grid", gap: 10 }}>
           <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 style={{ margin: 0, fontSize: "1.05rem" }}>{column.label}</h2>
             <span className="app-badge demo">{column.count}</span>
@@ -326,7 +319,7 @@ function Board({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: 
           ) : (
             column.tasks.map((task) => <TaskCard key={task.id} task={task} busy={busy} mutate={mutate} />)
           )}
-        </section>
+        </Panel>
       ))}
     </div>
   );
