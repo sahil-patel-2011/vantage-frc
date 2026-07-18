@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, PageHeader, TabBar } from "../../components/ui";
@@ -16,13 +17,18 @@ import {
 import { FundraisingGlance } from "./fundraising-glance";
 import { PartnerPlacementsPanel } from "./partner-placements-panel";
 import { SponsorPipelinePanel } from "./sponsor-pipeline-panel";
+import "../product-hub.css";
+const OrdersClient = dynamic(() => import("../orders/orders-client"), { ssr: false });
+const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-client"), { ssr: false });
 
-type Tab = "overview" | "budget" | "sponsors" | "placements" | "grants" | "evidence";
+type Tab = "overview" | "budget" | "orders" | "sponsors" | "sponsorship" | "placements" | "grants" | "evidence";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "budget", label: "Budget" },
+  { id: "orders", label: "Orders" },
   { id: "sponsors", label: "Sponsors" },
+  { id: "sponsorship", label: "Sponsorship" },
   { id: "placements", label: "Partners" },
   { id: "grants", label: "Grants" },
   { id: "evidence", label: "Awards" },
@@ -221,6 +227,9 @@ export default function BusinessClient() {
 
       {live ? (
         <nav className="biz-related" aria-label="Related finance tools">
+          <button type="button" className="app-button secondary" onClick={() => selectTab("orders")}>Orders</button>
+          <button type="button" className="app-button secondary" onClick={() => selectTab("sponsorship")}>Sponsorship</button>
+          <button type="button" className="app-button secondary" onClick={() => selectTab("grants")}>Grants</button>
           <a className="app-button secondary" href={`/costs${q}`}>
             Season Costs
           </a>
@@ -295,6 +304,7 @@ export default function BusinessClient() {
 
           {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
           {tab === "budget" ? <Budget view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
+          {tab === "orders" ? (<div className="product-hub-panel"><OrdersClient /></div>) : null}
           {tab === "sponsors" ? (
             <SponsorPipelinePanel
               view={live}
@@ -304,6 +314,7 @@ export default function BusinessClient() {
               research={research}
             />
           ) : null}
+          {tab === "sponsorship" ? (<div className="product-hub-panel"><SponsorshipClient /></div>) : null}
           {tab === "placements" ? (
             <PartnerPlacementsPanel orgId={live.orgId} seasonYear={live.seasonYear} canManage={live.canManageFinance} />
           ) : null}
@@ -324,7 +335,7 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
   const reminders = view.sponsorReminders.slice(0, 5);
   const progress = view.fundraisingProgress;
   const pulse = view.ordersPulse;
-  const ordersHref = `/orders?orgId=${encodeURIComponent(view.orgId)}`;
+  const ordersHref = `/business?orgId=${encodeURIComponent(view.orgId)}&tab=orders`;
   return (
     <div className="biz-stack">
       <section className="biz-kpis" aria-label="Season funding summary">
