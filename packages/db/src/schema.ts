@@ -174,6 +174,8 @@ export const profiles = pgTable("profiles", {
   teamRole: text("team_role"),
   primaryFocus: text("primary_focus").$type<"competition" | "build" | "business" | "leadership">(),
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+  termsVersion: text("terms_version"),
 });
 
 /** Opt-in email categories (all default false). Distinct from profiles.notification_prefs. */

@@ -36,6 +36,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/my-day")).toBe("Competition / My Day");
     expect(breadcrumbForPath("/business")).toBe("Business / Business Hub");
     expect(breadcrumbForPath("/sponsorship")).toBe("Business / Sponsorship One-Pagers");
+    expect(breadcrumbForPath("/orders")).toBe("Business / Orders");
     expect(breadcrumbForPath("/team/security")).toBe("Settings / Team security");
     expect(breadcrumbForPath("/team/background")).toBe("Settings / Team background");
     expect(breadcrumbForPath("/intel")).toBe("Competition / Matches");
@@ -43,6 +44,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/logistics")).toBe("Logistics / Event Logistics");
     expect(breadcrumbForPath("/packing")).toBe("Logistics / Packing List");
     expect(breadcrumbForPath("/duties")).toBe("Logistics / Duty Roster");
+    expect(breadcrumbForPath("/visit-invites")).toBe("Logistics / Visit Invites");
     expect(breadcrumbForPath("/pick-clock")).toBe("Scouting / Pick Clock");
     expect(breadcrumbForPath("/fmea")).toBe("Build / Failure Log (FMEA)");
   });
