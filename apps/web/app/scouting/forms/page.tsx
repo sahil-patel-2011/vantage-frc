@@ -1,10 +1,18 @@
-import { EmptyState } from "../../../components/ui";
+import { EmptyState, PageHeader } from "../../../components/ui";
+import {
+  FORM_BUILDER_RELATED_INCLUDE,
+  formBuilderNextActions,
+  formBuilderRelatedLinks,
+  formBuilderSetupSteps,
+  formBuilderShellCopy,
+} from "../../../lib/scouting/form-builder";
 import FormsClient from "./forms-client";
 import "./forms.css";
 
 export const metadata = {
   title: "Scouting form builder · Vantage",
-  description: "Build and publish custom match and pit scouting forms for your team.",
+  description:
+    "Build and publish custom match and pit scouting forms — never DEMO fields.",
 };
 
 export default async function ScoutingFormsPage({
@@ -14,18 +22,72 @@ export default async function ScoutingFormsPage({
 }) {
   const { orgId } = await searchParams;
   if (!orgId) {
+    const copy = formBuilderShellCopy("setup");
+    const links = formBuilderRelatedLinks(null, {
+      include: [...FORM_BUILDER_RELATED_INCLUDE],
+    });
+    const steps = formBuilderSetupSteps(null);
+    const actions = formBuilderNextActions({ orgId: null, shell: "setup" });
     return (
-      <main className="module-page sfb-page">
+      <main className="module-page sfb-page soft-gate">
+        <PageHeader
+          breadcrumbs="Competition / Form builder"
+          title="Scouting form builder"
+          description="Publish versioned match or pit schemas. Scouts and Coverage stay blank until a real version exists — never DEMO fields."
+        >
+          <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
+            {links.map((link) => (
+              <a key={link.id} className="app-button secondary" href={link.href}>
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        </PageHeader>
         <EmptyState
-          badge="Workspace"
+          soft
+          className="sfb-shell-empty"
+          badge="Setup required"
           badgeTone="setup"
-          title="Select a workspace"
-          description="Open the form builder from your team workspace so published schemas stay org-scoped."
+          title={copy.title}
+          description={copy.description}
         >
           <a className="app-button" href="/workspace">
             Select workspace
           </a>
+          <ol className="sfb-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
         </EmptyState>
+        <section
+          className="app-card soft-panel edc-next-actions sfb-next-actions"
+          aria-label="Next actions"
+        >
+          <header>
+            <h2>Next actions</h2>
+            <p className="app-muted">Scouting and Coverage — never DEMO fields.</p>
+          </header>
+          <ol>
+            {actions.map((action) => (
+              <li key={action.id} className={action.primary ? "primary" : undefined}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a className="app-button secondary" href={action.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
       </main>
     );
   }

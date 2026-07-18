@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   addOption,
+  classifyFormBuilderShell,
   definitionFromDraft,
   draftFromDefinition,
+  formBuilderNextActions,
+  formBuilderPublishBlockedReason,
+  formBuilderPublishLabel,
+  formBuilderRelatedLinks,
+  formBuilderSetupSteps,
+  formBuilderShellCopy,
+  FORM_BUILDER_RELATED_INCLUDE,
   moveOption,
   moveQuestion,
   needsOptionEditor,
@@ -163,5 +171,121 @@ describe("form-builder", () => {
     expect(steps[1]?.href).toContain("/scout-coverage-live");
     expect(steps[1]?.href).toContain("eventKey=2026casj");
     expect(steps.every((s) => !/demo/i.test(s.label + s.detail))).toBe(true);
+  });
+
+  it("builds Scouting / Coverage via hubHref / withOrgHref", () => {
+    const links = formBuilderRelatedLinks("org-1", {
+      include: [...FORM_BUILDER_RELATED_INCLUDE],
+    });
+    expect(links.map((l) => l.id)).toEqual(["scouting", "coverage"]);
+    expect(links[0]?.href).toContain("tab=scouting");
+    expect(links[0]?.href).toContain("orgId=org-1");
+    expect(links[1]?.href).toContain("/scouting/lineup");
+    expect(links[1]?.href).toContain("orgId=org-1");
+  });
+
+  it("uses hubHref / withOrgHref and never DEMO entries", () => {
+    const links = formBuilderRelatedLinks("org-1");
+    const steps = formBuilderSetupSteps("org-1");
+    const actions = formBuilderNextActions({ orgId: "org-1", shell: "empty" });
+    expect(JSON.stringify(links)).toContain("tab=scouting");
+    expect(JSON.stringify(links)).toContain("/scouting/lineup");
+    expect(steps.some((s) => s.id === "scouting")).toBe(true);
+    expect(steps.some((s) => s.id === "coverage")).toBe(true);
+    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    expect(formBuilderShellCopy("empty").description).toMatch(/never DEMO/i);
+  });
+
+  it("classifies empty/setup shells without inventing DEMO fields", () => {
+    expect(
+      classifyFormBuilderShell({
+        orgId: "org-1",
+        eventKey: null,
+        year: null,
+        hasPublishedSchema: false,
+      }),
+    ).toBe("setup");
+    expect(
+      classifyFormBuilderShell({
+        orgId: "org-1",
+        eventKey: "2026casj",
+        year: 2026,
+        hasPublishedSchema: false,
+      }),
+    ).toBe("empty");
+    expect(
+      classifyFormBuilderShell({
+        orgId: "org-1",
+        eventKey: "2026casj",
+        year: 2026,
+        hasPublishedSchema: true,
+      }),
+    ).toBe("ready");
+  });
+
+  it("clarifies publish button labels and blocked reasons", () => {
+    const questions = [
+      newDraftQuestion({ label: "Climb", kind: "dropdown", optionsText: "none, park" }),
+    ];
+    const unpublished = resolveDraftPublishStatus({
+      published: null,
+      draftTitle: "Match",
+      draftQuestions: questions,
+    });
+    expect(
+      formBuilderPublishLabel({ busy: false, entryType: "match", status: unpublished }),
+    ).toBe("Publish match form");
+    expect(
+      formBuilderPublishLabel({ busy: true, entryType: "pit", status: unpublished }),
+    ).toBe("Publishing…");
+
+    const ok = validateDraft("Match", questions);
+    expect(
+      formBuilderPublishBlockedReason({
+        canManageSchemas: true,
+        year: 2026,
+        eventKey: "2026casj",
+        validation: ok,
+        acknowledgeBudget: false,
+      }),
+    ).toBeNull();
+    expect(
+      formBuilderPublishBlockedReason({
+        canManageSchemas: false,
+        year: 2026,
+        eventKey: "2026casj",
+        validation: ok,
+        acknowledgeBudget: false,
+      }),
+    ).toMatch(/owner or admin/i);
+    expect(
+      formBuilderPublishBlockedReason({
+        canManageSchemas: true,
+        year: null,
+        eventKey: null,
+        validation: ok,
+        acknowledgeBudget: false,
+      }),
+    ).toMatch(/active event/i);
+  });
+
+  it("refuses invented DEMO fields in empty/setup copy", () => {
+    for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
+      const copy = formBuilderShellCopy(kind);
+      expect(copy.title).not.toMatch(/\bDEMO\b/);
+    }
+    expect(formBuilderShellCopy("empty").badge).toBe("Not published");
+    expect(formBuilderShellCopy("empty").description).toMatch(/never DEMO/i);
+    expect(formBuilderShellCopy("setup").badge).toBe("Setup required");
+    expect(formBuilderShellCopy("ready").description).toMatch(/never DEMO/i);
+    const actions = formBuilderNextActions({
+      orgId: "org-1",
+      shell: "empty",
+      canManageSchemas: true,
+      entryType: "match",
+    });
+    expect(actions.some((a) => a.id === "scouting")).toBe(true);
+    expect(actions.some((a) => a.id === "coverage")).toBe(true);
+    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
   });
 });

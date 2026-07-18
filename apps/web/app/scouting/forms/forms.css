@@ -3,12 +3,86 @@
   max-width: 1120px;
 }
 
+.sfb-page .sfb-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .sfb-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   justify-content: flex-end;
+}
+
+.sfb-setup-steps {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.sfb-setup-steps li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--soft-line);
+}
+
+.sfb-setup-steps li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.sfb-setup-steps li div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sfb-setup-steps li span {
+  font: 600 12px / 1.4 var(--font-source-sans), ui-sans-serif;
+  color: var(--soft-muted);
+}
+
+.sfb-next-actions {
+  margin-top: 4px;
+}
+
+.sfb-shell-empty {
+  margin-bottom: 4px;
+}
+
+.sfb-publish-blocked {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
+}
+
+.sfb-publish-blocked a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sfb-publish-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .sfb-meta {
