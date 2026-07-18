@@ -13,6 +13,7 @@ import {
   type PurchaseRequest,
   type Sponsor,
 } from "../../lib/business-portal";
+import { FundraisingGlance } from "./fundraising-glance";
 import { PartnerPlacementsPanel } from "./partner-placements-panel";
 import { SponsorPipelinePanel } from "./sponsor-pipeline-panel";
 
