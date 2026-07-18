@@ -2,6 +2,7 @@
 import { withRls } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
+import { type MentionRef, resolveMentionedUserIds } from "../../../lib/messages/mentions";
 import { clampWaitMs, LONG_POLL_TICK_MS } from "../../../lib/messages/sync";
 import { createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
 
@@ -9,6 +10,7 @@ export const maxDuration = 10;
 
 const postLimiter = createRateLimiter({ limit: 60, windowMs: 60_000, namespace: "messages-post" });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TEAM_CHANNEL_TITLE = "Team";
 const MAX_BODY = 8000;
 const POLL_LIMIT = 100;
@@ -36,11 +38,30 @@ type MessageRow = {
   pinnedAt: string | null;
   pinnedBy: string | null;
   mine: boolean;
+  mentions: MentionRef[];
 };
 
 type MemberRow = { id: string; name: string; email: string; role: string };
 
 let pinsSupportedCache: boolean | null = null;
+let mentionsSupportedCache: boolean | null = null;
+
+async function supportsMessageMentions(client: PoolClient): Promise<boolean> {
+  if (mentionsSupportedCache != null) return mentionsSupportedCache;
+  try {
+    const row = await client.query(
+      `SELECT 1
+       FROM information_schema.tables
+       WHERE table_schema = 'public'
+         AND table_name = 'org_message_mentions'
+       LIMIT 1`,
+    );
+    mentionsSupportedCache = Boolean(row.rowCount);
+  } catch {
+    mentionsSupportedCache = false;
+  }
+  return mentionsSupportedCache;
+}
 
 async function supportsMessagePins(client: PoolClient): Promise<boolean> {
   if (pinsSupportedCache != null) return pinsSupportedCache;
@@ -87,6 +108,46 @@ function dmKeyFor(a: string, b: string) {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeClaimedMentionIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const ids: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== "string") continue;
+    const trimmed = item.trim();
+    if (!UUID_RE.test(trimmed)) continue;
+    if (!ids.includes(trimmed)) ids.push(trimmed);
+  }
+  return ids;
+}
+
+async function attachMentions(client: PoolClient, orgId: string, messages: MessageRow[]) {
+  if (!messages.length) return;
+  for (const message of messages) {
+    message.mentions = [];
+  }
+  const rows = await client.query<{ messageId: string; userId: string; name: string }>(
+    `SELECT
+       mm.message_id AS "messageId",
+       mm.mentioned_user_id AS "userId",
+       COALESCE(u.name, 'Member') AS name
+     FROM org_message_mentions mm
+     INNER JOIN users u ON u.id = mm.mentioned_user_id
+     WHERE mm.org_id = $1
+       AND mm.message_id = ANY($2::uuid[])
+     ORDER BY mm.created_at ASC, lower(u.name)`,
+    [orgId, messages.map((message) => message.id)],
+  );
+  const byMessage = new Map<string, MentionRef[]>();
+  for (const row of rows.rows) {
+    const list = byMessage.get(row.messageId) ?? [];
+    list.push({ userId: row.userId, name: row.name });
+    byMessage.set(row.messageId, list);
+  }
+  for (const message of messages) {
+    message.mentions = byMessage.get(message.id) ?? [];
+  }
 }
 
 async function ensureTeamChannel(client: PoolClient, orgId: string, userId: string) {
@@ -248,6 +309,7 @@ async function listMessages(
   messages: MessageRow[];
   pinned: MessageRow[];
   pinsSupported: boolean;
+  mentionsSupported: boolean;
 }> {
   const access = await client.query<{ kind: "team" | "dm"; title: string | null }>(
     `SELECT kind, title FROM org_conversations WHERE id = $1 AND org_id = $2`,
@@ -256,6 +318,7 @@ async function listMessages(
   if (!access.rowCount) throw new Error("Conversation not found");
 
   const pinsSupported = await supportsMessagePins(client);
+  const mentionsSupported = await supportsMessageMentions(client);
 
   const messages = pinsSupported
     ? await client.query<MessageRow>(
@@ -333,6 +396,15 @@ async function listMessages(
         ).rows
       : [];
 
+  const messageList = messages.rows;
+  if (mentionsSupported) {
+    await attachMentions(client, orgId, [...messageList, ...pinned]);
+  } else {
+    for (const message of [...messageList, ...pinned]) {
+      message.mentions = [];
+    }
+  }
+
   if (options?.markRead !== false) {
     await client.query(
       `INSERT INTO org_conversation_participants (conversation_id, user_id, last_read_at)
@@ -359,12 +431,25 @@ async function listMessages(
         [userId, orgId, conversationId],
       );
     }
+
+    if (access.rows[0]!.kind === "team") {
+      await client.query(
+        `UPDATE notifications
+         SET read_at = now()
+         WHERE user_id = $1
+           AND org_id = $2
+           AND type = 'message_mention'
+           AND read_at IS NULL
+           AND payload->>'conversationId' = $3`,
+        [userId, orgId, conversationId],
+      );
+    }
   }
 
   const inbox = await listInbox(client, orgId, userId);
   const conversation = inbox.find((item) => item.id === conversationId) ?? null;
 
-  return { conversation, messages: messages.rows, pinned, pinsSupported };
+  return { conversation, messages: messageList, pinned, pinsSupported, mentionsSupported };
 }
 
 async function openDm(client: PoolClient, orgId: string, userId: string, peerUserId: string) {
@@ -420,6 +505,7 @@ async function sendMessage(
   userId: string,
   conversationId: string,
   body: string,
+  claimedMentionIds: string[] = [],
 ) {
   const trimmed = body.trim();
   if (!trimmed) throw new Error("Message body is required");
@@ -430,6 +516,9 @@ async function sendMessage(
     [conversationId, orgId],
   );
   if (!conversation.rowCount) throw new Error("Conversation not found");
+
+  const kind = conversation.rows[0]!.kind;
+  const mentionsSupported = await supportsMessageMentions(client);
 
   const inserted = await client.query<{ id: string; createdAt: string; updatedAt: string }>(
     `INSERT INTO org_messages (conversation_id, org_id, author_user_id, body)
@@ -447,7 +536,9 @@ async function sendMessage(
     [conversationId, userId],
   );
 
-  if (conversation.rows[0]!.kind === "dm") {
+  const messageId = inserted.rows[0]!.id;
+
+  if (kind === "dm") {
     const peers = await client.query<{ userId: string }>(
       `SELECT user_id AS "userId" FROM org_conversation_participants
        WHERE conversation_id = $1 AND user_id <> $2`,
@@ -466,6 +557,47 @@ async function sendMessage(
           fromName: author.rows[0]?.name ?? "Teammate",
         },
       });
+    }
+  } else if (kind === "team" && mentionsSupported) {
+    const members = await client.query<{ id: string; name: string; email: string }>(
+      `SELECT u.id, u.name, u.email
+       FROM memberships m
+       INNER JOIN users u ON u.id = m.user_id
+       WHERE m.org_id = $1`,
+      [orgId],
+    );
+    const mentionedIds = resolveMentionedUserIds(trimmed, members.rows, claimedMentionIds, userId);
+    if (mentionedIds.length) {
+      for (const mentionedUserId of mentionedIds) {
+        await client.query(
+          `INSERT INTO org_message_mentions (message_id, org_id, mentioned_user_id)
+           VALUES ($1, $2, $3)
+           ON CONFLICT DO NOTHING`,
+          [messageId, orgId, mentionedUserId],
+        );
+      }
+
+      const author = await client.query<{ name: string }>(`SELECT name FROM users WHERE id = $1`, [userId]);
+      const fromName = author.rows[0]?.name ?? "Teammate";
+      const preview = trimmed.slice(0, 120);
+      const href = `/messages?orgId=${encodeURIComponent(orgId)}&conversationId=${encodeURIComponent(conversationId)}`;
+      for (const mentionedUserId of mentionedIds) {
+        await emitNotification(client, {
+          userId: mentionedUserId,
+          orgId,
+          type: "message_mention",
+          payload: {
+            conversationId,
+            messageId,
+            preview,
+            fromUserId: userId,
+            fromName,
+            title: "You were mentioned in Team",
+            body: `${fromName} mentioned you: ${preview}`,
+            href,
+          },
+        });
+      }
     }
   }
 
@@ -568,6 +700,7 @@ export async function GET(request: Request) {
         messages: [] as MessageRow[],
         pinned: [] as MessageRow[],
         pinsSupported: await supportsMessagePins(client),
+        mentionsSupported: await supportsMessageMentions(client),
         conversation: null,
       };
     });
@@ -591,6 +724,7 @@ export async function POST(request: Request) {
       conversationId?: string;
       body?: string;
       messageId?: string;
+      mentionedUserIds?: unknown;
     };
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
@@ -645,7 +779,14 @@ export async function POST(request: Request) {
 
       const conversationId = String(body.conversationId ?? "");
       if (!conversationId) throw new Error("conversationId is required");
-      const message = await sendMessage(client, orgId, session.user.id, conversationId, String(body.body ?? ""));
+      const message = await sendMessage(
+        client,
+        orgId,
+        session.user.id,
+        conversationId,
+        String(body.body ?? ""),
+        normalizeClaimedMentionIds(body.mentionedUserIds),
+      );
       return { message };
     });
 

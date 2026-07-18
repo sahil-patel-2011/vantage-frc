@@ -1,7 +1,17 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import {
+  applyMention,
+  filterMembersForMention,
+  findActiveMention,
+  findMentionedUserIds,
+  pruneMentionIds,
+  segmentMessageBody,
+  type MentionMember,
+  type MentionRef,
+} from "../../lib/messages/mentions";
 import {
   LONG_POLL_MAX_MS,
   mergeMessages,
@@ -33,9 +43,43 @@ type Message = {
   pinnedAt?: string | null;
   pinnedBy?: string | null;
   mine: boolean;
+  mentions?: MentionRef[];
 };
 
 type Member = { id: string; name: string; email: string; role: string };
+
+function mentionsForRender(body: string, mentions: MentionRef[] | undefined, members: Member[]): MentionRef[] {
+  if (mentions?.length) return mentions;
+  const ids = new Set(findMentionedUserIds(body, members));
+  return members
+    .filter((member) => ids.has(member.id))
+    .map((member) => ({ userId: member.id, name: member.name }));
+}
+
+function MessageBody({
+  body,
+  mentions = [],
+  members,
+}: {
+  body: string;
+  mentions?: MentionRef[];
+  members: Member[];
+}) {
+  const segments = segmentMessageBody(body, mentionsForRender(body, mentions, members));
+  return (
+    <p>
+      {segments.map((segment, index) =>
+        segment.kind === "mention" ? (
+          <span key={`${segment.userId}-${index}`} className="message-mention">
+            {segment.value}
+          </span>
+        ) : (
+          <span key={`t-${index}`}>{segment.value}</span>
+        ),
+      )}
+    </p>
+  );
+}
 
 function labelFor(conversation: Conversation) {
   if (conversation.kind === "team") return conversation.title ?? "Team";
@@ -107,18 +151,29 @@ export default function MessagesClient({
   const [pinsSupported, setPinsSupported] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [text, setText] = useState("");
+  const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([]);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [composerCursor, setComposerCursor] = useState(0);
+  const [mentionMenuOpen, setMentionMenuOpen] = useState(true);
   const [status, setStatus] = useState("");
   const [sending, setSending] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const sinceRef = useRef<string | null>(null);
   const activeIdRef = useRef<string | null>(activeId);
   const stickToBottomRef = useRef(true);
+  const membersLoadedRef = useRef(false);
 
   const active = conversations.find((item) => item.id === activeId) ?? null;
   const inboxUnread = totalUnread(conversations);
+  const activeMention =
+    active?.kind === "team" && mentionMenuOpen ? findActiveMention(text, composerCursor) : null;
+  const mentionSuggestions = activeMention
+    ? filterMembersForMention(members, activeMention.query)
+    : [];
 
   useEffect(() => {
     activeIdRef.current = activeId;
@@ -238,7 +293,6 @@ export default function MessagesClient({
           failures = 0;
           setLive(true);
           if (!changed && activeIdRef.current === activeId) {
-            // Empty long-poll finished; loop immediately while the tab is visible.
             continue;
           }
         } catch {
@@ -256,6 +310,36 @@ export default function MessagesClient({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  const ensureMembers = useCallback(async () => {
+    if (membersLoadedRef.current && members.length > 0) return members;
+    const response = await fetch(`/api/messages?orgId=${encodeURIComponent(orgId)}&mode=members`);
+    const data = await response.json();
+    if (!response.ok) {
+      setStatus(data.error || "Could not load members.");
+      return [];
+    }
+    const list = (data.members ?? []) as Member[];
+    setMembers(list);
+    membersLoadedRef.current = true;
+    return list;
+  }, [members.length, orgId]);
+
+  useEffect(() => {
+    if (active?.kind === "team") {
+      void ensureMembers();
+    }
+  }, [active?.kind, ensureMembers]);
+
+  useEffect(() => {
+    const activeAt = findActiveMention(text, composerCursor);
+    if (!activeAt) {
+      setMentionMenuOpen(true);
+      setMentionIndex(0);
+      return;
+    }
+    setMentionIndex(0);
+  }, [text, composerCursor]);
+
   async function selectConversation(id: string) {
     setActiveId(id);
     setPickerOpen(false);
@@ -270,13 +354,53 @@ export default function MessagesClient({
 
   async function openMemberPicker() {
     setPickerOpen(true);
-    const response = await fetch(`/api/messages?orgId=${encodeURIComponent(orgId)}&mode=members`);
-    const data = await response.json();
-    if (!response.ok) {
-      setStatus(data.error || "Could not load members.");
+    await ensureMembers();
+  }
+
+  function updateComposer(nextText: string, cursor: number, nextMentionIds?: string[]) {
+    const refs = members.map((member) => ({ userId: member.id, name: member.name }));
+    const ids = pruneMentionIds(nextText, refs, nextMentionIds ?? mentionedUserIds);
+    setText(nextText);
+    setComposerCursor(cursor);
+    setMentionedUserIds(ids);
+  }
+
+  function selectMention(member: MentionMember) {
+    const result = applyMention(text, composerCursor, member);
+    const nextIds = mentionedUserIds.includes(member.id)
+      ? mentionedUserIds
+      : [...mentionedUserIds, member.id];
+    updateComposer(result.text, result.cursor, nextIds);
+    requestAnimationFrame(() => {
+      const node = composerRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(result.cursor, result.cursor);
+    });
+  }
+
+  function onComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (!activeMention || mentionSuggestions.length === 0) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setMentionIndex((index) => (index + 1) % mentionSuggestions.length);
       return;
     }
-    setMembers(data.members ?? []);
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setMentionIndex((index) => (index - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+      return;
+    }
+    if (event.key === "Enter" || event.key === "Tab") {
+      event.preventDefault();
+      const chosen = mentionSuggestions[mentionIndex] ?? mentionSuggestions[0];
+      if (chosen) selectMention(chosen);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setMentionMenuOpen(false);
+    }
   }
 
   async function startDm(peerUserId: string) {
@@ -303,13 +427,20 @@ export default function MessagesClient({
   async function send(event: FormEvent) {
     event.preventDefault();
     if (!activeId || !text.trim() || sending) return;
+    if (activeMention && mentionSuggestions.length > 0) return;
     setSending(true);
     setStatus("");
     try {
       const response = await fetch("/api/messages", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "send", orgId, conversationId: activeId, body: text }),
+        body: JSON.stringify({
+          action: "send",
+          orgId,
+          conversationId: activeId,
+          body: text,
+          mentionedUserIds: active?.kind === "team" ? mentionedUserIds : [],
+        }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -317,6 +448,8 @@ export default function MessagesClient({
         return;
       }
       setText("");
+      setMentionedUserIds([]);
+      setComposerCursor(0);
       stickToBottomRef.current = true;
       sinceRef.current = null;
       await loadThread(activeId);
@@ -439,7 +572,7 @@ export default function MessagesClient({
                 <span className="eyebrow">Pinned notes</span>
                 {pinned.map((item) => (
                   <article key={item.id}>
-                    <p>{item.body}</p>
+                    <MessageBody body={item.body} mentions={item.mentions} members={members} />
                     <footer>
                       <small>
                         {item.authorName} · {formatTime(item.pinnedAt ?? item.createdAt)}
@@ -467,7 +600,7 @@ export default function MessagesClient({
                   <h1>No messages yet.</h1>
                   <p>
                     {active.kind === "team"
-                      ? "Say something the whole team should see—pit schedule, travel notes, or a quick heads-up. Pin important match-day notes so they stay at the top."
+                      ? "Say something the whole team should see—pit schedule, travel notes, or a quick heads-up. Use @name to notify someone, and pin important match-day notes."
                       : "Start a private thread with this teammate. Only the two of you can read it."}
                   </p>
                 </div>
@@ -486,7 +619,7 @@ export default function MessagesClient({
                         {item.mine ? "You" : item.authorName} · {formatTime(item.createdAt)}
                         {item.pinnedAt ? " · pinned" : ""}
                       </span>
-                      <p>{item.body}</p>
+                      <MessageBody body={item.body} mentions={item.mentions} members={members} />
                       <div className="message-actions">
                         {pinsSupported && active.kind === "team" ? (
                           <button type="button" className="message-pin" onClick={() => void togglePin(item)}>
@@ -507,18 +640,51 @@ export default function MessagesClient({
             </div>
 
             <form className="chat-composer" onSubmit={send}>
-              {active.kind === "team" ? <div>Team channel · all org members can read this</div> : null}
-              <textarea
-                aria-label="Message"
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder={
-                  active.kind === "team"
-                    ? "Message the team… pin match-day notes when they matter"
-                    : "Private message…"
-                }
-                maxLength={8000}
-              />
+              {active.kind === "team" ? <div>Team channel · type @ to mention a teammate</div> : null}
+              <div className="messages-composer-wrap">
+                {active.kind === "team" && activeMention && mentionSuggestions.length > 0 ? (
+                  <ul className="messages-mention-menu" role="listbox" aria-label="Mention teammate">
+                    {mentionSuggestions.map((member, index) => (
+                      <li key={member.id}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={index === mentionIndex}
+                          className={index === mentionIndex ? "active" : undefined}
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            selectMention(member);
+                          }}
+                        >
+                          <strong>{member.name}</strong>
+                          <small>{member.email}</small>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <textarea
+                  ref={composerRef}
+                  aria-label="Message"
+                  value={text}
+                  onChange={(event) => {
+                    updateComposer(
+                      event.target.value,
+                      event.target.selectionStart ?? event.target.value.length,
+                    );
+                  }}
+                  onClick={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
+                  onKeyUp={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
+                  onSelect={(event) => setComposerCursor(event.currentTarget.selectionStart ?? 0)}
+                  onKeyDown={onComposerKeyDown}
+                  placeholder={
+                    active.kind === "team"
+                      ? "Message the team… use @name to notify someone"
+                      : "Private message…"
+                  }
+                  maxLength={8000}
+                />
+              </div>
               <button type="submit" disabled={!text.trim() || sending}>
                 Send
               </button>

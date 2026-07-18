@@ -220,9 +220,20 @@ html[data-theme="light"] .auth-page .primary-action,html[data-theme="light"] .au
 .messages-page .messages-pins p{margin:0 0 8px;line-height:1.45}
 .messages-page .messages-pins footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .messages-page .messages-pins button{padding:4px 8px;color:var(--soft-accent,#16d9e8);background:transparent;border:1px solid color-mix(in srgb,var(--soft-accent,#16d9e8) 40%,transparent);border-radius:6px;cursor:pointer;font:10px var(--font-ibm-mono),monospace}
+.messages-page .message-mention{color:var(--soft-accent,#16d9e8);font-weight:700}
+.messages-page .messages-composer-wrap{position:relative;display:grid;gap:0;flex:1;min-width:0}
+.messages-page .messages-composer-wrap textarea{width:100%}
+.messages-page .messages-mention-menu{position:absolute;left:0;right:0;bottom:calc(100% + 6px);z-index:5;margin:0;padding:6px;list-style:none;display:grid;gap:4px;max-height:220px;overflow:auto;border:1px solid var(--soft-line,#29363d);border-radius:10px;background:var(--soft-card,#10181d);box-shadow:0 12px 28px rgba(0,0,0,.28)}
+.messages-page .messages-mention-menu button{display:grid;gap:2px;width:100%;padding:8px 10px;text-align:left;color:inherit;background:transparent;border:0;border-radius:8px;cursor:pointer}
+.messages-page .messages-mention-menu button.active,
+.messages-page .messages-mention-menu button:hover{background:color-mix(in srgb,var(--soft-accent,#16d9e8) 14%,transparent)}
+.messages-page .messages-mention-menu strong{font:600 13px/1.3 var(--font-source-sans),sans-serif}
+.messages-page .messages-mention-menu small{color:var(--soft-muted,#829198);font:11px/1.3 var(--font-source-sans),sans-serif}
 .dash-notif-preview{display:block;margin-top:2px;color:var(--soft-muted,#829198);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-theme="light"] .messages-page .messages-pins{background:#eef5f8}
 html[data-theme="light"] .messages-page .messages-pins article{background:#fff;border-color:#d5dad8}
+html[data-theme="light"] .messages-page .messages-mention-menu{background:#fff;border-color:#d5dad8;box-shadow:0 12px 28px rgba(23,39,44,.12)}
+html[data-theme="light"] .messages-page .message-mention{color:#087f92}
 @media(max-width:950px){.messages-page{grid-template-columns:190px 1fr}}
 @media(max-width:620px){.messages-page{display:flex;flex-direction:column}}
 
