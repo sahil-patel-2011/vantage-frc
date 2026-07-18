@@ -1,4 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import { buildTeamTrendAlert, fingerprintAlert, summarizeAlerts } from ".";
 import type { EpaTrendAlert, EpaTrendPoint, EpaTrendSummary, WatchlistTeam } from "./types";
 
@@ -61,13 +63,34 @@ async function resolveOrg(
   return membership.rows[0] ?? null;
 }
 
+function setupSteps(orgId: string | null): EpaTrendAlertsSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — EPA Trend Alerts is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "strategy",
+      label: "Open Strategy",
+      detail: "Pick lists stay empty until real metrics exist — never DEMO EPA.",
+      href: hubHref("/competition", "strategy", orgId),
+    },
+    {
+      id: "opponent-watchlist",
+      label: "Open Opponent Watchlist",
+      detail: "Manual opponent notes stay blank until logged — never DEMO rankings.",
+      href: hubHref("/competition", "opponent-watchlist", orgId),
+    },
+  ];
+}
+
 function setupRequiredView(orgId: string | null = null): EpaTrendAlertsView {
   return {
     status: "setup_required",
     message: "Select a team workspace to build an EPA trend watchlist.",
-    steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-    ],
+    steps: setupSteps(orgId),
     orgId,
   };
 }

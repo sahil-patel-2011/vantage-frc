@@ -1,0 +1,287 @@
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
+
+/** Soft-UI related surfaces for EPA Trend Alerts (never DEMO EPA forecasts). */
+export const EPA_TREND_ALERTS_RELATED_LINKS = [
+  { id: "strategy", label: "Strategy", tab: "strategy" },
+  { id: "opponent-watchlist", label: "Opponent Watchlist", tab: "opponent-watchlist" },
+  { id: "scouting-heat-signals", label: "Scouting Heat", tab: "scouting-heat-signals" },
+  { id: "counter-book", label: "Counter-book", tab: "counter-book" },
+] as const;
+
+export type EpaTrendAlertsRelatedId = (typeof EPA_TREND_ALERTS_RELATED_LINKS)[number]["id"];
+
+export type EpaTrendAlertsRelatedLink = {
+  id: EpaTrendAlertsRelatedId;
+  label: string;
+  href: string;
+};
+
+/** Focused Soft-UI strip — Strategy / Opponent Watchlist first. */
+export const EPA_TREND_ALERTS_RELATED_INCLUDE: EpaTrendAlertsRelatedId[] = [
+  "strategy",
+  "opponent-watchlist",
+];
+
+/**
+ * Soft-UI cross-links from EPA Trend Alerts → Strategy / Opponent Watchlist.
+ * Build with hubHref / withOrgHref — never broken JSX href templates.
+ */
+export function epaTrendAlertsRelatedLinks(
+  orgId?: string | null,
+  options?: { active?: EpaTrendAlertsRelatedId; include?: EpaTrendAlertsRelatedId[] },
+): EpaTrendAlertsRelatedLink[] {
+  const include = options?.include ? new Set(options.include) : null;
+  return EPA_TREND_ALERTS_RELATED_LINKS.filter((link) => {
+    if (link.id === options?.active) return false;
+    if (include && !include.has(link.id)) return false;
+    return true;
+  }).map((link) => ({
+    id: link.id,
+    label: link.label,
+    href: hubHref("/competition", link.tab, orgId),
+  }));
+}
+
+export type EpaTrendAlertsShellKind = "loading" | "error" | "setup" | "empty" | "ready";
+
+export type EpaTrendAlertsNextAction = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+  primary?: boolean;
+};
+
+export type EpaTrendAlertsEmptyCopy = {
+  kind: EpaTrendAlertsShellKind;
+  badge?: string;
+  title: string;
+  description: string;
+};
+
+/** Real watchlist / alert counts only — never invent DEMO EPA totals. */
+export function formatEpaTrendMetric(value: unknown, loaded: boolean): string {
+  if (!loaded) return "…";
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n) || n < 0) return "0";
+  return Math.floor(n).toLocaleString();
+}
+
+/** Hide zeroed summary tiles when nothing is watched — avoids looking like DEMO counters. */
+export function shouldShowEpaTrendSummaryTiles(watchlistCount: number): boolean {
+  return watchlistCount > 0;
+}
+
+/** Classify EPA Trend Alerts Soft-UI shell — never invents DEMO EPA metrics. */
+export function classifyEpaTrendAlertsShell(input: {
+  loading: boolean;
+  fetchFailed?: boolean;
+  status?: "setup_required" | "live" | null;
+  orgId?: string | null;
+  watchlistCount?: number;
+}): EpaTrendAlertsShellKind {
+  if (input.loading) return "loading";
+  if (input.fetchFailed) return "error";
+  if (!input.orgId || input.status === "setup_required") return "setup";
+  if ((input.watchlistCount ?? 0) === 0) return "empty";
+  return "ready";
+}
+
+/** Soft-UI empty / setup / error copy — never DEMO EPA forecasts. */
+export function epaTrendAlertsShellCopy(kind: EpaTrendAlertsShellKind): EpaTrendAlertsEmptyCopy {
+  switch (kind) {
+    case "loading":
+      return {
+        kind,
+        title: "Loading EPA Trend Alerts…",
+        description:
+          "Checking workspace membership and watched teams — never DEMO EPA forecasts.",
+      };
+    case "error":
+      return {
+        kind,
+        badge: "Unavailable",
+        title: "Could not load EPA Trend Alerts",
+        description:
+          "A network or server issue blocked the watchlist. Retry, or open Strategy / Opponent Watchlist while it reloads — never invent DEMO EPA metrics.",
+      };
+    case "setup":
+      return {
+        kind,
+        badge: "Setup required",
+        title: "Select a team workspace",
+        description:
+          "EPA Trend Alerts is org-scoped. Pick a workspace before watching teams — nothing is pre-seeded.",
+      };
+    case "empty":
+      return {
+        kind,
+        badge: "No teams watched",
+        title: "Add a team to your watchlist",
+        description:
+          "Alerts stay blank until you watch a real team with reference EPA history. Cross-check Strategy and Opponent Watchlist — never DEMO EPA forecasts.",
+      };
+    default:
+      return {
+        kind: "ready",
+        title: "EPA swings on watched teams",
+        description:
+          "Alerts use only Neon reference EPA between events for teams you watch — never DEMO EPA forecasts.",
+      };
+  }
+}
+
+/**
+ * Soft-UI next actions for EPA Trend Alerts empty/setup shells.
+ * Points at Strategy / Opponent Watchlist — never invents DEMO EPA metrics.
+ */
+export function epaTrendAlertsNextActions(input: {
+  orgId?: string | null;
+  shell: EpaTrendAlertsShellKind;
+  watchlistCount?: number;
+  alertCount?: number;
+}): EpaTrendAlertsNextAction[] {
+  const orgId = input.orgId ?? null;
+  const watchlistCount = input.watchlistCount ?? 0;
+  const alertCount = input.alertCount ?? 0;
+
+  if (!orgId || input.shell === "setup") {
+    if (!orgId) {
+      return [
+        {
+          id: "workspace",
+          label: "Select workspace",
+          detail: "Watchlists are org-scoped — pick a team before tracking EPA swings.",
+          href: "/workspace",
+          primary: true,
+        },
+        {
+          id: "strategy",
+          label: "Open Strategy",
+          detail: "Pick lists stay empty until real metrics exist — never DEMO EPA.",
+          href: hubHref("/competition", "strategy", null),
+        },
+        {
+          id: "opponent-watchlist",
+          label: "Open Opponent Watchlist",
+          detail: "Manual opponent notes stay blank until logged — never DEMO rankings.",
+          href: hubHref("/competition", "opponent-watchlist", null),
+        },
+      ];
+    }
+    return [
+      {
+        id: "workspace",
+        label: "Open Workspace",
+        detail: "Finish membership setup so EPA Trend Alerts can resolve your organization.",
+        href: withOrgHref("/workspace", orgId),
+        primary: true,
+      },
+      {
+        id: "strategy",
+        label: "Open Strategy",
+        detail: "Confirm event context before watching EPA swings.",
+        href: hubHref("/competition", "strategy", orgId),
+      },
+      {
+        id: "opponent-watchlist",
+        label: "Open Opponent Watchlist",
+        detail: "Track opponents you already care about beside EPA alerts.",
+        href: hubHref("/competition", "opponent-watchlist", orgId),
+      },
+    ];
+  }
+
+  if (input.shell === "error") {
+    return [
+      {
+        id: "retry",
+        label: "Retry EPA Trend Alerts",
+        detail: "Reload real watchlist rows — nothing is invented while this fails.",
+        href: withOrgHref("/epa-trend-alerts", orgId),
+        primary: true,
+      },
+      {
+        id: "strategy",
+        label: "Open Strategy",
+        detail: "Event strategy stays available while alerts reload.",
+        href: hubHref("/competition", "strategy", orgId),
+      },
+      {
+        id: "opponent-watchlist",
+        label: "Open Opponent Watchlist",
+        detail: "Opponent notes stay available while alerts reload.",
+        href: hubHref("/competition", "opponent-watchlist", orgId),
+      },
+    ];
+  }
+
+  if (input.shell === "empty" || watchlistCount === 0) {
+    return [
+      {
+        id: "watch-team",
+        label: "Watch a team",
+        detail: "Add a team number below — alerts stay blank until reference EPA moves.",
+        href: "#epa-trend-alerts-watch",
+        primary: true,
+      },
+      {
+        id: "strategy",
+        label: "Cross-check Strategy",
+        detail: "Pick lists use scouted and reference metrics only — never DEMO EPA.",
+        href: hubHref("/competition", "strategy", orgId),
+      },
+      {
+        id: "opponent-watchlist",
+        label: "Open Opponent Watchlist",
+        detail: "Keep qualitative opponent notes beside quantitative EPA swings.",
+        href: hubHref("/competition", "opponent-watchlist", orgId),
+      },
+    ].slice(0, 4);
+  }
+
+  const actions: EpaTrendAlertsNextAction[] = [];
+
+  if (alertCount > 0) {
+    actions.push({
+      id: "review-alerts",
+      label: "Review active EPA swings",
+      detail: `${alertCount} alert${alertCount === 1 ? "" : "s"} from real event-to-event EPA — dismiss only after you acknowledge them.`,
+      href: "#epa-trend-alerts-list",
+      primary: true,
+    });
+  } else {
+    actions.push({
+      id: "watch-more",
+      label: "Watch another team",
+      detail: `${watchlistCount} watched — alerts appear only when reference EPA moves enough between events.`,
+      href: "#epa-trend-alerts-watch",
+      primary: true,
+    });
+  }
+
+  actions.push(
+    {
+      id: "strategy",
+      label: "Open Strategy",
+      detail: "Ground picks in scouted data and reference metrics — never DEMO EPA.",
+      href: hubHref("/competition", "strategy", orgId),
+      primary: !actions.some((a) => a.primary),
+    },
+    {
+      id: "opponent-watchlist",
+      label: "Open Opponent Watchlist",
+      detail: "Pair qualitative notes with quantitative EPA swings.",
+      href: hubHref("/competition", "opponent-watchlist", orgId),
+    },
+    {
+      id: "scouting-heat-signals",
+      label: "Open Scouting Heat",
+      detail: "Field heat signals stay blank until real scout rows exist.",
+      href: hubHref("/competition", "scouting-heat-signals", orgId),
+    },
+  );
+
+  return actions.slice(0, 5);
+}
