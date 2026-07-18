@@ -39,11 +39,12 @@ import {
   type SubteamCalendarView,
   type SubteamEventKind,
   type SubteamMemberLite,
+  type TravelLegOnCalendar,
 } from "../../../lib/subteam-calendar";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<SubteamCalendarView, { status: "ready" }>;
-type Tab = "calendar" | "subteams" | "duties" | "sync";
+type Tab = "calendar" | "subteams" | "duties" | "trip" | "sync";
 type DutyScope = "team" | "mine";
 
 function withOrg(path: string, orgId: string) {
@@ -759,6 +760,64 @@ function AssignDutyForm({
   );
 }
 
+
+function TripPanel({
+  orgId,
+  travelLegs,
+  mySubteamIds,
+}: {
+  orgId: string;
+  travelLegs: TravelLegOnCalendar[];
+  mySubteamIds: string[];
+}) {
+  const scoped = useMemo(() => {
+    return travelLegs.filter((leg) => leg.subteamId == null || mySubteamIds.includes(leg.subteamId));
+  }, [travelLegs, mySubteamIds]);
+  const byTrip = useMemo(() => {
+    const map = new Map<string, { title: string; items: typeof scoped }>();
+    for (const leg of scoped) {
+      const bucket = map.get(leg.tripId) ?? { title: leg.tripTitle, items: [] };
+      bucket.items.push(leg);
+      map.set(leg.tripId, bucket);
+    }
+    return [...map.entries()];
+  }, [scoped]);
+  return (
+    <div className="tc-layout">
+      <section className="tc-panel tc-main">
+        {scoped.length === 0 ? (
+          <div className="app-card tc-empty tc-guide">
+            <strong>No trip times yet</strong>
+            <p className="app-muted">Mentors add leave / hotel / venue / return in Event Logistics.</p>
+            <a className="app-button" href={withOrg("/logistics", orgId)}>
+              Open logistics
+            </a>
+          </div>
+        ) : (
+          byTrip.map(([tripId, bucket]) => (
+            <div key={tripId} className="tc-day">
+              <h3>{bucket.title}</h3>
+              {bucket.items.map((leg) => (
+                <article key={leg.id} className="tc-event tc-travel">
+                  <header>
+                    <strong>{leg.title}</strong>
+                    <span className="tc-chip">{leg.kind.replaceAll("_", " ")}</span>
+                  </header>
+                  <div className="tc-meta">
+                    <span>{fmtWhen(leg.startsAt)}</span>
+                    {leg.meetingPoint ? <span>Meet: {leg.meetingPoint}</span> : null}
+                    {leg.location ? <span>{leg.location}</span> : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ))
+        )}
+      </section>
+    </div>
+  );
+}
+
 function DutiesPanel({
   orgId,
   duties,
@@ -1067,6 +1126,7 @@ export default function TeamCalendarClient() {
       setHighlightDutyId(dutyId);
       setTab("duties");
     }
+    if (params.get("tab") === "trip") setTab("trip");
     const cached = await getFeatureSnapshot<SubteamCalendarView>("team-calendar", orgId);
     if (cached?.data) {
       setView(cached.data);
@@ -1299,6 +1359,15 @@ export default function TeamCalendarClient() {
         >
           Duties{(view.duties?.length ?? 0) > 0 ? ` (${view.duties!.length})` : ""}
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "trip"}
+          className={tab === "trip" ? "active" : ""}
+          onClick={() => setTab("trip")}
+        >
+          My trip{(view.travelLegs?.length ?? 0) > 0 ? ` (${view.travelLegs!.length})` : ""}
+        </button>
         {canManage ? (
           <button
             type="button"
@@ -1334,6 +1403,8 @@ export default function TeamCalendarClient() {
           initialStartsAt={quickStartsAt}
           onMutate={runDuty}
         />
+      ) : tab === "trip" ? (
+        <TripPanel orgId={orgId} travelLegs={view.travelLegs ?? []} mySubteamIds={view.mySubteamIds} />
       ) : tab === "subteams" && canManage ? (
         <SubteamsPanel orgId={orgId} subteams={view.subteams} members={view.members} busyKey={busyKey} run={run} />
       ) : tab === "sync" ? (
