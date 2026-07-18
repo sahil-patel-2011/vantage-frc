@@ -1,6 +1,8 @@
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { notifyNextMatchReady } from "../../../../lib/notify-match";
+import { loadDataSourceHealth } from "../../../../lib/reference-health";
 import { runTbaEventDaySync } from "../../../../lib/reference/run-ingest";
 
 async function current() {
@@ -72,6 +74,7 @@ export async function GET(request: Request) {
               `SELECT source,status,requests_last_hour AS "requestsLastHour",rate_limit_remaining AS "rateLimitRemaining",consecutive_failures AS "consecutiveFailures",last_success_at AS "lastSuccessAt",last_failure_at AS "lastFailureAt",next_attempt_at AS "nextAttemptAt",updated_at AS "updatedAt" FROM data_source_health WHERE source='tba'`,
             )
           ).rows[0] ?? null,
+        dataSourceHealth: await loadDataSourceHealth(client, orgId),
       };
     });
     return Response.json(data);
@@ -108,9 +111,30 @@ export async function POST(request: Request) {
            updated_at = now()`,
         [body.orgId, active.rows[0]?.credentialId ?? null, session.user.id],
       );
-      return runTbaEventDaySync({ eventKeys: [eventKey] }, { preferOrgIds: [body.orgId] });
+      const summary = await runTbaEventDaySync({ eventKeys: [eventKey] }, { preferOrgIds: [body.orgId] });
+      const orgMeta = await client.query<{ teamNumber: number | null; eventName: string | null }>(
+        `SELECT o.team_number AS "teamNumber", e.name AS "eventName"
+         FROM organizations o
+         LEFT JOIN events_ref e ON e.event_key = $2
+         WHERE o.id = $1::uuid`,
+        [body.orgId, eventKey],
+      );
+      let matchNotify: Awaited<ReturnType<typeof notifyNextMatchReady>> | null = null;
+      try {
+        matchNotify = await notifyNextMatchReady(client, {
+          orgId: body.orgId,
+          actorUserId: session.user.id,
+          eventKey,
+          eventName: orgMeta.rows[0]?.eventName ?? null,
+          teamNumber: orgMeta.rows[0]?.teamNumber ?? null,
+          announce: true,
+        });
+      } catch {
+        matchNotify = null;
+      }
+      return { summary, matchNotify };
     });
-    return Response.json({ success: true, summary });
+    return Response.json({ success: true, ...result });
   } catch (error) {
     return responseError(error);
   }

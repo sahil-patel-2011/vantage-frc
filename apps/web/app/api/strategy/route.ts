@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { platformTbaEnvConfigured } from "@vantage/reference";
+import { loadDataSourceHealth } from "../../../lib/reference-health";
 import { computeStrategyView } from "../../../lib/strategy/compute-strategy";
 import type { StrategyView } from "../../../lib/strategy/types";
 
@@ -17,13 +18,16 @@ export async function GET(request: Request) {
   const tbaConfigured = platformTbaEnvConfigured();
 
   try {
-    const view = await withRls({ userId: session.user.id }, async (client) =>
-      computeStrategyView(client, {
+    // Strategy always reads Neon last-good cache; attach explicit health/ETag banner state.
+    const view = await withRls({ userId: session.user.id }, async (client) => {
+      const strategy = await computeStrategyView(client, {
         userId: session.user.id,
         requestedOrg,
         matchKey,
-      }),
-    );
+      });
+      const dataSourceHealth = await loadDataSourceHealth(client, strategy.orgId);
+      return { ...strategy, dataSourceHealth };
+    });
     return Response.json(view);
   } catch {
     return Response.json(
