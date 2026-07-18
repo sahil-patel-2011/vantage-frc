@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     q: "How much does Vantage cost?",
-    a: "The complete non-AI competition core is free, with bring-your-own-key or local AI. Paid plans: Individual Pro $49/mo ($40 API), Individual Max $79/mo ($68 API), Team Pro $149/mo ($130 pooled API), Team Max $299/mo ($260 pooled API). Usage is debited at provider list rates with no Vantage markup; after the included allowance, usage hard-stops unless you buy Usage Credits or enable PAYG. Access ($35/mo) unlocks managed routing without a large included bucket. There is no per-seat student pricing.",
+    a: "The complete non-AI competition core is free, with bring-your-own-key or local AI. Paid plans: Individual Pro $79/mo ($50 API), Individual Max $119/mo ($85 API), Team Pro $229/mo ($150 pooled API), Team Max $449/mo ($300 pooled API). Usage is debited at provider list rates with no Vantage markup; after the included allowance, usage hard-stops unless you buy Usage Credits or enable PAYG. Access ($55/mo) unlocks managed routing without a large included bucket. There is no per-seat student pricing.",
   },
   {
     q: "Is our team's data private?",
