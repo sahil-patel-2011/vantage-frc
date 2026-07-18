@@ -54,6 +54,9 @@ describe("computeCounterBookView", () => {
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
       expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps[0]?.href).toBe("/workspace");
+      expect(view.steps.some((s) => s.href.includes("/competition?tab=strategy"))).toBe(true);
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
     }
   });
 

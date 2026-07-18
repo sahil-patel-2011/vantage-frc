@@ -1,0 +1,19 @@
+/* Soft-UI Pick-list Auto-Justifier — never DEMO rationales. */
+.picklist-justifier-page{display:grid;gap:16px}
+.picklist-justifier-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.picklist-justifier-select{display:flex;gap:6px;align-items:center}
+.picklist-justifier-related{display:flex;flex-wrap:wrap;gap:8px}
+.picklist-justifier-next-actions{margin:0}
+.picklist-justifier-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.picklist-justifier-stats strong{font-size:1.5rem}
+.picklist-justifier-layout{display:grid;gap:16px}
+.picklist-justifier-panel{display:grid;gap:12px}
+.picklist-justifier-list{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.picklist-justifier-card{display:grid;gap:6px}
+.picklist-justifier-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.picklist-justifier-sources{list-style:none;padding:0;margin:0;display:flex;gap:8px;flex-wrap:wrap}
+.picklist-justifier-tip{margin:0}
+@media(max-width:900px){
+  .picklist-justifier-header-actions{justify-content:flex-start}
+  .picklist-justifier-next-actions li{flex-direction:column;align-items:stretch}
+}

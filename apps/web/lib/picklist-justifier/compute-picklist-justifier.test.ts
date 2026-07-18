@@ -71,17 +71,26 @@ describe("computePicklistJustifierView", () => {
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
       expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps[0]?.href).toBe("/workspace");
+      expect(view.steps.some((s) => s.href.includes("/competition?tab=strategy"))).toBe(true);
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
     }
   });
 
-  it("returns setup_required when the org has no pick lists yet", async () => {
+  it("returns a live empty view when the org has no pick lists yet", async () => {
     const client = mockClient((sql) => {
       if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG }], rowCount: 1 };
       if (sql.includes("FROM pick_lists pl")) return { rows: [], rowCount: 0 };
       return { rows: [], rowCount: 0 };
     });
     const view = await computePicklistJustifierView(client, { userId: USER, requestedOrg: ORG });
-    expect(view.status).toBe("setup_required");
+    expect(view.status).toBe("live");
+    if (view.status === "live") {
+      expect(view.orgId).toBe(ORG);
+      expect(view.pickLists).toEqual([]);
+      expect(view.selectedPickListId).toBeNull();
+      expect(view.entries).toEqual([]);
+    }
   });
 
   it("returns a live view combining TBA metrics and scout summaries per slot", async () => {

@@ -7,6 +7,8 @@ import {
   computeFailureTriggers,
   computeTendencies,
 } from ".";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import type { CounterBookFailureTrigger, CounterBookReport, CounterBookTendency } from "./types";
 
 export const COUNTER_BOOK_AI_MODEL = "vantage-counter-book-v1";
@@ -18,6 +20,30 @@ export type CounterBookSetupStep = {
   detail: string;
   href: string;
 };
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO opponent metrics. */
+function setupSteps(orgId: string | null): CounterBookSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Counter-book is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "strategy",
+      label: "Open Strategy",
+      detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+      href: hubHref("/competition", "strategy", orgId),
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      href: hubHref("/competition", "scouting", orgId),
+    },
+  ];
+}
 
 export type CounterBookView =
   | {
@@ -91,9 +117,7 @@ export async function computeCounterBookView(
     return {
       status: "setup_required",
       message: "Select a team workspace to generate opponent counter-books.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: setupSteps(null),
       orgId: null,
     };
   }

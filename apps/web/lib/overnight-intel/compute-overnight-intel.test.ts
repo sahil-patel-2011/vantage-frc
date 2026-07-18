@@ -26,6 +26,9 @@ describe("computeOvernightIntelView", () => {
     if (view.status === "setup_required") {
       expect(view.orgId).toBeNull();
       expect(view.steps.length).toBeGreaterThan(0);
+      expect(view.steps[0]?.href).toBe("/workspace");
+      expect(view.steps.some((s) => s.href.includes("/competition?tab=command"))).toBe(true);
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
     }
   });
 
@@ -42,6 +45,9 @@ describe("computeOvernightIntelView", () => {
     if (view.status === "setup_required") {
       expect(view.orgId).toBe(ORG);
       expect(view.steps[0]?.id).toBe("active-event");
+      expect(view.steps[0]?.href).toBe(`/team/data?orgId=${ORG}`);
+      expect(view.steps.some((s) => s.href.includes("/competition?tab=command"))).toBe(true);
+      expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
     }
   });
 

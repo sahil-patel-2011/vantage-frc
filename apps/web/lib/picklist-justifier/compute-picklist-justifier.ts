@@ -2,10 +2,13 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { averageConfidence, computeJustification } from ".";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import type {
   JustificationInput,
   JustifiedEntry,
   PickListSummary,
+  PicklistJustifierSetupStep,
   PicklistJustifierView,
 } from "./types";
 
@@ -28,15 +31,36 @@ async function resolveOrg(
   return membership.rows[0] ?? null;
 }
 
-function setupRequiredView(message: string): PicklistJustifierView {
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO pick rationales. */
+function setupSteps(orgId: string | null): PicklistJustifierSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Pick-list Justifier is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "strategy",
+      label: "Build a pick list",
+      detail: "Create a ranked pick list under Strategy — never DEMO rankings.",
+      href: hubHref("/competition", "strategy", orgId),
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      href: hubHref("/competition", "scouting", orgId),
+    },
+  ];
+}
+
+function setupRequiredView(message: string, orgId: string | null = null): PicklistJustifierView {
   return {
     status: "setup_required",
     message,
-    steps: [
-      { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      { id: "picklist", label: "Build a pick list", detail: "Create a pick list under Competition", href: "/strategy" },
-    ],
-    orgId: null,
+    steps: setupSteps(orgId),
+    orgId,
   };
 }
 
@@ -181,7 +205,16 @@ export async function computePicklistJustifierView(
 
   const pickLists = await loadPickLists(client, org.orgId);
   if (!pickLists.length) {
-    return setupRequiredView("Build a pick list under Competition before generating justifications.");
+    return {
+      status: "live",
+      orgId: org.orgId,
+      pickLists: [],
+      selectedPickListId: null,
+      eventKey: null,
+      entries: [],
+      contradictionCount: 0,
+      computedAt: new Date().toISOString(),
+    };
   }
 
   const selected = (input.pickListId && pickLists.find((pl) => pl.id === input.pickListId)) || pickLists[0]!;
