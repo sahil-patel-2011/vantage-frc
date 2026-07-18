@@ -154,6 +154,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/team/knowledge", label: "Knowledge Base", icon: "clipboard" },
       { href: "/team/alumni", label: "Alumni", icon: "users" },
       { href: "/team", label: "Admin", icon: "gear" },
+      { href: "/team/discord", label: "Discord", icon: "chat" },
       { href: "/team/data", label: "Data analytics", icon: "stats" },
       { href: "/team/usage", label: "AI usage", icon: "stats" },
       { href: "/training", label: "Training Matrix", icon: "users", state: "planned" },
