@@ -100,6 +100,14 @@ Local development: also add `http://localhost:3001` as an origin and
 `http://localhost:3001/api/auth/callback/google` as a redirect URI. Keep `BETTER_AUTH_URL` matching the app
 origin.
 
+### GitHub robot-code context (optional OAuth)
+
+Org owners/admins link a robot-code repo in **Team admin → GitHub** (`/team?orgId=…#github-connection`).
+An encrypted **PAT works with no server OAuth env**. For one-click OAuth, set
+`GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` on Vercel (callback
+`https://vantage-frc-web.vercel.app/api/github/oauth/callback`). Full checklist:
+[`docs/GITHUB_CONNECTION.md`](docs/GITHUB_CONNECTION.md). Migration `0112_github_context.sql`.
+
 ## Deployment
 
 The canonical production origin is **https://vantage-frc-web.vercel.app**. Configure the Vercel project root

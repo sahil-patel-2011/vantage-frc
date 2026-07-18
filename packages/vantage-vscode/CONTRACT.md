@@ -133,8 +133,10 @@ not by the extension. Extension context is user/device opt-in; GitHub context is
 | GET | `/api/github/repos?orgId=` | List linked repos |
 | GET | `/api/github/contents?orgId=&path=&tree=1` | Size-capped file/tree snippets |
 
-Env (Onshape-style): `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, optional
+Env (optional OAuth App): `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, optional
 `GITHUB_OAUTH_REDIRECT_URI`, `GITHUB_OAUTH_SCOPES` (default `read:user repo`, never `workflow`).
+Missing OAuth env does **not** block the feature — Team admins can save an encrypted PAT.
+See `docs/GITHUB_CONNECTION.md` for the Vercel checklist.
 
 ## Privacy rules
 

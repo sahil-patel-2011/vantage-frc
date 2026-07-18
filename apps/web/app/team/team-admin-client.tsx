@@ -74,7 +74,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     localRelay: false,
     model: "",
   });
-  const [githubSetupRequired, setGithubSetupRequired] = useState(true);
+  const [githubOAuthSetupRequired, setGithubOAuthSetupRequired] = useState(false);
   const [githubConnection, setGithubConnection] = useState<GitHubConnection | null>(null);
   const [githubEmptyReason, setGithubEmptyReason] = useState("");
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
@@ -98,7 +98,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     const githubResponse = await fetch(`/api/github?orgId=${encodeURIComponent(orgId)}`);
     const githubData = await githubResponse.json();
     if (githubResponse.ok) {
-      setGithubSetupRequired(Boolean(githubData.setupRequired));
+      // OAuth App missing ≠ feature blocked — PAT always works.
+      setGithubOAuthSetupRequired(
+        Boolean(githubData.oauthSetupRequired ?? (githubData.setupRequired && !githubData.patAvailable)),
+      );
       setGithubConnection(githubData.connection ?? null);
       setGithubEmptyReason(githubData.emptyReason ?? "");
       setDefaultRepo(githubData.connection?.defaultRepoFullName ?? "");
@@ -411,10 +414,11 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
               robot-code repo. Tokens are encrypted at rest. Vantage never pushes and never requests the <code>workflow</code>{" "}
               scope.
             </p>
-            {githubSetupRequired && (
+            {githubOAuthSetupRequired && (
               <p className="app-muted">
-                OAuth setup required — set <code>GITHUB_OAUTH_CLIENT_ID</code> and <code>GITHUB_OAUTH_CLIENT_SECRET</code> on
-                the server. You can still connect with a personal access token below.
+                One-click OAuth is optional on this deployment (server missing{" "}
+                <code>GITHUB_OAUTH_CLIENT_ID</code> / <code>GITHUB_OAUTH_CLIENT_SECRET</code>). Use an encrypted personal
+                access token below — that path is fully production-ready without those env vars.
               </p>
             )}
             {!githubConnection && (
@@ -437,11 +441,16 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
             <div className="intel-actions">
               <button
                 type="button"
-                className="primary-action"
-                disabled={githubBusy || githubSetupRequired}
+                className={githubOAuthSetupRequired ? undefined : "primary-action"}
+                disabled={githubBusy || githubOAuthSetupRequired}
                 onClick={() => void connectGitHubOAuth()}
+                title={
+                  githubOAuthSetupRequired
+                    ? "OAuth App credentials are not configured on the server. Save a PAT instead."
+                    : "Authorize GitHub for this workspace"
+                }
               >
-                {githubSetupRequired ? "Connect GitHub (setup required)" : "Connect GitHub"}
+                {githubOAuthSetupRequired ? "Connect GitHub (OAuth unavailable)" : "Connect GitHub"}
               </button>
               {githubConnection && (
                 <button type="button" disabled={githubBusy} onClick={() => void disconnectGitHub()}>
@@ -452,8 +461,11 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           </section>
           <section className="intel-panel">
             <form onSubmit={saveGitHubPat}>
-              <span className="eyebrow">OR SAVE A PAT</span>
-              <p className="app-muted">Fine-grained or classic PAT with Contents: Read. Encrypted like other BYOK secrets.</p>
+              <span className="eyebrow">{githubOAuthSetupRequired ? "CONNECT WITH PAT" : "OR SAVE A PAT"}</span>
+              <p className="app-muted">
+                Fine-grained or classic PAT with Contents: Read. Encrypted like other BYOK secrets.
+                {githubOAuthSetupRequired ? " Recommended when OAuth is not configured on the server." : ""}
+              </p>
               <label>
                 Personal access token
                 <input

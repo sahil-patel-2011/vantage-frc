@@ -60,7 +60,9 @@ export async function GET(request: Request) {
       empty: !connection,
       emptyReason: connection
         ? null
-        : "No GitHub account linked for this workspace yet. Owners/admins can connect OAuth or save a PAT.",
+        : setup.configured
+          ? "No GitHub account linked for this workspace yet. Owners/admins can Connect GitHub (OAuth) or save a PAT."
+          : "No GitHub account linked yet. Save an encrypted PAT below (OAuth App credentials are optional on this deployment).",
     });
   } catch (error) {
     return fail(error);
