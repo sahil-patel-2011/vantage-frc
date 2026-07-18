@@ -16,6 +16,7 @@ export {
   progressOrder,
   reviewOrder,
   submitOrder,
+  updateOrderItemUrl,
   type OrdersView,
 } from "./compute-orders";
 export type {

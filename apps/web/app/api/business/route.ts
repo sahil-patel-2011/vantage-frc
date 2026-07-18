@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth, emitPreferredNotification } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { sanitizeFinanceWriteBody } from "../../../lib/finance/sanitize-write";
 import { loadBusinessView, validSeason } from "../../../lib/business-data";
 import {
   DRAFT_TYPES,
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
   let body: JsonBody;
   try {
-    body = (await request.json()) as JsonBody;
+    body = sanitizeFinanceWriteBody((await request.json()) as JsonBody);
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -212,7 +213,7 @@ export async function POST(request: Request) {
                WHERE org_id = $1 AND role IN ('owner', 'admin') AND user_id <> $2`,
               [orgId, session.user.id],
             );
-            const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(entityId)}`;
+            const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(entityId)}&season=${seasonYear}`;
             for (const adminRow of admins.rows) {
               await emitPreferredNotification(client, {
                 userId: adminRow.userId,
@@ -235,10 +236,16 @@ export async function POST(request: Request) {
           const status = choice<PurchaseStatus>(PURCHASE_STATUSES, body.status);
           if (!purchaseId || !status || status === "submitted") throw new Error("A purchase and review status are required");
           const current = await client.query<{
-            status: string; totalCostUsd: string; categoryId: string | null; seasonYear: number; title: string;
+            status: string;
+            totalCostUsd: string;
+            categoryId: string | null;
+            seasonYear: number;
+            title: string;
+            requestedBy: string;
           }>(
             `SELECT status::text, total_cost_usd::text AS "totalCostUsd", category_id AS "categoryId",
-                    season_year AS "seasonYear", title FROM purchase_requests WHERE id = $1 AND org_id = $2`,
+                    season_year AS "seasonYear", title, requested_by AS "requestedBy"
+             FROM purchase_requests WHERE id = $1 AND org_id = $2`,
             [purchaseId, orgId],
           );
           const purchase = current.rows[0];
@@ -246,13 +253,15 @@ export async function POST(request: Request) {
           const allowed: Record<string, string[]> = { pending: ["approved", "rejected"], approved: ["ordered", "rejected"], ordered: ["received"] };
           const dbStatus = purchaseDbStatus[status];
           if (!(allowed[purchase.status] ?? []).includes(dbStatus)) throw new Error(`Cannot move a ${purchase.status} request to ${dbStatus}`);
+          const reviewNote = text(body.reviewNote, 1_000);
           await client.query(
             `UPDATE purchase_requests SET status = $3::purchase_request_status, reviewed_by = $4,
                review_notes = $5, reviewed_at = COALESCE(reviewed_at, now()),
+               buyer_user_id = CASE WHEN $3 = 'approved' THEN coalesce(buyer_user_id, requested_by) ELSE buyer_user_id END,
                ordered_at = CASE WHEN $3 = 'ordered' THEN now() ELSE ordered_at END,
                received_at = CASE WHEN $3 = 'received' THEN now() ELSE received_at END,
                updated_at = now() WHERE id = $1 AND org_id = $2`,
-            [purchaseId, orgId, dbStatus, session.user.id, text(body.reviewNote, 1_000)],
+            [purchaseId, orgId, dbStatus, session.user.id, reviewNote],
           );
           if (dbStatus === "approved") {
             await client.query(
@@ -264,6 +273,31 @@ export async function POST(request: Request) {
                )`,
               [orgId, purchase.seasonYear, purchase.totalCostUsd, purchase.categoryId, purchaseId, purchase.title, session.user.id],
             );
+            const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(purchaseId)}&season=${purchase.seasonYear}`;
+            await emitPreferredNotification(client, {
+              userId: purchase.requestedBy,
+              orgId,
+              type: "purchase_request_approved",
+              payload: {
+                title: "Purchase request approved",
+                body: `“${purchase.title}” is approved — open the buy link and order outside Vantage.`,
+                orderId: purchaseId,
+                href,
+              },
+            });
+          } else if (dbStatus === "rejected") {
+            const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(purchaseId)}&season=${purchase.seasonYear}`;
+            await emitPreferredNotification(client, {
+              userId: purchase.requestedBy,
+              orgId,
+              type: "purchase_request_rejected",
+              payload: {
+                title: "Purchase request rejected",
+                body: `“${purchase.title}” was not approved.${reviewNote ? ` Note: ${reviewNote}` : ""}`,
+                orderId: purchaseId,
+                href,
+              },
+            });
           }
           await audit(client, { orgId, userId: session.user.id, action, entityType: "purchase_request", entityId: purchaseId, metadata: { status } });
           break;

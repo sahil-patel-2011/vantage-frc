@@ -6,6 +6,7 @@ import {
   validatePurchaseRequestInput,
   type PurchaseRequestStatus,
 } from "../../../../lib/finance";
+import { sanitizeFinanceWriteBody } from "../../../../lib/finance/sanitize-write";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const current = await session();
-    const body = (await request.json()) as Record<string, unknown>;
+    const body = sanitizeFinanceWriteBody((await request.json()) as Record<string, unknown>);
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
     const seasonYear = Number(body.seasonYear ?? new Date().getFullYear());
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const current = await session();
-    const body = (await request.json()) as Record<string, unknown>;
+    const body = sanitizeFinanceWriteBody((await request.json()) as Record<string, unknown>);
     const orgId = String(body.orgId ?? "");
     const id = String(body.id ?? "");
     const action = String(body.action ?? "");
@@ -128,6 +129,7 @@ export async function PATCH(request: Request) {
 
       const result = await client.query(
         `UPDATE purchase_requests SET status=$1, reviewed_by=$2, reviewed_at=now(), review_notes=COALESCE($3,review_notes),
+           buyer_user_id=CASE WHEN $1='approved' THEN coalesce(buyer_user_id, requested_by) ELSE buyer_user_id END,
            ordered_at=CASE WHEN $1='ordered' THEN now() ELSE ordered_at END,
            received_at=CASE WHEN $1='received' THEN now() ELSE received_at END,
            updated_at=now()

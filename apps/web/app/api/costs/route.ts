@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { sanitizeFinanceWriteBody } from "../../../lib/finance/sanitize-write";
 import {
   COST_CATEGORIES,
   COST_STATUSES,
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
 
   let body: Record<string, unknown>;
   try {
-    body = (await request.json()) as Record<string, unknown>;
+    body = sanitizeFinanceWriteBody((await request.json()) as Record<string, unknown>);
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
