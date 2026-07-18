@@ -1,6 +1,7 @@
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import {
+  FINANCE_IN_AI_ACK_VERSION,
   knownAiFeatures,
   knownAiTools,
   mapOrgAiPolicyRow,
@@ -87,7 +88,11 @@ export async function GET(request: Request) {
         },
         pendingApprovals: Number(pending.rows[0]?.count ?? 0),
         audit: audit.rows,
-        catalog: { features: knownAiFeatures(), tools: knownAiTools() },
+        catalog: {
+          features: knownAiFeatures(),
+          tools: knownAiTools(),
+          financeInAiAckVersion: FINANCE_IN_AI_ACK_VERSION,
+        },
       };
     });
 
@@ -111,6 +116,8 @@ export async function POST(request: Request) {
     const highCostThresholdUsd = parseOptionalUsd(body.highCostThresholdUsd);
     const dailySpendAlertUsd = parseOptionalUsd(body.dailySpendAlertUsd);
     const monthlySpendAlertUsd = parseOptionalUsd(body.monthlySpendAlertUsd);
+    const financeInAiEnabled = Boolean(body.financeInAiEnabled);
+    const financeInAiRiskAccepted = body.financeInAiRiskAccepted === true;
 
     await withRls({ userId: current.user.id, orgId }, async (client) => {
       await assertOrgCapability(client, orgId, "manage_api_keys");
@@ -118,15 +125,37 @@ export async function POST(request: Request) {
       const before =
         (await client.query(`SELECT * FROM org_ai_policies WHERE org_id=$1`, [orgId])).rows[0] ??
         null;
+      const beforeMapped = mapOrgAiPolicyRow(before as Record<string, unknown> | undefined);
+
+      let financeAcceptedAt: string | null = beforeMapped.financeInAiAcceptedAt;
+      let financeAcceptedBy: string | null = beforeMapped.financeInAiAcceptedBy;
+      let financeAckVersion: string | null = beforeMapped.financeInAiAckVersion;
+
+      if (financeInAiEnabled) {
+        const alreadyAccepted =
+          beforeMapped.financeInAiAckVersion === FINANCE_IN_AI_ACK_VERSION &&
+          Boolean(beforeMapped.financeInAiAcceptedAt);
+        if (!alreadyAccepted && !financeInAiRiskAccepted) {
+          throw new Error(
+            "Enabling Finance-in-AI requires accepting the risk modal (financeInAiRiskAccepted).",
+          );
+        }
+        if (financeInAiRiskAccepted || !alreadyAccepted) {
+          financeAcceptedAt = new Date().toISOString();
+          financeAcceptedBy = current.user.id;
+          financeAckVersion = FINANCE_IN_AI_ACK_VERSION;
+        }
+      }
 
       await client.query(
         `INSERT INTO org_ai_policies(
            org_id, feature_allowlist_enabled, allowed_features, tool_allowlist_enabled, allowed_tools,
            high_cost_threshold_usd, require_approval_above_threshold, require_approval_for_features,
            admin_bypass_approval, daily_spend_alert_usd, monthly_spend_alert_usd,
-           spend_alert_thresholds, updated_by
+           spend_alert_thresholds, finance_in_ai_enabled, finance_in_ai_accepted_at,
+           finance_in_ai_accepted_by, finance_in_ai_ack_version, updated_by
          ) VALUES (
-           $1,$2,$3::text[],$4,$5::text[],$6,$7,$8::text[],$9,$10,$11,$12::integer[],$13
+           $1,$2,$3::text[],$4,$5::text[],$6,$7,$8::text[],$9,$10,$11,$12::integer[],$13,$14::timestamptz,$15,$16,$17
          )
          ON CONFLICT (org_id) DO UPDATE SET
            feature_allowlist_enabled=EXCLUDED.feature_allowlist_enabled,
@@ -140,6 +169,10 @@ export async function POST(request: Request) {
            daily_spend_alert_usd=EXCLUDED.daily_spend_alert_usd,
            monthly_spend_alert_usd=EXCLUDED.monthly_spend_alert_usd,
            spend_alert_thresholds=EXCLUDED.spend_alert_thresholds,
+           finance_in_ai_enabled=EXCLUDED.finance_in_ai_enabled,
+           finance_in_ai_accepted_at=EXCLUDED.finance_in_ai_accepted_at,
+           finance_in_ai_accepted_by=EXCLUDED.finance_in_ai_accepted_by,
+           finance_in_ai_ack_version=EXCLUDED.finance_in_ai_ack_version,
            updated_by=EXCLUDED.updated_by,
            updated_at=now()`,
         [
@@ -155,6 +188,10 @@ export async function POST(request: Request) {
           dailySpendAlertUsd,
           monthlySpendAlertUsd,
           spendAlertThresholds,
+          financeInAiEnabled,
+          financeAcceptedAt,
+          financeAcceptedBy,
+          financeAckVersion,
           current.user.id,
         ],
       );
@@ -172,11 +209,20 @@ export async function POST(request: Request) {
       await client.query(
         `INSERT INTO org_ai_policy_audit(org_id, actor_user_id, action, before, after)
          VALUES ($1,$2,'ai_policy.updated',$3::jsonb,$4::jsonb)`,
-        [orgId, current.user.id, JSON.stringify(before), JSON.stringify(body)],
+        [
+          orgId,
+          current.user.id,
+          JSON.stringify(before),
+          JSON.stringify({
+            ...body,
+            financeInAiAckVersion: financeAckVersion,
+            financeInAiAcceptedAt: financeAcceptedAt,
+          }),
+        ],
       );
     });
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, financeInAiAckVersion: FINANCE_IN_AI_ACK_VERSION });
   } catch (error) {
     return fail(error);
   }

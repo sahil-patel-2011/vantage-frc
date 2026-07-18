@@ -1176,6 +1176,7 @@ export function createVantageToolRegistry() {
           }
         },
       }),
+    )
     .register(
       tool({
         name: "my_day.summary",
