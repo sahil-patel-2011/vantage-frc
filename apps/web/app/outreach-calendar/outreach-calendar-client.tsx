@@ -1,10 +1,33 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { outreachAudienceLabel, outreachCategoryLabel, outreachStatusLabel } from "../../lib/outreach-calendar";
+import {
+  outreachAudienceLabel,
+  outreachCategoryLabel,
+  outreachStatusLabel,
+} from "../../lib/outreach-calendar";
 import type { OutreachCalendarView } from "../../lib/outreach-calendar/compute-outreach-calendar";
-import type { OutreachAudience, OutreachCategory, OutreachStatus } from "../../lib/outreach-calendar/types";
+import {
+  OUTREACH_CALENDAR_RELATED_INCLUDE,
+  classifyOutreachCalendarShell,
+  formatOutreachCalendarMetric,
+  outreachCalendarNextActions,
+  outreachCalendarRelatedLinks,
+  outreachCalendarSetupSteps,
+  outreachCalendarShellCopy,
+  shouldShowOutreachCalendarSummaryTiles,
+  type OutreachCalendarNextAction,
+  type OutreachCalendarShellKind,
+} from "../../lib/outreach-calendar/outreach-calendar-related";
+import type {
+  OutreachAudience,
+  OutreachCategory,
+  OutreachStatus,
+} from "../../lib/outreach-calendar/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./outreach-calendar.css";
 
 const OUTREACH_CATEGORIES: OutreachCategory[] = [
   "stem_demo",
@@ -28,7 +51,7 @@ const OUTREACH_STATUSES: OutreachStatus[] = ["planned", "confirmed", "completed"
 function statusTone(status: OutreachStatus): string {
   if (status === "completed") return "good";
   if (status === "confirmed") return "setup";
-  if (status === "canceled") return "demo";
+  if (status === "canceled") return "setup";
   return "setup";
 }
 
@@ -38,6 +61,146 @@ function pct(value: number): string {
 
 type LiveView = Extract<OutreachCalendarView, { status: "live" }>;
 
+function OutreachRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = outreachCalendarRelatedLinks(orgId, {
+    include: [...OUTREACH_CALENDAR_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav
+      className="product-hub-related outreach-calendar-related"
+      aria-label="Related business tools"
+    >
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function OutreachNextActionsPanel({ actions }: { actions: OutreachCalendarNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions outreach-calendar-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Community Impact and Media Kit — never DEMO reach metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function OutreachShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: OutreachCalendarShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = outreachCalendarNextActions({ orgId, shell });
+  const copy = outreachCalendarShellCopy(shell);
+  const businessHref = hubHref("/business", "outreach-calendar", orgId);
+  const steps = shell === "setup" ? outreachCalendarSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page outreach-calendar-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={businessHref}>Business</a>
+            {" / Outreach Calendar"}
+          </>
+        }
+        title="Outreach Calendar"
+        description={description}
+      >
+        <OutreachRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No events yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#outreach-calendar-schedule">
+              Schedule an event
+            </a>
+            <a className="app-button secondary" href={hubHref("/business", "impact", orgId)}>
+              Open Community Impact
+            </a>
+            <a className="app-button secondary" href={hubHref("/business", "media-kit", orgId)}>
+              Open Media Kit
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {shell === "setup" && steps.length > 0 ? (
+        <ol className="strategy-setup-steps">
+          {steps.map((step) => (
+            <li key={step.id}>
+              <div>
+                <strong>{step.label}</strong>
+                <span>{step.detail}</span>
+              </div>
+              <a href={step.href}>Open</a>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+      <OutreachNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function OutreachCalendarClient() {
   const [view, setView] = useState<OutreachCalendarView | null>(null);
   const [error, setError] = useState("");
@@ -45,14 +208,13 @@ export default function OutreachCalendarClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
-
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonQuery =
+      seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
@@ -72,6 +234,23 @@ export default function OutreachCalendarClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const eventCount = view?.status === "live" ? view.summary.totalEvents : 0;
+
+  const shell = classifyOutreachCalendarShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" || view?.status === "setup_required" ? view.orgId : null,
+    eventCount,
+  });
+  const shellCopy = outreachCalendarShellCopy(shell);
+  const nextActions = outreachCalendarNextActions({ orgId, shell, eventCount });
+  const relatedLinks = outreachCalendarRelatedLinks(orgId, {
+    include: [...OUTREACH_CALENDAR_RELATED_INCLUDE],
+  });
+  const businessHref = hubHref("/business", "outreach-calendar", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -100,20 +279,50 @@ export default function OutreachCalendarClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <OutreachShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <OutreachShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <OutreachShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <OutreachShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page outreach-calendar-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
+            <a href={businessHref}>Business</a>
             {" / Outreach Calendar"}
           </>
         }
         title="Outreach Calendar"
-        description="Plan outreach events ahead of time and track their projected hours and reach. Projections use only what you schedule."
+        description="Plan outreach events ahead of time and track their projected hours and reach. Projections use only what you schedule — never DEMO reach metrics."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
+        <div className="outreach-calendar-header-actions">
+          {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
               <select
@@ -132,11 +341,11 @@ export default function OutreachCalendarClient() {
               </select>
             </label>
           ) : null}
-          {orgId ? (
-            <a className="app-button secondary" href={`/impact?orgId=${encodeURIComponent(orgId)}`}>
-              Community Impact log
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
             </a>
-          ) : null}
+          ))}
         </div>
       </PageHeader>
 
@@ -146,68 +355,63 @@ export default function OutreachCalendarClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the Outreach Calendar"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryPanel view={view} />
-          <ScheduleEventForm busy={busy} mutate={mutate} />
-          {view.summary.totalEvents > 0 ? <Breakdowns view={view} /> : null}
-          <UpcomingEvents view={view} />
-          <AllEvents view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
+      <OutreachNextActionsPanel actions={nextActions} />
 
-function SummaryPanel({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Planned events", value: String(summary.totalEvents) },
-    { label: "Projected hours", value: String(summary.totalProjectedHours) },
-    { label: "Projected reach", value: summary.totalProjectedPeopleReached.toLocaleString() },
-    { label: "Completed hours", value: String(summary.completedProjectedHours) },
-    { label: "Projected impact", value: pct(summary.projectedImpactScore) },
-  ];
-  return (
-    <Panel aria-label="Outreach plan summary">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {shouldShowOutreachCalendarSummaryTiles(eventCount) ? (
+        <section className="outreach-calendar-stats" aria-label="Outreach plan summary">
+          <div>
+            <strong>{formatOutreachCalendarMetric(view.summary.totalEvents, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Planned events
+            </span>
           </div>
-        ))}
+          <div>
+            <strong>{formatOutreachCalendarMetric(view.summary.totalProjectedHours, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Projected hours
+            </span>
+          </div>
+          <div>
+            <strong>
+              {formatOutreachCalendarMetric(view.summary.totalProjectedPeopleReached, true)}
+            </strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Projected reach
+            </span>
+          </div>
+          <div>
+            <strong>{pct(view.summary.projectedImpactScore)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Projected impact
+            </span>
+          </div>
+        </section>
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No events yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href="#outreach-calendar-schedule">
+            Schedule an event
+          </a>
+          <a className="app-button secondary" href={hubHref("/business", "impact", orgId)}>
+            Open Community Impact
+          </a>
+        </EmptyState>
+      ) : null}
+
+      <div className="outreach-calendar-layout">
+        <ScheduleEventForm busy={busy} mutate={mutate} />
+        {view.summary.totalEvents > 0 ? <Breakdowns view={view} /> : null}
+        <UpcomingEvents view={view} />
+        <AllEvents view={view} busy={busy} mutate={mutate} />
       </div>
-      <small className="app-muted">
-        {summary.plannedEvents} planned · {summary.confirmedEvents} confirmed · {summary.completedEvents} completed ·{" "}
-        {summary.canceledEvents} canceled
-      </small>
-    </Panel>
+    </main>
   );
 }
 
@@ -255,18 +459,25 @@ function UpcomingEvents({ view }: { view: LiveView }) {
       <h2 style={{ marginTop: 0 }}>Upcoming</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
         {view.upcoming.map((item) => (
-          <li key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li
+            key={item.id}
+            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
+          >
             <div>
               <strong>{item.title}</strong>
               <small className="app-muted" style={{ display: "block" }}>
-                {item.scheduledOn} · {outreachCategoryLabel(item.category)} · {outreachAudienceLabel(item.audience)}
+                {item.scheduledOn} · {outreachCategoryLabel(item.category)} ·{" "}
+                {outreachAudienceLabel(item.audience)}
                 {item.location ? ` · ${item.location}` : ""}
               </small>
               <small className="app-muted">
-                {item.projectedHours}h projected · {item.projectedPeopleReached.toLocaleString()} projected reach
+                {item.projectedHours}h projected · {item.projectedPeopleReached.toLocaleString()}{" "}
+                projected reach
               </small>
             </div>
-            <span className={`app-badge ${statusTone(item.status)}`}>{outreachStatusLabel(item.status)}</span>
+            <span className={`app-badge ${statusTone(item.status)}`}>
+              {outreachStatusLabel(item.status)}
+            </span>
           </li>
         ))}
       </ul>
@@ -286,10 +497,11 @@ function AllEvents({
   if (view.events.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No events yet"
         badgeTone="setup"
         title="Schedule your first outreach event"
-        description="Plan STEM demos, mentoring sessions, and community events ahead of time with a projected hours and reach estimate."
+        description="Plan STEM demos, mentoring sessions, and community events with projected hours and reach — never invent DEMO metrics."
       />
     );
   }
@@ -298,15 +510,20 @@ function AllEvents({
       <h2 style={{ marginTop: 0 }}>All events</h2>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
         {view.events.map((item) => (
-          <li key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li
+            key={item.id}
+            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
+          >
             <div>
               <strong>{item.title}</strong>
               <small className="app-muted" style={{ display: "block" }}>
-                {item.scheduledOn} · {outreachCategoryLabel(item.category)} · {outreachAudienceLabel(item.audience)}
+                {item.scheduledOn} · {outreachCategoryLabel(item.category)} ·{" "}
+                {outreachAudienceLabel(item.audience)}
                 {item.location ? ` · ${item.location}` : ""}
               </small>
               <small className="app-muted">
-                {item.projectedHours}h projected · {item.projectedPeopleReached.toLocaleString()} projected reach
+                {item.projectedHours}h projected · {item.projectedPeopleReached.toLocaleString()}{" "}
+                projected reach
               </small>
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -370,6 +587,7 @@ function ScheduleEventForm({
 
   return (
     <Panel
+      id="outreach-calendar-schedule"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -393,7 +611,12 @@ function ScheduleEventForm({
       <h2 style={{ margin: 0 }}>Schedule event</h2>
       <FormGrid min={160}>
         <FormRow label="Title">
-          <input value={form.title} onChange={set("title")} placeholder="Elementary STEM night" required />
+          <input
+            value={form.title}
+            onChange={set("title")}
+            placeholder="Elementary STEM night"
+            required
+          />
         </FormRow>
         <FormRow label="Date">
           <input type="date" value={form.scheduledOn} onChange={set("scheduledOn")} required />
@@ -426,10 +649,21 @@ function ScheduleEventForm({
           </select>
         </FormRow>
         <FormRow label="Projected hours">
-          <input type="number" min={0} step="0.5" value={form.projectedHours} onChange={set("projectedHours")} />
+          <input
+            type="number"
+            min={0}
+            step="0.5"
+            value={form.projectedHours}
+            onChange={set("projectedHours")}
+          />
         </FormRow>
         <FormRow label="Projected people reached">
-          <input type="number" min={0} value={form.projectedPeopleReached} onChange={set("projectedPeopleReached")} />
+          <input
+            type="number"
+            min={0}
+            value={form.projectedPeopleReached}
+            onChange={set("projectedPeopleReached")}
+          />
         </FormRow>
         <FormRow label="Location (optional)">
           <input value={form.location} onChange={set("location")} />
@@ -439,7 +673,11 @@ function ScheduleEventForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.title.trim() || !form.scheduledOn}>
+        <button
+          type="submit"
+          className="app-button"
+          disabled={busy || !form.title.trim() || !form.scheduledOn}
+        >
           Schedule event
         </button>
       </div>
