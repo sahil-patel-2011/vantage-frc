@@ -3,18 +3,30 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  FEATURED_SOFT_UI_LINKS,
+  ISLAND_TAB_CATALOG,
   MORE_SHEET_LINKS,
-  PRIMARY_TABS,
+  ORG_EXEMPT_HREFS,
+  PILLAR_SHEET_LINKS,
   PRODUCT_NAV_GROUPS,
   breadcrumbForPath,
   findNavMatch,
   navTitleForPath,
   withOrgHref,
+  withSelectedOrgHref,
   type ProductNavIcon,
 } from "../lib/nav/product-nav";
+import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
 import { formatMyDayWhen, matchAlertTitle, type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
+
+type MembershipOption = {
+  orgId: string;
+  orgName?: string | null;
+  teamNumber?: number | null;
+  role?: string | null;
+};
 
 type Me = {
   name?: string | null;
@@ -24,6 +36,9 @@ type Me = {
   orgName?: string | null;
   teamNumber?: number | null;
   role?: string | null;
+  planCode?: string | null;
+  paidOrg?: boolean;
+  memberships?: MembershipOption[];
   platformAdmin?: boolean;
   unreadNotificationCount?: number;
   unreadMessageCount?: number;
@@ -32,8 +47,59 @@ type Me = {
 type IconName = ProductNavIcon;
 
 const groups = PRODUCT_NAV_GROUPS;
-const primaryTabs = PRIMARY_TABS;
+const pillarSheetLinks = PILLAR_SHEET_LINKS;
 const moreSheetLinks = MORE_SHEET_LINKS;
+const featuredSoftUiLinks = FEATURED_SOFT_UI_LINKS;
+
+function formatMembershipLabel(row: MembershipOption): string {
+  const team =
+    row.teamNumber != null && Number.isFinite(row.teamNumber) ? `Team ${row.teamNumber}` : null;
+  const name = row.orgName?.trim() || null;
+  const parts = [team, name].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "Team workspace";
+}
+
+function formatRolePlanCue(role?: string | null, planCode?: string | null, paidOrg?: boolean): string {
+  const roleLabel = role?.trim() ? role.trim() : null;
+  const planLabel = planCode?.trim()
+    ? paidOrg
+      ? planCode.trim()
+      : `${planCode.trim()} plan`
+    : null;
+  if (roleLabel && planLabel) return `${roleLabel} · ${planLabel}`;
+  if (roleLabel) return roleLabel;
+  if (planLabel) return planLabel;
+  return "Workspace";
+}
+
+function islandTabIsActive(pathname: string, search: string, tabHref: string): boolean {
+  const [pathPart, queryPart] = tabHref.split("?");
+  const path = pathPart || tabHref;
+  if (pathname !== path && !(path !== "/" && pathname.startsWith(`${path}/`))) {
+    if (tabHref === "/dashboard") return pathname === "/dashboard" || pathname === "/";
+    return false;
+  }
+  if (!queryPart) {
+    if (tabHref === "/dashboard") return pathname === "/dashboard" || pathname === "/";
+    if (path === "/team/calendar") return pathname.startsWith("/team/calendar") || pathname === "/calendar";
+    return pathname === path || pathname.startsWith(`${path}/`);
+  }
+  const want = new URLSearchParams(queryPart.split("#")[0] || "");
+  const have = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  for (const [key, value] of want.entries()) {
+    if (have.get(key) !== value) return false;
+  }
+  return true;
+}
+
+function activeIslandHref(
+  pathname: string,
+  search: string,
+  tabs: Array<{ href: string }>,
+): string | undefined {
+  const queryMatch = tabs.find((tab) => tab.href.includes("?") && islandTabIsActive(pathname, search, tab.href));
+  return queryMatch?.href ?? tabs.find((tab) => islandTabIsActive(pathname, search, tab.href))?.href;
+}
 
 function Icon({ name }: { name: IconName }) {
   const p = {
@@ -201,7 +267,15 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   const [myDayGlance, setMyDayGlance] = useState<MyDayView | null>(null);
   const [online, setOnline] = useState(true);
   const [focusCollapsed, setFocusCollapsed] = useState(false);
+  const [islandHrefs, setIslandHrefs] = useState<string[]>(defaultIslandHrefs);
+  const [islandDraft, setIslandDraft] = useState<string[]>(defaultIslandHrefs);
+  const [islandEditorOpen, setIslandEditorOpen] = useState(false);
+  const [islandSaving, setIslandSaving] = useState(false);
+  const [islandMessage, setIslandMessage] = useState("");
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [memberships, setMemberships] = useState<MembershipOption[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [pathSearch, setPathSearch] = useState("");
 
   const activeNav = findNavMatch(pathname);
   const activeGroupLabel = activeNav?.group.label;
@@ -218,9 +292,16 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   }, [pathname]);
 
   useEffect(() => {
-    document.body.classList.toggle("soft-nav-open", open || commandOpen || moreOpen || accountMenuOpen);
+    document.body.classList.toggle(
+      "soft-nav-open",
+      open || commandOpen || moreOpen || accountMenuOpen || islandEditorOpen || workspaceOpen,
+    );
     return () => document.body.classList.remove("soft-nav-open");
-  }, [open, commandOpen, moreOpen, accountMenuOpen]);
+  }, [open, commandOpen, moreOpen, accountMenuOpen, islandEditorOpen, workspaceOpen]);
+
+  useEffect(() => {
+    setPathSearch(window.location.search);
+  }, [pathname]);
 
   useEffect(() => {
     void fetch("/api/me")
@@ -228,6 +309,10 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
       .then((data) => {
         if (!data) return;
         setMe(data);
+        const rows = Array.isArray(data.memberships)
+          ? data.memberships.filter((row): row is MembershipOption => Boolean(row?.orgId))
+          : [];
+        setMemberships(rows);
         const count = Number(data.unreadNotificationCount ?? 0);
         setUnreadCount(Number.isFinite(count) && count > 0 ? Math.floor(count) : 0);
         const messages = Number(data.unreadMessageCount ?? 0);
@@ -236,6 +321,18 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
       })
       .catch(() => undefined);
   }, [orgId, pathname]);
+
+  useEffect(() => {
+    void fetch("/api/navigation/preferences", { cache: "no-store" })
+      .then(async (response) => response.ok ? response.json() as Promise<{ tabs?: unknown }> : null)
+      .then((data) => {
+        if (!data) return;
+        const tabs = resolveIslandTabs(data.tabs).map((item) => item.href);
+        setIslandHrefs(tabs);
+        setIslandDraft(tabs);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!orgId) {
@@ -285,6 +382,8 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
         setOpen(false);
         setMoreOpen(false);
         setAccountMenuOpen(false);
+        setIslandEditorOpen(false);
+        setWorkspaceOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -327,10 +426,16 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
     me.teamNumber != null
       ? `Team ${me.teamNumber}${me.orgName ? ` · ${me.orgName}` : ""}`
       : (me.orgName ?? (orgId ? "Active workspace" : "No workspace selected"));
+  const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
 
   const crumbHint = breadcrumbForPath(pathname);
   const moreBadgeTotal = unreadCount + unreadMessages;
   const eventFocus = useMemo(() => buildEventFocus(myDayGlance, online), [myDayGlance, online]);
+  const islandTabs = useMemo(() => resolveIslandTabs(islandHrefs), [islandHrefs]);
+  const activeIslandTabHref = useMemo(
+    () => activeIslandHref(pathname, pathSearch, islandTabs),
+    [islandTabs, pathname, pathSearch],
+  );
 
   useEffect(() => {
     document.body.classList.toggle("has-event-focus", Boolean(eventFocus && !focusCollapsed));
@@ -346,13 +451,61 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
     setMoreOpen(false);
     setCommandOpen(false);
     setAccountMenuOpen(false);
+    setIslandEditorOpen(false);
+    setWorkspaceOpen(false);
   }, []);
+
+  const switchWorkspaceHref = useCallback(
+    (nextOrgId: string) => {
+      const pathOnly = pathname.split("?")[0] || pathname;
+      // Account/admin chrome is org-exempt — land on Workspace with the selected team.
+      if (ORG_EXEMPT_HREFS.has(pathOnly) || pathOnly.startsWith("/admin")) {
+        return withOrgHref("/workspace", nextOrgId);
+      }
+      return withSelectedOrgHref(`${pathname}${pathSearch || ""}` || "/competition", nextOrgId);
+    },
+    [pathname, pathSearch],
+  );
 
   async function handleSignOut() {
     if (signingOut) return;
     setSigningOut(true);
     closeOverlays();
     await signOutAndRedirect("/");
+  }
+
+  function toggleIslandDraft(href: string) {
+    setIslandMessage("");
+    setIslandDraft((current) => {
+      if (current.includes(href)) return current.filter((item) => item !== href);
+      return current.length < 4 ? [...current, href] : current;
+    });
+  }
+
+  async function saveIsland() {
+    if (islandDraft.length !== 4 || islandSaving) return;
+    setIslandSaving(true);
+    setIslandMessage("");
+    try {
+      const response = await fetch("/api/navigation/preferences", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tabs: islandDraft }),
+      });
+      const data = await response.json() as { tabs?: unknown; error?: string };
+      if (!response.ok) {
+        setIslandMessage(data.error ?? "Could not save the island.");
+        return;
+      }
+      const tabs = resolveIslandTabs(data.tabs).map((item) => item.href);
+      setIslandHrefs(tabs);
+      setIslandDraft(tabs);
+      setIslandEditorOpen(false);
+    } catch {
+      setIslandMessage("Could not save the island. Check your connection and try again.");
+    } finally {
+      setIslandSaving(false);
+    }
   }
 
   function renderGlance() {
@@ -461,7 +614,31 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                   <strong>{me.name ?? "Signed-in user"}</strong>
                   <span>{me.email ?? "Account"}</span>
                   <span className="soft-account-org">{orgLabel}</span>
+                  <span className="soft-account-org">{rolePlanCue}</span>
                 </div>
+                {memberships.length > 1 ? (
+                  <div className="soft-account-teams" role="group" aria-label="Switch team workspace">
+                    <span className="soft-account-teams-label">Teams</span>
+                    {memberships.map((row) => (
+                      <a
+                        key={row.orgId}
+                        role="menuitem"
+                        href={switchWorkspaceHref(row.orgId)}
+                        aria-current={row.orgId === orgId ? "true" : undefined}
+                        onClick={() => setAccountMenuOpen(false)}
+                      >
+                        {formatMembershipLabel(row)}
+                        <small>{row.role ?? "member"}</small>
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+                <a role="menuitem" href={withOrgHref("/workspace", orgId)} onClick={() => setAccountMenuOpen(false)}>
+                  Workspace manager
+                </a>
+                <a role="menuitem" href="/invite" onClick={() => setAccountMenuOpen(false)}>
+                  Accept invite
+                </a>
                 <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
                   Account settings
                 </a>
@@ -485,6 +662,11 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                 {orgId ? (
                   <a role="menuitem" href={withOrgHref("/team/admin", orgId)} onClick={() => setAccountMenuOpen(false)}>
                     API keys &amp; team admin
+                  </a>
+                ) : null}
+                {me.platformAdmin ? (
+                  <a role="menuitem" href="/admin" onClick={() => setAccountMenuOpen(false)}>
+                    Global Team Manager
                   </a>
                 ) : null}
                 <button
@@ -570,15 +752,69 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
               <Icon name="chevron" />
             </span>
           </a>
-          <div className="soft-org-chip" title={orgLabel}>
-            <Icon name="users" />
-            <div>
-              <strong>{orgLabel}</strong>
-              <span>{me.role ? `${me.role} · org context on links` : "Pick a workspace from Home"}</span>
-            </div>
-            <a href={withOrgHref("/workspace", orgId)} onClick={() => setOpen(false)}>
-              Switch workspace
-            </a>
+          <div className={`soft-workspace-manager${workspaceOpen ? " is-open" : ""}`}>
+            <button
+              type="button"
+              className="soft-org-chip soft-org-chip-btn"
+              title={orgLabel}
+              aria-expanded={workspaceOpen}
+              aria-controls="soft-workspace-picker"
+              onClick={() => setWorkspaceOpen((value) => !value)}
+            >
+              <Icon name="users" />
+              <div>
+                <strong>{orgLabel}</strong>
+                <span>
+                  {orgId
+                    ? `${rolePlanCue} · org on links`
+                    : "No workspace — accept an invite or pick a team"}
+                </span>
+              </div>
+              <span className={`soft-nav-caret${workspaceOpen ? " open" : ""}`} aria-hidden="true">
+                <Icon name="chevron" />
+              </span>
+            </button>
+            {workspaceOpen ? (
+              <div id="soft-workspace-picker" className="soft-workspace-picker" role="listbox" aria-label="Team workspaces">
+                {memberships.length === 0 ? (
+                  <p className="soft-workspace-empty">
+                    No real team memberships yet. Exact-email invites only — never DEMO organizations.
+                  </p>
+                ) : (
+                  memberships.map((row) => (
+                    <a
+                      key={row.orgId}
+                      role="option"
+                      aria-selected={row.orgId === orgId}
+                      href={switchWorkspaceHref(row.orgId)}
+                      onClick={() => {
+                        setWorkspaceOpen(false);
+                        setOpen(false);
+                      }}
+                    >
+                      <strong>{formatMembershipLabel(row)}</strong>
+                      <span>{row.role ?? "member"}{row.orgId === orgId ? " · active" : ""}</span>
+                    </a>
+                  ))
+                )}
+                <div className="soft-workspace-links">
+                  <a href={withOrgHref("/workspace", orgId)} onClick={() => setOpen(false)}>
+                    Workspace
+                  </a>
+                  <a href="/invite" onClick={() => setOpen(false)}>
+                    Invite
+                  </a>
+                  <a href="/account" onClick={() => setOpen(false)}>
+                    Account
+                  </a>
+                  {me.platformAdmin ? (
+                    <a href="/admin" onClick={() => setOpen(false)}>
+                      Teams admin
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
           <div className="soft-profile-actions">
             <a href="/account" onClick={() => setOpen(false)}>
@@ -595,8 +831,16 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             </button>
           </div>
         </div>
+        <nav className="soft-drawer-pillars" aria-label="Six pillars">
+          {pillarSheetLinks.map((link) => (
+            <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setOpen(false)}>
+              <Icon name={link.icon} />
+              {link.label}
+            </a>
+          ))}
+        </nav>
         <p className="soft-drawer-hint">
-          Home · Competition · Team · Logistics · Business · Build · AI — unfinished items stay Planned.
+          Expand a pillar for tools. Featured Soft-UI surfaces stay in More — unfinished items stay Planned.
         </p>
         {groups.map((group) => {
           const expanded = !!expandedGroups[group.label];
@@ -681,20 +925,17 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
       </aside>
 
       <nav className="soft-island" aria-label="Primary tabs">
-        {primaryTabs.map((tab) => (
+        {islandTabs.map((tab) => (
           <a
-            aria-current={
-              pathname === tab.href ||
-              (tab.href === "/team/calendar" && (pathname.startsWith("/team/calendar") || pathname === "/calendar")) ||
-              (tab.href !== "/dashboard" && tab.href !== "/team/calendar" && pathname.startsWith(tab.href))
-                ? "page"
-                : undefined
-            }
+            aria-current={activeIslandTabHref === tab.href ? "page" : undefined}
             href={withOrgHref(tab.href, orgId)}
             key={tab.href}
           >
             <Icon name={tab.icon} />
             <span>{tab.label}</span>
+            {tab.href.includes("tab=messages") && unreadMessages >= 1 ? (
+              <b className="soft-island-badge">{unreadMessages > 99 ? "99+" : unreadMessages}</b>
+            ) : null}
           </a>
         ))}
         <button
@@ -723,14 +964,24 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
         <div className="soft-more-head">
           <div>
             <strong>More</strong>
-            <small>Pillars and quick links</small>
+            <small>Six pillars · quick tools · featured Soft-UI</small>
           </div>
           <button className="soft-icon-btn" type="button" aria-label="Close more menu" onClick={() => setMoreOpen(false)}>
             <Icon name="x" />
           </button>
         </div>
         {renderGlance()}
-        <div className="soft-more-grid">
+        <p className="soft-more-section-label">Pillars</p>
+        <div className="soft-more-grid soft-more-pillars">
+          {pillarSheetLinks.map((link) => (
+            <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
+              <Icon name={link.icon} />
+              {link.label}
+            </a>
+          ))}
+        </div>
+        <p className="soft-more-section-label">Quick tools</p>
+        <div className="soft-more-grid soft-more-quick">
           {moreSheetLinks.map((link) => (
             <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
               <Icon name={link.icon} />
@@ -741,7 +992,16 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             </a>
           ))}
         </div>
-        <div className="soft-more-actions">
+        <p className="soft-more-section-label">Featured Soft-UI</p>
+        <div className="soft-more-featured">
+          {featuredSoftUiLinks.map((link) => (
+            <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
+              <Icon name={link.icon} />
+              {link.label}
+            </a>
+          ))}
+        </div>
+        <div className="soft-more-actions soft-more-actions-3">
           <a href="/notifications" onClick={() => setMoreOpen(false)}>
             <Icon name="bell" />
             Notifications
@@ -757,8 +1017,71 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             <Icon name="menu" />
             Full menu
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIslandDraft(islandHrefs);
+              setIslandMessage("");
+              setMoreOpen(false);
+              setIslandEditorOpen(true);
+            }}
+          >
+            <Icon name="gear" />
+            Customize island
+          </button>
         </div>
       </div>
+
+      {islandEditorOpen ? (
+        <div className="soft-island-editor" role="dialog" aria-modal="true" aria-labelledby="island-editor-title">
+          <button className="soft-island-editor-scrim" type="button" aria-label="Close island customization" onClick={() => setIslandEditorOpen(false)} />
+          <section>
+            <header>
+              <div>
+                <span>PERSONAL NAVIGATION</span>
+                <h2 id="island-editor-title">Choose your four island apps</h2>
+                <p>The default stays Home, Compete, Team, and Business until you save a change.</p>
+              </div>
+              <button className="soft-icon-btn" type="button" aria-label="Close" onClick={() => setIslandEditorOpen(false)}><Icon name="x" /></button>
+            </header>
+            <div className="soft-island-slot-preview" aria-label={`${islandDraft.length} of 4 island apps selected`}>
+              {[0, 1, 2, 3].map((slot) => {
+                const selectedHref = islandDraft[slot];
+                const selected = ISLAND_TAB_CATALOG.find((entry) => entry.href === selectedHref);
+                return <span className={selectedHref ? "filled" : ""} key={slot}>{selected ? <><Icon name={selected.icon} />{selected.label}</> : `Slot ${slot + 1}`}</span>;
+              })}
+            </div>
+            <p className="soft-island-order-hint">Tap apps in the order you want them to appear. Tap a selected app to remove it.</p>
+            <div className="soft-island-choice-grid">
+              {ISLAND_TAB_CATALOG.map((item) => {
+                const selected = islandDraft.includes(item.href);
+                const disabled = !selected && islandDraft.length >= 4;
+                return (
+                  <button
+                    className={selected ? "selected" : ""}
+                    disabled={disabled}
+                    key={item.href}
+                    onClick={() => toggleIslandDraft(item.href)}
+                    type="button"
+                    aria-pressed={selected}
+                  >
+                    <Icon name={item.icon} /><span><strong>{item.label}</strong><small>{selected ? `Slot ${islandDraft.indexOf(item.href) + 1}` : "Add to island"}</small></span>
+                  </button>
+                );
+              })}
+            </div>
+            {islandMessage ? <p className="soft-island-editor-error" role="alert">{islandMessage}</p> : null}
+            <footer>
+              <a href={withOrgHref("/dashboard?customize=1", orgId)}>Customize dashboard</a>
+              <a href={withOrgHref("/competition?tab=forms", orgId)}>Build scouting forms</a>
+              <button type="button" onClick={() => setIslandDraft(defaultIslandHrefs())}>Reset default</button>
+              <button className="primary" type="button" disabled={islandDraft.length !== 4 || islandSaving} onClick={() => void saveIsland()}>
+                {islandSaving ? "Saving…" : `Save ${islandDraft.length}/4`}
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
       <a className="soft-fab" href={withOrgHref("/chat", orgId)} aria-label="Open Vantage AI chat">
         <Icon name="chat" />

@@ -11,20 +11,20 @@ export async function GET() {
 
     const profile = await withRls({ userId: session.user.id }, async (client) => {
       const platform = await client.query(`SELECT 1 FROM platform_admins WHERE user_id=$1`, [session.user.id]);
-      const membership = await client.query<{
+      const memberships = await client.query<{
         orgId: string;
         role: string;
         teamNumber: number | null;
         orgName: string | null;
       }>(
-        `SELECT m.org_id AS "orgId", m.role, o.team_number AS "teamNumber", o.name AS "orgName"
+        `SELECT m.org_id AS "orgId", m.role::text AS role, o.team_number AS "teamNumber", o.name AS "orgName"
          FROM memberships m
          JOIN organizations o ON o.id = m.org_id
          WHERE m.user_id=$1
-         ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
-         LIMIT 1`,
+         ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number NULLS LAST, o.name`,
         [session.user.id],
       );
+      const membership = { rows: memberships.rows.slice(0, 1) };
       const created = await client.query<{ createdAt: string | null }>(
         `SELECT created_at::text AS "createdAt" FROM users WHERE id=$1`,
         [session.user.id],
@@ -109,6 +109,13 @@ export async function GET() {
       return {
         platformAdmin: Boolean(platform.rowCount),
         membership: membership.rows[0] ?? null,
+        // Real memberships only — never invent DEMO organizations for the Soft-UI picker.
+        memberships: memberships.rows.map((row) => ({
+          orgId: row.orgId,
+          orgName: row.orgName,
+          teamNumber: row.teamNumber,
+          role: row.role,
+        })),
         memberSince: created.rows[0]?.createdAt ?? null,
         unreadNotificationCount: Number(unread.rows[0]?.count ?? 0),
         unreadMessageCount,
@@ -135,6 +142,7 @@ export async function GET() {
       teamNumber: profile.membership?.teamNumber ?? profile.profile?.preferredTeamNumber ?? null,
       orgName: profile.membership?.orgName ?? null,
       role: profile.membership?.role ?? null,
+      memberships: profile.memberships,
       platformAdmin: profile.platformAdmin,
       memberSince: profile.memberSince,
       unreadNotificationCount: profile.unreadNotificationCount,

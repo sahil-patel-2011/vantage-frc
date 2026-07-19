@@ -322,23 +322,53 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
 ];
 
 /** Bottom island — glanceable; full IA lives in the drawer / More sheet. */
-export const PRIMARY_TABS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
+export type IslandTabDefinition = { href: string; label: string; icon: ProductNavIcon };
+
+export const PRIMARY_TABS: IslandTabDefinition[] = [
   { href: "/dashboard", label: "Home", icon: "home" },
   { href: "/competition", label: "Compete", icon: "swords" },
   { href: "/team", label: "Team", icon: "users" },
   { href: "/business", label: "Business", icon: "clipboard" },
 ];
 
-/** Quick destinations in the mobile More sheet (pillars + newly shipped event tools). */
-export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
-  { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
-  { href: "/competition?tab=forms", label: "Form builder", icon: "clipboard" },
-  { href: "/competition?tab=match-checklist", label: "Match checklist", icon: "clipboard" },
-  { href: "/competition?tab=scouting#scout-voice", label: "Voice notes", icon: "chat" },
-  { href: "/team?tab=messages", label: "Messages", icon: "chat" },
-  { href: "/logistics", label: "Logistics", icon: "pin" },
+/** Allowlisted destinations for the four personal island slots. */
+export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
+  ...PRIMARY_TABS,
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/ai", label: "AI", icon: "bolt" },
+  { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
+  { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
+  { href: "/logistics", label: "Logistics", icon: "pin" },
+  { href: "/team?tab=messages", label: "Messages", icon: "chat" },
+];
+
+/**
+ * Six Soft-UI pillars for the More sheet / drawer — readable hierarchy first.
+ * Competition · Team · Logistics · Business · Build · AI
+ */
+export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
+  { href: "/competition", label: "Competition", icon: "swords" },
+  { href: "/team", label: "Team", icon: "users" },
+  { href: "/logistics", label: "Logistics", icon: "pin" },
+  { href: "/business", label: "Business", icon: "clipboard" },
+  { href: "/build", label: "Build", icon: "cube" },
+  { href: "/ai", label: "AI", icon: "bolt" },
+];
+
+/** Glanceable ops shortcuts under the pillars — keep short to avoid clutter. */
+export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
+  { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
+  { href: "/competition?tab=forms", label: "Forms", icon: "clipboard" },
+  { href: "/competition?tab=match-checklist", label: "Checklist", icon: "clipboard" },
+  { href: "/team?tab=messages", label: "Messages", icon: "chat" },
+];
+
+/** Newly polished Soft-UI tools — discoverable without dumping the full catalog. */
+export const FEATURED_SOFT_UI_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
+  { href: "/sponsor-wall", label: "Sponsor Wall", icon: "clipboard" },
+  { href: "/award-tracker", label: "Award Tracker", icon: "clipboard" },
+  { href: "/grant-report", label: "Grant Report", icon: "clipboard" },
+  { href: "/writer", label: "Writer", icon: "bolt" },
 ];
 
 export function withOrgHref(href: string, orgId: string | null | undefined): string {

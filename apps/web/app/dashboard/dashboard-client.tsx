@@ -16,6 +16,15 @@ import {
   type DashboardWidgetType,
 } from "../../lib/dashboard/catalog";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
+import {
+  classifyDashboardShell,
+  dashboardHubLinks,
+  dashboardNextActions,
+  dashboardSetupSteps,
+  dashboardSetupTitle,
+} from "../../lib/dashboard/dashboard-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
@@ -219,6 +228,14 @@ export default function DashboardClient() {
     document.body.classList.toggle("dash-editing", editing);
     return () => document.body.classList.remove("dash-editing");
   }, [editing]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("customize") === "1") {
+      setEditing(true);
+      setLibraryOpen(true);
+    }
+  }, []);
 
   const availableCatalog = useMemo(
     () => WIDGET_CATALOG.filter((entry) => canAccessWidget(entry.type, role)),
@@ -624,6 +641,26 @@ export default function DashboardClient() {
   const nextMatchPayload = widgets.next_match;
   const nextMatchData =
     nextMatchPayload?.status === "live" ? (nextMatchPayload.data as Record<string, unknown> | undefined) : undefined;
+  const dashShell = classifyDashboardShell({
+    loaded: meLoaded,
+    orgId: orgId || null,
+    setupRequired,
+    tbaConfigured,
+  });
+  const hubLinks = dashboardHubLinks(orgId || null);
+  const nextActions = dashboardNextActions({
+    orgId: orgId || null,
+    shell: dashShell,
+    hasScoutingSchemas,
+    hasAiProvider,
+  });
+  const setupSteps = dashboardSetupSteps({
+    orgId: orgId || null,
+    setupRequired,
+    tbaConfigured,
+    hasScoutingSchemas,
+    hasAiProvider,
+  });
   const isNarrow = mounted && width < 640;
   const gridLayout: Layout = layout.map((item, index) => ({
     i: item.i,
@@ -686,7 +723,7 @@ export default function DashboardClient() {
         </div>
         <div className="dash-home-actions">
           {nextMatchData && !editing ? (
-            <a className="dash-next-glance" href={`/intel${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`}>
+            <a className="dash-next-glance" href={withOrgHref("/intel", orgId || null)}>
               <span>Next</span>
               <strong>
                 {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
@@ -706,8 +743,8 @@ export default function DashboardClient() {
               className="app-button secondary"
               href={
                 tbaConfigured === false
-                  ? `/team/data?orgId=${encodeURIComponent(orgId)}`
-                  : `/command?orgId=${encodeURIComponent(orgId)}`
+                  ? withOrgHref("/team/data", orgId)
+                  : hubHref("/competition", "command", orgId)
               }
             >
               {tbaConfigured === false ? "Connect TBA" : "Select event"}
@@ -737,8 +774,8 @@ export default function DashboardClient() {
             <a
               href={
                 homeAudience === "mentor"
-                  ? `/logistics?orgId=${encodeURIComponent(orgId)}`
-                  : `/kickoff?orgId=${encodeURIComponent(orgId)}`
+                  ? withOrgHref("/logistics", orgId)
+                  : hubHref("/build", "kickoff", orgId)
               }
             >
               {homeAudience === "mentor" ? "Open logistics" : "Kickoff summary"}
@@ -824,22 +861,26 @@ export default function DashboardClient() {
         </div>
       ) : null}
 
-      {meLoaded && (!orgId || setupRequired || tbaConfigured === false || !hasScoutingSchemas || !hasAiProvider) ? (
+      {meLoaded ? (
+        <nav className="dash-hub-rail" aria-label="Product hubs">
+          {hubLinks.map((link) => (
+            <a key={link.id} href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      ) : null}
+
+      {meLoaded && (dashShell !== "ready" || !hasScoutingSchemas || !hasAiProvider) ? (
         <section className="dash-setup-banner" aria-label="First-run setup">
           <div>
             <span className="app-badge setup">Setup required</span>
             <h2>
-              {!orgId
-                ? "Join your team workspace"
-                : setupRequired
-                  ? "Select an active event"
-                  : tbaConfigured === false
-                    ? "Connect TBA for live data"
-                    : !hasScoutingSchemas
-                      ? "Create scouting forms"
-                      : !hasAiProvider
-                        ? "Configure metered AI"
-                        : "Finish setup"}
+              {dashShell !== "ready"
+                ? dashboardSetupTitle(dashShell)
+                : !hasScoutingSchemas
+                  ? "Create scouting forms"
+                  : "Configure metered AI"}
             </h2>
             <p>
               Live widgets stay empty on purpose until this path is complete. Vantage will not invent ranks, EPA, match
@@ -850,70 +891,53 @@ export default function DashboardClient() {
             </p>
           </div>
           <ol className="dash-setup-steps">
-            <li className={orgId ? "done" : "current"}>
-              <b>1</b>
-              <div>
-                <strong>Join workspace</strong>
-                <span>Accept a team invite or select your org</span>
-              </div>
-              {!orgId ? <a href="/invite">Invite</a> : <em>Done</em>}
-            </li>
-            <li className={!orgId ? undefined : setupRequired ? "current" : "done"}>
-              <b>2</b>
-              <div>
-                <strong>Select event</strong>
-                <span>Set the active competition context</span>
-              </div>
-              {orgId && setupRequired ? (
-                <a href={`/command?orgId=${encodeURIComponent(orgId)}`}>Open</a>
-              ) : orgId && !setupRequired ? (
-                <em>Done</em>
-              ) : (
-                <span />
-              )}
-            </li>
-            <li className={!orgId ? undefined : tbaConfigured === false ? "current" : tbaConfigured ? "done" : undefined}>
-              <b>3</b>
-              <div>
-                <strong>Sync TBA</strong>
-                <span>Match and rank data from The Blue Alliance</span>
-              </div>
-              {tbaConfigured === false && orgId ? (
-                <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Connect</a>
-              ) : tbaConfigured ? (
-                <em>Ready</em>
-              ) : (
-                <span />
-              )}
-            </li>
-            <li className={!orgId || setupRequired ? undefined : !hasScoutingSchemas ? "current" : "done"}>
-              <b>4</b>
-              <div>
-                <strong>Scout</strong>
-                <span>Starter match and pit forms for the season</span>
-              </div>
-              {orgId && !setupRequired && !hasScoutingSchemas ? (
-                <a href={`/scouting/forms?orgId=${encodeURIComponent(orgId)}`}>Open</a>
-              ) : orgId && hasScoutingSchemas ? (
-                <em>Ready</em>
-              ) : (
-                <span />
-              )}
-            </li>
-            <li className={!orgId ? undefined : !hasAiProvider ? "current" : "done"}>
-              <b>5</b>
-              <div>
-                <strong>Metered AI</strong>
-                <span>BYO provider key for free-tier AI features</span>
-              </div>
-              {orgId && !hasAiProvider ? (
-                <a href={`/team?orgId=${encodeURIComponent(orgId)}#custom-providers`}>Configure</a>
-              ) : orgId && hasAiProvider ? (
-                <em>Ready</em>
-              ) : (
-                <span />
-              )}
-            </li>
+            {setupSteps.map((step, index) => (
+              <li key={step.id} className={step.state === "pending" ? undefined : step.state}>
+                <b>{index + 1}</b>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                {step.state === "done" ? (
+                  <em>{step.id === "tba" || step.id === "scout" || step.id === "ai" ? "Ready" : "Done"}</em>
+                ) : step.state === "current" ? (
+                  <a href={step.href}>
+                    {step.id === "workspace" && !orgId ? "Invite" : step.id === "tba" ? "Connect" : "Open"}
+                  </a>
+                ) : (
+                  <span />
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
+      {meLoaded && nextActions.length > 0 ? (
+        <section
+          className="dash-next-actions app-card soft-panel edc-next-actions"
+          aria-label={dashShell === "ready" ? "Explore hubs" : "Next actions"}
+        >
+          <header>
+            <h2>{dashShell === "ready" ? "Explore hubs" : "Next actions"}</h2>
+            <p>
+              {dashShell === "ready"
+                ? "Jump into the Soft-UI pillars — live numbers only appear when your workspace has real data."
+                : "Honest handoffs into Competition, Team, Business, Build, and AI — never DEMO metrics."}
+            </p>
+          </header>
+          <ol>
+            {nextActions.slice(0, 5).map((action) => (
+              <li key={action.id} className={action.primary ? "primary" : undefined}>
+                <div>
+                  <strong>{action.label}</strong>
+                  <span>{action.detail}</span>
+                </div>
+                <a className="app-button secondary" href={action.href}>
+                  Open
+                </a>
+              </li>
+            ))}
           </ol>
         </section>
       ) : null}
