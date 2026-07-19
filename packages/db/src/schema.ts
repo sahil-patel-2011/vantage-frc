@@ -179,6 +179,7 @@ export const profiles = pgTable("profiles", {
     .references(() => users.id, { onDelete: "cascade" }),
   displayName: text("display_name"),
   notificationPrefs: jsonb("notification_prefs").notNull().default({}),
+  islandTabs: jsonb("island_tabs").$type<string[]>().notNull().default([]),
   themePreference: text("theme_preference").notNull().default("light"),
   firstName: text("first_name"),
   lastName: text("last_name"),

@@ -1,6 +1,8 @@
 "use client";
 
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import { parseYouTubeEmbed } from "../../lib/youtube";
 import { Icon, type IconName } from "../../components/app-shell";
 
@@ -239,17 +241,16 @@ export function countdownLabel(iso: string | null | undefined) {
 }
 
 function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
-  const orgQuery = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
   const links: Array<{ href: string; label: string; detail: string }> = [];
   if (!orgId) {
     links.push({ href: "/invite", label: "Workspace", detail: "Accept invite" });
   } else {
-    links.push({ href: `/command${orgQuery}`, label: "Event", detail: "Select event" });
+    links.push({ href: hubHref("/competition", "command", orgId), label: "Event", detail: "Select event" });
   }
   if (tbaConfigured === false) {
-    links.push({ href: `/team/data${orgQuery}`, label: "TBA", detail: "Connect TBA" });
+    links.push({ href: withOrgHref("/team/data", orgId), label: "TBA", detail: "Connect TBA" });
   }
-  links.push({ href: `/team${orgQuery}`, label: "Invite", detail: "Invite members" });
+  links.push({ href: withOrgHref("/team", orgId), label: "Invite", detail: "Invite members" });
   return links;
 }
 
@@ -265,7 +266,7 @@ export function DashboardWidgetView({
   tbaConfigured?: boolean;
 }) {
   const data = payload?.data ?? {};
-  const withOrg = (href: string) => (orgId ? `${href}${href.includes("?") ? "&" : "?"}orgId=${encodeURIComponent(orgId)}` : href);
+  const withOrg = (href: string) => withOrgHref(href, orgId || null);
   const hint = emptyHintFor(type);
 
   switch (type) {
