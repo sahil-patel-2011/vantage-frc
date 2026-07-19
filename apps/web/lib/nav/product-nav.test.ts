@@ -3,6 +3,7 @@ import {
   breadcrumbForPath,
   findNavMatch,
   MORE_SHEET_LINKS,
+  PILLAR_SHEET_LINKS,
   PRIMARY_TABS,
   PRODUCT_NAV_GROUPS,
   withOrgHref,
@@ -32,16 +33,20 @@ describe("product-nav", () => {
     ]);
   });
 
-  it("surfaces pillar shortcuts in the More sheet", () => {
-    expect(MORE_SHEET_LINKS.map((link) => link.label)).toEqual([
-      "My Day",
-      "Form builder",
-      "Match checklist",
-      "Voice notes",
-      "Messages",
+  it("separates pillar shortcuts from glanceable tools in the More sheet", () => {
+    expect(PILLAR_SHEET_LINKS.map((link) => link.label)).toEqual([
+      "Competition",
+      "Team",
       "Logistics",
+      "Business",
       "Build",
       "AI",
+    ]);
+    expect(MORE_SHEET_LINKS.map((link) => link.label)).toEqual([
+      "My Day",
+      "Forms",
+      "Checklist",
+      "Messages",
     ]);
   });
 

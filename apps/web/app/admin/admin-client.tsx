@@ -170,9 +170,9 @@ function AdminClientInner() {
   return (
     <main className="module-page admin-control admin-flow-page">
       <PageHeader
-        breadcrumbs="Platform / Admin"
-        title="Team provisioning"
-        description="Closed membership: provision each team workspace and seed the first owner. Launch interest lives on the waitlist surface."
+        breadcrumbs="Platform / Global Team Manager"
+        title="Global Team Manager"
+        description="Closed membership: provision each real team workspace and seed the first owner by exact verified email. Never DEMO organizations — waitlist interest stays on the waitlist surface."
       >
         <AdminRelated active="teams" />
       </PageHeader>
