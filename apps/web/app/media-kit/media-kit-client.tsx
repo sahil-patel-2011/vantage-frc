@@ -1,17 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { mediaKitAssetKindLabel } from "../../lib/media-kit";
 import type { MediaKitView } from "../../lib/media-kit/compute-media-kit";
+import {
+  MEDIA_KIT_RELATED_INCLUDE,
+  classifyMediaKitShell,
+  formatMediaKitMetric,
+  mediaKitNextActions,
+  mediaKitRelatedLinks,
+  mediaKitSetupSteps,
+  mediaKitShellCopy,
+  shouldShowMediaKitSummaryTiles,
+  type MediaKitNextAction,
+  type MediaKitShellKind,
+} from "../../lib/media-kit/media-kit-related";
 import type { MediaKitAssetKind, MediaKitReadinessTier } from "../../lib/media-kit/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./media-kit.css";
 
 const ASSET_KINDS: MediaKitAssetKind[] = ["logo", "photo", "graphic", "other"];
 
 function tierTone(tier: MediaKitReadinessTier): string {
   if (tier === "ready") return "good";
   if (tier === "partial") return "setup";
-  return "demo";
+  return "setup";
 }
 
 function pct(value: number): string {
@@ -20,6 +35,146 @@ function pct(value: number): string {
 
 type LiveView = Extract<MediaKitView, { status: "live" }>;
 
+function MediaKitRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = mediaKitRelatedLinks(orgId, {
+    include: [...MEDIA_KIT_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related media-kit-related" aria-label="Related business tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function MediaKitNextActionsPanel({ actions }: { actions: MediaKitNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions media-kit-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Sponsor Suite and Outreach — never DEMO media metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function MediaKitShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: MediaKitShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = mediaKitNextActions({ orgId, shell });
+  const copy = mediaKitShellCopy(shell);
+  const businessHref = hubHref("/business", "media-kit", orgId);
+  const steps = shell === "setup" ? mediaKitSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page media-kit-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={businessHref}>Business</a>
+            {" / Media Kit"}
+          </>
+        }
+        title="Media Kit"
+        description={description}
+      >
+        <MediaKitRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No media yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#media-kit-profile">
+              Save team profile
+            </a>
+            <a className="app-button secondary" href={hubHref("/business", "sponsor-suite", orgId)}>
+              Open Sponsor Suite
+            </a>
+            <a
+              className="app-button secondary"
+              href={hubHref("/business", "outreach-calendar", orgId)}
+            >
+              Open Outreach Calendar
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {shell === "setup" && steps.length > 0 ? (
+        <ol className="strategy-setup-steps">
+          {steps.map((step) => (
+            <li key={step.id}>
+              <div>
+                <strong>{step.label}</strong>
+                <span>{step.detail}</span>
+              </div>
+              <a href={step.href}>Open</a>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+      <MediaKitNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function MediaKitClient() {
   const [view, setView] = useState<MediaKitView | null>(null);
   const [error, setError] = useState("");
@@ -27,14 +182,13 @@ export default function MediaKitClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
-
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
-    const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
+    const seasonQuery =
+      seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
@@ -54,6 +208,32 @@ export default function MediaKitClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const assetCount = view?.status === "live" ? view.assets.length : 0;
+  const documentCount = view?.status === "live" ? view.documents.length : 0;
+  const readinessScore = view?.status === "live" ? view.readiness.score : 0;
+
+  const shell = classifyMediaKitShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" || view?.status === "setup_required" ? view.orgId : null,
+    assetCount,
+    documentCount,
+    readinessScore,
+  });
+  const shellCopy = mediaKitShellCopy(shell);
+  const nextActions = mediaKitNextActions({
+    orgId,
+    shell,
+    assetCount,
+    documentCount,
+  });
+  const relatedLinks = mediaKitRelatedLinks(orgId, {
+    include: [...MEDIA_KIT_RELATED_INCLUDE],
+  });
+  const businessHref = hubHref("/business", "media-kit", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -82,37 +262,74 @@ export default function MediaKitClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <MediaKitShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <MediaKitShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <MediaKitShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <MediaKitShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page media-kit-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
+            <a href={businessHref}>Business</a>
             {" / Media Kit"}
           </>
         }
         title="Media Kit"
-        description="Build a sponsor- and media-ready team media kit — logos, bio, mission, and a generated one-pager grounded only in what you've recorded."
+        description="Build a sponsor- and media-ready team media kit — logos, bio, mission, and a generated one-pager grounded only in what you've recorded. Never DEMO media metrics."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="media-kit-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -121,36 +338,54 @@ export default function MediaKitClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState title="Could not load Media Kit" description="A network or server issue prevented loading. Try again.">
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+      <MediaKitNextActionsPanel actions={nextActions} />
+
+      {shouldShowMediaKitSummaryTiles({ assetCount, documentCount, readinessScore }) ? (
+        <section className="media-kit-stats" aria-label="Media kit counts">
+          <div>
+            <strong>{pct(view.readiness.score)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Completeness
+            </span>
+          </div>
+          <div>
+            <strong>{formatMediaKitMetric(assetCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              Assets
+            </span>
+          </div>
+          <div>
+            <strong>{formatMediaKitMetric(documentCount, true)}</strong>
+            <span className="app-muted" style={{ display: "block" }}>
+              One-pagers
+            </span>
+          </div>
+        </section>
+      ) : null}
+
+      {shell === "empty" ? (
+        <EmptyState
+          soft
+          badge="No media yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+        >
+          <a className="app-button" href="#media-kit-profile">
+            Save team profile
+          </a>
+          <a className="app-button secondary" href="#media-kit-assets">
+            Add a logo
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <ReadinessPanel view={view} />
-          <ProfileForm view={view} busy={busy} mutate={mutate} />
-          <AssetsPanel view={view} busy={busy} mutate={mutate} />
-          <DocumentsPanel view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      ) : null}
+
+      <div className="media-kit-layout">
+        {shell === "ready" ? <ReadinessPanel view={view} /> : null}
+        <ProfileForm view={view} busy={busy} mutate={mutate} />
+        <AssetsPanel view={view} busy={busy} mutate={mutate} />
+        <DocumentsPanel view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
@@ -159,14 +394,18 @@ function ReadinessPanel({ view }: { view: LiveView }) {
   const { readiness } = view;
   return (
     <Panel aria-label="Media kit readiness">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+      <header
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}
+      >
         <div>
-          <span className={`app-badge ${tierTone(readiness.tier)}`}>{readiness.tier.replace("_", " ").toUpperCase()}</span>
+          <span className={`app-badge ${tierTone(readiness.tier)}`}>
+            {readiness.tier.replace("_", " ").toUpperCase()}
+          </span>
           <h2 style={{ margin: "6px 0 0" }}>Media kit completeness</h2>
           {readiness.missingFields.length > 0 ? (
             <small className="app-muted">Missing: {readiness.missingFields.join(", ")}</small>
           ) : (
-            <small className="app-muted">All core fields recorded.</small>
+            <small className="app-muted">All core fields recorded — never DEMO claims.</small>
           )}
         </div>
         <strong style={{ fontSize: "2rem" }}>{pct(readiness.score)}</strong>
@@ -203,6 +442,7 @@ function ProfileForm({
 
   return (
     <Panel
+      id="media-kit-profile"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -260,20 +500,32 @@ function AssetsPanel({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
-  const empty = useMemo(() => ({ kind: "logo" as MediaKitAssetKind, title: "", url: "", description: "" }), []);
+  const empty = useMemo(
+    () => ({ kind: "logo" as MediaKitAssetKind, title: "", url: "", description: "" }),
+    [],
+  );
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
   return (
-    <Panel style={{ display: "grid", gap: 10 }}>
+    <Panel id="media-kit-assets" style={{ display: "grid", gap: 10 }}>
       <h2 style={{ margin: 0 }}>Assets</h2>
       {view.assets.length === 0 ? (
-        <EmptyState badge="No assets yet" badgeTone="setup" title="Add your team logo and photos" />
+        <EmptyState
+          soft
+          badge="No assets yet"
+          badgeTone="setup"
+          title="Add your team logo and photos"
+          description="Asset library stays empty until you add real URLs — never DEMO logos."
+        />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
           {view.assets.map((asset) => (
-            <li key={asset.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+            <li
+              key={asset.id}
+              style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}
+            >
               <div>
                 <strong>{asset.title}</strong>
                 <small className="app-muted" style={{ display: "block" }}>
@@ -331,7 +583,11 @@ function AssetsPanel({
           <input value={form.description} onChange={set("description")} />
         </FormRow>
         <div>
-          <button type="submit" className="app-button secondary" disabled={busy || !form.title.trim() || !form.url.trim()}>
+          <button
+            type="submit"
+            className="app-button secondary"
+            disabled={busy || !form.title.trim() || !form.url.trim()}
+          >
             Add asset
           </button>
         </div>
@@ -350,7 +606,7 @@ function DocumentsPanel({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel style={{ display: "grid", gap: 10 }}>
+    <Panel id="media-kit-documents" style={{ display: "grid", gap: 10 }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 style={{ margin: 0 }}>One-pagers</h2>
         <button
@@ -364,16 +620,24 @@ function DocumentsPanel({
       </header>
       {view.documents.length === 0 ? (
         <EmptyState
+          soft
           badge="No one-pagers yet"
           badgeTone="setup"
           title="Generate your first media-kit one-pager"
-          description="Built only from your recorded profile and asset library."
+          description="Built only from your recorded profile and asset library — never invent DEMO claims."
         />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
           {view.documents.map((doc) => (
             <li key={doc.id} className="app-card soft-panel" style={{ padding: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  alignItems: "flex-start",
+                }}
+              >
                 <strong>{doc.title}</strong>
                 <button
                   type="button"

@@ -1,0 +1,12 @@
+/* Soft-UI Outreach Calendar — .outreach-calendar-* + shared Soft-UI tokens. Never DEMO reach metrics. */
+.outreach-calendar-page{display:grid;gap:16px}
+.outreach-calendar-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.outreach-calendar-related{display:flex;flex-wrap:wrap;gap:8px}
+.outreach-calendar-next-actions{margin:0}
+.outreach-calendar-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.outreach-calendar-stats strong{font-size:1.5rem}
+.outreach-calendar-layout{display:grid;gap:16px}
+@media(max-width:900px){
+  .outreach-calendar-header-actions{justify-content:flex-start}
+  .outreach-calendar-next-actions li{flex-direction:column;align-items:stretch}
+}

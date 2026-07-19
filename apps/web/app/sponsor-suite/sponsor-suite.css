@@ -1,0 +1,12 @@
+/* Soft-UI Sponsor Suite — .sponsor-suite-* + shared Soft-UI tokens. Never DEMO fundraising metrics. */
+.sponsor-suite-page{display:grid;gap:16px}
+.sponsor-suite-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.sponsor-suite-related{display:flex;flex-wrap:wrap;gap:8px}
+.sponsor-suite-next-actions{margin:0}
+.sponsor-suite-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.sponsor-suite-stats strong{font-size:1.5rem}
+.sponsor-suite-layout{display:grid;gap:16px}
+@media(max-width:900px){
+  .sponsor-suite-header-actions{justify-content:flex-start}
+  .sponsor-suite-next-actions li{flex-direction:column;align-items:stretch}
+}
