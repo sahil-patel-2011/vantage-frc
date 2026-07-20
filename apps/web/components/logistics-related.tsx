@@ -1,15 +1,16 @@
 "use client";
 
 import {
+  LOGISTICS_RELATED_INCLUDE,
   logisticsRelatedLinks,
   type LogisticsRelatedId,
 } from "../lib/logistics/logistics-related";
 
-/** Soft-UI cross-links between Logistics and Event Day / My Day / Team calendar. */
+/** Soft-UI cross-links between Logistics and Event Day / My Day / Team calendar / Visit invites. */
 export function LogisticsRelated({
   orgId,
   active,
-  include,
+  include = [...LOGISTICS_RELATED_INCLUDE],
   className,
   ariaLabel = "Related logistics tools",
 }: {

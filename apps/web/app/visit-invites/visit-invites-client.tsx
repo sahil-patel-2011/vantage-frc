@@ -2,12 +2,23 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { VisitRelated } from "../../components/visit-related";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import {
+  CardGridSkeleton,
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  Panel,
+  StatRowSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   VISIT_RELATED_INCLUDE,
+  classifyVisitShell,
   visitInvitesShareHref,
   visitNextActions,
+  visitSetupSteps,
+  visitShellCopy,
   type VisitNextAction,
   type VisitShellKind,
 } from "../../lib/visit-invites/visit-related";
@@ -101,7 +112,37 @@ function VisitShell({
     visitCount,
     hostGaps,
   });
+  const copy = visitShellCopy(shell);
+  const steps = shell === "setup" || shell === "empty" ? visitSetupSteps(orgId) : [];
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+
+  if (shell === "loading") {
+    return (
+      <main className="visit-page module-page soft-gate">
+        <PageHeader navPath="/visit-invites" title="Visit Invites" description={copy.description}>
+          <VisitRelated orgId={orgId} include={[...VISIT_RELATED_INCLUDE]} />
+        </PageHeader>
+        {children}
+        <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading visit invites">
+          <StatRowSkeleton count={3} />
+          <CardGridSkeleton cols={2} rows={1} />
+        </div>
+      </main>
+    );
+  }
+
+  if (shell === "error") {
+    return (
+      <main className="visit-page module-page soft-gate">
+        <PageHeader navPath="/visit-invites" title="Visit Invites" description={description}>
+          <VisitRelated orgId={orgId} include={[...VISIT_RELATED_INCLUDE]} />
+        </PageHeader>
+        {children}
+        <ErrorState title={title || copy.title} message={error || copy.description} onRetry={onRetry} />
+        <VisitNextActionsPanel actions={actions} />
+      </main>
+    );
+  }
 
   return (
     <main className="visit-page module-page">
@@ -114,30 +155,23 @@ function VisitShell({
         badge={
           shell === "setup"
             ? "Setup"
-            : shell === "error"
-              ? "Unavailable"
-              : shell === "empty"
-                ? "No visits yet"
-                : undefined
+            : shell === "empty"
+              ? "No visits yet"
+              : copy.badge
         }
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
-        title={title}
-        description={
-          shell === "error"
-            ? error || "Check your connection and try again — nothing is filled with DEMO invites."
-            : description
-        }
-        aria-busy={shell === "loading" || undefined}
+        title={title || copy.title}
+        description={description || copy.description}
       >
         <div className="visit-inline-actions">
-          {shell === "error" && onRetry ? (
-            <button type="button" className="app-button secondary" onClick={onRetry}>
-              Retry
-            </button>
-          ) : null}
           {shell === "setup" ? (
             <a className="app-button" href={workspaceHref}>
               Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" && canManage ? (
+            <a className="app-button" href={visitInvitesShareHref(orgId) + "#visit-create"}>
+              Create the first visit
             </a>
           ) : null}
           <VisitRelated
@@ -145,8 +179,21 @@ function VisitShell({
             include={shell === "setup" ? ["logistics", "command", "calendar"] : [...VISIT_RELATED_INCLUDE]}
           />
         </div>
+        {steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
       </EmptyState>
-      {shell !== "loading" ? <VisitNextActionsPanel actions={actions} /> : null}
+      <VisitNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -234,16 +281,18 @@ export default function VisitInvitesClient() {
   const urlOrgId = orgFromUrl();
 
   if (!view) {
+    const shell = classifyVisitShell({
+      loading: !fetchFailed,
+      fetchFailed,
+      status: null,
+    });
+    const copy = visitShellCopy(shell);
     return (
       <VisitShell
-        title={fetchFailed ? "Could not load visit invites" : "Loading visit invites…"}
-        description={
-          fetchFailed
-            ? "A network or server issue blocked the board. Retry — never DEMO invite rows."
-            : "Loading shop tours and demo days for your team…"
-        }
+        title={copy.title}
+        description={copy.description}
         orgId={urlOrgId}
-        shell={fetchFailed ? "error" : "loading"}
+        shell={shell}
         error={error}
         onRetry={() => void load()}
       />
@@ -251,10 +300,11 @@ export default function VisitInvitesClient() {
   }
 
   if (view.status === "setup_required") {
+    const copy = visitShellCopy("setup");
     return (
       <VisitShell
-        title="Visit invites not ready"
-        description={view.message}
+        title={copy.title}
+        description={view.message || copy.description}
         orgId={view.context.orgId}
         shell="setup"
       />
@@ -263,7 +313,11 @@ export default function VisitInvitesClient() {
 
   const canManage = view.context.canManage;
   const orgId = view.context.orgId;
-  const shell: VisitShellKind = view.visits.length === 0 ? "empty" : "ready";
+  const shell = classifyVisitShell({
+    loading: false,
+    status: "ready",
+    visitCount: view.visits.length,
+  });
   const nextActions = visitNextActions({
     orgId,
     shell,
@@ -299,18 +353,9 @@ export default function VisitInvitesClient() {
       {shareNote ? <p className="visit-share-note" role="status">{shareNote}</p> : null}
 
       <div className="visit-summary">
-        <div className="visit-tile">
-          <strong>{view.upcomingCount}</strong>
-          <span>Upcoming</span>
-        </div>
-        <div className="visit-tile">
-          <strong>{view.visits.length}</strong>
-          <span>Total visits</span>
-        </div>
-        <div className="visit-tile">
-          <strong>{view.hostGaps}</strong>
-          <span>Missing hosts</span>
-        </div>
+        <StatTile flat={false} label="Upcoming" value={view.upcomingCount} />
+        <StatTile flat={false} label="Total visits" value={view.visits.length} />
+        <StatTile flat={false} label="Missing hosts" value={view.hostGaps} />
       </div>
 
       <section className="visit-share-panel" aria-label="Create and share">
