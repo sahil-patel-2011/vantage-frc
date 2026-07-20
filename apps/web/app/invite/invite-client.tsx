@@ -268,17 +268,6 @@ export default function InviteClient() {
               </div>
             </div>
 
-            <div className="invite-security-note">
-              <b aria-hidden="true">OK</b>
-              <p>
-                <strong>Exact-email invite security</strong>
-                <span>
-                  Only the verified account matching {preview.email} can accept. Team numbers never
-                  auto-join a workspace.
-                </span>
-              </p>
-            </div>
-
             {termsRequired ? (
               <LegalAgreementCheckbox
                 id="invite-terms"
@@ -286,11 +275,7 @@ export default function InviteClient() {
                 onChange={setTermsAccepted}
                 className="invite-legal"
               />
-            ) : (
-              <p className="invite-message" role="status">
-                Terms already accepted on this account — you can join without re-checking.
-              </p>
-            )}
+            ) : null}
 
             <div className="invite-actions" id="invite-accept">
               <button

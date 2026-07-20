@@ -11,60 +11,49 @@ export const metadata: Metadata = marketingPageMetadata({
   path: "/features",
 });
 
-type Status = "Available" | "Shipping" | "Setup required";
-
 const pillars: {
   title: string;
   copy: string;
-  status: Status;
   href?: string;
 }[] = [
   {
     title: "Competition",
     copy: "Command, My Day, Scouting, Strategy, Form builder, Match checklist, Pick clock, Alliance Selection Desk.",
-    status: "Available",
     href: "/features/strategy",
   },
   {
     title: "Team",
     copy: "Calendar, todos, practice, attendance, knowledge — Season Planning Workspace in More.",
-    status: "Available",
     href: "/for-teams",
   },
   {
     title: "Business",
     copy: "Budget, sponsors, grants, partners, award evidence.",
-    status: "Available",
     href: "/for-teams",
   },
   {
     title: "Build",
     copy: "Kickoff, CAD agent, Code Coach, FMEA, prototypes.",
-    status: "Available",
     href: "/features/cad",
   },
   {
     title: "AI",
     copy: "Assistant chat, writer, budgets — AI API keys at /team/ai-keys; hosted routing on paid plans.",
-    status: "Available",
     href: "/pricing",
   },
   {
     title: "CAD agent",
     copy: "Approval-gated brief → Onshape or Fusion.",
-    status: "Setup required",
     href: "/features/cad",
   },
   {
     title: "Code Coach",
     copy: "Flag risky WPILib patterns; human-approved diffs.",
-    status: "Available",
     href: "/features/code",
   },
   {
     title: "Strategy & picks",
     copy: "Competition Strategy tab, Alliance Selection Desk, Pick clock, FRC Assistant.",
-    status: "Available",
     href: "/features/strategy",
   },
 ];
@@ -75,11 +64,6 @@ const deepLinks = [
   { href: "/features/code", label: "Code Coach", detail: "Build hub · risk review with teaching notes." },
   { href: "/workflow", label: "How it works", detail: "Capture → sync → decide → present." },
 ] as const;
-
-function StatusBadge({ status }: { status: Status }) {
-  const tone = status === "Available" ? "available" : status === "Shipping" ? "shipping" : "setup";
-  return <span className={`status-badge ${tone}`}>{status}</span>;
-}
 
 export default function FeaturesPage() {
   return (
@@ -133,7 +117,7 @@ export default function FeaturesPage() {
         <section className="lux-pillars" id="supporting-ops" aria-labelledby="pillars-title">
           <div className="lux-content">
             <header className="lux-section-head">
-              <h2 id="pillars-title">Status by surface.</h2>
+              <h2 id="pillars-title">Surfaces.</h2>
             </header>
             <ul className="lux-pillar-list">
               {pillars.map((item) => (
@@ -142,7 +126,6 @@ export default function FeaturesPage() {
                     <h3>{item.href ? <a href={item.href}>{item.title}</a> : item.title}</h3>
                     <p>{item.copy}</p>
                   </div>
-                  <StatusBadge status={item.status} />
                 </li>
               ))}
             </ul>
