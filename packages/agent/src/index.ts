@@ -214,6 +214,7 @@ export * from "./auto-tools";
 export * from "./prompt-caching";
 export * from "./http-chat-adapter";
 export * from "./resolve-chat-adapter";
+export * from "./byok-model-routing";
 export * from "./coding-assistant";
 export * from "./brief-from-tools";
 export * from "./cad-brief";

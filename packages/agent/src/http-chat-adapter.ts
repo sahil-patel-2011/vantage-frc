@@ -78,6 +78,11 @@ export class HttpChatAdapter implements ChatAdapter {
       }),
     });
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          `Anthropic API key was rejected (${response.status}). Update the key under Team → AI API keys.`,
+        );
+      }
       throw new Error(`Anthropic chat failed (${response.status})`);
     }
     const payload = (await response.json()) as {
@@ -110,12 +115,16 @@ export class HttpChatAdapter implements ChatAdapter {
 
   private async completeOpenAi(message: string, context: ContextItem[], caching: boolean) {
     const preference = openAiPromptCachePreference(caching);
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+    // Ollama and many local servers accept requests without Authorization.
+    if (this.apiKey.trim()) {
+      headers.authorization = `Bearer ${this.apiKey}`;
+    }
     const response = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${this.apiKey}`,
-      },
+      headers,
       body: JSON.stringify({
         model: this.model,
         messages: [
@@ -132,6 +141,11 @@ export class HttpChatAdapter implements ChatAdapter {
       }),
     });
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          `OpenAI-compatible API key was rejected (${response.status}). Update the key under Team → AI API keys.`,
+        );
+      }
       throw new Error(`OpenAI-compatible chat failed (${response.status})`);
     }
     const payload = (await response.json()) as {

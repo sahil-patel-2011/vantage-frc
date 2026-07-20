@@ -1,5 +1,11 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { createKms, decryptSecret } from "@vantage/billing";
+import {
+  LOCAL_OPENAI_COMPAT_LABEL,
+  pickByokModelForFeature,
+  type ByokModelOption,
+  type ByokModelProvider,
+} from "./byok-model-routing";
 import type { ChatAdapter } from "./index";
 import { HttpChatAdapter, type HttpChatAdapterConfig } from "./http-chat-adapter";
 import type { PromptCachePrices } from "./prompt-caching";
@@ -14,6 +20,8 @@ export class ChatProviderResolutionError extends Error {
 export type ResolveOrgChatAdapterInput = {
   orgId: string;
   promptCachingEnabled: boolean;
+  /** Feature tag for Automode (cad, coding, strategy, chat, …). */
+  feature?: string;
   /** Injected for tests. Defaults to billing KMS decrypt. */
   decrypt?: (parts: {
     ciphertext: string;
@@ -26,16 +34,17 @@ export type ResolveOrgChatAdapterInput = {
 };
 
 type EncryptedRow = {
-  keyCiphertext: string;
-  keyNonce: string;
-  keyAuthTag: string;
-  encryptedDek: string;
-  kmsKeyId: string;
+  keyCiphertext: string | null;
+  keyNonce: string | null;
+  keyAuthTag: string | null;
+  encryptedDek: string | null;
+  kmsKeyId: string | null;
 };
 
 type OrgProviderRow = EncryptedRow & {
   id: string;
   kind: string;
+  label: string;
   baseUrl: string | null;
   localRelay: boolean;
   modelMappings: Record<string, string> | null;
@@ -54,6 +63,12 @@ type ManagedRow = EncryptedRow & {
   outputPrice: string | null;
   cacheReadPrice: string | null;
   cacheWritePrice: string | null;
+};
+
+type RoutingPrefs = {
+  mode: "fixed" | "automode";
+  fixedModelId: string | null;
+  enabledModelIds: string[] | null;
 };
 
 const DEFAULT_MODELS: Record<"openai" | "anthropic" | "openai-compatible", string> = {
@@ -80,13 +95,25 @@ function normalizeProvider(kind: string): HttpChatAdapterConfig["provider"] | nu
   const value = kind.trim().toLowerCase();
   if (value === "openai" || value === "anthropic" || value === "openai-compatible") return value;
   if (value.includes("anthropic") || value.includes("claude")) return "anthropic";
-  if (value.includes("openai") || value.includes("compatible")) return "openai-compatible";
+  if (value.includes("openai") || value.includes("compatible") || value === "ollama" || value === "lm-studio") {
+    return "openai-compatible";
+  }
   return null;
 }
 
 function isGoogleByokProvider(kind: string): boolean {
   const value = kind.trim().toLowerCase();
   return value === "google" || value === "gemini" || value.includes("gemini");
+}
+
+function isLoopbackUrl(value: string | null | undefined): boolean {
+  if (!value) return false;
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+  } catch {
+    return /localhost|127\.0\.0\.1/i.test(value);
+  }
 }
 
 function pickMappedModel(mappings: Record<string, string> | null | undefined, fallback: string) {
@@ -121,6 +148,13 @@ function pricesFromNumbers(input: {
         : Number.isFinite(Number(input.cacheWrite))
           ? Number(input.cacheWrite)
           : null,
+  };
+}
+
+function pricesFromOption(option: ByokModelOption): PromptCachePrices {
+  return {
+    inputPerMillionUsd: option.inputPerMillionUsd,
+    outputPerMillionUsd: option.outputPerMillionUsd,
   };
 }
 
@@ -163,6 +197,15 @@ async function decryptRow(
   row: EncryptedRow,
   decrypt: ResolveOrgChatAdapterInput["decrypt"],
 ): Promise<string> {
+  if (
+    !row.keyCiphertext ||
+    !row.keyNonce ||
+    !row.keyAuthTag ||
+    !row.encryptedDek ||
+    !row.kmsKeyId
+  ) {
+    return "";
+  }
   try {
     if (decrypt) {
       return await decrypt({
@@ -184,12 +227,61 @@ async function decryptRow(
       createKms(),
     );
   } catch {
-    throw new ChatProviderResolutionError("Stored AI provider key could not be decrypted.");
+    throw new ChatProviderResolutionError(
+      "Stored AI provider key could not be decrypted. Check KMS setup under Team → AI API keys.",
+    );
   }
+}
+
+async function loadRoutingPrefs(client: PoolClient, orgId: string): Promise<RoutingPrefs> {
+  try {
+    const result = await client.query<{
+      mode: string;
+      fixedModelId: string | null;
+      enabledModelIds: string[] | null;
+    }>(
+      `SELECT mode,
+              fixed_model_id AS "fixedModelId",
+              enabled_model_ids AS "enabledModelIds"
+         FROM org_byok_routing_prefs
+        WHERE org_id = $1::uuid`,
+      [orgId],
+    );
+    const row = result.rows[0];
+    if (!row) return { mode: "automode", fixedModelId: null, enabledModelIds: null };
+    return {
+      mode: row.mode === "fixed" ? "fixed" : "automode",
+      fixedModelId: row.fixedModelId,
+      enabledModelIds: row.enabledModelIds,
+    };
+  } catch {
+    // Table may not exist yet before migration — degrade to automode defaults.
+    return { mode: "automode", fixedModelId: null, enabledModelIds: null };
+  }
+}
+
+function availableProvidersFrom(
+  orgKeys: OrgKeyRow[],
+  orgProviders: OrgProviderRow[],
+): ByokModelProvider[] {
+  const set = new Set<ByokModelProvider>();
+  for (const row of orgKeys) {
+    if (isGoogleByokProvider(row.provider)) set.add("google");
+    else if (normalizeProvider(row.provider) === "openai") set.add("openai");
+    else if (normalizeProvider(row.provider) === "anthropic") set.add("anthropic");
+  }
+  for (const row of orgProviders) {
+    if (row.localRelay) continue;
+    if (row.baseUrl || normalizeProvider(row.kind) === "openai-compatible") {
+      set.add("openai-compatible");
+    }
+  }
+  return [...set];
 }
 
 /**
  * Resolve a live HTTP chat adapter for an org (BYOK → custom → managed).
+ * Honors fixed / Automode prefs when BYOK keys are present.
  * Never falls back to LocalDeterministicChatAdapter — callers get an honest error
  * when no usable key exists. Metering still goes through meteredAI in the orchestrator.
  */
@@ -197,21 +289,127 @@ export async function resolveOrgChatAdapter(
   client: PoolClient,
   input: ResolveOrgChatAdapterInput,
 ): Promise<ChatAdapter> {
+  const prefs = await loadRoutingPrefs(client, input.orgId);
+
   const orgProviders = await client.query<OrgProviderRow>(
-    `SELECT id, kind, base_url AS "baseUrl", local_relay AS "localRelay",
+    `SELECT id, kind, label, base_url AS "baseUrl", local_relay AS "localRelay",
             model_mappings AS "modelMappings",
             key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
             key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
             kms_key_id AS "kmsKeyId"
      FROM org_provider_configs
      WHERE org_id = $1 AND enabled = true AND disabled_at IS NULL
-       AND key_ciphertext IS NOT NULL AND key_nonce IS NOT NULL
-       AND key_auth_tag IS NOT NULL AND encrypted_dek IS NOT NULL AND kms_key_id IS NOT NULL
-     ORDER BY created_at DESC`,
+     ORDER BY
+       CASE WHEN label = $2 THEN 0 ELSE 1 END,
+       created_at DESC`,
+    [input.orgId, LOCAL_OPENAI_COMPAT_LABEL],
+  );
+
+  const orgKeys = await client.query<OrgKeyRow>(
+    `SELECT id, provider,
+            key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
+            key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
+            kms_key_id AS "kmsKeyId"
+     FROM org_llm_keys
+     WHERE org_id = $1
+     ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
     [input.orgId],
   );
 
-  const hosted = orgProviders.rows.find((row) => !row.localRelay);
+  const available = availableProvidersFrom(orgKeys.rows, orgProviders.rows);
+  const chosen = pickByokModelForFeature({
+    feature: input.feature,
+    mode: prefs.mode,
+    fixedModelId: prefs.fixedModelId,
+    enabledModelIds: prefs.enabledModelIds,
+    availableProviders: available.filter((p) => p !== "openai-compatible") as ByokModelProvider[],
+  });
+
+  // Prefer explicit OpenAI-compatible / local connector when configured.
+  const localOrCompat = orgProviders.rows.find(
+    (row) =>
+      !row.localRelay &&
+      (row.label === LOCAL_OPENAI_COMPAT_LABEL ||
+        normalizeProvider(row.kind) === "openai-compatible" ||
+        Boolean(row.baseUrl)),
+  );
+  if (localOrCompat?.baseUrl) {
+    // When Automode/fixed picks a first-party model and a cloud key exists, prefer that
+    // unless the only available path is the local connector.
+    const hasCloudKey = orgKeys.rows.some(
+      (row) =>
+        isGoogleByokProvider(row.provider) ||
+        normalizeProvider(row.provider) === "openai" ||
+        normalizeProvider(row.provider) === "anthropic",
+    );
+    const forceLocal =
+      !hasCloudKey ||
+      available.length === 0 ||
+      (prefs.mode === "fixed" && prefs.fixedModelId?.startsWith("openai-compatible:"));
+    if (forceLocal || !chosen) {
+      const apiKey = await decryptRow(localOrCompat, input.decrypt);
+      const model = pickMappedModel(
+        localOrCompat.modelMappings,
+        chosen?.provider === "openai" || chosen?.provider === "openai-compatible"
+          ? chosen.modelId
+          : DEFAULT_MODELS["openai-compatible"],
+      );
+      const prices =
+        chosen && (chosen.provider === "openai" || chosen.provider === "openai-compatible")
+          ? pricesFromOption(chosen)
+          : DEFAULT_PRICES["openai-compatible"];
+      if (isLoopbackUrl(localOrCompat.baseUrl) && process.env.VERCEL) {
+        // Soft warning path — still attempt; fetch will fail honestly if unreachable.
+      }
+      return new HttpChatAdapter({
+        provider: "openai-compatible",
+        model,
+        apiKey,
+        baseUrl: localOrCompat.baseUrl,
+        promptCachingEnabled: input.promptCachingEnabled,
+        prices,
+        fetchImpl: input.fetchImpl,
+      });
+    }
+  }
+
+  // First-party BYOK keys with Automode / fixed selection.
+  if (chosen) {
+    if (chosen.provider === "google") {
+      const row = orgKeys.rows.find((r) => isGoogleByokProvider(r.provider));
+      if (row) {
+        const apiKey = await decryptRow(row, input.decrypt);
+        return new HttpChatAdapter({
+          provider: "openai-compatible",
+          model: chosen.modelId,
+          apiKey,
+          baseUrl: GOOGLE_OPENAI_COMPAT_BASE,
+          promptCachingEnabled: input.promptCachingEnabled,
+          prices: pricesFromOption(chosen),
+          fetchImpl: input.fetchImpl,
+        });
+      }
+    }
+    if (chosen.provider === "openai" || chosen.provider === "anthropic") {
+      const row = orgKeys.rows.find((r) => normalizeProvider(r.provider) === chosen.provider);
+      if (row) {
+        const apiKey = await decryptRow(row, input.decrypt);
+        return new HttpChatAdapter({
+          provider: chosen.provider,
+          model: chosen.modelId,
+          apiKey,
+          promptCachingEnabled: input.promptCachingEnabled,
+          prices: pricesFromOption(chosen),
+          fetchImpl: input.fetchImpl,
+        });
+      }
+    }
+  }
+
+  // Legacy: any enabled HTTPS custom provider (Team Admin).
+  const hosted = orgProviders.rows.find(
+    (row) => !row.localRelay && row.baseUrl && row.keyCiphertext,
+  );
   if (hosted) {
     const provider = normalizeProvider(hosted.kind) ?? (hosted.baseUrl ? "openai-compatible" : null);
     if (!provider) {
@@ -238,18 +436,8 @@ export async function resolveOrgChatAdapter(
     });
   }
 
-  const orgKeys = await client.query<OrgKeyRow>(
-    `SELECT id, provider,
-            key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
-            key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
-            kms_key_id AS "kmsKeyId"
-     FROM org_llm_keys
-     WHERE org_id = $1
-     ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
-    [input.orgId],
-  );
+  // Fallback: first usable org_llm_keys row (pre-Automode behavior).
   for (const row of orgKeys.rows) {
-    // Bare org_llm_keys have no base URL — first-party OpenAI / Anthropic / Google (Gemini).
     if (isGoogleByokProvider(row.provider)) {
       const apiKey = await decryptRow(row, input.decrypt);
       const prices = await catalogPrices(client, "google", GOOGLE_DEFAULT_MODEL, GOOGLE_DEFAULT_PRICES);
@@ -274,6 +462,21 @@ export async function resolveOrgChatAdapter(
       apiKey,
       promptCachingEnabled: input.promptCachingEnabled,
       prices,
+      fetchImpl: input.fetchImpl,
+    });
+  }
+
+  // Keyless local connector last chance.
+  if (localOrCompat?.baseUrl) {
+    const apiKey = await decryptRow(localOrCompat, input.decrypt);
+    const model = pickMappedModel(localOrCompat.modelMappings, DEFAULT_MODELS["openai-compatible"]);
+    return new HttpChatAdapter({
+      provider: "openai-compatible",
+      model,
+      apiKey,
+      baseUrl: localOrCompat.baseUrl,
+      promptCachingEnabled: input.promptCachingEnabled,
+      prices: DEFAULT_PRICES["openai-compatible"],
       fetchImpl: input.fetchImpl,
     });
   }
@@ -322,17 +525,17 @@ export async function resolveOrgChatAdapter(
 
   if (orgProviders.rows.some((row) => row.localRelay)) {
     throw new ChatProviderResolutionError(
-      "Configured providers use the local desktop relay, which cannot serve hosted chat. Add an HTTPS OpenAI or Anthropic API key under Team Admin.",
+      "Configured providers use the local desktop relay, which cannot serve hosted chat. Add an OpenAI-compatible base URL under Team → AI API keys, or an HTTPS OpenAI/Anthropic key.",
     );
   }
 
   if (tier === "free") {
     throw new ChatProviderResolutionError(
-      "No AI provider key is configured for this organization. Free workspaces need your own OpenAI, Anthropic, or Google key under Team → AI API keys (or a custom/local provider under Team Admin).",
+      "No AI provider key is configured for this organization. Free workspaces need your own OpenAI, Anthropic, or Google key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
     );
   }
 
   throw new ChatProviderResolutionError(
-    "No AI provider key is available. Add OpenAI / Anthropic / Google under Team → AI API keys, configure a custom provider under Team Admin, or ask a platform admin to add a managed hosted key.",
+    "No AI provider key is available. Add OpenAI / Anthropic / Google under Team → AI API keys, configure a local OpenAI-compatible connector, or ask a platform admin to add a managed hosted key.",
   );
 }

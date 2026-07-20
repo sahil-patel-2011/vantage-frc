@@ -620,6 +620,9 @@ export default function AccountClient() {
                 <a className="app-button" href={withOrgHref("/team/ai-keys", orgId)}>
                   Manage API keys
                 </a>
+                <a className="app-button secondary" href={withOrgHref("/team/ai-usage", orgId)}>
+                  BYOK usage
+                </a>
                 <a className="app-button secondary" href={withOrgHref("/ai?tab=budgets", orgId)}>
                   API budgets
                 </a>

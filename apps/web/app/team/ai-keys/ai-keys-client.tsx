@@ -27,11 +27,38 @@ type ProviderMeta = {
   docsHint: string;
 };
 
+type ModelOption = {
+  id: string;
+  provider: string;
+  modelId: string;
+  label: string;
+  tier: string;
+  tierLabel: string;
+};
+
+type LocalConnector = {
+  configured: boolean;
+  baseUrl: string | null;
+  model: string | null;
+  hasKey: boolean;
+  lastTestedAt: string | null;
+  reachabilityWarning: string | null;
+};
+
+type RoutingPrefs = {
+  mode: "fixed" | "automode";
+  fixedModelId: string | null;
+  enabledModelIds: string[];
+};
+
 type Payload = {
   tier: string;
   canManage: boolean;
   keys: ByokKeyStatus[];
   providers: ProviderMeta[];
+  localConnector?: LocalConnector;
+  routing?: RoutingPrefs;
+  modelOptions?: ModelOption[];
   setupRequired?: boolean;
   setupMessage?: string | null;
   error?: string;
@@ -179,10 +206,18 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(Boolean(orgId));
   const [busyProvider, setBusyProvider] = useState<ByokProvider | null>(null);
+  const [busyLocal, setBusyLocal] = useState(false);
+  const [busyRouting, setBusyRouting] = useState(false);
   const [drafts, setDrafts] = useState<Record<ByokProvider, string>>({
     openai: "",
     anthropic: "",
     google: "",
+  });
+  const [localDraft, setLocalDraft] = useState({ baseUrl: "", model: "llama3.2", apiKey: "" });
+  const [routingDraft, setRoutingDraft] = useState<RoutingPrefs>({
+    mode: "automode",
+    fixedModelId: null,
+    enabledModelIds: [],
   });
 
   async function load() {
@@ -201,6 +236,23 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       } else {
         setMessage("");
         setPayload(data);
+        if (data.localConnector?.baseUrl) {
+          setLocalDraft((prev) => ({
+            ...prev,
+            baseUrl: data.localConnector!.baseUrl ?? "",
+            model: data.localConnector!.model ?? "llama3.2",
+            apiKey: "",
+          }));
+        }
+        if (data.routing) {
+          setRoutingDraft(data.routing);
+        } else if (data.modelOptions?.length) {
+          setRoutingDraft({
+            mode: "automode",
+            fixedModelId: data.modelOptions[0]?.id ?? null,
+            enabledModelIds: data.modelOptions.map((m) => m.id),
+          });
+        }
       }
     } catch {
       setMessage("Could not load AI keys");
@@ -225,7 +277,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, provider, apiKey }),
+        body: JSON.stringify({ orgId, action: "save_key", provider, apiKey }),
       });
       const data = (await response.json()) as { error?: string; setupRequired?: boolean };
       if (!response.ok) {
@@ -263,6 +315,124 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     }
   }
 
+  async function saveLocal() {
+    if (!orgId) return;
+    setBusyLocal(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/organizations/ai-keys", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          action: "save_local",
+          baseUrl: localDraft.baseUrl,
+          model: localDraft.model,
+          apiKey: localDraft.apiKey,
+        }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        reachabilityWarning?: string | null;
+      };
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not save local connector");
+        return;
+      }
+      setLocalDraft((prev) => ({ ...prev, apiKey: "" }));
+      setMessage(
+        data.reachabilityWarning
+          ? `Local connector saved. ${data.reachabilityWarning}`
+          : "Local OpenAI-compatible connector encrypted and saved.",
+      );
+      await load();
+    } finally {
+      setBusyLocal(false);
+    }
+  }
+
+  async function testLocal() {
+    if (!orgId) return;
+    setBusyLocal(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/organizations/ai-keys", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action: "test_local" }),
+      });
+      const data = (await response.json()) as { error?: string; reachabilityWarning?: string | null };
+      if (!response.ok) {
+        setMessage(data.error ?? "Connection test failed");
+        return;
+      }
+      setMessage(
+        data.reachabilityWarning
+          ? `Connection ok. ${data.reachabilityWarning}`
+          : "Connection test succeeded.",
+      );
+      await load();
+    } finally {
+      setBusyLocal(false);
+    }
+  }
+
+  async function removeLocal() {
+    if (!orgId) return;
+    if (!confirm("Remove the local OpenAI-compatible connector?")) return;
+    setBusyLocal(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/organizations/ai-keys", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action: "remove_local" }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not remove local connector");
+        return;
+      }
+      setLocalDraft({ baseUrl: "", model: "llama3.2", apiKey: "" });
+      setMessage("Local connector removed.");
+      await load();
+    } finally {
+      setBusyLocal(false);
+    }
+  }
+
+  async function saveRouting() {
+    if (!orgId) return;
+    setBusyRouting(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/organizations/ai-keys", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          action: "save_routing",
+          mode: routingDraft.mode,
+          fixedModelId: routingDraft.fixedModelId,
+          enabledModelIds: routingDraft.enabledModelIds,
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not save model routing");
+        return;
+      }
+      setMessage(
+        routingDraft.mode === "fixed"
+          ? "Fixed model saved — every BYOK call uses that model."
+          : "Automode saved — CAD/Code use high reasoning; Strategy uses strong mid; light chat uses fast models from your pool.",
+      );
+      await load();
+    } finally {
+      setBusyRouting(false);
+    }
+  }
+
   const shell = classifyAiKeysShell({
     loading,
     hasOrg: Boolean(orgId),
@@ -281,6 +451,11 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       placeholder: BYOK_PROVIDER_META[id].placeholder,
       docsHint: BYOK_PROVIDER_META[id].docsHint,
     }));
+  const modelOptions = payload?.modelOptions ?? [];
+  const configuredProviders = new Set<string>(
+    (payload?.keys ?? []).filter((k) => k.configured).map((k) => k.provider),
+  );
+  if (payload?.localConnector?.configured) configuredProviders.add("openai-compatible");
 
   const aiHubHref = hubHref("/ai", "chat", orgId);
 
@@ -295,7 +470,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         }
         navPath="/team/ai-keys"
         title="AI API keys"
-        description="Bring your own OpenAI, Anthropic, or Google keys for Free workspaces. Paid plans add Vantage-hosted AI—cheaper than own keys—with Soft-UI product surfaces built in. Never DEMO usage totals."
+        description="Bring your own OpenAI, Anthropic, Google, or local OpenAI-compatible server. Fixed model or Automode by task toughness. Never DEMO usage totals."
       />
 
       {orgId ? <RelatedStrip orgId={orgId} /> : null}
@@ -320,11 +495,9 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
             <span className="eyebrow">{billing.title}</span>
             <p>{billing.body}</p>
             <p className="app-muted">
-              Custom OpenAI-compatible HTTPS endpoints and local desktop relays stay under{" "}
-              <a href={orgId ? `${withOrgHref("/team/admin", orgId)}#custom-providers` : "/team/admin"}>
-                Team admin → custom providers
-              </a>
-              .
+              Track BYOK call estimates on{" "}
+              <a href={orgId ? withOrgHref("/team/ai-usage", orgId) : "/team/ai-usage"}>BYOK usage</a>
+              . Hosted 0.75× metering still applies when no BYOK path is configured.
             </p>
           </section>
 
@@ -366,6 +539,188 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
                 />
               );
             })}
+          </section>
+
+          <section className="app-card soft-panel ai-keys-local" aria-label="Local OpenAI-compatible connector">
+            <span className="eyebrow">LOCAL / OPENAI-COMPATIBLE</span>
+            <h2>Ollama / LM Studio</h2>
+            <p className="app-muted">
+              Set a base URL such as <code>http://localhost:11434/v1</code> (Ollama) or your LM Studio
+              OpenAI-compatible URL. Optional API key (often empty or <code>lm-studio</code>).
+              Cloud Vantage cannot call your laptop&apos;s localhost — use a tunnel or self-hosted
+              gateway with a reachable HTTPS URL.
+            </p>
+            {payload.localConnector?.configured ? (
+              <p className="ai-keys-meta app-muted">
+                Configured
+                {payload.localConnector.hasKey ? " · key stored" : " · no key"}
+                {payload.localConnector.lastTestedAt
+                  ? ` · tested ${new Date(payload.localConnector.lastTestedAt).toLocaleString()}`
+                  : " · not tested"}
+                .
+              </p>
+            ) : null}
+            {payload.localConnector?.reachabilityWarning ? (
+              <p className="ai-keys-warn" role="note">
+                {payload.localConnector.reachabilityWarning}
+              </p>
+            ) : null}
+            {payload.canManage ? (
+              <form
+                className="ai-keys-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void saveLocal();
+                }}
+              >
+                <label>
+                  Base URL
+                  <input
+                    type="url"
+                    required
+                    placeholder="http://localhost:11434/v1"
+                    value={localDraft.baseUrl}
+                    disabled={busyLocal}
+                    onChange={(e) => setLocalDraft((prev) => ({ ...prev, baseUrl: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  Default model id
+                  <input
+                    required
+                    placeholder="llama3.2"
+                    value={localDraft.model}
+                    disabled={busyLocal}
+                    onChange={(e) => setLocalDraft((prev) => ({ ...prev, model: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  Optional API key
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    placeholder="lm-studio or leave blank"
+                    value={localDraft.apiKey}
+                    disabled={busyLocal}
+                    onChange={(e) => setLocalDraft((prev) => ({ ...prev, apiKey: e.target.value }))}
+                  />
+                </label>
+                <div className="ai-keys-actions">
+                  <button className="primary-action" type="submit" disabled={busyLocal || !localDraft.baseUrl.trim()}>
+                    Save connector
+                  </button>
+                  {payload.localConnector?.configured ? (
+                    <>
+                      <button type="button" disabled={busyLocal} onClick={() => void testLocal()}>
+                        Test connection
+                      </button>
+                      <button className="danger-action" type="button" disabled={busyLocal} onClick={() => void removeLocal()}>
+                        Remove
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              </form>
+            ) : null}
+          </section>
+
+          <section className="app-card soft-panel ai-keys-routing" aria-label="Model routing">
+            <span className="eyebrow">MODEL ROUTING</span>
+            <h2>Fixed model or Automode</h2>
+            <p className="app-muted">
+              Automode picks from your enabled pool by task toughness: CAD and Code → high reasoning;
+              Strategy → strong mid; light chat → fast. Only models for providers you have keyed
+              (or a local connector) are eligible. Model ids are the real API strings below — not
+              hosted display names like &quot;GPT 5.6 Sol&quot;.
+            </p>
+            {payload.canManage && modelOptions.length ? (
+              <form
+                className="ai-keys-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void saveRouting();
+                }}
+              >
+                <fieldset className="ai-keys-mode">
+                  <legend>Mode</legend>
+                  <label className="check-field">
+                    <input
+                      type="radio"
+                      name="byok-mode"
+                      checked={routingDraft.mode === "fixed"}
+                      onChange={() => setRoutingDraft((prev) => ({ ...prev, mode: "fixed" }))}
+                    />{" "}
+                    Fixed model — always use one model
+                  </label>
+                  <label className="check-field">
+                    <input
+                      type="radio"
+                      name="byok-mode"
+                      checked={routingDraft.mode === "automode"}
+                      onChange={() => setRoutingDraft((prev) => ({ ...prev, mode: "automode" }))}
+                    />{" "}
+                    Automode — route by feature toughness
+                  </label>
+                </fieldset>
+
+                {routingDraft.mode === "fixed" ? (
+                  <label>
+                    Fixed model
+                    <select
+                      value={routingDraft.fixedModelId ?? ""}
+                      onChange={(e) =>
+                        setRoutingDraft((prev) => ({ ...prev, fixedModelId: e.target.value || null }))
+                      }
+                    >
+                      {modelOptions.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label} · {opt.tierLabel} ({opt.modelId})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <fieldset className="ai-keys-pool">
+                    <legend>Automode pool</legend>
+                    {modelOptions.map((opt) => {
+                      const checked = routingDraft.enabledModelIds.includes(opt.id);
+                      const providerReady =
+                        opt.provider === "openai-compatible"
+                          ? Boolean(payload.localConnector?.configured)
+                          : configuredProviders.has(opt.provider);
+                      return (
+                        <label key={opt.id} className="check-field">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              setRoutingDraft((prev) => ({
+                                ...prev,
+                                enabledModelIds: checked
+                                  ? prev.enabledModelIds.filter((id) => id !== opt.id)
+                                  : [...prev.enabledModelIds, opt.id],
+                              }))
+                            }
+                          />{" "}
+                          <strong>{opt.label}</strong>
+                          <span className="app-muted">
+                            {" "}
+                            · {opt.tierLabel} · <code>{opt.modelId}</code>
+                            {!providerReady ? " · add provider key to use" : ""}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </fieldset>
+                )}
+
+                <div className="ai-keys-actions">
+                  <button className="primary-action" type="submit" disabled={busyRouting}>
+                    Save routing
+                  </button>
+                </div>
+              </form>
+            ) : null}
           </section>
         </>
       ) : null}
