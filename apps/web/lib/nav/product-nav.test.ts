@@ -171,7 +171,10 @@ describe("product-nav", () => {
     const media = PRODUCT_NAV_GROUPS.find((g) => g.label === "Media")!;
     expect(media.items.some((i) => i.href === "/media")).toBe(true);
     expect(media.items.some((i) => i.href === "/media-kit")).toBe(true);
+    expect(media.items.some((i) => i.href === "/outreach-calendar")).toBe(true);
     expect(media.items.some((i) => i.href === "/media?tab=drafts")).toBe(true);
+    expect(breadcrumbForPath("/media-kit")).toBe("Media / Media Kit editor");
+    expect(breadcrumbForPath("/outreach-calendar")).toBe("Media / Outreach Calendar editor");
   });
 
   it("marks unfinished destinations as planned instead of dead links", () => {

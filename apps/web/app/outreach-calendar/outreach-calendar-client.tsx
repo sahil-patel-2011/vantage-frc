@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { HowToUseLink } from "../help/how-to-use-link";
 import {
   outreachAudienceLabel,
   outreachCategoryLabel,
@@ -133,13 +134,14 @@ function OutreachShell({
       <PageHeader
         breadcrumbs={
           <>
-            <a href={businessHref}>Business</a>
+            <a href={orgId ? withOrgHref("/media", orgId) : "/media"}>Media</a>
             {" / Outreach Calendar"}
           </>
         }
         title="Outreach Calendar"
         description={description}
       >
+        <HowToUseLink slug="media-workspace" />
         <OutreachRelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
@@ -314,7 +316,7 @@ export default function OutreachCalendarClient() {
       <PageHeader
         breadcrumbs={
           <>
-            <a href={businessHref}>Business</a>
+            <a href={withOrgHref("/media", orgId)}>Media</a>
             {" / Outreach Calendar"}
           </>
         }
@@ -322,6 +324,7 @@ export default function OutreachCalendarClient() {
         description="Plan outreach events ahead of time and track their projected hours and reach. Projections use only what you schedule — never DEMO reach metrics."
       >
         <div className="outreach-calendar-header-actions">
+          <HowToUseLink slug="media-workspace" />
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season

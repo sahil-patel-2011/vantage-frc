@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { CardGridSkeleton, EmptyState, ErrorState, PageHeader, Panel, StatRowSkeleton } from "../../components/ui";
+import { HowToUseLink } from "../help/how-to-use-link";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
@@ -196,6 +197,7 @@ function EventDayShell({
         title="Event Day Command"
         description="Next match, scout gaps, and labeled model briefs from real TBA rows — never DEMO schedule."
       >
+        <HowToUseLink slug="event-day-command" />
         <EventDayRelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
@@ -532,6 +534,7 @@ export default function CommandClient() {
         }
       >
         <div className="edc-header-actions">
+          <HowToUseLink slug="event-day-command" />
           <span className="edc-live" aria-live="polite">
             {loading && !snap ? "Loading…" : `Updated ${snap ? new Date(snap.computedAt).toLocaleTimeString() : "—"}`}
           </span>
