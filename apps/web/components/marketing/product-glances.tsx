@@ -1,6 +1,6 @@
 /**
- * Marketing hub directory + hero Soft-UI preview.
- * Hub names and tabs match PRODUCT_HUBS / island defaults. No DEMO metrics.
+ * Marketing Soft-UI hero preview + optional hub directory for /features.
+ * Hub names match Soft-UI pillars. No DEMO metrics or status chips.
  */
 
 const hubs = [
@@ -26,6 +26,12 @@ const hubs = [
     modules: ["Calendar", "Todos", "Practice", "Attendance", "Knowledge", "Season Planning Workspace"],
   },
   {
+    id: "logistics",
+    title: "Logistics",
+    href: "/for-teams",
+    modules: ["Event Logistics", "Packing List", "Duty Roster", "Visit Invites"],
+  },
+  {
     id: "business",
     title: "Business",
     href: "/for-teams",
@@ -45,6 +51,7 @@ const hubs = [
   },
 ] as const;
 
+/** Hub directory used on /features — not on the homepage (homepage uses a quieter strip). */
 export function ProductGlances() {
   return (
     <div className="product-glances product-glances-hubs" aria-label="Product hubs">
