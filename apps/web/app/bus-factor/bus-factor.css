@@ -1,0 +1,16 @@
+/* Soft-UI Bus-Factor & Burnout — .bus-factor-* + shared Soft-UI tokens. Never DEMO metrics. */
+.bus-factor-page{display:grid;gap:16px}
+.bus-factor-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.bus-factor-related{display:flex;flex-wrap:wrap;gap:8px}
+.bus-factor-next-actions{margin:0}
+.bus-factor-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.bus-factor-panel{display:grid;gap:12px}
+.bus-factor-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.bus-factor-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.bus-factor-tip{margin:0}
+.bus-factor-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.bus-factor-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+@media(max-width:900px){
+  .bus-factor-header-actions{justify-content:flex-start}
+  .bus-factor-next-actions li,.bus-factor-setup-steps li,.bus-factor-row{flex-direction:column;align-items:stretch}
+}

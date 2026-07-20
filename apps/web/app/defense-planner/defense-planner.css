@@ -1,0 +1,16 @@
+/* Soft-UI Defense Planner — .defense-planner-* + shared Soft-UI tokens. Never DEMO metrics. */
+.defense-planner-page{display:grid;gap:16px}
+.defense-planner-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.defense-planner-related{display:flex;flex-wrap:wrap;gap:8px}
+.defense-planner-next-actions{margin:0}
+.defense-planner-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.defense-planner-panel{display:grid;gap:12px}
+.defense-planner-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.defense-planner-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.defense-planner-tip{margin:0}
+.defense-planner-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.defense-planner-row{display:grid;gap:6px}
+@media(max-width:900px){
+  .defense-planner-header-actions{justify-content:flex-start}
+  .defense-planner-next-actions li,.defense-planner-setup-steps li{flex-direction:column;align-items:stretch}
+}

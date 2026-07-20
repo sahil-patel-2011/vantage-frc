@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { CODE_VERSION_STATUSES, WIRING_STATUSES, computeReadinessIndex, subsystemHealthScore } from ".";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import type {
   CodeVersionStatus,
   ReadinessChecklistItem,
@@ -19,6 +21,30 @@ export type ReadinessScoreSetupStep = {
   detail: string;
   href: string;
 };
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO readiness metrics. */
+function setupSteps(orgId: string | null): ReadinessScoreSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Readiness Score is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "fmea",
+      label: "Open FMEA",
+      detail: "Open failure modes stay blank until real rows exist — never DEMO RPN.",
+      href: hubHref("/build", "fmea", orgId),
+    },
+    {
+      id: "inspection-copilot",
+      label: "Open Inspection Copilot",
+      detail: "Inspection readiness stays blank until measurements exist — never DEMO risk.",
+      href: hubHref("/build", "inspection-copilot", orgId),
+    },
+  ];
+}
 
 export type ReadinessScoreView =
   | {
@@ -150,9 +176,7 @@ export async function computeReadinessScoreView(
     return {
       status: "setup_required",
       message: "Select a team workspace to track robot readiness.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: setupSteps(null),
       orgId: null,
       seasonYear,
     };

@@ -1,13 +1,41 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import {
+  Badge,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  StatRowSkeleton,
+  StatTile,
+  TableSkeleton,
+  type BadgeTone,
+} from "../../components/ui";
 import { busFactorAreaLabel } from "../../lib/bus-factor";
 import { BUS_FACTOR_AREAS, DEFAULT_WINDOW_WEEKS, type BusFactorView } from "../../lib/bus-factor/compute-bus-factor";
+import {
+  BUS_FACTOR_RELATED_INCLUDE,
+  busFactorNextActions,
+  busFactorRelatedLinks,
+  busFactorSetupSteps,
+  busFactorShellCopy,
+  classifyBusFactorShell,
+  formatBusFactorMetric,
+  formatBusFactorPercent,
+  shouldShowBusFactorSummaryTiles,
+  type BusFactorNextAction,
+  type BusFactorShellKind,
+} from "../../lib/bus-factor/bus-factor-related";
 import type { BusFactorArea, RiskLevel } from "../../lib/bus-factor/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./bus-factor.css";
 
-function riskTone(level: RiskLevel): string {
-  if (level === "high") return "demo";
+function riskTone(level: RiskLevel): BadgeTone {
+  if (level === "high") return "danger";
   if (level === "watch") return "setup";
   return "good";
 }
@@ -18,14 +46,149 @@ function pct(value: number): string {
 
 type LiveView = Extract<BusFactorView, { status: "live" }>;
 
+function BusFactorRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = busFactorRelatedLinks(orgId, {
+    include: [...BUS_FACTOR_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related bus-factor-related" aria-label="Related team tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function BusFactorNextActionsPanel({ actions }: { actions: BusFactorNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions bus-factor-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Attendance, My Hours, and Task board — never DEMO risk metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function BusFactorShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: BusFactorShellKind;
+  error?: string;
+  onRetry?: () => void;
+}) {
+  const actions = busFactorNextActions({ orgId, shell });
+  const copy = busFactorShellCopy(shell);
+  const teamHref = hubHref("/team", "bus-factor", orgId);
+  const steps = shell === "setup" ? busFactorSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page bus-factor-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Bus-Factor & Burnout"}
+          </>
+        }
+        title="Bus-Factor & Burnout Watch"
+        description={description}
+      >
+        <BusFactorRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {shell === "loading" ? (
+        <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading bus-factor">
+          <StatRowSkeleton count={5} />
+          <TableSkeleton rows={4} cols={3} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : shell === "empty" ? "No entries yet" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href="#bus-factor-log">
+                Log a workload entry
+              </a>
+              <a className="app-button secondary" href={hubHref("/team", "hours-self-view", orgId)}>
+                Open My Hours
+              </a>
+              <a className="app-button secondary" href={hubHref("/team", "attendance", orgId)}>
+                Open Attendance
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="bus-factor-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Attendance and My Hours — never DEMO risk metrics.</p>
+          </header>
+          <ul className="bus-factor-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted bus-factor-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <BusFactorNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function BusFactorClient() {
   const [view, setView] = useState<BusFactorView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [windowWeeks, setWindowWeeks] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((weeksOverride?: number) => {
     setFetchFailed(false);
@@ -52,6 +215,30 @@ export default function BusFactorClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const entryCount = view?.status === "live" ? view.entries.length : 0;
+  const flagCount = view?.status === "live" ? view.summary.flags.length : 0;
+
+  const shell = classifyBusFactorShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    entryCount,
+  });
+  const shellCopy = busFactorShellCopy(shell);
+  const nextActions = busFactorNextActions({
+    orgId,
+    shell,
+    entryCount,
+    flagCount,
+  });
+  const relatedLinks = busFactorRelatedLinks(orgId, {
+    include: [...BUS_FACTOR_RELATED_INCLUDE],
+  });
+  const teamHref = hubHref("/team", "bus-factor", orgId);
+  const showTiles = shouldShowBusFactorSummaryTiles(entryCount);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -80,38 +267,71 @@ export default function BusFactorClient() {
     [orgId, windowWeeks, busy],
   );
 
+  if (shell === "loading") {
+    return <BusFactorShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <BusFactorShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <BusFactorShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <BusFactorShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page bus-factor-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
+            <a href={teamHref}>Team</a>
             {" / Bus-Factor & Burnout"}
           </>
         }
         title="Bus-Factor & Burnout Watch"
-        description="Early-warning for single-point-of-human-failure and overload risk, built only from what the team logs — hours and task/knowledge concentration."
+        description="Early-warning for single-point-of-human-failure and overload risk from logged hours and task concentration only. Cross-check Attendance, My Hours, and Task board — never DEMO risk metrics."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Window
-              <select
-                value={windowWeeks ?? view.windowWeeks}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setWindowWeeks(next);
-                  load(next);
-                }}
-              >
-                {[4, 6, 8, 12].map((weeks) => (
-                  <option key={weeks} value={weeks}>
-                    {weeks} weeks
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+        <div className="bus-factor-header-actions">
+          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            Window
+            <select
+              value={windowWeeks ?? view.windowWeeks ?? DEFAULT_WINDOW_WEEKS}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setWindowWeeks(next);
+                load(next);
+              }}
+            >
+              {[4, 6, 8, 12].map((weeks) => (
+                <option key={weeks} value={weeks}>
+                  {weeks} weeks
+                </option>
+              ))}
+            </select>
+          </label>
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
       </PageHeader>
 
@@ -121,47 +341,37 @@ export default function BusFactorClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <BusFactorNextActionsPanel actions={nextActions} />
+
+      {showTiles ? <SummaryTiles view={view} /> : null}
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load bus-factor risk"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No entries yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+          className="product-hub-setup"
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href="#bus-factor-log">
+            Log a workload entry
+          </a>
+          <a className="app-button secondary" href={hubHref("/team", "hours-self-view", orgId)}>
+            Open My Hours
+          </a>
+          <a className="app-button secondary" href={hubHref("/team", "attendance", orgId)}>
+            Open Attendance
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <RiskPanel view={view} />
-          <SummaryTiles view={view} />
-          <LogEntryForm view={view} busy={busy} mutate={mutate} />
-          {view.summary.areaConcentration.length > 0 ? <ConcentrationBreakdown view={view} /> : null}
-          {view.entries.length > 0 ? <RecentEntries view={view} busy={busy} mutate={mutate} /> : (
-            <EmptyState
-              badge="No entries yet"
-              badgeTone="setup"
-              title="Log your first weekly workload entry"
-              description="Track hours, tasks owned, and 'only I know how to do this' counts per member and area to surface concentration and overload risk."
-            />
-          )}
-        </div>
-      )}
+      ) : null}
+
+      <div style={{ display: "grid", gap: 16 }}>
+        {entryCount > 0 ? <RiskPanel view={view} /> : null}
+        <LogEntryForm view={view} busy={busy} mutate={mutate} />
+        {view.summary.areaConcentration.length > 0 ? <ConcentrationBreakdown view={view} /> : null}
+        {view.entries.length > 0 ? <RecentEntries view={view} busy={busy} mutate={mutate} /> : null}
+      </div>
     </main>
   );
 }
@@ -169,16 +379,17 @@ export default function BusFactorClient() {
 function RiskPanel({ view }: { view: LiveView }) {
   const { summary } = view;
   return (
-    <Panel aria-label="Bus-factor risk">
+    <Panel id="bus-factor-risk" className="bus-factor-panel" aria-label="Bus-factor risk">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div>
-          <span className={`app-badge ${riskTone(summary.riskLevel)}`}>{summary.riskLevel.toUpperCase()}</span>
+          <Badge tone={riskTone(summary.riskLevel)}>{summary.riskLevel.toUpperCase()}</Badge>
           <h2 style={{ margin: "6px 0 0" }}>Organizational risk signal</h2>
           <small className="app-muted">
-            {summary.activeMembers} active member(s) logged over the last {view.windowWeeks} week(s)
+            {formatBusFactorMetric(summary.activeMembers, true)} active member(s) logged over the last{" "}
+            {view.windowWeeks} week(s) — never DEMO scores
           </small>
         </div>
-        <strong style={{ fontSize: "2rem" }}>{pct(summary.riskScore)}</strong>
+        <strong style={{ fontSize: "2rem" }}>{formatBusFactorPercent(summary.riskScore, true)}</strong>
       </header>
       {summary.flags.length > 0 ? (
         <div style={{ marginTop: 12 }}>
@@ -186,8 +397,8 @@ function RiskPanel({ view }: { view: LiveView }) {
           <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
             {summary.flags.slice(0, 10).map((flag) => (
               <li key={flag.id}>
-                <span className={`app-badge ${riskTone(flag.level)}`} style={{ marginRight: 6 }}>
-                  {flag.level}
+                <span style={{ marginRight: 6 }}>
+                  <Badge tone={riskTone(flag.level)}>{flag.level}</Badge>
                 </span>
                 {flag.detail}
               </li>
@@ -205,22 +416,20 @@ function RiskPanel({ view }: { view: LiveView }) {
 
 function SummaryTiles({ view }: { view: LiveView }) {
   const { summary } = view;
-  const tiles = [
-    { label: "Weeks covered", value: String(summary.weeksCovered) },
-    { label: "Active members", value: String(summary.activeMembers) },
-    { label: "Total hours", value: String(summary.totalHours) },
-    { label: "Mean hrs/member/wk", value: String(summary.meanWeeklyHoursPerMember) },
-    { label: "Areas tracked", value: String(summary.areaConcentration.length) },
-  ];
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
+    <Panel className="bus-factor-panel" aria-label="Bus-factor counts">
+      <div className="bus-factor-stats">
+        <StatTile label="Weeks covered" value={formatBusFactorMetric(summary.weeksCovered, true)} />
+        <StatTile label="Active members" value={formatBusFactorMetric(summary.activeMembers, true)} />
+        <StatTile label="Total hours" value={formatBusFactorMetric(summary.totalHours, true)} />
+        <StatTile
+          label="Mean hrs/member/wk"
+          value={formatBusFactorMetric(summary.meanWeeklyHoursPerMember, true)}
+        />
+        <StatTile
+          label="Areas tracked"
+          value={formatBusFactorMetric(summary.areaConcentration.length, true)}
+        />
       </div>
     </Panel>
   );
@@ -234,14 +443,14 @@ function ConcentrationBreakdown({ view }: { view: LiveView }) {
   );
   return (
     <section
-      className="app-card soft-panel"
+      className="app-card soft-panel bus-factor-panel"
       style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}
     >
       <div>
         <h2 style={{ marginTop: 0 }}>By area</h2>
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <ul className="bus-factor-list">
           {summary.areaConcentration.map((row) => (
-            <li key={row.area} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <li key={row.area} className="bus-factor-row">
               <span>{busFactorAreaLabel(row.area)}</span>
               <small className="app-muted">
                 {row.contributors} contributor(s) · {row.totalHours}h · top {pct(row.topContributorShare)}
@@ -252,11 +461,11 @@ function ConcentrationBreakdown({ view }: { view: LiveView }) {
       </div>
       <div>
         <h2 style={{ marginTop: 0 }}>By member</h2>
-        <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+        <ul className="bus-factor-list">
           {summary.memberWorkloads.map((row) => {
             const actual = actualByUser.get(row.memberUserId);
             return (
-              <li key={row.memberUserId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <li key={row.memberUserId} className="bus-factor-row">
                 <span>{row.memberName}</span>
                 <small className="app-muted">
                   {row.totalHours}h · {row.totalTasksOwned} task(s) · {row.overloadRatio}x avg
@@ -268,7 +477,7 @@ function ConcentrationBreakdown({ view }: { view: LiveView }) {
         </ul>
         {view.actualBuildHours.length > 0 ? (
           <small className="app-muted" style={{ display: "block", marginTop: 6 }}>
-            &quot;Clocked&quot; hours are actual Build Hours over the same window, for comparison against self-reported workload.
+            &quot;Clocked&quot; hours are actual Build Hours over the same window — never DEMO hours.
           </small>
         ) : null}
       </div>
@@ -286,14 +495,11 @@ function RecentEntries({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel>
+    <Panel className="bus-factor-panel">
       <h2 style={{ marginTop: 0 }}>Logged entries</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+      <ul className="bus-factor-list">
         {view.entries.slice(0, 30).map((item) => (
-          <li
-            key={item.id}
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-          >
+          <li key={item.id} className="bus-factor-row">
             <div>
               <strong>{item.memberName}</strong>
               <small className="app-muted" style={{ display: "block" }}>
@@ -347,11 +553,27 @@ function LogEntryForm({
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
-  if (view.members.length === 0) return null;
+  if (view.members.length === 0) {
+    return (
+      <EmptyState
+        soft
+        badge="No members"
+        badgeTone="setup"
+        title="Invite teammates before logging workload"
+        description="Bus-Factor needs org members to attribute hours — never DEMO headcount."
+      >
+        <a className="app-button" href={withOrgHref("/workspace", view.orgId)}>
+          Open Workspace
+        </a>
+      </EmptyState>
+    );
+  }
 
   return (
     <Panel
+      id="bus-factor-log"
       as="form"
+      className="bus-factor-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.memberUserId || !form.weekStart) return;
