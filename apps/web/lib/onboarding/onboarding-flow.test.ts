@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildOnboardingStepMeta,
   onboardingCanSubmit,
+  onboardingFundingReady,
   onboardingLoadCopy,
   onboardingMembershipNote,
   onboardingProgressLabel,
@@ -34,6 +35,45 @@ describe("onboarding Soft-UI flow helpers", () => {
     expect(onboardingCanSubmit({ termsAccepted: false, termsAcceptedAt: null })).toBe(false);
     expect(onboardingCanSubmit({ termsAccepted: true, termsAcceptedAt: null })).toBe(true);
     expect(onboardingCanSubmit({ termsAccepted: false, termsAcceptedAt: "2026-07-01" })).toBe(true);
+  });
+
+  it("requires affiliation and a funding path for team heads", () => {
+    expect(
+      onboardingFundingReady({
+        isTeamHead: false,
+        teamAffiliation: null,
+        schoolFunded: false,
+        outsideGrants: false,
+        sponsorsAllowed: false,
+      }),
+    ).toBe(true);
+    expect(
+      onboardingFundingReady({
+        isTeamHead: true,
+        teamAffiliation: null,
+        schoolFunded: true,
+        outsideGrants: false,
+        sponsorsAllowed: false,
+      }),
+    ).toBe(false);
+    expect(
+      onboardingFundingReady({
+        isTeamHead: true,
+        teamAffiliation: "private_school",
+        schoolFunded: false,
+        outsideGrants: false,
+        sponsorsAllowed: false,
+      }),
+    ).toBe(false);
+    expect(
+      onboardingFundingReady({
+        isTeamHead: true,
+        teamAffiliation: "community",
+        schoolFunded: false,
+        outsideGrants: true,
+        sponsorsAllowed: false,
+      }),
+    ).toBe(true);
   });
 
   it("keeps closed-membership copy honest for empty/setup shells", () => {

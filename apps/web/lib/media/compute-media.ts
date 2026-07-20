@@ -1,8 +1,13 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeMediaKitReadiness } from "../media-kit";
 import type { MediaKitAsset, MediaKitProfile } from "../media-kit/types";
+import {
+  listMediaContentItems,
+  processDueMediaReminders,
+} from "./compute-media-content";
 import type {
   MediaAssetPreview,
+  MediaContentItem,
   MediaImpactPreview,
   MediaImpactSummary,
   MediaKitSummary,
@@ -36,6 +41,7 @@ export type MediaView =
       outreach: MediaOutreachSummary;
       impact: MediaImpactSummary;
       sponsorWall: MediaSponsorWallSummary;
+      items: MediaContentItem[];
       computedAt: string;
     };
 
@@ -177,6 +183,13 @@ export async function computeMediaView(
     };
   }
 
+  // Fire due media reminders before listing so the Soft-UI board stays current.
+  await processDueMediaReminders(client, {
+    orgId: org.orgId,
+    userId: input.userId,
+    seasonYear,
+  });
+
   const [
     profileResult,
     assetCountResult,
@@ -187,6 +200,7 @@ export async function computeMediaView(
     impactCountResult,
     impactListResult,
     sponsorWallResult,
+    items,
   ] = await Promise.all([
     client.query<ProfileRow>(
       `SELECT mission_statement AS "missionStatement", team_bio AS "teamBio",
@@ -265,6 +279,7 @@ export async function computeMediaView(
          (SELECT published FROM sponsor_wall_settings WHERE org_id = $1) AS "wallPublished"`,
       [org.orgId],
     ),
+    listMediaContentItems(client, { orgId: org.orgId, seasonYear }),
   ]);
 
   const profile = profileResult.rows[0] ? mapProfile(profileResult.rows[0]) : null;
@@ -345,6 +360,7 @@ export async function computeMediaView(
       publishedEntryCount: toInt(wall?.publishedEntryCount),
       wallPublished: Boolean(wall?.wallPublished),
     },
+    items,
     computedAt: new Date().toISOString(),
   };
 }

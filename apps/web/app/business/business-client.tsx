@@ -16,6 +16,7 @@ import {
   type Sponsor,
 } from "../../lib/business-portal";
 import { BUSINESS_GRANTS_RELATED_INCLUDE } from "../../lib/business/business-related";
+import { filterSponsorTabs, SPONSOR_TAB_IDS } from "../../lib/nav/hub-access-filter";
 import {
   hubById,
   hubLegacyHref,
@@ -153,6 +154,21 @@ export default function BusinessClient() {
   }, [load]);
 
   const live = view?.status === "live" ? view : null;
+  const visibleTabs = useMemo(
+    () => filterSponsorTabs(TABS, live?.sponsorsAllowed),
+    [live?.sponsorsAllowed],
+  );
+  const visibleMoreTabs = useMemo(
+    () => filterSponsorTabs(MORE_TABS, live?.sponsorsAllowed),
+    [live?.sponsorsAllowed],
+  );
+
+  useEffect(() => {
+    if (!live) return;
+    if (SPONSOR_TAB_IDS.has(tab) && live.sponsorsAllowed === false) {
+      selectTab("overview");
+    }
+  }, [live, selectTab, tab]);
 
   const mutate = useCallback(async (payload: Record<string, unknown>): Promise<boolean> => {
     if (!live || busy) return false;
@@ -315,14 +331,14 @@ export default function BusinessClient() {
         aria-label="Business sections"
         value={tab}
         onChange={(id) => selectTab(id as Tab)}
-        tabs={TABS}
+        tabs={visibleTabs}
         className="product-hub-tabs"
       />
-      {MORE_TABS.length ? (
+      {visibleMoreTabs.length ? (
         <details className="product-hub-more">
-          <summary>More tools ({MORE_TABS.length})</summary>
+          <summary>More tools ({visibleMoreTabs.length})</summary>
           <div className="product-hub-more-links">
-            {MORE_TABS.map((entry) => (
+            {visibleMoreTabs.map((entry) => (
               <a key={entry.id} href={hubLegacyHref(entry, orgId ?? live?.orgId ?? null)}>
                 {entry.label}
               </a>
@@ -518,10 +534,16 @@ type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 
 function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const categorySpend = useMemo(() => new Map(view.categories.map((category) => [category.id, view.purchases.filter((purchase) => purchase.categoryId === category.id && ["approved", "ordered", "received"].includes(purchase.status)).reduce((total, purchase) => total + purchase.totalCents, 0)])), [view.categories, view.purchases]);
+  const financeAiHref = `/ai?tab=finance&orgId=${encodeURIComponent(view.orgId)}`;
   return <div className="biz-stack">
+    <div className="biz-detail-link">
+      <span>Need help reading the season budget against open purchase requests?</span>
+      <a href={financeAiHref}>Finance AI →</a>
+      <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season Costs →</a>
+    </div>
     <section className="biz-grid two">
       <article className="app-card">
-        <header className="biz-card-head"><div><span className="biz-overline">Season guardrails</span><h2>Set the budget once. Compare every decision to it.</h2><p className="app-muted" style={{ margin: "8px 0 0", fontSize: 12 }}>For event-by-event spend tracking, use <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season Costs</a>.</p></div>{view.canManageFinance ? <ToneBadge tone="blue">Lead controls</ToneBadge> : <ToneBadge>Read only</ToneBadge>}</header>
+        <header className="biz-card-head"><div><span className="biz-overline">Season guardrails</span><h2>Set the budget once. Compare every decision to it.</h2><p className="app-muted" style={{ margin: "8px 0 0", fontSize: 12 }}>For event-by-event spend tracking, use <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season Costs</a>. Chat guidance lives under <a href={financeAiHref}>Finance AI</a>.</p></div>{view.canManageFinance ? <ToneBadge tone="blue">Lead controls</ToneBadge> : <ToneBadge>Read only</ToneBadge>}</header>
         <form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-budget", ["totalBudget", "fundraisingGoal"])}>
           <Field label="Operating budget"><input name="totalBudgetDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.totalBudgetCents)} disabled={!view.canManageFinance} /></Field>
           <Field label="Fundraising goal"><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} disabled={!view.canManageFinance} /></Field>
@@ -568,16 +590,25 @@ function PurchaseRow({ purchase, canManage, busy, mutate }: { purchase: Purchase
 function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: boolean; submit: Submit; mutate: Mutate }) {
   const [selectedDraft, setSelectedDraft] = useState(view.drafts[0]?.id ?? "");
   const draft = view.drafts.find((item) => item.id === selectedDraft) ?? view.drafts[0];
+  const grantsAiHref = `/ai?tab=writer&orgId=${encodeURIComponent(view.orgId)}`;
+  const grantsRelated = useMemo(() => {
+    const include = [...BUSINESS_GRANTS_RELATED_INCLUDE];
+    if (view.sponsorsAllowed === false) {
+      return include.filter((id) => id !== "sponsors" && id !== "sponsorship" && id !== "placements");
+    }
+    return include;
+  }, [view.sponsorsAllowed]);
   return (
     <div className="biz-stack">
       <BusinessRelated
         orgId={view.orgId}
         active="grants"
-        include={BUSINESS_GRANTS_RELATED_INCLUDE}
+        include={grantsRelated}
         ariaLabel="Related grant writing tools"
       />
       <div className="biz-detail-link">
         <span>Need guided need · impact · budget · timeline essays with metered AI assist?</span>
+        <a href={grantsAiHref}>Grants AI →</a>
         <a href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>Open the grant writing workbench →</a>
         <a href={`/writer?orgId=${encodeURIComponent(view.orgId)}`}>Writer →</a>
         <a href={`/grant-report?orgId=${encodeURIComponent(view.orgId)}`}>Grant report →</a>

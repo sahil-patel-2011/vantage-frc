@@ -163,6 +163,10 @@ export type BusinessView = {
   canManageFinance: boolean;
   seasonYear: number;
   seasons: number[];
+  teamAffiliation?: "private_school" | "public_school" | "community" | null;
+  schoolFunded?: boolean | null;
+  outsideGrants?: boolean | null;
+  sponsorsAllowed?: boolean | null;
   budget: {
     totalBudgetCents: number;
     fundraisingGoalCents: number;

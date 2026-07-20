@@ -119,6 +119,7 @@ export function classifyMediaShell(input: {
   mediaCategoryCount?: number;
   mediaActivityCount?: number;
   publishedEntryCount?: number;
+  itemCount?: number;
 }): MediaShellKind {
   if (input.loading) return "loading";
   if (input.fetchFailed) return "error";
@@ -136,6 +137,7 @@ export function classifyMediaShell(input: {
       },
       impact: { mediaActivityCount: input.mediaActivityCount ?? 0 },
       sponsorWall: { publishedEntryCount: input.publishedEntryCount ?? 0 },
+      items: Array.from({ length: input.itemCount ?? 0 }, (_, index) => ({ id: String(index) })),
     })
   ) {
     return "empty";
@@ -180,9 +182,9 @@ export function mediaShellCopy(kind: MediaShellKind): MediaEmptyCopy {
     default:
       return {
         kind: "ready",
-        title: "Business + media workspace",
+        title: "Media workspace",
         description:
-          "Counts reflect Media Kit, outreach, impact, and sponsor visuals you recorded — never DEMO reach or invent bios.",
+          "Counts reflect content items, Media Kit, outreach, impact, and sponsor visuals you recorded — never DEMO reach or invent bios.",
       };
   }
 }

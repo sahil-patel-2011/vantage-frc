@@ -61,6 +61,7 @@ describe("computeMediaView", () => {
     expect(view.outreach.upcomingCount).toBe(0);
     expect(view.impact.mediaActivityCount).toBe(0);
     expect(view.sponsorWall.publishedEntryCount).toBe(0);
+    expect(view.items).toEqual([]);
   });
 
   it("fans in real kit, outreach, impact, and sponsor-wall signals", async () => {

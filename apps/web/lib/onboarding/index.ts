@@ -3,6 +3,7 @@ export {
   ONBOARDING_STEP_COPY,
   buildOnboardingStepMeta,
   onboardingCanSubmit,
+  onboardingFundingReady,
   onboardingLoadCopy,
   onboardingMembershipNote,
   onboardingProgressLabel,
@@ -15,4 +16,5 @@ export {
   type OnboardingSetupStep,
   type OnboardingStepMeta,
   type OnboardingStepPhase,
+  type TeamAffiliationOption,
 } from "./onboarding-flow";

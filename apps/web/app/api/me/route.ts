@@ -1,13 +1,15 @@
-import { auth } from "@vantage/core";
+import { auth, listMemberHubAccess } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { isPayingOrgEntitlement } from "../../../lib/paid-plan";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return Response.json({ authenticated: false }, { status: 401 });
+
+    const requestedOrg = new URL(request.url).searchParams.get("orgId");
 
     const profile = await withRls({ userId: session.user.id }, async (client) => {
       const platform = await client.query(`SELECT 1 FROM platform_admins WHERE user_id=$1`, [session.user.id]);
@@ -24,7 +26,10 @@ export async function GET() {
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number NULLS LAST, o.name`,
         [session.user.id],
       );
-      const membership = { rows: memberships.rows.slice(0, 1) };
+      const activeMembership =
+        (requestedOrg
+          ? memberships.rows.find((row) => row.orgId === requestedOrg)
+          : undefined) ?? memberships.rows[0] ?? null;
       const created = await client.query<{ createdAt: string | null }>(
         `SELECT created_at::text AS "createdAt" FROM users WHERE id=$1`,
         [session.user.id],
@@ -35,9 +40,9 @@ export async function GET() {
         [session.user.id],
       );
       let unreadMessageCount = 0;
-      if (membership.rows[0]?.orgId) {
+      if (activeMembership?.orgId) {
         try {
-          const orgId = membership.rows[0].orgId;
+          const orgId = activeMembership.orgId;
           const unreadMessages = await client.query<{ count: string }>(
             `WITH visible AS (
                SELECT c.id
@@ -87,17 +92,22 @@ export async function GET() {
          FROM profiles WHERE user_id=$1`,
         [session.user.id],
       );
-      const tba = await resolveTbaConfigured(client, membership.rows[0]?.orgId ?? null);
+      const tba = await resolveTbaConfigured(client, activeMembership?.orgId ?? null);
       let planCode: string | null = null;
       let planStatus: string | null = null;
-      if (membership.rows[0]?.orgId) {
+      let hubAccess: Awaited<ReturnType<typeof listMemberHubAccess>> = [];
+      let teamAffiliation: string | null = null;
+      let schoolFunded: boolean | null = null;
+      let outsideGrants: boolean | null = null;
+      let sponsorsAllowed: boolean | null = null;
+      if (activeMembership?.orgId) {
         try {
           const entitlement = await client.query<{ planCode: string; status: string }>(
             `SELECT e.plan_code AS "planCode", e.status
              FROM org_entitlements e
              WHERE e.org_id = $1::uuid
              LIMIT 1`,
-            [membership.rows[0].orgId],
+            [activeMembership.orgId],
           );
           planCode = entitlement.rows[0]?.planCode ?? null;
           planStatus = entitlement.rows[0]?.status ?? null;
@@ -105,10 +115,44 @@ export async function GET() {
           planCode = null;
           planStatus = null;
         }
+        try {
+          if (activeMembership.role === "owner" || activeMembership.role === "admin") {
+            hubAccess = [];
+          } else {
+            hubAccess = await listMemberHubAccess(client, activeMembership.orgId, session.user.id);
+          }
+        } catch {
+          hubAccess = [];
+        }
+        try {
+          const funding = await client.query<{
+            teamAffiliation: string | null;
+            schoolFunded: boolean | null;
+            outsideGrants: boolean | null;
+            sponsorsAllowed: boolean | null;
+          }>(
+            `SELECT team_affiliation AS "teamAffiliation",
+                    school_funded AS "schoolFunded",
+                    outside_grants AS "outsideGrants",
+                    sponsors_allowed AS "sponsorsAllowed"
+             FROM organizations WHERE id = $1::uuid`,
+            [activeMembership.orgId],
+          );
+          const row = funding.rows[0];
+          teamAffiliation = row?.teamAffiliation ?? null;
+          schoolFunded = row?.schoolFunded ?? null;
+          outsideGrants = row?.outsideGrants ?? null;
+          sponsorsAllowed = row?.sponsorsAllowed ?? null;
+        } catch {
+          teamAffiliation = null;
+          schoolFunded = null;
+          outsideGrants = null;
+          sponsorsAllowed = null;
+        }
       }
       return {
         platformAdmin: Boolean(platform.rowCount),
-        membership: membership.rows[0] ?? null,
+        membership: activeMembership,
         // Real memberships only — never invent DEMO organizations for the Soft-UI picker.
         memberships: memberships.rows.map((row) => ({
           orgId: row.orgId,
@@ -124,6 +168,11 @@ export async function GET() {
         planCode,
         planStatus,
         paidOrg: isPayingOrgEntitlement({ planCode, status: planStatus }),
+        hubAccess,
+        teamAffiliation,
+        schoolFunded,
+        outsideGrants,
+        sponsorsAllowed,
       };
     });
 
@@ -159,6 +208,11 @@ export async function GET() {
       planCode: profile.planCode,
       planStatus: profile.planStatus,
       paidOrg: profile.paidOrg,
+      hubAccess: profile.hubAccess,
+      teamAffiliation: profile.teamAffiliation,
+      schoolFunded: profile.schoolFunded,
+      outsideGrants: profile.outsideGrants,
+      sponsorsAllowed: profile.sponsorsAllowed,
     });
   } catch {
     return Response.json({ authenticated: false }, { status: 401 });

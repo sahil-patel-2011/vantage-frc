@@ -37,6 +37,25 @@ describe("onboarding validation", () => {
   it("requires a supported personalization focus", () => {
     expect(() => validateOnboardingPayload({ ...base, primaryFocus: "random" as never })).toThrow(/focus/i);
   });
+
+  it("accepts funding fields on complete payloads", () => {
+    const result = validateOnboardingPayload({
+      ...base,
+      teamAffiliation: "private_school",
+      schoolFunded: true,
+      outsideGrants: false,
+      sponsorsAllowed: false,
+    });
+    expect(result.teamAffiliation).toBe("private_school");
+    expect(result.schoolFunded).toBe(true);
+    expect(result.sponsorsAllowed).toBe(false);
+  });
+
+  it("rejects unknown team affiliation", () => {
+    expect(() =>
+      validateOnboardingPayload({ ...base, teamAffiliation: "homeschool" as never }),
+    ).toThrow(/private school|public school|community/i);
+  });
 });
 
 describe("normalizeOrgLocationFields", () => {

@@ -1,5 +1,6 @@
 import { EmptyState } from "../../../components/ui";
 import CapabilitiesClient from "./capabilities-client";
+import HubAccessClient from "./hub-access-client";
 import AuthPolicyClient from "./policy-client";
 
 export default async function TeamSecurityPage({
@@ -30,6 +31,9 @@ export default async function TeamSecurityPage({
       <AuthPolicyClient orgId={orgId} />
       <main className="module-page team-security-capabilities" style={{ paddingTop: 0 }}>
         <CapabilitiesClient orgId={orgId} />
+      </main>
+      <main className="module-page team-security-hub-access" style={{ paddingTop: 0 }}>
+        <HubAccessClient orgId={orgId} />
       </main>
     </>
   );

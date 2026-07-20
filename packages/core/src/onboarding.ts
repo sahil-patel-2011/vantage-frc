@@ -19,9 +19,16 @@ export const TEAM_ROLE_OPTIONS = [
 
 export const PRIMARY_FOCUS_OPTIONS = ["competition", "build", "business", "leadership"] as const;
 
+export const TEAM_AFFILIATION_OPTIONS = [
+  "private_school",
+  "public_school",
+  "community",
+] as const;
+
 export type GenderOption = (typeof GENDER_OPTIONS)[number];
 export type TeamRoleOption = (typeof TEAM_ROLE_OPTIONS)[number];
 export type PrimaryFocusOption = (typeof PRIMARY_FOCUS_OPTIONS)[number];
+export type TeamAffiliationOption = (typeof TEAM_AFFILIATION_OPTIONS)[number];
 export type OnboardingStep = "profile" | "team" | "preferences" | "complete";
 
 export type OrgLocationInput = {
@@ -29,6 +36,13 @@ export type OrgLocationInput = {
   stateProv?: string | null;
   description?: string | null;
   termsAccepted?: boolean;
+};
+
+export type OrgFundingInput = {
+  teamAffiliation?: TeamAffiliationOption | null;
+  schoolFunded?: boolean | null;
+  outsideGrants?: boolean | null;
+  sponsorsAllowed?: boolean | null;
 };
 
 export type NormalizedOrgLocation = {
@@ -51,6 +65,10 @@ export type OnboardingPayload = {
   stateProv?: string | null;
   description?: string | null;
   termsAccepted?: boolean;
+  teamAffiliation?: TeamAffiliationOption | null;
+  schoolFunded?: boolean | null;
+  outsideGrants?: boolean | null;
+  sponsorsAllowed?: boolean | null;
 };
 
 export type OnboardingState = {
@@ -71,6 +89,10 @@ export type OnboardingState = {
   orgCity: string | null;
   orgStateProv: string | null;
   orgDescription: string | null;
+  orgTeamAffiliation: TeamAffiliationOption | null;
+  orgSchoolFunded: boolean | null;
+  orgOutsideGrants: boolean | null;
+  orgSponsorsAllowed: boolean | null;
   canCreateOrg: boolean;
   platformAdmin: boolean;
   termsAcceptedAt: string | null;
@@ -157,6 +179,13 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
   const themePreference = input.themePreference === "dark" ? "dark" : "light";
   parseDob(input.dateOfBirth);
   const location = normalizeOrgLocationFields(input, { requireLocation: false });
+  let teamAffiliation: TeamAffiliationOption | null = null;
+  if (input.teamAffiliation != null) {
+    if (!TEAM_AFFILIATION_OPTIONS.includes(input.teamAffiliation)) {
+      throw new Error("Select private school, public school, or community team.");
+    }
+    teamAffiliation = input.teamAffiliation;
+  }
   return {
     firstName,
     lastName,
@@ -170,6 +199,10 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
     city: location.city,
     stateProv: location.stateProv,
     description: location.description,
+    teamAffiliation,
+    schoolFunded: input.schoolFunded ?? null,
+    outsideGrants: input.outsideGrants ?? null,
+    sponsorsAllowed: input.sponsorsAllowed ?? null,
   };
 }
 
@@ -236,6 +269,35 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
   const locked = workspace.rows[0] ?? null;
   const workspaceLocked = locked && ["approved", "invited", "pending"].includes(locked.accessStatus);
   const row = profile.rows[0];
+
+  let orgFunding: {
+    teamAffiliation: TeamAffiliationOption | null;
+    schoolFunded: boolean | null;
+    outsideGrants: boolean | null;
+    sponsorsAllowed: boolean | null;
+  } = {
+    teamAffiliation: null,
+    schoolFunded: null,
+    outsideGrants: null,
+    sponsorsAllowed: null,
+  };
+  if (locked?.orgId) {
+    const funding = await client.query<{
+      teamAffiliation: TeamAffiliationOption | null;
+      schoolFunded: boolean | null;
+      outsideGrants: boolean | null;
+      sponsorsAllowed: boolean | null;
+    }>(
+      `SELECT team_affiliation AS "teamAffiliation",
+              school_funded AS "schoolFunded",
+              outside_grants AS "outsideGrants",
+              sponsors_allowed AS "sponsorsAllowed"
+       FROM organizations WHERE id = $1::uuid`,
+      [locked.orgId],
+    );
+    if (funding.rows[0]) orgFunding = funding.rows[0];
+  }
+
   return {
     complete: Boolean(row?.onboardingCompletedAt),
     firstName: row?.firstName ?? null,
@@ -254,6 +316,10 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     orgCity: locked?.city ?? null,
     orgStateProv: locked?.stateProv ?? null,
     orgDescription: locked?.description ?? null,
+    orgTeamAffiliation: orgFunding.teamAffiliation,
+    orgSchoolFunded: orgFunding.schoolFunded,
+    orgOutsideGrants: orgFunding.outsideGrants,
+    orgSponsorsAllowed: orgFunding.sponsorsAllowed,
     canCreateOrg: Boolean(admin.rowCount),
     platformAdmin: Boolean(admin.rowCount),
     termsAcceptedAt: row?.termsAcceptedAt ?? null,
@@ -341,13 +407,36 @@ export async function completeOnboarding(
 
   if (state.isTeamHead && state.lockedOrgId) {
     const location = normalizeOrgLocationFields(input, { requireLocation: true });
+    if (!payload.teamAffiliation) {
+      throw new Error("Select whether your team is a private school, public school, or community team.");
+    }
+    const schoolFunded = Boolean(payload.schoolFunded);
+    const outsideGrants = Boolean(payload.outsideGrants);
+    const sponsorsAllowed =
+      payload.sponsorsAllowed == null ? true : Boolean(payload.sponsorsAllowed);
+    if (!schoolFunded && !outsideGrants && !sponsorsAllowed) {
+      throw new Error("Select at least one funding path: school funds, outside grants, or sponsors.");
+    }
     await client.query(
       `UPDATE organizations
        SET city = $2,
            state_prov = $3,
-           description = $4
+           description = $4,
+           team_affiliation = $5,
+           school_funded = $6,
+           outside_grants = $7,
+           sponsors_allowed = $8
        WHERE id = $1::uuid`,
-      [state.lockedOrgId, location.city, location.stateProv, location.description],
+      [
+        state.lockedOrgId,
+        location.city,
+        location.stateProv,
+        location.description,
+        payload.teamAffiliation,
+        schoolFunded,
+        outsideGrants,
+        sponsorsAllowed,
+      ],
     );
   }
 

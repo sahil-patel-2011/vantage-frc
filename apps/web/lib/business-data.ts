@@ -44,8 +44,16 @@ export async function loadBusinessView(
     orgName: string;
     teamNumber: number | null;
     role: string;
+    teamAffiliation: "private_school" | "public_school" | "community" | null;
+    schoolFunded: boolean | null;
+    outsideGrants: boolean | null;
+    sponsorsAllowed: boolean | null;
   }>(
-    `SELECT m.org_id AS "orgId", o.name AS "orgName", o.team_number AS "teamNumber", m.role::text AS role
+    `SELECT m.org_id AS "orgId", o.name AS "orgName", o.team_number AS "teamNumber", m.role::text AS role,
+            o.team_affiliation AS "teamAffiliation",
+            o.school_funded AS "schoolFunded",
+            o.outside_grants AS "outsideGrants",
+            o.sponsors_allowed AS "sponsorsAllowed"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
@@ -362,6 +370,10 @@ export async function loadBusinessView(
     canManageFinance: org.role === "owner" || org.role === "admin",
     seasonYear,
     seasons,
+    teamAffiliation: org.teamAffiliation ?? null,
+    schoolFunded: org.schoolFunded ?? null,
+    outsideGrants: org.outsideGrants ?? null,
+    sponsorsAllowed: org.sponsorsAllowed ?? null,
     budget: {
       totalBudgetCents,
       fundraisingGoalCents,

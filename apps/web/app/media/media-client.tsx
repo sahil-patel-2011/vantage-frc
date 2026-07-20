@@ -1,12 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
+import { AIAttribution, EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { HowToUseLink } from "../help/how-to-use-link";
 import {
   formatMediaMetric,
+  isMediaReminderOverdue,
+  mediaCalendarItems,
+  mediaDraftItems,
   mediaReadinessPct,
+  mediaReminderItems,
   shouldShowMediaSummaryTiles,
+  type MediaContentItem,
+  type MediaContentPlatform,
+  type MediaHubTab,
+  type MediaPostDraftResult,
+  MEDIA_CONTENT_PLATFORMS,
+  MEDIA_HUB_TABS,
 } from "../../lib/media";
 import type { MediaView } from "../../lib/media/compute-media";
 import {
@@ -19,11 +30,64 @@ import {
   type MediaNextAction,
   type MediaShellKind,
 } from "../../lib/media/media-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubById, hubPrimaryTabs, isHubTab } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./media.css";
 
+const MEDIA_HUB = hubById("media");
+const PRIMARY_TABS = hubPrimaryTabs(MEDIA_HUB);
+
+type Tab = MediaHubTab;
+
+const TABS: Array<{ id: Tab; label: string }> = PRIMARY_TABS.map((tab) => ({
+  id: tab.id as Tab,
+  label: tab.label,
+}));
+
 type LiveView = Extract<MediaView, { status: "live" }>;
+
+type LiveWithDraft = LiveView & { draft?: MediaPostDraftResult };
+
+function isTab(value: string | null): value is Tab {
+  return Boolean(value && MEDIA_HUB_TABS.includes(value as Tab) && isHubTab(MEDIA_HUB, value));
+}
+
+function readOrgIdFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("orgId");
+}
+
+function readTabFromUrl(): Tab {
+  if (typeof window === "undefined") return "calendar";
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  return isTab(tab) ? tab : "calendar";
+}
+
+function writeTabToUrl(tab: Tab) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (tab === "calendar") url.searchParams.delete("tab");
+  else url.searchParams.set("tab", tab);
+  window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+}
+
+function formatWhen(value: string | null): string {
+  if (!value) return "—";
+  const ms = Date.parse(value);
+  if (!Number.isFinite(ms)) return value;
+  return new Date(ms).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function fromLocalInputValue(value: string): string | null {
+  if (!value.trim()) return null;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
+}
 
 function MediaRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = mediaRelatedLinks(orgId, {
@@ -50,7 +114,7 @@ function MediaNextActionsPanel({ actions }: { actions: MediaNextAction[] }) {
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Media Kit, Outreach, and Impact — never DEMO media metrics.</p>
+        <p className="app-muted">Calendar, drafts, kit, and impact — never DEMO media metrics.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -86,21 +150,11 @@ function MediaShell({
 }) {
   const actions = mediaNextActions({ orgId, shell });
   const copy = mediaShellCopy(shell);
-  const businessHref = hubHref("/business", "media", orgId);
   const steps = shell === "setup" ? mediaSetupSteps(orgId) : [];
 
   return (
     <main className="module-page media-page soft-gate">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={businessHref}>Business</a>
-            {" / Media"}
-          </>
-        }
-        title="Media"
-        description={description}
-      >
+      <PageHeader breadcrumbs={<>Media</>} title="Media" description={description}>
         <div className="media-header-actions">
           <HowToUseLink slug="media-workspace" />
           <MediaRelatedStrip orgId={orgId} />
@@ -138,15 +192,9 @@ function MediaShell({
             <a className="app-button" href={orgId ? withOrgHref("/media-kit", orgId) : "/media-kit"}>
               Build Media Kit
             </a>
-            <a
-              className="app-button secondary"
-              href={hubHref("/business", "outreach-calendar", orgId)}
-            >
-              Open Outreach Calendar
-            </a>
-            <a className="app-button secondary" href={hubHref("/business", "impact", orgId)}>
-              Open Community Impact
-            </a>
+            <button type="button" className="app-button secondary" onClick={onRetry}>
+              Refresh
+            </button>
           </>
         ) : null}
       </EmptyState>
@@ -168,197 +216,613 @@ function MediaShell({
   );
 }
 
-function LiveMediaWorkspace({ view }: { view: LiveView }) {
+function ContentItemRow({
+  item,
+  actions,
+}: {
+  item: MediaContentItem;
+  actions?: ReactNode;
+}) {
+  return (
+    <li className="media-item-row">
+      <div>
+        <strong>{item.title}</strong>
+        <span className="app-muted">
+          {item.platform} · {item.kind} · {item.status}
+          {item.dueAt ? ` · due ${formatWhen(item.dueAt)}` : ""}
+          {item.remindAt ? ` · remind ${formatWhen(item.remindAt)}` : ""}
+        </span>
+        {item.caption ? <p className="media-item-caption">{item.caption}</p> : null}
+      </div>
+      {actions ? <div className="media-item-actions">{actions}</div> : null}
+    </li>
+  );
+}
+
+function CalendarPanel({
+  view,
+  busy,
+  onCreate,
+  onMarkPosted,
+}: {
+  view: LiveView;
+  busy: boolean;
+  onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
+  onMarkPosted: (itemId: string) => Promise<void>;
+}) {
+  const [title, setTitle] = useState("");
+  const [platform, setPlatform] = useState<MediaContentPlatform>("instagram");
+  const [dueAt, setDueAt] = useState("");
+  const [remindAt, setRemindAt] = useState("");
+  const items = mediaCalendarItems(view.items);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const ok = await onCreate({
+      action: "create-item",
+      tab: "calendar",
+      title,
+      platform,
+      status: "scheduled",
+      dueAt: fromLocalInputValue(dueAt),
+      remindAt: fromLocalInputValue(remindAt),
+    });
+    if (ok) {
+      setTitle("");
+      setDueAt("");
+      setRemindAt("");
+    }
+  }
+
+  return (
+    <div className="media-tab-panel">
+      <Panel>
+        <header>
+          <h2>Content calendar</h2>
+          <p className="app-muted">
+            Scheduled and due posts for {view.seasonYear} — never DEMO engagement.
+          </p>
+        </header>
+        {items.length ? (
+          <ul className="media-panel-list">
+            {items.map((item) => (
+              <ContentItemRow
+                key={item.id}
+                item={item}
+                actions={
+                  item.status !== "posted" ? (
+                    <button
+                      type="button"
+                      className="app-button secondary"
+                      disabled={busy}
+                      onClick={() => void onMarkPosted(item.id)}
+                    >
+                      Mark posted
+                    </button>
+                  ) : null
+                }
+              />
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            soft
+            badge="No scheduled posts"
+            badgeTone="setup"
+            title="Schedule your first post"
+            description="Add a title and due time — the calendar stays empty until you record real posts."
+          />
+        )}
+      </Panel>
+
+      <Panel>
+        <header>
+          <h2>Schedule a post</h2>
+          <p className="app-muted">Creates a scheduled content item for your team.</p>
+        </header>
+        <form className="media-form" onSubmit={(event) => void submit(event)}>
+          <label>
+            Title
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              required
+              maxLength={200}
+              placeholder="Kickoff reveal reel"
+            />
+          </label>
+          <label>
+            Platform
+            <select
+              value={platform}
+              onChange={(event) => setPlatform(event.target.value as MediaContentPlatform)}
+            >
+              {MEDIA_CONTENT_PLATFORMS.map((entry) => (
+                <option key={entry} value={entry}>
+                  {entry}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Due
+            <input
+              type="datetime-local"
+              value={dueAt}
+              onChange={(event) => setDueAt(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Remind at
+            <input
+              type="datetime-local"
+              value={remindAt}
+              onChange={(event) => setRemindAt(event.target.value)}
+            />
+          </label>
+          <button type="submit" className="app-button" disabled={busy || !title.trim()}>
+            Schedule
+          </button>
+        </form>
+      </Panel>
+    </div>
+  );
+}
+
+function DraftsPanel({
+  view,
+  busy,
+  cutoffCode,
+  draftMeta,
+  onCreate,
+  onAiDraft,
+  onMarkPosted,
+}: {
+  view: LiveView;
+  busy: boolean;
+  cutoffCode: string | null;
+  draftMeta: { feature: string; generatedAt: string } | null;
+  onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
+  onAiDraft: (payload: Record<string, unknown>) => Promise<void>;
+  onMarkPosted: (itemId: string) => Promise<void>;
+}) {
+  const [title, setTitle] = useState("");
+  const [platform, setPlatform] = useState<MediaContentPlatform>("instagram");
+  const [notes, setNotes] = useState("");
+  const [caption, setCaption] = useState("");
+  const items = mediaDraftItems(view.items);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const ok = await onCreate({
+      action: "create-item",
+      tab: "drafts",
+      title,
+      platform,
+      status: "draft",
+      caption: caption || notes || null,
+    });
+    if (ok) {
+      setTitle("");
+      setNotes("");
+      setCaption("");
+    }
+  }
+
+  return (
+    <div className="media-tab-panel">
+      <Panel>
+        <header>
+          <h2>Drafts</h2>
+          <p className="app-muted">Work-in-progress captions — never DEMO reach.</p>
+        </header>
+        {view.orgId && cutoffCode ? (
+          <UsageCutoffBanner orgId={view.orgId} errorCode={cutoffCode} compact />
+        ) : null}
+        {draftMeta ? (
+          <AIAttribution feature={draftMeta.feature} generatedAt={draftMeta.generatedAt} />
+        ) : null}
+        {items.length ? (
+          <ul className="media-panel-list">
+            {items.map((item) => (
+              <ContentItemRow
+                key={item.id}
+                item={item}
+                actions={
+                  <>
+                    <button
+                      type="button"
+                      className="app-button secondary"
+                      disabled={busy}
+                      onClick={() =>
+                        void onAiDraft({
+                          action: "ai-draft",
+                          tab: "drafts",
+                          itemId: item.id,
+                          title: item.title,
+                          platform: item.platform,
+                          notes: item.caption,
+                        })
+                      }
+                    >
+                      Suggest with AI
+                    </button>
+                    <button
+                      type="button"
+                      className="app-button secondary"
+                      disabled={busy}
+                      onClick={() => void onMarkPosted(item.id)}
+                    >
+                      Mark posted
+                    </button>
+                  </>
+                }
+              />
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            soft
+            badge="No drafts"
+            badgeTone="setup"
+            title="Start a draft"
+            description="Titles and captions stay blank until you write them — nothing is pre-seeded."
+          />
+        )}
+      </Panel>
+
+      <Panel>
+        <header>
+          <h2>New draft</h2>
+          <p className="app-muted">Save a draft, or ask Vantage AI for a caption grounded in your title.</p>
+        </header>
+        <form className="media-form" onSubmit={(event) => void submit(event)}>
+          <label>
+            Title
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              required
+              maxLength={200}
+              placeholder="Build season update"
+            />
+          </label>
+          <label>
+            Platform
+            <select
+              value={platform}
+              onChange={(event) => setPlatform(event.target.value as MediaContentPlatform)}
+            >
+              {MEDIA_CONTENT_PLATFORMS.map((entry) => (
+                <option key={entry} value={entry}>
+                  {entry}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Notes
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              rows={3}
+              maxLength={4000}
+              placeholder="Talking points for the caption"
+            />
+          </label>
+          <label>
+            Caption
+            <textarea
+              value={caption}
+              onChange={(event) => setCaption(event.target.value)}
+              rows={4}
+              maxLength={4000}
+              placeholder="Optional — or use Suggest with AI"
+            />
+          </label>
+          <div className="media-form-actions">
+            <button type="submit" className="app-button" disabled={busy || !title.trim()}>
+              Save draft
+            </button>
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy || (!title.trim() && !notes.trim())}
+              onClick={() =>
+                void onAiDraft({
+                  action: "ai-draft",
+                  tab: "drafts",
+                  title,
+                  platform,
+                  notes,
+                }).then(() => undefined)
+              }
+            >
+              Suggest with AI
+            </button>
+          </div>
+        </form>
+      </Panel>
+    </div>
+  );
+}
+
+function RemindersPanel({
+  view,
+  busy,
+  onDismiss,
+}: {
+  view: LiveView;
+  busy: boolean;
+  onDismiss: (itemId: string) => Promise<void>;
+}) {
+  const items = mediaReminderItems(view.items);
+  const now = new Date();
+
+  return (
+    <Panel>
+      <header>
+        <h2>Reminders</h2>
+        <p className="app-muted">
+          Upcoming and overdue remind_at flags — due reminders also create in-app notifications.
+        </p>
+      </header>
+      {items.length ? (
+        <ul className="media-panel-list">
+          {items.map((item) => (
+            <ContentItemRow
+              key={item.id}
+              item={item}
+              actions={
+                <>
+                  <span className={isMediaReminderOverdue(item, now) ? "media-overdue" : "app-muted"}>
+                    {isMediaReminderOverdue(item, now) ? "Overdue" : "Upcoming"}
+                  </span>
+                  <button
+                    type="button"
+                    className="app-button secondary"
+                    disabled={busy}
+                    onClick={() => void onDismiss(item.id)}
+                  >
+                    Dismiss
+                  </button>
+                </>
+              }
+            />
+          ))}
+        </ul>
+      ) : (
+        <EmptyState
+          soft
+          badge="No reminders"
+          badgeTone="setup"
+          title="No upcoming media reminders"
+          description="Set remind_at when scheduling or drafting — never invent DEMO alert counts."
+        />
+      )}
+    </Panel>
+  );
+}
+
+function KitPanel({ view }: { view: LiveView }) {
+  const kitHref = withOrgHref("/media-kit", view.orgId);
+  return (
+    <Panel>
+      <header>
+        <h2>Media Kit readiness</h2>
+        <p className="app-muted">
+          {view.kit.readinessTier === "ready"
+            ? "Profile and logo recorded — open Media Kit to edit."
+            : view.kit.missingFields.length
+              ? `Still missing: ${view.kit.missingFields.slice(0, 3).join(", ")}${view.kit.missingFields.length > 3 ? "…" : ""}`
+              : "No kit fields yet — never DEMO bios or logos."}
+        </p>
+      </header>
+      <div className="media-stats" aria-label="Kit readiness">
+        <div>
+          <strong>{mediaReadinessPct(view.kit.readinessScore)}</strong>
+          <span className="app-muted"> Ready</span>
+        </div>
+        <div>
+          <strong>{formatMediaMetric(view.kit.assetCount, true)}</strong>
+          <span className="app-muted"> Assets</span>
+        </div>
+        <div>
+          <strong>{formatMediaMetric(view.kit.logoCount, true)}</strong>
+          <span className="app-muted"> Logos</span>
+        </div>
+        <div>
+          <strong>{formatMediaMetric(view.kit.documentCount, true)}</strong>
+          <span className="app-muted"> One-pagers</span>
+        </div>
+      </div>
+      {view.kit.recentAssets.length ? (
+        <ul className="media-panel-list">
+          {view.kit.recentAssets.map((asset) => (
+            <li key={asset.id}>
+              <div>
+                <strong>{asset.title}</strong>
+                <span className="app-muted">{asset.kind}</span>
+              </div>
+              <a className="app-button secondary" href={asset.url} target="_blank" rel="noreferrer">
+                Open
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="app-muted">Asset library is empty until you add real URLs.</p>
+      )}
+      <a className="app-button" href={kitHref}>
+        Open Media Kit
+      </a>
+    </Panel>
+  );
+}
+
+function ImpactPanel({ view }: { view: LiveView }) {
+  return (
+    <Panel>
+      <header>
+        <h2>Media impact</h2>
+        <p className="app-muted">Logged activities with category media — never DEMO hours.</p>
+      </header>
+      <div className="media-stats" aria-label="Media impact">
+        <div>
+          <strong>{formatMediaMetric(view.impact.mediaActivityCount, true)}</strong>
+          <span className="app-muted"> Activities</span>
+        </div>
+        <div>
+          <strong>{formatMediaMetric(view.impact.peopleReached, true)}</strong>
+          <span className="app-muted"> People reached</span>
+        </div>
+      </div>
+      {view.impact.recent.length ? (
+        <ul className="media-panel-list">
+          {view.impact.recent.map((row) => (
+            <li key={row.id}>
+              <div>
+                <strong>{row.title}</strong>
+                <span className="app-muted">
+                  {row.occurredOn} · {formatMediaMetric(row.peopleReached, true)} reached
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState
+          soft
+          badge="No impact logs"
+          badgeTone="setup"
+          title="No media-category impact yet"
+          description="People reached stays blank until you log real activities."
+        />
+      )}
+      <a className="app-button" href={withOrgHref("/impact", view.orgId)}>
+        Open Community Impact
+      </a>
+    </Panel>
+  );
+}
+
+function LiveMediaWorkspace({
+  view,
+  tab,
+  onTab,
+  busy,
+  error,
+  cutoffCode,
+  draftMeta,
+  mutate,
+}: {
+  view: LiveView;
+  tab: Tab;
+  onTab: (tab: Tab) => void;
+  busy: boolean;
+  error: string;
+  cutoffCode: string | null;
+  draftMeta: { feature: string; generatedAt: string } | null;
+  mutate: (payload: Record<string, unknown>, method?: "POST" | "PATCH" | "DELETE") => Promise<boolean>;
+}) {
   const orgId = view.orgId;
   const showTiles = shouldShowMediaSummaryTiles({
     kit: view.kit,
     outreach: view.outreach,
     impact: view.impact,
     sponsorWall: view.sponsorWall,
+    items: view.items,
   });
-  const related = mediaRelatedLinks(orgId, { include: [...MEDIA_RELATED_INCLUDE] });
-  const nextActions = mediaNextActions({
-    orgId,
-    shell: "ready",
-    assetCount: view.kit.assetCount,
-    upcomingCount: view.outreach.upcomingCount,
-  });
-  const kitHref = withOrgHref("/media-kit", orgId);
-  const outreachHref = hubHref("/business", "outreach-calendar", orgId);
-  const impactHref = hubHref("/business", "impact", orgId);
-  const wallHref = hubHref("/business", "sponsor-wall", orgId);
+
+  const create = useCallback(
+    (payload: Record<string, unknown>) => mutate(payload, "POST"),
+    [mutate],
+  );
+
+  const markPosted = useCallback(
+    async (itemId: string) => {
+      await mutate({ action: "mark-posted", tab, itemId }, "POST");
+    },
+    [mutate, tab],
+  );
+
+  const aiDraft = useCallback(
+    async (payload: Record<string, unknown>) => {
+      await mutate(payload, "POST");
+    },
+    [mutate],
+  );
+
+  const dismiss = useCallback(
+    async (itemId: string) => {
+      await mutate({ action: "dismiss-reminder", tab: "reminders", itemId }, "POST");
+    },
+    [mutate],
+  );
 
   return (
     <main className="module-page media-page">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={hubHref("/business", "media", orgId)}>Business</a>
-            {" / Media"}
-          </>
-        }
+        breadcrumbs={<>Media</>}
         title="Media"
-        description={`${view.orgName}${view.teamNumber != null ? ` · Team ${view.teamNumber}` : ""} · ${view.seasonYear} press, social, and sponsor visuals — counts from recorded rows only.`}
+        description={`${view.orgName}${view.teamNumber != null ? ` · Team ${view.teamNumber}` : ""} · ${view.seasonYear} content calendar, drafts, kit, and impact — recorded rows only.`}
       >
         <div className="media-header-actions">
           <HowToUseLink slug="media-workspace" />
-          <nav className="product-hub-related media-related" aria-label="Related media tools">
-            {related.map((link) => (
-              <a key={link.id} className="app-button secondary" href={link.href}>
-                {link.label}
-              </a>
-            ))}
-          </nav>
+          <MediaRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
+
+      <TabBar
+        aria-label="Media sections"
+        value={tab}
+        onChange={(id) => onTab(id as Tab)}
+        tabs={TABS}
+        className="product-hub-tabs"
+      />
+
+      {error ? <p className="app-error">{error}</p> : null}
+      {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       {showTiles ? (
         <Panel>
           <div className="media-stats" aria-label="Media summary">
             <div>
+              <strong>{formatMediaMetric(view.items.length, true)}</strong>
+              <span className="app-muted"> Content items</span>
+            </div>
+            <div>
               <strong>{mediaReadinessPct(view.kit.readinessScore)}</strong>
               <span className="app-muted"> Kit readiness</span>
-            </div>
-            <div>
-              <strong>{formatMediaMetric(view.kit.assetCount, true)}</strong>
-              <span className="app-muted"> Assets</span>
-            </div>
-            <div>
-              <strong>{formatMediaMetric(view.outreach.upcomingCount, true)}</strong>
-              <span className="app-muted"> Upcoming outreach</span>
             </div>
             <div>
               <strong>{formatMediaMetric(view.impact.mediaActivityCount, true)}</strong>
               <span className="app-muted"> Media impact logs</span>
             </div>
-            <div>
-              <strong>{formatMediaMetric(view.sponsorWall.publishedEntryCount, true)}</strong>
-              <span className="app-muted"> Sponsor wall entries</span>
-            </div>
           </div>
         </Panel>
       ) : null}
 
-      <div className="media-grid">
-        <Panel>
-          <header>
-            <h2>Press kit</h2>
-            <p className="app-muted">
-              {view.kit.readinessTier === "ready"
-                ? "Profile and logo recorded — open Media Kit to edit."
-                : view.kit.missingFields.length
-                  ? `Still missing: ${view.kit.missingFields.slice(0, 3).join(", ")}${view.kit.missingFields.length > 3 ? "…" : ""}`
-                  : "No kit fields yet — never DEMO bios or logos."}
-            </p>
-          </header>
-          <p>
-            {formatMediaMetric(view.kit.logoCount, true)} logos ·{" "}
-            {formatMediaMetric(view.kit.photoCount, true)} photos ·{" "}
-            {formatMediaMetric(view.kit.documentCount, true)} one-pagers
-          </p>
-          {view.kit.recentAssets.length ? (
-            <ul className="media-panel-list">
-              {view.kit.recentAssets.map((asset) => (
-                <li key={asset.id}>
-                  <div>
-                    <strong>{asset.title}</strong>
-                    <span className="app-muted">{asset.kind}</span>
-                  </div>
-                  <a className="app-button secondary" href={asset.url} target="_blank" rel="noreferrer">
-                    Open
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="app-muted">Asset library is empty until you add real URLs.</p>
-          )}
-          <a className="app-button" href={kitHref}>
-            Open Media Kit
-          </a>
-        </Panel>
-
-        <Panel>
-          <header>
-            <h2>Outreach calendar</h2>
-            <p className="app-muted">
-              Upcoming planned/confirmed events for {view.seasonYear} — never DEMO dates.
-            </p>
-          </header>
-          <p>
-            {formatMediaMetric(view.outreach.upcomingCount, true)} upcoming ·{" "}
-            {formatMediaMetric(view.outreach.mediaCategoryCount, true)} tagged media
-          </p>
-          {view.outreach.upcoming.length ? (
-            <ul className="media-panel-list">
-              {view.outreach.upcoming.map((event) => (
-                <li key={event.id}>
-                  <div>
-                    <strong>{event.title}</strong>
-                    <span className="app-muted">
-                      {event.scheduledOn} · {event.category} · {event.status}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="app-muted">No upcoming outreach on the calendar yet.</p>
-          )}
-          <a className="app-button" href={outreachHref}>
-            Open Outreach Calendar
-          </a>
-        </Panel>
-
-        <Panel>
-          <header>
-            <h2>Media impact</h2>
-            <p className="app-muted">Logged activities with category media — never DEMO hours.</p>
-          </header>
-          <p>
-            {formatMediaMetric(view.impact.mediaActivityCount, true)} activities ·{" "}
-            {formatMediaMetric(view.impact.peopleReached, true)} people reached
-          </p>
-          {view.impact.recent.length ? (
-            <ul className="media-panel-list">
-              {view.impact.recent.map((row) => (
-                <li key={row.id}>
-                  <div>
-                    <strong>{row.title}</strong>
-                    <span className="app-muted">
-                      {row.occurredOn} · {formatMediaMetric(row.peopleReached, true)} reached
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="app-muted">No media-category impact logs yet.</p>
-          )}
-          <a className="app-button" href={impactHref}>
-            Open Community Impact
-          </a>
-        </Panel>
-
-        <Panel>
-          <header>
-            <h2>Sponsor visuals</h2>
-            <p className="app-muted">
-              {view.sponsorWall.wallPublished
-                ? "Wall is marked published — logos still come from real entries only."
-                : "Wall stays unpublished until you flip it in Sponsor Wall."}
-            </p>
-          </header>
-          <p>
-            {formatMediaMetric(view.sponsorWall.publishedEntryCount, true)} published entries
-          </p>
-          <a className="app-button" href={wallHref}>
-            Open Sponsor Wall
-          </a>
-        </Panel>
-      </div>
-
-      <MediaNextActionsPanel actions={nextActions} />
+      {tab === "calendar" ? (
+        <CalendarPanel view={view} busy={busy} onCreate={create} onMarkPosted={markPosted} />
+      ) : null}
+      {tab === "drafts" ? (
+        <DraftsPanel
+          view={view}
+          busy={busy}
+          cutoffCode={cutoffCode}
+          draftMeta={draftMeta}
+          onCreate={create}
+          onAiDraft={aiDraft}
+          onMarkPosted={markPosted}
+        />
+      ) : null}
+      {tab === "reminders" ? (
+        <RemindersPanel view={view} busy={busy} onDismiss={dismiss} />
+      ) : null}
+      {tab === "kit" ? <KitPanel view={view} /> : null}
+      {tab === "impact" ? <ImpactPanel view={view} /> : null}
     </main>
   );
 }
@@ -367,6 +831,10 @@ export default function MediaClient() {
   const [view, setView] = useState<MediaView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<Tab>("calendar");
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
+  const [draftMeta, setDraftMeta] = useState<{ feature: string; generatedAt: string } | null>(null);
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -377,6 +845,8 @@ export default function MediaClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
+    const currentTab = readTabFromUrl();
+    if (currentTab !== "calendar") query.set("tab", currentTab);
     void fetch(`/api/media${query.toString() ? `?${query.toString()}` : ""}`)
       .then(async (response) => {
         const data = (await response.json()) as MediaView | { error?: string };
@@ -394,14 +864,107 @@ export default function MediaClient() {
   }, []);
 
   useEffect(() => {
+    setTab(readTabFromUrl());
     load();
   }, [load]);
+
+  const selectTab = useCallback((next: Tab) => {
+    setTab(next);
+    writeTabToUrl(next);
+  }, []);
+
+  const mutate = useCallback(
+    async (payload: Record<string, unknown>, method: "POST" | "PATCH" | "DELETE" = "POST") => {
+      if (!view || view.status !== "live" || busy) return false;
+      setBusy(true);
+      setError("");
+      setCutoffCode(null);
+      try {
+        const response = await fetch("/api/media", {
+          method,
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            orgId: view.orgId,
+            seasonYear: view.seasonYear,
+            ...payload,
+          }),
+        });
+        const data = (await response.json()) as
+          | LiveWithDraft
+          | { error?: string; code?: string; status?: string };
+        if (!response.ok) {
+          const cutoff = resolveCutoffErrorCode(response.status, data);
+          if (cutoff) {
+            setCutoffCode(cutoff);
+            setError("AI usage limit reached — raise budgets or wait for the billing period to reset.");
+            return false;
+          }
+          setError("error" in data && data.error ? data.error : "Media update failed");
+          return false;
+        }
+        if (!("status" in data) || data.status !== "live") {
+          setError("error" in data && data.error ? data.error : "Media update failed");
+          return false;
+        }
+        const live = data as LiveWithDraft;
+        if (live.draft?.status === "setup_required") {
+          setError(live.draft.message);
+          setView(live);
+          return false;
+        }
+        if (
+          live.draft?.status === "live" &&
+          payload.action === "ai-draft" &&
+          !payload.itemId &&
+          typeof payload.title === "string" &&
+          payload.title.trim()
+        ) {
+          setDraftMeta({ feature: live.draft.feature, generatedAt: live.draft.generatedAt });
+          const createResponse = await fetch("/api/media", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              orgId: view.orgId,
+              seasonYear: view.seasonYear,
+              action: "create-item",
+              tab: "drafts",
+              title: payload.title,
+              platform: payload.platform ?? "other",
+              status: "draft",
+              caption: live.draft.caption,
+              dueAt: live.draft.dueAt,
+            }),
+          });
+          const created = (await createResponse.json()) as MediaView | { error?: string };
+          if (!createResponse.ok || !("status" in created) || created.status !== "live") {
+            setError("error" in created && created.error ? created.error : "Could not save AI draft");
+            setView(live);
+            return false;
+          }
+          setView(created);
+          return true;
+        }
+        if (live.draft?.status === "live") {
+          setDraftMeta({ feature: live.draft.feature, generatedAt: live.draft.generatedAt });
+        }
+        setView(live);
+        return true;
+      } catch {
+        setError("Media update failed");
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, view],
+  );
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const kit = view?.status === "live" ? view.kit : null;
   const outreach = view?.status === "live" ? view.outreach : null;
   const impact = view?.status === "live" ? view.impact : null;
   const sponsorWall = view?.status === "live" ? view.sponsorWall : null;
+  const items = view?.status === "live" ? view.items : [];
 
   const shell = classifyMediaShell({
     loading: view == null && !fetchFailed,
@@ -415,17 +978,30 @@ export default function MediaClient() {
     mediaCategoryCount: outreach?.mediaCategoryCount,
     mediaActivityCount: impact?.mediaActivityCount,
     publishedEntryCount: sponsorWall?.publishedEntryCount,
+    itemCount: items.length,
   });
 
-  if (shell === "ready" && view?.status === "live") {
-    return <LiveMediaWorkspace view={view} />;
+  // Live org always gets the TabBar hub so users can create the first draft/schedule.
+  if (view?.status === "live") {
+    return (
+      <LiveMediaWorkspace
+        view={view}
+        tab={tab}
+        onTab={selectTab}
+        busy={busy}
+        error={error}
+        cutoffCode={cutoffCode}
+        draftMeta={draftMeta}
+        mutate={mutate}
+      />
+    );
   }
 
   return (
     <MediaShell
-      description="Press kit, outreach dates, media impact, and sponsor visuals for business + media teammates — never DEMO metrics."
+      description="Content calendar, drafts, reminders, Media Kit, and impact — never DEMO metrics."
       orgId={orgId}
-      shell={shell}
+      shell={shell === "ready" ? "empty" : shell}
       error={error || undefined}
       onRetry={load}
     />

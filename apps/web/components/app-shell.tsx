@@ -17,6 +17,10 @@ import {
   type ProductNavIcon,
 } from "../lib/nav/product-nav";
 import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
+import {
+  pathAllowedByHubAccess,
+  type ClientHubAccessRow,
+} from "../lib/nav/hub-access-filter";
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
 import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
@@ -52,6 +56,11 @@ type Me = {
   platformAdmin?: boolean;
   unreadNotificationCount?: number;
   unreadMessageCount?: number;
+  hubAccess?: ClientHubAccessRow[] | null;
+  sponsorsAllowed?: boolean | null;
+  schoolFunded?: boolean | null;
+  outsideGrants?: boolean | null;
+  teamAffiliation?: string | null;
 };
 
 type IconName = ProductNavIcon;
@@ -386,7 +395,8 @@ export default function AppShell() {
   }, [commandOpen, commandQuery, orgId]);
 
   useEffect(() => {
-    void fetch("/api/me")
+    const meUrl = orgId ? `/api/me?orgId=${encodeURIComponent(orgId)}` : "/api/me";
+    void fetch(meUrl)
       .then(async (response) => (response.ok ? ((await response.json()) as Me) : null))
       .then((data) => {
         if (!data) return;
@@ -498,8 +508,33 @@ export default function AppShell() {
     me.email?.trim() ||
     null;
   const initial = (accountLabel?.[0] ?? "?").toUpperCase();
+
+  const hubAccess = me.hubAccess ?? null;
+  const visiblePillarLinks = useMemo(
+    () => pillarSheetLinks.filter((link) => pathAllowedByHubAccess(link.href, hubAccess)),
+    [hubAccess],
+  );
+  const visibleMoreLinks = useMemo(
+    () => moreSheetLinks.filter((link) => pathAllowedByHubAccess(link.href, hubAccess)),
+    [hubAccess],
+  );
+  const visibleIslandCatalog = useMemo(
+    () => ISLAND_TAB_CATALOG.filter((item) => pathAllowedByHubAccess(item.href, hubAccess)),
+    [hubAccess],
+  );
+  const visibleNavGroups = useMemo(
+    () =>
+      groups
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => pathAllowedByHubAccess(item.href, hubAccess)),
+        }))
+        .filter((group) => group.items.length > 0),
+    [hubAccess],
+  );
+
   const flat = useMemo(() => {
-    const items = groups.flatMap((group) => group.items);
+    const items = visibleNavGroups.flatMap((group) => group.items);
     if (me.platformAdmin) {
       items.push({ href: "/admin", label: "Global Team Manager", icon: "grid" });
     }
@@ -510,7 +545,7 @@ export default function AppShell() {
       seen.add(item.href);
       return true;
     });
-  }, [me.platformAdmin]);
+  }, [me.platformAdmin, visibleNavGroups]);
 
   const filteredNav = useMemo(() => {
     const q = commandQuery.trim().toLowerCase();
@@ -518,8 +553,8 @@ export default function AppShell() {
       // Empty query: glanceable shortcuts only — typing unlocks the full module list.
       const shortcuts: Array<{ href: string; label: string; icon: ProductNavIcon; state?: undefined }> = [
         { href: "/dashboard", label: "Home", icon: "home" },
-        ...pillarSheetLinks,
-        ...moreSheetLinks,
+        ...visiblePillarLinks,
+        ...visibleMoreLinks,
         { href: "/help", label: "Help", icon: "clipboard" },
         { href: "/account", label: "Account", icon: "gear" },
       ];
@@ -534,7 +569,7 @@ export default function AppShell() {
       const hay = `${item.label} ${item.href} ${item.state ?? ""}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [commandQuery, flat]);
+  }, [commandQuery, flat, visibleMoreLinks, visiblePillarLinks]);
 
   const orderedMemberships = useMemo(
     () => sortMembershipsByRecent(memberships, recentOrgIds),
@@ -603,7 +638,10 @@ export default function AppShell() {
   const crumbHint = breadcrumbForPath(pathname);
   const moreBadgeTotal = unreadCount + unreadMessages;
   const eventFocus = useMemo(() => buildEventFocus(myDayGlance, online), [myDayGlance, online]);
-  const islandTabs = useMemo(() => resolveIslandTabs(islandHrefs), [islandHrefs]);
+  const islandTabs = useMemo(
+    () => resolveIslandTabs(islandHrefs).filter((tab) => pathAllowedByHubAccess(tab.href, hubAccess)),
+    [islandHrefs, hubAccess],
+  );
   const activeIslandTabHref = useMemo(
     () => activeIslandHref(pathname, pathSearch, islandTabs),
     [islandTabs, pathname, pathSearch],
@@ -1028,14 +1066,14 @@ export default function AppShell() {
           </div>
         </div>
         <nav className="soft-drawer-pillars" aria-label="Six pillars">
-          {pillarSheetLinks.map((link) => (
+          {visiblePillarLinks.map((link) => (
             <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setOpen(false)}>
               <Icon name={link.icon} />
               {link.label}
             </a>
           ))}
         </nav>
-        {groups.map((group) => {
+        {visibleNavGroups.map((group) => {
           const expanded = !!expandedGroups[group.label];
           const visibleCount = group.items.filter((item) => item.state !== "planned").length;
           const isActiveGroup = activeGroupLabel === group.label;
@@ -1169,7 +1207,7 @@ export default function AppShell() {
           </button>
         </div>
         <div className="soft-more-grid soft-more-pillars">
-          {pillarSheetLinks.map((link) => (
+          {visiblePillarLinks.map((link) => (
             <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
               <Icon name={link.icon} />
               {link.label}
@@ -1177,7 +1215,7 @@ export default function AppShell() {
           ))}
         </div>
         <div className="soft-more-grid soft-more-quick">
-          {moreSheetLinks.map((link) => (
+          {visibleMoreLinks.map((link) => (
             <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
               <Icon name={link.icon} />
               {link.label}
@@ -1233,13 +1271,14 @@ export default function AppShell() {
             <div className="soft-island-slot-preview" aria-label={`${islandDraft.length} of 4 island apps selected`}>
               {[0, 1, 2, 3].map((slot) => {
                 const selectedHref = islandDraft[slot];
-                const selected = ISLAND_TAB_CATALOG.find((entry) => entry.href === selectedHref);
+                const selected = visibleIslandCatalog.find((entry) => entry.href === selectedHref)
+                  ?? ISLAND_TAB_CATALOG.find((entry) => entry.href === selectedHref);
                 return <span className={selectedHref ? "filled" : ""} key={slot}>{selected ? <><Icon name={selected.icon} />{selected.label}</> : `Slot ${slot + 1}`}</span>;
               })}
             </div>
             <p className="soft-island-order-hint">Tap apps in the order you want them to appear. Tap a selected app to remove it.</p>
             <div className="soft-island-choice-grid">
-              {ISLAND_TAB_CATALOG.map((item) => {
+              {visibleIslandCatalog.map((item) => {
                 const selected = islandDraft.includes(item.href);
                 const disabled = !selected && islandDraft.length >= 4;
                 return (

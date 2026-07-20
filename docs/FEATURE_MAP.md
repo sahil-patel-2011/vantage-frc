@@ -26,12 +26,15 @@
 | Season Costs Soft-UI | `/costs` | Real-world spend + subscriptions + live usage ledger vs season budget; empty/setup + next actions; remaining/% blank until budget set; cross-links to Orders / Fundraisers / Business budget — never DEMO $ |
 | Logistics Soft-UI | `/logistics` (also `/travel`) | Hotels, rooming, travel legs, checklist, on-duty mentors; empty/setup + next actions; hotel/travel clarity; cross-links to Event Day / My Day / Team calendar / Visit invites; tripId/hotelId org-scoped — never DEMO lodging |
 | Visit Invites Soft-UI | `/visit-invites` | Shop tours / demo days, hosts, RSVPs; empty/setup + next actions; cross-links to Logistics / Event Day / Calendar — never DEMO invites |
-| Business | `/business` | Overview · Budget · Orders · Sponsors · Sponsorship · Grants · … |
+| Business | `/business` | Overview · Budget · Orders · Sponsors · Sponsorship · Grants · … — sponsor tabs hide when org `sponsors_allowed=false` |
+| Media | `/media` | Calendar · Drafts · Reminders · Kit · Impact |
+| Section access | `/team/security` | Owner/admin hub+tab allowlists per scout/viewer (`membership_hub_access`); unrestricted when no rows |
+| Onboarding funding | `/onboarding` | Team heads set private/public/community affiliation + school funds / grants / sponsors_allowed |
 | Business Soft-UI CRM | `/business?tab=sponsors` · `/business?tab=placements` | Soft-UI pipeline / packages / placements; empty/setup + next actions; cross-links to fundraisers, grants, orders, Finance-in-AI; packageId org-scoped — never DEMO sponsor metrics |
 | Business Soft-UI grants | `/business?tab=grants` · `/team/grants` | Pipeline + draft library + guided grant writing; empty/setup + next actions; metered AI hard-stop via UsageCutoffBanner; cross-links to sponsors / fundraisers / writer — never DEMO award $ |
 | Business Soft-UI fundraisers | `/fundraisers` · Overview fundraising glance | Soft-UI events + goal progress from recorded deposits/goals only; empty/setup + next actions; cross-links to Sponsors / Grants / Orders — never DEMO raised totals |
 | Business Soft-UI impact & awards | `/impact` · `/team/awards` · Business · Awards | Soft-UI outreach log + readiness from recorded activities; award essays from catalog submissions; empty/setup + next actions; cross-links to Business hub / Grants / Sponsors — never DEMO hours or win rates |
-| Business Media workspace | `/media` (Business More tools) | Soft-UI hub for press/social/business-media teammates — fans in Media Kit readiness/assets, outreach calendar, media-category impact, sponsor-wall counts with deep-links; empty/setup + next actions — never DEMO media metrics |
+| Media Soft-UI workspace | `/media` (Media hub) | Soft-UI TabBar: Calendar · Drafts · Reminders · Kit · Impact — content CRUD + metered caption drafts + due reminders; fans in Media Kit readiness and media-category impact; empty/setup — never DEMO media metrics |
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Prototypes · Batteries (+ More tools) |
 | Readiness Score Soft-UI | `/readiness-score` (Build More tools) | Ship-readiness index from subsystems / checklist / FMEA / weight·power; empty/setup + next actions; UsageCutoffBanner on metered subsystem writes; FMEA / Inspection / Code via hubHref — never DEMO ship scores |
 | Control Map Soft-UI | `/control-map` | Driver/operator button bindings; empty/setup + next actions; counts from saved rows only; cross-links to Subsystems / FMEA / Practice — never DEMO bindings |

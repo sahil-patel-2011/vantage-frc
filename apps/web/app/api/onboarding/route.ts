@@ -13,6 +13,8 @@ async function session() {
 
 const focus = z.enum(["competition", "build", "business", "leadership"]);
 const role = z.enum(["student", "mentor", "coach", "parent", "other"]);
+const teamAffiliation = z.enum(["private_school", "public_school", "community"]);
+
 const completeSchema = z.object({
   firstName: z.string().trim().min(1).max(60),
   lastName: z.string().trim().min(1).max(60),
@@ -27,6 +29,10 @@ const completeSchema = z.object({
   stateProv: z.string().trim().max(80).nullable().optional(),
   description: z.string().trim().max(2000).nullable().optional(),
   termsAccepted: z.literal(true),
+  teamAffiliation: teamAffiliation.nullable().optional(),
+  schoolFunded: z.boolean().optional(),
+  outsideGrants: z.boolean().optional(),
+  sponsorsAllowed: z.boolean().optional(),
 }).strict();
 
 const draftSchema = z.discriminatedUnion("step", [
