@@ -111,7 +111,7 @@ function StatusTiles({ view }: { view: LiveView }) {
   );
 }
 
-export default function PrototypeTrackerClient() {
+export default function PrototypeTrackerClient({ embedded = false }: { embedded?: boolean } = {}) {
   const embed = useHubEmbed();
   const [view, setView] = useState<PrototypeTrackerView | null>(null);
   const [error, setError] = useState("");

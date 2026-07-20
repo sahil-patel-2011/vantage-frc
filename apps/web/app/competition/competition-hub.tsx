@@ -22,23 +22,23 @@ export default function CompetitionHub() {
   return (
     <ProductHubShell hubId="competition">
       {({ tab, orgId }) => {
-        if (tab === "command") return <CommandClient />;
-        if (tab === "my-day") return <MyDayClient />;
-        if (tab === "strategy") return <StrategyClient />;
-        if (tab === "pick-clock") return <PickClockClient />;
-        if (tab === "chemistry") return <ChemistryClient />;
-        if (tab === "match-checklist") return <MatchChecklistClient />;
+        if (tab === "command") return <CommandClient embedded />;
+        if (tab === "my-day") return <MyDayClient embedded />;
+        if (tab === "strategy") return <StrategyClient embedded />;
+        if (tab === "pick-clock") return <PickClockClient embedded />;
+        if (tab === "chemistry") return <ChemistryClient embedded />;
+        if (tab === "match-checklist") return <MatchChecklistClient embedded />;
         if (tab === "scouting") {
           return (
             <HubOrgGate orgId={orgId} label="Scouting">
-              {(id) => <ScoutingClient orgId={id} />}
+              {(id) => <ScoutingClient orgId={id} embedded />}
             </HubOrgGate>
           );
         }
         if (tab === "forms") {
           return (
             <HubOrgGate orgId={orgId} label="Form builder">
-              {(id) => <FormsClient orgId={id} />}
+              {(id) => <FormsClient orgId={id} embedded />}
             </HubOrgGate>
           );
         }

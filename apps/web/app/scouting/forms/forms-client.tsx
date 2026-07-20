@@ -358,7 +358,7 @@ function PreviewField({ question }: { question: DraftQuestion }) {
   );
 }
 
-export default function FormsClient({ orgId }: { orgId: string }) {
+export default function FormsClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const [payload, setPayload] = useState<SchemasPayload | null>(null);
   const [loadError, setLoadError] = useState("");
   const [type, setType] = useState<EntryType>("match");

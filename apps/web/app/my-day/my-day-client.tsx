@@ -243,7 +243,7 @@ function MyDayShell({
   );
 }
 
-export default function MyDayClient() {
+export default function MyDayClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<MyDayView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);

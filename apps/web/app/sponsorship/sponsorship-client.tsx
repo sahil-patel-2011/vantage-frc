@@ -86,7 +86,7 @@ async function downloadBlob(response: Response, fallbackName: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function SponsorshipClient() {
+export default function SponsorshipClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<SponsorshipView | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -228,8 +228,10 @@ export default function SponsorshipClient() {
 
   if (!view) {
     return (
-      <main className="module-page svp-page">
-        <PageHeader navPath="/sponsorship" title="Sponsorship one-pagers" description="Loading…" />
+      <main className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
+        {!embedded ? (
+          <PageHeader navPath="/sponsorship" title="Sponsorship one-pagers" description="Loading…" />
+        ) : null}
         {error ? (
           <p className="telemetry-status" role="alert">
             {error}
@@ -241,12 +243,14 @@ export default function SponsorshipClient() {
 
   if (view.status === "setup_required") {
     return (
-      <main className="module-page svp-page">
-        <PageHeader
-          navPath="/sponsorship"
-          title="Sponsorship one-pagers"
-          description="Compose org-isolated value props for cash, parts, and mentorship."
-        />
+      <main className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
+        {!embedded ? (
+          <PageHeader
+            navPath="/sponsorship"
+            title="Sponsorship one-pagers"
+            description="Compose org-isolated value props for cash, parts, and mentorship."
+          />
+        ) : null}
         <EmptyState title="Select a workspace" description={view.message}>
           <a className="app-button" href="/workspace">
             Open workspace
@@ -259,7 +263,8 @@ export default function SponsorshipClient() {
   const { context, onePagers, seasons, seasonYear } = view;
 
   return (
-    <main className="module-page svp-page">
+    <main className={`module-page svp-page${embedded ? " is-embedded" : ""}`}>
+      {!embedded ? (
       <PageHeader
         navPath="/sponsorship"
         title="Sponsorship one-pagers"
@@ -321,6 +326,47 @@ export default function SponsorshipClient() {
           </button>
         </div>
       </PageHeader>
+      ) : (
+        <div className="svp-toolbar svp-embed-toolbar">
+          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            Season
+            <select
+              value={season ?? seasonYear}
+              onChange={(event) => {
+                const next = Number(event.target.value);
+                setSeason(next);
+                setSelectedId(null);
+                setDraft(null);
+                load(next);
+              }}
+            >
+              {(seasons.length ? seasons : [seasonYear]).map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="app-button"
+            disabled={busy}
+            onClick={() =>
+              void mutate(
+                {
+                  action: "create",
+                  title: defaultTitle(context.teamNumber, season ?? seasonYear),
+                  whoWeAre: context.seedWhoWeAre ?? "",
+                  whatWeDo: context.seedFundingNeed ?? "",
+                },
+                "One-pager created.",
+              )
+            }
+          >
+            New one-pager
+          </button>
+        </div>
+      )}
 
       {error ? (
         <p className="telemetry-status" role="alert">

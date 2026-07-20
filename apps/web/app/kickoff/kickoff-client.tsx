@@ -1015,7 +1015,7 @@ function RulesSection({
   );
 }
 
-export default function KickoffClient() {
+export default function KickoffClient({ embedded = false }: { embedded?: boolean } = {}) {
   const embed = useHubEmbed();
   const [view, setView] = useState<KickoffView | null>(null);
   const [error, setError] = useState("");

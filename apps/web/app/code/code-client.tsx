@@ -51,10 +51,12 @@ type Proposal = ReturnType<typeof buildDiffProposal>;
 export function CodeClient({
   orgId = "",
   related = "build",
+  embedded = false,
 }: {
   orgId?: string;
   /** Soft-UI related strip: Build hub vs AI hub embedding. */
   related?: "build" | "ai";
+  embedded?: boolean;
 }) {
   const [path, setPath] = useState("src/main/java/frc/robot/subsystems/DriveSubsystem.java");
   const [content, setContent] = useState(CODE_COACH_SAMPLE);
@@ -153,7 +155,8 @@ export function CodeClient({
   }
 
   return (
-    <main className="module-page cdc-page">
+    <main className={`module-page cdc-page${embedded ? " is-embedded" : ""}`}>
+      {!embedded ? (
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">{related === "ai" ? "AI / Code assist" : "Build / Code Coach"}</span>
@@ -173,12 +176,15 @@ export function CodeClient({
           ) : null}
         </div>
       </header>
+      ) : null}
 
-      {related === "ai" ? (
-        orgId ? <AiHubRelated orgId={orgId} active="code" /> : null
-      ) : (
-        <BuildHubRelated orgId={orgId} active="code" />
-      )}
+      {!embedded ? (
+        related === "ai" ? (
+          orgId ? <AiHubRelated orgId={orgId} active="code" /> : null
+        ) : (
+          <BuildHubRelated orgId={orgId} active="code" />
+        )
+      ) : null}
 
       {!orgId ? (
         <EmptyState

@@ -147,7 +147,7 @@ function isOnline(device: Device | undefined) {
   return Date.now() - new Date(device.lastSeenAt).getTime() < 90_000;
 }
 
-export default function CadWorkspace({ orgId }: { orgId: string }) {
+export default function CadWorkspace({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selected, setSelected] = useState("");
   const [detail, setDetail] = useState<{
