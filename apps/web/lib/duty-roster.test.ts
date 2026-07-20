@@ -9,7 +9,7 @@ import {
   parseDutyAction,
   sortDuties,
   type DutyAssignment,
-} from "./duty-roster";
+} from "./duty-roster-shared";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const USER = "22222222-2222-4222-8222-222222222222";

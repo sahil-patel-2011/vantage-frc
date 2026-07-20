@@ -7,17 +7,19 @@ import { TeamOpsNav } from "../../components/team-ops-nav";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { statusLabel } from "../../lib/todos";
-import { TODO_STATUSES, type TodosView } from "../../lib/todos/compute-todos";
 import {
   TODO_LIST_FILTERS,
   TODOS_RELATED_INCLUDE,
+  TODO_STATUSES,
   filterTodos,
+  statusLabel,
   todoDeepLink,
   todosNextActions,
   type TodoListFilter,
-} from "../../lib/todos/todos-related";
-import type { TeamTodo, TodoStatus } from "../../lib/todos/types";
+  type TeamTodo,
+  type TodoStatus,
+  type TodosView,
+} from "../../lib/todos";
 import "./todos.css";
 
 type LiveView = Extract<TodosView, { status: "live" }>;

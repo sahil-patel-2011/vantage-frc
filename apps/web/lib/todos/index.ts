@@ -1,12 +1,5 @@
+/** Client-safe todos barrel — never re-export compute-todos (@vantage/core). */
 export { asOfUtcDate, computeMetrics, daysToDue, sortTodos, statusLabel, withFlags } from "./evaluate";
-export {
-  TODO_STATUSES,
-  computeTodosView,
-  createTodo,
-  deleteTodo,
-  updateTodo,
-  type TodosView,
-} from "./compute-todos";
 export {
   TODO_LIST_FILTERS,
   TODOS_RELATED_INCLUDE,
@@ -22,4 +15,7 @@ export type {
   TodoMetrics,
   TodoStatus,
   TodoSubteam,
+  TodosSetupStep,
+  TodosView,
 } from "./types";
+export { TODO_STATUSES } from "./types";

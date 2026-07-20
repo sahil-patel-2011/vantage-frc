@@ -23,7 +23,7 @@ import {
   dutyWorkflowLinks,
   groupDutiesByDay,
   type DutyKind,
-} from "../../../lib/duty-roster";
+} from "../../../lib/duty-roster-shared";
 import {
   buildMonthCells,
   buildWeekCells,
