@@ -33,18 +33,17 @@ const capabilities = [
 
 export default function CodeFeaturePage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense marketing-quiet">
+    <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="route-page">
-        <header className="route-hero brand-route-hero">
-          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
-          <span className="section-id">FRC CODE COACH</span>
-          <h1>Flag risky robot-code patterns—then teach the safer habit.</h1>
+        <header className="lux-route-hero">
+          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
+          <h1>Flag risky patterns—then teach the safer habit.</h1>
           <p>
             A learning coach for FRC software: reviews repository input for robot-loop and hardware risks, explains why
             those patterns fail under match pressure, and shows better approaches. Changes stay human-approved diffs.
           </p>
-          <div className="route-hero-actions">
+          <div className="actions">
             <a className="button primary" href="/signin">
               Sign in to use Code
             </a>
@@ -54,27 +53,27 @@ export default function CodeFeaturePage() {
           </div>
         </header>
 
-        <section className="ops-preview-band product-show" aria-labelledby="code-capabilities-title">
-          <header>
-            <span className="section-id">WHAT IT COVERS</span>
+        <section className="lux-pillars" aria-labelledby="code-capabilities-title">
+          <header className="lux-section-head">
             <h2 id="code-capabilities-title">Review, explain, suggest—always with an approval gate.</h2>
           </header>
-          <div className="product-glances">
+          <ul className="lux-pillar-list">
             {capabilities.map((item) => (
-              <article className="product-glance" key={item.id}>
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-              </article>
+              <li key={item.id}>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                </div>
+              </li>
             ))}
-            <p className="product-glances-note">
-              Marketing copy only. Signed-in Code stays empty until a repository and review context exist.
-            </p>
-          </div>
+          </ul>
+          <p className="product-glances-note">
+            Marketing copy only. Signed-in Code stays empty until a repository and review context exist.
+          </p>
         </section>
 
-        <section className="pricing-preview">
+        <section className="lux-pricing">
           <div>
-            <span className="section-id">NEXT</span>
             <h2>Join the waitlist or explore the product.</h2>
           </div>
           <div className="pricing-preview-actions">

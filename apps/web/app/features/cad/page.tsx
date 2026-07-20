@@ -10,18 +10,17 @@ export const metadata: Metadata = {
 
 export default function CadFeaturePage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense marketing-quiet">
+    <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="route-page">
-        <header className="route-hero brand-route-hero">
-          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
-          <span className="section-id">AI CAD BUILDER · SETUP REQUIRED</span>
+        <header className="lux-route-hero">
+          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>Start with engineering intent, not an unreviewed mutation.</h1>
           <p>
             Onshape hosted jobs and a paired Fusion 360 desktop relay. Both require configured credentials—Vantage does
             not claim to control a local CAD session from Vercel.
           </p>
-          <div className="route-hero-actions">
+          <div className="actions">
             <a className="button primary" href="/signin">
               Sign in to configure access
             </a>
@@ -31,9 +30,8 @@ export default function CadFeaturePage() {
           </div>
         </header>
 
-        <section className="ops-preview-band product-show">
-          <header>
-            <span className="section-id">WORKFLOW</span>
+        <section className="lux-showcase">
+          <header className="lux-section-head">
             <h2>Confirm the brief. Approve each step.</h2>
             <p>Marketing preview of the CAD path—not live geometry.</p>
           </header>

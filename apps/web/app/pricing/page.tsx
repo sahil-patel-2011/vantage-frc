@@ -24,20 +24,18 @@ export default function PricingPage() {
   const teamMax = PRICING_CATALOG.team_max;
 
   return (
-    <div className="marketing-site marketing-v2 marketing-dense marketing-pro marketing-quiet">
+    <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="pricing-page">
-        <section className="pricing-hero brand-route-hero">
-          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
-          <span className="section-id">PRICING / INDIVIDUAL OR TEAM</span>
+        <section className="lux-route-hero pricing-hero">
+          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>Fund private work or the whole team—deliberately.</h1>
           <p>
-            Free keeps the Soft-UI competition core useful with BYOK/local AI. Raised paid plans add Vantage managed
-            routing across scouting trust, strategy, Event Day/Pit ops, and CAD—with included API allowance at published
-            provider rates—then a hard stop unless you buy Usage Credits or enable PAYG. No per-seat student pricing and
-            no surprise charges.
+            Free keeps the Soft-UI competition core useful with BYOK/local AI. Raised paid plans add managed routing with
+            included API allowance at published provider rates—then a hard stop unless you buy Usage Credits or enable
+            PAYG. No per-seat student pricing and no surprise charges.
           </p>
-          <div className="route-hero-actions">
+          <div className="actions">
             <a className="button primary" href="/#waitlist">
               Join the waitlist
             </a>
@@ -86,10 +84,9 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className="waitlist v2-final-waitlist pricing-waitlist soft-waitlist-band" id="waitlist">
+        <section className="lux-waitlist pricing-waitlist" id="waitlist">
           <div>
-            <p className="brand-hero-wordmark route-wordmark waitlist-wordmark">Vantage</p>
-            <span className="section-id">EARLY ACCESS</span>
+            <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
             <h2>Join the waitlist before checkout opens.</h2>
             <p>
               Catalog: Access ${accessPrice} · Individual Pro ${individualPro.monthlyUsd} / Max $

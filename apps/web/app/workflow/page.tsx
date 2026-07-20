@@ -43,20 +43,16 @@ const stages = [
 
 export default function WorkflowPage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense marketing-quiet">
+    <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="route-page">
-        <header className="route-hero">
-          <div className="showcase-kicker">
-            <span className="brand-chip">Vantage</span>
-            <span className="section-id">SYSTEM WORKFLOW</span>
-          </div>
+        <header className="lux-route-hero">
+          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>Shared context is the handoff layer.</h1>
           <p>
-            Vantage keeps global reference data separate from private team observations, then joins them only inside an
-            authorized organization and active event. Scouting is not a dead-end folder: synced facts inform the FRC
-            Assistant, predictions, strategy playbooks, pick lists, and live match awareness. Generated output never
-            silently replaces its source evidence.
+            Global reference data stays separate from private team observations, then joins only inside an authorized
+            organization and active event. Synced scout facts inform the Assistant, predictions, playbooks, and pick
+            lists—generated output never silently replaces its source evidence.
           </p>
         </header>
 

@@ -55,9 +55,8 @@ export function FAQ() {
   };
 
   return (
-    <section className="faq-section" aria-labelledby="faq-title">
-      <header>
-        <span className="section-id">QUESTIONS</span>
+    <section className="faq-section lux-faq" aria-labelledby="faq-title">
+      <header className="lux-section-head">
         <h2 id="faq-title">Frequently asked.</h2>
       </header>
       <div className="faq-list">

@@ -52,18 +52,17 @@ const scoutFeeds = [
 
 export default function StrategyFeaturePage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense marketing-quiet">
+    <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="route-page">
-        <header className="route-hero brand-route-hero">
-          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
-          <span className="section-id">FRC ASSISTANT · STRATEGY</span>
-          <h1>Competition intel you can inspect—not a vanity dashboard.</h1>
+        <header className="lux-route-hero">
+          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
+          <h1>Competition intel you can inspect.</h1>
           <p>
             Strategy, matchups, opponent history, and robot capabilities inside your team’s active event. Synced
             scouting feeds predictions and pick lists with source labels intact—empty until real data exists.
           </p>
-          <div className="route-hero-actions">
+          <div className="actions">
             <a className="button primary" href="/signin">
               Sign in to use Strategy
             </a>
@@ -111,9 +110,8 @@ export default function StrategyFeaturePage() {
           </div>
         </section>
 
-        <section className="pricing-preview">
+        <section className="lux-pricing">
           <div>
-            <span className="section-id">NEXT</span>
             <h2>See the rest of the product, or join the waitlist.</h2>
           </div>
           <div className="pricing-preview-actions">
