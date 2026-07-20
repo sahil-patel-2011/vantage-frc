@@ -18,6 +18,7 @@ import {
   type ByokProvider,
 } from "../../../lib/ai-keys/byok-providers";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { HowToUseLink } from "../../help/how-to-use-link";
 import "./ai-keys.css";
 
 type ProviderMeta = {
@@ -471,7 +472,9 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         navPath="/team/ai-keys"
         title="AI API keys"
         description="Bring your own OpenAI, Anthropic, Google, or local OpenAI-compatible server. Fixed model or Automode by task toughness. Never DEMO usage totals."
-      />
+      >
+        <HowToUseLink slug="byok-automode" />
+      </PageHeader>
 
       {orgId ? <RelatedStrip orgId={orgId} /> : null}
 

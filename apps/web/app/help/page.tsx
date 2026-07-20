@@ -1,6 +1,7 @@
-import { redirect } from "next/navigation";
+import HelpClient from "./help-client";
 
-/** Legacy Settings nav path — Soft-UI tickets live at `/support`. */
-export default function HelpRedirectPage() {
-  redirect("/support");
+export const dynamic = "force-dynamic";
+
+export default function HelpPage() {
+  return <HelpClient />;
 }
