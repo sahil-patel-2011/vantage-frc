@@ -1304,6 +1304,7 @@ export default function AppShell() {
             </div>
             {islandMessage ? <p className="soft-island-editor-error" role="alert">{islandMessage}</p> : null}
             <footer>
+              <a href="/help/bottom-island">How to customize</a>
               <a href={withOrgHref("/dashboard?customize=1", orgId)}>Customize dashboard</a>
               <a href={withOrgHref("/competition?tab=forms", orgId)}>Build scouting forms</a>
               <button type="button" onClick={() => setIslandDraft(defaultIslandHrefs())}>Reset default</button>

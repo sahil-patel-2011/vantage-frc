@@ -541,3 +541,19 @@
   }
 }
 
+@media (max-width: 560px) {
+  .sfb-question-head,
+  .sfb-option-actions,
+  .sfb-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sfb-question-head .app-button,
+  .sfb-option-actions .app-button,
+  .sfb-toolbar .app-button,
+  .sfb-actions .app-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

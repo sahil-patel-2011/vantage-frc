@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
 import { PageHeader } from "../../../components/ui";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
+import { HowToUseLink } from "../../help/how-to-use-link";
 import {
   AI_BUDGETS_RELATED_INCLUDE,
   AI_BUDGETS_SCOPE_CARDS,
@@ -247,6 +248,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
         description="Hard spend and token limits checked before every metered AI call. Included plan allowance hard-stops unless you buy Usage Credits or enable PAYG — no silent overage."
       >
         <nav className="settings-inline-links" aria-label="Related settings">
+          <HowToUseLink slug="credits-vs-free" />
           {headerLinks
             .filter((link) =>
               ["chat", "usage", "pricing", "account", "governance", "admin"].includes(link.id),

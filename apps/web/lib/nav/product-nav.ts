@@ -235,7 +235,6 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/grant-report", label: "Grant Report", icon: "clipboard" },
       { href: "/impact-essay", label: "FIRST Impact Essay Generator", icon: "clipboard" },
       { href: "/judge-sim", label: "Judge-Pitch Simulator", icon: "clipboard" },
-      { href: "/outreach-calendar", label: "Outreach Calendar", icon: "clipboard" },
       { href: "/sponsor-suite", label: "Sponsor Suite", icon: "clipboard" },
       { href: "/sponsor-tier-calculator", label: "Sponsor Tier Calculator", icon: "clipboard" },
       { href: "/sponsor-wall", label: "Sponsor Wall", icon: "clipboard" },
@@ -256,7 +255,8 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/media?tab=reminders", label: "Reminders", icon: "bell" },
       { href: "/media?tab=kit", label: "Kit", icon: "clipboard" },
       { href: "/media?tab=impact", label: "Impact", icon: "target" },
-      { href: "/media-kit", label: "Media Kit", icon: "clipboard" },
+      { href: "/media-kit", label: "Media Kit editor", icon: "clipboard" },
+      { href: "/outreach-calendar", label: "Outreach Calendar editor", icon: "clipboard" },
     ],
   },
   {
