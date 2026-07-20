@@ -1,5 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { BUS_FACTOR_AREAS, summarizeBusFactor } from ".";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import type { BusFactorArea, BusFactorSummary, WorkloadEntry } from "./types";
 
 export { BUS_FACTOR_AREAS };
@@ -10,6 +12,30 @@ export type BusFactorSetupStep = {
   detail: string;
   href: string;
 };
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO risk metrics. */
+function setupSteps(orgId: string | null): BusFactorSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Bus-Factor is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "attendance",
+      label: "Open Attendance",
+      detail: "Presence stays blank until real check-ins exist — never DEMO headcount.",
+      href: hubHref("/team", "attendance", orgId),
+    },
+    {
+      id: "hours-self-view",
+      label: "Open My Hours",
+      detail: "Clocked hours stay blank until members log shop time — never DEMO hours.",
+      href: hubHref("/team", "hours-self-view", orgId),
+    },
+  ];
+}
 
 export type BusFactorView =
   | {
@@ -97,9 +123,7 @@ export async function computeBusFactorView(
     return {
       status: "setup_required",
       message: "Select a team workspace to see burnout / bus-factor risk.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: setupSteps(null),
       orgId: null,
       windowWeeks,
     };

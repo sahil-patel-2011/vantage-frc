@@ -1,0 +1,16 @@
+/* Soft-UI Robot Readiness Score — .readiness-score-* + shared Soft-UI tokens. Never DEMO metrics. */
+.readiness-score-page{display:grid;gap:16px}
+.readiness-score-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.readiness-score-related{display:flex;flex-wrap:wrap;gap:8px}
+.readiness-score-next-actions{margin:0}
+.readiness-score-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.readiness-score-panel{display:grid;gap:12px}
+.readiness-score-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.readiness-score-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.readiness-score-tip{margin:0}
+.readiness-score-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.readiness-score-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+@media(max-width:900px){
+  .readiness-score-header-actions{justify-content:flex-start}
+  .readiness-score-next-actions li,.readiness-score-setup-steps li,.readiness-score-row{flex-direction:column;align-items:stretch}
+}

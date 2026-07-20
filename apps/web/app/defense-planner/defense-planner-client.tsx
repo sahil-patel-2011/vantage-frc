@@ -1,19 +1,47 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Badge,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  StatRowSkeleton,
+  StatTile,
+  TableSkeleton,
+  type BadgeTone,
+} from "../../components/ui";
+import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   DRIVETRAIN_TYPES,
   defenseRecommendationLabel,
   drivetrainLabel,
 } from "../../lib/defense-planner";
 import type { DefensePlannerView } from "../../lib/defense-planner/compute-defense-planner";
+import {
+  DEFENSE_PLANNER_RELATED_INCLUDE,
+  classifyDefensePlannerShell,
+  defensePlannerNextActions,
+  defensePlannerRelatedLinks,
+  defensePlannerSetupSteps,
+  defensePlannerShellCopy,
+  formatDefensePlannerMetric,
+  shouldShowDefensePlannerSummaryTiles,
+  type DefensePlannerNextAction,
+  type DefensePlannerShellKind,
+} from "../../lib/defense-planner/defense-planner-related";
 import type { DrivetrainType } from "../../lib/defense-planner/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./defense-planner.css";
 
-function recommendationTone(recommendation: string): string {
+function recommendationTone(recommendation: string): BadgeTone {
   if (recommendation === "play_defense") return "good";
   if (recommendation === "stay_offense") return "setup";
-  return "demo";
+  return "danger";
 }
 
 function pct(value: number): string {
@@ -22,14 +50,153 @@ function pct(value: number): string {
 
 type LiveView = Extract<DefensePlannerView, { status: "live" }>;
 
+function DefenseRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = defensePlannerRelatedLinks(orgId, {
+    include: [...DEFENSE_PLANNER_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related defense-planner-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function DefenseNextActionsPanel({ actions }: { actions: DefensePlannerNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions defense-planner-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy, Scouting, and Counter-book — never DEMO defense metrics.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function DefenseShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: DefensePlannerShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = defensePlannerNextActions({ orgId, shell });
+  const copy = defensePlannerShellCopy(shell);
+  const competitionHref = hubHref("/competition", "defense-planner", orgId);
+  const steps = shell === "setup" ? defensePlannerSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page defense-planner-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Defense Planner"}
+          </>
+        }
+        title="Defense Planner"
+        description={description}
+      >
+        <DefenseRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading defense planner">
+          <StatRowSkeleton count={3} />
+          <TableSkeleton rows={3} cols={3} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : shell === "empty" ? "No matchups yet" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href="#defense-planner-matchup">
+                Log a matchup
+              </a>
+              <a className="app-button secondary" href={hubHref("/competition", "scouting", orgId)}>
+                Open Scouting
+              </a>
+              <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
+                Open Strategy
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="defense-planner-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Strategy and Scouting — never DEMO defense metrics.</p>
+          </header>
+          <ul className="defense-planner-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted defense-planner-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <DefenseNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function DefensePlannerClient() {
   const [view, setView] = useState<DefensePlannerView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -57,11 +224,36 @@ export default function DefensePlannerClient() {
     load();
   }, [load]);
 
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const matchupCount = view?.status === "live" ? view.matchups.length : 0;
+  const hasProfile = view?.status === "live" ? Boolean(view.robotProfile) : false;
+
+  const shell = classifyDefensePlannerShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId: view?.status === "live" ? view.orgId : view?.status === "setup_required" ? view.orgId : null,
+    matchupCount,
+  });
+  const shellCopy = defensePlannerShellCopy(shell);
+  const nextActions = defensePlannerNextActions({
+    orgId,
+    shell,
+    matchupCount,
+    hasProfile,
+  });
+  const relatedLinks = defensePlannerRelatedLinks(orgId, {
+    include: [...DEFENSE_PLANNER_RELATED_INCLUDE],
+  });
+  const competitionHref = hubHref("/competition", "defense-planner", orgId);
+  const showTiles = shouldShowDefensePlannerSummaryTiles({ matchupCount, hasProfile });
+
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
       setBusy(true);
       setError("");
+      setCutoffCode(null);
       try {
         const response = await fetch("/api/defense-planner", {
           method: "POST",
@@ -70,6 +262,12 @@ export default function DefensePlannerClient() {
         });
         const data = (await response.json()) as DefensePlannerView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          const cutoff = resolveCutoffErrorCode(response.status, data);
+          if (cutoff) {
+            setCutoffCode(cutoff);
+            setError("AI usage limit reached — raise budgets or wait for the billing period to reset.");
+            return;
+          }
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
@@ -84,38 +282,77 @@ export default function DefensePlannerClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <DefenseShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <DefenseShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <DefenseShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <DefenseShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page defense-planner-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Defense Planner"}
           </>
         }
         title="Defense Planner"
-        description="For the next opponent: weigh our mass and drivetrain against their scouted cycle path to decide whether — and whom — to play defense."
+        description="Weigh our mass and drivetrain against scouted opponent cycles to decide whether — and whom — to play defense. Cross-check Strategy, Scouting, and Counter-book — never DEMO defense metrics."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="defense-planner-header-actions">
+          {view.seasons.length > 0 ? (
+            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
+
+      {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -123,43 +360,49 @@ export default function DefensePlannerClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      <DefenseNextActionsPanel actions={nextActions} />
+
+      {showTiles ? (
+        <Panel className="defense-planner-panel" aria-label="Defense planner counts">
+          <div className="defense-planner-stats">
+            <StatTile label="Matchups" value={formatDefensePlannerMetric(matchupCount, true)} />
+            <StatTile label="Profile" value={hasProfile ? "Set" : "—"} />
+            <StatTile label="Season" value={String(view.seasonYear)} />
+          </div>
+        </Panel>
+      ) : null}
+
+      {shell === "empty" ? (
         <EmptyState
-          title="Could not load the Defense Planner"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No matchups yet"
+          badgeTone="setup"
+          title={shellCopy.title}
+          description={shellCopy.description}
+          className="product-hub-setup"
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          <a className="app-button" href={hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile"}>
+            {hasProfile ? "Log a matchup" : "Save robot profile"}
+          </a>
+          <a className="app-button secondary" href={hubHref("/competition", "scouting", orgId)}>
+            Open Scouting
+          </a>
+          <a className="app-button secondary" href={hubHref("/competition", "strategy", orgId)}>
+            Open Strategy
+          </a>
         </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <RobotProfilePanel view={view} busy={busy} mutate={mutate} />
-          <LogMatchupForm busy={busy} mutate={mutate} />
-          <MatchupsPanel view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      ) : null}
+
+      <div style={{ display: "grid", gap: 16 }}>
+        <RobotProfileForm view={view} busy={busy} mutate={mutate} />
+        <LogMatchupForm busy={busy} mutate={mutate} cutoffCode={cutoffCode} orgId={orgId} />
+        <MatchupsPanel view={view} busy={busy} mutate={mutate} />
+      </div>
     </main>
   );
 }
 
-function RobotProfilePanel({
+function RobotProfileForm({
   view,
   busy,
   mutate,
@@ -176,7 +419,9 @@ function RobotProfilePanel({
 
   return (
     <Panel
+      id="defense-planner-profile"
       as="form"
+      className="defense-planner-panel"
       onSubmit={(event) => {
         event.preventDefault();
         const mass = Number(massLbs);
@@ -194,7 +439,7 @@ function RobotProfilePanel({
       <h2 style={{ margin: 0 }}>Our robot profile — {view.seasonYear}</h2>
       {!profile ? (
         <small className="app-muted">
-          Set our mass and drivetrain to unlock matchup recommendations.
+          Set our mass and drivetrain to unlock matchup recommendations — never DEMO containment.
         </small>
       ) : null}
       <FormGrid min={160}>
@@ -236,9 +481,13 @@ function RobotProfilePanel({
 function LogMatchupForm({
   busy,
   mutate,
+  cutoffCode,
+  orgId,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  cutoffCode: string | null;
+  orgId: string | null;
 }) {
   const empty = useMemo(
     () => ({
@@ -260,7 +509,9 @@ function LogMatchupForm({
 
   return (
     <Panel
+      id="defense-planner-matchup"
       as="form"
+      className="defense-planner-panel"
       onSubmit={(event) => {
         event.preventDefault();
         const opponentTeamNumber = Number(form.opponentTeamNumber);
@@ -296,6 +547,10 @@ function LogMatchupForm({
       style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Scout the next opponent</h2>
+      <p className="app-muted" style={{ margin: 0 }}>
+        Metered local recommendation — UsageCutoffBanner appears when budgets hard-stop. Never DEMO defense metrics.
+      </p>
+      {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
       <FormGrid min={160}>
         <FormRow label="Team number">
           <input type="number" min={1} value={form.opponentTeamNumber} onChange={set("opponentTeamNumber")} required />
@@ -364,21 +619,15 @@ function MatchupsPanel({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   if (view.matchups.length === 0) {
-    return (
-      <EmptyState
-        badge="No matchups yet"
-        badgeTone="setup"
-        title="Log your first opponent matchup"
-        description="Enter the scouted mass, drivetrain, and cycle path for the next opponent to get a defense recommendation."
-      />
-    );
+    return null;
   }
   return (
-    <Panel>
+    <Panel className="defense-planner-panel" id="defense-planner-list">
       <h2 style={{ marginTop: 0 }}>Matchups — {view.seasonYear}</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
+      <p className="app-muted">Real logged matchups only — never DEMO recommendations.</p>
+      <ul className="defense-planner-list">
         {view.matchups.map((matchup) => (
-          <li key={matchup.id} className="app-card soft-panel" style={{ display: "grid", gap: 6 }}>
+          <li key={matchup.id} className="app-card soft-panel defense-planner-row">
             <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
               <div>
                 <strong>
@@ -392,9 +641,9 @@ function MatchupsPanel({
                 </small>
               </div>
               <div style={{ textAlign: "right" }}>
-                <span className={`app-badge ${recommendationTone(matchup.recommendation)}`}>
+                <Badge tone={recommendationTone(matchup.recommendation)}>
                   {defenseRecommendationLabel(matchup.recommendation)}
-                </span>
+                </Badge>
                 <small className="app-muted" style={{ display: "block" }}>
                   {pct(matchup.confidence)} confidence
                 </small>
