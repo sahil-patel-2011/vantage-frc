@@ -10,11 +10,11 @@ export const metadata: Metadata = marketingPageMetadata({
 });
 
 const stages = [
-  ["1", "Reference", "TBA / Statbotics caches with freshness.", "Setup required"],
-  ["2", "Observe", "Offline forms + voice notes → attributed facts.", "Available"],
-  ["3", "Reconcile", "Conflicts stay visible before models run.", "Available"],
-  ["4", "Decide", "Strategy, Alliance Selection Desk, FRC Assistant—sourced.", "Available"],
-  ["5", "Execute", "Competition Command / My Day, CAD briefs, exports.", "Setup required"],
+  ["1", "Reference", "TBA / Statbotics caches with freshness."],
+  ["2", "Observe", "Offline forms + voice notes → attributed facts."],
+  ["3", "Reconcile", "Conflicts stay visible before models run."],
+  ["4", "Decide", "Strategy, Alliance Selection Desk, FRC Assistant—sourced."],
+  ["5", "Execute", "Competition Command / My Day, CAD briefs, exports."],
 ] as const;
 
 export default function WorkflowPage() {
@@ -39,16 +39,13 @@ export default function WorkflowPage() {
         </header>
 
         <section className="flow-map lux-content" aria-label="Vantage context flow">
-          {stages.map(([id, title, detail, status], index) => (
+          {stages.map(([id, title, detail], index) => (
             <article key={id}>
               <div>
                 <b>{id}</b>
                 {index < stages.length - 1 && <i aria-hidden="true" />}
               </div>
               <section>
-                <span className={`status-badge ${status === "Available" ? "available" : "setup"}`}>
-                  {status}
-                </span>
                 <h2>{title}</h2>
                 <p>{detail}</p>
               </section>

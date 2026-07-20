@@ -177,8 +177,7 @@ export default function Home() {
           <div>
             <h2>Join the waitlist.</h2>
             <p>
-              Terms required. Access is invite-only. {raisedPricingSummaryLine()} on <a href="/pricing">pricing</a>.{" "}
-              <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
+              Invite-only access. {raisedPricingSummaryLine()} on <a href="/pricing">pricing</a>.
             </p>
           </div>
           <WaitlistForm idPrefix="hero" />
