@@ -519,7 +519,7 @@ export default function SignInClient({
         <div className="signin-method-panel">
           <p className="signin-method-heading">
             <span>METHOD · GOOGLE</span>
-            <strong>One tap when Google OAuth is configured</strong>
+            <strong>{googleReady ? "Continue with Google" : "Google sign-in unavailable"}</strong>
           </p>
           {googleReady ? (
             <button className="signin-google" type="button" onClick={google} disabled={busy}>
@@ -529,10 +529,16 @@ export default function SignInClient({
           ) : (
             <>
               <SetupShell kind="google" />
-              <button className="signin-google disabled" type="button" disabled aria-disabled="true">
+              <button
+                className="signin-google disabled"
+                type="button"
+                disabled
+                aria-disabled="true"
+                title="Google sign-in is not configured for this deployment yet."
+              >
                 <GoogleMark />
                 Continue with Google
-                <em>setup_required</em>
+                <em>Not configured</em>
               </button>
             </>
           )}
@@ -547,7 +553,7 @@ export default function SignInClient({
             <button
               type="button"
               role="tab"
-              aria-pressed={mode === "password"}
+              aria-selected={mode === "password"}
               onClick={() => switchMode("password")}
             >
               Password
@@ -555,7 +561,7 @@ export default function SignInClient({
             <button
               type="button"
               role="tab"
-              aria-pressed={mode === "email-otp"}
+              aria-selected={mode === "email-otp"}
               onClick={() => switchMode("email-otp")}
             >
               Email code

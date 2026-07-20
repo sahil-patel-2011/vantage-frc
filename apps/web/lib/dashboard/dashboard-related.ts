@@ -140,42 +140,39 @@ export function dashboardNextActions(input: {
     });
   }
 
-  actions.push(
-    {
-      id: "competition",
-      label: "Competition hub",
-      detail: "Command, My Day, strategy, and scouting in one Soft-UI shell.",
-      href: dashboardHubHref("competition", orgId),
-      primary: shell === "ready",
-    },
-    {
-      id: "team",
-      label: "Team hub",
-      detail: "Members, calendar, and ops — invite stays exact-email.",
-      href: dashboardHubHref("team", orgId),
-    },
-    {
-      id: "business",
-      label: "Business hub",
-      detail: "Sponsors, grants, and award evidence — no DEMO counts.",
-      href: dashboardHubHref("business", orgId),
-    },
-    {
-      id: "build",
-      label: "Build hub",
-      detail: "CAD, bring-up, and shop tools for the robot season.",
-      href: dashboardHubHref("build", orgId),
-    },
-    {
-      id: "ai",
-      label: "AI hub",
-      detail: "Metered chat and budgets — configure a provider before expecting usage.",
-      href: dashboardHubHref("ai", orgId),
-    },
-  );
+  // Ready home already has the hub rail — only surface real blockers here.
+  if (shell === "ready") {
+    if (input.hasScoutingSchemas === false) {
+      actions.push({
+        id: "scouting-forms",
+        label: "Create scouting forms",
+        detail: "Starter match and pit forms stay blank until your team publishes them.",
+        href: hubHref("/competition", "forms", orgId),
+        primary: true,
+      });
+    }
+    if (input.hasAiProvider === false) {
+      actions.push({
+        id: "ai-provider",
+        label: "Add AI API keys",
+        detail: "Paste OpenAI, Anthropic, or Google keys for Free / your-keys routing — no DEMO spend.",
+        href: withOrgHref("/team/ai-keys", orgId),
+        primary: actions.length === 0,
+      });
+    }
+    return actions;
+  }
+
+  actions.push({
+    id: "competition",
+    label: "Competition hub",
+    detail: "Command, My Day, strategy, and scouting in one Soft-UI shell.",
+    href: dashboardHubHref("competition", orgId),
+    primary: actions.length === 0,
+  });
 
   if (input.hasScoutingSchemas === false) {
-    actions.splice(1, 0, {
+    actions.push({
       id: "scouting-forms",
       label: "Create scouting forms",
       detail: "Starter match and pit forms stay blank until your team publishes them.",
