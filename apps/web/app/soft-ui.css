@@ -51,6 +51,8 @@ body.has-app-shell .app-topbar{display:none}
   border-bottom:1px solid color-mix(in srgb,var(--soft-line) 55%,transparent);
   backdrop-filter:saturate(1.35) blur(14px);-webkit-backdrop-filter:saturate(1.35) blur(14px);
 }
+/* Account pop lives inside this stacking context — elevate above the dismiss scrim when open. */
+.soft-topbar.account-menu-open{z-index:86}
 .soft-icon-btn{
   display:grid;place-items:center;width:44px;height:44px;color:var(--soft-ink);
   background:transparent;border:1px solid transparent;border-radius:10px;cursor:pointer;
@@ -80,13 +82,17 @@ body.has-app-shell .app-topbar{display:none}
 }
 .soft-avatar.lg{width:88px;height:88px;font-size:36px;box-shadow:0 10px 28px color-mix(in srgb,var(--soft-accent) 28%,transparent)}
 .soft-avatar-btn{border:0;cursor:pointer;padding:0}
-.soft-account-menu{position:relative}
-.soft-account-scrim{position:fixed;z-index:74;inset:0;border:0;background:transparent;cursor:default}
+.soft-account-menu{position:relative;z-index:1}
+/* Scrim is a shell sibling (not inside topbar). Keep it under the elevated topbar (86) but
+   above island/FAB (80/81) so outside clicks dismiss without eating menu item hits. */
+.soft-account-scrim{position:fixed;z-index:85;inset:0;border:0;background:transparent;cursor:default}
 .soft-account-pop{
-  position:absolute;z-index:76;top:calc(100% + 8px);right:0;width:min(280px,calc(100vw - 24px));
+  position:absolute;z-index:2;top:calc(100% + 8px);right:0;width:min(280px,calc(100vw - 24px));
   padding:8px;border-radius:16px;background:var(--soft-card);border:1px solid var(--soft-line);
   box-shadow:0 16px 40px rgba(19,32,51,.16);display:grid;gap:2px;
   animation:dash-fade .16s ease;
+  /* Ensure menu items receive pointer events above any ancestor overlays. */
+  pointer-events:auto;
 }
 .soft-account-pop-head{padding:10px 12px 12px;border-bottom:1px solid var(--soft-line);margin-bottom:4px}
 .soft-account-pop-head strong{display:block;font-size:14px}
