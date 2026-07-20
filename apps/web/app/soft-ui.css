@@ -287,31 +287,32 @@ body.has-app-shell .app-topbar{display:none}
 
 /* Island + FAB */
 .soft-island{
-  position:fixed;z-index:80;left:50%;bottom:calc(14px + var(--soft-safe-bottom));transform:translateX(-50%);
+  position:fixed;z-index:95;left:50%;bottom:calc(14px + var(--soft-safe-bottom));transform:translateX(-50%);
   display:flex;gap:4px;padding:8px;border-radius:999px;background:var(--soft-island);
   border:1px solid color-mix(in srgb,var(--soft-line) 70%,transparent);box-shadow:0 12px 40px rgba(28,36,48,.16);
   backdrop-filter:saturate(1.4) blur(16px);-webkit-backdrop-filter:saturate(1.4) blur(16px);
   touch-action:manipulation;
 }
-.soft-island a{
+.soft-island a,.soft-island-more{
   display:grid;justify-items:center;gap:3px;min-width:64px;padding:8px 10px;border-radius:16px;
   color:var(--soft-muted);text-decoration:none;font:600 10px/1 ui-sans-serif;
   transition:background .18s ease,color .18s ease,transform .18s ease;
+  border:0;background:transparent;cursor:pointer;
 }
 .soft-island a:active,.soft-island-more:active{transform:scale(.96)}
-.soft-island a svg{width:20px;height:20px}
-.soft-island a[aria-current="page"]{color:var(--soft-accent);background:var(--soft-accent-soft)}
+.soft-island a svg,.soft-island-more svg{width:20px;height:20px}
+.soft-island a[aria-current="page"],.soft-island-more.is-open{color:var(--soft-accent);background:var(--soft-accent-soft)}
 .soft-island-more{position:relative}
 .soft-island-badge{
   position:absolute;top:2px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;
   color:#fff;background:#ef4444;font:700 9px/16px ui-sans-serif;text-align:center;
 }
 .soft-more-scrim{
-  position:fixed;z-index:88;inset:0;border:0;cursor:pointer;
+  position:fixed;z-index:96;inset:0;border:0;cursor:pointer;
   background:rgba(15,20,28,.42);backdrop-filter:blur(3px);animation:soft-scrim-in .2s ease;
 }
 .soft-more-sheet{
-  position:fixed;z-index:89;left:50%;bottom:calc(78px + var(--soft-safe-bottom));
+  position:fixed;z-index:97;left:50%;bottom:calc(78px + var(--soft-safe-bottom));
   width:min(420px,calc(100vw - 20px));transform:translateX(-50%) translateY(18px);
   padding:10px 12px 14px;border-radius:22px;background:var(--soft-card);
   border:1px solid var(--soft-line);box-shadow:0 18px 48px rgba(15,20,28,.22);
@@ -341,13 +342,13 @@ body.has-app-shell .app-topbar{display:none}
 }
 .soft-more-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
 .soft-more-pillars{grid-template-columns:repeat(3,minmax(0,1fr))}
-.soft-more-quick{grid-template-columns:repeat(4,minmax(0,1fr))}
+.soft-more-quick{grid-template-columns:repeat(3,minmax(0,1fr))}
 .soft-more-grid a{
   position:relative;display:grid;justify-items:center;gap:6px;min-height:72px;padding:12px 8px;border-radius:14px;
   border:1px solid var(--soft-line);background:var(--soft-bg);color:var(--soft-ink);
   text-decoration:none;font:700 11px/1 var(--font-source-sans),ui-sans-serif;
 }
-.soft-more-quick a{min-height:64px;padding:10px 6px;font-size:10px}
+.soft-more-quick a{min-height:68px;padding:10px 6px;font-size:10px}
 .soft-more-grid a svg{width:20px;height:20px;color:var(--soft-accent)}
 .soft-more-grid a b,.soft-more-actions a b{
   position:absolute;top:8px;right:8px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;
@@ -577,6 +578,17 @@ html[data-theme="dark"] .soft-callout{background:#1a2740;color:#bfdbfe}
   letter-spacing:.04em;text-transform:uppercase;
 }
 .dash-home-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px}
+.dash-home-more{position:relative}
+.dash-home-more>summary{
+  list-style:none;cursor:pointer;min-height:36px;padding:8px 12px;border:1px solid var(--soft-line);
+  border-radius:999px;background:var(--soft-card);color:var(--soft-muted);font:600 12px/1 var(--font-source-sans),system-ui;
+}
+.dash-home-more>summary::-webkit-details-marker{display:none}
+.dash-home-more[open]>summary{color:var(--soft-accent);border-color:color-mix(in srgb,var(--soft-accent) 35%,var(--soft-line))}
+.dash-home-more>div{
+  position:absolute;right:0;top:calc(100% + 6px);z-index:20;display:grid;gap:8px;min-width:200px;padding:10px;
+  border:1px solid var(--soft-line);border-radius:12px;background:var(--soft-card);box-shadow:0 12px 32px rgba(15,20,28,.12);
+}
 .dash-home .app-button{border:0;background:var(--soft-accent);color:#fff;cursor:pointer;border-radius:12px;box-shadow:0 8px 20px color-mix(in srgb,var(--soft-accent) 28%,transparent)}
 .dash-home .app-button.secondary{background:var(--soft-card);color:var(--soft-ink);border:1px solid var(--soft-line);box-shadow:none}
 .dash-hub-rail{

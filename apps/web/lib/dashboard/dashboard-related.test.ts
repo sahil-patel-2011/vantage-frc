@@ -68,4 +68,14 @@ describe("dashboard Soft-UI related", () => {
     expect(ai?.href).toBe(`/team/ai-keys?orgId=${ORG}`);
     expect(ai?.label.toLowerCase()).toContain("api keys");
   });
+
+  it("keeps ready next actions to blockers only — no hub tour", () => {
+    const actions = dashboardNextActions({
+      orgId: ORG,
+      shell: "ready",
+      hasScoutingSchemas: true,
+      hasAiProvider: true,
+    });
+    expect(actions).toEqual([]);
+  });
 });
