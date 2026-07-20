@@ -1,0 +1,270 @@
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
+
+/** Soft-UI related surfaces for Knowledge-gap detective (never DEMO wiki gaps). */
+export const KNOWLEDGE_GAP_RELATED_LINKS = [
+  { id: "knowledge", label: "Knowledge", tab: "knowledge" },
+  { id: "decisions", label: "Decisions", hub: "/ai" as const, tab: "decisions" },
+  { id: "fmea", label: "FMEA", tab: "fmea" },
+  { id: "meeting-autopilot", label: "Meeting Autopilot", tab: "meeting-autopilot" },
+] as const;
+
+export type KnowledgeGapRelatedId = (typeof KNOWLEDGE_GAP_RELATED_LINKS)[number]["id"];
+
+export type KnowledgeGapRelatedLink = {
+  id: KnowledgeGapRelatedId;
+  label: string;
+  href: string;
+};
+
+export const KNOWLEDGE_GAP_RELATED_INCLUDE: KnowledgeGapRelatedId[] = [
+  "knowledge",
+  "fmea",
+  "meeting-autopilot",
+];
+
+export function knowledgeGapRelatedLinks(
+  orgId?: string | null,
+  options?: { active?: KnowledgeGapRelatedId; include?: KnowledgeGapRelatedId[] },
+): KnowledgeGapRelatedLink[] {
+  const include = options?.include ? new Set(options.include) : null;
+  return KNOWLEDGE_GAP_RELATED_LINKS.filter((link) => {
+    if (link.id === options?.active) return false;
+    if (include && !include.has(link.id)) return false;
+    return true;
+  }).map((link) => {
+    const hubPath = "hub" in link ? link.hub : link.id === "fmea" ? "/build" : "/team";
+    return {
+      id: link.id,
+      label: link.label,
+      href: hubHref(hubPath, link.tab, orgId),
+    };
+  });
+}
+
+export type KnowledgeGapShellKind = "loading" | "error" | "setup" | "empty" | "ready";
+
+export type KnowledgeGapNextAction = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+  primary?: boolean;
+};
+
+export type KnowledgeGapEmptyCopy = {
+  kind: KnowledgeGapShellKind;
+  badge?: string;
+  title: string;
+  description: string;
+};
+
+export type KnowledgeGapSetupStepLink = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+};
+
+export function knowledgeGapSetupSteps(orgId?: string | null): KnowledgeGapSetupStepLink[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — gap scans are org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "knowledge",
+      label: "Open Knowledge wiki",
+      detail: "Pages you write here are the coverage source — never invented stubs.",
+      href: hubHref("/team", "knowledge", orgId),
+    },
+    {
+      id: "fmea",
+      label: "Open FMEA",
+      detail: "Subsystems logged in FMEA become subjects the detective can scan.",
+      href: hubHref("/build", "fmea", orgId),
+    },
+  ];
+}
+
+export function formatKnowledgeGapMetric(value: unknown, loaded: boolean): string {
+  if (!loaded) return "…";
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n) || n < 0) return "0";
+  return Math.floor(n).toLocaleString();
+}
+
+export function shouldShowKnowledgeGapSummaryTiles(itemCount: number, hasScan: boolean): boolean {
+  return hasScan || itemCount > 0;
+}
+
+export function classifyKnowledgeGapShell(input: {
+  loading?: boolean;
+  fetchFailed?: boolean;
+  status?: "setup_required" | "live" | null;
+  orgId?: string | null;
+  hasScan?: boolean;
+  itemCount?: number;
+}): KnowledgeGapShellKind {
+  if (input.loading) return "loading";
+  if (input.fetchFailed) return "error";
+  if (input.status === "setup_required" || !input.orgId) return "setup";
+  if (!input.hasScan) return "empty";
+  return "ready";
+}
+
+export function knowledgeGapShellCopy(kind: KnowledgeGapShellKind): KnowledgeGapEmptyCopy {
+  switch (kind) {
+    case "loading":
+      return {
+        kind,
+        title: "Loading Knowledge-gap detective…",
+        description: "Checking workspace membership and wiki coverage — never DEMO gap lists.",
+      };
+    case "error":
+      return {
+        kind,
+        badge: "Unavailable",
+        title: "Could not load Knowledge-gap detective",
+        description:
+          "A network or server issue blocked the scan. Retry, or open the wiki while it reloads — never invent DEMO gaps.",
+      };
+    case "setup":
+      return {
+        kind,
+        badge: "Setup required",
+        title: "Select a team workspace",
+        description:
+          "Knowledge-gap detective is org-scoped. Pick a workspace before scanning — nothing is pre-seeded.",
+      };
+    case "empty":
+      return {
+        kind,
+        badge: "No scan yet",
+        title: "Run your first coverage scan",
+        description:
+          "Diffs subsystems, decisions, and scouted events against real wiki pages — never DEMO gap packs.",
+      };
+    default:
+      return {
+        kind: "ready",
+        title: "Documentation coverage",
+        description: "Gaps from real wiki diffs only — never DEMO coverage counters.",
+      };
+  }
+}
+
+export function knowledgeGapNextActions(input: {
+  orgId?: string | null;
+  shell: KnowledgeGapShellKind;
+  itemCount?: number;
+  hasScan?: boolean;
+}): KnowledgeGapNextAction[] {
+  const orgId = input.orgId ?? null;
+  const itemCount = input.itemCount ?? 0;
+  const hasScan = input.hasScan ?? false;
+
+  if (!orgId || input.shell === "setup") {
+    if (!orgId) {
+      return [
+        {
+          id: "workspace",
+          label: "Select workspace",
+          detail: "Gap scans are org-scoped — pick a team before running a scan.",
+          href: "/workspace",
+          primary: true,
+        },
+        {
+          id: "knowledge",
+          label: "Open Knowledge",
+          detail: "Wiki coverage stays blank until pages exist.",
+          href: hubHref("/team", "knowledge", null),
+        },
+      ];
+    }
+    return [
+      {
+        id: "workspace",
+        label: "Open Workspace",
+        detail: "Finish membership setup so Knowledge-gap can resolve your organization.",
+        href: withOrgHref("/workspace", orgId),
+        primary: true,
+      },
+      {
+        id: "knowledge",
+        label: "Open Knowledge",
+        detail: "Write wiki pages the detective will treat as coverage.",
+        href: hubHref("/team", "knowledge", orgId),
+      },
+    ];
+  }
+
+  if (input.shell === "error") {
+    return [
+      {
+        id: "retry",
+        label: "Retry Knowledge-gap",
+        detail: "Reload real wiki diffs — nothing is invented while this fails.",
+        href: withOrgHref("/knowledge-gap", orgId),
+        primary: true,
+      },
+      {
+        id: "knowledge",
+        label: "Open Knowledge",
+        detail: "The wiki stays available while the scan reloads.",
+        href: hubHref("/team", "knowledge", orgId),
+      },
+    ];
+  }
+
+  if (input.shell === "empty" || !hasScan) {
+    return [
+      {
+        id: "run-scan",
+        label: "Run coverage scan",
+        detail: "Gaps stay blank until you scan real subsystems and wiki pages — never DEMO packs.",
+        href: "#knowledge-gap-scan",
+        primary: true,
+      },
+      {
+        id: "knowledge",
+        label: "Open Knowledge",
+        detail: "Add wiki pages before or after the scan.",
+        href: hubHref("/team", "knowledge", orgId),
+      },
+      {
+        id: "fmea",
+        label: "Open FMEA",
+        detail: "Subsystems logged here become scan subjects.",
+        href: hubHref("/build", "fmea", orgId),
+      },
+    ];
+  }
+
+  return [
+    {
+      id: itemCount > 0 ? "draft-stubs" : "rescan",
+      label: itemCount > 0 ? "Draft stub pages" : "Re-scan coverage",
+      detail:
+        itemCount > 0
+          ? `${itemCount} undocumented subject${itemCount === 1 ? "" : "s"} from real wiki diffs — never DEMO gaps.`
+          : "Coverage is complete for this scan — re-run after new subsystems land.",
+      href: itemCount > 0 ? "#knowledge-gap-items" : "#knowledge-gap-scan",
+      primary: true,
+    },
+    {
+      id: "knowledge",
+      label: "Open Knowledge",
+      detail: "Edit wiki pages that close open gaps.",
+      href: hubHref("/team", "knowledge", orgId),
+    },
+    {
+      id: "meeting",
+      label: "Open Meeting Autopilot",
+      detail: "Turn undocumented subjects into agenda items.",
+      href: hubHref("/team", "meeting-autopilot", orgId),
+    },
+  ];
+}

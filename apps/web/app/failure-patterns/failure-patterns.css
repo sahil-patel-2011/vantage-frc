@@ -1,0 +1,24 @@
+/* Soft-UI Repeat Failure Patterns — never DEMO clusters. */
+.fp-page{display:grid;gap:16px}
+.fp-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.fp-filter{display:flex;gap:6px;align-items:center}
+.fp-related{display:flex;flex-wrap:wrap;gap:8px}
+.fp-next-actions{margin:0}
+.fp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.fp-panel{display:grid;gap:12px}
+.fp-panel h2{margin:6px 0 0}
+.fp-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.fp-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.fp-tip{margin:0}
+.fp-clusters{display:grid;gap:12px}
+.fp-cluster-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.fp-cluster-count{text-align:right}
+.fp-cluster-count strong{font-size:1.6rem}
+.fp-block{display:block}
+.fp-event-list{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.fp-event-row{display:flex;justify-content:space-between;gap:8px}
+@media(max-width:900px){
+  .fp-header-actions{justify-content:flex-start}
+  .fp-next-actions li,.fp-setup-steps li,.fp-event-row{flex-direction:column;align-items:stretch}
+  .fp-cluster-count{text-align:left}
+}

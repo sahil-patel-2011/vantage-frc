@@ -1,23 +1,173 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { matchVideoSourceLabel } from "../../lib/match-video-index";
 import {
   MATCH_VIDEO_SOURCES,
   type MatchVideoIndexView,
 } from "../../lib/match-video-index/compute-match-video-index";
 import type { MatchVideoSource } from "../../lib/match-video-index/types";
+import {
+  MATCH_VIDEO_INDEX_RELATED_INCLUDE,
+  classifyMatchVideoIndexShell,
+  formatMatchVideoIndexMetric,
+  matchVideoIndexNextActions,
+  matchVideoIndexRelatedLinks,
+  matchVideoIndexSetupSteps,
+  matchVideoIndexShellCopy,
+  shouldShowMatchVideoIndexSummaryTiles,
+  type MatchVideoIndexNextAction,
+  type MatchVideoIndexShellKind,
+} from "../../lib/match-video-index/match-video-index-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./match-video-index.css";
 
 type LiveView = Extract<MatchVideoIndexView, { status: "live" }>;
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = matchVideoIndexRelatedLinks(orgId, {
+    include: [...MATCH_VIDEO_INDEX_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related mvi-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: MatchVideoIndexNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions mvi-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Scouting, Match Notes, and Match-Delta — never DEMO clip packs.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function IndexShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: MatchVideoIndexShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = matchVideoIndexNextActions({ orgId, shell });
+  const copy = matchVideoIndexShellCopy(shell);
+  const competitionHref = hubHref("/competition", "match-video-index", orgId);
+  const steps = shell === "setup" ? matchVideoIndexSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page mvi-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Match Video Index"}
+          </>
+        }
+        title="Match Video Index"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading Match Video Index">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <a className="app-button" href="#match-video-index-add">
+              Add a match video
+            </a>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="mvi-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Scouting and Match Notes — never DEMO clip packs.</p>
+          </header>
+          <ul className="mvi-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted mvi-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function MatchVideoIndexClient() {
   const [view, setView] = useState<MatchVideoIndexView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -41,6 +191,27 @@ export default function MatchVideoIndexClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const videoCount = view?.status === "live" ? view.summary.totalVideos : 0;
+  const matchCount = view?.status === "live" ? view.summary.totalMatches : 0;
+
+  const shell = classifyMatchVideoIndexShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    videoCount,
+  });
+  const shellCopy = matchVideoIndexShellCopy(shell);
+  const nextActions = matchVideoIndexNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    videoCount,
+  });
+  const competitionHref = hubHref("/competition", "match-video-index", orgId);
+  const showTiles = shouldShowMatchVideoIndexSummaryTiles(videoCount, matchCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -68,18 +239,44 @@ export default function MatchVideoIndexClient() {
     [orgId, busy],
   );
 
+  if (shell === "loading") {
+    return <IndexShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <IndexShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <IndexShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page mvi-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Match Video Index"}
           </>
         }
         title="Match Video Index"
-        description="Auto-index your match videos by match key for quick review — jump straight to the right clip."
-      />
+        description="Auto-index your match videos by match key for quick review — never DEMO clip packs. Cross-check Scouting and Match Notes."
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -87,63 +284,27 @@ export default function MatchVideoIndexClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Match Video Index"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <AddVideoForm busy={busy} mutate={mutate} />
-          <VideoGroups view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
-
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Videos indexed", value: String(summary.totalVideos) },
-    { label: "Matches covered", value: String(summary.totalMatches) },
-    {
-      label: "Top source",
-      value: summary.bySource[0] ? matchVideoSourceLabel(summary.bySource[0].source) : "—",
-    },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {showTiles ? (
+        <Panel className="mvi-panel">
+          <div className="mvi-stats">
+            <StatTile label="Videos indexed" value={formatMatchVideoIndexMetric(videoCount, loaded)} />
+            <StatTile label="Matches covered" value={formatMatchVideoIndexMetric(matchCount, loaded)} />
+            <StatTile
+              label="Top source"
+              value={
+                view.summary.bySource[0]
+                  ? matchVideoSourceLabel(view.summary.bySource[0].source)
+                  : "—"
+              }
+            />
           </div>
-        ))}
-      </div>
-    </Panel>
+        </Panel>
+      ) : null}
+
+      <AddVideoForm busy={busy} mutate={mutate} />
+      <VideoGroups view={view} busy={busy} mutate={mutate} />
+      <NextActionsPanel actions={nextActions} />
+    </main>
   );
 }
 
@@ -159,35 +320,33 @@ function VideoGroups({
   if (view.summary.totalVideos === 0) {
     return (
       <EmptyState
+        soft
         badge="No videos yet"
         badgeTone="setup"
         title="Index your first match video"
-        description="Add a video link with its match key to build a quick-review library for the whole team."
+        description="Add a video link with its match key — never DEMO clip packs."
       />
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Videos by match</h2>
-      <div style={{ display: "grid", gap: 14 }}>
+    <Panel id="match-video-index-groups" className="mvi-panel">
+      <h2>Videos by match</h2>
+      <div className="mvi-groups">
         {view.groups.map((group) => (
           <div key={group.matchKey}>
             <strong>{group.matchLabel ?? group.matchKey}</strong>
-            <small className="app-muted" style={{ display: "block", marginBottom: 6 }}>
+            <small className="app-muted mvi-block">
               {group.matchKey}
               {group.eventKey ? ` · ${group.eventKey}` : ""}
             </small>
-            <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
+            <ul className="mvi-video-list">
               {group.videos.map((video) => (
-                <li
-                  key={video.id}
-                  style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-                >
+                <li key={video.id} className="mvi-video-row">
                   <div>
-                    <a href={video.videoUrl} target="_blank" rel="noreferrer" style={{ wordBreak: "break-all" }}>
+                    <a href={video.videoUrl} target="_blank" rel="noreferrer" className="mvi-url">
                       {video.videoUrl}
                     </a>
-                    <small className="app-muted" style={{ display: "block" }}>
+                    <small className="app-muted mvi-block">
                       {matchVideoSourceLabel(video.source)}
                       {video.recordedOn ? ` · ${video.recordedOn}` : ""}
                       {video.tags.length ? ` · ${video.tags.join(", ")}` : ""}
@@ -198,6 +357,7 @@ function VideoGroups({
                     type="button"
                     className="text-button"
                     disabled={busy}
+                    aria-label={`Remove video ${video.videoUrl} from ${group.matchLabel ?? group.matchKey}`}
                     onClick={() => {
                       if (window.confirm("Remove this video from the index?")) {
                         mutate({ action: "delete-video", entryId: video.id });
@@ -242,7 +402,9 @@ function AddVideoForm({
 
   return (
     <Panel
+      id="match-video-index-add"
       as="form"
+      className="mvi-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.matchKey.trim() || !form.videoUrl.trim()) return;
@@ -256,14 +418,17 @@ function AddVideoForm({
           recordedOn: form.recordedOn || undefined,
           notes: form.notes || undefined,
           tags: form.tags
-            ? form.tags.split(",").map((t) => t.trim()).filter(Boolean)
+            ? form.tags
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean)
             : [],
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Add video</h2>
+      <h2>Add video</h2>
+      <p className="app-muted">Real URLs and match keys only — never DEMO clip packs.</p>
       <FormGrid min={160}>
         <FormRow label="Match key">
           <input value={form.matchKey} onChange={set("matchKey")} placeholder="2026casj_qm12" required />
