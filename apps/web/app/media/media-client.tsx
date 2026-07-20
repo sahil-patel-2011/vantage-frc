@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { SoftAccessDenied } from "../../components/hub-access-gate";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AIAttribution, EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { HowToUseLink } from "../help/how-to-use-link";
@@ -30,8 +31,13 @@ import {
   type MediaNextAction,
   type MediaShellKind,
 } from "../../lib/media/media-related";
+import {
+  clientCanAccessHub,
+  filterTabsByHubAccess,
+} from "../../lib/nav/hub-access-filter";
 import { hubById, hubPrimaryTabs, isHubTab } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { useClientAccessProfile } from "../../lib/nav/use-client-access";
 import "./media.css";
 
 const MEDIA_HUB = hubById("media");
@@ -711,6 +717,7 @@ function LiveMediaWorkspace({
   view,
   tab,
   onTab,
+  tabs,
   busy,
   error,
   cutoffCode,
@@ -720,6 +727,7 @@ function LiveMediaWorkspace({
   view: LiveView;
   tab: Tab;
   onTab: (tab: Tab) => void;
+  tabs: Array<{ id: Tab; label: string }>;
   busy: boolean;
   error: string;
   cutoffCode: string | null;
@@ -778,7 +786,7 @@ function LiveMediaWorkspace({
         aria-label="Media sections"
         value={tab}
         onChange={(id) => onTab(id as Tab)}
-        tabs={TABS}
+        tabs={tabs}
         className="product-hub-tabs"
       />
 
@@ -828,16 +836,25 @@ function LiveMediaWorkspace({
 }
 
 export default function MediaClient() {
+  const access = useClientAccessProfile();
   const [view, setView] = useState<MediaView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("calendar");
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [draftMeta, setDraftMeta] = useState<{ feature: string; generatedAt: string } | null>(null);
 
+  const visibleTabs = useMemo(
+    () => filterTabsByHubAccess(TABS, access.hubAccess, "media"),
+    [access.hubAccess],
+  );
+  const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, "media");
+
   const load = useCallback(() => {
     setFetchFailed(false);
+    setAccessDenied(false);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -850,6 +867,11 @@ export default function MediaClient() {
     void fetch(`/api/media${query.toString() ? `?${query.toString()}` : ""}`)
       .then(async (response) => {
         const data = (await response.json()) as MediaView | { error?: string };
+        if (response.status === 403) {
+          setAccessDenied(true);
+          setError("error" in data && data.error ? data.error : "You do not have access to this tab");
+          return;
+        }
         if (!response.ok || !("status" in data)) {
           setFetchFailed(true);
           setError("error" in data && data.error ? data.error : "Could not load Media");
@@ -867,6 +889,14 @@ export default function MediaClient() {
     setTab(readTabFromUrl());
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!access.ready || !visibleTabs.length) return;
+    if (visibleTabs.some((entry) => entry.id === tab)) return;
+    const fallback = (visibleTabs[0]?.id as Tab) ?? "calendar";
+    setTab(fallback);
+    writeTabToUrl(fallback);
+  }, [access.ready, tab, visibleTabs]);
 
   const selectTab = useCallback((next: Tab) => {
     setTab(next);
@@ -982,12 +1012,27 @@ export default function MediaClient() {
   });
 
   // Live org always gets the TabBar hub so users can create the first draft/schedule.
+  if (hubDenied || accessDenied) {
+    return (
+      <SoftAccessDenied
+        breadcrumbs="Media / Media hub"
+        title="Media"
+        heading={hubDenied ? "Media is not available" : "This Media tab is not available"}
+        description={
+          error ||
+          "Your team admin limited which Media sections you can open. Ask an owner to update section access under Team → Security."
+        }
+      />
+    );
+  }
+
   if (view?.status === "live") {
     return (
       <LiveMediaWorkspace
         view={view}
         tab={tab}
         onTab={selectTab}
+        tabs={visibleTabs}
         busy={busy}
         error={error}
         cutoffCode={cutoffCode}

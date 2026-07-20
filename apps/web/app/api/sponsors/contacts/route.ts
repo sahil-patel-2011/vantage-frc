@@ -1,7 +1,7 @@
 import { withRls } from "@vantage/db";
 import {
-  requireOrgAdmin,
-  requireOrgMember,
+  requireSponsorsAdmin,
+  requireSponsorsMember,
   requireSponsorInOrg,
   requireTenantSession,
   tenantErrorResponse,
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const sponsorId = url.searchParams.get("sponsorId");
     if (!orgId || !sponsorId) throw new Error("orgId and sponsorId are required");
     const contacts = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgMember(client, orgId, current.user.id);
+      await requireSponsorsMember(client, orgId, current.user.id);
       await requireSponsorInOrg(client, orgId, sponsorId);
       const result = await client.query(
         `SELECT id, sponsor_id AS "sponsorId", name, title, email, phone, is_primary AS "isPrimary", notes
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     if (!orgId || !sponsorId) throw new Error("orgId and sponsorId are required");
     if (!name) throw new Error("Contact name is required");
     const contact = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, current.user.id);
+      await requireSponsorsAdmin(client, orgId, current.user.id);
       await requireSponsorInOrg(client, orgId, sponsorId);
       if (body.isPrimary) {
         await client.query(
@@ -72,7 +72,7 @@ export async function PATCH(request: Request) {
     if (!orgId || !id) throw new Error("orgId and id are required");
     if (!name) throw new Error("Contact name is required");
     const contact = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, current.user.id);
+      await requireSponsorsAdmin(client, orgId, current.user.id);
       if (body.isPrimary) {
         const sponsor = await client.query(
           `SELECT sponsor_id AS "sponsorId" FROM sponsor_contacts WHERE id=$1::uuid AND org_id=$2::uuid`,

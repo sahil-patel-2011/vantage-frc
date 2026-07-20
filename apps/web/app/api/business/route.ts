@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { auth, emitPreferredNotification } from "@vantage/core";
+import { assertHubTabAccess, assertSponsorsAllowed, auth, emitPreferredNotification } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { sanitizeFinanceWriteBody } from "../../../lib/finance/sanitize-write";
@@ -26,6 +26,26 @@ import {
 } from "../../../lib/sponsor-pipeline";
 
 type JsonBody = Record<string, unknown>;
+
+const SPONSOR_ACTIONS = new Set([
+  "add-sponsor",
+  "update-sponsor",
+  "set-pipeline-stage",
+  "add-contribution",
+  "log-interaction",
+  "mark-thank-you-sent",
+  "save-prospect",
+  "dismiss-prospect",
+]);
+
+function businessTabForAction(action: string): string {
+  if (SPONSOR_ACTIONS.has(action)) return "sponsors";
+  if (action === "add-grant" || action === "set-grant-status") return "grants";
+  if (action === "generate-draft" || action === "add-award") return "evidence";
+  if (action === "submit-purchase" || action === "set-purchase-status") return "budget";
+  if (action === "save-budget" || action === "add-category") return "budget";
+  return "overview";
+}
 
 function text(value: unknown, max = 2_000): string | null {
   if (typeof value !== "string") return null;
@@ -112,12 +132,20 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const requestedOrg = url.searchParams.get("orgId");
   const seasonYear = validSeason(url.searchParams.get("season"));
+  const tab = url.searchParams.get("tab")?.trim() || undefined;
   try {
-    const view = await withRls({ userId: session.user.id, orgId: requestedOrg ?? undefined }, (client) =>
-      loadBusinessView(client, { userId: session.user.id, requestedOrg, seasonYear }),
-    );
+    const view = await withRls({ userId: session.user.id, orgId: requestedOrg ?? undefined }, async (client) => {
+      const loaded = await loadBusinessView(client, { userId: session.user.id, requestedOrg, seasonYear });
+      if (loaded.status === "live") {
+        await assertHubTabAccess(client, loaded.orgId, session.user.id, "business", tab);
+      }
+      return loaded;
+    });
     return Response.json(view);
   } catch (error) {
+    if (error instanceof Error && /do not have access|membership required/i.test(error.message)) {
+      return Response.json({ error: error.message }, { status: 403 });
+    }
     if (error instanceof Error && /access denied/i.test(error.message)) {
       return Response.json({ error: error.message }, { status: 403 });
     }
@@ -145,6 +173,10 @@ export async function POST(request: Request) {
   try {
     const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const member = await membership(client, orgId, session.user.id);
+      await assertHubTabAccess(client, orgId, session.user.id, "business", businessTabForAction(action));
+      if (SPONSOR_ACTIONS.has(action)) {
+        await assertSponsorsAllowed(client, orgId);
+      }
       let entityId: string | null;
 
       switch (action) {
@@ -682,7 +714,12 @@ export async function POST(request: Request) {
     return Response.json(result, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Business portal request failed";
-    const status = /access denied|owner or admin/i.test(message) ? 403 : 400;
+    const status =
+      /access denied|owner or admin|do not have access|membership required|Sponsor tools are disabled/i.test(
+        message,
+      )
+        ? 403
+        : 400;
     return Response.json({ error: message }, { status });
   }
 }

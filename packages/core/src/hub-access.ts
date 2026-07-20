@@ -218,3 +218,15 @@ export type OrgFundingProfile = {
 export function sponsorsUiAllowed(profile: Pick<OrgFundingProfile, "sponsorsAllowed">): boolean {
   return profile.sponsorsAllowed !== false;
 }
+
+/** Soft-UI + API guard: org funding profile disallows sponsor tools. */
+export async function assertSponsorsAllowed(client: PoolClient, orgId: string): Promise<void> {
+  const result = await client.query<{ sponsorsAllowed: boolean | null }>(
+    `SELECT sponsors_allowed AS "sponsorsAllowed" FROM organizations WHERE id = $1::uuid`,
+    [orgId],
+  );
+  if (!result.rows[0]) throw new Error("Organization access denied");
+  if (!sponsorsUiAllowed({ sponsorsAllowed: result.rows[0].sponsorsAllowed })) {
+    throw new Error("Sponsor tools are disabled for this organization");
+  }
+}
