@@ -233,6 +233,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/grant-report", label: "Grant Report", icon: "clipboard" },
       { href: "/impact-essay", label: "FIRST Impact Essay Generator", icon: "clipboard" },
       { href: "/judge-sim", label: "Judge-Pitch Simulator", icon: "clipboard" },
+      { href: "/media", label: "Media", icon: "clipboard" },
       { href: "/media-kit", label: "Media Kit", icon: "clipboard" },
       { href: "/outreach-calendar", label: "Outreach Calendar", icon: "clipboard" },
       { href: "/sponsor-suite", label: "Sponsor Suite", icon: "clipboard" },
