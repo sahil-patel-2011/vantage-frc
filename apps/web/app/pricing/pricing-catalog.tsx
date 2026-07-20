@@ -1,6 +1,12 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import {
+  PRICING_CATALOG,
+  TEAM_TRIAL_DAYS,
+  formatCatalogUsd,
+  teamCommitRangeCopy,
+} from "@vantage/billing/catalog";
 
 type PlanCard = {
   code: string;
@@ -14,6 +20,14 @@ type PlanCard = {
   note?: string;
 };
 
+const access = PRICING_CATALOG.access;
+const individualPro = PRICING_CATALOG.individual_pro;
+const individualMax = PRICING_CATALOG.individual_max;
+const teamPro = PRICING_CATALOG.team_pro;
+const teamMax = PRICING_CATALOG.team_max;
+const teamTrial = PRICING_CATALOG.team_trial;
+const teamRange = teamCommitRangeCopy();
+
 const individualPlans: PlanCard[] = [
   {
     code: "free",
@@ -21,7 +35,7 @@ const individualPlans: PlanCard[] = [
     price: "$0",
     signal: "BYOK / LOCAL · $0 MANAGED",
     features: [
-      "Complete non-AI competition core: scouting, TBA/Statbotics, manual strategy, exports, team ops",
+      "Soft-UI competition core: scouting hub, strategy, Event Day / Pit ops, exports",
       "Bring a supported API key or pair a local OpenAI-compatible relay",
       "Managed routing is stronger because of integrated tools, context, and failover—not because BYOK is sabotaged",
       "No included managed API allowance; no silent paid-model routing",
@@ -30,26 +44,26 @@ const individualPlans: PlanCard[] = [
   {
     code: "individual_pro",
     name: "Individual Pro",
-    price: "$79",
-    signal: "PRIVATE · $50 API INCLUDED",
+    price: formatCatalogUsd(individualPro.monthlyUsd),
+    signal: `PRIVATE · $${individualPro.includedAllowanceUsd} API INCLUDED`,
     featured: true,
     flag: "Popular starting point",
     features: [
-      "$50 included managed API allowance per month, then hard cut-off",
+      `$${individualPro.includedAllowanceUsd} included managed API allowance per month, then hard cut-off`,
       "Debited at published provider list rates (1 Usage Credit = $1 API cost)",
-      "Private workspace only; priority access to new features",
+      "Private Soft-UI workspace: scouting trust, strategy, and CAD review hubs",
       "After allowance: buy Usage Credits or enable PAYG with a spend cap",
     ],
   },
   {
     code: "individual_max",
     name: "Individual Max",
-    price: "$119",
-    signal: "PRIVATE · $85 API · ~2× PRO LIMITS",
+    price: formatCatalogUsd(individualMax.monthlyUsd),
+    signal: `PRIVATE · $${individualMax.includedAllowanceUsd} API · ~2× PRO LIMITS`,
     features: [
-      "$85 included managed API allowance per month, then hard cut-off",
+      `$${individualMax.includedAllowanceUsd} included managed API allowance per month, then hard cut-off`,
       "~2× Individual Pro hourly, rate, and concurrency limits",
-      "Private workspace only; priority access to new features",
+      "Private Soft-UI workspace; priority features and scenario sweeps",
       "After allowance: Usage Credits or explicit PAYG + spend cap",
     ],
   },
@@ -59,33 +73,36 @@ const teamPlans: PlanCard[] = [
   {
     code: "team_pro",
     name: "Team Pro",
-    price: "$229",
-    signal: "ORG · $150 API POOLED",
+    price: formatCatalogUsd(teamPro.monthlyUsd),
+    signal: `ORG · $${teamPro.includedAllowanceUsd} API POOLED`,
     featured: true,
     flag: "Most teams start here",
     features: [
-      "$150 pooled managed API allowance per month, then hard cut-off",
-      "Shared AI, automations, and org budget/member/feature controls",
-      "Priority access to new features",
+      `$${teamPro.includedAllowanceUsd} pooled managed API allowance per month, then hard cut-off`,
+      "Shared Soft-UI AI, automations, and Event Day / Pit / logistics ops",
+      "Org budget, member, and feature controls with hard usage cutoffs",
       "After allowance: pooled Usage Credits or PAYG with a hard monthly cap",
     ],
   },
   {
     code: "team_max",
     name: "Team Max",
-    price: "$449",
-    signal: "ORG · $300 API · ~2× PRO LIMITS",
+    price: formatCatalogUsd(teamMax.monthlyUsd),
+    signal: `ORG · $${teamMax.includedAllowanceUsd} API · ~2× PRO LIMITS`,
     features: [
-      "$300 pooled managed API allowance per month, then hard cut-off",
+      `$${teamMax.includedAllowanceUsd} pooled managed API allowance per month, then hard cut-off`,
       "~2× Team Pro rate, hourly, and concurrency limits",
-      "Advanced CAD, strategy, code review, and admin workflows",
+      "Advanced CAD, strategy, code review, and admin Soft-UI workflows",
       "Explore higher credit packs below when you need more pooled API",
     ],
   },
 ];
 
 const creditPackOptions = [
-  { value: "team_max", label: "$449/mo subscription ($300 included API)" },
+  {
+    value: "team_max",
+    label: `$${teamMax.monthlyUsd}/mo subscription ($${teamMax.includedAllowanceUsd} included API)`,
+  },
   { value: "credits_100", label: "Add Usage Credits pack · $100 (= $100 API)" },
   { value: "credits_250", label: "Add Usage Credits pack · $250 (= $250 API)" },
   { value: "credits_500", label: "Add Usage Credits pack · $500 (= $500 API)" },
@@ -102,16 +119,16 @@ const alternatePaths: PlanCard[] = [
       "No included API bucket — enroll PAYG with a payment method and hard monthly spend cap",
       "Usage debited at provider list rates (1 credit = $1 API)",
       "Hard stop when prepaid credits and/or the spend cap are exhausted",
-      "Best when you want managed routing without a $229–$449 commit",
+      `Best when you want managed Soft-UI routing without a ${teamRange} commit`,
     ],
   },
   {
     code: "access",
     name: "Access + PAYG",
-    price: "$55",
+    price: formatCatalogUsd(access.monthlyUsd),
     signal: "LIGHT PLAN · MANAGED ROUTING",
     features: [
-      "$55/mo unlocks Vantage managed routing, tools, and context at API list rates",
+      `$${access.monthlyUsd}/mo unlocks Vantage managed Soft-UI routing, tools, and context at API list rates`,
       "No large included allowance — add Usage Credits or enable PAYG with a spend cap",
       "Clearer vs Free: Free is BYOK/local; Access is managed platform routing without a big included bucket",
       "Optional path for individuals and small teams avoiding Team Pro/Max commit",
@@ -164,18 +181,22 @@ export function PricingCatalog() {
     <>
       <section className="pricing-toggle" aria-label="Pricing groups" role="tablist">
         <button
+          id="pricing-tab-individual"
           type="button"
           role="tab"
           aria-selected={group === "individual"}
+          aria-controls="individual"
           className={group === "individual" ? "active" : undefined}
           onClick={() => setGroup("individual")}
         >
           Individual
         </button>
         <button
+          id="pricing-tab-team"
           type="button"
           role="tab"
           aria-selected={group === "team"}
+          aria-controls="team"
           className={group === "team" ? "active" : undefined}
           onClick={() => setGroup("team")}
         >
@@ -183,7 +204,12 @@ export function PricingCatalog() {
         </button>
       </section>
 
-      <section id={group} aria-live="polite">
+      <section
+        id={group}
+        role="tabpanel"
+        aria-labelledby={group === "individual" ? "pricing-tab-individual" : "pricing-tab-team"}
+        aria-live="polite"
+      >
         <span className="section-id">
           {group === "individual" ? "INDIVIDUAL / PRIVATE WORKSPACE" : "TEAM / ENTIRE ORGANIZATION"}
         </span>
@@ -228,8 +254,8 @@ export function PricingCatalog() {
         <span className="section-id">ALTERNATE PATHS</span>
         <h2>Skip the big team commit.</h2>
         <p>
-          Prefer no $229–$449 subscription? Use pure PAYG, or Access ($55/mo) plus Usage Credits / PAYG for managed
-          routing without a large included allowance.
+          Prefer no {teamRange} subscription? Use pure PAYG, or Access (${access.monthlyUsd}/mo) plus Usage Credits /
+          PAYG for managed Soft-UI routing without a large included allowance.
         </p>
         <div className="pricing-grid pricing-grid-team">
           {alternatePaths.map((plan) => (
@@ -240,10 +266,11 @@ export function PricingCatalog() {
 
       <section className="pricing-trial">
         <span className="section-id">WEEK TEAM TRIAL</span>
-        <h2>Try managed team AI for 7 days.</h2>
+        <h2>Try managed team AI for {TEAM_TRIAL_DAYS} days.</h2>
         <p>
-          Platform admins can grant a week team trial with <strong>$30</strong> included managed API allowance. No
-          surprise auto-charge after the trial unless you subscribe. Existing consent rules still apply.
+          Platform admins can grant a week team trial with <strong>${teamTrial.includedAllowanceUsd}</strong> included
+          managed API allowance. No surprise auto-charge after the trial unless you subscribe. Existing consent rules
+          still apply.
         </p>
       </section>
     </>

@@ -35,8 +35,8 @@ describe("sign-in Soft-UI helpers", () => {
   it("exposes waitlist + raised pricing CTAs without inventing access", () => {
     const actions = signInNextActions();
     expect(actions.find((a) => a.id === "waitlist")?.href).toBe("/#waitlist");
-    expect(actions.find((a) => a.id === "pricing")?.detail).toMatch(/\$55/);
-    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$55", "$79 / $119", "$229 / $449"]);
+    expect(actions.find((a) => a.id === "pricing")?.detail).toMatch(/\$79/);
+    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$79", "$129 / $189", "$349 / $649"]);
   });
 
   it("maps OAuth waitlist denials to closed-access copy", () => {

@@ -2,7 +2,10 @@
   "name": "@vantage/billing",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/catalog.ts"
+  },
   "scripts": { "typecheck": "tsc --noEmit" },
   "dependencies": {
     "@aws-sdk/client-kms": "latest",

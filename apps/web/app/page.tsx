@@ -6,6 +6,7 @@ import {
   StrategyPreview,
 } from "../components/marketing/product-demos";
 import { FAQ } from "../components/marketing/faq";
+import { raisedPricingStrip, raisedPricingSummaryLine } from "@vantage/billing/catalog";
 
 type Status = "Available" | "Shipping" | "Setup required";
 
@@ -271,18 +272,12 @@ export default function Home() {
               Usage Credits or enable PAYG.
             </p>
             <ul className="pricing-price-strip" aria-label="Raised monthly plan prices">
-              <li>
-                <span>Access</span>
-                <strong>$55</strong>
-              </li>
-              <li>
-                <span>Individual Pro / Max</span>
-                <strong>$79 / $119</strong>
-              </li>
-              <li>
-                <span>Team Pro / Max</span>
-                <strong>$229 / $449</strong>
-              </li>
+              {raisedPricingStrip().map((item) => (
+                <li key={item.id}>
+                  <span>{item.label}</span>
+                  <strong>{item.price}</strong>
+                </li>
+              ))}
             </ul>
           </div>
           <div className="pricing-preview-actions">
@@ -304,8 +299,8 @@ export default function Home() {
             <h2>Put one operational picture in front of the whole team.</h2>
             <p>
               Join the prelaunch list—terms acceptance is required. Account verification and administrator-created
-              team access remain separate launch steps. Raised plans: Access $55 · Individual $79/$119 · Team $229/$449
-              on <a href="/pricing">pricing</a>. Read <a href="/terms">terms</a> and <a href="/privacy">privacy</a>.
+              team access remain separate launch steps. Raised plans: {raisedPricingSummaryLine()} on{" "}
+              <a href="/pricing">pricing</a>. Read <a href="/terms">terms</a> and <a href="/privacy">privacy</a>.
             </p>
           </div>
           <WaitlistForm idPrefix="hero" />

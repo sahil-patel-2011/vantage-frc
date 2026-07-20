@@ -1,5 +1,11 @@
 /** Soft-UI helpers for `/signin` — closed waitlist access, never DEMO auth. */
 
+import {
+  raisedPricingStrip as catalogRaisedPricingStrip,
+  raisedPricingSummaryLine,
+  type CatalogPlanCode,
+} from "@vantage/billing/catalog";
+
 export type SignInMode = "password" | "email-otp" | "reset";
 
 export type SignInAuthStatus = {
@@ -38,11 +44,7 @@ export type RaisedPriceItem = {
 };
 
 /** Catalog defaults shown on Soft-UI waitlist/pricing CTAs. */
-export const SIGN_IN_RAISED_PRICES: RaisedPriceItem[] = [
-  { id: "access", label: "Access", price: "$55" },
-  { id: "individual", label: "Individual Pro / Max", price: "$79 / $119" },
-  { id: "team", label: "Team Pro / Max", price: "$229 / $449" },
-];
+export const SIGN_IN_RAISED_PRICES: RaisedPriceItem[] = catalogRaisedPricingStrip();
 
 export const WAITLIST_ONLY_MESSAGE =
   "Vantage is waitlist-only right now. Join the waitlist for access, or sign in with an authorized account.";
@@ -166,15 +168,18 @@ export function signInNextActions(): SignInNextAction[] {
     {
       id: "pricing",
       label: "View pricing",
-      detail: "Access $55 · Individual $79/$119 · Team $229/$449",
+      detail: raisedPricingSummaryLine(),
       href: "/pricing",
     },
   ];
 }
 
 export function raisedPricingStrip(): RaisedPriceItem[] {
-  return SIGN_IN_RAISED_PRICES;
+  return catalogRaisedPricingStrip();
 }
+
+/** Re-export for callers that need plan codes from the shared catalog. */
+export type { CatalogPlanCode };
 
 export function oauthErrorMessage(code: string | null | undefined) {
   if (!code) return "";

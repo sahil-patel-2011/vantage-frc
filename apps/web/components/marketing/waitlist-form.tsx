@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useId, useState } from "react";
+import { raisedPricingSummaryLine } from "@vantage/billing/catalog";
 import { LegalAgreementCheckbox } from "../legal-agreement-checkbox";
 import { track } from "../../lib/marketing/analytics";
 
@@ -67,7 +68,7 @@ export function WaitlistForm({
           organization—admins still provision access separately.
         </p>
         <p className="confirmation-next">
-          Meanwhile, review raised plans: Access $55 · Individual $79/$119 · Team $229/$449 on{" "}
+          Meanwhile, review raised plans: {raisedPricingSummaryLine()} on{" "}
           <a href="/pricing">pricing</a>.
         </p>
       </div>

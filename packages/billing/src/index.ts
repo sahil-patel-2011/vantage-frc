@@ -38,6 +38,18 @@ export {
   parseOptionalUsd,
   type OrgAiPolicy,
 } from "./ai-governance";
+export {
+  CATALOG_SERVICE_MULTIPLIER,
+  PRICING_CATALOG,
+  TEAM_TRIAL_DAYS,
+  catalogDefaultsFootnote,
+  formatCatalogUsd,
+  raisedPricingStrip,
+  raisedPricingSummaryLine,
+  teamCommitRangeCopy,
+  type CatalogPlan,
+  type CatalogPlanCode,
+} from "./catalog";
 
 export {
   UsageHardCutoffError,
