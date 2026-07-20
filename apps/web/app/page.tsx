@@ -63,8 +63,8 @@ export default function Home() {
           <div>
             <h2 id="lux-pricing-title">Free competition core. Paid for managed AI.</h2>
             <p>
-              BYOK stays on Free. Hosted AI: {hostedApiSavingsCopy()} Hard stop after included allowance unless Credits
-              or PAYG.
+              Free keeps your own keys. Paid adds hosted AI—{hostedApiSavingsCopy()} Hard stop after the included
+              hosted window unless Credits or PAYG.
             </p>
             <ul className="pricing-price-strip" aria-label="Monthly plan prices">
               {raisedPricingStrip().map((item) => (

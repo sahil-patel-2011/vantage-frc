@@ -13,6 +13,7 @@ import {
   CATALOG_SERVICE_MULTIPLIER,
   BYOK_LIST_MULTIPLIER,
   hostedApiSavingsCopy,
+  hostedApiEconomicsSoftLine,
   hostedCreditPackListApiUsd,
   raisedPricingStrip,
   raisedPricingSummaryLine,
@@ -33,8 +34,8 @@ describe("appealing pricing catalog", () => {
     expect(PRICING_CATALOG.team_trial.includedAllowanceUsd).toBe(39);
     expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$69", "$109 / $159", "$299 / $549"]);
     expect(raisedPricingSummaryLine()).toMatch(/Access \$69/);
-    expect(hostedApiSavingsCopy()).toMatch(/75% of typical API rates/);
-    expect(hostedApiSavingsCopy()).toMatch(/25% less/);
+    expect(hostedApiSavingsCopy()).toMatch(/Cheaper than bringing your own keys/i);
+    expect(hostedApiEconomicsSoftLine()).toMatch(/25% less/);
     expect(hostedCreditPackListApiUsd(100)).toBe(133);
   });
 });

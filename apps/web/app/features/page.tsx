@@ -74,7 +74,7 @@ export default function FeaturesPage() {
           <div>
             <h2>Waitlist or plans.</h2>
             <p>
-              Free core with BYOK. {hostedApiSavingsCopy()}{" "}
+              Free core with your own keys. {hostedApiSavingsCopy()}{" "}
               <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
             </p>
             <ul className="pricing-price-strip" aria-label="Monthly plan prices">

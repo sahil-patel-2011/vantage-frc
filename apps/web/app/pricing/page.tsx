@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
   PRICING_CATALOG,
   catalogDefaultsFootnote,
+  hostedApiEconomicsSoftLine,
   hostedApiSavingsCopy,
   raisedPricingSummaryLine,
 } from "@vantage/billing/catalog";
@@ -12,7 +13,7 @@ import { PricingCatalog } from "./pricing-catalog";
 export const metadata: Metadata = {
   title: "Pricing — Vantage",
   description:
-    "Free Soft-UI competition core. Paid managed AI with hosted usage ~25% less than BYOK. Hard cutoffs—no surprise overage.",
+    "Free Soft-UI competition core with your own keys. Paid plans add hosted AI—cheaper than BYOK—plus scouting, strategy, and Event Day built in natively.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -24,6 +25,7 @@ export default function PricingPage() {
   const teamPro = PRICING_CATALOG.team_pro;
   const teamMax = PRICING_CATALOG.team_max;
   const hostedSavings = hostedApiSavingsCopy();
+  const economicsSoft = hostedApiEconomicsSoftLine();
 
   return (
     <div className="marketing-site marketing-lux">
@@ -33,8 +35,9 @@ export default function PricingPage() {
           <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>Plans for private work or the whole team.</h1>
           <p>
-            Free Soft-UI core with BYOK. Paid adds managed routing and included API—then a hard stop. Hosted AI is about
-            25% cheaper than own keys.
+            Free keeps the Soft-UI competition core with your own keys or local models. Paid plans add Vantage-hosted
+            AI—cheaper than BYOK, with scouting, strategy, and Event Day built in natively. Hard cutoffs; no surprise
+            overage.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
@@ -50,16 +53,18 @@ export default function PricingPage() {
 
         <section className="payg">
           <div>
-            <span className="section-id">USAGE</span>
-            <h2>Hosted AI costs less than BYOK.</h2>
+            <span className="section-id">HOSTED AI</span>
+            <h2>A service—not an API wallet.</h2>
           </div>
           <div>
             <p>
-              <strong>{hostedSavings}</strong> Prepaid credits buy hosted capacity at the same 0.75× debit.
+              <strong>{hostedSavings}</strong> Scouting, strategy, Event Day, CAD assistant, and more live inside the
+              product. You are not renting a generic model meter.
             </p>
             <p>
-              After included allowance: hard stop unless Usage Credits or PAYG (explicit cap). BYOK never consumes managed
-              allowance.
+              {economicsSoft} Bring-your-own-key stays available on Free and never consumes managed hosted usage. After
+              the included hosted window: hard stop unless you add Usage Credits or enable PAYG with an explicit spend
+              cap.
             </p>
             <p>Checkout opens when Stripe Price IDs are configured—until then, join the waitlist.</p>
             <p className="pricing-note">{catalogNote}</p>

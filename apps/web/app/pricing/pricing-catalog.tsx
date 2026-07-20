@@ -6,8 +6,6 @@ import {
   TEAM_TRIAL_DAYS,
   formatCatalogUsd,
   hostedApiSavingsCopy,
-  hostedCreditPackListApiUsd,
-  hostedUsageDebitCopy,
   teamCommitRangeCopy,
 } from "@vantage/billing/catalog";
 
@@ -28,9 +26,7 @@ const individualPro = PRICING_CATALOG.individual_pro;
 const individualMax = PRICING_CATALOG.individual_max;
 const teamPro = PRICING_CATALOG.team_pro;
 const teamMax = PRICING_CATALOG.team_max;
-const teamTrial = PRICING_CATALOG.team_trial;
 const teamRange = teamCommitRangeCopy();
-const hostedDebit = hostedUsageDebitCopy();
 const hostedSavings = hostedApiSavingsCopy();
 
 const individualPlans: PlanCard[] = [
@@ -38,38 +34,38 @@ const individualPlans: PlanCard[] = [
     code: "free",
     name: "Free",
     price: "$0",
-    signal: "BYOK · $0 managed",
+    signal: "Your keys · local OK",
     features: [
       "Soft-UI competition core: scouting, strategy, Event Day / Pit ops",
       "Bring your own key or a local OpenAI-compatible relay",
-      "Managed routing is stronger via tools and context—not BYOK sabotage",
-      "No included managed API; no silent paid-model routing",
+      "Native product surfaces—not a bolted-on chat wrapper",
+      "No managed AI routing; no silent paid-model spend",
     ],
   },
   {
     code: "individual_pro",
     name: "Individual Pro",
     price: formatCatalogUsd(individualPro.monthlyUsd),
-    signal: `$${individualPro.includedAllowanceUsd} API included`,
+    signal: "Hosted AI included",
     featured: true,
     flag: "Popular",
     features: [
-      `$${individualPro.includedAllowanceUsd}/mo managed API, then hard cut-off`,
-      "Hosted AI ~25% cheaper than BYOK (0.75× typical rates)",
-      "Private Soft-UI: scouting trust, strategy, CAD review",
-      "After allowance: Usage Credits or PAYG with a spend cap",
+      "Managed AI — less than typical BYOK",
+      "Native Soft-UI: scouting trust, strategy, CAD review",
+      "Private workspace with clear hard usage cutoffs",
+      "Add Usage Credits or PAYG when you need more",
     ],
   },
   {
     code: "individual_max",
     name: "Individual Max",
     price: formatCatalogUsd(individualMax.monthlyUsd),
-    signal: `$${individualMax.includedAllowanceUsd} API · 2× limits`,
+    signal: "More capacity · priority",
     features: [
-      `$${individualMax.includedAllowanceUsd}/mo managed API, then hard cut-off`,
-      "~2× Pro hourly, rate, and concurrency limits",
+      "Higher hosted AI capacity and concurrency than Pro",
       "Priority Soft-UI features and scenario sweeps",
-      "After allowance: Usage Credits or PAYG + spend cap",
+      "Same native product—built in, not bolted on",
+      "Credits or PAYG after the included hosted window",
     ],
   },
 ];
@@ -79,26 +75,26 @@ const teamPlans: PlanCard[] = [
     code: "team_pro",
     name: "Team Pro",
     price: formatCatalogUsd(teamPro.monthlyUsd),
-    signal: `$${teamPro.includedAllowanceUsd} pooled API`,
+    signal: "Native features + hosted models",
     featured: true,
     flag: "Most teams",
     features: [
-      `$${teamPro.includedAllowanceUsd}/mo pooled managed API, then hard cut-off`,
-      "Hosted AI ~25% cheaper than BYOK (0.75× typical rates)",
-      "Shared Soft-UI AI, Event Day / Pit / logistics",
-      "After allowance: pooled Credits or PAYG with a monthly cap",
+      "Managed AI for the org — cheaper than own keys",
+      "Shared Soft-UI: Event Day, Pit, logistics, automations",
+      "Org budget, member, and feature controls",
+      "Pooled Credits or PAYG when the team needs more",
     ],
   },
   {
     code: "team_max",
     name: "Team Max",
     price: formatCatalogUsd(teamMax.monthlyUsd),
-    signal: `$${teamMax.includedAllowanceUsd} API · 2× limits`,
+    signal: "Full org · advanced AI",
     features: [
-      `$${teamMax.includedAllowanceUsd}/mo pooled managed API, then hard cut-off`,
-      "~2× Team Pro rate, hourly, and concurrency limits",
-      "Advanced CAD, strategy, code review, and admin",
-      "Higher credit packs available when you need more API",
+      "Highest hosted capacity and concurrency for the org",
+      "Advanced CAD, strategy, code review, and admin Soft-UI",
+      "Everything built in natively across the season",
+      "Optional credit packs when you outgrow the plan window",
     ],
   },
 ];
@@ -106,20 +102,11 @@ const teamPlans: PlanCard[] = [
 const creditPackOptions = [
   {
     value: "team_max",
-    label: `$${teamMax.monthlyUsd}/mo ($${teamMax.includedAllowanceUsd} included API)`,
+    label: `Team Max · $${teamMax.monthlyUsd}/mo`,
   },
-  {
-    value: "credits_100",
-    label: `Credits $100 ≈ $${hostedCreditPackListApiUsd(100)} typical API`,
-  },
-  {
-    value: "credits_250",
-    label: `Credits $250 ≈ $${hostedCreditPackListApiUsd(250)} typical API`,
-  },
-  {
-    value: "credits_500",
-    label: `Credits $500 ≈ $${hostedCreditPackListApiUsd(500)} typical API`,
-  },
+  { value: "credits_100", label: "Usage Credits · $100" },
+  { value: "credits_250", label: "Usage Credits · $250" },
+  { value: "credits_500", label: "Usage Credits · $500" },
 ];
 
 const alternatePaths: PlanCard[] = [
@@ -130,10 +117,10 @@ const alternatePaths: PlanCard[] = [
     period: "subscription",
     signal: "No big subscription",
     features: [
-      "Enroll PAYG with a payment method and hard monthly spend cap",
-      hostedDebit,
-      "Hard stop when credits and/or the spend cap are exhausted",
-      `Best without a ${teamRange} team commit`,
+      "Managed Soft-UI routing with a hard monthly spend cap",
+      "Hosted models when you want them—without a team commit",
+      "Hard stop at the cap; no silent overage",
+      `Best without a ${teamRange} subscription`,
     ],
   },
   {
@@ -142,10 +129,10 @@ const alternatePaths: PlanCard[] = [
     price: formatCatalogUsd(access.monthlyUsd),
     signal: "Light · managed routing",
     features: [
-      `$${access.monthlyUsd}/mo unlocks managed Soft-UI routing`,
+      "Unlocks Vantage-hosted Soft-UI routing",
       hostedSavings,
-      "No large included bucket — add Credits or enable PAYG",
-      "Free stays BYOK/local; Access is managed without a big allowance",
+      "Add Credits or enable PAYG as you go",
+      "Free stays your keys/local; Access is managed platform AI",
     ],
   },
 ];
@@ -220,7 +207,8 @@ export function PricingCatalog() {
             </button>
           </div>
           <p className="pricing-savings-callout">
-            <strong>25% less than BYOK.</strong> {hostedSavings}
+            <strong>Cheaper than your own keys.</strong> {hostedSavings} Managed AI plus scouting, strategy, Event Day,
+            and CAD—built in, not bolted on.
           </p>
         </div>
 
@@ -272,8 +260,8 @@ export function PricingCatalog() {
         <span className="section-id">ALTERNATE PATHS</span>
         <h2>Skip the big team commit.</h2>
         <p>
-          Prefer no {teamRange} subscription? Use pure PAYG, or Access (${access.monthlyUsd}/mo) plus Usage Credits /
-          PAYG for managed Soft-UI routing without a large included allowance.
+          Prefer no {teamRange} subscription? Use pure PAYG, or Access (${access.monthlyUsd}/mo) for managed Soft-UI
+          routing without a large team plan.
         </p>
         <div className="pricing-grid pricing-grid-team">
           {alternatePaths.map((plan) => (
@@ -286,9 +274,8 @@ export function PricingCatalog() {
         <span className="section-id">WEEK TEAM TRIAL</span>
         <h2>Try managed team AI for {TEAM_TRIAL_DAYS} days.</h2>
         <p>
-          Platform admins can grant a week team trial with <strong>${teamTrial.includedAllowanceUsd}</strong> included
-          managed API allowance. No surprise auto-charge after the trial unless you subscribe. Existing consent rules
-          still apply.
+          Platform admins can grant a week team trial with hosted AI included for the trial window. No surprise
+          auto-charge after the trial unless you subscribe. Existing consent rules still apply.
         </p>
       </section>
     </>
