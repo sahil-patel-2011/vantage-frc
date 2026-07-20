@@ -33,6 +33,7 @@ import type { HomeStripItem } from "../../lib/home-workflows";
 import { Badge } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
+import { HowToUseLink } from "../help/how-to-use-link";
 import "react-grid-layout/css/styles.css";
 import "./dashboard-editor.css";
 import "./dashboard-dnd.css";
@@ -774,6 +775,7 @@ export default function DashboardClient() {
               Edit Home
             </button>
           ) : null}
+          <HowToUseLink slug="edit-home" />
           <details className="dash-home-more">
             <summary aria-label="More home tools">More</summary>
             <div>

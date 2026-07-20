@@ -520,11 +520,13 @@ export default function AppShell() {
         ? "Notifications"
         : pathname.startsWith("/admin")
           ? "Admin"
-          : pathname.startsWith("/help") || pathname === "/support"
-            ? "Help & Support"
-            : pathname.startsWith("/security")
-              ? "Security"
-              : null);
+          : pathname.startsWith("/help")
+            ? "Help"
+            : pathname === "/support"
+              ? "Support"
+              : pathname.startsWith("/security")
+                ? "Security"
+                : null);
 
   const orgLabel =
     me.teamNumber != null
@@ -749,8 +751,11 @@ export default function AppShell() {
                 <a role="menuitem" href="/security" onClick={() => setAccountMenuOpen(false)}>
                   Security
                 </a>
+                <a role="menuitem" href="/help" onClick={() => setAccountMenuOpen(false)}>
+                  Help
+                </a>
                 <a role="menuitem" href="/support" onClick={() => setAccountMenuOpen(false)}>
-                  Help &amp; Support
+                  Support tickets
                 </a>
                 {me.platformAdmin ? (
                   <a role="menuitem" href="/admin" onClick={() => setAccountMenuOpen(false)}>
@@ -1077,7 +1082,7 @@ export default function AppShell() {
             </a>
           ))}
         </div>
-        <div className="soft-more-actions soft-more-actions-3">
+        <div className="soft-more-actions soft-more-actions-4">
           <button
             type="button"
             onClick={() => {
@@ -1097,6 +1102,10 @@ export default function AppShell() {
             <Icon name="gear" />
             Island
           </button>
+          <a href="/help" onClick={() => setMoreOpen(false)}>
+            <Icon name="clipboard" />
+            Help
+          </a>
           <a href={withOrgHref("/chat", orgId)} onClick={() => setMoreOpen(false)}>
             <Icon name="chat" />
             Chat
@@ -1179,7 +1188,7 @@ export default function AppShell() {
               </button>
             </header>
             <label htmlFor="soft-command-input">
-              Filter modules or search tasks, inventory, impact, and knowledge
+              Filter modules or search help, tasks, inventory, impact, and knowledge
               <input
                 id="soft-command-input"
                 ref={commandInputRef}
