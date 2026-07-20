@@ -18,21 +18,21 @@ export default function BuildHub() {
   return (
     <ProductHubShell hubId="build">
       {({ tab, orgId }) => {
-        if (tab === "kickoff") return <KickoffClient />;
-        if (tab === "fmea") return <FmeaClient />;
-        if (tab === "prototype") return <PrototypeTrackerClient />;
-        if (tab === "batteries") return <BatteriesClient />;
+        if (tab === "kickoff") return <KickoffClient embedded />;
+        if (tab === "fmea") return <FmeaClient embedded />;
+        if (tab === "prototype") return <PrototypeTrackerClient embedded />;
+        if (tab === "batteries") return <BatteriesClient embedded />;
         if (tab === "code") {
           return (
             <HubOrgGate orgId={orgId} label="Code">
-              {(id) => <CodeClient orgId={id} />}
+              {(id) => <CodeClient orgId={id} embedded />}
             </HubOrgGate>
           );
         }
         if (tab === "cad") {
           return (
             <HubOrgGate orgId={orgId} label="CAD">
-              {(id) => <CadWorkspace orgId={id} />}
+              {(id) => <CadWorkspace orgId={id} embedded />}
             </HubOrgGate>
           );
         }

@@ -265,7 +265,7 @@ function ScoutingShell({
   );
 }
 
-export default function ScoutingClient({ orgId }: { orgId: string }) {
+export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const searchParams = useSearchParams();
   const [data, setData] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(true);
