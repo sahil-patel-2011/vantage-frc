@@ -158,3 +158,9 @@
   .lineup-gap-list li{grid-template-columns:1fr}
   .lineup-gap-list a{grid-row:auto}
 }
+
+@media print{
+  .lineup-page .lineup-related,.lineup-page .lineup-header-meta .app-button,.lineup-page .lineup-next-actions{display:none!important}
+  .lineup-page{max-width:none!important;padding:0!important}
+  .lineup-page article{break-inside:avoid;box-shadow:none!important}
+}

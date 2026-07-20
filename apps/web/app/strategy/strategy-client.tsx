@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { runWhatIf } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
+import { CopyShareLink } from "../../components/copy-share-link";
+import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { strategyFixture } from "../../lib/marketing/strategy-demo";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -774,6 +776,13 @@ export default function StrategyClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<StrategyTab>("matchup");
+  const [urlOrgId, setUrlOrgId] = useState<string | null>(null);
+  const previewOrgId = (view && "orgId" in view ? view.orgId : null) ?? urlOrgId;
+  const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(previewOrgId);
+
+  useEffect(() => {
+    setUrlOrgId(new URLSearchParams(window.location.search).get("orgId"));
+  }, []);
 
   const loadStrategy = useCallback(() => {
     setFetchFailed(false);
@@ -884,6 +893,10 @@ export default function StrategyClient() {
       >
         <div className="strategy-header-actions">
           <StrategyRelatedStrip orgId={orgId} />
+          <CopyShareLink orgId={orgId} />
+          <button type="button" className="app-button secondary" onClick={() => window.print()}>
+            Print
+          </button>
           {orgId ? (
             <>
               <a className="app-button secondary" href={withOrgHref("/strategy/draft", orgId)}>
@@ -909,6 +922,7 @@ export default function StrategyClient() {
           ) : null}
         </div>
       </PageHeader>
+      <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       <TabBar
         aria-label="Strategy sections"

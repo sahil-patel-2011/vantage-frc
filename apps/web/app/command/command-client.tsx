@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { CardGridSkeleton, EmptyState, ErrorState, PageHeader, Panel, StatRowSkeleton } from "../../components/ui";
+import { CopyShareLink } from "../../components/copy-share-link";
+import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
 import { eventDayNextActions } from "../../lib/command/event-day-actions";
 import {
@@ -272,6 +274,7 @@ export default function CommandClient() {
   const [eventBusy, setEventBusy] = useState(false);
   const [eventMessage, setEventMessage] = useState("");
   const [tick, setTick] = useState(0);
+  const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId);
 
   useEffect(() => {
     const fromUrl = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -532,6 +535,7 @@ export default function CommandClient() {
           <span className="edc-live" aria-live="polite">
             {loading && !snap ? "Loading…" : `Updated ${snap ? new Date(snap.computedAt).toLocaleTimeString() : "—"}`}
           </span>
+          <CopyShareLink orgId={orgId || null} />
           {snap?.canSetEvent ? (
             <button className="app-button secondary" type="button" onClick={() => setEventOpen(true)}>
               {snap.eventKey ? "Change event" : "Select event"}
@@ -542,6 +546,7 @@ export default function CommandClient() {
           </button>
         </div>
       </PageHeader>
+      <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       <EventDayRelatedStrip orgId={orgId || null} />
 

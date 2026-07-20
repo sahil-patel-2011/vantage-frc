@@ -19,6 +19,16 @@ import {
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
+import { CopyShareLink } from "../../components/copy-share-link";
+import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
+import {
+  clearScoutDraft,
+  formatDraftSavedAgo,
+  payloadHasDraftContent,
+  readScoutDraft,
+  scoutDraftStorageKey,
+  writeScoutDraft,
+} from "../../lib/scouting/draft-autosave";
 import {
   cacheEvent,
   getCachedEvent,
@@ -283,6 +293,9 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
   const [formulaWeights, setFormulaWeights] = useState<Record<string, number>>({});
   const [showFormula, setShowFormula] = useState(false);
   const [trust, setTrust] = useState<TrustSnapshot | null>(null);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [draftDirty, setDraftDirty] = useState(false);
+  const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId);
 
   const type = tab === "pit" ? "pit" : "match";
 
@@ -470,6 +483,55 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
     return map;
   }, [trust]);
 
+  const draftKey = useMemo(
+    () =>
+      scoutDraftStorageKey({
+        orgId,
+        eventKey: data?.eventKey ?? "",
+        entryType: type,
+        matchKey,
+        teamKey,
+      }),
+    [orgId, data?.eventKey, type, matchKey, teamKey],
+  );
+
+  useEffect(() => {
+    if (!draftKey) {
+      setDraftSavedAt(null);
+      setDraftDirty(false);
+      return;
+    }
+    const existing = readScoutDraft(draftKey);
+    if (existing) {
+      setPayload(existing.payload);
+      setConfidence(existing.confidence);
+      setDraftSavedAt(existing.savedAt);
+      setDraftDirty(false);
+      return;
+    }
+    setPayload({});
+    setDraftSavedAt(null);
+    setDraftDirty(false);
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftKey || !payloadHasDraftContent(payload)) return;
+    setDraftDirty(true);
+    const timer = window.setTimeout(() => {
+      const savedAt = writeScoutDraft(draftKey, {
+        payload,
+        confidence,
+        matchKey,
+        teamKey,
+      });
+      if (savedAt) {
+        setDraftSavedAt(savedAt);
+        setDraftDirty(false);
+      }
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [draftKey, payload, confidence, matchKey, teamKey]);
+
   async function submit() {
     if (!data?.eventKey || !schema || !teamKey || (type === "match" && !matchKey)) {
       setMessage("Select an event assignment, team, and form");
@@ -489,9 +551,12 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
       updatedAt: new Date().toISOString(),
     };
     await queueEntry(entry);
+    clearScoutDraft(draftKey);
     setPayload({});
     setSource("manual");
     setEntryClientId(stableClientId());
+    setDraftSavedAt(null);
+    setDraftDirty(false);
     setSaveReceipt({
       teamKey,
       matchKey: type === "match" ? matchKey : undefined,
@@ -701,6 +766,10 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
       >
         <div className="scout-header-meta">
           <ScoutingRelatedStrip orgId={orgId} />
+          <CopyShareLink orgId={orgId} />
+          <button type="button" className="app-button secondary" onClick={() => window.print()}>
+            Print
+          </button>
           <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
             {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} entries ·{" "}
             {formatScoutingMetric(counts.media, true)} media
@@ -710,6 +779,7 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
           </button>
         </div>
       </PageHeader>
+      <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       <OfflineBanner
         feature="Scouting"
@@ -936,7 +1006,18 @@ export default function ScoutingClient({ orgId }: { orgId: string }) {
                 <h2>{schema?.definition.title ?? `No ${type} form`}</h2>
                 <p className="app-muted">Primary action: fill the form, then save.</p>
               </div>
-              <span className="app-badge">v{schema?.version ?? "—"}</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                {payloadHasDraftContent(payload) || draftSavedAt ? (
+                  <span
+                    className={`scout-draft-chip ${draftDirty ? "dirty" : draftSavedAt ? "saved" : ""}`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {draftDirty ? "Unsaved changes" : formatDraftSavedAgo(draftSavedAt)}
+                  </span>
+                ) : null}
+                <span className="app-badge">v{schema?.version ?? "—"}</span>
+              </div>
             </header>
 
             <div className="scout-identity-lock" role="status">
