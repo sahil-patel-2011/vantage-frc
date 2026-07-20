@@ -15,6 +15,8 @@ export type HomeStripItem = {
   detail: string;
   href: string;
   tone: "neutral" | "ok" | "warn";
+  /** Real schedule ISO for a live Soft-UI countdown — omit when unknown (never DEMO). */
+  at?: string | null;
 };
 
 export type MentorHomeStripInput = {
@@ -130,26 +132,18 @@ export function buildMentorHomeStrip(input: MentorHomeStripInput): HomeStripItem
 
 export function buildStudentHomeStrip(input: StudentHomeStripInput): HomeStripItem[] {
   const orgId = input.orgId;
-  const when = formatStripWhen(input.nextPracticeAt);
   const hotel = formatHomeLodgingDetail(input.hotelName, input.roomLabel);
-  const travelWhen = formatStripWhen(input.nextTravelAt);
-  const travelDetail = input.nextTravelLabel
-    ? travelWhen
-      ? `${input.nextTravelLabel} · ${travelWhen}`
-      : input.nextTravelLabel
-    : "No leave time published yet";
+  const practiceDetail = input.nextPracticeTitle?.trim() || "Nothing scheduled yet";
+  const travelDetail = input.nextTravelLabel?.trim() || "No leave time published yet";
 
   return [
     {
       key: "next_practice",
       label: "Next practice",
-      detail: input.nextPracticeTitle
-        ? when
-          ? `${input.nextPracticeTitle} · ${when}`
-          : input.nextPracticeTitle
-        : "Nothing scheduled yet",
+      detail: practiceDetail,
       href: withOrgHref("/practice", orgId),
       tone: input.nextPracticeTitle ? "ok" : "neutral",
+      at: input.nextPracticeAt,
     },
     {
       key: "my_hotel",
@@ -164,6 +158,7 @@ export function buildStudentHomeStrip(input: StudentHomeStripInput): HomeStripIt
       detail: travelDetail,
       href: withOrgHref("/logistics", orgId),
       tone: input.nextTravelLabel ? "ok" : "neutral",
+      at: input.nextTravelAt,
     },
     {
       key: "my_todos",
@@ -180,6 +175,14 @@ export function buildStudentHomeStrip(input: StudentHomeStripInput): HomeStripIt
       tone: input.kickoffReady ? "ok" : "neutral",
     },
   ];
+}
+
+/** Prefer warnings and timed cues so Home first viewport stays lean. */
+export function prioritizeHomeStrip(items: HomeStripItem[], max = 3): HomeStripItem[] {
+  if (items.length <= max) return items;
+  const score = (item: HomeStripItem) =>
+    (item.tone === "warn" ? 8 : 0) + (item.at ? 4 : 0) + (item.tone === "ok" ? 1 : 0);
+  return [...items].sort((a, b) => score(b) - score(a)).slice(0, max);
 }
 
 export type FirstRunStep = {
