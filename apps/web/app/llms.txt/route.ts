@@ -46,10 +46,10 @@ FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access i
 
 ## Pricing
 - Free: complete non-AI Soft-UI competition core, BYOK/local AI, $0 managed API allowance.
-- Access ($${c.access.monthlyUsd}/mo): managed Soft-UI routing at provider list rates without a large included bucket (Usage Credits or PAYG).
+- Access ($${c.access.monthlyUsd}/mo): managed Soft-UI routing without a large included bucket (Usage Credits or PAYG).
 - Individual Pro ($${c.individual_pro.monthlyUsd}/mo, $${c.individual_pro.includedAllowanceUsd} included API) and Individual Max ($${c.individual_max.monthlyUsd}/mo, $${c.individual_max.includedAllowanceUsd} included API): private Soft-UI workspace; priority features; Max ≈2× Pro rate limits.
 - Team Pro ($${c.team_pro.monthlyUsd}/mo, $${c.team_pro.includedAllowanceUsd} pooled API) and Team Max ($${c.team_max.monthlyUsd}/mo, $${c.team_max.includedAllowanceUsd} pooled API): organization Soft-UI + ops plans; Max ≈2× Pro rate limits.
-- No Vantage markup on model spend: 1 Usage Credit = $1 provider API at list rates (1.0× debit). Hard stop after included allowance unless Usage Credits or explicit PAYG + spend cap. Week team trial: ${TEAM_TRIAL_DAYS} days / $${c.team_trial.includedAllowanceUsd} API, no surprise auto-charge. No per-seat student pricing.
+- Hosted AI usage is billed at 75% of typical API rates — about 25% less than running the same models on your own keys (BYOK stays at provider list). Hard stop after included allowance unless Usage Credits or explicit PAYG + spend cap. Week team trial: ${TEAM_TRIAL_DAYS} days / $${c.team_trial.includedAllowanceUsd} API, no surprise auto-charge. No per-seat student pricing.
 
 ## Data sources
 Live reference data from The Blue Alliance and Statbotics can be cached per event for signed-in teams (freshness-stamped). Marketing pages do not publish aggregate event/team/match counts.
