@@ -49,6 +49,15 @@ type Member = {
   joinedAt: string;
 };
 
+type AdminTenure = {
+  orgCreatedAt: string;
+  adminCount: number;
+  bootstrapActive: boolean;
+  daysRemaining: number | null;
+  lastAdminLocked: boolean;
+  inviteHint: string | null;
+};
+
 type AccessRequest = {
   id: string;
   userId: string;
@@ -135,6 +144,7 @@ function MembershipNextActionsPanel({ actions }: { actions: TeamAdminNextAction[
 export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [adminTenure, setAdminTenure] = useState<AdminTenure | null>(null);
   const [membersLoaded, setMembersLoaded] = useState(false);
   const [membershipLoading, setMembershipLoading] = useState(true);
   const [membershipFetchFailed, setMembershipFetchFailed] = useState(false);
@@ -182,12 +192,14 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     const response = await fetch(`/api/organizations/invites?orgId=${orgId}`);
     const data = await response.json();
     setInvites(data.invites ?? []);
+    if (data.adminTenure) setAdminTenure(data.adminTenure as AdminTenure);
     if (!response.ok) setMessage(data.error);
 
     const membersResponse = await fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`);
     const membersData = await membersResponse.json();
     if (membersResponse.ok) {
       setMembers(Array.isArray(membersData.members) ? membersData.members : []);
+      if (membersData.adminTenure) setAdminTenure(membersData.adminTenure as AdminTenure);
       setMembersLoaded(true);
       setMembershipFetchFailed(false);
     } else {
@@ -688,6 +700,11 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
             Team numbers never grant access. The recipient must verify this exact address — the ledger stays blank
             until a real invite is sent, never DEMO members.
           </p>
+          {adminTenure?.inviteHint ? (
+            <p className="app-muted team-admin-tenure-hint" role="note">
+              {adminTenure.inviteHint}
+            </p>
+          ) : null}
           <label>
             Email
             <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />

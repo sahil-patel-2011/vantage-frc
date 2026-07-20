@@ -36,10 +36,11 @@ describe("dashboard Soft-UI related", () => {
     expect(dashboardHubHref("ai", null)).toBe("/ai?tab=chat");
   });
 
-  it("keeps no-org next actions invite-safe and DEMO-free", () => {
+  it("keeps no-org next actions as one invite path", () => {
     const actions = dashboardNextActions({ orgId: null, shell: "no_org" });
+    expect(actions).toHaveLength(1);
     expect(actions[0]?.href).toBe("/invite");
-    expect(actions.some((action) => action.href === "/workspace")).toBe(true);
+    expect(actions[0]?.primary).toBe(true);
     expect(actions.every((action) => !/demo/i.test(`${action.label} ${action.detail}`))).toBe(true);
   });
 
@@ -50,23 +51,36 @@ describe("dashboard Soft-UI related", () => {
       tbaConfigured: false,
       hasScoutingSchemas: false,
       hasAiProvider: false,
+      role: "owner",
     });
     expect(steps.find((step) => step.id === "workspace")?.state).toBe("done");
+    expect(steps.find((step) => step.id === "workspace")?.detail).not.toMatch(/accept an invite/i);
     expect(steps.find((step) => step.id === "event")?.state).toBe("current");
     expect(steps.find((step) => step.id === "tba")?.state).toBe("current");
     expect(steps.find((step) => step.id === "tba")?.href).toContain("orgId=");
     expect(steps.find((step) => step.id === "ai")?.href).toContain("/team/ai-keys");
   });
 
-  it("points missing AI provider next action at AI API keys", () => {
+  it("points missing AI provider next action at AI API keys for owners", () => {
     const actions = dashboardNextActions({
       orgId: ORG,
       shell: "ready",
       hasAiProvider: false,
+      role: "owner",
     });
     const ai = actions.find((action) => action.id === "ai-provider");
     expect(ai?.href).toBe(`/team/ai-keys?orgId=${ORG}`);
     expect(ai?.label.toLowerCase()).toMatch(/ai keys|api keys/);
+  });
+
+  it("hides AI key next action from non-admin members", () => {
+    const actions = dashboardNextActions({
+      orgId: ORG,
+      shell: "ready",
+      hasAiProvider: false,
+      role: "member",
+    });
+    expect(actions.find((action) => action.id === "ai-provider")).toBeUndefined();
   });
 
   it("keeps ready next actions to blockers only — no hub tour", () => {

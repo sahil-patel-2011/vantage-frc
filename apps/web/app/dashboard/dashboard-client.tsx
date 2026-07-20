@@ -673,6 +673,7 @@ export default function DashboardClient() {
     shell: dashShell,
     hasScoutingSchemas,
     hasAiProvider,
+    role,
   });
   const setupSteps = dashboardSetupSteps({
     orgId: orgId || null,
@@ -680,6 +681,7 @@ export default function DashboardClient() {
     tbaConfigured,
     hasScoutingSchemas,
     hasAiProvider,
+    role,
   });
   const isNarrow = mounted && width < 640;
   const gridLayout: Layout = layout.map((item, index) => ({

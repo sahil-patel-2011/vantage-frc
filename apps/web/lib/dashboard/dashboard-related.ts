@@ -84,7 +84,7 @@ export function classifyDashboardShell(input: {
   return "ready";
 }
 
-/** Soft-UI next actions — short labels; one primary when blocked. */
+/** Soft-UI next actions — short labels; role-aware; one primary when blocked. */
 export function dashboardNextActions(input: {
   orgId?: string | null;
   shell: DashboardShellKind;
@@ -95,7 +95,11 @@ export function dashboardNextActions(input: {
   const { orgId, shell } = input;
   if (shell === "loading") return [];
 
+  const role = (input.role ?? "").toLowerCase();
+  const isOwnerAdmin = role === "owner" || role === "admin";
+
   if (shell === "no_org") {
+    // One short invite path — never a laundry list of accept/email/support rows.
     return [
       {
         id: "invite",
@@ -103,12 +107,6 @@ export function dashboardNextActions(input: {
         detail: "Use the link sent to your email.",
         href: "/invite",
         primary: true,
-      },
-      {
-        id: "workspace",
-        label: "Workspace",
-        detail: "Pick a team if you already joined.",
-        href: "/workspace",
       },
     ];
   }
@@ -145,7 +143,7 @@ export function dashboardNextActions(input: {
         primary: true,
       });
     }
-    if (input.hasAiProvider === false) {
+    if (input.hasAiProvider === false && isOwnerAdmin) {
       actions.push({
         id: "ai-provider",
         label: "Add AI keys",
@@ -157,6 +155,7 @@ export function dashboardNextActions(input: {
     return actions;
   }
 
+  // Members with org never see invite-accept checklists.
   return actions;
 }
 
@@ -167,20 +166,27 @@ export function dashboardSetupSteps(input: {
   tbaConfigured?: boolean | null;
   hasScoutingSchemas?: boolean;
   hasAiProvider?: boolean;
+  role?: string | null;
 }): DashboardSetupStep[] {
   const orgId = input.orgId ?? null;
   const hasOrg = Boolean(orgId);
+  const role = (input.role ?? "").toLowerCase();
+  const isOwnerAdmin = role === "owner" || role === "admin";
   const eventDone = hasOrg && !input.setupRequired;
   const tbaDone = input.tbaConfigured === true;
   const tbaCurrent = hasOrg && input.tbaConfigured === false;
   const scoutDone = input.hasScoutingSchemas === true;
   const aiDone = input.hasAiProvider === true;
 
-  return [
+  const steps: DashboardSetupStep[] = [
     {
       id: "workspace",
-      label: "Join workspace",
-      detail: "Accept an invite or select your team",
+      label: hasOrg ? "Workspace" : "Join workspace",
+      detail: hasOrg
+        ? isOwnerAdmin
+          ? "Team selected"
+          : "You’re on a team"
+        : "Open the invite sent to your email",
       href: hasOrg ? withOrgHref("/workspace", orgId) : "/invite",
       state: hasOrg ? "done" : "current",
     },
@@ -205,14 +211,19 @@ export function dashboardSetupSteps(input: {
       href: hubHref("/competition", "forms", orgId),
       state: !hasOrg || input.setupRequired ? "pending" : scoutDone ? "done" : "current",
     },
-    {
+  ];
+
+  if (isOwnerAdmin || !hasOrg) {
+    steps.push({
       id: "ai",
       label: "AI keys",
       detail: "Optional provider keys",
       href: withOrgHref("/team/ai-keys", orgId),
       state: !hasOrg ? "pending" : aiDone ? "done" : "current",
-    },
-  ];
+    });
+  }
+
+  return steps;
 }
 
 export function dashboardSetupTitle(shell: DashboardShellKind): string {

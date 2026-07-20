@@ -13,8 +13,8 @@ export default function HelpClient() {
     <main className="module-page help-page soft-gate">
       <PageHeader
         breadcrumbs="Settings / App manual"
-        title="How to use this app"
-        description="Searchable Soft-UI manual — hubs, island, Home widgets, scouting offline, TBA, BYOK, Event Day, Business/Media, and AI. Also available from Cmd+K."
+        title="App manual"
+        description="Search Soft-UI topics — hubs, island, Home widgets, scouting, TBA, BYOK, Event Day, Business/Media, and AI. Also available from Cmd+K."
       >
         <a className="app-button secondary" href="/support">
           Support tickets

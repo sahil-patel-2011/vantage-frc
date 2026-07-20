@@ -85,10 +85,10 @@ export function buildOnboardingChecklistSteps(signals: OnboardingSignals): Onboa
   return [
     {
       key: "workspace",
-      label: "Join workspace",
-      detail: "Accept a team invite or select your org",
+      label: "Workspace",
+      detail: "Team selected",
       done: true,
-      href: "/invite",
+      href: `/workspace${q}`,
     },
     {
       key: "event",

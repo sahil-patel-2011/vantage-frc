@@ -10,6 +10,7 @@ import {
   PILLAR_SHEET_LINKS,
   PRODUCT_NAV_GROUPS,
   breadcrumbForPath,
+  cmdkNavCatalog,
   findNavMatch,
   navTitleForPath,
   withOrgHref,
@@ -271,12 +272,6 @@ function Icon({ name }: { name: IconName }) {
   );
 }
 
-function defaultExpandedGroups(activeLabel: string | undefined): Record<string, boolean> {
-  const next: Record<string, boolean> = { Home: true };
-  if (activeLabel && activeLabel !== "Home") next[activeLabel] = true;
-  return next;
-}
-
 export default function AppShell() {
   const pathname = usePathname();
   const router = useRouter();
@@ -300,7 +295,6 @@ export default function AppShell() {
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [memberships, setMemberships] = useState<MembershipOption[]>([]);
   const [recentOrgIds, setRecentOrgIds] = useState<string[]>([]);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [pathSearch, setPathSearch] = useState("");
   const [commandQuery, setCommandQuery] = useState("");
   const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
@@ -311,10 +305,6 @@ export default function AppShell() {
 
   const activeNav = findNavMatch(pathname);
   const activeGroupLabel = activeNav?.group.label;
-
-  useEffect(() => {
-    setExpandedGroups((prev) => ({ ...defaultExpandedGroups(activeGroupLabel), ...prev, Home: true, ...(activeGroupLabel ? { [activeGroupLabel]: true } : {}) }));
-  }, [activeGroupLabel]);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -563,18 +553,17 @@ export default function AppShell() {
   );
 
   const flat = useMemo(() => {
-    const items = visibleNavGroups.flatMap((group) => group.items);
+    const items = cmdkNavCatalog().filter((item) => navHrefAllowed(item.href));
     if (me.platformAdmin) {
       items.push({ href: "/admin", label: "Global Team Manager", icon: "grid" });
     }
-    // Dedupe by href so Cmd+K never lists the same module twice (e.g. Offline Shell).
     const seen = new Set<string>();
     return items.filter((item) => {
       if (seen.has(item.href)) return false;
       seen.add(item.href);
       return true;
     });
-  }, [me.platformAdmin, visibleNavGroups]);
+  }, [me.platformAdmin, navHrefAllowed]);
 
   const filteredNav = useMemo(() => {
     const q = commandQuery.trim().toLowerCase();
@@ -612,8 +601,10 @@ export default function AppShell() {
     pathname === "/competition" ||
     pathname === "/team" ||
     pathname === "/business" ||
+    pathname === "/media" ||
     pathname === "/build" ||
-    pathname === "/ai";
+    pathname === "/ai" ||
+    pathname === "/logistics";
 
   const showBack =
     !isHubRoot &&
@@ -681,10 +672,6 @@ export default function AppShell() {
     document.body.classList.toggle("has-event-focus", Boolean(eventFocus && !focusCollapsed));
     return () => document.body.classList.remove("has-event-focus");
   }, [eventFocus, focusCollapsed]);
-
-  const toggleGroup = useCallback((label: string) => {
-    setExpandedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
-  }, []);
 
   const closeOverlays = useCallback(() => {
     setOpen(false);
@@ -778,21 +765,6 @@ export default function AppShell() {
     } finally {
       setIslandSaving(false);
     }
-  }
-
-  function navItemBadge(itemHref: string) {
-    const path = itemHref.split("?")[0] || itemHref;
-    const isMessages =
-      itemHref === "/messages" ||
-      itemHref.startsWith("/messages?") ||
-      (path === "/team" && itemHref.includes("tab=messages"));
-    if (isMessages && unreadMessages >= 1) {
-      return <b className="soft-nav-badge">{unreadMessages > 99 ? "99+" : unreadMessages}</b>;
-    }
-    if (itemHref === "/notifications" && unreadCount >= 1) {
-      return <b className="soft-nav-badge">{unreadCount > 99 ? "99+" : unreadCount}</b>;
-    }
-    return null;
   }
 
   return (
@@ -918,7 +890,7 @@ export default function AppShell() {
                   Security
                 </a>
                 <a role="menuitem" href="/docs" onClick={() => setAccountMenuOpen(false)}>
-                  How to use this app
+                  App manual
                 </a>
                 <a role="menuitem" href="/support" onClick={() => setAccountMenuOpen(false)}>
                   Support tickets
@@ -1068,74 +1040,39 @@ export default function AppShell() {
             ) : null}
           </div>
         </div>
-        {visibleNavGroups.map((group) => {
-          const expanded = !!expandedGroups[group.label];
-          const isActiveGroup = activeGroupLabel === group.label;
-          return (
-            <section
-              className={`soft-nav-group${isActiveGroup ? " is-active" : ""}`}
-              key={group.label}
-              style={{ ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg }}
-            >
-              <button
-                type="button"
-                className="soft-nav-heading"
-                aria-expanded={expanded}
-                onClick={() => toggleGroup(group.label)}
+        <nav className="soft-drawer-flat" aria-label="Hubs">
+          {visibleNavGroups.map((group) => {
+            const item = group.items[0];
+            if (!item || item.state === "planned") return null;
+            const isActive = activeGroupLabel === group.label;
+            return (
+              <a
+                key={group.label}
+                className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
+                aria-current={
+                  activeNav?.item.href === item.href && activeNav.group.label === group.label
+                    ? "page"
+                    : undefined
+                }
+                href={withOrgHref(item.href, orgId)}
+                onClick={() => setOpen(false)}
+                style={{ ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg }}
               >
                 <i>
                   <Icon name={group.icon} />
                 </i>
-                <span>{group.label}</span>
-                <span className={`soft-nav-caret${expanded ? " open" : ""}`} aria-hidden="true">
-                  <Icon name="chevron" />
-                </span>
-              </button>
-              {expanded ? (
-                <div className="soft-nav-items">
-                  {group.items.map((item) =>
-                    item.state === "planned" ? (
-                      <span className="planned" key={`${group.label}-${item.label}`}>
-                        <Icon name={item.icon} />
-                        {item.label}
-                        <small>Planned</small>
-                      </span>
-                    ) : (
-                      <a
-                        aria-current={
-                          activeNav?.item.href === item.href && activeNav.group.label === group.label ? "page" : undefined
-                        }
-                        href={withOrgHref(item.href, orgId)}
-                        key={`${group.label}-${item.label}`}
-                        onClick={() => setOpen(false)}
-                      >
-                        <Icon name={item.icon} />
-                        {item.label}
-                        {navItemBadge(item.href) ??
-                          (item.state === "setup" ? <small>Setup</small> : null)}
-                      </a>
-                    ),
-                  )}
-                </div>
-              ) : null}
-            </section>
-          );
-        })}
-        {me.platformAdmin ? (
-          <section className="soft-nav-group">
-            <div className="soft-nav-heading static">
-              <i>
-                <Icon name="grid" />
-              </i>
-              <span>Platform</span>
-            </div>
-            <div className="soft-nav-items">
-              <a href="/admin" onClick={() => setOpen(false)}>
-                <Icon name="grid" />
-                Team manager
+                <span>{item.label}</span>
               </a>
-            </div>
-          </section>
+            );
+          })}
+        </nav>
+        {me.platformAdmin ? (
+          <a className="soft-drawer-hub soft-drawer-platform" href="/admin" onClick={() => setOpen(false)}>
+            <i>
+              <Icon name="grid" />
+            </i>
+            <span>Team manager</span>
+          </a>
         ) : null}
         <footer className="soft-drawer-foot">
           <a href="/account" onClick={() => setOpen(false)}>

@@ -3,8 +3,10 @@ import { WaitlistForm } from "../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import { FAQ } from "../components/marketing/faq";
 import { HeroProductVisual } from "../components/marketing/product-glances";
+import { HomeShowcase } from "../components/marketing/home-showcase";
 import { raisedPricingStrip } from "@vantage/billing/catalog";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
+import "./marketing-showcase.css";
 
 export const metadata: Metadata = marketingPageMetadata({
   title: "Vantage — Competition ops for FRC teams",
@@ -40,21 +42,18 @@ const hubs = [
   },
 ] as const;
 
-const seasonBeat = [
+const whatYouOpen = [
   {
-    step: "01",
-    title: "Plan the season",
-    copy: "Invite the org, link TBA, publish scout forms, set goals.",
+    title: "Home",
+    copy: "Next match and EPA after you link a team and sync TBA/Statbotics.",
   },
   {
-    step: "02",
-    title: "Run event day",
-    copy: "Offline scouting plus Competition Command and My Day at the venue.",
+    title: "Competition",
+    copy: "Command, scouting, and strategy tabs for the active event.",
   },
   {
-    step: "03",
-    title: "Pick with sources",
-    copy: "Strategy and Alliance Selection Desk use scout and public facts—or stay empty.",
+    title: "Team & Business",
+    copy: "Calendar, invites, budget, and sponsors inside those hubs.",
   },
 ] as const;
 
@@ -82,21 +81,20 @@ export default function Home() {
           <HeroProductVisual />
         </section>
 
-        <section className="lux-season" aria-labelledby="lux-season-title">
+        <section className="lux-season" aria-labelledby="lux-open-title">
           <div className="lux-content">
             <header className="lux-section-head">
-              <h2 id="lux-season-title">Season → venue → picks.</h2>
-              <p>One org context from kickoff through alliance selection.</p>
+              <h2 id="lux-open-title">What you open after invite.</h2>
+              <p>Link TBA, set the active event, then use hub tabs—not a decorative flowchart.</p>
             </header>
-            <ol className="lux-season-steps">
-              {seasonBeat.map((item) => (
-                <li key={item.step}>
-                  <b>{item.step}</b>
+            <ul className="lux-feature-grid lux-hub-strip">
+              {whatYouOpen.map((item) => (
+                <li key={item.title}>
                   <strong>{item.title}</strong>
                   <span>{item.copy}</span>
                 </li>
               ))}
-            </ol>
+            </ul>
             <p className="lux-inline-cta">
               <a className="text-link" href="/workflow">
                 How it works →
@@ -126,6 +124,8 @@ export default function Home() {
             </p>
           </div>
         </section>
+
+        <HomeShowcase />
 
         <section className="lux-pricing" id="pricing-preview" aria-labelledby="lux-pricing-title">
           <div>
