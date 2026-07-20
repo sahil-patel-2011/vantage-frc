@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { CopyShareLink } from "../../../components/copy-share-link";
 import type { CoverageGapSlot, CoverageGapSummary } from "@vantage/scouting/coverage";
 import {
   LINEUP_RELATED_INCLUDE,
@@ -352,6 +353,10 @@ export default function LineupClient({ orgId }: { orgId: string }) {
             {updatedAt ? ` · ${new Date(updatedAt).toLocaleTimeString()}` : ""}
           </span>
           <LineupRelatedStrip orgId={orgId} />
+          <CopyShareLink orgId={orgId} />
+          <button type="button" className="app-button secondary" onClick={() => window.print()}>
+            Print
+          </button>
           <a className="app-button secondary" href={scoutingHref}>
             Scout forms
           </a>

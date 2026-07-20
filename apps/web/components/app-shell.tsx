@@ -1,7 +1,8 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ShellOutboxStatus } from "./shell-outbox-status";
 import {
   FEATURED_SOFT_UI_LINKS,
   ISLAND_TAB_CATALOG,
@@ -17,9 +18,17 @@ import {
   type ProductNavIcon,
 } from "../lib/nav/product-nav";
 import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
+import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
 import { formatMyDayWhen, matchAlertTitle, type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
+
+type SearchHit = {
+  title: string;
+  subtitle?: string | null;
+  href: string;
+  sourceLabel?: string;
+};
 
 type MembershipOption = {
   orgId: string;
@@ -274,8 +283,14 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   const [islandMessage, setIslandMessage] = useState("");
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [memberships, setMemberships] = useState<MembershipOption[]>([]);
+  const [recentOrgIds, setRecentOrgIds] = useState<string[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [pathSearch, setPathSearch] = useState("");
+  const [commandQuery, setCommandQuery] = useState("");
+  const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const commandInputRef = useRef<HTMLInputElement>(null);
+  const searchRequestId = useRef(0);
 
   const activeNav = findNavMatch(pathname);
   const activeGroupLabel = activeNav?.group.label;
@@ -302,6 +317,63 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   useEffect(() => {
     setPathSearch(window.location.search);
   }, [pathname]);
+
+  useEffect(() => {
+    setRecentOrgIds(listRecentOrgIds());
+  }, []);
+
+  useEffect(() => {
+    if (!commandOpen) {
+      setCommandQuery("");
+      setSearchHits([]);
+      setSearchLoading(false);
+      return;
+    }
+    const focusTimer = window.setTimeout(() => commandInputRef.current?.focus(), 30);
+    return () => window.clearTimeout(focusTimer);
+  }, [commandOpen]);
+
+  useEffect(() => {
+    if (!commandOpen) return;
+    const q = commandQuery.trim();
+    if (q.length < 2) {
+      setSearchHits([]);
+      setSearchLoading(false);
+      return;
+    }
+    const id = ++searchRequestId.current;
+    setSearchLoading(true);
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ q });
+      if (orgId) params.set("orgId", orgId);
+      void fetch(`/api/search?${params.toString()}`, { cache: "no-store" })
+        .then(async (response) =>
+          response.ok
+            ? ((await response.json()) as { status?: string; results?: SearchHit[] })
+            : null,
+        )
+        .then((data) => {
+          if (id !== searchRequestId.current) return;
+          const rows =
+            data?.status === "ready" && Array.isArray(data.results) ? data.results.slice(0, 8) : [];
+          setSearchHits(
+            rows.map((row) => ({
+              title: row.title,
+              subtitle: row.subtitle,
+              href: row.href,
+              sourceLabel: row.sourceLabel,
+            })),
+          );
+          setSearchLoading(false);
+        })
+        .catch(() => {
+          if (id !== searchRequestId.current) return;
+          setSearchHits([]);
+          setSearchLoading(false);
+        });
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [commandOpen, commandQuery, orgId]);
 
   useEffect(() => {
     void fetch("/api/me")
@@ -399,6 +471,20 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
     return items;
   }, [me.platformAdmin]);
 
+  const filteredNav = useMemo(() => {
+    const q = commandQuery.trim().toLowerCase();
+    if (!q) return flat;
+    return flat.filter((item) => {
+      const hay = `${item.label} ${item.href} ${item.state ?? ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [commandQuery, flat]);
+
+  const orderedMemberships = useMemo(
+    () => sortMembershipsByRecent(memberships, recentOrgIds),
+    [memberships, recentOrgIds],
+  );
+
   const showBack =
     pathname.startsWith("/account") ||
     pathname.startsWith("/team") ||
@@ -466,6 +552,17 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
     },
     [pathname, pathSearch],
   );
+
+  const onWorkspaceSwitch = useCallback((nextOrgId: string) => {
+    setRecentOrgIds(rememberRecentOrg(nextOrgId));
+  }, []);
+
+  const openFullSearch = useCallback(() => {
+    const q = commandQuery.trim();
+    const href = withOrgHref(q ? `/search?q=${encodeURIComponent(q)}` : "/search", orgId || null);
+    setCommandOpen(false);
+    router.push(href);
+  }, [commandQuery, orgId, router]);
 
   async function handleSignOut() {
     if (signingOut) return;
@@ -548,6 +645,9 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
 
   return (
     <>
+      <a className="soft-skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <header className="soft-topbar">
         {showBack ? (
           <div className="soft-page-head">
@@ -578,6 +678,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
           </button>
         )}
         <div className="soft-topbar-actions">
+          <ShellOutboxStatus orgId={orgId || null} />
           <button
             className="soft-icon-btn"
             type="button"
@@ -619,16 +720,22 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                 {memberships.length > 1 ? (
                   <div className="soft-account-teams" role="group" aria-label="Switch team workspace">
                     <span className="soft-account-teams-label">Teams</span>
-                    {memberships.map((row) => (
+                    {orderedMemberships.map((row) => (
                       <a
                         key={row.orgId}
                         role="menuitem"
                         href={switchWorkspaceHref(row.orgId)}
                         aria-current={row.orgId === orgId ? "true" : undefined}
-                        onClick={() => setAccountMenuOpen(false)}
+                        onClick={() => {
+                          onWorkspaceSwitch(row.orgId);
+                          setAccountMenuOpen(false);
+                        }}
                       >
                         {formatMembershipLabel(row)}
-                        <small>{row.role ?? "member"}</small>
+                        <small>
+                          {row.role ?? "member"}
+                          {recentOrgIds[0] === row.orgId && row.orgId !== orgId ? " · recent" : ""}
+                        </small>
                       </a>
                     ))}
                   </div>
@@ -781,19 +888,24 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                     No real team memberships yet. Exact-email invites only — never DEMO organizations.
                   </p>
                 ) : (
-                  memberships.map((row) => (
+                  orderedMemberships.map((row) => (
                     <a
                       key={row.orgId}
                       role="option"
                       aria-selected={row.orgId === orgId}
                       href={switchWorkspaceHref(row.orgId)}
                       onClick={() => {
+                        onWorkspaceSwitch(row.orgId);
                         setWorkspaceOpen(false);
                         setOpen(false);
                       }}
                     >
                       <strong>{formatMembershipLabel(row)}</strong>
-                      <span>{row.role ?? "member"}{row.orgId === orgId ? " · active" : ""}</span>
+                      <span>
+                        {row.role ?? "member"}
+                        {row.orgId === orgId ? " · active" : ""}
+                        {recentOrgIds.includes(row.orgId) && row.orgId !== orgId ? " · recent" : ""}
+                      </span>
                     </a>
                   ))
                 )}
@@ -1091,19 +1203,72 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
         <div className="command-dialog" role="dialog" aria-modal="true" aria-labelledby="command-title">
           <div>
             <header>
-              <h2 id="command-title">Go to a Vantage module</h2>
+              <h2 id="command-title">Search &amp; jump</h2>
               <button type="button" aria-label="Close" onClick={() => setCommandOpen(false)}>
                 ×
               </button>
             </header>
-            <nav>
-              {flat.map((item) => (
-                <a href={withOrgHref(item.href, orgId)} key={`${item.href}-${item.label}`} onClick={() => setCommandOpen(false)}>
-                  <Icon name={item.icon} />
-                  <span>{item.label}</span>
-                  {item.state ? <small>{item.state}</small> : null}
-                </a>
-              ))}
+            <label htmlFor="soft-command-input">
+              Filter modules or search tasks, inventory, impact, and knowledge
+              <input
+                id="soft-command-input"
+                ref={commandInputRef}
+                type="search"
+                value={commandQuery}
+                placeholder="Type to filter… Enter opens full search"
+                autoComplete="off"
+                onChange={(event) => setCommandQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    openFullSearch();
+                  }
+                }}
+              />
+            </label>
+            {searchHits.length > 0 || searchLoading ? (
+              <section className="command-search-hits" aria-label="Search results">
+                <header>
+                  <strong>Results</strong>
+                  {searchLoading ? <small>Searching…</small> : null}
+                </header>
+                <nav>
+                  {searchHits.map((hit) => (
+                    <a
+                      href={hit.href}
+                      key={`${hit.href}-${hit.title}`}
+                      onClick={() => setCommandOpen(false)}
+                    >
+                      <Icon name="search" />
+                      <span>
+                        {hit.title}
+                        {hit.subtitle ? <small>{hit.subtitle}</small> : null}
+                      </span>
+                      {hit.sourceLabel ? <small>{hit.sourceLabel}</small> : null}
+                    </a>
+                  ))}
+                </nav>
+                <button type="button" className="command-open-full" onClick={openFullSearch}>
+                  Open full search{commandQuery.trim() ? ` for “${commandQuery.trim()}”` : ""}
+                </button>
+              </section>
+            ) : null}
+            <nav aria-label="Modules">
+              {filteredNav.length === 0 ? (
+                <p className="command-empty">No modules match — try full search with Enter.</p>
+              ) : (
+                filteredNav.map((item) => (
+                  <a
+                    href={withOrgHref(item.href, orgId)}
+                    key={`${item.href}-${item.label}`}
+                    onClick={() => setCommandOpen(false)}
+                  >
+                    <Icon name={item.icon} />
+                    <span>{item.label}</span>
+                    {item.state ? <small>{item.state}</small> : null}
+                  </a>
+                ))
+              )}
             </nav>
           </div>
         </div>
