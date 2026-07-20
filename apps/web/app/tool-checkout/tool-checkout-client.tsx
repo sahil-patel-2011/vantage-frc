@@ -1,11 +1,37 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { toolCategoryLabel } from "../../lib/tool-checkout";
 import { TOOL_CATEGORIES } from "../../lib/tool-checkout/compute-tool-checkout";
 import type { ToolCheckoutView } from "../../lib/tool-checkout/compute-tool-checkout";
 import type { ToolCategory, ToolCheckoutStatus } from "../../lib/tool-checkout/types";
+import {
+  TOOL_CHECKOUT_RELATED_INCLUDE,
+  classifyToolCheckoutShell,
+  formatToolCheckoutMetric,
+  toolCheckoutNextActions,
+  toolCheckoutRelatedLinks,
+  toolCheckoutSetupSteps,
+  toolCheckoutShellCopy,
+  shouldShowToolCheckoutSummaryTiles,
+  type ToolCheckoutNextAction,
+  type ToolCheckoutShellKind,
+} from "../../lib/tool-checkout/tool-checkout-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./tool-checkout.css";
 
 type LiveView = Extract<ToolCheckoutView, { status: "live" }>;
 
@@ -15,19 +41,147 @@ const STATUS_LABEL: Record<ToolCheckoutStatus, string> = {
   overdue: "Overdue",
 };
 
-const STATUS_TONE: Record<ToolCheckoutStatus, string> = {
+const STATUS_TONE: Record<ToolCheckoutStatus, BadgeTone> = {
   available: "good",
   checked_out: "setup",
-  overdue: "demo",
+  overdue: "danger",
 };
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = toolCheckoutRelatedLinks(orgId, {
+    include: [...TOOL_CHECKOUT_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related tc-related" aria-label="Related team tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: ToolCheckoutNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions tc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Equipment, Checklists, and Safety — never DEMO loan ledgers.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function CheckoutShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: ToolCheckoutShellKind;
+  error?: string;
+  onRetry?: () => void;
+}) {
+  const actions = toolCheckoutNextActions({ orgId, shell });
+  const copy = toolCheckoutShellCopy(shell);
+  const teamHref = hubHref("/team", "tool-checkout", orgId);
+  const steps = shell === "setup" ? toolCheckoutSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page tc-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Tool Checkout"}
+          </>
+        }
+        title="Tool Checkout"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading Tool Checkout">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={hubHref("/team", "equipment-maintenance", orgId)}>
+                Open Equipment
+              </a>
+              <a className="app-button secondary" href={withOrgHref("/inventory", orgId)}>
+                Open Inventory
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="tc-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Equipment and Inventory — never DEMO loan ledgers.</p>
+          </header>
+          <ul className="tc-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted tc-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function ToolCheckoutClient() {
   const [view, setView] = useState<ToolCheckoutView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -51,6 +205,28 @@ export default function ToolCheckoutClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const toolCount = view?.status === "live" ? view.summary.totalTools : 0;
+  const overdueCount = view?.status === "live" ? view.summary.overdueCount : 0;
+
+  const shell = classifyToolCheckoutShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    toolCount,
+  });
+  const shellCopy = toolCheckoutShellCopy(shell);
+  const nextActions = toolCheckoutNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    toolCount,
+    overdueCount,
+  });
+  const teamHref = hubHref("/team", "tool-checkout", orgId);
+  const showTiles = shouldShowToolCheckoutSummaryTiles(toolCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -78,18 +254,44 @@ export default function ToolCheckoutClient() {
     [orgId, busy],
   );
 
+  if (shell === "loading") {
+    return <CheckoutShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <CheckoutShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <CheckoutShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page tc-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
+            <a href={teamHref}>Team</a>
             {" / Tool Checkout"}
           </>
         }
         title="Tool Checkout"
-        description="Track who has each shop tool and when it's due back — bus-factor protection for drills, calipers, chargers, and laptops."
-      />
+        description="Track who has each shop tool and when it's due back — never DEMO loan ledgers."
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -97,68 +299,28 @@ export default function ToolCheckoutClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load tool checkout"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <AddToolForm busy={busy} mutate={mutate} />
-          <ToolsPanel view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
-
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Tools tracked", value: String(summary.totalTools) },
-    { label: "Available", value: String(summary.availableCount) },
-    { label: "Checked out", value: String(summary.checkedOutCount) },
-    { label: "Overdue", value: String(summary.overdueCount) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.4rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {showTiles ? (
+        <Panel className="tc-panel">
+          <div className="tc-stats">
+            <StatTile label="Tools tracked" value={formatToolCheckoutMetric(view.summary.totalTools, loaded)} />
+            <StatTile label="Available" value={formatToolCheckoutMetric(view.summary.availableCount, loaded)} />
+            <StatTile label="Checked out" value={formatToolCheckoutMetric(view.summary.checkedOutCount, loaded)} />
+            <StatTile label="Overdue" value={formatToolCheckoutMetric(view.summary.overdueCount, loaded)} />
           </div>
-        ))}
-      </div>
-      {summary.byCategory.length > 0 ? (
-        <small className="app-muted" style={{ display: "block", marginTop: 10 }}>
-          {summary.byCategory
-            .map((c) => `${toolCategoryLabel(c.category)}: ${c.checkedOut}/${c.total} out`)
-            .join(" · ")}
-        </small>
+          {view.summary.byCategory.length > 0 ? (
+            <small className="app-muted tc-block">
+              {view.summary.byCategory
+                .map((c) => `${toolCategoryLabel(c.category)}: ${c.checkedOut}/${c.total} out`)
+                .join(" · ")}
+            </small>
+          ) : null}
+        </Panel>
       ) : null}
-    </Panel>
+
+      <AddToolForm busy={busy} mutate={mutate} />
+      <ToolsPanel view={view} busy={busy} mutate={mutate} />
+      <NextActionsPanel actions={nextActions} />
+    </main>
   );
 }
 
@@ -174,40 +336,39 @@ function ToolsPanel({
   if (view.tools.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No tools yet"
         badgeTone="setup"
         title="Add your first shop tool"
-        description="Register tools to track who has each one and when it's due back."
+        description="Register tools to track who has each one and when it's due back — never DEMO loan packs."
       />
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Tool registry</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel id="tool-checkout-registry" className="tc-panel">
+      <h2>Tool registry</h2>
+      <ul className="tc-list">
         {view.tools.map((tool) => (
-          <li key={tool.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={tool.id} className="tc-row">
             <div>
-              <strong>{tool.name}</strong>
-              <span className={`app-badge ${STATUS_TONE[tool.status]}`} style={{ marginLeft: 8 }}>
-                {STATUS_LABEL[tool.status]}
-              </span>
-              <small className="app-muted" style={{ display: "block" }}>
+              <strong>{tool.name}</strong>{" "}
+              <Badge tone={STATUS_TONE[tool.status]}>{STATUS_LABEL[tool.status]}</Badge>
+              <small className="app-muted tc-block">
                 {toolCategoryLabel(tool.category)}
                 {tool.assetTag ? ` · ${tool.assetTag}` : ""}
                 {tool.location ? ` · ${tool.location}` : ""}
               </small>
               {tool.currentLoan ? (
-                <small className="app-muted" style={{ display: "block" }}>
+                <small className="app-muted tc-block">
                   With {tool.currentLoan.borrowerName}
                   {tool.currentLoan.dueAt
                     ? ` · due ${new Date(tool.currentLoan.dueAt).toLocaleDateString()}`
                     : ""}
                 </small>
               ) : null}
-              {tool.notes ? <small className="app-muted" style={{ display: "block" }}>{tool.notes}</small> : null}
+              {tool.notes ? <small className="app-muted tc-block">{tool.notes}</small> : null}
             </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <div className="tc-actions">
               {tool.currentLoan ? (
                 <button
                   type="button"
@@ -272,14 +433,13 @@ function CheckoutButton({
         setDueAt("");
         setOpen(false);
       }}
-      style={{ display: "flex", gap: 6, alignItems: "center" }}
+      className="tc-checkout-form"
     >
       <input
         value={borrowerName}
         onChange={(event) => setBorrowerName(event.target.value)}
         placeholder="Borrower"
         required
-        style={{ maxWidth: 120 }}
       />
       <input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)} />
       <button type="submit" className="app-button" disabled={busy || !borrowerName.trim()}>
@@ -309,6 +469,8 @@ function AddToolForm({
 
   return (
     <Panel
+      id="tool-checkout-add"
+      className="tc-panel"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -323,9 +485,9 @@ function AddToolForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Add tool</h2>
+      <h2>Add tool</h2>
+      <p className="app-muted tc-tip">Real shop tools only — never DEMO loan packs.</p>
       <FormGrid min={160}>
         <FormRow label="Name">
           <input value={form.name} onChange={set("name")} placeholder="Cordless drill" required />

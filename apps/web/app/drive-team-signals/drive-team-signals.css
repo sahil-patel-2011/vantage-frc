@@ -1,0 +1,15 @@
+/* Soft-UI Drive-Team Signals — never DEMO cheat sheets. */
+.dts-page{display:grid;gap:16px}
+.dts-related{display:flex;flex-wrap:wrap;gap:8px}
+.dts-next-actions{margin:0}
+.dts-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.dts-panel{display:grid;gap:12px}
+.dts-panel h2{margin:0}
+.dts-setup-steps,.dts-list,.dts-sheets{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.dts-setup-steps li,.dts-row,.dts-sheet-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.dts-tip,.dts-block{margin:0;display:block}
+.dts-code{margin-left:8px}
+.dts-add-signal{display:grid;gap:8px;margin-top:12px;border-top:1px solid var(--app-border,#33415522);padding-top:12px}
+@media(max-width:900px){
+  .dts-next-actions li,.dts-setup-steps li,.dts-row,.dts-sheet-header{flex-direction:column;align-items:stretch}
+}

@@ -1,0 +1,16 @@
+/* Soft-UI Tool Checkout — never DEMO loan ledgers. */
+.tc-page{display:grid;gap:16px}
+.tc-related{display:flex;flex-wrap:wrap;gap:8px}
+.tc-next-actions{margin:0}
+.tc-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.tc-panel{display:grid;gap:12px}
+.tc-panel h2{margin:0}
+.tc-setup-steps,.tc-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.tc-setup-steps li,.tc-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.tc-tip,.tc-block{margin:0;display:block}
+.tc-actions{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;align-items:center}
+.tc-checkout-form{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tc-checkout-form input{max-width:140px}
+@media(max-width:900px){
+  .tc-next-actions li,.tc-setup-steps li,.tc-row{flex-direction:column;align-items:stretch}
+}

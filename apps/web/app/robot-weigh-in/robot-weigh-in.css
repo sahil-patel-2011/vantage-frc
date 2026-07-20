@@ -1,0 +1,21 @@
+/* Soft-UI Robot Weigh-In — never DEMO scale readings. */
+.rwi-page{display:grid;gap:16px}
+.rwi-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.rwi-filter{display:flex;gap:6px;align-items:center}
+.rwi-related{display:flex;flex-wrap:wrap;gap:8px}
+.rwi-next-actions{margin:0}
+.rwi-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.rwi-panel{display:grid;gap:12px}
+.rwi-panel h2{margin:0}
+.rwi-setup-steps,.rwi-list,.rwi-trend{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.rwi-setup-steps li,.rwi-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.rwi-tip,.rwi-block{margin:0;display:block}
+.rwi-trend li{display:grid;grid-template-columns:100px 1fr 90px;gap:8px;align-items:center}
+.rwi-trend-val{text-align:right}
+.rwi-checks{border:none;padding:0;margin:0;display:flex;gap:12px;flex-wrap:wrap}
+.rwi-checks label{display:flex;gap:6px;align-items:center}
+@media(max-width:900px){
+  .rwi-header-actions{justify-content:flex-start}
+  .rwi-next-actions li,.rwi-setup-steps li,.rwi-row{flex-direction:column;align-items:stretch}
+  .rwi-trend li{grid-template-columns:1fr}
+}
