@@ -2,18 +2,28 @@
 
 import { useEffect, useState } from "react";
 
+type PoolStatus = {
+  configured?: string[];
+  models?: Record<string, string>;
+  balancing?: string;
+  degraded?: string[];
+  balanced?: boolean;
+  note?: string;
+};
+
 type PromoPayload = {
   eligible?: boolean;
   endsAt?: string;
   teamNumber?: number | null;
   reason?: string | null;
   message?: string;
+  pool?: PoolStatus;
   error?: string;
 };
 
 /**
- * Surfaces team 1111 sponsored-promo state (active window or expired reminder).
- * Only renders for the promo team or when the API returns a promo-related message.
+ * Surfaces team 1111 sponsored-promo state (active window or expired reminder)
+ * plus masked pool status (which providers are configured — never keys).
  * Expiry is AI-pool only — never used to lock out non-AI product surfaces.
  */
 export function SponsoredPromoBanner({
@@ -51,6 +61,8 @@ export function SponsoredPromoBanner({
 
   const expired = payload.reason === "promo_expired";
   const tone = expired ? "warn" : "info";
+  const configured = payload.pool?.configured ?? [];
+  const degraded = payload.pool?.degraded ?? [];
 
   return (
     <aside
@@ -70,6 +82,20 @@ export function SponsoredPromoBanner({
         {expired ? "Sponsored AI ended" : "Sponsored promo AI"}
       </strong>
       <span>{payload.message}</span>
+      {payload.eligible && configured.length > 0 ? (
+        <div style={{ marginTop: "0.45rem", fontSize: "0.85rem", opacity: 0.92 }}>
+          <div>
+            Pool: {configured.join(", ")}
+            {payload.pool?.balanced ? " · balanced (weighted round-robin)" : null}
+          </div>
+          {payload.pool?.note ? <div style={{ marginTop: "0.2rem" }}>{payload.pool.note}</div> : null}
+          {degraded.length > 0 ? (
+            <div style={{ marginTop: "0.2rem" }}>
+              Temporarily degraded (skipped as primary): {degraded.join(", ")}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       {expired ? (
         <div style={{ marginTop: "0.45rem" }}>
           <a className="app-button secondary" href={`/team/ai-keys?orgId=${encodeURIComponent(orgId)}`}>
