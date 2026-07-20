@@ -367,6 +367,15 @@ export default function AccountClient() {
     }
   }, []);
 
+  function selectTab(next: Tab) {
+    setTab(next);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (next === "profile") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", next);
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
   async function load() {
     setLoading(true);
     setFetchFailed(false);
@@ -642,7 +651,7 @@ export default function AccountClient() {
               <strong>Inbox</strong>
               <span>In-app alerts for this account</span>
             </a>
-            <button type="button" onClick={() => setTab("notifications")}>
+            <button type="button" onClick={() => selectTab("notifications")}>
               <strong>Notification prefs</strong>
               <span>In-app alerts and email opt-ins</span>
             </button>
@@ -681,7 +690,7 @@ export default function AccountClient() {
             className="account-tabs"
             aria-label="Account sections"
             value={tab}
-            onChange={(id) => setTab(id as Tab)}
+            onChange={(id) => selectTab(id as Tab)}
             tabs={[
               { id: "profile", label: "Profile" },
               { id: "appearance", label: "Appearance" },
