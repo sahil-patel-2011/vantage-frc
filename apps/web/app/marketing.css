@@ -1069,16 +1069,23 @@
 .marketing-lux .button.secondary:hover{border-color:var(--m-ink);background:rgba(0,0,0,.03)}
 .marketing-lux .button.compact{min-height:32px;padding:6px 14px;font-size:12px}
 
-.marketing-lux .lux-wordmark{
+.marketing-lux .lux-wordmark,
+.marketing-lux .lux-hero-copy>p.lux-wordmark,
+.marketing-lux .lux-waitlist>div>p.lux-wordmark,
+.marketing-lux .lux-route-hero>p.lux-wordmark{
   margin:0 0 18px;
   font:600 clamp(56px,10vw,104px)/.86 var(--m-sans);
   letter-spacing:-.055em;color:var(--m-ink);
   animation:lux-rise .75s cubic-bezier(.22,.8,.2,1) both;
 }
-.marketing-lux .lux-wordmark-sm{
+.marketing-lux .lux-wordmark-sm,
+.marketing-lux .lux-hero-copy>p.lux-wordmark-sm,
+.marketing-lux .lux-waitlist>div>p.lux-wordmark-sm,
+.marketing-lux .lux-route-hero>p.lux-wordmark-sm,
+.marketing-lux .pricing-hero>p.lux-wordmark-sm{
   margin:0 0 16px;
-  font-size:clamp(36px,6vw,56px);
-  letter-spacing:-.045em;
+  font:600 clamp(36px,6vw,56px)/.9 var(--m-sans);
+  letter-spacing:-.045em;color:var(--m-ink);
   animation:none;
 }
 .marketing-lux .lux-hero{
@@ -1096,7 +1103,7 @@
   letter-spacing:-.035em;color:var(--m-ink);
   animation:lux-rise .8s .05s cubic-bezier(.22,.8,.2,1) both;
 }
-.marketing-lux .lux-hero-copy>p{
+.marketing-lux .lux-hero-copy>p:not(.lux-wordmark){
   max-width:34rem;margin:0;color:var(--m-muted);
   font-size:clamp(17px,1.5vw,20px);line-height:1.55;
   animation:lux-rise .8s .1s cubic-bezier(.22,.8,.2,1) both;
@@ -1263,8 +1270,8 @@
   font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);
   letter-spacing:-.03em;
 }
-.marketing-lux .lux-waitlist>div>p,
-.marketing-lux .waitlist>div>p{
+.marketing-lux .lux-waitlist>div>p:not(.lux-wordmark),
+.marketing-lux .waitlist>div>p:not(.lux-wordmark){
   max-width:36rem;margin:0;color:var(--m-muted);font-size:15px;line-height:1.6;
 }
 .marketing-lux .soft-waitlist-form,
@@ -1298,9 +1305,9 @@
   font:600 clamp(34px,4.4vw,56px)/1.08 var(--m-sans);
   letter-spacing:-.035em;
 }
-.marketing-lux .lux-route-hero>p,
-.marketing-lux .route-hero>p,
-.marketing-lux .pricing-hero>p{
+.marketing-lux .lux-route-hero>p:not(.lux-wordmark),
+.marketing-lux .route-hero>p:not(.lux-wordmark),
+.marketing-lux .pricing-hero>p:not(.lux-wordmark){
   max-width:38rem;margin:0;color:var(--m-muted);font-size:17px;line-height:1.55;
 }
 .marketing-lux .lux-route-hero .actions,
