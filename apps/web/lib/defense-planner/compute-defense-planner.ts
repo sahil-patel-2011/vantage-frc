@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { DRIVETRAIN_TYPES, recommendDefensePlan } from ".";
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
 import type { DrivetrainType, Matchup, RobotProfile } from "./types";
 
 export { DRIVETRAIN_TYPES };
@@ -12,6 +14,30 @@ export type DefensePlannerSetupStep = {
   detail: string;
   href: string;
 };
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO defense metrics. */
+function setupSteps(orgId: string | null): DefensePlannerSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Defense Planner is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "strategy",
+      label: "Open Strategy",
+      detail: "Event strategy stays empty until real metrics exist — never DEMO rankings.",
+      href: hubHref("/competition", "strategy", orgId),
+    },
+    {
+      id: "scouting",
+      label: "Open Scouting",
+      detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+      href: hubHref("/competition", "scouting", orgId),
+    },
+  ];
+}
 
 export type DefensePlannerView =
   | {
@@ -135,9 +161,7 @@ export async function computeDefensePlannerView(
     return {
       status: "setup_required",
       message: "Select a team workspace to plan defensive matchups.",
-      steps: [
-        { id: "workspace", label: "Select workspace", detail: "Choose your team organization", href: "/workspace" },
-      ],
+      steps: setupSteps(null),
       orgId: null,
       seasonYear,
     };
