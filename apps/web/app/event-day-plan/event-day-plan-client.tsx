@@ -1,10 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+  type BadgeTone,
+} from "../../components/ui";
 import { eventDayPlanKindLabel, eventDayPlanStatusLabel, EVENT_DAY_PLAN_KINDS } from "../../lib/event-day-plan";
 import type { EventDayPlanView } from "../../lib/event-day-plan/compute-event-day-plan";
 import type { EventDayPlanKind, EventDayPlanStatus } from "../../lib/event-day-plan/types";
+import {
+  EVENT_DAY_PLAN_RELATED_INCLUDE,
+  classifyEventDayPlanShell,
+  eventDayPlanNextActions,
+  eventDayPlanRelatedLinks,
+  eventDayPlanSetupSteps,
+  eventDayPlanShellCopy,
+  formatEventDayPlanMetric,
+  shouldShowEventDayPlanSummaryTiles,
+  type EventDayPlanNextAction,
+  type EventDayPlanShellKind,
+} from "../../lib/event-day-plan/event-day-plan-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./event-day-plan.css";
 
 type LiveView = Extract<EventDayPlanView, { status: "live" }>;
 
@@ -27,11 +54,144 @@ function hourLabel(hour: number): string {
   return dt.toLocaleTimeString(undefined, { hour: "numeric" });
 }
 
-function statusTone(status: EventDayPlanStatus): string {
+function statusTone(status: EventDayPlanStatus): BadgeTone {
   if (status === "done") return "good";
-  if (status === "cancelled") return "demo";
+  if (status === "cancelled") return "neutral";
   if (status === "in_progress") return "setup";
-  return "";
+  return "info";
+}
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = eventDayPlanRelatedLinks(orgId, {
+    include: [...EVENT_DAY_PLAN_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related edp-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: EventDayPlanNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions edp-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Command, Batteries, and Pit — never DEMO schedule blocks.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function PlanShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: EventDayPlanShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = eventDayPlanNextActions({ orgId, shell });
+  const copy = eventDayPlanShellCopy(shell);
+  const competitionHref = hubHref("/competition", "event-day-plan", orgId);
+  const steps = shell === "setup" ? eventDayPlanSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page edp-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Event-Day Plan"}
+          </>
+        }
+        title="Event-Day Stress Planner"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading event-day plan">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href="#event-day-plan-add">
+                Add the first block
+              </a>
+              <a className="app-button secondary" href={hubHref("/competition", "command", orgId)}>
+                Open Command
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="edp-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Command and Batteries — never DEMO schedule blocks.</p>
+          </header>
+          <ul className="edp-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted edp-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
 }
 
 export default function EventDayPlanClient() {
@@ -41,8 +201,6 @@ export default function EventDayPlanClient() {
   const [busy, setBusy] = useState(false);
   const [planDate, setPlanDate] = useState<string | null>(null);
   const [eventKey, setEventKey] = useState<string | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((overrides?: { planDate?: string; eventKey?: string }) => {
     setFetchFailed(false);
@@ -75,6 +233,30 @@ export default function EventDayPlanClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const blockCount = view?.status === "live" ? view.blocks.length : 0;
+  const conflictCount = view?.status === "live" ? view.conflicts.length : 0;
+
+  const shell = classifyEventDayPlanShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    blockCount,
+  });
+  const shellCopy = eventDayPlanShellCopy(shell);
+  const nextActions = eventDayPlanNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    blockCount,
+    conflictCount,
+  });
+  const relatedLinks = eventDayPlanRelatedLinks(orgId, {
+    include: [...EVENT_DAY_PLAN_RELATED_INCLUDE],
+  });
+  const competitionHref = hubHref("/competition", "event-day-plan", orgId);
+  const showTiles = shouldShowEventDayPlanSummaryTiles(blockCount);
+
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
       if (!orgId || busy) return;
@@ -84,7 +266,12 @@ export default function EventDayPlanClient() {
         const response = await fetch("/api/event-day-plan", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, planDate: planDate ?? undefined, eventKey: eventKey ?? undefined, ...payload }),
+          body: JSON.stringify({
+            orgId,
+            planDate: planDate ?? undefined,
+            eventKey: eventKey ?? undefined,
+            ...payload,
+          }),
         });
         const data = (await response.json()) as EventDayPlanView | { error?: string };
         if (!response.ok || !("status" in data)) {
@@ -103,50 +290,95 @@ export default function EventDayPlanClient() {
     [orgId, busy, planDate, eventKey],
   );
 
+  if (shell === "loading") {
+    return <PlanShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <PlanShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <PlanShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      >
+        {view?.status === "setup_required" && view.steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {view.steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </PlanShell>
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <PlanShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page edp-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Event-Day Plan"}
           </>
         }
         title="Event-Day Stress Planner"
-        description="A per-hour overlay of qual matches, battery charges, scout shifts, pit-repair windows, and logistics — with automatic conflict alerts."
+        description="A per-hour overlay of qual matches, battery charges, scout shifts, pit-repair windows, and logistics — with automatic conflict alerts. Never DEMO schedule blocks. Cross-check Command, Battery Rotation, and Pit Repair."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" ? (
-            <>
-              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                Event
-                <select
-                  value={eventKey ?? view.eventKey}
-                  onChange={(event) => {
-                    setEventKey(event.target.value);
-                    load({ eventKey: event.target.value });
-                  }}
-                >
-                  {view.eventKeys.map((key) => (
-                    <option key={key} value={key}>
-                      {key}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                Date
-                <input
-                  type="date"
-                  value={planDate ?? view.planDate}
-                  onChange={(event) => {
-                    setPlanDate(event.target.value);
-                    load({ planDate: event.target.value });
-                  }}
-                />
-              </label>
-            </>
-          ) : null}
+        <div className="edp-header-actions">
+          <label className="app-muted edp-filter">
+            Event
+            <select
+              value={eventKey ?? view.eventKey}
+              onChange={(event) => {
+                setEventKey(event.target.value);
+                load({ eventKey: event.target.value });
+              }}
+            >
+              {view.eventKeys.map((key) => (
+                <option key={key} value={key}>
+                  {key}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="app-muted edp-filter">
+            Date
+            <input
+              type="date"
+              value={planDate ?? view.planDate}
+              onChange={(event) => {
+                setPlanDate(event.target.value);
+                load({ planDate: event.target.value });
+              }}
+            />
+          </label>
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
       </PageHeader>
 
@@ -156,49 +388,37 @@ export default function EventDayPlanClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the event-day plan"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <div style={{ display: "grid", gap: 16 }}>
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-            <ol className="strategy-setup-steps">
-              {view.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  <a href={step.href}>Open</a>
-                </li>
-              ))}
-            </ol>
-          </EmptyState>
-          {view.orgId ? (
-            <AddBlockForm
-              busy={busy}
-              mutate={mutate}
-              planDate={planDate ?? view.planDate}
-              defaultEventKey=""
+      <NextActionsPanel actions={nextActions} />
+
+      {showTiles ? (
+        <section className="edp-stats" aria-label="Event-day plan counts">
+          <StatTile
+            label="Blocks"
+            value={formatEventDayPlanMetric(view.summary.totalBlocks, true)}
+          />
+          <StatTile
+            label="Conflicts"
+            value={formatEventDayPlanMetric(view.summary.conflictCount, true)}
+          />
+          <StatTile
+            label="Unassigned"
+            value={formatEventDayPlanMetric(view.summary.unassignedCount, true)}
+          />
+          {view.summary.byKind.map((row) => (
+            <StatTile
+              key={row.kind}
+              label={eventDayPlanKindLabel(row.kind)}
+              value={formatEventDayPlanMetric(row.count, true)}
             />
-          ) : null}
-        </div>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <ConflictBanner view={view} />
-          <SummaryTiles view={view} />
-          <AddBlockForm busy={busy} mutate={mutate} planDate={view.planDate} defaultEventKey={view.eventKey} />
-          <HourlyOverlay view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+          ))}
+        </section>
+      ) : null}
+
+      <ConflictBanner view={view} />
+      <div id="event-day-plan-add">
+        <AddBlockForm busy={busy} mutate={mutate} planDate={view.planDate} defaultEventKey={view.eventKey} />
+      </div>
+      <HourlyOverlay view={view} busy={busy} mutate={mutate} />
     </main>
   );
 }
@@ -206,41 +426,16 @@ export default function EventDayPlanClient() {
 function ConflictBanner({ view }: { view: LiveView }) {
   if (view.conflicts.length === 0) return null;
   return (
-    <Panel aria-label="Schedule conflicts">
-      <span className="app-badge demo">CONFLICTS</span>
-      <h2 style={{ margin: "6px 0 0" }}>{view.conflicts.length} scheduling conflict(s)</h2>
-      <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+    <Panel id="event-day-plan-conflicts" className="edp-panel" aria-label="Schedule conflicts">
+      <Badge tone="demo">Conflicts</Badge>
+      <h2 style={{ margin: "6px 0 0" }}>
+        {formatEventDayPlanMetric(view.conflicts.length, true)} scheduling conflict(s)
+      </h2>
+      <ul className="edp-conflict-list">
         {view.conflicts.map((conflict) => (
           <li key={conflict.id}>{conflict.detail}</li>
         ))}
       </ul>
-    </Panel>
-  );
-}
-
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Blocks", value: String(summary.totalBlocks) },
-    { label: "Conflicts", value: String(summary.conflictCount) },
-    { label: "Unassigned", value: String(summary.unassignedCount) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-        {summary.byKind.map((row) => (
-          <div key={row.kind}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{row.count}</strong>
-            <span className="app-muted">{eventDayPlanKindLabel(row.kind)}</span>
-          </div>
-        ))}
-      </div>
     </Panel>
   );
 }
@@ -257,51 +452,53 @@ function HourlyOverlay({
   if (view.blocks.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No blocks yet"
         badgeTone="setup"
         title="Add your first event-day block"
-        description="Qual matches, battery charges, scout shifts, pit-repair windows, and logistics all overlay on one hourly plan."
-      />
+        description="Qual matches, battery charges, scout shifts, pit-repair windows, and logistics all overlay on one hourly plan — never DEMO schedule packs."
+      >
+        <a className="app-button" href="#event-day-plan-add">
+          Add block
+        </a>
+      </EmptyState>
     );
   }
   return (
-    <Panel>
+    <Panel id="event-day-plan-hourly" className="edp-panel">
       <h2 style={{ marginTop: 0 }}>Hourly overlay</h2>
-      <div style={{ display: "grid", gap: 12 }}>
+      <div className="edp-hourly">
         {view.hourly.map((slot) => (
-          <div key={slot.hour} style={{ display: "grid", gridTemplateColumns: "72px 1fr", gap: 10 }}>
+          <div key={slot.hour} className="edp-hour-row">
             <strong className="app-muted">{hourLabel(slot.hour)}</strong>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
+            <ul className="edp-block-list">
               {slot.blocks.map((block) => (
-                <li
-                  key={`${slot.hour}-${block.id}`}
-                  style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-                >
+                <li key={`${slot.hour}-${block.id}`} className="edp-block-row">
                   <div>
-                    <span className={`app-badge ${statusTone(block.status)}`}>
+                    <Badge tone={statusTone(block.status)} icon={null}>
                       {eventDayPlanKindLabel(block.kind)}
-                    </span>
-                    <strong style={{ display: "block", marginTop: 2 }}>{block.title}</strong>
-                    <small className="app-muted" style={{ display: "block" }}>
+                    </Badge>
+                    <strong className="edp-block-title">{block.title}</strong>
+                    <small className="app-muted">
                       {formatTimeRange(block.startAt, block.endAt)}
                       {block.assignedTo ? ` · ${block.assignedTo}` : ""}
                       {block.location ? ` · ${block.location}` : ""} · {eventDayPlanStatusLabel(block.status)}
                     </small>
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <div className="edp-block-actions">
                     {block.status !== "done" && block.status !== "cancelled" ? (
-                      <button
-                        type="button"
-                        className="text-button"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         disabled={busy}
                         onClick={() => mutate({ action: "update-status", blockId: block.id, status: "done" })}
                       >
                         Mark done
-                      </button>
+                      </Button>
                     ) : null}
-                    <button
-                      type="button"
-                      className="text-button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       disabled={busy}
                       onClick={() => {
                         if (window.confirm(`Delete "${block.title}"?`)) {
@@ -310,7 +507,7 @@ function HourlyOverlay({
                       }}
                     >
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -355,6 +552,7 @@ function AddBlockForm({
   return (
     <Panel
       as="form"
+      className="edp-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.eventKey.trim() || !form.title.trim() || !form.startAt || !form.endAt) return;
@@ -371,7 +569,6 @@ function AddBlockForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add block</h2>
       <FormGrid min={160}>
@@ -407,13 +604,13 @@ function AddBlockForm({
         <textarea value={form.notes} onChange={set("notes")} rows={2} />
       </FormRow>
       <div>
-        <button
+        <Button
           type="submit"
-          className="app-button"
+          variant="primary"
           disabled={busy || !form.eventKey.trim() || !form.title.trim() || !form.startAt || !form.endAt}
         >
           Add block
-        </button>
+        </Button>
       </div>
     </Panel>
   );

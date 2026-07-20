@@ -5,9 +5,11 @@ import {
   Badge,
   type BadgeTone,
   EmptyState,
+  ErrorState,
   FormRow,
   PageHeader,
   Panel,
+  SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
 import type { CoverageStatus } from "../../lib/scout-coverage-live/types";
@@ -130,49 +132,49 @@ function ScoutCoverageLiveShell({
         <ScoutCoverageLiveRelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
-      <EmptyState
-        soft
-        badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading scout coverage live">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={
+            shell === "setup"
+              ? "Setup required"
               : shell === "empty"
                 ? "No schedule yet"
                 : copy.badge
-        }
-        badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
-        aria-busy={shell === "loading"}
-      >
-        {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
-            Retry
-          </button>
-        ) : null}
-        {shell === "setup" ? (
-          <a className="app-button" href={orgId ? commandHref : "/workspace"}>
-            {orgId ? "Set active event" : "Select workspace"}
-          </a>
-        ) : null}
-        {shell === "empty" ? (
-          <>
-            <a className="app-button" href={commandHref}>
-              Sync event schedule
+          }
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? commandHref : "/workspace"}>
+              {orgId ? "Set active event" : "Select workspace"}
             </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-            <a className="app-button secondary" href={lineupHref}>
-              Open Lineup
-            </a>
-            <a className="app-button secondary" href={crossvalHref}>
-              Open Cross-Validation
-            </a>
-          </>
-        ) : null}
-      </EmptyState>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={commandHref}>
+                Sync event schedule
+              </a>
+              <a className="app-button secondary" href={scoutingHref}>
+                Open Scouting
+              </a>
+              <a className="app-button secondary" href={lineupHref}>
+                Open Lineup
+              </a>
+              <a className="app-button secondary" href={crossvalHref}>
+                Open Cross-Validation
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
       {steps.length > 0 ? (
         <Panel className="scout-coverage-live-panel" aria-label="Setup steps">
           <header>
