@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { marketingPageMetadata } from "../../lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "For teams — Vantage",
+export const metadata: Metadata = marketingPageMetadata({
+  title: "For FRC teams — Vantage",
   description:
-    "How FRC mentors and student leads run Competition, Team, Business, Build, and AI hubs in Vantage.",
-  alternates: { canonical: "/for-teams" },
-};
+    "How mentors and student leads run Competition, Team, Business, Build, and AI hubs—from offline scouting to Alliance Selection Desk—in one invite-only workspace.",
+  path: "/for-teams",
+});
 
 const roles = [
   {

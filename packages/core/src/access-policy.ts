@@ -54,6 +54,7 @@ export function resolveAuthTrustedOrigins(baseURL: string) {
   addOrigin(baseURL);
   addOrigin("https://vantage-frc-web.vercel.app");
   addOrigin(runtimeEnv("NEXT_PUBLIC_APP_URL"));
+  addOrigin(runtimeEnv("NEXT_PUBLIC_SITE_URL"));
   const productionHost = runtimeEnv("VERCEL_PROJECT_PRODUCTION_URL");
   addOrigin(productionHost);
   addOrigin(runtimeEnv("VERCEL_URL"));

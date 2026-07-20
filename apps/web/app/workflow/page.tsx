@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
+import { marketingPageMetadata } from "../../lib/marketing/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = marketingPageMetadata({
   title: "How it works — Vantage",
   description:
-    "How TBA reference, scouting, Strategy, Alliance Selection Desk, Competition Command, and CAD share one org event context.",
-  alternates: { canonical: "/workflow" },
-};
+    "How TBA reference data, offline scouting, Competition Strategy, Alliance Selection Desk, Command / My Day, and CAD share one org event context in Vantage.",
+  path: "/workflow",
+});
 
 const stages = [
   ["1", "Reference", "TBA / Statbotics caches with freshness.", "Setup required"],
