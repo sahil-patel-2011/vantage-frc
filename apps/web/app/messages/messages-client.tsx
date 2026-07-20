@@ -155,10 +155,13 @@ function sleep(ms: number, signal: AbortSignal) {
 
 export default function MessagesClient({
   orgId,
+  embedded = false,
   initialConversationId = null,
   initialObjectLink = null,
 }: {
   orgId: string;
+  /** When true (Team hub tab), hide PageHeader / related strips — hub chrome already covers them. */
+  embedded?: boolean;
   initialConversationId?: string | null;
   initialObjectLink?: MessageObjectLink | null;
 }) {
@@ -593,25 +596,37 @@ export default function MessagesClient({
   }
 
   return (
-    <main className="chat-page messages-page">
-      <PageHeader
-        breadcrumbs="Team / Messages"
-        title="Messages"
-        description="Org-scoped team channel and private chats — real members only, never demo threads."
-      >
-        <span className={`messages-live ${live ? "on" : "off"}`}>
-          <i aria-hidden="true" />
-          {live ? "Live" : "Paused"}
-          {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
-        </span>
-      </PageHeader>
-      <TeamOpsNav orgId={orgId} active="messages" />
-      <TeamHubRelated
-        orgId={orgId}
-        active="messages"
-        include={MESSAGES_RELATED_INCLUDE}
-        ariaLabel="Related team ops for messages"
-      />
+    <main className={`chat-page messages-page${embedded ? " is-embedded" : ""}`}>
+      {!embedded ? (
+        <>
+          <PageHeader
+            breadcrumbs="Team / Messages"
+            title="Messages"
+            description="Org-scoped team channel and private chats — real members only, never demo threads."
+          >
+            <span className={`messages-live ${live ? "on" : "off"}`}>
+              <i aria-hidden="true" />
+              {live ? "Live" : "Paused"}
+              {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
+            </span>
+          </PageHeader>
+          <TeamOpsNav orgId={orgId} active="messages" />
+          <TeamHubRelated
+            orgId={orgId}
+            active="messages"
+            include={MESSAGES_RELATED_INCLUDE}
+            ariaLabel="Related team ops for messages"
+          />
+        </>
+      ) : (
+        <div className="messages-embed-status" aria-live="polite">
+          <span className={`messages-live ${live ? "on" : "off"}`}>
+            <i aria-hidden="true" />
+            {live ? "Live" : "Paused"}
+            {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <EmptyState soft title="Loading messages…" description="Opening your org inbox." aria-busy />

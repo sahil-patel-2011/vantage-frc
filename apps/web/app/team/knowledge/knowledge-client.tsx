@@ -44,7 +44,7 @@ function filterPages(pages: KnowledgePageSummary[], q: string, kind: ListFilter)
   });
 }
 
-export default function KnowledgeClient() {
+export default function KnowledgeClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<KnowledgeWikiView | null>(null);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
@@ -291,33 +291,35 @@ export default function KnowledgeClient() {
   }
 
   return (
-    <main className="module-page kb-page">
+    <main className={`module-page kb-page${embedded ? " is-embedded" : ""}`}>
       <header className="kb-hero">
         <div>
-          <h1>Knowledge Base</h1>
+          {!embedded ? <h1>Knowledge Base</h1> : null}
           <p>
             Searchable wiki with handoff templates, linked to decisions and design reviews. The FRC Assistant and CAD
             agent retrieve these as tools — empty corpus means empty answers, never invented history.
           </p>
         </div>
-        <div className="kb-hero-actions">
-          {orgId ? (
-            <>
-              <a className="button secondary" href={hubHref("/team", "messages", orgId)}>
-                Messages
-              </a>
-              <a className="button secondary" href={hubHref("/team", "fmea", orgId)}>
-                FMEA
-              </a>
-              <a className="button secondary" href={hubHref("/build", "cad", orgId)}>
-                CAD
-              </a>
-            </>
-          ) : null}
-        </div>
+        {!embedded ? (
+          <div className="kb-hero-actions">
+            {orgId ? (
+              <>
+                <a className="button secondary" href={hubHref("/team", "messages", orgId)}>
+                  Messages
+                </a>
+                <a className="button secondary" href={hubHref("/team", "fmea", orgId)}>
+                  FMEA
+                </a>
+                <a className="button secondary" href={hubHref("/build", "cad", orgId)}>
+                  CAD
+                </a>
+              </>
+            ) : null}
+          </div>
+        ) : null}
       </header>
 
-      {orgId ? (
+      {orgId && !embedded ? (
         <>
           <KnowledgeHubRelated orgId={orgId} include={["messages", "fmea", "cad", "decisions", "assistant"]} />
           <TeamHubRelated orgId={orgId} active="knowledge" />

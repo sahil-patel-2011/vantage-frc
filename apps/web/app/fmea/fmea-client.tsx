@@ -98,8 +98,9 @@ function NextActions({
   );
 }
 
-export default function FmeaClient() {
-  const embed = useHubEmbed();
+export default function FmeaClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const pathEmbed = useHubEmbed();
+  const embed = pathEmbed ?? (embedded ? "team" : null);
   const [view, setView] = useState<FmeaView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -272,7 +273,7 @@ export default function FmeaClient() {
         </div>
       </PageHeader>
 
-      {orgId ? <FmeaRelated orgId={orgId} /> : null}
+      {orgId && !embed ? <FmeaRelated orgId={orgId} /> : null}
 
       {error ? (
         <p className="fmea-alert" role="alert">
