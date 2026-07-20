@@ -11,11 +11,11 @@ import {
 } from "./event-day-related";
 
 describe("eventDayRelatedLinks", () => {
-  it("builds My Day / Schedule / Strategy / Scouting via hubHref / withOrgHref", () => {
+  it("builds My Day / Schedule / Strategy / Logistics via hubHref / withOrgHref", () => {
     const links = eventDayRelatedLinks("org-1", {
       include: [...EVENT_DAY_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["my-day", "schedule", "strategy", "scouting"]);
+    expect(links.map((l) => l.id)).toEqual(["my-day", "schedule", "strategy", "logistics"]);
     expect(links.find((l) => l.id === "my-day")?.href).toBe(
       "/competition?tab=my-day&orgId=org-1",
     );
@@ -23,9 +23,7 @@ describe("eventDayRelatedLinks", () => {
     expect(links.find((l) => l.id === "strategy")?.href).toBe(
       "/competition?tab=strategy&orgId=org-1",
     );
-    expect(links.find((l) => l.id === "scouting")?.href).toBe(
-      "/competition?tab=scouting&orgId=org-1",
-    );
+    expect(links.find((l) => l.id === "logistics")?.href).toBe("/logistics?orgId=org-1");
   });
 
   it("never uses DEMO labels or hrefs", () => {

@@ -3,7 +3,7 @@
 | Hub | Route | Tabs |
 |---|---|---|
 | Competition | `/competition` | Command · My Day · Strategy · Scouting · Form builder · Match checklist · Pick clock · Chemistry (+ More tools) |
-| Event Day Soft-UI | `/command` (also `/competition?tab=command`) | Field-side command; empty/setup + next actions; cross-links to My Day / Schedule / Strategy / Scouting — never DEMO schedule |
+| Event Day Soft-UI | `/command` (also `/competition?tab=command`) | Field-side command; empty/setup + next actions; travel/lodging clarity strip; cross-links to My Day / Schedule / Strategy / Logistics — never DEMO schedule or lodging |
 | My Day Soft-UI | `/my-day` (also `/competition?tab=my-day`) | Live ops / now-next match; empty/setup + next actions; cross-links to Event Day / Schedule / Strategy — never DEMO matches |
 | Strategy Soft-UI | `/strategy`, `/strategy/draft`, `/pick-clock`, `/chemistry` | Main Strategy empty/setup + next actions; cross-links to Pick desk / Scouting / Event Day; explainability + coverage links; never DEMO win rates (no metered insights on matchup — UsageCutoffBanner N/A) |
 | Scouting Soft-UI | `/scouting` (also `/competition?tab=scouting`) | Main Scouting Hub empty/setup + next actions; OfflineBanner from real outbox counts; cloud voice STT UsageCutoffBanner; cross-links to Forms / Coverage / Strategy / Offline — never DEMO entries |
@@ -11,8 +11,10 @@
 | Scout voice notes | `/competition?tab=scouting` (`#scout-voice`) | Opt-in voice STT notes + optional Apply-to-form; cloud STT metered with UsageCutoffBanner |
 | Offline Shell Soft-UI | `/offline`, `/offline-shell` | Cold SW fallover + precache readiness; next actions + Scouting links; Soft-UI banners on Schedule / Scouting / Calendar / Todos / Logistics — never DEMO sync counts |
 | Match checklist Soft-UI | `/match-checklist` (also `/competition?tab=match-checklist`) | Timed pit runs/items, empty/setup + next actions; cross-links to Event Day / My Day / Scouting / Strategy — never DEMO checklist progress |
+| Defense Planner Soft-UI | `/defense-planner` (Competition More tools) | Mass/drivetrain vs scouted cycle defense plans; empty/setup + next actions; UsageCutoffBanner on metered matchup writes; Strategy / Scouting / Counter-book via hubHref — never DEMO defense metrics |
 | Displays Soft-UI | `/display`, `/display/kiosk` | Pit TV board setup + kiosk; empty/setup + next actions; cross-links to Event Day / Strategy / Scouting; TBA/prediction widgets stay blank until real rows — never DEMO ranks or coverage zeros |
 | Team | `/team` | Calendar · Todos · Messages · Practice · Knowledge · Attendance · Batteries · FMEA (+ More tools) |
+| Bus-Factor Soft-UI | `/bus-factor` (Team More tools) | Workload concentration / overload from logged entries only; empty/setup + next actions; Attendance / My Hours / Task board via hubHref — never DEMO risk scores |
 | Calendar Soft-UI | `/team?tab=calendar` (also `/team/calendar`) | Month / Week / List clarity, empty/setup + next actions; subteams + events only when created — never DEMO events; cross-links to Practice / Attendance / Logistics / Messages |
 | Batteries Soft-UI | `/team?tab=batteries`, `/build?tab=batteries` (also `/batteries`) | Pack list, rotation, health/log empty states, next actions; IR/cycles from real logs only — never DEMO metrics; cross-links to FMEA / Pit / rotation / forecast |
 | Knowledge Soft-UI | `/team?tab=knowledge` (also `/team/knowledge`) | Page list filters, empty/setup shells, editor affordances (dirty/char count/md chips); cross-links to Messages / FMEA / CAD; page mutations stay org-scoped — never DEMO articles |
@@ -20,13 +22,15 @@
 | Risk Register Soft-UI | `/risks` | Proactive season L×I register (distinct from FMEA); empty/setup + next actions; top score blank until real entries; cross-links to FMEA / Knowledge |
 | Goals Soft-UI | `/goals` | Season objectives + scorecard from logged current/target values only; empty/setup + next actions; progress blank until goals exist; cross-links to Todos / Practice / Team hub — never DEMO % |
 | Season Costs Soft-UI | `/costs` | Real-world spend + subscriptions + live usage ledger vs season budget; empty/setup + next actions; remaining/% blank until budget set; cross-links to Orders / Fundraisers / Business budget — never DEMO $ |
-| Logistics Soft-UI | `/logistics` (also `/travel`) | Hotels, rooming, travel legs, checklist, on-duty mentors; empty/setup states; cross-links to Event Day / My Day / Team calendar; tripId/hotelId org-scoped — never DEMO lodging |
+| Logistics Soft-UI | `/logistics` (also `/travel`) | Hotels, rooming, travel legs, checklist, on-duty mentors; empty/setup + next actions; hotel/travel clarity; cross-links to Event Day / My Day / Team calendar / Visit invites; tripId/hotelId org-scoped — never DEMO lodging |
+| Visit Invites Soft-UI | `/visit-invites` | Shop tours / demo days, hosts, RSVPs; empty/setup + next actions; cross-links to Logistics / Event Day / Calendar — never DEMO invites |
 | Business | `/business` | Overview · Budget · Orders · Sponsors · Sponsorship · Grants · … |
 | Business Soft-UI CRM | `/business?tab=sponsors` · `/business?tab=placements` | Soft-UI pipeline / packages / placements; empty/setup + next actions; cross-links to fundraisers, grants, orders, Finance-in-AI; packageId org-scoped — never DEMO sponsor metrics |
 | Business Soft-UI grants | `/business?tab=grants` · `/team/grants` | Pipeline + draft library + guided grant writing; empty/setup + next actions; metered AI hard-stop via UsageCutoffBanner; cross-links to sponsors / fundraisers / writer — never DEMO award $ |
 | Business Soft-UI fundraisers | `/fundraisers` · Overview fundraising glance | Soft-UI events + goal progress from recorded deposits/goals only; empty/setup + next actions; cross-links to Sponsors / Grants / Orders — never DEMO raised totals |
 | Business Soft-UI impact & awards | `/impact` · `/team/awards` · Business · Awards | Soft-UI outreach log + readiness from recorded activities; award essays from catalog submissions; empty/setup + next actions; cross-links to Business hub / Grants / Sponsors — never DEMO hours or win rates |
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Prototypes · Batteries (+ More tools) |
+| Readiness Score Soft-UI | `/readiness-score` (Build More tools) | Ship-readiness index from subsystems / checklist / FMEA / weight·power; empty/setup + next actions; UsageCutoffBanner on metered subsystem writes; FMEA / Inspection / Code via hubHref — never DEMO ship scores |
 | Control Map Soft-UI | `/control-map` | Driver/operator button bindings; empty/setup + next actions; counts from saved rows only; cross-links to Subsystems / FMEA / Practice — never DEMO bindings |
 | Spare Forecast Soft-UI | `/spare-forecast` | Exhaustion forecast from real spare-category inventory × FMEA cadence; empty/setup + next actions; cross-links to Batteries / Orders / Subsystems — never DEMO spare counts |
 | Inspection Copilot Soft-UI | `/inspection-copilot` | Weight / frame-bumper / wiring readiness from logged limits + measurements only; empty/setup + next actions; cross-links to Batteries / FMEA / Subsystems — never DEMO risk scores |

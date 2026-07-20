@@ -257,3 +257,89 @@ export function classifyVisitShell(input: {
   if ((input.visitCount ?? 0) === 0) return "empty";
   return "ready";
 }
+
+export type VisitEmptyCopy = {
+  kind: VisitShellKind;
+  badge?: string;
+  title: string;
+  description: string;
+};
+
+/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO invites. */
+export type VisitSetupStep = {
+  id: string;
+  label: string;
+  detail: string;
+  href: string;
+};
+
+export function visitSetupSteps(orgId?: string | null): VisitSetupStep[] {
+  return [
+    {
+      id: "workspace",
+      label: "Select workspace",
+      detail: "Choose your team organization — Visit Invites is org-scoped.",
+      href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
+    },
+    {
+      id: "create",
+      label: "Schedule a visit",
+      detail: "Draft stays planner-only; Scheduled opens RSVPs — never invent DEMO guests.",
+      href: visitInvitesShareHref(orgId) + "#visit-create",
+    },
+    {
+      id: "logistics",
+      label: "Open Logistics",
+      detail: "Competition hotels and leave times stay on Logistics, separate from shop tours.",
+      href: withOrgHref("/logistics", orgId),
+    },
+    {
+      id: "calendar",
+      label: "Open Calendar",
+      detail: "Optional calendar sync places real outreach blocks next to practice nights.",
+      href: hubHref("/team", "calendar", orgId),
+    },
+  ];
+}
+
+/** Soft-UI empty / setup / error copy — never DEMO invites. */
+export function visitShellCopy(kind: VisitShellKind): VisitEmptyCopy {
+  switch (kind) {
+    case "loading":
+      return {
+        kind,
+        title: "Loading visit invites…",
+        description: "Checking workspace membership and scheduled shop tours — never DEMO invite rows.",
+      };
+    case "error":
+      return {
+        kind,
+        badge: "Unavailable",
+        title: "Could not load visit invites",
+        description:
+          "A network or server issue blocked the board. Retry, or open Logistics / Event Day / Calendar while it reloads — never invent DEMO invites.",
+      };
+    case "setup":
+      return {
+        kind,
+        badge: "Setup required",
+        title: "Finish setup for visit invites",
+        description:
+          "Visit Invites is org-scoped. Pick a workspace and apply the visit invites migration if tables are missing — nothing is pre-seeded.",
+      };
+    case "empty":
+      return {
+        kind,
+        badge: "No visits yet",
+        title: "No shop tours or demo days yet",
+        description:
+          "Mentors schedule real outreach visits here. Empty means none are published — never DEMO invite placeholders.",
+      };
+    default:
+      return {
+        kind,
+        title: "Visit Invites",
+        description: "Shop tours, demo days, mentor hosts, and guest RSVPs from real visit rows — never DEMO invites.",
+      };
+  }
+}

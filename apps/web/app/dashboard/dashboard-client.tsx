@@ -30,6 +30,7 @@ import { DataSourceDegradedBanner } from "../../components/data-source-degraded-
 import type { DataSourceHealthView } from "../../lib/reference-health";
 import { countdownLabel, DashboardWidgetView } from "./widgets";
 import type { HomeStripItem } from "../../lib/home-workflows";
+import { Badge } from "../../components/ui";
 import "react-grid-layout/css/styles.css";
 import "./dashboard-editor.css";
 import "./dashboard-dnd.css";
@@ -775,10 +776,10 @@ export default function DashboardClient() {
               href={
                 homeAudience === "mentor"
                   ? withOrgHref("/logistics", orgId)
-                  : hubHref("/build", "kickoff", orgId)
+                  : withOrgHref("/logistics", orgId)
               }
             >
-              {homeAudience === "mentor" ? "Open logistics" : "Kickoff summary"}
+              {homeAudience === "mentor" ? "Hotels & travel" : "My hotel & leave times"}
             </a>
           </header>
           <ul>
@@ -874,7 +875,7 @@ export default function DashboardClient() {
       {meLoaded && (dashShell !== "ready" || !hasScoutingSchemas || !hasAiProvider) ? (
         <section className="dash-setup-banner" aria-label="First-run setup">
           <div>
-            <span className="app-badge setup">Setup required</span>
+            <Badge tone="setup">Setup required</Badge>
             <h2>
               {dashShell !== "ready"
                 ? dashboardSetupTitle(dashShell)

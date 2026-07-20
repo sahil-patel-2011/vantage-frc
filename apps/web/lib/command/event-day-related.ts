@@ -7,6 +7,7 @@ export const EVENT_DAY_RELATED_LINKS = [
   { id: "schedule", label: "Schedule", kind: "path" as const, path: "/schedule" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
+  { id: "logistics", label: "Logistics", kind: "path" as const, path: "/logistics" },
   { id: "match-checklist", label: "Match checklist", kind: "hub" as const, tab: "match-checklist" },
   { id: "team-data", label: "Team Data", kind: "path" as const, path: "/team/data" },
 ] as const;
@@ -19,12 +20,12 @@ export type EventDayRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — My Day · Schedule · Strategy · Scouting. */
+/** Focused Soft-UI strip — My Day · Schedule · Strategy · Logistics. */
 export const EVENT_DAY_RELATED_INCLUDE: EventDayRelatedId[] = [
   "my-day",
   "schedule",
   "strategy",
-  "scouting",
+  "logistics",
 ];
 
 /**

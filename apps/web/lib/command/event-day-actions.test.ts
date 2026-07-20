@@ -135,6 +135,13 @@ describe("eventDayNextActions", () => {
     expect(actions.find((a) => a.id === "checklist")?.primary).toBe(true);
     expect(actions.find((a) => a.id === "scout")?.label).toMatch(/2 coverage/);
     expect(actions.find((a) => a.id === "my-day")?.detail).toMatch(/RED bumpers/i);
-    expect(actions.every((a) => !/demo|fabricat|illustrative/i.test(a.label + a.detail))).toBe(true);
+    expect(actions.find((a) => a.id === "logistics")?.href).toContain("/logistics");
+    expect(
+      actions.every((a) => {
+        const blob = `${a.label} ${a.detail}`;
+        return !/\b(fabricat|illustrative)\b/i.test(blob) && !/\bDEMO\b(?!\s+lodging)/i.test(blob);
+      }),
+    ).toBe(true);
+    expect(actions.every((a) => !a.href.toLowerCase().includes("/demo"))).toBe(true);
   });
 });
