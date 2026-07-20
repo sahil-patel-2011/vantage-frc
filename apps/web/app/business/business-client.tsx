@@ -223,14 +223,7 @@ export default function BusinessClient() {
   return (
     <main className="module-page business-page">
       <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/dashboard?orgId=${encodeURIComponent(orgId)}` : "/dashboard"}>Home</a>
-            {" / "}
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Business"}
-          </>
-        }
+        breadcrumbs="Business"
         title="Business"
         description={
           live
@@ -317,6 +310,27 @@ export default function BusinessClient() {
       {!view && !error ? (
         <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
       ) : null}
+
+      <TabBar
+        aria-label="Business sections"
+        value={tab}
+        onChange={(id) => selectTab(id as Tab)}
+        tabs={TABS}
+        className="product-hub-tabs"
+      />
+      {MORE_TABS.length ? (
+        <details className="product-hub-more">
+          <summary>More tools ({MORE_TABS.length})</summary>
+          <div className="product-hub-more-links">
+            {MORE_TABS.map((entry) => (
+              <a key={entry.id} href={hubLegacyHref(entry, orgId ?? live?.orgId ?? null)}>
+                {entry.label}
+              </a>
+            ))}
+          </div>
+        </details>
+      ) : null}
+
       {view?.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Choose the organization for this team, then return here to start the season business plan.">
           <a className="app-button" href="/workspace">
@@ -327,26 +341,6 @@ export default function BusinessClient() {
 
       {live ? (
         <>
-          <TabBar
-            aria-label="Business sections"
-            value={tab}
-            onChange={(id) => selectTab(id as Tab)}
-            tabs={TABS}
-            className="product-hub-tabs"
-          />
-          {MORE_TABS.length ? (
-            <details className="product-hub-more">
-              <summary>More tools ({MORE_TABS.length})</summary>
-              <div className="product-hub-more-links">
-                {MORE_TABS.map((entry) => (
-                  <a key={entry.id} href={hubLegacyHref(entry, live.orgId)}>
-                    {entry.label}
-                  </a>
-                ))}
-              </div>
-            </details>
-          ) : null}
-
           {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
           {tab === "budget" ? <Budget view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
           {tab === "orders" ? (

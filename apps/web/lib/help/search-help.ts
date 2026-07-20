@@ -53,7 +53,14 @@ export function scoreHelpArticle(article: HelpArticle, term: string): number {
 
   if (keywords.some((k) => k === q || k.includes(q))) score += 25;
   if (summary.includes(q)) score += 20;
-  if (full.includes(q)) score += 8;
+  // Body-only mentions are weak — avoid flooding Cmd+K for terms like "sponsor".
+  if (full.includes(q)) {
+    const strong =
+      tokens.length > 1 ||
+      title.includes(q) ||
+      keywords.some((k) => k === q || k.includes(q) || q.includes(k));
+    score += strong ? 8 : 2;
+  }
 
   return score;
 }
@@ -74,7 +81,7 @@ export function searchHelpArticles(term: string, limit = 8): HelpSearchHit[] {
       score,
     };
   })
-    .filter((hit) => hit.score > 0)
+    .filter((hit) => hit.score >= 20)
     .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
     .slice(0, limit);
 }
