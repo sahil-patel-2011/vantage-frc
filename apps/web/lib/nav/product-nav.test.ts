@@ -45,6 +45,7 @@ describe("product-nav", () => {
       "Build",
       "AI",
     ]);
+    expect(PILLAR_SHEET_LINKS.find((l) => l.label === "Media")?.icon).toBe("camera");
     expect(MORE_SHEET_LINKS.map((link) => link.label)).toEqual([
       "My Day",
       "Forms",
@@ -62,7 +63,12 @@ describe("product-nav", () => {
     ]);
   });
 
-  it("keeps Alliance desk and Season planning in the drawer", () => {
+  it("keeps short drawer lists (≈3–6 items) with Alliance desk and Season planning", () => {
+    for (const group of PRODUCT_NAV_GROUPS) {
+      const live = group.items.filter((i) => i.state !== "planned");
+      expect(live.length).toBeGreaterThanOrEqual(3);
+      expect(live.length).toBeLessThanOrEqual(6);
+    }
     const competition = PRODUCT_NAV_GROUPS.find((g) => g.label === "Competition")!;
     const team = PRODUCT_NAV_GROUPS.find((g) => g.label === "Team")!;
     expect(competition.items.some((i) => i.href === "/alliance-selection-desk")).toBe(true);
@@ -72,54 +78,39 @@ describe("product-nav", () => {
   it("resolves breadcrumbs by longest live nav href and hub legacy paths", () => {
     expect(breadcrumbForPath("/team")).toBe("Team / Team hub");
     expect(breadcrumbForPath("/team/calendar")).toBe("Team / Calendar");
-    expect(breadcrumbForPath("/calendar")).toBe("Team / Season Calendar");
-    expect(breadcrumbForPath("/tasks")).toBe("Team / Build-Season Task Board");
     expect(breadcrumbForPath("/todos")).toBe("Team / Todos");
     expect(breadcrumbForPath("/command")).toBe("Competition / Command");
     expect(breadcrumbForPath("/my-day")).toBe("Competition / My Day");
-    expect(breadcrumbForPath("/start")).toBe("Home / Your path");
-    expect(breadcrumbForPath("/business")).toBe("Business / Business Hub");
+    expect(breadcrumbForPath("/business")).toBe("Business / Business hub");
     expect(breadcrumbForPath("/sponsorship")).toBe("Business / Sponsorship");
     expect(breadcrumbForPath("/orders")).toBe("Business / Orders");
-    expect(breadcrumbForPath("/team/security")).toBe("Settings / Team security");
-    expect(breadcrumbForPath("/team/ai-keys")).toBe("AI / AI API keys");
-    expect(breadcrumbForPath("/team/background")).toBe("Settings / Team background");
-    expect(breadcrumbForPath("/intel")).toBe("Competition / Matches & Teams");
+    expect(breadcrumbForPath("/team/ai-keys")).toBe("AI / API keys");
     expect(breadcrumbForPath("/kickoff")).toBe("Build / Kickoff");
-    expect(breadcrumbForPath("/logistics")).toBe("Logistics / Event Logistics");
-    expect(breadcrumbForPath("/packing")).toBe("Logistics / Packing List");
-    expect(breadcrumbForPath("/duties")).toBe("Logistics / Duty Roster");
-    expect(breadcrumbForPath("/visit-invites")).toBe("Logistics / Visit Invites");
-    expect(breadcrumbForPath("/pick-clock")).toBe("Competition / Pick clock");
-    expect(breadcrumbForPath("/fmea")).toBe("Team / FMEA");
-    expect(breadcrumbForPath("/batteries")).toBe("Team / Batteries");
-    expect(breadcrumbForPath("/chat")).toBe("AI / Chat");
+    expect(breadcrumbForPath("/logistics")).toBe("Logistics / Logistics");
+    expect(breadcrumbForPath("/packing")).toBe("Logistics / Packing");
+    expect(breadcrumbForPath("/duties")).toBe("Logistics / Duties");
+    expect(breadcrumbForPath("/visit-invites")).toBe("Logistics / Visit invites");
     expect(breadcrumbForPath("/strategy")).toBe("Competition / Strategy");
-    expect(breadcrumbForPath("/writer")).toBe("AI / Award Writer");
-    expect(breadcrumbForPath("/team/ai-memory")).toBe("AI / Memory");
-    expect(breadcrumbForPath("/team/usage")).toBe("AI / AI usage");
-    expect(breadcrumbForPath("/code")).toBe("Build / Code");
     expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
     expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Form builder");
     expect(breadcrumbForPath("/competition")).toBe("Competition / Competition hub");
-    expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance Selection Desk");
-    expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season Planning Workspace");
+    expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance desk");
+    expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season planning");
     expect(breadcrumbForPath("/media")).toBe("Media / Media hub");
+    expect(breadcrumbForPath("/media-kit")).toBe("Media / Kit");
+    expect(breadcrumbForPath("/chat")).toBe("AI / Chat");
   });
 
-  it("resolves form builder via hub tab when using competition?tab=forms href", () => {
+  it("resolves hub tabs via PRODUCT_HUBS when not in the short drawer", () => {
     const match = findNavMatch("/competition");
     expect(match?.group.label).toBe("Competition");
     expect(
       PRODUCT_NAV_GROUPS.find((group) => group.label === "Competition")?.items.some(
         (item) => item.href === "/competition?tab=forms",
       ),
-    ).toBe(true);
-    expect(
-      PRODUCT_NAV_GROUPS.find((group) => group.label === "Competition")?.items.some(
-        (item) => item.href === "/scouting/forms",
-      ),
     ).toBe(false);
+    expect(findNavMatch("/scouting/forms")?.item.label).toBe("Form builder");
+    expect(findNavMatch("/match-checklist")?.item.label).toBe("Match checklist");
   });
 
   it("resolves nested team knowledge via hub legacy href", () => {
@@ -147,34 +138,17 @@ describe("product-nav", () => {
     );
   });
 
-  it("resolves form builder and match checklist under Competition", () => {
-    expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Form builder");
-    expect(breadcrumbForPath("/match-checklist")).toBe("Competition / Match checklist");
+  it("keeps core Competition / Business / Media drawer destinations", () => {
     const competition = PRODUCT_NAV_GROUPS.find((g) => g.label === "Competition")!;
-    expect(competition.items.some((i) => i.href === "/competition?tab=forms")).toBe(true);
-    expect(competition.items.some((i) => i.href === "/competition?tab=match-checklist")).toBe(true);
-    expect(competition.items.some((i) => i.href === "/competition?tab=scouting#scout-voice")).toBe(true);
+    const business = PRODUCT_NAV_GROUPS.find((g) => g.label === "Business")!;
+    const media = PRODUCT_NAV_GROUPS.find((g) => g.label === "Media")!;
     expect(competition.items.some((i) => i.href === "/competition?tab=strategy")).toBe(true);
     expect(competition.items.some((i) => i.href === "/competition?tab=scouting")).toBe(true);
-  });
-
-  it("keeps Business hub tabs and workbenches in the drawer", () => {
-    const business = PRODUCT_NAV_GROUPS.find((g) => g.label === "Business")!;
     expect(business.items.some((i) => i.href === "/business?tab=sponsors")).toBe(true);
     expect(business.items.some((i) => i.href === "/business?tab=grants")).toBe(true);
-    expect(business.items.some((i) => i.href === "/team/grants")).toBe(true);
-    expect(business.items.some((i) => i.href === "/team/sponsors")).toBe(false);
-    expect(business.items.some((i) => i.href === "/media")).toBe(false);
-  });
-
-  it("keeps Media hub and kit in the Media drawer group", () => {
-    const media = PRODUCT_NAV_GROUPS.find((g) => g.label === "Media")!;
     expect(media.items.some((i) => i.href === "/media")).toBe(true);
-    expect(media.items.some((i) => i.href === "/media-kit")).toBe(true);
-    expect(media.items.some((i) => i.href === "/outreach-calendar")).toBe(true);
+    expect(media.items.some((i) => i.href === "/media?tab=kit")).toBe(true);
     expect(media.items.some((i) => i.href === "/media?tab=drafts")).toBe(true);
-    expect(breadcrumbForPath("/media-kit")).toBe("Media / Media Kit editor");
-    expect(breadcrumbForPath("/outreach-calendar")).toBe("Media / Outreach Calendar editor");
   });
 
   it("marks unfinished destinations as planned instead of dead links", () => {
@@ -183,17 +157,6 @@ describe("product-nav", () => {
     );
     expect(planned).not.toContain("/repairs");
     expect(planned).not.toContain("/knowledge");
-  });
-
-  it("dedupes cross-pillar laundry-list links", () => {
-    const hrefs = PRODUCT_NAV_GROUPS.flatMap((group) =>
-      group.items.filter((item) => item.state !== "planned").map((item) => `${group.label}:${item.href}`),
-    );
-    expect(hrefs.filter((entry) => entry.endsWith(":/intel"))).toHaveLength(1);
-    expect(hrefs.filter((entry) => entry.includes(":/ai?tab=chat") || entry.endsWith(":/chat"))).toHaveLength(1);
-    expect(hrefs.filter((entry) => entry.endsWith(":/calendar"))).toHaveLength(1);
-    expect(hrefs.filter((entry) => entry.includes(":/build?tab=cad") || entry.endsWith(":/cad"))).toHaveLength(1);
-    expect(hrefs.filter((entry) => entry.endsWith(":/team")).length).toBeGreaterThanOrEqual(1);
   });
 
   it("keeps Strategy under Competition and Kickoff under Build", () => {

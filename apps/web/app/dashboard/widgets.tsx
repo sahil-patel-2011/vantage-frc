@@ -34,105 +34,105 @@ const WIDGET_ICON: Record<string, { icon: IconName; tone: string; toneBg: string
 
 const EMPTY_COPY: Record<string, EmptyHint> = {
   next_match: {
-    title: "No upcoming match yet",
-    body: "Select a team workspace and active event, then open My Day for bumper color and travel cues.",
+    title: "No upcoming match",
+    body: "Set a workspace and active event.",
     ctaHref: "/my-day",
     ctaLabel: "Open My Day",
   },
   recent_result: {
-    title: "No scored matches yet",
-    body: "Once TBA syncs results for your event, the latest W/L shows here.",
+    title: "No scored matches",
+    body: "Results appear after TBA sync.",
     ctaHref: "/command",
-    ctaLabel: "Select event",
+    ctaLabel: "Set event",
   },
   competition_snapshot: {
-    title: "No competition snapshot",
-    body: "Rank, record, and EPA appear after an event is selected and TBA/Statbotics sync.",
+    title: "No snapshot",
+    body: "Rank and EPA need an event plus TBA sync.",
     ctaHref: "/command",
-    ctaLabel: "Select event",
+    ctaLabel: "Set event",
   },
   scouting_coverage: {
-    title: "No scouting coverage yet",
-    body: "Assignments and reports appear after your team workspace and event are set.",
+    title: "No coverage yet",
+    body: "Assignments appear after event setup.",
     ctaHref: "/scouting",
     ctaLabel: "Open scouting",
   },
   prediction_summary: {
     title: "No prediction yet",
-    body: "Need match schedule + team metrics from TBA/Statbotics/scouting before a win/loss prediction can run.",
+    body: "Needs schedule and team metrics.",
     ctaHref: "/strategy",
     ctaLabel: "Open strategy",
   },
   sync_status: {
     title: "Sync not ready",
-    body: "Connect TBA (platform key or admin connector) before live rank/match sync.",
+    body: "Connect TBA for live match data.",
     ctaHref: "/team/data",
     ctaLabel: "Connect TBA",
   },
   pit_youtube: {
     title: "No pit stream",
-    body: "Add an org YouTube URL in Displays when you are ready to share the pit feed.",
+    body: "Add a YouTube URL in Displays.",
     ctaHref: "/display",
     ctaLabel: "Open displays",
   },
   ai_usage: {
     title: "AI usage unavailable",
-    body: "Owner/admin access and a billing plan are required to view usage.",
+    body: "Owner/admin access required.",
     ctaHref: "/team",
     ctaLabel: "Team settings",
   },
   notifications: {
     title: "No notifications",
-    body: "Alerts for matches, scouting, and sync issues appear here when they are sent.",
+    body: "Alerts appear when they are sent.",
   },
   robot_readiness: {
-    title: "No checklist data yet",
-    body: "Add robot / battery / maintenance records after your team workspace is set up.",
+    title: "No checklist data",
+    body: "Add robot checks after setup.",
     ctaHref: "/code",
     ctaLabel: "Open robot checks",
   },
   alerts: {
     title: "No new alerts",
-    body: "Live org alerts and open scouting disagreements will list here when they exist.",
+    body: "Org alerts list here when they exist.",
   },
   team_todos: {
     title: "No open todos",
-    body: "Shared team todos appear here after your org adds real action items — nothing is invented.",
+    body: "Team todos appear when your org adds them.",
     ctaHref: "/todos",
     ctaLabel: "Open todos",
   },
   subteam_upcoming: {
-    title: "Nothing upcoming for your subteams",
-    body: "Create a subteam and schedule a practice — the next session shows here.",
+    title: "Nothing upcoming",
+    body: "Schedule a practice to see the next session.",
     ctaHref: "/team/calendar",
     ctaLabel: "Open calendar",
   },
   quick_actions: {
     title: "Get set up",
-    body: "Use the actions below to connect workspace, event, and TBA before live widgets fill in.",
+    body: "Connect workspace, event, and TBA.",
   },
   onboarding_checklist: {
     title: "Finish setup",
-    body: "Complete workspace, event, TBA, scouting, and AI steps to unlock live widgets.",
+    body: "Set workspace, event, and TBA.",
     ctaHref: "/command",
-    ctaLabel: "Select event",
+    ctaLabel: "Set event",
   },
 };
 
 function emptyHintFor(type: string): EmptyHint {
   return (
     EMPTY_COPY[type] ?? {
-      title: "Nothing to show yet",
-      body: "Complete workspace and event setup to load live data. Vantage does not invent stats.",
+      title: "Nothing yet",
+      body: "Finish workspace and event setup.",
     }
   );
 }
 
 function StatusBadge({ status }: { status: WidgetPayload["status"] | "waiting" }) {
   if (status === "live") return <span className="app-badge good">Live</span>;
-  if (status === "empty") return <span className="app-badge">No data</span>;
-  if (status === "waiting") return <span className="app-badge setup">Waiting</span>;
-  return <span className="app-badge setup">Setup required</span>;
+  if (status === "empty") return <span className="app-badge">Empty</span>;
+  if (status === "waiting") return null;
+  return <span className="app-badge setup">Setup</span>;
 }
 
 function EmptyState({
@@ -185,18 +185,20 @@ function Shell({
   const showLive = status === "live";
   const useChildren = preferChildren || (showLive && children != null && children !== false);
   const iconMeta = WIDGET_ICON[type];
+  // Colored circle icons only when the widget has real live data — never decorate empty/waiting shells.
+  const showIcon = showLive && Boolean(iconMeta);
   const isHero = type === "next_match" && showLive;
 
   return (
     <article
-      className={`dash-widget app-card${isHero ? " hero" : ""}`}
-      style={iconMeta ? ({ ["--tone" as string]: iconMeta.tone, ["--tone-bg" as string]: iconMeta.toneBg }) : undefined}
+      className={`dash-widget app-card${isHero ? " hero" : ""}${showLive ? "" : " is-empty"}`}
+      style={showIcon ? ({ ["--tone" as string]: iconMeta!.tone, ["--tone-bg" as string]: iconMeta!.toneBg }) : undefined}
     >
       <header>
         <div className="dash-widget-title">
-          {iconMeta ? (
+          {showIcon ? (
             <i className="dash-widget-icon">
-              <Icon name={iconMeta.icon} />
+              <Icon name={iconMeta!.icon} />
             </i>
           ) : null}
           <div>
@@ -497,14 +499,23 @@ export function DashboardWidgetView({
           ) : null}
         </Shell>
       );
-    case "competition_snapshot":
+    case "competition_snapshot": {
+      const scope = String(data.scope ?? "event");
+      const rankLabel =
+        data.rank != null
+          ? `#${String(data.rank)}`
+          : scope === "year"
+            ? String(data.record ?? "Season")
+            : "—";
       return (
         <Shell type={type} title="Competition snapshot" payload={payload} href={withOrg("/intel")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <div className="dash-metric-grid">
               <div>
-                <strong>#{String(data.rank ?? "—")}</strong>
-                <span>rank · {String(data.record ?? "")}</span>
+                <strong>{rankLabel}</strong>
+                <span>
+                  {scope === "year" ? "year EPA scope" : `rank · ${String(data.record ?? "")}`}
+                </span>
               </div>
               <div>
                 <strong>{data.epaTotal != null ? Number(data.epaTotal).toFixed(1) : "—"}</strong>
@@ -522,6 +533,7 @@ export function DashboardWidgetView({
           ) : null}
         </Shell>
       );
+    }
     case "sync_status": {
       const sources = (data.sources as Array<{ source: string; status: string; lastSuccessAt: string | null }> | undefined) ?? [];
       return (

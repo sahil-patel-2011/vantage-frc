@@ -10,7 +10,7 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
       <PageHeader
         breadcrumbs={
           <>
-            <a href="/help">Help</a>
+            <a href="/docs">App manual</a>
             {" / "}
             {article.title}
           </>
@@ -22,8 +22,8 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
           <a className="app-button" href={article.relatedHref}>
             Open in app
           </a>
-          <a className="app-button secondary" href="/help">
-            All tutorials
+          <a className="app-button secondary" href="/docs">
+            All topics
           </a>
         </div>
       </PageHeader>
@@ -43,8 +43,8 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
         ))}
       </div>
 
-      <nav className="help-article-footer" aria-label="Help navigation">
-        <a href="/help">← Help hub</a>
+      <nav className="help-article-footer" aria-label="App manual navigation">
+        <a href="/docs">← App manual</a>
         <a href={helpArticleHref(article.slug)}>Permalink</a>
         <a href="/support">Support tickets</a>
       </nav>

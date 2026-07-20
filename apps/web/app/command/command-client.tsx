@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { CardGridSkeleton, EmptyState, ErrorState, PageHeader, Panel, StatRowSkeleton } from "../../components/ui";
-import { HowToUseLink } from "../help/how-to-use-link";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
@@ -13,12 +12,9 @@ import {
   EVENT_DAY_RELATED_INCLUDE,
   classifyEventDayShell,
   eventDayRelatedLinks,
-  eventDaySetupSteps,
   eventDayShellCopy,
-  eventDayShellNextActions,
   formatEventDayMatchCount,
   type EventDayShellKind,
-  type EventDayShellNextAction,
 } from "../../lib/command/event-day-related";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { formatMyDayWhen } from "../../lib/my-day";
@@ -92,31 +88,6 @@ function EventDayRelatedStrip({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function EventDayNextActionsPanel({ actions }: { actions: EventDayShellNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <Panel className="edc-next-actions edc-shell-actions soft-panel">
-      <header>
-        <h2>Next actions</h2>
-        <p>My Day, Schedule, Strategy, and Scouting — never DEMO schedule.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </Panel>
-  );
-}
-
 function EventDayShell({
   orgId,
   shell,
@@ -136,30 +107,18 @@ function EventDayShell({
   canSetEvent?: boolean;
   children?: ReactNode;
 }) {
-  const actions = eventDayShellNextActions({
-    orgId,
-    shell,
-    hasActiveEvent,
-  });
   const copy = eventDayShellCopy(shell);
-  const steps = shell === "setup" ? eventDaySetupSteps(orgId) : [];
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const teamDataHref = withOrgHref("/team/data", orgId);
-  const myDayHref = hubHref("/competition", "my-day", orgId);
-  const scheduleHref = withOrgHref("/schedule", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
-  const scoutingHref = hubHref("/competition", "scouting", orgId);
 
   if (shell === "loading") {
     return (
       <main className="edc-page soft-gate">
         <PageHeader
           breadcrumbs="Competition / Event Day"
-          title="Event Day Command"
-          description="Next match, scout gaps, and labeled model briefs from real TBA rows — never DEMO schedule."
-        >
-          <EventDayRelatedStrip orgId={orgId} />
-        </PageHeader>
+          title="Command"
+          description="Next match and pit cues."
+        />
         {children}
         <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading Event Day Command">
           <StatRowSkeleton count={3} />
@@ -174,91 +133,54 @@ function EventDayShell({
       <main className="edc-page soft-gate">
         <PageHeader
           breadcrumbs="Competition / Event Day"
-          title="Event Day Command"
-          description="Next match, scout gaps, and labeled model briefs from real TBA rows — never DEMO schedule."
-        >
-          <EventDayRelatedStrip orgId={orgId} />
-        </PageHeader>
-        {children}
-        <ErrorState
-          title={copy.title}
-          message={error ?? copy.description}
-          onRetry={onRetry}
+          title="Command"
+          description="Next match and pit cues."
         />
-        <EventDayNextActionsPanel actions={actions} />
+        {children}
+        <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
       </main>
     );
   }
+
+  const primarySetupCta =
+    canSetEvent && onSelectEvent ? (
+      <button type="button" className="app-button" onClick={onSelectEvent}>
+        Set active event
+      </button>
+    ) : (
+      <a className="app-button" href={orgId ? teamDataHref : workspaceHref}>
+        {orgId ? "Connect TBA" : "Select workspace"}
+      </a>
+    );
 
   return (
     <main className="edc-page soft-gate">
       <PageHeader
         breadcrumbs="Competition / Event Day"
-        title="Event Day Command"
-        description="Next match, scout gaps, and labeled model briefs from real TBA rows — never DEMO schedule."
-      >
-        <HowToUseLink slug="event-day-command" />
-        <EventDayRelatedStrip orgId={orgId} />
-      </PageHeader>
+        title="Command"
+        description="Connect TBA and set an active event."
+      />
       {children}
       <EmptyState
         soft
         className="edc-empty"
         badge={shell === "setup" ? "Setup required" : copy.badge}
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={shell === "setup" && !hasActiveEvent ? "No event linked" : copy.title}
+        description={
+          error ??
+          (shell === "setup"
+            ? "Connect TBA and set the active event."
+            : copy.description)
+        }
       >
-        {shell === "setup" ? (
-          <>
-            {canSetEvent && onSelectEvent ? (
-              <button type="button" className="app-button" onClick={onSelectEvent}>
-                Select event
-              </button>
-            ) : (
-              <a className="app-button" href={orgId ? teamDataHref : workspaceHref}>
-                {orgId ? "Sync Team Data" : "Select workspace"}
-              </a>
-            )}
-            <a className="app-button secondary" href={myDayHref}>
-              Open My Day
-            </a>
-            <a className="app-button secondary" href={scheduleHref}>
-              Open Schedule
-            </a>
-          </>
-        ) : null}
+        {shell === "setup" ? primarySetupCta : null}
         {shell === "empty" ? (
-          <>
-            <a className="app-button" href={scheduleHref}>
-              Open Schedule
-            </a>
-            <a className="app-button secondary" href={myDayHref}>
-              Open My Day
-            </a>
-            <a className="app-button secondary" href={strategyHref}>
-              Open Strategy
-            </a>
-            <a className="app-button secondary" href={scoutingHref}>
-              Open Scouting
-            </a>
-          </>
-        ) : null}
-        {shell === "setup" && steps.length > 0 ? (
-          <ol className="strategy-setup-steps">
-            {steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          <a className="app-button" href={withOrgHref("/schedule", orgId)}>
+            Check schedule sync
+          </a>
         ) : null}
       </EmptyState>
-      <EventDayNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -402,8 +324,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           </button>
         </header>
         <p className="edc-muted">
-          Only owners and admins can set the event. Lists come from the TBA reference cache — empty means sync
-          first. Never DEMO events.
+          Only owners and admins can set the event. Empty list means sync TBA first.
         </p>
         <input
           className="edc-search"
@@ -509,7 +430,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
             {snap?.eventName ?? snap?.eventKey ?? "Active event"}
             {" · "}
             {formatEventDayMatchCount(snap?.matches.length ?? 0, Boolean(snap))} upcoming matches
-            {" — never DEMO schedule"}
+            
           </p>
           <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
         </EventDayShell>
@@ -529,12 +450,11 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
             {snap?.teamNumber ? ` · Team ${snap.teamNumber}` : ""}
             {snap?.eventKey ? ` · ${snap.eventKey}` : ""}
             {" — "}
-            Next match, scout gaps, and labeled model briefs. Never DEMO schedule.
+            Next match, scout gaps, and briefs.
           </>
         }
       >
         <div className="edc-header-actions">
-          <HowToUseLink slug="event-day-command" />
           <span className="edc-live" aria-live="polite">
             {loading && !snap ? "Loading…" : `Updated ${snap ? new Date(snap.computedAt).toLocaleTimeString() : "—"}`}
           </span>
@@ -561,7 +481,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
         <section className="edc-next-actions soft-panel" aria-label="Next actions">
           <header>
             <h2>Next actions</h2>
-            <p>Clear field-side steps from real schedule, scout gaps, and setup — never invents DEMO metrics.</p>
+            <p>Field-side steps from schedule and scout gaps.</p>
           </header>
           <ol>
             {liveActions.slice(0, 5).map((action) => (
@@ -648,7 +568,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
                     <span>Travel</span>
                     <b>
                       {snap.myDay.nextTravelLabel ??
-                        "No leave time published — open Logistics (never DEMO departures)"}
+                        "No leave time — open Logistics"}
                     </b>
                   </li>
                   <li>
@@ -687,7 +607,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           ) : (
             <div className="dash-empty">
               <strong>No upcoming match</strong>
-              <p>{snap?.message ?? "Sync TBA and select your event to load the queue — never DEMO times."}</p>
+              <p>{snap?.message ?? "Sync TBA and select your event."}</p>
               {snap?.myDay ? (
                 <ul className="edc-myday-strip" aria-label="Hotels and travel">
                   <li>
@@ -799,7 +719,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           ) : (
             <div className="dash-empty calm">
               <strong>No prediction yet</strong>
-              <p>Needs an upcoming match plus TBA/Statbotics metrics. Never shown as a TBA fact or DEMO win rate.</p>
+              <p>Needs an upcoming match plus TBA/Statbotics metrics.</p>
               <a className="dash-empty-cta" href={strategyHref}>
                 Open Strategy
               </a>
@@ -858,7 +778,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
               <strong>No live match rows yet</strong>
               <p>
                 When TBA puts your next matches on the board, uncovered vs double-scouted robots appear here — never
-                DEMO coverage zeros.
+                coverage zeros.
               </p>
               <a className="dash-empty-cta" href={scoutingHref}>
                 Open Scouting
@@ -984,7 +904,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           ) : (
             <div className="dash-empty calm">
               <strong>No event metrics yet</strong>
-              <p>Rank and EPA appear after TBA/Statbotics sync for your team at this event — never DEMO stats.</p>
+              <p>Rank and EPA appear after TBA/Statbotics sync.</p>
             </div>
           )}
         </article>

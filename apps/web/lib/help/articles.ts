@@ -458,5 +458,5 @@ export function getHelpArticle(slug: string): HelpArticle | undefined {
 }
 
 export function helpArticleHref(slug: string): string {
-  return `/help/${slug}`;
+  return `/docs/${slug}`;
 }

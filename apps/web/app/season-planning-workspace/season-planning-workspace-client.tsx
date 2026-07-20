@@ -14,7 +14,6 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { HowToUseLink } from "../help/how-to-use-link";
 import {
   GOAL_CATEGORIES,
   WORK_ITEM_STATUSES,
@@ -465,7 +464,6 @@ export default function SeasonPlanningWorkspaceClient() {
         description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data — never DEMO completion %. Cross-check Season Goals, Calendar, and Attendance."
       >
         <div className="season-plan-header-actions">
-          <HowToUseLink slug="alliance-season" />
           {view && "seasons" in view && view.seasons.length > 0 ? (
             <label className="app-muted season-plan-select">
               Season

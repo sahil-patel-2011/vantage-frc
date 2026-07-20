@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState, Panel } from "../../../components/ui";
-import { HowToUseLink } from "../../help/how-to-use-link";
 import {
   FUNDING_AFFILIATION_LABELS,
   FUNDING_AFFILIATION_OPTIONS,
@@ -92,7 +91,6 @@ export default function FundingProfileClient({ orgId }: { orgId: string }) {
           <span className="eyebrow">Business Soft-UI</span>
           <h2>Affiliation &amp; funding</h2>
         </div>
-        <HowToUseLink slug="funding-profile" />
       </div>
       <p className="app-muted">
         Same fields as onboarding. When Sponsors allowed is off, Business tabs and drawer links for sponsor tools stay

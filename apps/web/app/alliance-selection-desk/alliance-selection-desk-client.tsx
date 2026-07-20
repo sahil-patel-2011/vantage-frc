@@ -14,7 +14,6 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { HowToUseLink } from "../help/how-to-use-link";
 import {
   deskStatusLabel,
   pickSlotLabel,
@@ -443,7 +442,6 @@ export default function AllianceSelectionDeskClient() {
         description="Live pick board with shared slots, scout evidence attach, TBA conflict flags, and drive-team export — never DEMO rankings. Cross-check Strategy, Collaborative Pick List, and Pick clock."
       >
         <div className="alliance-desk-header-actions">
-          <HowToUseLink slug="alliance-season" />
           {view?.status === "live" ? (
             <>
               <Badge tone={conflictTone(view.conflictCount)}>

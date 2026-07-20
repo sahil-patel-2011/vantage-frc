@@ -4,7 +4,7 @@ import type { SupportTicket, SupportTicketStatus } from "./types";
 /** Soft-UI related surfaces for team support tickets (never DEMO placeholders). */
 export const SUPPORT_RELATED_LINKS = [
   { id: "account", label: "Account", path: "/account" },
-  { id: "help", label: "Help", path: "/help" },
+  { id: "help", label: "App manual", path: "/docs" },
   { id: "workspace", label: "Workspace", path: "/workspace" },
   { id: "notifications", label: "Notifications", path: "/notifications" },
 ] as const;
@@ -120,9 +120,9 @@ export function supportNextActions(input: {
       },
       {
         id: "help",
-        label: "Open Help docs",
-        detail: "Short Soft-UI tutorials (island, Home, scouting, BYOK) — separate from tickets.",
-        href: "/help",
+        label: "Open app manual",
+        detail: "Soft-UI topics (island, Home, scouting, BYOK) — separate from tickets.",
+        href: "/docs",
       },
     ];
   }
@@ -160,9 +160,9 @@ export function supportNextActions(input: {
   actions.push(
     {
       id: "help",
-      label: "Help docs",
-      detail: "Tutorials for Soft-UI surfaces — island, Edit Home, scouting, BYOK, Event Day, credits.",
-      href: "/help",
+      label: "App manual",
+      detail: "Soft-UI topics — island, Edit Home, scouting, BYOK, Event Day, credits.",
+      href: "/docs",
       primary: false,
     },
     {
