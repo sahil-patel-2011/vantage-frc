@@ -57,6 +57,11 @@ export function ProductGlances() {
           <p>{panel.copy}</p>
           <div className="product-glance-frame" aria-hidden="true">
             <header>
+              <span className="product-glance-dots" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
               <span>{panel.frame}</span>
               <b>Preview</b>
             </header>
@@ -80,6 +85,11 @@ export function HeroProductVisual() {
     <div className="hero-product-visual" aria-hidden="true">
       <div className="hero-product-screen">
         <header>
+          <span className="product-glance-dots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
           <span>Vantage</span>
           <b>Competition</b>
         </header>
@@ -95,6 +105,10 @@ export function HeroProductVisual() {
           <div className="hero-product-row muted">
             <span>Strategy</span>
             <strong>Pick desk</strong>
+          </div>
+          <div className="hero-product-row muted">
+            <span>Season</span>
+            <strong>Goals · owners</strong>
           </div>
           <div className="hero-product-row muted">
             <span>Assistant</span>

@@ -12,7 +12,7 @@ const capabilities = [
   { id: "02", title: "Explain why", body: "Teaching notes tied to match-pressure failure modes." },
   { id: "03", title: "Safer habits", body: "WPILib-aligned alternatives—not opaque rewrites." },
   { id: "04", title: "Approve diffs", body: "Human-gated proposals; sim stays with the team." },
-];
+] as const;
 
 export default function CodeFeaturePage() {
   return (
@@ -22,10 +22,10 @@ export default function CodeFeaturePage() {
         <header className="lux-route-hero">
           <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>Flag risk. Teach the fix.</h1>
-          <p>Soft-UI Code Coach—human-approved diffs only.</p>
+          <p>Soft-UI Code Coach—human-approved diffs only. Never auto-deploys to a robot.</p>
           <div className="actions">
-            <a className="button primary" href="/signin">
-              Sign in
+            <a className="button primary" href="/#waitlist">
+              Join the waitlist
             </a>
             <a className="button secondary" href="/features">
               Product overview
@@ -34,25 +34,33 @@ export default function CodeFeaturePage() {
         </header>
 
         <section className="lux-pillars" aria-labelledby="code-capabilities-title">
-          <header className="lux-section-head">
-            <h2 id="code-capabilities-title">Review → explain → suggest → approve.</h2>
-          </header>
-          <ul className="lux-pillar-list">
-            {capabilities.map((item) => (
-              <li key={item.id}>
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.body}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <p className="product-glances-note">Marketing copy. Code stays empty until a repo is connected.</p>
+          <div className="lux-content">
+            <header className="lux-section-head">
+              <h2 id="code-capabilities-title">Review → explain → suggest → approve.</h2>
+            </header>
+            <ul className="lux-pillar-list">
+              {capabilities.map((item) => (
+                <li key={item.id}>
+                  <div>
+                    <h3>
+                      <span className="lux-step-id">{item.id}</span> {item.title}
+                    </h3>
+                    <p>{item.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="product-glances-note">Marketing copy. Code stays empty until a repo is connected.</p>
+          </div>
         </section>
 
         <section className="lux-pricing">
           <div>
-            <h2>Join the waitlist.</h2>
+            <h2>Related.</h2>
+            <p>
+              <a href="/features/strategy">Strategy & Assistant</a> · <a href="/features/cad">CAD agent</a> ·{" "}
+              <a href="/pricing">Pricing</a>
+            </p>
           </div>
           <div className="pricing-preview-actions">
             <a className="button primary" href="/#waitlist">

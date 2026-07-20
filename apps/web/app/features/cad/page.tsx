@@ -7,6 +7,27 @@ export const metadata: Metadata = {
   alternates: { canonical: "/features/cad" },
 };
 
+const steps = [
+  {
+    title: "Brief",
+    copy: "Intent before geometry.",
+    frame: "CAD brief",
+    lines: ["Constraints listed", "Human gate first", "Empty until written"],
+  },
+  {
+    title: "Connectors",
+    copy: "Onshape OAuth or Fusion relay.",
+    frame: "Setup",
+    lines: ["Onshape hosted", "Fusion desktop", "Setup required"],
+  },
+  {
+    title: "Review",
+    copy: "Per-step approvals stay with the team.",
+    frame: "Controls",
+    lines: ["Step status", "Checkpoints", "Artifacts labeled"],
+  },
+] as const;
+
 export default function CadFeaturePage() {
   return (
     <div className="marketing-site marketing-lux">
@@ -15,10 +36,12 @@ export default function CadFeaturePage() {
         <header className="lux-route-hero">
           <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>CAD starts with a brief.</h1>
-          <p>Onshape hosted jobs or a Fusion desktop relay—credentials required. No unreviewed mutations.</p>
+          <p>
+            Onshape hosted jobs or a Fusion desktop relay—credentials required. No unreviewed mutations.
+          </p>
           <div className="actions">
-            <a className="button primary" href="/signin">
-              Sign in
+            <a className="button primary" href="/#waitlist">
+              Join the waitlist
             </a>
             <a className="button secondary" href="/features">
               Product overview
@@ -27,63 +50,57 @@ export default function CadFeaturePage() {
         </header>
 
         <section className="lux-showcase">
-          <header className="lux-section-head">
-            <h2>Confirm. Connect. Review.</h2>
-          </header>
-          <div className="product-glances" aria-label="CAD workflow preview">
-            <article className="product-glance">
-              <h3>Brief</h3>
-              <p>Intent before geometry.</p>
-              <div className="product-glance-frame" aria-hidden="true">
-                <header>
-                  <span>CAD brief</span>
-                  <b>Preview</b>
-                </header>
-                <ul>
-                  <li>Constraints listed</li>
-                  <li>Human gate first</li>
-                  <li>Empty until written</li>
-                </ul>
-              </div>
-            </article>
-            <article className="product-glance">
-              <h3>Connectors</h3>
-              <p>Onshape OAuth or Fusion relay.</p>
-              <div className="product-glance-frame" aria-hidden="true">
-                <header>
-                  <span>Setup</span>
-                  <b>Preview</b>
-                </header>
-                <ul>
-                  <li>Onshape hosted</li>
-                  <li>Fusion desktop</li>
-                  <li>Setup required</li>
-                </ul>
-              </div>
-            </article>
-            <article className="product-glance">
-              <h3>Review</h3>
-              <p>Per-step approvals stay with the team.</p>
-              <div className="product-glance-frame" aria-hidden="true">
-                <header>
-                  <span>Controls</span>
-                  <b>Preview</b>
-                </header>
-                <ul>
-                  <li>Step status</li>
-                  <li>Checkpoints</li>
-                  <li>Artifacts labeled</li>
-                </ul>
-              </div>
-            </article>
-            <p className="product-glances-note">Marketing preview. CAD stays setup-required until connected.</p>
+          <div className="lux-content">
+            <header className="lux-section-head">
+              <h2>Confirm. Connect. Review.</h2>
+            </header>
+            <div className="product-glances" aria-label="CAD workflow preview">
+              {steps.map((step) => (
+                <article className="product-glance" key={step.title}>
+                  <h3>{step.title}</h3>
+                  <p>{step.copy}</p>
+                  <div className="product-glance-frame" aria-hidden="true">
+                    <header>
+                      <span>{step.frame}</span>
+                      <b>Preview</b>
+                    </header>
+                    <ul>
+                      {step.lines.map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              ))}
+              <p className="product-glances-note">
+                Marketing preview. CAD stays setup-required until connected.
+              </p>
+            </div>
           </div>
         </section>
 
-        <section className="technical-note">
+        <section className="technical-note lux-content">
           <span className="section-id">BOUNDARY</span>
           <h2>AI is not engineering certification.</h2>
           <p>Teams own fit, loads, materials, rules, and safety.</p>
+        </section>
+
+        <section className="lux-pricing">
+          <div>
+            <h2>Related.</h2>
+            <p>
+              <a href="/features/strategy">Strategy & Assistant</a> · <a href="/features/code">Code Coach</a> ·{" "}
+              <a href="/pricing">Pricing</a>
+            </p>
+          </div>
+          <div className="pricing-preview-actions">
+            <a className="button primary" href="/#waitlist">
+              Join waitlist
+            </a>
+            <a className="button secondary" href="/workflow">
+              How it works
+            </a>
+          </div>
         </section>
       </main>
       <SiteFooter />
