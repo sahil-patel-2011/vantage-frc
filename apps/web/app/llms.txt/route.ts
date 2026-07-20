@@ -45,11 +45,11 @@ FRC teams: coaches, mentors, drive teams, strategy staff, and students. Access i
 - No fabricated metrics; official results take priority over estimates.
 
 ## Pricing
-- Free: complete non-AI Soft-UI competition core, BYOK/local AI, $0 managed API allowance.
-- Access ($${c.access.monthlyUsd}/mo): managed Soft-UI routing without a large included bucket (Usage Credits or PAYG).
-- Individual Pro ($${c.individual_pro.monthlyUsd}/mo, $${c.individual_pro.includedAllowanceUsd} included API) and Individual Max ($${c.individual_max.monthlyUsd}/mo, $${c.individual_max.includedAllowanceUsd} included API): private Soft-UI workspace; priority features; Max ≈2× Pro rate limits.
-- Team Pro ($${c.team_pro.monthlyUsd}/mo, $${c.team_pro.includedAllowanceUsd} pooled API) and Team Max ($${c.team_max.monthlyUsd}/mo, $${c.team_max.includedAllowanceUsd} pooled API): organization Soft-UI + ops plans; Max ≈2× Pro rate limits.
-- Hosted AI usage is billed at 75% of typical API rates — about 25% less than running the same models on your own keys (BYOK stays at provider list). Hard stop after included allowance unless Usage Credits or explicit PAYG + spend cap. Week team trial: ${TEAM_TRIAL_DAYS} days / $${c.team_trial.includedAllowanceUsd} API, no surprise auto-charge. No per-seat student pricing.
+- Free: Soft-UI competition core with bring-your-own-key or local AI.
+- Access ($${c.access.monthlyUsd}/mo): light managed Soft-UI routing; add Usage Credits or PAYG as needed.
+- Individual Pro ($${c.individual_pro.monthlyUsd}/mo) and Individual Max ($${c.individual_max.monthlyUsd}/mo): private Soft-UI workspace with hosted AI included; Max has higher capacity / priority features.
+- Team Pro ($${c.team_pro.monthlyUsd}/mo) and Team Max ($${c.team_max.monthlyUsd}/mo): organization Soft-UI + ops with hosted models built in; Max has higher capacity.
+- Hosted AI is cheaper than bringing your own keys, with scouting, strategy, Event Day, and CAD built in natively. Soft economics: billed below typical API list (~25% vs BYOK). Hard stop after the included hosted window unless Usage Credits or explicit PAYG + spend cap. Week team trial: ${TEAM_TRIAL_DAYS} days, no surprise auto-charge. No per-seat student pricing.
 
 ## Data sources
 Live reference data from The Blue Alliance and Statbotics can be cached per event for signed-in teams (freshness-stamped). Marketing pages do not publish aggregate event/team/match counts.

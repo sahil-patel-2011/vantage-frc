@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: `Free competition core with BYOK/local AI. Paid: Individual Pro $${c.individual_pro.monthlyUsd}/mo, Max $${c.individual_max.monthlyUsd}/mo; Team Pro $${c.team_pro.monthlyUsd}/mo, Max $${c.team_max.monthlyUsd}/mo. ${hostedApiSavingsCopy()} Hard stop after included allowance unless Credits or PAYG. Week trial: ${TEAM_TRIAL_DAYS} days.`,
+    a: `Free Soft-UI competition core with bring-your-own-key or local AI. Paid plans: Individual Pro $${c.individual_pro.monthlyUsd}/mo, Max $${c.individual_max.monthlyUsd}/mo; Team Pro $${c.team_pro.monthlyUsd}/mo, Max $${c.team_max.monthlyUsd}/mo. ${hostedApiSavingsCopy()} Hard stop after the included hosted window unless Credits or PAYG. Week team trial: ${TEAM_TRIAL_DAYS} days. No per-seat student pricing.`,
   },
   {
     q: "Is team data private?",

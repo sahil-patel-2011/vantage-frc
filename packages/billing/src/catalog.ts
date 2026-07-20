@@ -103,14 +103,17 @@ export function hostedCreditPackListApiUsd(purchaseUsd: number): number {
   return Math.round(purchaseUsd / CATALOG_SERVICE_MULTIPLIER);
 }
 
-/** Short marketing line for the hosted vs BYOK discount (no wholesale disclosure). */
+/** Soft marketing line for hosted vs BYOK (no wholesale; avoid wallet-style allotment talk). */
 export function hostedApiSavingsCopy(): string {
-  return (
-    "Hosted AI usage is billed at 75% of typical API rates — about 25% less than running the same models on your own keys."
-  );
+  return "Cheaper than bringing your own keys—with the full product built in natively.";
 }
 
-/** Compact debit explanation for pricing cards / budgets. */
+/** One optional soft economics line (~25%) for pricing footnotes — not plan-card headers. */
+export function hostedApiEconomicsSoftLine(): string {
+  return "Hosted usage is billed below typical API list rates—about 25% less than running the same models on your own keys.";
+}
+
+/** Compact debit explanation for budgets / admin (not plan-card marketing). */
 export function hostedUsageDebitCopy(): string {
   return (
     `Hosted Usage Credits debit at ${CATALOG_SERVICE_MULTIPLIER}× typical provider list ` +
