@@ -70,7 +70,11 @@ export async function POST(request: Request) {
       }
       if (!body.threadId || !body.message?.trim() || !body.scope) throw new Error("Thread, scope, and message are required");
       const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
-      const adapter = await resolveOrgChatAdapter(client, { orgId, promptCachingEnabled });
+      const adapter = await resolveOrgChatAdapter(client, {
+        orgId,
+        promptCachingEnabled,
+        feature: "chat",
+      });
 
       const bridgeContext = [
         ...(body.editorContextId

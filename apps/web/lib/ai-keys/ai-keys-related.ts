@@ -6,6 +6,7 @@ export type AiKeysRelatedId =
   | "chat"
   | "budgets"
   | "usage"
+  | "byok-usage"
   | "pricing"
   | "account"
   | "admin"
@@ -25,6 +26,7 @@ export function aiKeysRelatedLinks(
   const all: AiKeysRelatedLink[] = [
     { id: "chat", label: "Chat", href: hubHref("/ai", "chat", orgId) },
     { id: "budgets", label: "API budgets", href: hubHref("/ai", "budgets", orgId) },
+    { id: "byok-usage", label: "BYOK usage", href: withOrgHref("/team/ai-usage", orgId) },
     { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
     { id: "pricing", label: "Pricing", href: withOrgHref("/pricing", orgId) },
     { id: "account", label: "Account", href: withOrgHref("/account", orgId) },
@@ -45,6 +47,7 @@ export function aiKeysRelatedLinks(
 export const AI_KEYS_RELATED_INCLUDE: AiKeysRelatedId[] = [
   "chat",
   "budgets",
+  "byok-usage",
   "pricing",
   "account",
 ];

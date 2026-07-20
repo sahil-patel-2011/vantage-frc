@@ -180,8 +180,11 @@ export type UsageReceipt<T> = {
   uncachedInputTokens?: number;
 };
 
-/** Platform-billed, BYOK, or local CLI (subscription on the user machine — Vantage charge is always 0). */
-export type MeterKeySource = "platform" | "byo" | "local_cli";
+/**
+ * Platform-billed, org BYOK, OpenAI-compatible local gateway, or local CLI.
+ * `byo` / `local` / `local_cli` never debit hosted Usage Credits.
+ */
+export type MeterKeySource = "platform" | "byo" | "local" | "local_cli";
 
 export type MeteredAIInput<T> = {
   client: PoolClient;
@@ -196,12 +199,77 @@ export type MeteredAIInput<T> = {
   model?: string;
   metadata?: Record<string, unknown>;
   billingOwner?: { type: "user" | "org"; id: string };
-  /** When `local_cli`, Vantage never charges and ledger cost is forced to 0. */
+  /**
+   * When `local_cli`, Vantage never charges and ledger cost is forced to 0.
+   * When `byo` / `local`, skip hosted credit caps (caller already resolved org keys).
+   * When omitted, prefer configured org BYOK/local over hosted platform for any tier.
+   */
   keySource?: MeterKeySource;
   invoke: (keySource: MeterKeySource) => Promise<UsageReceipt<T>>;
 };
+
+function isLoopbackProviderUrl(value: string | null | undefined): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+  } catch {
+    return /localhost|127\.0\.0\.1|\[::1\]/i.test(value);
+  }
+}
+
+/**
+ * Prefer org BYOK / OpenAI-compatible connectors over hosted platform metering.
+ * Returns null when the org has no usable bring-your-own path.
+ */
+export async function detectOrgByokKeySource(
+  client: PoolClient,
+  orgId: string,
+): Promise<"byo" | "local" | null> {
+  const providers = await client.query<{
+    kind: string;
+    baseUrl: string | null;
+    localRelay: boolean;
+  }>(
+    `SELECT kind, base_url AS "baseUrl", local_relay AS "localRelay"
+       FROM org_provider_configs
+      WHERE org_id = $1::uuid
+        AND enabled = true
+        AND disabled_at IS NULL
+      ORDER BY created_at DESC`,
+    [orgId],
+  );
+  for (const row of providers.rows) {
+    const kind = row.kind.trim().toLowerCase();
+    if (row.localRelay) return "local";
+    if (
+      kind === "local" ||
+      kind === "ollama" ||
+      kind === "lm-studio" ||
+      kind === "lmstudio"
+    ) {
+      return "local";
+    }
+    if (kind === "openai-compatible" || row.baseUrl) {
+      if (isLoopbackProviderUrl(row.baseUrl)) return "local";
+      return "byo";
+    }
+  }
+  const keys = await client.query(
+    `SELECT 1 FROM org_llm_keys WHERE org_id = $1::uuid LIMIT 1`,
+    [orgId],
+  );
+  if (keys.rows.length > 0) return "byo";
+  return null;
+}
+
+function isExternalKeySource(source: MeterKeySource): boolean {
+  return source === "byo" || source === "local" || source === "local_cli";
+}
 type LockedCreditWallet={accountId:string;included:number;purchased:number;gifted:number;serviceMultiplier:number;entitlementSnapshot:Record<string,unknown>;planCode:string};
-async function lockCreditWallet<T>(input:MeteredAIInput<T>,keySource:"platform"|"byo"):Promise<LockedCreditWallet|null>{
+async function lockCreditWallet<T>(input:MeteredAIInput<T>,keySource:MeterKeySource):Promise<LockedCreditWallet|null>{
+  if(isExternalKeySource(keySource))return null;
   if(!input.billingOwner)return null;const owner=input.billingOwner;
   const result=await input.client.query<{accountId:string;included:string;purchased:string;gifted:string;serviceMultiplier:string;termsSnapshot:Record<string,unknown>;planCode:string}>(`SELECT a.id AS "accountId",w.included_balance AS included,w.purchased_balance AS purchased,w.gifted_balance AS gifted,
     v.service_multiplier AS "serviceMultiplier",s.terms_snapshot AS "termsSnapshot",s.plan_code AS "planCode"
@@ -221,7 +289,7 @@ const numberOrNull = (value: unknown) =>
 async function enforceApiBudgets<T>(
   input: MeteredAIInput<T>,
   tier: string,
-  keySource: "platform" | "byo",
+  keySource: MeterKeySource,
 ) {
   const [policyResult, memberResult, featureResult, modelResult, usageResult, safetyResult] =
     await Promise.all([
@@ -282,7 +350,9 @@ async function enforceApiBudgets<T>(
   const usage = (usageResult.rows[0] ?? {}) as Record<string, unknown>;
   const safety = safetyResult.rows[0] as Record<string, unknown> | undefined;
   const estimatedTokens =
-    keySource === "byo" && policy?.enforce_byo_token_limits === false
+    isExternalKeySource(keySource) &&
+    keySource !== "local_cli" &&
+    policy?.enforce_byo_token_limits === false
       ? 0
       : (input.estimatedPromptTokens ?? 0) + (input.estimatedCompletionTokens ?? 0);
   const deny = async (reason: string) => {
@@ -439,6 +509,9 @@ export function findBudgetViolation(
  * Must be called inside the same transaction established by withRls().
  * The billing row lock serializes the cap check, provider call, and ledger append.
  * `keySource: "local_cli"` skips credit caps and always records cost_usd = 0.
+ * When an org has BYOK / OpenAI-compatible keys configured, prefer that path and
+ * do not consume hosted Usage Credits — even on paid tiers (0.75× hosted still
+ * applies when no BYOK is present).
  */
 export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   if (input.estimatedCostUsd < 0) throw new Error("Estimated cost cannot be negative");
@@ -485,17 +558,29 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   if (!account) throw new Error("Billing account is not configured");
   if (account.kill_switch) throw new BillingDisabledError();
 
-  const keySource: MeterKeySource = account.tier === "free" ? "byo" : "platform";
-  if (keySource === "byo") {
+  let keySource: MeterKeySource;
+  if (input.keySource === "byo" || input.keySource === "local") {
+    keySource = input.keySource;
+  } else {
+    const detected = await detectOrgByokKeySource(input.client, input.orgId);
+    if (detected) {
+      keySource = detected;
+    } else if (account.tier === "free") {
+      throw new Error("Free organizations must configure a BYO AI key");
+    } else {
+      keySource = "platform";
+    }
+  }
+  if (keySource === "byo" || keySource === "local") {
     const key = await input.client.query(
       `SELECT 1 FROM org_llm_keys WHERE org_id = $1
        UNION ALL
        SELECT 1 FROM org_provider_configs
-       WHERE org_id = $1 AND enabled = true AND key_ciphertext IS NOT NULL
+       WHERE org_id = $1 AND enabled = true AND disabled_at IS NULL
        LIMIT 1`,
       [input.orgId],
     );
-    if (!key.rowCount) throw new Error("Free organizations must configure a BYO AI key");
+    if (!key.rows.length) throw new Error("Free organizations must configure a BYO AI key");
   }
   const creditWallet = await lockCreditWallet(input, keySource);
   await enforceApiBudgets(input, account.tier, keySource);
@@ -510,7 +595,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     model: input.model,
     metadata: input.metadata,
   });
-  if (keySource !== "byo") {
+  if (keySource === "platform") {
     const totals = await input.client.query<{ used: string; grants: string }>(
       `SELECT
          COALESCE((SELECT SUM(cost_usd) FROM ai_usage_events
@@ -580,6 +665,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
 
   const receipt = await input.invoke(keySource);
   if (receipt.costUsd < 0) throw new Error("Provider returned a negative cost");
+  const ledgerCostUsd = keySource === "local" ? 0 : receipt.costUsd;
   await input.client.query(
     `INSERT INTO ai_usage_events
       (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
@@ -596,9 +682,14 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       receipt.promptTokens,
       receipt.completionTokens,
       receipt.promptTokens + receipt.completionTokens,
-      receipt.costUsd,
+      ledgerCostUsd,
       input.requestId,
-      JSON.stringify(input.metadata ?? {}),
+      JSON.stringify({
+        ...(input.metadata ?? {}),
+        ...(isExternalKeySource(keySource)
+          ? { vantageChargeUsd: 0, path: keySource }
+          : {}),
+      }),
       receipt.cacheReadInputTokens ?? 0,
       receipt.cacheWriteInputTokens ?? 0,
       receipt.uncachedInputTokens ?? receipt.promptTokens,
@@ -609,7 +700,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     await input.client.query(`UPDATE credit_wallets SET included_balance=included_balance-$2,purchased_balance=purchased_balance-$3,gifted_balance=gifted_balance-$4,updated_at=now() WHERE billing_account_id=$1`,[creditWallet.accountId,allocation.fromIncluded,allocation.fromPurchased,allocation.fromGifted]);
     await input.client.query(`INSERT INTO credit_ledger(billing_account_id,kind,credits,provider_cost_usd,service_multiplier,bucket,reference_id,metadata) VALUES($1,'ai_debit',$2,$3,$4,$5,$6,$7::jsonb)`,[creditWallet.accountId,-allocation.debit,receipt.costUsd,creditWallet.serviceMultiplier,allocation.bucket,input.requestId,JSON.stringify({orgId:input.orgId,userId:input.userId,feature:input.feature,planCode:creditWallet.planCode})]);
   }
-  if (keySource !== "byo") {
+  if (keySource === "platform") {
     await input.client.query(
       `UPDATE org_plan_periods SET provider_cost_used_usd=provider_cost_used_usd+$2
        WHERE org_id=$1 AND status='active' AND period_start<=now() AND period_end>now()`,

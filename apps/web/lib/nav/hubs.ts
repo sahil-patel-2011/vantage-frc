@@ -248,6 +248,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "governance", label: "Governance", legacyHref: "/team/ai-policy" },
       { id: "finance", label: "Finance" },
       { id: "ai-keys", label: "AI API keys", legacyHref: "/team/ai-keys", primary: false, featured: true },
+      { id: "ai-usage", label: "BYOK usage", legacyHref: "/team/ai-usage", primary: false },
       { id: "usage", label: "Usage", legacyHref: "/team/usage", primary: false },
       { id: "decisions", label: "Decision Log", legacyHref: "/decisions", primary: false },
       { id: "decision-search", label: "Decision Search", legacyHref: "/decision-search", primary: false },
