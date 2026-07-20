@@ -666,11 +666,11 @@ function Grants({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
           </form>
         </article>
         <article className="app-card biz-writer">
-          <span className="biz-overline">Evidence-grounded writing studio</span>
+          <span className="biz-overline">Template writing studio</span>
           <h2>Draft faster without inventing a single metric.</h2>
           <p>
-            Template drafts pull only from this team&apos;s Impact log and award history. For metered AI assist with hard
-            cutoffs, open the grant writing workbench or Writer.
+            Template drafts pull only from this team&apos;s Impact log and award history — not metered AI. For AI assist
+            with hard cutoffs, open the grant writing workbench or Writer.
           </p>
           <form className="biz-form-grid" onSubmit={(event) => void submit(event, "generate-draft")}>
             <Field label="Document">
