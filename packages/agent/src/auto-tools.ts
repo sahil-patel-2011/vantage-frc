@@ -312,7 +312,11 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
       ? ("scout_observation" as const)
       : name === "scouting.schema"
         ? ("hard_metric" as const)
-      : name === "research.findings" || name === "kickoff.intelligence" || name === "kickoff.rules"
+      : name === "research.findings" ||
+          name === "kickoff.intelligence" ||
+          name === "kickoff.rules" ||
+          name === "web.search" ||
+          name === "web.fetch"
         ? ("researched_claim" as const)
         : name === "strategy.match" ||
             name === "strategy.design" ||
@@ -324,6 +328,73 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
             name.startsWith("fmea.")
           ? ("model_inference" as const)
           : ("hard_metric" as const);
+
+  if (name === "web.search") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    if (row.status === "setup_required") {
+      return {
+        name,
+        status: "setup_required",
+        classification,
+        summary: String(row.message ?? "Web search is not configured."),
+        output,
+        input,
+      };
+    }
+    const results = Array.isArray(row.results) ? row.results : [];
+    if (!results.length) {
+      return {
+        name,
+        status: "empty",
+        classification,
+        summary: String(row.message ?? "No search results."),
+        output,
+        input,
+      };
+    }
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary: `${results.length} web search hit(s) via ${String(row.provider ?? "search")}`,
+      output,
+      input,
+    };
+  }
+
+  if (name === "web.fetch") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    if (row.status === "setup_required") {
+      return {
+        name,
+        status: "setup_required",
+        classification,
+        summary: String(row.message ?? "Web browse is disabled."),
+        output,
+        input,
+      };
+    }
+    if (row.status === "error" || !row.excerpt) {
+      return {
+        name,
+        status: "empty",
+        classification,
+        summary: String(row.message ?? "Fetch failed or returned no excerpt."),
+        output,
+        input,
+      };
+    }
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary: row.truncated
+        ? `Fetched truncated excerpt from ${String(row.finalUrl ?? row.url ?? "url")}`
+        : `Fetched excerpt from ${String(row.finalUrl ?? row.url ?? "url")}`,
+      output,
+      input,
+    };
+  }
 
   if (name === "finance.summary") {
     const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
