@@ -1,0 +1,20 @@
+/* Soft-UI Season Planning Workspace — never DEMO completion %. */
+.season-plan-page{display:grid;gap:16px}
+.season-plan-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.season-plan-select{display:flex;gap:6px;align-items:center}
+.season-plan-related{display:flex;flex-wrap:wrap;gap:8px}
+.season-plan-next-actions{margin:0}
+.season-plan-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.season-plan-layout{display:grid;gap:16px}
+.season-plan-panel{display:grid;gap:12px}
+.season-plan-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.season-plan-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.season-plan-tip{margin:0}
+.season-plan-goal-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.season-plan-badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.season-plan-status-label{display:flex;gap:8px;align-items:center;margin-top:10px}
+.season-plan-milestones{margin:12px 0 0;padding-left:1.1rem;display:grid;gap:6px}
+@media(max-width:900px){
+  .season-plan-header-actions{justify-content:flex-start}
+  .season-plan-next-actions li,.season-plan-setup-steps li{flex-direction:column;align-items:stretch}
+}

@@ -1,12 +1,164 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { PICKLIST_COLLAB_TIERS, picklistCollabTierLabel } from "../../lib/picklist-collab";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
+import {
+  PICKLIST_COLLAB_RELATED_INCLUDE,
+  classifyPicklistCollabShell,
+  formatPicklistCollabMetric,
+  picklistCollabNextActions,
+  picklistCollabRelatedLinks,
+  picklistCollabSetupSteps,
+  picklistCollabShellCopy,
+  shouldShowPicklistCollabSummaryTiles,
+  type PicklistCollabNextAction,
+  type PicklistCollabShellKind,
+} from "../../lib/picklist-collab/picklist-collab-related";
 import type { PicklistCollabEntry, PicklistCollabTier } from "../../lib/picklist-collab/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./picklist-collab.css";
 
 type LiveView = Extract<PicklistCollabView, { status: "live" }>;
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = picklistCollabRelatedLinks(orgId, {
+    include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related picklist-collab-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: PicklistCollabNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions picklist-collab-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy, Justifier, and Pick clock — never DEMO ranks.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function CollabShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: PicklistCollabShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = picklistCollabNextActions({ orgId, shell });
+  const copy = picklistCollabShellCopy(shell);
+  const competitionHref = hubHref("/competition", "picklist-collab", orgId);
+  const steps = shell === "setup" ? picklistCollabSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page picklist-collab-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Collaborative Pick List"}
+          </>
+        }
+        title="Collaborative Pick List"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading pick list">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="picklist-collab-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Strategy and Scouting — never DEMO ranks.</p>
+          </header>
+          <ul className="picklist-collab-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted picklist-collab-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function PicklistCollabClient() {
   const [view, setView] = useState<PicklistCollabView | null>(null);
@@ -14,8 +166,6 @@ export default function PicklistCollabClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [listId, setListId] = useState<string | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((listOverride?: string | null) => {
     setFetchFailed(false);
@@ -42,6 +192,32 @@ export default function PicklistCollabClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const listCount = view?.status === "live" ? view.lists.length : 0;
+  const totalEntries = view?.status === "live" ? view.summary.totalEntries : 0;
+  const totalVotes = view?.status === "live" ? view.summary.totalVotes : 0;
+
+  const shell = classifyPicklistCollabShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    listCount,
+  });
+  const shellCopy = picklistCollabShellCopy(shell);
+  const nextActions = picklistCollabNextActions({
+    orgId,
+    shell,
+    listCount,
+    totalEntries,
+    totalVotes,
+  });
+  const relatedLinks = picklistCollabRelatedLinks(orgId, {
+    include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
+  });
+  const competitionHref = hubHref("/competition", "picklist-collab", orgId);
+  const showTiles = shouldShowPicklistCollabSummaryTiles({ listCount, totalEntries });
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -70,37 +246,85 @@ export default function PicklistCollabClient() {
     [orgId, listId, busy],
   );
 
+  if (shell === "loading") {
+    return <CollabShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <CollabShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <CollabShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      >
+        {view?.status === "setup_required" && view.steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {view.steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+        {orgId ? <CreateListForm busy={busy} mutate={mutate} /> : null}
+      </CollabShell>
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page picklist-collab-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Collaborative Pick List"}
           </>
         }
         title="Collaborative Pick List"
-        description="Build the pick list together — rank teams into tiers and cast weighted votes that roll up into a consensus order."
+        description="Build the pick list together — rank teams into tiers and cast weighted votes that roll up into a consensus order. Never DEMO ranks. Cross-check Strategy, Pick-list Justifier, and Pick clock."
       >
-        {view?.status === "live" && view.lists.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            List
-            <select
-              value={listId ?? view.activeList?.id ?? ""}
-              onChange={(event) => {
-                const next = event.target.value;
-                setListId(next);
-                load(next);
-              }}
-            >
-              {view.lists.map((list) => (
-                <option key={list.id} value={list.id}>
-                  {list.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="picklist-collab-header-actions">
+          {view?.status === "live" && view.lists.length > 0 ? (
+            <label className="app-muted picklist-collab-select">
+              List
+              <select
+                value={listId ?? view.activeList?.id ?? ""}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setListId(next);
+                  load(next);
+                }}
+              >
+                {view.lists.map((list) => (
+                  <option key={list.id} value={list.id}>
+                    {list.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -109,63 +333,64 @@ export default function PicklistCollabClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the pick list"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <div style={{ display: "grid", gap: 16 }}>
-          <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-            <ol className="strategy-setup-steps">
-              {view.steps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <span>{step.detail}</span>
-                  </div>
-                  <a href={step.href}>Open</a>
-                </li>
-              ))}
-            </ol>
-          </EmptyState>
-          {view.orgId ? <CreateListForm busy={busy} mutate={mutate} /> : null}
+      <NextActionsPanel actions={nextActions} />
+
+      {showTiles && view?.status === "live" ? (
+        <section className="picklist-collab-stats" aria-label="Pick list counts">
+          <StatTile
+            label="Teams tracked"
+            value={formatPicklistCollabMetric(view.summary.totalEntries, true)}
+          />
+          <StatTile
+            label="Votes cast"
+            value={formatPicklistCollabMetric(view.summary.totalVotes, true)}
+          />
+          <StatTile
+            label="Voters"
+            value={formatPicklistCollabMetric(view.summary.totalVoters, true)}
+          />
+        </section>
+      ) : null}
+
+      {shell === "empty" ? (
+        <div className="picklist-collab-layout">
+          <EmptyState
+            soft
+            badge="No lists yet"
+            badgeTone="setup"
+            title={shellCopy.title}
+            description={shellCopy.description}
+          />
+          <CreateListForm busy={busy} mutate={mutate} />
         </div>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
+      ) : view?.status === "live" ? (
+        <div className="picklist-collab-layout">
+          <SummaryStatus view={view} />
           <AddEntryForm busy={busy} mutate={mutate} />
           <EntriesByTier view={view} busy={busy} mutate={mutate} />
           <CreateListForm busy={busy} mutate={mutate} collapsedLabel="Add another pick list" />
         </div>
-      )}
+      ) : null}
     </main>
   );
 }
 
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Teams tracked", value: String(summary.totalEntries) },
-    { label: "Votes cast", value: String(summary.totalVotes) },
-    { label: "Voters", value: String(summary.totalVoters) },
-    { label: "List status", value: view.activeList?.status ?? "—" },
-  ];
+function SummaryStatus({ view }: { view: LiveView }) {
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
+    <Panel className="picklist-collab-panel">
+      <div className="picklist-collab-status-row">
+        <span className="app-muted">List status</span>
+        <Badge
+          tone={
+            view.activeList?.status === "locked"
+              ? "setup"
+              : view.activeList?.status === "archived"
+                ? "neutral"
+                : "good"
+          }
+        >
+          {view.activeList?.status ?? "—"}
+        </Badge>
       </div>
     </Panel>
   );
@@ -183,22 +408,23 @@ function EntriesByTier({
   if (view.summary.totalEntries === 0) {
     return (
       <EmptyState
+        soft
         badge="No teams yet"
         badgeTone="setup"
         title="Add your first team to this pick list"
-        description="Once teams are added, anyone on the team can cast a weighted vote to build consensus."
+        description="Once teams are added, anyone on the team can cast a weighted vote to build consensus — never DEMO ranks."
       />
     );
   }
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div id="picklist-collab-entries" className="picklist-collab-layout">
       {PICKLIST_COLLAB_TIERS.map((tier) => {
         const entries = view.entries.filter((e) => e.tier === tier);
         if (entries.length === 0) return null;
         return (
-          <Panel key={tier}>
+          <Panel key={tier} className="picklist-collab-panel">
             <h2 style={{ marginTop: 0 }}>{picklistCollabTierLabel(tier)}</h2>
-            <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+            <ul className="picklist-collab-list">
               {entries.map((entry) => (
                 <EntryRow key={entry.id} entry={entry} tier={tier} busy={busy} mutate={mutate} />
               ))}
@@ -225,30 +451,30 @@ function EntryRow({
   const [rank, setRank] = useState("");
 
   return (
-    <li
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        gap: 12,
-        alignItems: "flex-start",
-        flexWrap: "wrap",
-      }}
-    >
+    <li className="picklist-collab-entry">
       <div>
         <strong>
           #{entry.teamNumber}
           {entry.teamName ? ` — ${entry.teamName}` : ""}
         </strong>
-        <small className="app-muted" style={{ display: "block" }}>
+        <small className="app-muted picklist-collab-tip">
           Weighted score {entry.weightedScore} · {entry.votes.length} vote(s)
           {entry.averageRankSuggestion != null ? ` · avg rank ${entry.averageRankSuggestion}` : ""}
         </small>
         {entry.note ? <small className="app-muted">{entry.note}</small> : null}
       </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      <div className="picklist-collab-entry-actions">
         <select
           value={tier}
-          onChange={(event) => mutate({ action: "move-entry", entryId: entry.id, tier: event.target.value, position: entry.position })}
+          aria-label={`Tier for team #${entry.teamNumber}`}
+          onChange={(event) =>
+            mutate({
+              action: "move-entry",
+              entryId: entry.id,
+              tier: event.target.value,
+              position: entry.position,
+            })
+          }
         >
           {PICKLIST_COLLAB_TIERS.map((t) => (
             <option key={t} value={t}>
@@ -263,7 +489,7 @@ function EntryRow({
           step={0.1}
           value={weight}
           onChange={(event) => setWeight(event.target.value)}
-          style={{ width: 64 }}
+          className="picklist-collab-num"
           aria-label="Vote weight"
         />
         <input
@@ -272,12 +498,12 @@ function EntryRow({
           placeholder="Rank"
           value={rank}
           onChange={(event) => setRank(event.target.value)}
-          style={{ width: 64 }}
+          className="picklist-collab-num"
           aria-label="Suggested rank"
         />
-        <button
-          type="button"
-          className="app-button secondary"
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={busy}
           onClick={() =>
             mutate({
@@ -289,10 +515,10 @@ function EntryRow({
           }
         >
           Vote
-        </button>
-        <button
-          type="button"
-          className="text-button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           disabled={busy}
           onClick={() => {
             if (window.confirm(`Remove team #${entry.teamNumber} from this list?`)) {
@@ -301,7 +527,7 @@ function EntryRow({
           }}
         >
           Remove
-        </button>
+        </Button>
       </div>
     </li>
   );
@@ -324,7 +550,9 @@ function AddEntryForm({
 
   return (
     <Panel
+      id="picklist-collab-add"
       as="form"
+      className="picklist-collab-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.teamNumber) return;
@@ -337,7 +565,6 @@ function AddEntryForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Add team</h2>
       <FormGrid min={160}>
@@ -361,9 +588,9 @@ function AddEntryForm({
         <textarea value={form.note} onChange={set("note")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.teamNumber}>
+        <Button as="button" type="submit" variant="primary" disabled={busy || !form.teamNumber}>
           Add to list
-        </button>
+        </Button>
       </div>
     </Panel>
   );
@@ -386,15 +613,17 @@ function CreateListForm({
 
   if (!open) {
     return (
-      <button type="button" className="app-button secondary" onClick={() => setOpen(true)}>
+      <Button variant="secondary" onClick={() => setOpen(true)}>
         {collapsedLabel}
-      </button>
+      </Button>
     );
   }
 
   return (
     <Panel
+      id="picklist-collab-create"
       as="form"
+      className="picklist-collab-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.name.trim() || !form.eventKey.trim()) return;
@@ -402,7 +631,6 @@ function CreateListForm({
         setForm(empty);
         setOpen(!collapsedLabel);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
       <h2 style={{ margin: 0 }}>Create pick list</h2>
       <FormGrid min={160}>
@@ -414,9 +642,14 @@ function CreateListForm({
         </FormRow>
       </FormGrid>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.name.trim() || !form.eventKey.trim()}>
+        <Button
+          as="button"
+          type="submit"
+          variant="primary"
+          disabled={busy || !form.name.trim() || !form.eventKey.trim()}
+        >
           Create list
-        </button>
+        </Button>
       </div>
     </Panel>
   );
