@@ -299,6 +299,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/ai?tab=governance", label: "Governance", icon: "gear" },
       { href: "/ai?tab=finance", label: "Finance toggle", icon: "stats" },
       { href: "/team/usage", label: "AI usage", icon: "stats" },
+      { href: "/team/ai-keys", label: "AI API keys", icon: "gear" },
       { href: "/decision-search", label: "Decision Search", icon: "bolt" },
       { href: "/season-report", label: "Season Report", icon: "bolt" },
     ],
@@ -316,7 +317,8 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/team/security", label: "Team security", icon: "gear" },
       { href: "/team/background", label: "Team background", icon: "users" },
       { href: "/ai?tab=budgets", label: "API budgets", icon: "stats" },
-      { href: "/team/admin", label: "API keys & admin", icon: "gear" },
+      { href: "/team/ai-keys", label: "AI API keys", icon: "gear" },
+      { href: "/team/admin", label: "Custom providers & admin", icon: "gear" },
     ],
   },
 ];

@@ -64,6 +64,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/sponsorship")).toBe("Business / Sponsorship");
     expect(breadcrumbForPath("/orders")).toBe("Business / Orders");
     expect(breadcrumbForPath("/team/security")).toBe("Settings / Team security");
+    expect(breadcrumbForPath("/team/ai-keys")).toBe("AI / AI API keys");
     expect(breadcrumbForPath("/team/background")).toBe("Settings / Team background");
     expect(breadcrumbForPath("/intel")).toBe("Competition / Matches & Teams");
     expect(breadcrumbForPath("/kickoff")).toBe("Build / Kickoff");
