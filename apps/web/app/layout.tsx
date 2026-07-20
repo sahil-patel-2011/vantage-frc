@@ -6,6 +6,7 @@ import "./soft-ui.css";
 import "./styles.css";
 import PwaRegister from "./pwa-register";
 import ThemeProvider from "./theme-provider";
+import { rootMarketingMetadata } from "../lib/marketing/seo";
 
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],
@@ -24,28 +25,7 @@ const ibmMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-const canonicalUrl = "https://vantage-frc-web.vercel.app";
-
-
-export const metadata: Metadata = {
-  metadataBase: new URL(canonicalUrl),
-  title: "Vantage — One shared context for FRC decisions",
-  description: "Competition operations software connecting FRC scouting, prediction, strategy, CAD, and code around the same event evidence.",
-  manifest: "/manifest.webmanifest",
-  alternates: { canonical: "/" },
-  openGraph: {
-    title: "Vantage — From match data to robot decisions",
-    description: "One shared FRC context for scouting, prediction, strategy, CAD, and code.",
-    url: canonicalUrl,
-    type: "website",
-    siteName: "Vantage",
-    images: [{ url: "/vantage-social.svg", width: 1200, height: 630, alt: "Vantage — competition operations software for FRC teams" }],
-  },
-  twitter: { card: "summary_large_image", images: ["/vantage-social.svg"] },
-  robots: { index: true, follow: true },
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
-  appleWebApp: { capable: true, title: "Vantage" },
-};
+export const metadata: Metadata = rootMarketingMetadata();
 
 export const viewport: Viewport = {
   themeColor: [

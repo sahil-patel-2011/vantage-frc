@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
+import { marketingPageMetadata } from "../../../lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "FRC Code Builder / Debugger — Vantage",
-  description: "Code Coach flags risky WPILib patterns, teaches safer habits, and proposes human-approved diffs.",
-  alternates: { canonical: "/features/code" },
-};
+export const metadata: Metadata = marketingPageMetadata({
+  title: "Code Coach — Vantage",
+  description:
+    "Build hub Code Coach flags risky WPILib patterns, teaches safer habits, and proposes human-approved diffs. Never auto-deploys to a robot.",
+  path: "/features/code",
+});
 
 const capabilities = [
   { id: "01", title: "Review risk", body: "Blocking loops, hard-coded CAN, unsafe actuators." },

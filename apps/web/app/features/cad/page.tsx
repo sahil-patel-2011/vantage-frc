@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
+import { marketingPageMetadata } from "../../../lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "AI CAD builder — Vantage",
-  description: "Approval-gated CAD briefs for Onshape or Fusion—setup required until connectors are configured.",
-  alternates: { canonical: "/features/cad" },
-};
+export const metadata: Metadata = marketingPageMetadata({
+  title: "CAD agent — Vantage",
+  description:
+    "Approval-gated CAD briefs for Onshape or Fusion on the Build hub. Setup required until connectors are configured. No unreviewed mutations.",
+  path: "/features/cad",
+});
 
 const steps = [
   {

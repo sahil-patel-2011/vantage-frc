@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
+import { marketingPageMetadata } from "../../../lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "FRC Assistant & Strategy — Vantage",
+export const metadata: Metadata = marketingPageMetadata({
+  title: "Strategy & FRC Assistant — Vantage",
   description:
-    "FRC Assistant, Soft-UI Strategy, Alliance Selection Desk, and Pick clock—sourced from TBA and your scouting, never DEMO win rates.",
-  alternates: { canonical: "/features/strategy" },
-};
+    "Competition Strategy, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced from TBA and your scouting. No DEMO win rates.",
+  path: "/features/strategy",
+});
 
 const assistantJobs = [
   { id: "01", title: "Strategy & playbooks", copy: "Drive-team briefs from real scout + TBA facts." },

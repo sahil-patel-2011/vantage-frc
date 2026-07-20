@@ -9,13 +9,14 @@ import {
 import { WaitlistForm } from "../../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { PricingCatalog } from "./pricing-catalog";
+import { marketingPageMetadata } from "../../lib/marketing/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = marketingPageMetadata({
   title: "Pricing — Vantage",
   description:
-    "Free Soft-UI competition core with your own keys. Paid plans add hosted AI—cheaper than BYOK—plus scouting, strategy, and Event Day built in natively.",
-  alternates: { canonical: "/pricing" },
-};
+    "Free competition core with your own AI keys. Paid plans add Vantage-hosted AI as a service—cheaper than BYOK—with scouting, strategy, and Event Day built in. Hard cutoffs; no surprise overage.",
+  path: "/pricing",
+});
 
 export default function PricingPage() {
   const catalogNote = catalogDefaultsFootnote();
