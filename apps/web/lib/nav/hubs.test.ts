@@ -39,6 +39,9 @@ describe("product hubs", () => {
     expect(more).toContain("impact");
     expect(more).toContain("award-tracker");
     expect(more).toContain("grant-report");
+    expect(more).toContain("sponsor-renewal-roi");
+    expect(more).toContain("grant-eligibility-matcher");
+    expect(more).toContain("matching-gift-finder");
   });
 
   it("surfaces Team ops tabs including batteries and FMEA", () => {
@@ -69,6 +72,8 @@ describe("product hubs", () => {
     ]);
     expect(hubMoreTabs(build).map((tab) => tab.id)).not.toContain("prototype");
     expect(hubMoreTabs(build).map((tab) => tab.id)).not.toContain("prototype-tracker");
+    expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("cad-change-radar");
+    expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("bin-shelf-locator");
   });
 
   it("surfaces AI hub tabs for chat, budgets, writer, code, and memory", () => {

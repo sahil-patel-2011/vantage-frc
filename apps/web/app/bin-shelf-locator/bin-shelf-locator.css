@@ -1,0 +1,14 @@
+/* Soft-UI Bin/Shelf Locator — never DEMO inventory pins. */
+.bsl-page{display:grid;gap:16px}
+.bsl-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.bsl-related{display:flex;flex-wrap:wrap;gap:8px}
+.bsl-next-actions{margin:0}
+.bsl-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.bsl-panel{display:grid;gap:12px}
+.bsl-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.bsl-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.bsl-tip{margin:0}
+@media(max-width:900px){
+  .bsl-header-actions{justify-content:flex-start}
+  .bsl-next-actions li,.bsl-setup-steps li{flex-direction:column;align-items:stretch}
+}

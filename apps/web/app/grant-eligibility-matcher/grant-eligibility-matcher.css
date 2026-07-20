@@ -1,0 +1,17 @@
+/* Soft-UI Grant Eligibility Matcher — never DEMO grant dollars. */
+.gem-page{display:grid;gap:16px}
+.gem-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.gem-related{display:flex;flex-wrap:wrap;gap:8px}
+.gem-next-actions{margin:0}
+.gem-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.gem-panel{display:grid;gap:12px}
+.gem-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.gem-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.gem-tip{margin:0}
+.gem-missing{font-size:13px;margin:8px 0 0}
+.gem-employers{display:grid;gap:8px;margin-top:12px}
+.gem-row-actions{display:flex;gap:8px;align-items:center}
+@media(max-width:900px){
+  .gem-header-actions{justify-content:flex-start}
+  .gem-next-actions li,.gem-setup-steps li{flex-direction:column;align-items:stretch}
+}

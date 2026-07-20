@@ -1,0 +1,18 @@
+/* Soft-UI CAD Change Impact Radar — never DEMO revision diffs. */
+.ccr-page{display:grid;gap:16px}
+.ccr-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.ccr-related{display:flex;flex-wrap:wrap;gap:8px}
+.ccr-next-actions{margin:0}
+.ccr-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.ccr-panel{display:grid;gap:12px}
+.ccr-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.ccr-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.ccr-tip{margin:0}
+.ccr-connection-meta{margin:0;font-size:13px}
+.ccr-form-hint{margin:0;font-size:13px}
+.ccr-delta-list{margin:4px 0 0;padding-left:16px;font-size:12px}
+.ccr-subscribe-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+@media(max-width:900px){
+  .ccr-header-actions{justify-content:flex-start}
+  .ccr-next-actions li,.ccr-setup-steps li{flex-direction:column;align-items:stretch}
+}
