@@ -1332,9 +1332,9 @@
   .biz-workbench .biz-form-row {
     grid-template-columns: 1fr;
   }
-  .biz-field.wide,
   .biz-form-grid > .app-button {
     grid-column: auto;
+    width: 100%;
   }
   .biz-split-metrics {
     grid-template-columns: 1fr;

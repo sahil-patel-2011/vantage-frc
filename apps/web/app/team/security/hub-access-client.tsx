@@ -162,8 +162,9 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
       <span className="eyebrow">Section allowlists</span>
       <h2>Hub access</h2>
       <p className="app-muted">
-        Limit scouts and viewers to specific Soft-UI hubs (and optional tabs). Empty tab selection means every tab in
-        that hub. Clear all restores unrestricted navigation. Owners and admins stay unrestricted.
+        Limit scouts and viewers to specific Soft-UI hubs. Start unrestricted (no hubs checked). Enabling a hub shows
+        it; leave its tabs unchecked for every tab, or check tabs to restrict to those only. Clear all restores full
+        navigation. Owners and admins stay unrestricted.
       </p>
       {message ? (
         <p role="status" className="telemetry-status">
@@ -192,7 +193,7 @@ export default function HubAccessClient({ orgId }: { orgId: string }) {
               title="No scouts or viewers to restrict"
               description="Invite members from Team admin, then limit Competition, Team, Business, Build, AI, or Media here."
             >
-              <a className="app-button secondary" href={`/team?orgId=${encodeURIComponent(orgId)}`}>
+              <a className="app-button secondary" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`}>
                 Open Team admin
               </a>
             </EmptyState>

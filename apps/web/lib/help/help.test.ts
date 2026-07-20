@@ -14,6 +14,8 @@ describe("help articles", () => {
       "alliance-season",
       "credits-vs-free",
       "media-workspace",
+      "hub-access",
+      "funding-profile",
     ]);
   });
 
@@ -53,7 +55,12 @@ describe("help search index", () => {
   it("does not flood weak body-only sponsor matches", () => {
     const hits = searchHelpArticles("sponsor");
     expect(hits.every((hit) => hit.score >= 20)).toBe(true);
-    expect(hits.length).toBeLessThanOrEqual(2);
+    expect(hits.length).toBeLessThanOrEqual(3);
+  });
+
+  it("finds hub access and funding profile docs", () => {
+    expect(searchHelpArticles("hub access allowlist")[0]?.slug).toBe("hub-access");
+    expect(searchHelpArticles("funding profile affiliation")[0]?.slug).toBe("funding-profile");
   });
 
   it("filters the hub list without inventing articles", () => {

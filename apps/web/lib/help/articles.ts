@@ -39,6 +39,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "personal navigation",
       "customize island",
       "soft-ui",
+      "media island",
     ],
     relatedHref: "/dashboard",
     sections: [
@@ -54,7 +55,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "Tap apps in the order you want them. A selected app shows its slot number.",
           "Tap a selected app again to remove it. You need exactly four before Save is enabled.",
-          "Allowlisted destinations include Home, Compete, Team, Business, Build, AI, Scout, My Day, Logistics, and Messages.",
+          "Allowlisted destinations include Home, Compete, Team, Business, Media, Build, AI, Scout, My Day, Logistics, and Messages.",
         ],
       },
       {
@@ -320,43 +321,132 @@ export const HELP_ARTICLES: HelpArticle[] = [
     slug: "media-workspace",
     title: "Media workspace for press and business",
     summary:
-      "One Soft-UI home for Media Kit, outreach dates, media impact, and sponsor visuals — empty until real rows exist.",
-    category: "Business",
+      "Top-level Soft-UI Media pillar for calendar, drafts, kit, and impact — empty until real rows exist.",
+    category: "Media",
     keywords: [
       "media",
       "press kit",
       "social",
       "media kit",
       "outreach",
-      "sponsor wall",
+      "content calendar",
       "business media",
       "photos",
       "captions",
+      "media pillar",
     ],
     relatedHref: "/media",
     sections: [
       {
         heading: "Open Media",
         body: [
-          "From Business → More tools → Media, or search “Media” in Cmd+K / the drawer.",
-          "Pick a team workspace first — Media is org-scoped like other Soft-UI business tools.",
+          "Open the Media pillar from the Soft-UI island, drawer, or Cmd+K — search “Media”.",
+          "You can also pin Media as one of your four island apps.",
+          "Pick a team workspace first — Media is org-scoped like other Soft-UI tools.",
         ],
       },
       {
         heading: "What the tiles mean",
         body: [
           "Kit readiness and asset counts come from Media Kit profile fields and uploaded URLs.",
-          "Upcoming outreach and “tagged media” come from Outreach Calendar events you scheduled.",
+          "Upcoming outreach and “tagged media” come from calendar events you scheduled.",
           "Media impact and people reached come only from Community Impact rows with category media.",
-          "Sponsor wall counts come from published Sponsor Wall entries — never invented logos.",
+          "Content items are drafts and posts you created here — never invented logos or reach.",
         ],
       },
       {
         heading: "Where to edit",
         body: [
-          "Use Open Media Kit to edit bios, logos, and one-pagers.",
-          "Use Outreach Calendar for press days and demos; Community Impact to log completed media work; Sponsor Wall for thank-you visuals.",
+          "Use Calendar for press days and demos; Drafts for captions and AI-assisted posts (metered).",
+          "Use Kit for bios, logos, and one-pagers; Impact to review logged media outreach.",
           "Empty states stay empty until you add real data — Vantage never invents DEMO media metrics.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "hub-access",
+    slug: "hub-access",
+    title: "Limit hub access for scouts and viewers",
+    summary:
+      "Owners and admins restrict Soft-UI pillars and tabs per member from Team security — unrestricted by default.",
+    category: "Team",
+    keywords: [
+      "hub access",
+      "section access",
+      "acl",
+      "allowlist",
+      "restrict tabs",
+      "scout access",
+      "viewer access",
+      "team security",
+    ],
+    relatedHref: "/team/security",
+    sections: [
+      {
+        heading: "Where to configure",
+        body: [
+          "Open Team → Team security (or search “hub access”).",
+          "Scroll to Hub access under authentication policy and capabilities.",
+          "Only scouts and viewers can be restricted. Owners and admins stay unrestricted.",
+        ],
+      },
+      {
+        heading: "How allowlists work",
+        body: [
+          "With no hubs checked, the member is unrestricted (sees every pillar).",
+          "Check a hub to allow it. Leave its tabs unchecked for full access inside that hub.",
+          "Checking any tab limits the member to those tabs only — empty tab selection means every tab.",
+          "Clear all hubs and save to restore unrestricted navigation.",
+        ],
+      },
+      {
+        heading: "What members see",
+        body: [
+          "Hidden hubs disappear from the island, drawer, and Cmd+K for that member.",
+          "Always-available paths like Home, Account, Help, and notifications stay reachable.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "funding-profile",
+    slug: "funding-profile",
+    title: "Team funding profile and sponsor tools",
+    summary:
+      "Affiliation and funding paths shape Business Soft-UI — teams that disallow sponsors hide sponsor destinations.",
+    category: "Business",
+    keywords: [
+      "funding",
+      "affiliation",
+      "school funded",
+      "outside grants",
+      "sponsors allowed",
+      "private school",
+      "funding profile",
+      "hide sponsors",
+    ],
+    relatedHref: "/team/background",
+    sections: [
+      {
+        heading: "Set during onboarding",
+        body: [
+          "Owners and admins choose affiliation (private school, public school, or community) and at least one funding path: school funds, outside grants, or sponsors allowed.",
+          "Many private schools self-fund and disallow outside sponsors — uncheck Sponsors allowed when that matches your team.",
+        ],
+      },
+      {
+        heading: "What changes in Soft-UI",
+        body: [
+          "When Sponsors allowed is off, Business hub tabs and drawer links for Sponsor Wall, Suite, Matching Gift Finder, and related tools stay hidden.",
+          "Grants, budget, awards, and Media stay available when those funding paths apply.",
+        ],
+      },
+      {
+        heading: "Update later",
+        body: [
+          "Owners and admins can change affiliation and funding paths under Team → Background after onboarding.",
+          "Changes apply to navigation immediately for the workspace — no DEMO sponsor rows are invented either way.",
         ],
       },
     ],
