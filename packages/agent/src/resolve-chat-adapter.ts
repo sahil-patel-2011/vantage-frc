@@ -1,5 +1,11 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { createKms, decryptSecret } from "@vantage/billing";
+import {
+  createKms,
+  decryptSecret,
+  maybeNotifySponsoredPromoExpired,
+  resolveSponsoredPromoForOrg,
+  sponsoredPromoExpiredMessage,
+} from "@vantage/billing";
 import {
   LOCAL_OPENAI_COMPAT_LABEL,
   pickByokModelForFeature,
@@ -9,6 +15,7 @@ import {
 import type { ChatAdapter } from "./index";
 import { HttpChatAdapter, type HttpChatAdapterConfig } from "./http-chat-adapter";
 import type { PromptCachePrices } from "./prompt-caching";
+import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
 
 export class ChatProviderResolutionError extends Error {
   constructor(message: string) {
@@ -529,7 +536,20 @@ export async function resolveOrgChatAdapter(
     );
   }
 
+  // Platform-sponsored promo pool (team 1111 within window) before free-tier BYOK hard fail.
   if (tier === "free") {
+    const promo = await resolveSponsoredPromoForOrg(client, input.orgId);
+    if (promo.eligible) {
+      const sponsored = tryCreateSponsoredFailoverAdapter({
+        promptCachingEnabled: input.promptCachingEnabled,
+        fetchImpl: input.fetchImpl,
+      });
+      if (sponsored) return sponsored;
+    }
+    if (!promo.eligible && promo.reason === "promo_expired") {
+      await maybeNotifySponsoredPromoExpired(client, input.orgId, promo);
+      throw new ChatProviderResolutionError(sponsoredPromoExpiredMessage(promo.teamNumber ?? 1111));
+    }
     throw new ChatProviderResolutionError(
       "No AI provider key is configured for this organization. Free workspaces need your own OpenAI, Anthropic, or Google key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
     );

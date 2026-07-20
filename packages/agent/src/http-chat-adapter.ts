@@ -19,6 +19,28 @@ export type HttpChatAdapterConfig = {
   fetchImpl?: typeof fetch;
 };
 
+/** Distinct 429 / quota failure so sponsored failover can try the next provider. */
+export class ProviderRateLimitError extends Error {
+  readonly status: number;
+  constructor(message: string, status = 429) {
+    super(message);
+    this.name = "ProviderRateLimitError";
+    this.status = status;
+  }
+}
+
+function throwIfHttpFailed(providerLabel: string, status: number): void {
+  if (status === 401 || status === 403) {
+    throw new Error(
+      `${providerLabel} API key was rejected (${status}). Update the key under Team → AI API keys.`,
+    );
+  }
+  if (status === 429 || status === 503) {
+    throw new ProviderRateLimitError(`${providerLabel} rate-limited or at capacity (${status})`, status);
+  }
+  throw new Error(`${providerLabel} chat failed (${status})`);
+}
+
 export class HttpChatAdapter implements ChatAdapter {
   readonly provider: string;
   readonly model: string;
@@ -78,12 +100,7 @@ export class HttpChatAdapter implements ChatAdapter {
       }),
     });
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        throw new Error(
-          `Anthropic API key was rejected (${response.status}). Update the key under Team → AI API keys.`,
-        );
-      }
-      throw new Error(`Anthropic chat failed (${response.status})`);
+      throwIfHttpFailed("Anthropic", response.status);
     }
     const payload = (await response.json()) as {
       content?: Array<{ type?: string; text?: string }>;
@@ -141,12 +158,7 @@ export class HttpChatAdapter implements ChatAdapter {
       }),
     });
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        throw new Error(
-          `OpenAI-compatible API key was rejected (${response.status}). Update the key under Team → AI API keys.`,
-        );
-      }
-      throw new Error(`OpenAI-compatible chat failed (${response.status})`);
+      throwIfHttpFailed("OpenAI-compatible", response.status);
     }
     const payload = (await response.json()) as {
       choices?: Array<{ message?: { content?: string } }>;

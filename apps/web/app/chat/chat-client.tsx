@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
+import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   AI_CHAT_RELATED_INCLUDE,
@@ -414,6 +415,7 @@ export default function ChatClient({
       </nav>
 
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
+      <SponsoredPromoBanner orgId={orgId} />
 
       {showStatusShell ? (
         <section className="app-card soft-panel product-hub-setup" role="status" aria-busy={shell === "loading"}>
