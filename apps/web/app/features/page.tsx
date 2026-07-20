@@ -6,7 +6,7 @@ import { ProductGlances } from "../../components/marketing/product-glances";
 export const metadata: Metadata = {
   title: "Product — Vantage",
   description:
-    "Soft-UI surfaces FRC teams open: Scouting, Event Day, Strategy / Pick desk, Season planning, CAD agent, Team & Business.",
+    "Soft-UI hubs for FRC: Competition, Team, Business, Build, and AI—plus Alliance Selection Desk, Season Planning, CAD, and AI keys.",
   alternates: { canonical: "/features" },
 };
 
@@ -18,15 +18,36 @@ const pillars: {
   status: Status;
   href?: string;
 }[] = [
-  { title: "Scouting", copy: "Offline forms, voice notes, form builder, sync.", status: "Available" },
-  { title: "Event Day", copy: "Command, My Day, match checklist, pit TV.", status: "Available" },
   {
-    title: "Strategy & picks",
-    copy: "Alliance Selection Desk, Pick clock, FRC Assistant.",
+    title: "Competition",
+    copy: "Command, My Day, Scouting, Strategy, Form builder, Match checklist, Pick clock, Alliance Selection Desk.",
     status: "Available",
     href: "/features/strategy",
   },
-  { title: "Season planning", copy: "Goals, milestones, owners—from real logs.", status: "Available" },
+  {
+    title: "Team",
+    copy: "Calendar, todos, practice, attendance, knowledge — Season Planning Workspace in More.",
+    status: "Available",
+    href: "/for-teams",
+  },
+  {
+    title: "Business",
+    copy: "Budget, sponsors, grants, partners, award evidence.",
+    status: "Available",
+    href: "/for-teams",
+  },
+  {
+    title: "Build",
+    copy: "Kickoff, CAD agent, Code Coach, FMEA, prototypes.",
+    status: "Available",
+    href: "/features/cad",
+  },
+  {
+    title: "AI",
+    copy: "Assistant chat, writer, budgets — AI API keys at /team/ai-keys; hosted routing on paid plans.",
+    status: "Available",
+    href: "/pricing",
+  },
   {
     title: "CAD agent",
     copy: "Approval-gated brief → Onshape or Fusion.",
@@ -39,14 +60,18 @@ const pillars: {
     status: "Available",
     href: "/features/code",
   },
-  { title: "Team & Business", copy: "Logistics, sponsors, grants, knowledge.", status: "Available", href: "/for-teams" },
-  { title: "AI keys & hosted AI", copy: "BYOK on Free; paid plans add managed routing.", status: "Available", href: "/pricing" },
+  {
+    title: "Strategy & picks",
+    copy: "Competition Strategy tab, Alliance Selection Desk, Pick clock, FRC Assistant.",
+    status: "Available",
+    href: "/features/strategy",
+  },
 ];
 
 const deepLinks = [
-  { href: "/features/strategy", label: "Strategy & Assistant", detail: "Pick desk, playbooks, sourced answers." },
-  { href: "/features/cad", label: "CAD agent", detail: "Brief → connector → review." },
-  { href: "/features/code", label: "Code Coach", detail: "Risk review with teaching notes." },
+  { href: "/features/strategy", label: "Strategy & Assistant", detail: "Competition Strategy, Pick clock, sourced answers." },
+  { href: "/features/cad", label: "CAD agent", detail: "Build hub · Onshape / Fusion." },
+  { href: "/features/code", label: "Code Coach", detail: "Build hub · risk review with teaching notes." },
   { href: "/workflow", label: "How it works", detail: "Capture → sync → decide → present." },
 ] as const;
 
@@ -61,9 +86,11 @@ export default function FeaturesPage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
-          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>The product map.</h1>
-          <p>Named hubs teams open—scouting through business—not a vague ops platform.</p>
+          <p>
+            Soft-UI hubs teams open after sign-in: Competition, Team, Business, Build, and AI—plus featured tools like
+            Alliance Selection Desk and Season Planning.
+          </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
               Join the waitlist
@@ -77,8 +104,8 @@ export default function FeaturesPage() {
         <section className="lux-showcase" aria-labelledby="product-show-title">
           <div className="lux-content">
             <header className="lux-section-head">
-              <h2 id="product-show-title">What teams open first.</h2>
-              <p>Marketing previews only.</p>
+              <h2 id="product-show-title">Hubs with real tab names.</h2>
+              <p>CSS recreation of Soft-UI chrome—not live screenshots, not DEMO metrics.</p>
             </header>
             <ProductGlances />
           </div>

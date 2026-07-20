@@ -16,9 +16,9 @@ const assistantJobs = [
 ] as const;
 
 const scoutFeeds = [
-  { title: "Strategy Soft-UI", copy: "Win/loss factors from attributed scout facts." },
-  { title: "Pick desk", copy: "Shared alliance board with scout evidence attached." },
-  { title: "Event Day", copy: "Same event context on Command and My Day." },
+  { title: "Competition · Strategy", copy: "Factors from attributed scout facts—empty until scouted." },
+  { title: "Alliance Selection Desk", copy: "Shared alliance board with scout evidence attached." },
+  { title: "Command / My Day", copy: "Same event context on the Competition hub." },
   { title: "FRC Assistant", copy: "Answers cite sources; no invented win %." },
 ] as const;
 
@@ -28,10 +28,9 @@ export default function StrategyFeaturePage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
-          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>Strategy you can inspect.</h1>
           <p>
-            Soft-UI Strategy, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced facts only.
+            Competition Strategy tab, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced facts only.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
@@ -68,7 +67,7 @@ export default function StrategyFeaturePage() {
           <div className="lux-content">
             <header>
               <span className="section-id">WHERE IT SHOWS UP</span>
-              <h2 id="scout-feed-title">Same scout feed across Soft-UI.</h2>
+              <h2 id="scout-feed-title">Same scout feed across hubs.</h2>
             </header>
             <div className="supporting-status-grid">
               {scoutFeeds.map((item) => (
