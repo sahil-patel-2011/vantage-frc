@@ -1,13 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { priorityLabel } from "../../lib/spare-robot-kit";
 import { CHECKLIST_STATUSES, type SpareRobotKitView } from "../../lib/spare-robot-kit/compute-spare-robot-kit";
 import type { ChecklistStatus, KitPriority } from "../../lib/spare-robot-kit/types";
+import {
+  SPARE_ROBOT_KIT_RELATED_INCLUDE,
+  classifySpareRobotKitShell,
+  formatSpareRobotKitMetric,
+  spareRobotKitNextActions,
+  spareRobotKitRelatedLinks,
+  spareRobotKitSetupSteps,
+  spareRobotKitShellCopy,
+  shouldShowSpareRobotKitSummaryTiles,
+  type SpareRobotKitNextAction,
+  type SpareRobotKitShellKind,
+} from "../../lib/spare-robot-kit/spare-robot-kit-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./spare-robot-kit.css";
 
-const PRIORITY_TONE: Record<KitPriority, string> = {
-  critical: "demo",
+const PRIORITY_TONE: Record<KitPriority, BadgeTone | undefined> = {
+  critical: "danger",
   recommended: "setup",
   optional: "good",
 };
@@ -19,14 +43,145 @@ const STATUS_LABEL: Record<ChecklistStatus, string> = {
 
 type LiveView = Extract<SpareRobotKitView, { status: "live" }>;
 
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = spareRobotKitRelatedLinks(orgId, {
+    include: [...SPARE_ROBOT_KIT_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related srk-related" aria-label="Related build tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: SpareRobotKitNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions srk-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">FMEA, Inventory, and Spare Forecast — never DEMO pack lists.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function KitShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: SpareRobotKitShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = spareRobotKitNextActions({ orgId, shell });
+  const copy = spareRobotKitShellCopy(shell);
+  const buildHref = hubHref("/build", "spare-robot-kit", orgId);
+  const steps = shell === "setup" ? spareRobotKitSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page srk-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Spare Robot Kit"}
+          </>
+        }
+        title="Spare Robot Kit Checklist"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading spare robot kit checklist">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
+                Open FMEA
+              </a>
+              <a className="app-button secondary" href={withOrgHref("/inventory", orgId)}>
+                Open Inventory
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="srk-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">FMEA and Inventory — never DEMO pack lists.</p>
+          </header>
+          <ul className="srk-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted srk-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function SpareRobotKitClient() {
   const [view, setView] = useState<SpareRobotKitView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -53,6 +208,29 @@ export default function SpareRobotKitClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const candidateCount = view?.status === "live" ? view.candidateItems.length : 0;
+  const checklistCount = view?.status === "live" ? view.checklists.length : 0;
+
+  const shell = classifySpareRobotKitShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    candidateCount,
+    checklistCount,
+  });
+  const shellCopy = spareRobotKitShellCopy(shell);
+  const nextActions = spareRobotKitNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    candidateCount,
+    checklistCount,
+  });
+  const buildHref = hubHref("/build", "spare-robot-kit", orgId);
+  const showTiles = shouldShowSpareRobotKitSummaryTiles(candidateCount, checklistCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -81,37 +259,64 @@ export default function SpareRobotKitClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <KitShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <KitShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <KitShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page srk-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
+            <a href={buildHref}>Build</a>
             {" / Spare Robot Kit"}
           </>
         }
         title="Spare Robot Kit Checklist"
-        description="Generates a competition spare-parts kit checklist by cross-referencing inventory spare bins against FMEA repeat-failure history — pack what's actually failed, not a guess."
+        description="Generates a competition spare-parts kit by cross-referencing inventory spare bins against FMEA repeat-failure history — never DEMO pack lists."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="srk-header-actions">
+          <RelatedStrip orgId={orgId} />
+          {view.seasons.length > 0 ? (
+            <label className="app-muted srk-filter">
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -120,37 +325,18 @@ export default function SpareRobotKitClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the spare-robot-kit checklist"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <CandidatesPanel view={view} busy={busy} mutate={mutate} />
-          {view.checklists.length > 0 ? <ChecklistsList view={view} busy={busy} mutate={mutate} /> : null}
-        </div>
-      )}
+      {showTiles ? (
+        <Panel className="srk-panel">
+          <div className="srk-stats">
+            <StatTile label="Kit candidates" value={formatSpareRobotKitMetric(candidateCount, loaded)} />
+            <StatTile label="Checklists" value={formatSpareRobotKitMetric(checklistCount, loaded)} />
+          </div>
+        </Panel>
+      ) : null}
+
+      <CandidatesPanel view={view} busy={busy} mutate={mutate} />
+      {view.checklists.length > 0 ? <ChecklistsList view={view} busy={busy} mutate={mutate} /> : null}
+      <NextActionsPanel actions={nextActions} />
     </main>
   );
 }
@@ -169,24 +355,24 @@ function CandidatesPanel({
   if (view.candidateItems.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No kit candidates yet"
         badgeTone="setup"
         title="No spares are currently matched to FMEA history"
-        description="Once spare-category inventory items are tagged with a subsystem that has logged FMEA failures, Vantage will surface what to pack for competition."
+        description="Once spare-category inventory items are tagged with a subsystem that has logged FMEA failures, Vantage will surface what to pack — never DEMO kits."
       />
     );
   }
 
   return (
-    <Panel>
-      <header style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <h2 style={{ margin: 0 }}>Kit candidates</h2>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+    <Panel id="spare-robot-kit-candidates" className="srk-panel">
+      <header className="srk-candidates-header">
+        <h2>Kit candidates</h2>
+        <div className="srk-generate">
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder={`Spare robot kit — ${view.seasonYear}`}
-            style={{ minWidth: 220 }}
           />
           <button
             type="button"
@@ -201,16 +387,16 @@ function CandidatesPanel({
           </button>
         </div>
       </header>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10, marginTop: 12 }}>
+      <ul className="srk-candidate-list">
         {view.candidateItems.map((item) => (
-          <li key={item.itemId} className="app-card soft-panel" style={{ display: "grid", gap: 6 }}>
-            <header style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={item.itemId} className="app-card soft-panel srk-candidate-card">
+            <header className="srk-candidate-header">
               <div>
-                <span className={`app-badge ${PRIORITY_TONE[item.priority]}`}>{priorityLabel(item.priority)}</span>
-                <strong style={{ display: "block", marginTop: 4 }}>{item.itemName}</strong>
+                <Badge tone={PRIORITY_TONE[item.priority]}>{priorityLabel(item.priority)}</Badge>
+                <strong className="srk-item-name">{item.itemName}</strong>
                 <small className="app-muted">
-                  {item.subsystem ?? "Unmatched subsystem"} · {item.quantityOnHand} on hand · {item.failureCount} FMEA
-                  failure(s) this season
+                  {item.subsystem ?? "Unmatched subsystem"} · {item.quantityOnHand} on hand · {item.failureCount}{" "}
+                  FMEA failure(s) this season
                 </small>
               </div>
             </header>
@@ -232,17 +418,17 @@ function ChecklistsList({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Checklists</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel id="spare-robot-kit-checklists" className="srk-panel">
+      <h2>Checklists</h2>
+      <ul className="srk-checklist-list">
         {view.checklists.map((checklist) => {
           const packedCount = checklist.items.filter((item) => item.packed).length;
           return (
-            <li key={checklist.id} className="app-card soft-panel" style={{ display: "grid", gap: 6 }}>
-              <header style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+            <li key={checklist.id} className="app-card soft-panel srk-checklist-card">
+              <header className="srk-checklist-header">
                 <div>
                   <strong>{checklist.title}</strong>
-                  <small className="app-muted" style={{ display: "block" }}>
+                  <small className="app-muted srk-block">
                     {STATUS_LABEL[checklist.status]} · {packedCount}/{checklist.items.length} packed
                   </small>
                 </div>
@@ -260,10 +446,10 @@ function ChecklistsList({
                 </button>
               </header>
               <small className="app-muted">{checklist.rationale}</small>
-              <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 4 }}>
+              <ul className="srk-pack-list">
                 {checklist.items.map((item) => (
-                  <li key={item.itemId} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-                    <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <li key={item.itemId} className="srk-pack-row">
+                    <label className="srk-pack-label">
                       <input
                         type="checkbox"
                         checked={item.packed}
@@ -279,7 +465,7 @@ function ChecklistsList({
                 ))}
               </ul>
               {checklist.status !== "finalized" ? (
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div className="srk-status-actions">
                   {CHECKLIST_STATUSES.filter((status) => status !== checklist.status).map((status) => (
                     <button
                       key={status}

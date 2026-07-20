@@ -1,26 +1,183 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { fieldBudgetPhaseLabel } from "../../lib/scout-field-budget";
 import type { ScoutFieldBudgetView } from "../../lib/scout-field-budget/compute-scout-field-budget";
 import type { FieldBudgetLintResult, FieldBudgetSeverity } from "../../lib/scout-field-budget/types";
+import {
+  SCOUT_FIELD_BUDGET_RELATED_INCLUDE,
+  classifyScoutFieldBudgetShell,
+  formatScoutFieldBudgetMetric,
+  scoutFieldBudgetNextActions,
+  scoutFieldBudgetRelatedLinks,
+  scoutFieldBudgetSetupSteps,
+  scoutFieldBudgetShellCopy,
+  shouldShowScoutFieldBudgetSummaryTiles,
+  type ScoutFieldBudgetNextAction,
+  type ScoutFieldBudgetShellKind,
+} from "../../lib/scout-field-budget/scout-field-budget-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./scout-field-budget.css";
 
-function severityTone(severity: FieldBudgetSeverity): string {
-  if (severity === "critical") return "demo";
-  if (severity === "warning") return "setup";
-  return "good";
-}
+const severityBadgeTone: Record<FieldBudgetSeverity, BadgeTone | undefined> = {
+  critical: "danger",
+  warning: "setup",
+  ok: "good",
+};
 
 type LiveView = Extract<ScoutFieldBudgetView, { status: "live" }>;
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = scoutFieldBudgetRelatedLinks(orgId, {
+    include: [...SCOUT_FIELD_BUDGET_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related sfb-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: ScoutFieldBudgetNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions sfb-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Forms, Scouting, and Schema A/B — never DEMO field totals.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function BudgetShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: ScoutFieldBudgetShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = scoutFieldBudgetNextActions({ orgId, shell });
+  const copy = scoutFieldBudgetShellCopy(shell);
+  const competitionHref = hubHref("/competition", "scout-field-budget", orgId);
+  const steps = shell === "setup" ? scoutFieldBudgetSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page sfb-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Field-Count Budget"}
+          </>
+        }
+        title="Scouting Field-Count Budget"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading field-count budget">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href="#scout-field-budget-lint">
+                Lint a schema
+              </a>
+              <a className="app-button secondary" href={hubHref("/competition", "forms", orgId)}>
+                Open Form builder
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="sfb-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Forms and Scouting — never DEMO field totals.</p>
+          </header>
+          <ul className="sfb-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted sfb-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function ScoutFieldBudgetClient() {
   const [view, setView] = useState<ScoutFieldBudgetView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -44,6 +201,28 @@ export default function ScoutFieldBudgetClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const snapshotCount = view?.status === "live" ? view.summary.totalSnapshots : 0;
+  const overBudgetCount = view?.status === "live" ? view.summary.overBudgetCount : 0;
+
+  const shell = classifyScoutFieldBudgetShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    snapshotCount,
+  });
+  const shellCopy = scoutFieldBudgetShellCopy(shell);
+  const nextActions = scoutFieldBudgetNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    snapshotCount,
+    overBudgetCount,
+  });
+  const competitionHref = hubHref("/competition", "scout-field-budget", orgId);
+  const showTiles = shouldShowScoutFieldBudgetSummaryTiles(snapshotCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -71,18 +250,44 @@ export default function ScoutFieldBudgetClient() {
     [orgId, busy],
   );
 
+  if (shell === "loading") {
+    return <BudgetShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <BudgetShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <BudgetShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page sfb-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Field-Count Budget"}
           </>
         }
         title="Scouting Field-Count Budget"
-        description="Log a scouting schema's per-phase field count and lint it against a realistic per-match budget before it hits the field."
-      />
+        description="Log a scouting schema's per-phase field count and lint it against a realistic per-match budget — never DEMO field totals."
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -90,83 +295,45 @@ export default function ScoutFieldBudgetClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the field-count budget linter"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <BudgetTiles view={view} />
-          <SnapshotForm busy={busy} mutate={mutate} />
-          {view.summary.totalSnapshots > 0 ? <SnapshotList view={view} busy={busy} mutate={mutate} /> : <NoSnapshots />}
-        </div>
-      )}
-    </main>
-  );
-}
-
-function BudgetTiles({ view }: { view: LiveView }) {
-  const { summary, budgets } = view;
-  const tiles = [
-    { label: "Schemas linted", value: String(summary.totalSnapshots) },
-    { label: "Over budget", value: String(summary.overBudgetCount) },
-    { label: "Within budget", value: String(summary.okCount) },
-    { label: "Avg live-match fields", value: String(summary.averageLiveFields) },
-  ];
-  return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Budget at a glance</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {showTiles ? (
+        <Panel className="sfb-panel">
+          <h2>Budget at a glance</h2>
+          <div className="sfb-stats">
+            <StatTile label="Schemas linted" value={formatScoutFieldBudgetMetric(view.summary.totalSnapshots, loaded)} />
+            <StatTile label="Over budget" value={formatScoutFieldBudgetMetric(view.summary.overBudgetCount, loaded)} />
+            <StatTile label="Within budget" value={formatScoutFieldBudgetMetric(view.summary.okCount, loaded)} />
+            <StatTile
+              label="Avg live-match fields"
+              value={formatScoutFieldBudgetMetric(view.summary.averageLiveFields, loaded)}
+            />
           </div>
-        ))}
-      </div>
-      <div style={{ marginTop: 12 }}>
-        <strong className="app-muted">Per-phase budgets</strong>
-        <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-          {Object.entries(budgets).map(([phase, budget]) => (
-            <li key={phase}>
-              {fieldBudgetPhaseLabel(phase as Parameters<typeof fieldBudgetPhaseLabel>[0])}: {budget} fields
-            </li>
-          ))}
-        </ul>
-      </div>
-    </Panel>
-  );
-}
+          <div>
+            <strong className="app-muted">Per-phase budgets</strong>
+            <ul className="sfb-budget-list">
+              {Object.entries(view.budgets).map(([phase, budget]) => (
+                <li key={phase}>
+                  {fieldBudgetPhaseLabel(phase as Parameters<typeof fieldBudgetPhaseLabel>[0])}: {budget} fields
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Panel>
+      ) : null}
 
-function NoSnapshots() {
-  return (
-    <EmptyState
-      badge="No schemas linted yet"
-      badgeTone="setup"
-      title="Log your first schema snapshot"
-      description="Record how many fields each match phase of your scouting schema asks for and see whether it fits a realistic per-match budget."
-    />
+      <SnapshotForm busy={busy} mutate={mutate} />
+      {view.summary.totalSnapshots > 0 ? (
+        <SnapshotList view={view} busy={busy} mutate={mutate} />
+      ) : (
+        <EmptyState
+          soft
+          badge="No schemas linted yet"
+          badgeTone="setup"
+          title="Log your first schema snapshot"
+          description="Record how many fields each match phase asks for — never DEMO schema packs."
+        />
+      )}
+      <NextActionsPanel actions={nextActions} />
+    </main>
   );
 }
 
@@ -180,9 +347,9 @@ function SnapshotList({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Linted schemas</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
+    <Panel id="scout-field-budget-list" className="sfb-panel">
+      <h2>Linted schemas</h2>
+      <ul className="sfb-lint-list">
         {view.lints.map((lint) => (
           <LintRow key={lint.snapshotId} lint={lint} busy={busy} mutate={mutate} />
         ))}
@@ -201,12 +368,12 @@ function LintRow({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <li style={{ display: "grid", gap: 6, borderBottom: "1px solid var(--app-border, #e5e7eb)", paddingBottom: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+    <li className="sfb-lint-row">
+      <div className="sfb-lint-header">
         <div>
-          <span className={`app-badge ${severityTone(lint.severity)}`}>{lint.severity.toUpperCase()}</span>
-          <strong style={{ marginLeft: 8 }}>{lint.schemaName}</strong>
-          <small className="app-muted" style={{ display: "block" }}>
+          <Badge tone={severityBadgeTone[lint.severity]}>{lint.severity.toUpperCase()}</Badge>
+          <strong className="sfb-lint-name">{lint.schemaName}</strong>
+          <small className="app-muted sfb-block">
             {lint.liveFields} live-match fields (budget {lint.liveBudget}) · {lint.totalFields} total fields
           </small>
         </div>
@@ -223,11 +390,11 @@ function LintRow({
           Delete
         </button>
       </div>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 2 }}>
+      <ul className="sfb-phase-list">
         {lint.phases.map((phase) => (
-          <li key={phase.phase} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+          <li key={phase.phase} className="sfb-phase-row">
             <span>{fieldBudgetPhaseLabel(phase.phase)}</span>
-            <small className="app-muted" style={{ color: phase.overBudget ? "var(--app-danger, #dc2626)" : undefined }}>
+            <small className={phase.overBudget ? "sfb-over" : "app-muted"}>
               {phase.count} / {phase.budget}
               {phase.overBudget ? ` (+${phase.overBy})` : ""}
             </small>
@@ -235,7 +402,7 @@ function LintRow({
         ))}
       </ul>
       {lint.recommendations.length > 0 ? (
-        <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+        <ul className="sfb-recs">
           {lint.recommendations.map((rec) => (
             <li key={rec}>
               <small className="app-muted">{rec}</small>
@@ -272,7 +439,9 @@ function SnapshotForm({
 
   return (
     <Panel
+      id="scout-field-budget-lint"
       as="form"
+      className="sfb-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.schemaName.trim()) return;
@@ -288,9 +457,8 @@ function SnapshotForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Lint a schema</h2>
+      <h2>Lint a schema</h2>
       <FormGrid min={160}>
         <FormRow label="Schema name">
           <input value={form.schemaName} onChange={set("schemaName")} placeholder="2026 Reefscape v2" required />

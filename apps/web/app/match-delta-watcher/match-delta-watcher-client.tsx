@@ -1,21 +1,175 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { matchDeltaAlertTypeLabel, matchDeltaSeverityLabel } from "../../lib/match-delta-watcher";
 import type { MatchDeltaWatcherView } from "../../lib/match-delta-watcher/compute-match-delta-watcher";
+import {
+  MATCH_DELTA_WATCHER_RELATED_INCLUDE,
+  classifyMatchDeltaWatcherShell,
+  formatMatchDeltaWatcherMetric,
+  formatMatchDeltaWatcherRate,
+  matchDeltaWatcherNextActions,
+  matchDeltaWatcherRelatedLinks,
+  matchDeltaWatcherSetupSteps,
+  matchDeltaWatcherShellCopy,
+  shouldShowMatchDeltaWatcherSummaryTiles,
+  type MatchDeltaWatcherNextAction,
+  type MatchDeltaWatcherShellKind,
+} from "../../lib/match-delta-watcher/match-delta-watcher-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./match-delta-watcher.css";
 
-function severityTone(severity: string): string {
-  if (severity === "critical") return "demo";
-  if (severity === "watch") return "setup";
-  return "good";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+const severityTone: Record<string, BadgeTone | undefined> = {
+  critical: "danger",
+  watch: "setup",
+  info: "good",
+};
 
 type LiveView = Extract<MatchDeltaWatcherView, { status: "live" }>;
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = matchDeltaWatcherRelatedLinks(orgId, {
+    include: [...MATCH_DELTA_WATCHER_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related mdw-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: MatchDeltaWatcherNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions mdw-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy, Pick List, and Command — never DEMO upset alerts.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function WatcherShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: MatchDeltaWatcherShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = matchDeltaWatcherNextActions({ orgId, shell });
+  const copy = matchDeltaWatcherShellCopy(shell);
+  const competitionHref = hubHref("/competition", "match-delta-watcher", orgId);
+  const steps = shell === "setup" ? matchDeltaWatcherSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page mdw-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Match-Delta Watcher"}
+          </>
+        }
+        title="Match-Delta Watcher"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading match-delta watcher">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={hubHref("/competition", "strategy", orgId)}>
+                Open Strategy
+              </a>
+              <a className="app-button secondary" href={hubHref("/competition", "command", orgId)}>
+                Open Command
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="mdw-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Strategy and Pick List — never DEMO upset alerts.</p>
+          </header>
+          <ul className="mdw-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted mdw-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function MatchDeltaWatcherClient() {
   const [view, setView] = useState<MatchDeltaWatcherView | null>(null);
@@ -23,8 +177,6 @@ export default function MatchDeltaWatcherClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [eventKey, setEventKey] = useState<string | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((eventOverride?: string) => {
     setFetchFailed(false);
@@ -51,6 +203,28 @@ export default function MatchDeltaWatcherClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const watchedCount = view?.status === "live" ? view.summary.totalWatchedMatches : 0;
+  const unacknowledgedCount = view?.status === "live" ? view.summary.unacknowledgedAlerts : 0;
+
+  const shell = classifyMatchDeltaWatcherShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    watchedCount,
+  });
+  const shellCopy = matchDeltaWatcherShellCopy(shell);
+  const nextActions = matchDeltaWatcherNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    watchedCount,
+    unacknowledgedCount,
+  });
+  const competitionHref = hubHref("/competition", "match-delta-watcher", orgId);
+  const showTiles = shouldShowMatchDeltaWatcherSummaryTiles(watchedCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -79,21 +253,52 @@ export default function MatchDeltaWatcherClient() {
     [orgId, eventKey, busy],
   );
 
+  if (shell === "loading") {
+    return <WatcherShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <WatcherShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <WatcherShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
+  if (view?.status !== "live") {
+    return <WatcherShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page mdw-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Match-Delta Watcher"}
           </>
         }
         title="Match-Delta Watcher"
-        description="Watches official match results as they land and flags when reality diverges from our prediction model or pick-list priorities."
+        description="Watches official match results as they land and flags when reality diverges from your prediction model or pick-list priorities — never DEMO upset alerts."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.events.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div className="mdw-header-actions">
+          <RelatedStrip orgId={orgId} />
+          {view.events.length > 0 ? (
+            <label className="app-muted mdw-filter">
               Event
               <select
                 value={eventKey ?? view.eventKey}
@@ -111,16 +316,15 @@ export default function MatchDeltaWatcherClient() {
               </select>
             </label>
           ) : null}
-          {view?.status === "live" ? (
-            <button
-              type="button"
-              className="app-button secondary"
-              disabled={busy}
-              onClick={() => mutate({ action: "scan-event" })}
-            >
-              Scan for deltas
-            </button>
-          ) : null}
+          <button
+            id="match-delta-scan"
+            type="button"
+            className="app-button secondary"
+            disabled={busy}
+            onClick={() => mutate({ action: "scan-event" })}
+          >
+            Scan for deltas
+          </button>
         </div>
       </PageHeader>
 
@@ -130,62 +334,30 @@ export default function MatchDeltaWatcherClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the match-delta watcher"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <ConfigPanel view={view} busy={busy} mutate={mutate} />
-          <AlertsPanel view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
-
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Watched matches", value: String(summary.totalWatchedMatches) },
-    { label: "Prediction accuracy", value: pct(summary.accuracyRate) },
-    { label: "Total alerts", value: String(summary.totalAlerts) },
-    { label: "Critical alerts", value: String(summary.criticalAlerts) },
-    { label: "Unacknowledged", value: String(summary.unacknowledgedAlerts) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {showTiles ? (
+        <Panel className="mdw-panel">
+          <div className="mdw-stats">
+            <StatTile label="Watched matches" value={formatMatchDeltaWatcherMetric(view.summary.totalWatchedMatches, loaded)} />
+            <StatTile
+              label="Prediction accuracy"
+              value={formatMatchDeltaWatcherRate(view.summary.accuracyRate, loaded, {
+                hasWatched: watchedCount > 0,
+              })}
+            />
+            <StatTile label="Total alerts" value={formatMatchDeltaWatcherMetric(view.summary.totalAlerts, loaded)} />
+            <StatTile label="Critical alerts" value={formatMatchDeltaWatcherMetric(view.summary.criticalAlerts, loaded)} />
+            <StatTile
+              label="Unacknowledged"
+              value={formatMatchDeltaWatcherMetric(view.summary.unacknowledgedAlerts, loaded)}
+            />
           </div>
-        ))}
-      </div>
-    </Panel>
+        </Panel>
+      ) : null}
+
+      <ConfigPanel view={view} busy={busy} mutate={mutate} />
+      <AlertsPanel view={view} busy={busy} mutate={mutate} />
+      <NextActionsPanel actions={nextActions} />
+    </main>
   );
 }
 
@@ -201,18 +373,18 @@ function ConfigPanel({
   const enabled = view.config?.enabled ?? true;
   const threshold = view.config?.upsetThreshold ?? 0.65;
   return (
-    <Panel>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+    <Panel className="mdw-panel">
+      <header className="mdw-config-header">
         <div>
-          <h2 style={{ margin: 0 }}>Watch settings — {view.eventKey}</h2>
+          <h2>Watch settings — {view.eventKey}</h2>
           <small className="app-muted">
-            {view.config ? "Configured" : "Not yet configured — using defaults until saved."}
+            {view.config ? "Configured from real scans" : "Not yet configured — using defaults until saved. Never DEMO thresholds."}
           </small>
         </div>
-        <span className={`app-badge ${enabled ? "good" : "setup"}`}>{enabled ? "Enabled" : "Disabled"}</span>
+        <Badge tone={enabled ? "good" : "setup"}>{enabled ? "Enabled" : "Disabled"}</Badge>
       </header>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginTop: 12 }}>
-        <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      <div className="mdw-config-controls">
+        <label className="mdw-check">
           <input
             type="checkbox"
             checked={enabled}
@@ -223,7 +395,7 @@ function ConfigPanel({
           />
           Watch this event
         </label>
-        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <label className="app-muted mdw-filter">
           Critical confidence threshold
           <input
             type="number"
@@ -235,7 +407,6 @@ function ConfigPanel({
             onChange={(event) =>
               mutate({ action: "set-config", enabled, upsetThreshold: Number(event.target.value) || 0.65 })
             }
-            style={{ width: 80 }}
           />
         </label>
       </div>
@@ -255,32 +426,28 @@ function AlertsPanel({
   if (view.alerts.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No deltas yet"
         badgeTone="setup"
         title="No divergence detected"
-        description="Run a scan once official results are posted for this event to compare them against your predictions and pick list."
+        description="Run a scan once official results are posted for this event — never DEMO upset packs."
       />
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Alerts</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel id="match-delta-alerts" className="mdw-panel">
+      <h2>Alerts</h2>
+      <ul className="mdw-alert-list">
         {view.alerts.map((alert) => (
-          <li
-            key={alert.id}
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-          >
+          <li key={alert.id} className="mdw-alert-row">
             <div>
-              <span className={`app-badge ${severityTone(alert.severity)}`}>
+              <Badge tone={severityTone[alert.severity] ?? "neutral"}>
                 {matchDeltaSeverityLabel(alert.severity)}
-              </span>{" "}
+              </Badge>{" "}
               <strong>
                 {alert.compLevel.toUpperCase()} {alert.matchNumber} · {matchDeltaAlertTypeLabel(alert.alertType)}
               </strong>
-              <small className="app-muted" style={{ display: "block" }}>
-                {alert.summary}
-              </small>
+              <small className="app-muted mdw-block">{alert.summary}</small>
               {alert.teamsInvolved.length > 0 ? (
                 <small className="app-muted">{alert.teamsInvolved.join(", ")}</small>
               ) : null}
