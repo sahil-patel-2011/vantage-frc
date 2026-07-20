@@ -15,6 +15,7 @@ const AI_TABS = [
 ] as const;
 
 const CROSS_HUB = [
+  { id: "ai-keys", label: "AI API keys", href: "/team/ai-keys" },
   { id: "competition", label: "Competition", href: "/competition" },
   { id: "build", label: "Build", href: "/build" },
 ] as const;

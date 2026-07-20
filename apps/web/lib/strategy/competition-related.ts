@@ -10,6 +10,7 @@ export const COMPETITION_RELATED_LINKS = [
   { id: "match-checklist", label: "Match checklist", tab: "match-checklist" },
   { id: "pick-clock", label: "Pick clock", tab: "pick-clock" },
   { id: "chemistry", label: "Chemistry", tab: "chemistry" },
+  { id: "alliance-desk", label: "Alliance desk", href: "/alliance-selection-desk" },
   { id: "draft", label: "Draft board", href: "/strategy/draft" },
   { id: "coverage", label: "Scout coverage", href: "/scout-coverage-live" },
 ] as const;

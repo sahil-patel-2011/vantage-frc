@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { hubById, hubHref, hubMoreTabs, hubPrimaryTabs, isHubTab, PRODUCT_HUBS } from "./hubs";
+import {
+  hubById,
+  hubFeaturedMoreTabs,
+  hubHref,
+  hubMoreTabs,
+  hubPrimaryTabs,
+  isHubTab,
+  PRODUCT_HUBS,
+} from "./hubs";
 
 describe("product hubs", () => {
   it("defines the five shipping hubs", () => {
@@ -75,7 +83,17 @@ describe("product hubs", () => {
       "finance",
     ]);
     expect(hubMoreTabs(ai).map((tab) => tab.id)).toEqual(
-      expect.arrayContaining(["usage", "decisions", "decision-search", "season-report"]),
+      expect.arrayContaining(["ai-keys", "usage", "decisions", "decision-search", "season-report"]),
     );
+  });
+
+  it("pins Alliance desk, Season planning, and AI keys as featured More tools", () => {
+    expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toContain(
+      "alliance-selection-desk",
+    );
+    expect(hubFeaturedMoreTabs(hubById("team")).map((tab) => tab.id)).toContain(
+      "season-planning-workspace",
+    );
+    expect(hubFeaturedMoreTabs(hubById("ai")).map((tab) => tab.id)).toEqual(["ai-keys"]);
   });
 });

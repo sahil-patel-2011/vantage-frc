@@ -1,4 +1,15 @@
 .product-hub-tabs { margin: 0 0 12px; }
+.product-hub-featured {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.product-hub-featured .app-button {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
 .product-hub-more {
   margin: 0 0 16px;
   padding: 10px 14px;
@@ -24,6 +35,9 @@
   text-decoration: none;
 }
 .product-hub-more-links a:hover { text-decoration: underline; }
+.product-hub-more-links a[data-featured="yes"] {
+  font-weight: 700;
+}
 .product-hub-panel > main.module-page,
 .product-hub-panel > main.intel-app,
 .product-hub-panel > main.workspace-page,
