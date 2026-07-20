@@ -72,3 +72,30 @@
 .strategy-demo-optin {
   margin-top: 0;
 }
+
+.strategy-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media print {
+  .strategy-page .strategy-related,
+  .strategy-page .strategy-header-actions .app-button,
+  .strategy-page .strategy-next-actions-panel,
+  .strategy-page .app-badge {
+    display: none !important;
+  }
+
+  .strategy-page {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .strategy-page .app-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+}
