@@ -479,7 +479,7 @@ export default function AccountClient() {
     await signOutAndRedirect("/");
   }
 
-  const initial = (displayName.trim()?.[0] ?? account?.email?.trim()?.[0] ?? "V").toUpperCase();
+  const initial = (displayName.trim()?.[0] ?? account?.email?.trim()?.[0] ?? "?").toUpperCase();
   const orgId = org.orgId;
   const hasProfile = Boolean(displayName.trim());
   const emailDeliveryReady = account?.emailDelivery?.status !== "setup_required";

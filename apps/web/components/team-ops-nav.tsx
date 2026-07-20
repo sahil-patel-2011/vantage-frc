@@ -21,13 +21,29 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
   { key: "admin", href: "/team/admin", label: "Admin", match: (p) => p === "/team/admin" || p.startsWith("/team/admin/") },
 ];
 
-type TeamOpsNavProps = { orgId?: string | null; active?: TeamOpsKey; className?: string };
+/** Page-scoped strips — avoid dumping every TeamOps pill on Logistics / Calendar / Background. */
+const CONTEXT_KEYS: Partial<Record<TeamOpsKey, TeamOpsKey[]>> = {
+  logistics: ["logistics", "calendar", "attendance", "practice"],
+  calendar: ["calendar", "practice", "attendance", "messages", "logistics"],
+  admin: ["admin", "start", "messages"],
+};
 
-export function TeamOpsNav({ orgId, active, className }: TeamOpsNavProps) {
+type TeamOpsNavProps = {
+  orgId?: string | null;
+  active?: TeamOpsKey;
+  /** Limit which keys appear; defaults to a focused set when `active` has a context map. */
+  keys?: TeamOpsKey[];
+  className?: string;
+};
+
+export function TeamOpsNav({ orgId, active, keys, className }: TeamOpsNavProps) {
   const pathname = usePathname() || "";
+  const allow = keys ?? (active ? CONTEXT_KEYS[active] : undefined);
+  const links = allow ? LINKS.filter((link) => allow.includes(link.key)) : LINKS;
+
   return (
     <nav className={["team-ops-nav", className].filter(Boolean).join(" ")} aria-label="Team operations">
-      {LINKS.map((link) => {
+      {links.map((link) => {
         const selected = active ? link.key === active : link.match(pathname);
         return (
           <a key={link.key} href={withOrgHref(link.href, orgId)} className={selected ? "active" : undefined} aria-current={selected ? "page" : undefined}>

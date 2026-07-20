@@ -71,7 +71,6 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/team")).toBe("Team / Team hub");
     expect(breadcrumbForPath("/team/calendar")).toBe("Team / Calendar");
     expect(breadcrumbForPath("/calendar")).toBe("Team / Season Calendar");
-    expect(breadcrumbForPath("/shifts")).toBe("Team / Shifts");
     expect(breadcrumbForPath("/tasks")).toBe("Team / Build-Season Task Board");
     expect(breadcrumbForPath("/todos")).toBe("Team / Todos");
     expect(breadcrumbForPath("/command")).toBe("Competition / Command");

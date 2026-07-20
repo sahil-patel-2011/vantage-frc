@@ -127,14 +127,19 @@ export async function GET() {
       };
     });
 
+    const displayName =
+      profile.profile?.displayName?.trim() ||
+      session.user.name?.trim() ||
+      null;
     const displayFirst =
       profile.profile?.firstName?.trim() ||
-      (session.user.name ?? "").split(" ")[0] ||
+      (displayName ?? "").split(" ")[0] ||
       null;
 
     return Response.json({
       authenticated: true,
-      name: session.user.name,
+      name: displayName,
+      displayName,
       firstName: displayFirst,
       email: session.user.email,
       image: session.user.image,
