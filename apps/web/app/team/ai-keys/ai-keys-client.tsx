@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader } from "../../../components/ui";
+import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
+import { hubHref } from "../../../lib/nav/hubs";
 import {
   AI_KEYS_RELATED_INCLUDE,
   aiKeysBillingNote,
@@ -281,18 +282,32 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       docsHint: BYOK_PROVIDER_META[id].docsHint,
     }));
 
+  const aiHubHref = hubHref("/ai", "chat", orgId);
+
   return (
-    <main className="module-page ai-keys-page">
+    <main className="module-page ai-keys-page soft-gate">
       <PageHeader
+        breadcrumbs={
+          <>
+            <a href={aiHubHref}>AI</a>
+            {" / API keys"}
+          </>
+        }
         navPath="/team/ai-keys"
         title="AI API keys"
-        description="Bring your own OpenAI, Anthropic, or Google keys for Free workspaces. Paid plans add Vantage-hosted AI—cheaper than own keys—with Soft-UI product surfaces built in."
+        description="Bring your own OpenAI, Anthropic, or Google keys for Free workspaces. Paid plans add Vantage-hosted AI—cheaper than own keys—with Soft-UI product surfaces built in. Never DEMO usage totals."
       />
 
       {orgId ? <RelatedStrip orgId={orgId} /> : null}
 
-      {shell === "loading" || shell === "empty" || shell === "auth_required" || (shell === "error" && !payload) ? (
-        <ShellPanel shell={shell === "loading" ? "loading" : shell} detail={message} orgId={orgId} />
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading AI API keys">
+          <SoftBlockSkeleton lines={3} />
+        </div>
+      ) : null}
+
+      {shell === "empty" || shell === "auth_required" || (shell === "error" && !payload) ? (
+        <ShellPanel shell={shell} detail={message} orgId={orgId} />
       ) : null}
 
       {payload?.setupRequired ? (

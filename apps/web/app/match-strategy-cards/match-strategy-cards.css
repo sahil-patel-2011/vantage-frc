@@ -1,0 +1,21 @@
+/* Soft-UI Match Strategy Cards — never DEMO game plans. */
+.msc-page{display:grid;gap:16px}
+.msc-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.msc-related{display:flex;flex-wrap:wrap;gap:8px}
+.msc-next-actions{margin:0}
+.msc-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.msc-layout{display:grid;gap:16px}
+.msc-panel{display:grid;gap:12px}
+.msc-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.msc-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.msc-tip{margin:0}
+.msc-card{display:grid;gap:12px}
+.msc-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.msc-alliances{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.msc-roles{display:grid;gap:6px}
+.msc-role-row{display:flex;gap:8px;flex-wrap:wrap}
+.msc-card-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:900px){
+  .msc-header-actions{justify-content:flex-start}
+  .msc-next-actions li,.msc-setup-steps li{flex-direction:column;align-items:stretch}
+}

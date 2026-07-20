@@ -1,20 +1,176 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  ErrorState,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { matchLabel, renderCardText } from "../../lib/match-strategy-cards";
 import type { MatchStrategyCardsView } from "../../lib/match-strategy-cards/compute-match-strategy-cards";
+import {
+  MATCH_STRATEGY_CARDS_RELATED_INCLUDE,
+  classifyMatchStrategyCardsShell,
+  formatMatchStrategyCardsMetric,
+  matchStrategyCardsNextActions,
+  matchStrategyCardsRelatedLinks,
+  matchStrategyCardsSetupSteps,
+  matchStrategyCardsShellCopy,
+  shouldShowMatchStrategyCardsSummaryTiles,
+  type MatchStrategyCardsNextAction,
+  type MatchStrategyCardsShellKind,
+} from "../../lib/match-strategy-cards/match-strategy-cards-related";
 import type { MatchStrategyCard, MatchStrategyRoleAssignment } from "../../lib/match-strategy-cards/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./match-strategy-cards.css";
 
 type LiveView = Extract<MatchStrategyCardsView, { status: "live" }>;
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = matchStrategyCardsRelatedLinks(orgId, {
+    include: [...MATCH_STRATEGY_CARDS_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related msc-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: MatchStrategyCardsNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions msc-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Strategy, Checklist, and Command — never DEMO game plans.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function CardsShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: MatchStrategyCardsShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = matchStrategyCardsNextActions({ orgId, shell });
+  const copy = matchStrategyCardsShellCopy(shell);
+  const competitionHref = hubHref("/competition", "match-strategy-cards", orgId);
+  const steps = shell === "setup" ? matchStrategyCardsSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page msc-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Match Strategy Cards"}
+          </>
+        }
+        title="Match Strategy Cards"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading match strategy cards">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={hubHref("/competition", "strategy", orgId)}>
+                Open Strategy
+              </a>
+              <a className="app-button secondary" href={hubHref("/competition", "command", orgId)}>
+                Open Command
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="msc-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Strategy and Command — never DEMO game plans.</p>
+          </header>
+          <ul className="msc-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted msc-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function MatchStrategyCardsClient() {
   const [view, setView] = useState<MatchStrategyCardsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -38,6 +194,30 @@ export default function MatchStrategyCardsClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const cardCount = view?.status === "live" ? view.cards.length : 0;
+  const savedCount = view?.status === "live" ? view.cards.filter((c) => c.hasCard).length : 0;
+
+  const shell = classifyMatchStrategyCardsShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    cardCount,
+  });
+  const shellCopy = matchStrategyCardsShellCopy(shell);
+  const nextActions = matchStrategyCardsNextActions({
+    orgId,
+    shell,
+    cardCount,
+    savedCount,
+  });
+  const relatedLinks = matchStrategyCardsRelatedLinks(orgId, {
+    include: [...MATCH_STRATEGY_CARDS_RELATED_INCLUDE],
+  });
+  const competitionHref = hubHref("/competition", "match-strategy-cards", orgId);
+  const showTiles = shouldShowMatchStrategyCardsSummaryTiles(cardCount);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -65,44 +245,30 @@ export default function MatchStrategyCardsClient() {
     [orgId, busy],
   );
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Match Strategy Cards"}
-          </>
-        }
-        title="Match Strategy Cards"
-        description="Printable per-match game plans for the drive team — roles, auto assignment, defense focus, key threats."
+  if (shell === "loading") {
+    return <CardsShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <CardsShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <CardsShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
       >
-        {orgId ? (
-          <a className="app-button secondary" href={`/competition?orgId=${encodeURIComponent(orgId)}`}>
-            Competition hub
-          </a>
-        ) : null}
-      </PageHeader>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Match Strategy Cards"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+        {view?.status === "setup_required" && view.steps.length > 0 ? (
           <ol className="strategy-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
@@ -114,44 +280,73 @@ export default function MatchStrategyCardsClient() {
               </li>
             ))}
           </ol>
-        </EmptyState>
-      ) : (
-        <CardList view={view} busy={busy} mutate={mutate} />
-      )}
-    </main>
-  );
-}
-
-function CardList({
-  view,
-  busy,
-  mutate,
-}: {
-  view: LiveView;
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
-  if (view.cards.length === 0) {
-    return (
-      <EmptyState
-        badge="No matches yet"
-        badgeTone="setup"
-        title="No scheduled matches found"
-        description="Once the match schedule is synced for your active event, cards will appear here."
-      />
+        ) : null}
+      </CardsShell>
     );
   }
+
+  if (shell === "empty") {
+    return <CardsShell description={shellCopy.description} orgId={orgId} shell="empty" />;
+  }
+
+  if (view?.status !== "live") {
+    return <CardsShell description={shellCopy.description} orgId={orgId} shell="setup" />;
+  }
+
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <Panel>
-        <span className="app-muted">
-          {view.eventName ?? view.eventKey} · Team {view.teamNumber} · {view.cards.length} scheduled match(es)
-        </span>
-      </Panel>
-      {view.cards.map((card) => (
-        <StrategyCardPanel key={card.matchKey} card={card} eventKey={view.eventKey} busy={busy} mutate={mutate} />
-      ))}
-    </div>
+    <main className="module-page msc-page">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Match Strategy Cards"}
+          </>
+        }
+        title="Match Strategy Cards"
+        description="Printable per-match game plans for the drive team — roles, auto assignment, defense focus, key threats. Never DEMO game plans. Cross-check Strategy, Match checklist, and Command."
+      >
+        <div className="msc-header-actions">
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </PageHeader>
+
+      {error ? (
+        <p className="telemetry-status" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <NextActionsPanel actions={nextActions} />
+
+      {showTiles ? (
+        <section className="msc-stats" aria-label="Match Strategy Cards counts">
+          <StatTile label="Scheduled" value={formatMatchStrategyCardsMetric(cardCount, true)} />
+          <StatTile label="Saved plans" value={formatMatchStrategyCardsMetric(savedCount, true)} />
+        </section>
+      ) : null}
+
+      <div id="match-strategy-cards-list" className="msc-layout">
+        <Panel className="msc-panel">
+          <span className="app-muted">
+            {view.eventName ?? view.eventKey} · Team {view.teamNumber} · {view.cards.length} scheduled
+            match(es)
+          </span>
+        </Panel>
+        {view.cards.map((card) => (
+          <StrategyCardPanel
+            key={card.matchKey}
+            card={card}
+            eventKey={view.eventKey}
+            busy={busy}
+            mutate={mutate}
+          />
+        ))}
+      </div>
+    </main>
   );
 }
 
@@ -175,26 +370,36 @@ function StrategyCardPanel({
     card.roleAssignments.length ? card.roleAssignments : [{ role: "Driver", assignee: "" }],
   );
 
-  const partners = card.alliances
-    .find((a) => a.isOwnAlliance)
-    ?.teamNumbers.filter((n) => n !== card.alliances.find((x) => x.isOwnAlliance)?.teamNumbers[0]) ?? [];
+  const partners =
+    card.alliances
+      .find((a) => a.isOwnAlliance)
+      ?.teamNumbers.filter((n) => n !== card.alliances.find((x) => x.isOwnAlliance)?.teamNumbers[0]) ??
+    [];
   const opponents = card.alliances.filter((a) => !a.isOwnAlliance).flatMap((a) => a.teamNumbers);
 
   return (
-    <Panel className="print-strategy-card" style={{ display: "grid", gap: 12 }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+    <Panel className="print-strategy-card msc-panel msc-card">
+      <header className="msc-card-head">
         <div>
           <h2 style={{ margin: 0 }}>{matchLabel(card)}</h2>
           <small className="app-muted">
             {card.scheduledAt ? new Date(card.scheduledAt).toLocaleString() : "Time TBD"}
           </small>
         </div>
-        <span className={`app-badge ${card.ownAllianceColor === "red" ? "demo" : "good"}`}>
+        <Badge
+          tone={
+            card.ownAllianceColor === "red"
+              ? "danger"
+              : card.ownAllianceColor === "blue"
+                ? "info"
+                : "neutral"
+          }
+        >
           {card.ownAllianceColor ? card.ownAllianceColor.toUpperCase() : "TBD"} alliance
-        </span>
+        </Badge>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
+      <div className="msc-alliances">
         {card.alliances.map((alliance) => (
           <div key={alliance.color}>
             <strong className="app-muted">
@@ -221,10 +426,10 @@ function StrategyCardPanel({
         <textarea value={driverNotes} onChange={(e) => setDriverNotes(e.target.value)} rows={2} />
       </FormRow>
 
-      <div style={{ display: "grid", gap: 6 }}>
+      <div className="msc-roles">
         <span className="app-muted">Role assignments</span>
         {roles.map((role, index) => (
-          <div key={index} style={{ display: "flex", gap: 8 }}>
+          <div key={index} className="msc-role-row">
             <input
               value={role.role}
               placeholder="Role (e.g. Driver)"
@@ -238,33 +443,35 @@ function StrategyCardPanel({
               placeholder="Assignee"
               aria-label={`Assignee for role ${index + 1}`}
               onChange={(e) =>
-                setRoles((prev) => prev.map((r, i) => (i === index ? { ...r, assignee: e.target.value } : r)))
+                setRoles((prev) =>
+                  prev.map((r, i) => (i === index ? { ...r, assignee: e.target.value } : r)),
+                )
               }
             />
-            <button
-              type="button"
-              className="text-button"
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Remove role ${index + 1}`}
               onClick={() => setRoles((prev) => prev.filter((_, i) => i !== index))}
             >
               Remove
-            </button>
+            </Button>
           </div>
         ))}
         <div>
-          <button
-            type="button"
-            className="app-button secondary"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setRoles((prev) => [...prev, { role: "", assignee: "" }])}
           >
             Add role
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          className="app-button"
+      <div className="msc-card-actions">
+        <Button
+          variant="primary"
           disabled={busy}
           onClick={() =>
             mutate({
@@ -281,14 +488,13 @@ function StrategyCardPanel({
           }
         >
           Save card
-        </button>
-        <button type="button" className="app-button secondary" onClick={() => window.print()}>
+        </Button>
+        <Button variant="secondary" onClick={() => window.print()}>
           Print
-        </button>
+        </Button>
         {card.hasCard ? (
-          <button
-            type="button"
-            className="text-button"
+          <Button
+            variant="ghost"
             disabled={busy}
             onClick={() => {
               if (window.confirm(`Delete the strategy card for ${matchLabel(card)}?`)) {
@@ -297,15 +503,11 @@ function StrategyCardPanel({
             }}
           >
             Delete
-          </button>
+          </Button>
         ) : null}
-        <button
-          type="button"
-          className="text-button"
-          onClick={() => void navigator.clipboard?.writeText(renderCardText(card))}
-        >
+        <Button variant="ghost" onClick={() => void navigator.clipboard?.writeText(renderCardText(card))}>
           Copy text
-        </button>
+        </Button>
       </div>
     </Panel>
   );

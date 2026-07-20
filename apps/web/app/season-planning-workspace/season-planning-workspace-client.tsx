@@ -1,18 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Badge,
   type BadgeTone,
   Button,
-  CardGridSkeleton,
   EmptyState,
   ErrorState,
   FormGrid,
   FormRow,
   PageHeader,
   Panel,
-  TextBlockSkeleton,
+  SoftBlockSkeleton,
+  StatTile,
 } from "../../components/ui";
 import {
   GOAL_CATEGORIES,
@@ -22,7 +22,22 @@ import {
   workItemStatusLabel,
   type SeasonPlanningWorkspaceView,
 } from "../../lib/season-planning-workspace";
+import {
+  SEASON_PLANNING_RELATED_INCLUDE,
+  classifySeasonPlanningShell,
+  formatSeasonPlanningMetric,
+  seasonPlanningNextActions,
+  seasonPlanningRelatedLinks,
+  seasonPlanningSetupSteps,
+  seasonPlanningShellCopy,
+  shouldShowSeasonPlanningSummaryTiles,
+  type SeasonPlanningNextAction,
+  type SeasonPlanningShellKind,
+} from "../../lib/season-planning-workspace/season-planning-workspace-related";
 import type { GoalCategory, SeasonGoal, WorkItemStatus } from "../../lib/season-planning-workspace/types";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./season-planning-workspace.css";
 
 type LiveView = Extract<SeasonPlanningWorkspaceView, { status: "live" }>;
 type EmptyView = Extract<SeasonPlanningWorkspaceView, { status: "empty" }>;
@@ -32,6 +47,132 @@ function statusTone(status: WorkItemStatus): BadgeTone {
   if (status === "in_progress") return "info";
   if (status === "dropped") return "neutral";
   return "setup";
+}
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = seasonPlanningRelatedLinks(orgId, {
+    include: [...SEASON_PLANNING_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related season-plan-related" aria-label="Related team tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: SeasonPlanningNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions season-plan-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Goals, Calendar, and Attendance — never DEMO completion %.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function PlanShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: SeasonPlanningShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = seasonPlanningNextActions({ orgId, shell });
+  const copy = seasonPlanningShellCopy(shell);
+  const teamHref = hubHref("/team", "season-planning-workspace", orgId);
+  const steps = shell === "setup" ? seasonPlanningSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page season-plan-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Season Planning Workspace"}
+          </>
+        }
+        title="Season Planning Workspace"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading season planning">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="season-plan-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Goals and Calendar — never DEMO completion %.</p>
+          </header>
+          <ul className="season-plan-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted season-plan-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
 }
 
 function GoalCard({
@@ -50,17 +191,17 @@ function GoalCard({
   const [milestoneOwner, setMilestoneOwner] = useState("");
 
   return (
-    <Panel>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+    <Panel className="season-plan-panel">
+      <div className="season-plan-goal-head">
         <div>
           <h3 style={{ margin: 0 }}>{goal.title}</h3>
-          <p className="app-muted" style={{ margin: "4px 0 0" }}>
+          <p className="app-muted season-plan-tip">
             {goalCategoryLabel(goal.category)}
             {goal.ownerName ? ` · Owner ${goal.ownerName}` : ""}
             {goal.targetDate ? ` · Target ${goal.targetDate}` : ""}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <div className="season-plan-badges">
           <Badge tone={statusTone(goal.status)}>{workItemStatusLabel(goal.status)}</Badge>
           {goal.milestoneTotal > 0 ? (
             <Badge tone="neutral">
@@ -72,7 +213,7 @@ function GoalCard({
         </div>
       </div>
 
-      <label className="app-muted" style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10 }}>
+      <label className="app-muted season-plan-status-label">
         Goal status
         <select
           value={goal.status}
@@ -90,10 +231,10 @@ function GoalCard({
       </label>
 
       {goal.milestones.length > 0 ? (
-        <ul style={{ margin: "12px 0 0", paddingLeft: "1.1rem", display: "grid", gap: 6 }}>
+        <ul className="season-plan-milestones">
           {goal.milestones.map((m) => (
             <li key={m.id}>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <div className="season-plan-badges">
                 <strong>{m.title}</strong>
                 <Badge tone={statusTone(m.status)}>{workItemStatusLabel(m.status)}</Badge>
                 {m.dueOn ? <span className="app-muted">Due {m.dueOn}</span> : null}
@@ -181,9 +322,6 @@ export default function SeasonPlanningWorkspaceClient() {
   const [goalOwner, setGoalOwner] = useState("");
   const [goalTarget, setGoalTarget] = useState("");
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
-  const planId = view && view.status === "live" ? view.plan.id : null;
-
   const load = useCallback((seasonOverride?: number, planOverride?: string | null) => {
     setFetchFailed(false);
     setError("");
@@ -214,6 +352,30 @@ export default function SeasonPlanningWorkspaceClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const planId = view && view.status === "live" ? view.plan.id : null;
+  const goalsTotal = view?.status === "live" ? view.progress.goalsTotal : 0;
+  const milestonesTotal = view?.status === "live" ? view.progress.milestonesTotal : 0;
+
+  const shell = classifySeasonPlanningShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+  });
+  const shellCopy = seasonPlanningShellCopy(shell);
+  const nextActions = seasonPlanningNextActions({
+    orgId,
+    shell,
+    goalsTotal,
+    milestonesTotal,
+  });
+  const relatedLinks = seasonPlanningRelatedLinks(orgId, {
+    include: [...SEASON_PLANNING_RELATED_INCLUDE],
+  });
+  const teamHref = hubHref("/team", "season-planning-workspace", orgId);
+  const showTiles = shouldShowSeasonPlanningSummaryTiles({ goalsTotal, milestonesTotal });
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -249,16 +411,61 @@ export default function SeasonPlanningWorkspaceClient() {
     return `/api/season-planning-workspace?${query.toString()}`;
   }, [orgId, planId, season]);
 
-  return (
-    <main className="module-page">
-      <PageHeader
-        breadcrumbs={<>Team / Season Planning Workspace</>}
-        title="Season Planning Workspace"
-        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data — never DEMO completion %."
+  if (shell === "loading") {
+    return <PlanShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+
+  if (shell === "error") {
+    return (
+      <PlanShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+
+  if (shell === "setup") {
+    return (
+      <PlanShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+        {view?.status === "setup_required" && view.steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {view.steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </PlanShell>
+    );
+  }
+
+  return (
+    <main className="module-page season-plan-page">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Season Planning Workspace"}
+          </>
+        }
+        title="Season Planning Workspace"
+        description="Goals → milestones → owners with calendar sync hooks. Progress uses real attendance and build-task data — never DEMO completion %. Cross-check Season Goals, Calendar, and Attendance."
+      >
+        <div className="season-plan-header-actions">
           {view && "seasons" in view && view.seasons.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <label className="app-muted season-plan-select">
               Season
               <select
                 value={season ?? view.seasonYear}
@@ -277,55 +484,60 @@ export default function SeasonPlanningWorkspaceClient() {
             </label>
           ) : null}
           {icsHref ? (
-            <a className="app-button secondary" href={icsHref}>
+            <a id="season-plan-ics" className="app-button secondary" href={icsHref}>
               Export milestones .ics
             </a>
           ) : null}
+          {relatedLinks.map((link) => (
+            <a key={link.id} className="app-button secondary" href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </div>
       </PageHeader>
 
       {error ? (
-        <p role="alert" style={{ color: "var(--app-danger, #c0392b)" }}>
+        <p role="alert" className="telemetry-status">
           {error}
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <ErrorState
-          title="Could not load Season Planning Workspace"
-          message="A network or server issue prevented loading. Try again."
-          onRetry={() => load()}
-        />
-      ) : view == null ? (
-        <div aria-busy="true" aria-label="Loading season planning" style={{ display: "grid", gap: 16 }}>
-          <TextBlockSkeleton lines={2} />
-          <CardGridSkeleton cols={2} rows={2} />
-        </div>
-      ) : view.status === "setup_required" ? (
-        <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : view.status === "empty" ? (
-        <div style={{ display: "grid", gap: 16 }}>
+      <NextActionsPanel actions={nextActions} />
+
+      {showTiles && view?.status === "live" ? (
+        <section className="season-plan-stats" aria-label="Season Planning counts">
+          <StatTile
+            label="Goals done"
+            value={`${formatSeasonPlanningMetric(view.progress.goalsDone, true)}/${formatSeasonPlanningMetric(view.progress.goalsTotal, true)}`}
+          />
+          <StatTile
+            label="Milestones"
+            value={
+              view.progress.milestoneCompletionPct != null
+                ? `${view.progress.milestoneCompletionPct}%`
+                : "—"
+            }
+          />
+          <StatTile
+            label="Attendance events"
+            value={formatSeasonPlanningMetric(view.progress.signals.attendanceEventCount, true)}
+          />
+        </section>
+      ) : null}
+
+      {shell === "empty" && view?.status === "empty" ? (
+        <div className="season-plan-layout">
           <EmptyState
             soft
             badge="No plan"
             badgeTone="setup"
             title={(view as EmptyView).message}
-            description="Create a plan, then add goals and dated milestones. Attendance and build-task signals appear once those modules have real rows."
+            description={shellCopy.description}
           />
           <Panel
+            id="season-plan-create"
             as="form"
+            className="season-plan-panel"
             onSubmit={(e) => {
               e.preventDefault();
               void mutate({
@@ -342,11 +554,11 @@ export default function SeasonPlanningWorkspaceClient() {
             </Button>
           </Panel>
         </div>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <Panel>
+      ) : view?.status === "live" ? (
+        <div id="season-plan-goals" className="season-plan-layout">
+          <Panel className="season-plan-panel">
             <h3 style={{ marginTop: 0 }}>{(view as LiveView).plan.title}</h3>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div className="season-plan-badges">
               <Badge tone="neutral">
                 Goals {(view as LiveView).progress.goalsDone}/{(view as LiveView).progress.goalsTotal}
               </Badge>
@@ -374,7 +586,9 @@ export default function SeasonPlanningWorkspaceClient() {
           </Panel>
 
           <Panel
+            id="season-plan-add-goal"
             as="form"
+            className="season-plan-panel"
             onSubmit={(e) => {
               e.preventDefault();
               if (!goalTitle.trim()) return;
@@ -437,7 +651,7 @@ export default function SeasonPlanningWorkspaceClient() {
               description="Break it into milestones with owners and due dates. Progress % stays blank until milestones or build tasks exist."
             />
           ) : (
-            <div style={{ display: "grid", gap: 16 }}>
+            <div className="season-plan-layout">
               {(view as LiveView).goals.map((goal) => (
                 <GoalCard
                   key={goal.id}
@@ -450,7 +664,7 @@ export default function SeasonPlanningWorkspaceClient() {
             </div>
           )}
         </div>
-      )}
+      ) : null}
     </main>
   );
 }
