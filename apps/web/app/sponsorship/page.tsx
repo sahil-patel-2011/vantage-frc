@@ -1,3 +1,4 @@
+import { SponsorsFundingGate } from "../../components/hub-access-gate";
 import SponsorshipClient from "./sponsorship-client";
 import "./sponsorship.css";
 
@@ -8,5 +9,9 @@ export const metadata = {
 };
 
 export default function SponsorshipPage() {
-  return <SponsorshipClient />;
+  return (
+    <SponsorsFundingGate breadcrumbs={<>Business / Sponsorship</>}>
+      <SponsorshipClient />
+    </SponsorsFundingGate>
+  );
 }

@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { auth } from "@vantage/core";
+import { assertSponsorsAllowed, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
@@ -39,8 +39,32 @@ export async function requireOrgMember(
   return { role, admin: role === "owner" || role === "admin" };
 }
 
+/** Org member + funding profile allows sponsor Soft-UI / APIs. */
+export async function requireSponsorsMember(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+): Promise<{ role: string; admin: boolean }> {
+  const member = await requireOrgMember(client, orgId, userId);
+  try {
+    await assertSponsorsAllowed(client, orgId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Sponsor tools are disabled for this organization";
+    throw new TenantHttpError(403, message);
+  }
+  return member;
+}
+
 export async function requireOrgAdmin(client: PoolClient, orgId: string, userId: string) {
   const member = await requireOrgMember(client, orgId, userId);
+  if (!member.admin) {
+    throw new TenantHttpError(403, "Organization administrator access required");
+  }
+  return member;
+}
+
+export async function requireSponsorsAdmin(client: PoolClient, orgId: string, userId: string) {
+  const member = await requireSponsorsMember(client, orgId, userId);
   if (!member.admin) {
     throw new TenantHttpError(403, "Organization administrator access required");
   }
@@ -85,7 +109,10 @@ export function tenantErrorResponse(error: unknown, fallback = "Request failed")
     return Response.json({ error: error.message }, { status: error.status });
   }
   const message = error instanceof Error ? error.message : fallback;
-  const status = /access denied|administrator access|membership required/i.test(message) ? 403 : 400;
+  const status =
+    /access denied|administrator access|membership required|Sponsor tools are disabled/i.test(message)
+      ? 403
+      : 400;
   return Response.json({ error: message }, { status });
 }
 
