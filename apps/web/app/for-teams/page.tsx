@@ -4,33 +4,33 @@ import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 export const metadata: Metadata = {
   title: "For teams — Vantage",
   description:
-    "How FRC mentors and student leads run scouting, Event Day, alliance selection, season planning, and team ops in Vantage.",
+    "How FRC mentors and student leads run Competition, Team, Business, Build, and AI hubs in Vantage.",
   alternates: { canonical: "/for-teams" },
 };
 
 const roles = [
   {
     title: "Mentors & coaches",
-    copy: "Invite-only org, budgets, AI keys, and audit-friendly exports.",
+    copy: "Invite-only org, budgets, AI keys at /team/ai-keys, audit-friendly exports.",
   },
   {
     title: "Drive & strategy",
-    copy: "Alliance Selection Desk, Pick clock, and sourced Assistant answers.",
+    copy: "Competition Strategy, Alliance Selection Desk, Pick clock, sourced Assistant.",
   },
   {
     title: "Scouts & pit",
-    copy: "Offline forms, Event Day Command / My Day, match checklist.",
+    copy: "Offline forms, Command / My Day, Match checklist.",
   },
   {
     title: "Business leads",
-    copy: "Sponsors, grants, logistics, and season planning in one place.",
+    copy: "Sponsors, grants, logistics — Business hub and Season Planning on Team.",
   },
 ] as const;
 
 const season = [
   { title: "Preseason", copy: "Goals, forms, TBA link, AI keys or hosted plan." },
-  { title: "Build season", copy: "CAD briefs, Code Coach, knowledge, logistics." },
-  { title: "Event weekend", copy: "Scouting sync, Command board, pick desk." },
+  { title: "Build season", copy: "Build hub: CAD briefs, Code Coach, knowledge, logistics." },
+  { title: "Event weekend", copy: "Scouting sync, Command board, Alliance Selection Desk." },
   { title: "After", copy: "Exports, season report, next milestones." },
 ] as const;
 
@@ -40,10 +40,10 @@ export default function ForTeamsPage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
-          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>Built for the whole team.</h1>
           <p>
-            Mentors provision access. Students open Soft-UI hubs. Everyone shares one event context—no DEMO win rates.
+            Mentors provision access. Students open Competition, Team, Business, Build, and AI. Everyone shares one
+            event context—no DEMO win rates.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
@@ -74,8 +74,8 @@ export default function ForTeamsPage() {
         <section className="lux-season" aria-labelledby="season-title">
           <div className="lux-content">
             <header className="lux-section-head">
-              <h2 id="season-title">A calm season rhythm.</h2>
-              <p>Same product from kickoff through alliance selection.</p>
+              <h2 id="season-title">Season rhythm.</h2>
+              <p>Same hubs from kickoff through alliance selection.</p>
             </header>
             <ol className="lux-season-steps lux-season-steps-4">
               {season.map((item, index) => (

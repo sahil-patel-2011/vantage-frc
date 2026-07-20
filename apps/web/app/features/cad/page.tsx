@@ -34,10 +34,10 @@ export default function CadFeaturePage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
-          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>CAD starts with a brief.</h1>
           <p>
-            Onshape hosted jobs or a Fusion desktop relay—credentials required. No unreviewed mutations.
+            Build hub CAD agent: Onshape hosted jobs or a Fusion desktop relay—credentials required. No unreviewed
+            mutations.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
@@ -53,29 +53,18 @@ export default function CadFeaturePage() {
           <div className="lux-content">
             <header className="lux-section-head">
               <h2>Confirm. Connect. Review.</h2>
+              <p>Build hub · CAD tab. Setup required until Onshape or Fusion is connected.</p>
             </header>
-            <div className="product-glances" aria-label="CAD workflow preview">
+            <ul className="lux-feature-grid">
               {steps.map((step) => (
-                <article className="product-glance" key={step.title}>
-                  <h3>{step.title}</h3>
-                  <p>{step.copy}</p>
-                  <div className="product-glance-frame" aria-hidden="true">
-                    <header>
-                      <span>{step.frame}</span>
-                      <b>Preview</b>
-                    </header>
-                    <ul>
-                      {step.lines.map((line) => (
-                        <li key={line}>{line}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </article>
+                <li key={step.title}>
+                  <strong>{step.title}</strong>
+                  <span>
+                    {step.copy} {step.lines.join(" · ")}
+                  </span>
+                </li>
               ))}
-              <p className="product-glances-note">
-                Marketing preview. CAD stays setup-required until connected.
-              </p>
-            </div>
+            </ul>
           </div>
         </section>
 

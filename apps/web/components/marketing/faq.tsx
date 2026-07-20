@@ -7,11 +7,11 @@ const c = PRICING_CATALOG;
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Competition ops for FRC: Scouting, Event Day, Strategy / Pick desk, Season planning, CAD agent, Team & Business, and metered FRC Assistant. Empty until real data exists.",
+    a: "Competition operations for FRC teams: Soft-UI hubs for Competition, Team, Business, Build, and AI—including Scouting, Command / My Day, Strategy, Alliance Selection Desk, Season Planning, CAD, and metered Assistant. Empty until real data exists.",
   },
   {
     q: "What do teams open first?",
-    a: "Scouting (offline + voice), Event Day Command / My Day, Strategy and Alliance Selection Desk, then logistics and Business when the season needs them.",
+    a: "Competition hub (Scouting, Command, My Day, Strategy), Alliance Selection Desk for picks, Season Planning on Team, then Business and Build when the season needs them. Free teams add AI keys at /team/ai-keys.",
   },
   {
     q: "Does it work offline?",

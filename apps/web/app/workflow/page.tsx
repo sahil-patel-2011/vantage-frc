@@ -4,7 +4,7 @@ import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 export const metadata: Metadata = {
   title: "How it works — Vantage",
   description:
-    "How TBA reference, scouting, Strategy, Pick desk, Event Day, and CAD share one org event context.",
+    "How TBA reference, scouting, Strategy, Alliance Selection Desk, Competition Command, and CAD share one org event context.",
   alternates: { canonical: "/workflow" },
 };
 
@@ -12,8 +12,8 @@ const stages = [
   ["1", "Reference", "TBA / Statbotics caches with freshness.", "Setup required"],
   ["2", "Observe", "Offline forms + voice notes → attributed facts.", "Available"],
   ["3", "Reconcile", "Conflicts stay visible before models run.", "Available"],
-  ["4", "Decide", "Strategy, Pick desk, FRC Assistant—sourced.", "Available"],
-  ["5", "Execute", "Event Day boards, CAD briefs, exports.", "Setup required"],
+  ["4", "Decide", "Strategy, Alliance Selection Desk, FRC Assistant—sourced.", "Available"],
+  ["5", "Execute", "Competition Command / My Day, CAD briefs, exports.", "Setup required"],
 ] as const;
 
 export default function WorkflowPage() {
@@ -22,11 +22,10 @@ export default function WorkflowPage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
-          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>How it works.</h1>
           <p>
-            One event context. Scout facts feed Strategy, Pick desk, Event Day, and Assistant—never replace their
-            sources.
+            One event context. Scout facts feed Competition Strategy, Alliance Selection Desk, Command / My Day, and
+            Assistant—never replace their sources.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
@@ -61,7 +60,7 @@ export default function WorkflowPage() {
             <header>
               <span className="section-id">SCOUTING LOOP</span>
               <h2 id="workflow-scout-title">Capture → sync → decide → present.</h2>
-              <p>Same feed across Soft-UI hubs.</p>
+              <p>Same feed across Competition, Team, Build, and AI hubs.</p>
             </header>
             <ol className="integration-steps">
               <li>
@@ -77,12 +76,12 @@ export default function WorkflowPage() {
               <li>
                 <b>03</b>
                 <strong>Decide</strong>
-                <span>Strategy, Assistant, Pick desk.</span>
+                <span>Strategy, Assistant, Alliance Selection Desk.</span>
               </li>
               <li>
                 <b>04</b>
                 <strong>Present</strong>
-                <span>Event Day boards and exports.</span>
+                <span>Command boards and exports.</span>
               </li>
             </ol>
           </div>

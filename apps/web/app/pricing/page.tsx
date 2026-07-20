@@ -32,12 +32,11 @@ export default function PricingPage() {
       <SiteHeader />
       <main className="pricing-page">
         <section className="lux-route-hero pricing-hero">
-          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>Free core. Hosted AI when you want it.</h1>
           <p>
-            Free keeps Soft-UI competition ops with your own keys or local models. Paid plans add Vantage-hosted AI as
-            a service—cheaper than BYOK, with scouting, strategy, and Event Day built in. Hard cutoffs; no surprise
-            overage.
+            Free keeps Competition, Team, Business, and Build with your own keys or local models. Paid plans add
+            Vantage-hosted AI as a service—cheaper than BYOK—with scouting, strategy, and Event Day built in. Hard
+            cutoffs; no surprise overage.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
@@ -80,7 +79,6 @@ export default function PricingPage() {
 
         <section className="lux-waitlist pricing-waitlist" id="waitlist">
           <div>
-            <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
             <h2>Join the waitlist.</h2>
             <p>
               Access ${accessPrice} · Individual ${individualPro.monthlyUsd}/${individualMax.monthlyUsd} · Team $
