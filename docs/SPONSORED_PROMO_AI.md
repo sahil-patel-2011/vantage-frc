@@ -7,6 +7,8 @@ Env var **names** only (set values in Vercel or gitignored `.env.local` — neve
 - `GROQ_API_KEY` — failover
 - `COHERE_API_KEY` — failover
 
-**Promo:** FRC team number `1111` only, through **2026-10-18** (`funding_mode` / ledger `key_source=sponsored`, $0 Vantage charge). After expiry, Soft-UI banners + in-app `sponsored_promo.expired` notify owners/admins; AI falls back to BYOK.
+**Promo:** FRC team number `1111` only, through **2026-10-18** (`funding_mode` / ledger `key_source=sponsored`, $0 Vantage charge).
+
+**After expiry (AI-only):** Soft-UI banners + in-app `sponsored_promo.expired` notify owners/admins; sponsored Mistral/Cerebras/Groq/Cohere keys stop. Chat/metered AI falls back to BYOK or upgrade messaging. **Dashboard, hubs, membership, Media/Business, and all non-AI features keep working** — the promo date never gates org access.
 
 **Routing:** `resolveOrgChatAdapter` → sponsored failover pool (Mistral → Cerebras → Groq → Cohere on 429/quota) → `meteredAI` records `sponsored`.

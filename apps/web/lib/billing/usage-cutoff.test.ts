@@ -79,8 +79,17 @@ describe("cutoff Soft-UI error mapping", () => {
     expect(isCutoffError("CreditCapExceededError")).toBe(true);
     expect(isCutoffError("payg_not_enabled")).toBe(true);
     const msg = messageForCutoffError("managed_allowance_exhausted", "org-9");
-    expect(msg.title.toLowerCase()).toContain("allowance");
+    expect(msg.title.toLowerCase()).toMatch(/hosted ai|allowance|exhausted/);
     expect(msg.ctas.some((c) => c.checkoutAction === "credits" || c.id === "credits")).toBe(true);
+  });
+
+  it("maps sponsored_promo_expired to BYOK / upgrade CTAs (AI-only)", () => {
+    const msg = messageForCutoffError("sponsored_promo_expired", "org-1111");
+    expect(msg.title).toMatch(/Sponsored AI ended/i);
+    expect(msg.body).toMatch(/keeps working/i);
+    expect(msg.ctas.some((c) => c.id === "ai-keys")).toBe(true);
+    expect(msg.ctas.some((c) => c.id === "pricing")).toBe(true);
+    expect(msg.ctas.some((c) => c.checkoutAction === "credits")).toBe(false);
   });
 });
 
@@ -94,6 +103,17 @@ describe("resolveCutoffErrorCode (chat / agent)", () => {
         hardCutoff: true,
       }),
     ).toBe("usage_hard_cutoff");
+  });
+
+  it("prefers sponsored_promo_expired over generic usage_hard_cutoff", () => {
+    expect(
+      resolveCutoffErrorCode(402, {
+        error: "Promotional sponsored AI ended",
+        code: "usage_hard_cutoff",
+        reason: "sponsored_promo_expired",
+        hardCutoff: true,
+      }),
+    ).toBe("sponsored_promo_expired");
   });
 
   it("maps credit and budget cutoff codes without requiring status 402", () => {
