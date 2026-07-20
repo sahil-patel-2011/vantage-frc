@@ -3,21 +3,102 @@ import { SiteFooter, SiteHeader } from "../../../components/marketing/site-heade
 
 export const metadata: Metadata = {
   title: "AI CAD builder — Vantage",
-  description: "The implemented Vantage CAD workflow: confirmed briefs, connector setup, approval gates, job steps, and geometry checkpoints.",
+  description:
+    "The implemented Vantage CAD workflow: confirmed briefs, connector setup, approval gates, job steps, and geometry checkpoints.",
   alternates: { canonical: "/features/cad" },
 };
 
 export default function CadFeaturePage() {
-  return <div className="marketing-site marketing-v2 marketing-dense"><SiteHeader /><main className="route-page">
-    <header className="route-hero split-hero"><div><div className="showcase-kicker"><span className="brand-chip">Vantage</span><span className="section-id">AI CAD BUILDER / SETUP REQUIRED</span></div><h1>Start with engineering intent, not an unreviewed mutation.</h1><p>The current product supports Onshape hosted jobs and a paired Fusion 360 desktop relay. Both require configured credentials or connections; Vantage does not claim to control a local CAD session from Vercel.</p><a className="button primary" href="/signin">Sign in to configure access</a></div>
-      <div className="cad-screen" aria-label="Demo data representation of the implemented CAD builder"><header><span>DEMO DATA</span><b>BRIEF CONFIRMED</b></header><section><small>ENGINEERING THREAD</small><h2>Intake roller guard</h2><p>Keep the frame perimeter clear. Use existing 10-32 mounting locations. Flag any interference before export.</p><ol><li><b>01</b> Sketch envelope <span>Completed</span></li><li><b>02</b> Extrude guard <span>Awaiting approval</span></li><li><b>03</b> Verify topology <span>Queued</span></li></ol></section></div>
-    </header>
-    <section className="cad-paths">
-      <article><span className="app-badge setup">Setup required*</span><h2>Onshape hosted</h2><p>Connect OAuth when ONSHAPE_OAUTH_* is configured, select a document/workspace/element, preview an allowlisted plan, approve required steps, and inspect topology/render checkpoints after mutations. *Enabled automatically once admin credentials exist.</p></article>
-      <article><span className="app-badge good">Local relay</span><h2>Fusion 360 (Win/mac)</h2><p>Pair a signed desktop relay. Jobs use leases and heartbeats; execution stays inside the user’s Autodesk session. Linux: Fusion Autodesk app unavailable — use Onshape or mock.</p></article>
-      <article><span className="app-badge good">Available</span><h2>Review controls</h2><p>Brief confirmation, per-step status, approval requirements, artifacts, checksums, and current checkpoint references are implemented in the CAD workspace. Demo renders are labeled — never presented as live production geometry.</p></article>
-    </section>
-    <section className="technical-note"><span className="section-id">OS MATRIX</span><h2>Installers and platforms</h2><p>CLI install scripts: <code>scripts/cad/install-cli.ps1</code> / <code>install-cli.sh</code>. Fusion add-in: <code>install-fusion-addin.ps1</code> / <code>.sh</code>. Unsigned package: <code>node scripts/cad/package-relay.mjs</code>. Docs: CAD_RELAY.md.</p></section>
-    <section className="technical-note"><span className="section-id">BOUNDARY</span><h2>AI assistance is not engineering certification.</h2><p>Review flags and generated geometry are suggestions. Teams remain responsible for fit, loads, materials, rules compliance, manufacturing, and safety review.</p></section>
-  </main><SiteFooter /></div>;
+  return (
+    <div className="marketing-site marketing-v2 marketing-dense marketing-quiet">
+      <SiteHeader />
+      <main className="route-page">
+        <header className="route-hero brand-route-hero">
+          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
+          <span className="section-id">AI CAD BUILDER · SETUP REQUIRED</span>
+          <h1>Start with engineering intent, not an unreviewed mutation.</h1>
+          <p>
+            Onshape hosted jobs and a paired Fusion 360 desktop relay. Both require configured credentials—Vantage does
+            not claim to control a local CAD session from Vercel.
+          </p>
+          <div className="route-hero-actions">
+            <a className="button primary" href="/signin">
+              Sign in to configure access
+            </a>
+            <a className="button secondary" href="/features">
+              Product overview
+            </a>
+          </div>
+        </header>
+
+        <section className="ops-preview-band product-show">
+          <header>
+            <span className="section-id">WORKFLOW</span>
+            <h2>Confirm the brief. Approve each step.</h2>
+            <p>Marketing preview of the CAD path—not live geometry.</p>
+          </header>
+          <div className="product-glances" aria-label="CAD workflow preview">
+            <article className="product-glance">
+              <h3>Brief</h3>
+              <p>Season constraints become an engineering thread before any mutation.</p>
+              <div className="product-glance-frame" aria-hidden="true">
+                <header>
+                  <span>CAD brief</span>
+                  <b>Preview</b>
+                </header>
+                <ul>
+                  <li>Intent confirmed</li>
+                  <li>Constraints listed</li>
+                  <li>Human gate first</li>
+                </ul>
+              </div>
+            </article>
+            <article className="product-glance">
+              <h3>Connectors</h3>
+              <p>Onshape OAuth or a paired Fusion relay when credentials exist.</p>
+              <div className="product-glance-frame" aria-hidden="true">
+                <header>
+                  <span>Setup</span>
+                  <b>Preview</b>
+                </header>
+                <ul>
+                  <li>Onshape hosted</li>
+                  <li>Fusion desktop relay</li>
+                  <li>Empty until connected</li>
+                </ul>
+              </div>
+            </article>
+            <article className="product-glance">
+              <h3>Review</h3>
+              <p>Per-step status, approvals, and checkpoints—teams stay responsible for engineering judgment.</p>
+              <div className="product-glance-frame" aria-hidden="true">
+                <header>
+                  <span>Controls</span>
+                  <b>Preview</b>
+                </header>
+                <ul>
+                  <li>Step approvals</li>
+                  <li>Topology checks</li>
+                  <li>Artifacts labeled</li>
+                </ul>
+              </div>
+            </article>
+            <p className="product-glances-note">
+              Marketing preview. Signed-in CAD stays setup-required until connectors are configured.
+            </p>
+          </div>
+        </section>
+
+        <section className="technical-note">
+          <span className="section-id">BOUNDARY</span>
+          <h2>AI assistance is not engineering certification.</h2>
+          <p>
+            Review flags and generated geometry are suggestions. Teams remain responsible for fit, loads, materials,
+            rules compliance, manufacturing, and safety review.
+          </p>
+        </section>
+      </main>
+      <SiteFooter />
+    </div>
+  );
 }
