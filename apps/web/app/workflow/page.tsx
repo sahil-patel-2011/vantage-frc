@@ -43,7 +43,7 @@ const stages = [
 
 export default function WorkflowPage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense">
+    <div className="marketing-site marketing-v2 marketing-dense marketing-quiet">
       <SiteHeader />
       <main className="route-page">
         <header className="route-hero">

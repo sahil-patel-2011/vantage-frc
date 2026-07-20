@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
-import { AssistantPreview, StrategyPreview } from "../../../components/marketing/product-demos";
 
 export const metadata: Metadata = {
   title: "FRC Assistant & Strategy — Vantage",
@@ -39,7 +38,7 @@ const scoutFeeds = [
   },
   {
     title: "Predictions",
-    copy: "Weighted-current models combine TBA/Statbotics with your org’s synced scout data, then show intervals, key factors, and caveats.",
+    copy: "Models combine TBA/Statbotics with your org’s synced scout data, then show intervals, key factors, and caveats.",
   },
   {
     title: "Pick lists",
@@ -53,31 +52,25 @@ const scoutFeeds = [
 
 export default function StrategyFeaturePage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense">
+    <div className="marketing-site marketing-v2 marketing-dense marketing-quiet">
       <SiteHeader />
       <main className="route-page">
-        <header className="route-hero split-hero">
-          <div>
-            <div className="showcase-kicker">
-              <span className="brand-chip">Vantage</span>
-              <span className="section-id">FRC ASSISTANT · STRATEGY · AVAILABLE</span>
-            </div>
-            <h1>Competition intel you can inspect—not a vanity dashboard.</h1>
-            <p>
-              Vantage’s FRC Assistant helps with strategy, matchups, opponent history, and robot capabilities inside your
-              team’s active event. Scouting is not a bolt-on spreadsheet: synced observations feed predictions, playbooks,
-              pick lists, and live ops with source labels intact.
-            </p>
-            <div className="route-hero-actions">
-              <a className="button primary" href="/signin">
-                Sign in to use Strategy &amp; Assistant
-              </a>
-              <a className="button secondary" href="#frc-assistant">
-                How the Assistant works
-              </a>
-            </div>
+        <header className="route-hero brand-route-hero">
+          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
+          <span className="section-id">FRC ASSISTANT · STRATEGY</span>
+          <h1>Competition intel you can inspect—not a vanity dashboard.</h1>
+          <p>
+            Strategy, matchups, opponent history, and robot capabilities inside your team’s active event. Synced
+            scouting feeds predictions and pick lists with source labels intact—empty until real data exists.
+          </p>
+          <div className="route-hero-actions">
+            <a className="button primary" href="/signin">
+              Sign in to use Strategy
+            </a>
+            <a className="button secondary" href="#frc-assistant">
+              How the Assistant works
+            </a>
           </div>
-          <StrategyPreview />
         </header>
 
         <section className="assistant-story" id="frc-assistant" aria-labelledby="assistant-title">
@@ -100,21 +93,15 @@ export default function StrategyFeaturePage() {
                 </article>
               ))}
             </div>
-            <AssistantPreview />
           </div>
         </section>
 
-        <section className="scout-integration" aria-labelledby="scout-integration-title">
+        <section className="supporting-gallery" aria-labelledby="scout-feed-title">
           <header>
-            <span className="section-id">SCOUTING ↔ EVERYTHING ELSE</span>
-            <h2 id="scout-integration-title">Scout once. The rest of the system stays current.</h2>
-            <p>
-              Offline match and pit forms—plus owner-published custom schemas and opt-in voice notes—sync into
-              organization-scoped facts. Those facts don’t sit in a dead archive—they inform Soft-UI Strategy, the
-              Assistant, predictions, pick lists, and day-of awareness as one connected loop.
-            </p>
+            <span className="section-id">SCOUTING FEEDS</span>
+            <h2 id="scout-feed-title">Observations that travel with the season.</h2>
           </header>
-          <div className="scout-feed-grid">
+          <div className="supporting-status-grid">
             {scoutFeeds.map((item) => (
               <article key={item.title}>
                 <h3>{item.title}</h3>
@@ -124,40 +111,19 @@ export default function StrategyFeaturePage() {
           </div>
         </section>
 
-        <section className="detail-proof-grid" aria-label="Strategy engine details">
-          <article>
-            <b>01</b>
-            <h2>Prediction with limits</h2>
-            <p>
-              Red/blue probabilities, effective sample size, confidence interval, model version, key factors, and
-              sparse-data caveats—built from TBA/Statbotics plus scout facts when available.
-            </p>
-          </article>
-          <article>
-            <b>02</b>
-            <h2>Explicit what-if</h2>
-            <p>
-              Point deltas are recorded as assumptions so a changed probability never masquerades as an observed result.
-            </p>
-          </article>
-          <article>
-            <b>03</b>
-            <h2>Soft-UI pick desk</h2>
-            <p>
-              Draft boards, collab pick lists, and pick-clock affordances live in the Competition Soft-UI hub—driven by
-              real coverage and capability tags your scouts recorded, never DEMO rankings.
-            </p>
-          </article>
-        </section>
-
-        <section className="technical-note">
-          <span className="section-id">PROVENANCE</span>
-          <h2>No DEMO fake dashboards as live product data.</h2>
-          <p>
-            Marketing previews on this page are labeled demo fixtures. Signed-in Strategy and the Assistant stay empty or
-            limited until workspace, event, and real metrics/scout inputs exist. Official results always outrank
-            estimates.
-          </p>
+        <section className="pricing-preview">
+          <div>
+            <span className="section-id">NEXT</span>
+            <h2>See the rest of the product, or join the waitlist.</h2>
+          </div>
+          <div className="pricing-preview-actions">
+            <a className="button primary" href="/#waitlist">
+              Join waitlist
+            </a>
+            <a className="button secondary" href="/features">
+              Product overview
+            </a>
+          </div>
         </section>
       </main>
       <SiteFooter />
