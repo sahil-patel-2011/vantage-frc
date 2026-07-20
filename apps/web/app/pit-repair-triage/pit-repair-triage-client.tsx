@@ -1,18 +1,44 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { triageDecisionLabel } from "../../lib/pit-repair-triage";
 import {
   TRIAGE_STATUSES,
   type PitRepairTriageView,
 } from "../../lib/pit-repair-triage/compute-pit-repair-triage";
 import type { TriageDecision, TriageStatus } from "../../lib/pit-repair-triage/types";
+import {
+  PIT_REPAIR_TRIAGE_RELATED_INCLUDE,
+  classifyPitRepairTriageShell,
+  formatPitRepairTriageMetric,
+  pitRepairTriageNextActions,
+  pitRepairTriageRelatedLinks,
+  pitRepairTriageSetupSteps,
+  pitRepairTriageShellCopy,
+  shouldShowPitRepairTriageSummaryTiles,
+  type PitRepairTriageNextAction,
+  type PitRepairTriageShellKind,
+} from "../../lib/pit-repair-triage/pit-repair-triage-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./pit-repair-triage.css";
 
-const DECISION_TONE: Record<TriageDecision, string> = {
+const DECISION_TONE: Record<TriageDecision, BadgeTone> = {
   fix: "good",
   swap: "setup",
-  monitor: "demo",
+  monitor: "neutral",
 };
 
 const STATUS_LABEL: Record<TriageStatus, string> = {
@@ -27,14 +53,145 @@ function pct(value: number): string {
 
 type LiveView = Extract<PitRepairTriageView, { status: "live" }>;
 
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = pitRepairTriageRelatedLinks(orgId, {
+    include: [...PIT_REPAIR_TRIAGE_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related prt-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: PitRepairTriageNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions prt-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Command, FMEA, and Spare Kit — never DEMO triage calls.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function TriageShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: PitRepairTriageShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = pitRepairTriageNextActions({ orgId, shell });
+  const copy = pitRepairTriageShellCopy(shell);
+  const competitionHref = hubHref("/competition", "pit-repair-triage", orgId);
+  const steps = shell === "setup" ? pitRepairTriageSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page prt-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Pit Repair Triage"}
+          </>
+        }
+        title="Pit Repair Triage"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading pit-repair triage">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href="#pit-repair-triage-log">
+                Log a pit failure
+              </a>
+              <a className="app-button secondary" href={hubHref("/build", "fmea", orgId)}>
+                Open FMEA
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="prt-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">FMEA, Inventory, and Command — never DEMO triage calls.</p>
+          </header>
+          <ul className="prt-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted prt-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function PitRepairTriageClient() {
   const [view, setView] = useState<PitRepairTriageView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -61,6 +218,33 @@ export default function PitRepairTriageClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const reportCount = view?.status === "live" ? view.reports.length : 0;
+  const fmeaCount = view?.status === "live" ? view.fmeaHistory.length : 0;
+  const spareCount = view?.status === "live" ? view.spareCandidates.length : 0;
+  const openCount =
+    view?.status === "live"
+      ? view.reports.filter((r) => r.status === "open" || r.status === "staged").length
+      : 0;
+
+  const shell = classifyPitRepairTriageShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    reportCount,
+  });
+  const shellCopy = pitRepairTriageShellCopy(shell);
+  const nextActions = pitRepairTriageNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    reportCount,
+    openCount,
+  });
+  const competitionHref = hubHref("/competition", "pit-repair-triage", orgId);
+  const showTiles = shouldShowPitRepairTriageSummaryTiles(reportCount, fmeaCount, spareCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -89,37 +273,64 @@ export default function PitRepairTriageClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <TriageShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <TriageShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <TriageShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page prt-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Pit Repair Triage"}
           </>
         }
         title="Pit Repair Triage"
-        description="Log a pit failure, cross-referenced against FMEA history and spares on hand, to get a grounded fix-vs-swap call and pre-stage the right part before the next match."
+        description="Log a pit failure against real FMEA history and spare stock — never DEMO triage calls. Cross-check Command and Spare Kit."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="prt-header-actions">
+          <RelatedStrip orgId={orgId} />
+          {view.seasons.length > 0 ? (
+            <label className="app-muted prt-filter">
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -128,47 +339,31 @@ export default function PitRepairTriageClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load pit-repair triage"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
+      {showTiles ? (
+        <Panel className="prt-panel">
+          <div className="prt-stats">
+            <StatTile label="Reports" value={formatPitRepairTriageMetric(reportCount, loaded)} />
+            <StatTile label="Open / staged" value={formatPitRepairTriageMetric(openCount, loaded)} />
+            <StatTile label="FMEA history" value={formatPitRepairTriageMetric(fmeaCount, loaded)} />
+            <StatTile label="Spares in stock" value={formatPitRepairTriageMetric(spareCount, loaded)} />
+          </div>
+        </Panel>
+      ) : null}
+
+      <LogFailureForm busy={busy} mutate={mutate} view={view} />
+      {view.reports.length > 0 ? (
+        <ReportsList view={view} busy={busy} mutate={mutate} />
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <LogFailureForm busy={busy} mutate={mutate} view={view} />
-          {view.reports.length > 0 ? (
-            <ReportsList view={view} busy={busy} mutate={mutate} />
-          ) : (
-            <EmptyState
-              badge="No reports yet"
-              badgeTone="setup"
-              title="Log your first pit failure"
-              description="Once logged, Vantage cross-references FMEA history and spares inventory against remaining match time to recommend fix or swap."
-            />
-          )}
-          <ReferencePanels view={view} />
-        </div>
+        <EmptyState
+          soft
+          badge="No reports yet"
+          badgeTone="setup"
+          title="Log your first pit failure"
+          description="Fix-vs-swap uses real FMEA history and spare stock — never DEMO triage packs."
+        />
       )}
+      <ReferencePanels view={view} />
+      <NextActionsPanel actions={nextActions} />
     </main>
   );
 }
@@ -183,17 +378,15 @@ function ReportsList({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Triage reports</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel id="pit-repair-triage-reports" className="prt-panel">
+      <h2>Triage reports</h2>
+      <ul className="prt-report-list">
         {view.reports.map((report) => (
-          <li key={report.id} className="app-card soft-panel" style={{ display: "grid", gap: 6 }}>
-            <header style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={report.id} className="app-card soft-panel prt-report-card">
+            <header className="prt-report-header">
               <div>
-                <span className={`app-badge ${DECISION_TONE[report.decision]}`}>
-                  {triageDecisionLabel(report.decision)}
-                </span>
-                <strong style={{ display: "block", marginTop: 4 }}>{report.title}</strong>
+                <Badge tone={DECISION_TONE[report.decision]}>{triageDecisionLabel(report.decision)}</Badge>
+                <strong className="prt-report-title">{report.title}</strong>
                 <small className="app-muted">
                   {report.subsystemName} · {STATUS_LABEL[report.status]} · confidence {pct(report.confidence)}
                 </small>
@@ -211,7 +404,7 @@ function ReportsList({
                 Delete
               </button>
             </header>
-            {report.symptomNote ? <p style={{ margin: 0 }}>{report.symptomNote}</p> : null}
+            {report.symptomNote ? <p className="prt-tip">{report.symptomNote}</p> : null}
             {report.photoUrl ? (
               <a href={report.photoUrl} target="_blank" rel="noreferrer">
                 View photo
@@ -224,7 +417,7 @@ function ReportsList({
               {report.prestageRecommended ? " · pre-stage recommended" : ""}
             </small>
             {report.status !== "resolved" ? (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div className="prt-status-actions">
                 {TRIAGE_STATUSES.filter((status) => status !== report.status).map((status) => (
                   <button
                     key={status}
@@ -247,18 +440,15 @@ function ReportsList({
 
 function ReferencePanels({ view }: { view: LiveView }) {
   return (
-    <section
-      className="app-card soft-panel"
-      style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}
-    >
+    <section className="app-card soft-panel prt-reference" aria-label="FMEA and spares reference">
       <div>
-        <h2 style={{ marginTop: 0 }}>FMEA history</h2>
+        <h2>FMEA history</h2>
         {view.fmeaHistory.length === 0 ? (
-          <p className="app-muted">No FMEA failures logged this season yet.</p>
+          <p className="app-muted">No FMEA failures logged this season yet — never DEMO history.</p>
         ) : (
-          <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+          <ul className="prt-ref-list">
             {view.fmeaHistory.map((entry) => (
-              <li key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <li key={entry.id} className="prt-ref-row">
                 <span>
                   {entry.subsystemName} — {entry.title}
                 </span>
@@ -271,13 +461,13 @@ function ReferencePanels({ view }: { view: LiveView }) {
         )}
       </div>
       <div>
-        <h2 style={{ marginTop: 0 }}>Spares in stock</h2>
+        <h2>Spares in stock</h2>
         {view.spareCandidates.length === 0 ? (
-          <p className="app-muted">No spares currently in stock.</p>
+          <p className="app-muted">No spares currently in stock — never DEMO inventory.</p>
         ) : (
-          <ul className="factor-table" style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+          <ul className="prt-ref-list">
             {view.spareCandidates.map((item) => (
-              <li key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <li key={item.id} className="prt-ref-row">
                 <span>{item.name}</span>
                 <small className="app-muted">
                   {item.quantity} in stock{item.subsystem ? ` · ${item.subsystem}` : ""}
@@ -318,7 +508,9 @@ function LogFailureForm({
 
   return (
     <Panel
+      id="pit-repair-triage-log"
       as="form"
+      className="prt-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.subsystemName.trim() || !form.title.trim()) return;
@@ -334,9 +526,9 @@ function LogFailureForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Log a pit failure</h2>
+      <h2>Log a pit failure</h2>
+      <p className="app-muted">Grounded in real FMEA and spare stock — never DEMO triage calls.</p>
       <FormGrid min={180}>
         <FormRow label="Subsystem">
           <input value={form.subsystemName} onChange={set("subsystemName")} placeholder="Intake" required />

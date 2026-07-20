@@ -1,0 +1,25 @@
+/* Soft-UI Pit Repair Triage — never DEMO triage calls. */
+.prt-page{display:grid;gap:16px}
+.prt-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.prt-filter{display:flex;gap:6px;align-items:center}
+.prt-related{display:flex;flex-wrap:wrap;gap:8px}
+.prt-next-actions{margin:0}
+.prt-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.prt-panel{display:grid;gap:12px}
+.prt-panel h2{margin:0}
+.prt-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.prt-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.prt-tip{margin:0}
+.prt-report-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.prt-report-card{display:grid;gap:6px}
+.prt-report-header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.prt-report-title{display:block;margin-top:4px}
+.prt-status-actions{display:flex;gap:8px;flex-wrap:wrap}
+.prt-reference{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.prt-reference h2{margin-top:0}
+.prt-ref-list{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.prt-ref-row{display:flex;justify-content:space-between;gap:8px}
+@media(max-width:900px){
+  .prt-header-actions{justify-content:flex-start}
+  .prt-next-actions li,.prt-setup-steps li,.prt-report-header,.prt-ref-row{flex-direction:column;align-items:stretch}
+}

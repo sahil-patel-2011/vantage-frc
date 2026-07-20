@@ -1,0 +1,18 @@
+/* Soft-UI Match Video Index — never DEMO clip packs. */
+.mvi-page{display:grid;gap:16px}
+.mvi-related{display:flex;flex-wrap:wrap;gap:8px}
+.mvi-next-actions{margin:0}
+.mvi-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.mvi-panel{display:grid;gap:12px}
+.mvi-panel h2{margin:0}
+.mvi-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.mvi-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.mvi-tip{margin:0}
+.mvi-groups{display:grid;gap:14px}
+.mvi-block{display:block;margin-bottom:6px}
+.mvi-video-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.mvi-video-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.mvi-url{word-break:break-all}
+@media(max-width:900px){
+  .mvi-next-actions li,.mvi-setup-steps li,.mvi-video-row{flex-direction:column;align-items:stretch}
+}

@@ -1,0 +1,21 @@
+/* Soft-UI Scout-Assisted Count — never DEMO tap tallies. */
+.sac-page{display:grid;gap:16px}
+.sac-related{display:flex;flex-wrap:wrap;gap:8px}
+.sac-next-actions{margin:0}
+.sac-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px}
+.sac-panel{display:grid;gap:12px}
+.sac-panel h2{margin:0}
+.sac-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.sac-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.sac-tip{margin:0}
+.sac-session-list{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.sac-session-card{display:grid;gap:10px}
+.sac-session-header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.sac-block{display:block}
+.sac-tap-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.sac-tap-count{font-size:2.2rem}
+.sac-tap-log{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:4px}
+.sac-tap-log-row{display:flex;justify-content:space-between}
+@media(max-width:900px){
+  .sac-next-actions li,.sac-setup-steps li,.sac-session-header{flex-direction:column;align-items:stretch}
+}

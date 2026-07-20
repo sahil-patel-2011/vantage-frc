@@ -1,15 +1,40 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  Panel,
+  ProgressMeter,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { knowledgeGapSubjectLabel } from "../../lib/knowledge-gap";
 import type { KnowledgeGapView } from "../../lib/knowledge-gap/compute-knowledge-gap";
 import type { KnowledgeGapItem, KnowledgeGapStatus, KnowledgeGapSubjectKind } from "../../lib/knowledge-gap/types";
+import {
+  KNOWLEDGE_GAP_RELATED_INCLUDE,
+  classifyKnowledgeGapShell,
+  formatKnowledgeGapMetric,
+  knowledgeGapNextActions,
+  knowledgeGapRelatedLinks,
+  knowledgeGapSetupSteps,
+  knowledgeGapShellCopy,
+  shouldShowKnowledgeGapSummaryTiles,
+  type KnowledgeGapNextAction,
+  type KnowledgeGapShellKind,
+} from "../../lib/knowledge-gap/knowledge-gap-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./knowledge-gap.css";
 
-const STATUS_TONE: Record<KnowledgeGapStatus, string> = {
+const STATUS_TONE: Record<KnowledgeGapStatus, BadgeTone> = {
   open: "setup",
   drafted: "good",
-  dismissed: "demo",
+  dismissed: "neutral",
 };
 
 const STATUS_LABEL: Record<KnowledgeGapStatus, string> = {
@@ -18,17 +43,146 @@ const STATUS_LABEL: Record<KnowledgeGapStatus, string> = {
   dismissed: "Dismissed",
 };
 
-const SUBJECT_TONE: Record<KnowledgeGapSubjectKind, string> = {
-  subsystem: "demo",
+const SUBJECT_TONE: Record<KnowledgeGapSubjectKind, BadgeTone> = {
+  subsystem: "neutral",
   decision: "setup",
   event: "good",
 };
 
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
+type LiveView = Extract<KnowledgeGapView, { status: "live" }>;
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = knowledgeGapRelatedLinks(orgId, {
+    include: [...KNOWLEDGE_GAP_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related kg-related" aria-label="Related team tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
 }
 
-type LiveView = Extract<KnowledgeGapView, { status: "live" }>;
+function NextActionsPanel({ actions }: { actions: KnowledgeGapNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions kg-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Knowledge, FMEA, and Meeting Autopilot — never DEMO wiki gaps.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function GapShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: KnowledgeGapShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = knowledgeGapNextActions({ orgId, shell });
+  const copy = knowledgeGapShellCopy(shell);
+  const teamHref = hubHref("/team", "knowledge-gap", orgId);
+  const steps = shell === "setup" ? knowledgeGapSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page kg-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Knowledge-gap detective"}
+          </>
+        }
+        title="Knowledge-gap detective"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading knowledge-gap scan">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href="#knowledge-gap-scan">
+                Run scan
+              </a>
+              <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
+                Open Knowledge
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="kg-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Knowledge and FMEA — never DEMO wiki gaps.</p>
+          </header>
+          <ul className="kg-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted kg-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function KnowledgeGapClient() {
   const [view, setView] = useState<KnowledgeGapView | null>(null);
@@ -36,8 +190,6 @@ export default function KnowledgeGapClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -64,6 +216,31 @@ export default function KnowledgeGapClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const hasScan = view?.status === "live" ? view.scan != null : false;
+  const itemCount = view?.status === "live" ? view.items.length : 0;
+  const openCount =
+    view?.status === "live" ? view.items.filter((item) => item.status === "open").length : 0;
+
+  const shell = classifyKnowledgeGapShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    hasScan,
+    itemCount,
+  });
+  const shellCopy = knowledgeGapShellCopy(shell);
+  const nextActions = knowledgeGapNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    hasScan,
+    itemCount,
+  });
+  const teamHref = hubHref("/team", "knowledge-gap", orgId);
+  const showTiles = shouldShowKnowledgeGapSummaryTiles(itemCount, hasScan);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -92,21 +269,46 @@ export default function KnowledgeGapClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <GapShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <GapShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <GapShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page kg-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
+            <a href={teamHref}>Team</a>
             {" / Knowledge-gap detective"}
           </>
         }
         title="Knowledge-gap detective"
-        description="Scans your wiki and decision log against real subsystems and scouted events, and flags what has no documentation — then drafts a stub page for it."
+        description="Scans wiki and decision log against real subsystems and scouted events — never DEMO wiki gaps. Cross-check Knowledge and FMEA."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.seasons.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div className="kg-header-actions">
+          <RelatedStrip orgId={orgId} />
+          {view.seasons.length > 0 ? (
+            <label className="app-muted kg-filter">
               Season
               <select
                 value={season ?? view.seasonYear}
@@ -124,11 +326,9 @@ export default function KnowledgeGapClient() {
               </select>
             </label>
           ) : null}
-          {orgId ? (
-            <a className="app-button secondary" href={`/knowledge?orgId=${encodeURIComponent(orgId)}`}>
-              Open wiki
-            </a>
-          ) : null}
+          <a className="app-button secondary" href={hubHref("/team", "knowledge", orgId)}>
+            Open wiki
+          </a>
         </div>
       </PageHeader>
 
@@ -138,53 +338,44 @@ export default function KnowledgeGapClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      {showTiles ? (
+        <Panel className="kg-panel">
+          <div className="kg-stats">
+            <StatTile label="Open gaps" value={formatKnowledgeGapMetric(openCount, loaded)} />
+            <StatTile label="Tracked subjects" value={formatKnowledgeGapMetric(itemCount, loaded)} />
+            <StatTile
+              label="Coverage"
+              value={
+                view.scan
+                  ? `${Math.round(view.scan.coverageScore * 100)}%`
+                  : "—"
+              }
+            />
+          </div>
+        </Panel>
+      ) : null}
+
+      <ScanPanel view={view} busy={busy} mutate={mutate} season={season ?? view.seasonYear} />
+      {view.scan == null ? (
         <EmptyState
-          title="Could not load the Knowledge-gap detective"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
+          soft
+          badge="No scan yet"
+          badgeTone="setup"
+          title="Run your first scan"
+          description="Diffs robot_subsystems, decision_records, and scouted events against your knowledge_pages wiki — never DEMO gap packs."
+        />
+      ) : view.items.length === 0 ? (
+        <EmptyState
+          soft
+          badge="Fully documented"
+          badgeTone="good"
+          title="No gaps found for this season"
+          description="Every tracked subsystem, decision, and scouted event has wiki coverage — never DEMO completeness."
+        />
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <ScanPanel view={view} busy={busy} mutate={mutate} season={season ?? view.seasonYear} />
-          {view.scan == null ? (
-            <EmptyState
-              badge="No scan yet"
-              badgeTone="setup"
-              title="Run your first scan"
-              description="Diffs robot_subsystems, decision_records, and scouted events against your knowledge_pages wiki for this season — nothing is invented."
-            />
-          ) : view.items.length === 0 ? (
-            <EmptyState
-              badge="Fully documented"
-              badgeTone="good"
-              title="No gaps found for this season"
-              description="Every tracked subsystem, decision, and scouted event has wiki coverage."
-            />
-          ) : (
-            <GapList items={view.items} busy={busy} mutate={mutate} />
-          )}
-        </div>
+        <GapList items={view.items} busy={busy} mutate={mutate} />
       )}
+      <NextActionsPanel actions={nextActions} />
     </main>
   );
 }
@@ -202,32 +393,36 @@ function ScanPanel({
 }) {
   const scan = view.scan;
   return (
-    <Panel>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+    <Panel id="knowledge-gap-scan" className="kg-panel">
+      <header className="kg-scan-header">
         <div>
-          <h2 style={{ margin: 0 }}>Coverage — {season}</h2>
+          <h2>Coverage — {season}</h2>
           {scan ? (
             <small className="app-muted">
               {scan.subsystemCount} subsystem(s) · {scan.decisionCount} decision(s) · {scan.eventCount} scouted
               event(s) · {scan.pageCount} wiki page(s) · scanned {new Date(scan.createdAt).toLocaleString()}
             </small>
           ) : (
-            <small className="app-muted">No scan has been run for {season} yet.</small>
+            <small className="app-muted">No scan has been run for {season} yet — never DEMO coverage.</small>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {scan ? <strong style={{ fontSize: "1.8rem" }}>{pct(scan.coverageScore)}</strong> : null}
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={() => mutate({ action: "run-scan" })}
-          >
+        <div className="kg-scan-actions">
+          {scan ? (
+            <div className="kg-progress">
+              <ProgressMeter
+                value={Math.round(scan.coverageScore * 100)}
+                target={100}
+                unit="%"
+                label="Coverage"
+              />
+            </div>
+          ) : null}
+          <button type="button" className="app-button" disabled={busy} onClick={() => mutate({ action: "run-scan" })}>
             {scan ? "Re-scan" : "Run scan"}
           </button>
         </div>
       </header>
-      {scan ? <p className="app-muted" style={{ marginBottom: 0 }}>{scan.summary}</p> : null}
+      {scan ? <p className="app-muted kg-tip">{scan.summary}</p> : null}
     </Panel>
   );
 }
@@ -242,22 +437,20 @@ function GapList({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Undocumented subjects</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel id="knowledge-gap-items" className="kg-panel">
+      <h2>Undocumented subjects</h2>
+      <ul className="kg-item-list">
         {items.map((item) => (
-          <li key={item.id} className="app-card soft-panel" style={{ display: "grid", gap: 6 }}>
-            <header style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+          <li key={item.id} className="app-card soft-panel kg-item-card">
+            <header className="kg-item-header">
               <div>
-                <span className={`app-badge ${SUBJECT_TONE[item.subjectKind]}`}>
-                  {knowledgeGapSubjectLabel(item.subjectKind)}
-                </span>{" "}
-                <span className={`app-badge ${STATUS_TONE[item.status]}`}>{STATUS_LABEL[item.status]}</span>
-                <strong style={{ display: "block", marginTop: 4 }}>{item.subjectRef}</strong>
+                <Badge tone={SUBJECT_TONE[item.subjectKind]}>{knowledgeGapSubjectLabel(item.subjectKind)}</Badge>{" "}
+                <Badge tone={STATUS_TONE[item.status]}>{STATUS_LABEL[item.status]}</Badge>
+                <strong className="kg-item-name">{item.subjectRef}</strong>
                 <small className="app-muted">Season {item.seasonYear}</small>
               </div>
               {item.status === "open" ? (
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div className="kg-item-actions">
                   <button
                     type="button"
                     className="app-button secondary"
@@ -276,14 +469,15 @@ function GapList({
                   </button>
                 </div>
               ) : item.status === "drafted" && item.draftPageId ? (
-                <a className="app-button secondary" href={`/knowledge?pageId=${encodeURIComponent(item.draftPageId)}`}>
+                <a
+                  className="app-button secondary"
+                  href={`/knowledge?pageId=${encodeURIComponent(item.draftPageId)}`}
+                >
                   Open stub
                 </a>
               ) : null}
             </header>
-            <p className="app-muted" style={{ margin: 0 }}>
-              {item.reason}
-            </p>
+            <p className="app-muted kg-tip">{item.reason}</p>
           </li>
         ))}
       </ul>

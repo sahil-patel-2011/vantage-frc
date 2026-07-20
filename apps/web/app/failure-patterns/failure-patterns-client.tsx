@@ -1,21 +1,180 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { failurePatternNoteStatusLabel, failurePatternTierLabel } from "../../lib/failure-patterns";
 import {
   FAILURE_PATTERN_NOTE_STATUSES,
   type FailurePatternsView,
 } from "../../lib/failure-patterns/compute-failure-patterns";
 import type { FailurePatternCluster, FailurePatternNoteStatus, FailurePatternTier } from "../../lib/failure-patterns/types";
+import {
+  FAILURE_PATTERNS_RELATED_INCLUDE,
+  classifyFailurePatternsShell,
+  formatFailurePatternsMetric,
+  failurePatternsNextActions,
+  failurePatternsRelatedLinks,
+  failurePatternsSetupSteps,
+  failurePatternsShellCopy,
+  shouldShowFailurePatternsSummaryTiles,
+  type FailurePatternsNextAction,
+  type FailurePatternsShellKind,
+} from "../../lib/failure-patterns/failure-patterns-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./failure-patterns.css";
 
-function tierTone(tier: FailurePatternTier): string {
-  if (tier === "critical") return "demo";
-  if (tier === "watch") return "setup";
-  return "good";
-}
+const tierBadgeTone: Record<FailurePatternTier, BadgeTone> = {
+  critical: "danger",
+  watch: "setup",
+  minor: "good",
+};
 
 type LiveView = Extract<FailurePatternsView, { status: "live" }>;
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = failurePatternsRelatedLinks(orgId, {
+    include: [...FAILURE_PATTERNS_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related fp-related" aria-label="Related build tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: FailurePatternsNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions fp-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">FMEA, Spare Kit, and Incident Heatmap — never DEMO clusters.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function PatternsShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: FailurePatternsShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = failurePatternsNextActions({ orgId, shell });
+  const copy = failurePatternsShellCopy(shell);
+  const buildHref = hubHref("/build", "failure-patterns", orgId);
+  const steps = shell === "setup" ? failurePatternsSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page fp-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Repeat Failure Patterns"}
+          </>
+        }
+        title="Repeat Failure Patterns"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading failure patterns">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
+                Open FMEA
+              </a>
+              <a className="app-button secondary" href={hubHref("/competition", "pit-repair-triage", orgId)}>
+                Open Pit Triage
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="fp-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">FMEA and Pit Triage — never DEMO clusters.</p>
+          </header>
+          <ul className="fp-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted fp-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
 
 export default function FailurePatternsClient() {
   const [view, setView] = useState<FailurePatternsView | null>(null);
@@ -23,8 +182,6 @@ export default function FailurePatternsClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -51,6 +208,29 @@ export default function FailurePatternsClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const clusterCount = view?.status === "live" ? view.clusters.length : 0;
+  const eventCount = view?.status === "live" ? view.summary.totalEvents : 0;
+  const criticalCount = view?.status === "live" ? view.summary.criticalClusters : 0;
+
+  const shell = classifyFailurePatternsShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    clusterCount,
+  });
+  const shellCopy = failurePatternsShellCopy(shell);
+  const nextActions = failurePatternsNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    clusterCount,
+    criticalCount,
+  });
+  const buildHref = hubHref("/build", "failure-patterns", orgId);
+  const showTiles = shouldShowFailurePatternsSummaryTiles(eventCount, clusterCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -79,37 +259,64 @@ export default function FailurePatternsClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <PatternsShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <PatternsShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <PatternsShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page fp-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
+            <a href={buildHref}>Build</a>
             {" / Repeat Failure Patterns"}
           </>
         }
         title="Repeat Failure Patterns"
-        description="Clusters your FMEA failure log and equipment incidents by subsystem to surface which mechanisms keep breaking — grounded only in what your team has logged."
+        description="Clusters FMEA and equipment incidents by subsystem — never DEMO clusters. Cross-check FMEA and Spare Kit."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="fp-header-actions">
+          <RelatedStrip orgId={orgId} />
+          {view.seasons.length > 0 ? (
+            <label className="app-muted fp-filter">
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -118,91 +325,47 @@ export default function FailurePatternsClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      {showTiles ? (
+        <Panel className="fp-panel">
+          <div className="fp-stats">
+            <StatTile label="Total events" value={formatFailurePatternsMetric(view.summary.totalEvents, loaded)} />
+            <StatTile
+              label="Subsystems affected"
+              value={formatFailurePatternsMetric(view.summary.totalClusters, loaded)}
+            />
+            <StatTile
+              label="Repeat patterns"
+              value={formatFailurePatternsMetric(view.summary.repeatClusters, loaded)}
+            />
+            <StatTile label="Critical" value={formatFailurePatternsMetric(view.summary.criticalClusters, loaded)} />
+          </div>
+        </Panel>
+      ) : null}
+
+      {view.clusters.length === 0 ? (
         <EmptyState
-          title="Could not load failure patterns"
-          description="A network or server issue prevented loading. Try again."
+          soft
+          badge="No failures logged"
+          badgeTone="setup"
+          title="No FMEA or incident records yet this season"
+          description="Log failures in FMEA or equipment incidents — never DEMO pattern packs."
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
+          <a className="app-button" href={hubHref("/build", "fmea", orgId)}>
+            Open FMEA
+          </a>
+          <a className="app-button secondary" href={hubHref("/competition", "pit-repair-triage", orgId)}>
+            Open Pit Triage
+          </a>
         </EmptyState>
       ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          {view.clusters.length === 0 ? (
-            <EmptyState
-              badge="No failures logged"
-              badgeTone="setup"
-              title="No FMEA or incident records yet this season"
-              description="Log failures in the FMEA failure log or equipment incidents, and repeat-failure clusters will appear here automatically."
-            >
-              <a className="app-button secondary" href={orgId ? `/pit-repair-triage?orgId=${encodeURIComponent(orgId)}` : "/pit-repair-triage"}>
-                Open pit repair triage
-              </a>
-            </EmptyState>
-          ) : (
-            <ClusterList view={view} busy={busy} mutate={mutate} />
-          )}
+        <div id="failure-patterns-clusters" className="fp-clusters">
+          {view.clusters.map((cluster) => (
+            <ClusterCard key={cluster.subsystemName} cluster={cluster} busy={busy} mutate={mutate} />
+          ))}
         </div>
       )}
+      <NextActionsPanel actions={nextActions} />
     </main>
-  );
-}
-
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Total events", value: String(summary.totalEvents) },
-    { label: "Subsystems affected", value: String(summary.totalClusters) },
-    { label: "Repeat-failure patterns", value: String(summary.repeatClusters) },
-    { label: "Critical", value: String(summary.criticalClusters) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
-  );
-}
-
-function ClusterList({
-  view,
-  busy,
-  mutate,
-}: {
-  view: LiveView;
-  busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
-  return (
-    <div style={{ display: "grid", gap: 12 }}>
-      {view.clusters.map((cluster) => (
-        <ClusterCard key={cluster.subsystemName} cluster={cluster} busy={busy} mutate={mutate} />
-      ))}
-    </div>
   );
 }
 
@@ -219,29 +382,27 @@ function ClusterCard({
   const [status, setStatus] = useState<FailurePatternNoteStatus>("acknowledged");
 
   return (
-    <Panel>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+    <Panel className="fp-panel">
+      <header className="fp-cluster-header">
         <div>
-          <span className={`app-badge ${tierTone(cluster.tier)}`}>{failurePatternTierLabel(cluster.tier)}</span>
-          <h2 style={{ margin: "6px 0 0" }}>{cluster.subsystemName}</h2>
+          <Badge tone={tierBadgeTone[cluster.tier]}>{failurePatternTierLabel(cluster.tier)}</Badge>
+          <h2>{cluster.subsystemName}</h2>
           <small className="app-muted">
             {cluster.totalCount} failure(s) · {cluster.fmeaCount} FMEA · {cluster.incidentCount} incident(s) ·{" "}
             {cluster.firstOccurredOn} → {cluster.lastOccurredOn}
           </small>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <strong style={{ fontSize: "1.6rem" }}>{cluster.totalCount}×</strong>
+        <div className="fp-cluster-count">
+          <strong>{cluster.totalCount}×</strong>
           {cluster.maxSeverity != null ? (
-            <small className="app-muted" style={{ display: "block" }}>
-              max severity {cluster.maxSeverity}/10
-            </small>
+            <small className="app-muted fp-block">max severity {cluster.maxSeverity}/10</small>
           ) : null}
         </div>
       </header>
 
-      <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 0", display: "grid", gap: 6 }}>
+      <ul className="fp-event-list">
         {cluster.events.map((event) => (
-          <li key={event.id} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+          <li key={event.id} className="fp-event-row">
             <span>
               {event.title} <small className="app-muted">({event.source === "fmea" ? "FMEA" : "Incident"})</small>
             </span>
@@ -254,13 +415,13 @@ function ClusterCard({
       </ul>
 
       {cluster.latestNote ? (
-        <p className="app-muted" style={{ marginTop: 12 }}>
+        <p className="app-muted">
           <strong>{failurePatternNoteStatusLabel(cluster.latestNote.status)}</strong>
           {cluster.latestNote.note ? `: ${cluster.latestNote.note}` : ""}
         </p>
       ) : null}
 
-      <FormGrid min={160} style={{ marginTop: 12 }}>
+      <FormGrid min={160}>
         <FormRow label="Status">
           <select value={status} onChange={(event) => setStatus(event.target.value as FailurePatternNoteStatus)}>
             {FAILURE_PATTERN_NOTE_STATUSES.map((s) => (
@@ -274,7 +435,7 @@ function ClusterCard({
           <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Corrective action taken" />
         </FormRow>
       </FormGrid>
-      <div style={{ marginTop: 8 }}>
+      <div>
         <button
           type="button"
           className="app-button secondary"

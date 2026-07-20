@@ -1,0 +1,24 @@
+/* Soft-UI Knowledge-gap detective — never DEMO wiki gaps. */
+.kg-page{display:grid;gap:16px}
+.kg-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.kg-filter{display:flex;gap:6px;align-items:center}
+.kg-related{display:flex;flex-wrap:wrap;gap:8px}
+.kg-next-actions{margin:0}
+.kg-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.kg-panel{display:grid;gap:12px}
+.kg-panel h2{margin:0}
+.kg-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.kg-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.kg-tip{margin:0}
+.kg-scan-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.kg-scan-actions{display:flex;align-items:center;gap:12px}
+.kg-progress{min-width:140px}
+.kg-item-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.kg-item-card{display:grid;gap:6px}
+.kg-item-header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.kg-item-name{display:block;margin-top:4px}
+.kg-item-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:900px){
+  .kg-header-actions{justify-content:flex-start}
+  .kg-next-actions li,.kg-setup-steps li,.kg-item-header{flex-direction:column;align-items:stretch}
+}
