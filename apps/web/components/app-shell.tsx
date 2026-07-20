@@ -320,6 +320,15 @@ export default function AppShell() {
   }, [pathname]);
 
   useEffect(() => {
+    setOpen(false);
+    setMoreOpen(false);
+    setCommandOpen(false);
+    setAccountMenuOpen(false);
+    setIslandEditorOpen(false);
+    setWorkspaceOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     setRecentOrgIds(listRecentOrgIds());
   }, []);
 
@@ -532,14 +541,25 @@ export default function AppShell() {
     [memberships, recentOrgIds],
   );
 
+  /** Hub roots keep the hamburger — Back replaces Menu and strands mobile users. */
+  const isHubRoot =
+    pathname === "/" ||
+    pathname === "/dashboard" ||
+    pathname === "/competition" ||
+    pathname === "/team" ||
+    pathname === "/business" ||
+    pathname === "/build" ||
+    pathname === "/ai";
+
   const showBack =
-    pathname.startsWith("/account") ||
-    pathname.startsWith("/team") ||
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/security") ||
-    pathname.startsWith("/notifications") ||
-    pathname.startsWith("/help") ||
-    pathname === "/support";
+    !isHubRoot &&
+    (pathname.startsWith("/account") ||
+      pathname.startsWith("/team/") ||
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/security") ||
+      pathname.startsWith("/notifications") ||
+      pathname.startsWith("/help") ||
+      pathname === "/support");
 
   const backHref = useMemo(() => {
     if (pathname.startsWith("/account")) return "/dashboard";
@@ -552,11 +572,8 @@ export default function AppShell() {
     if (pathname.startsWith("/admin/") || pathname === "/admin") {
       return pathname === "/admin" ? "/dashboard" : "/admin";
     }
-    if (pathname.startsWith("/team/") || (pathname.startsWith("/team") && pathname !== "/team")) {
+    if (pathname.startsWith("/team/")) {
       return withOrgHref("/team", orgId || null);
-    }
-    if (pathname === "/team" || pathname.startsWith("/team?")) {
-      return "/dashboard";
     }
     return "/dashboard";
   }, [pathname, orgId]);
@@ -716,22 +733,7 @@ export default function AppShell() {
         Skip to main content
       </a>
       <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
-        {showBack ? (
-          <div className="soft-page-head">
-            <button
-              className="soft-icon-btn"
-              type="button"
-              aria-label="Go back"
-              onClick={() => router.push(backHref)}
-            >
-              <Icon name="back" />
-            </button>
-            <div className="soft-page-head-copy">
-              <h1>{title}</h1>
-              <small className="soft-org-crumb">{crumbHint}</small>
-            </div>
-          </div>
-        ) : (
+        <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
           <button
             className={`soft-icon-btn soft-menu-btn${open ? " is-open" : ""}`}
             type="button"
@@ -748,11 +750,27 @@ export default function AppShell() {
               <i />
             </span>
           </button>
-        )}
+          {showBack ? (
+            <div className="soft-page-head">
+              <button
+                className="soft-icon-btn"
+                type="button"
+                aria-label="Go back"
+                onClick={() => router.push(backHref)}
+              >
+                <Icon name="back" />
+              </button>
+              <div className="soft-page-head-copy">
+                <h1>{title}</h1>
+                <small className="soft-org-crumb">{crumbHint}</small>
+              </div>
+            </div>
+          ) : null}
+        </div>
         <div className="soft-topbar-actions">
           <ShellOutboxStatus orgId={orgId || null} />
           <button
-            className="soft-icon-btn"
+            className="soft-icon-btn soft-search-btn"
             type="button"
             aria-label="Search"
             onClick={() => {

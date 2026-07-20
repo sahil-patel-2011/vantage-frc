@@ -50,6 +50,7 @@ function MessagesTab({ orgId }: { orgId: string }) {
   return (
     <MessagesClient
       orgId={orgId}
+      embedded
       initialConversationId={initialConversationId}
       initialObjectLink={initialObjectLink}
     />
@@ -60,13 +61,13 @@ export default function TeamHub() {
   return (
     <ProductHubShell hubId="team" headerActions={<TeamAdminLink />}>
       {({ tab, orgId }) => {
-        if (tab === "calendar") return <TeamCalendarClient />;
-        if (tab === "todos") return <TodosClient />;
-        if (tab === "practice") return <PracticeClient />;
-        if (tab === "knowledge") return <KnowledgeClient />;
-        if (tab === "attendance") return <AttendanceClient />;
-        if (tab === "batteries") return <BatteriesClient />;
-        if (tab === "fmea") return <FmeaClient />;
+        if (tab === "calendar") return <TeamCalendarClient embedded />;
+        if (tab === "todos") return <TodosClient embedded />;
+        if (tab === "practice") return <PracticeClient embedded />;
+        if (tab === "knowledge") return <KnowledgeClient embedded />;
+        if (tab === "attendance") return <AttendanceClient embedded />;
+        if (tab === "batteries") return <BatteriesClient embedded />;
+        if (tab === "fmea") return <FmeaClient embedded />;
         if (tab === "messages") {
           return (
             <HubOrgGate orgId={orgId} label="Messages">
