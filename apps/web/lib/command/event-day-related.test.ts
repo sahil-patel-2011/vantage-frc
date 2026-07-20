@@ -102,15 +102,16 @@ describe("classifyEventDayShell", () => {
 });
 
 describe("eventDayShellCopy", () => {
-  it("refuses invented DEMO schedule in empty/setup copy", () => {
+  it("keeps empty/setup copy concise without DEMO lectures", () => {
     for (const kind of ["loading", "error", "setup", "empty", "ready"] as const) {
       const copy = eventDayShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
+      expect(copy.description).not.toMatch(/\bDEMO\b/);
     }
-    expect(eventDayShellCopy("empty").badge).toBe("No matches yet");
-    expect(eventDayShellCopy("empty").description).toMatch(/never DEMO/i);
-    expect(eventDayShellCopy("setup").badge).toBe("Setup required");
-    expect(eventDayShellCopy("ready").description).toMatch(/never DEMO/i);
+    expect(eventDayShellCopy("empty").badge).toBe("No matches");
+    expect(eventDayShellCopy("empty").description).toMatch(/TBA/i);
+    expect(eventDayShellCopy("setup").badge).toBe("Setup");
+    expect(eventDayShellCopy("ready").description.length).toBeLessThan(80);
   });
 });
 
@@ -124,15 +125,14 @@ describe("eventDayShellNextActions", () => {
     );
   });
 
-  it("points empty boards at My Day / Schedule / Strategy / Scouting — never DEMO schedule", () => {
+  it("points empty boards at My Day / Schedule / Strategy / Scouting", () => {
     const actions = eventDayShellNextActions({
       orgId: "org-1",
       shell: "empty",
     });
     expect(actions.map((a) => a.id)).toEqual(["schedule", "my-day", "strategy", "scouting"]);
-    expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
+    expect(actions.every((a) => !/\bDEMO\b/.test(`${a.label} ${a.detail}`))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
-    expect(actions.some((a) => /never DEMO/i.test(a.detail))).toBe(true);
     expect(actions.find((a) => a.id === "my-day")?.href).toBe(
       "/competition?tab=my-day&orgId=org-1",
     );

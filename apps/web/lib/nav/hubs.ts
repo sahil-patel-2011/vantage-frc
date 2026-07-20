@@ -34,8 +34,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/competition",
     label: "Competition",
     title: "Competition",
-    description:
-      "Event day command, personal schedule, strategy, scouting, form builder, match checklist, picks, chemistry — plus Alliance Selection Desk in More tools.",
+    description: "Command, scouting, and strategy for your active event.",
     defaultTab: "command",
     tabs: [
       { id: "command", label: "Command", legacyHref: "/command" },
@@ -95,8 +94,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/team",
     label: "Team",
     title: "Team",
-    description:
-      "Calendar & subteams, todos, practice, attendance, knowledge, messages, batteries, and FMEA — Season Planning in More tools.",
+    description: "Calendar, messages, todos, and team ops.",
     defaultTab: "calendar",
     tabs: [
       { id: "calendar", label: "Calendar", legacyHref: "/team/calendar" },
@@ -148,8 +146,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/business",
     label: "Business",
     title: "Business",
-    description:
-      "Budget, purchase orders, sponsor pipeline, sponsorship one-pagers, grants, partners, and award evidence — one season source of truth.",
+    description: "Budget, sponsors, grants, and orders.",
     defaultTab: "overview",
     tabs: [
       { id: "overview", label: "Overview" },
@@ -200,8 +197,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/build",
     label: "Build",
     title: "Build",
-    description:
-      "Kickoff, CAD, code coach, FMEA, prototypes, and battery ops — Soft-UI shop tools with Competition and AI cross-links.",
+    description: "Kickoff, CAD, code, and shop tools.",
     defaultTab: "kickoff",
     tabs: [
       { id: "kickoff", label: "Kickoff", legacyHref: "/kickoff" },
@@ -238,8 +234,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/ai",
     label: "AI",
     title: "AI",
-    description:
-      "Assistant chat, autonomous agent, API budgets, grant/sponsor writer, code assist, memory, governance, finance-in-AI — and AI API keys in More tools.",
+    description: "Chat, writer, budgets, and API keys.",
     defaultTab: "chat",
     tabs: [
       { id: "chat", label: "Chat", legacyHref: "/chat" },
@@ -263,8 +258,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/media",
     label: "Media",
     title: "Media",
-    description:
-      "Content calendar, drafts, reminders, Media Kit readiness, and media impact — Soft-UI for press and social teammates.",
+    description: "Calendar, drafts, and media kit.",
     defaultTab: "calendar",
     tabs: [
       { id: "calendar", label: "Calendar" },

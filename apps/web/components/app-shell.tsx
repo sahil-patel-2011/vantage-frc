@@ -204,6 +204,12 @@ function Icon({ name }: { name: IconName }) {
         <path d="M9 5V4h6v1M9 11h6M9 15h4" />
       </>
     ),
+    camera: (
+      <>
+        <path d="M4 8h3l2-2h6l2 2h3v11H4V8z" />
+        <circle cx="12" cy="13" r="3.5" />
+      </>
+    ),
     users: (
       <>
         <circle cx="9" cy="8" r="3.5" />
@@ -508,7 +514,23 @@ export default function AppShell() {
     me.firstName?.trim() ||
     me.email?.trim() ||
     null;
-  const initial = (accountLabel?.[0] ?? "?").toUpperCase();
+  // Prefer given name / email for the avatar glyph — never brand "V" from Vantage org naming.
+  const initialSource =
+    me.firstName?.trim() ||
+    me.displayName?.trim() ||
+    me.name?.trim() ||
+    me.email?.trim() ||
+    null;
+  const brandLike = /^(vantage|team\s*\d+)/i;
+  const initialChar = (() => {
+    if (!initialSource) return "?";
+    if (brandLike.test(initialSource) && me.email?.trim()) {
+      return me.email.trim()[0]!.toUpperCase();
+    }
+    if (brandLike.test(initialSource)) return "?";
+    return initialSource[0]!.toUpperCase();
+  })();
+  const initial = initialChar;
 
   const hubAccess = me.hubAccess ?? null;
   const sponsorsAllowed = me.sponsorsAllowed;
@@ -562,7 +584,7 @@ export default function AppShell() {
         { href: "/dashboard", label: "Home", icon: "home" },
         ...visiblePillarLinks,
         ...visibleMoreLinks,
-        { href: "/help", label: "Help", icon: "clipboard" },
+        { href: "/docs", label: "App manual", icon: "clipboard" },
         { href: "/account", label: "Account", icon: "gear" },
       ];
       const seen = new Set<string>();
@@ -600,15 +622,16 @@ export default function AppShell() {
       pathname.startsWith("/admin") ||
       pathname.startsWith("/security") ||
       pathname.startsWith("/notifications") ||
+      pathname.startsWith("/docs") ||
       pathname.startsWith("/help") ||
       pathname === "/support");
 
   const backHref = useMemo(() => {
     if (pathname.startsWith("/account")) return "/dashboard";
     if (pathname.startsWith("/security")) return "/account";
-    if (pathname === "/support") return "/help";
-    if (pathname.startsWith("/help/") || pathname === "/help") {
-      return pathname === "/help" ? "/dashboard" : "/help";
+    if (pathname === "/support") return "/docs";
+    if (pathname.startsWith("/docs/") || pathname === "/docs" || pathname.startsWith("/help/") || pathname === "/help") {
+      return pathname === "/docs" || pathname === "/help" ? "/dashboard" : "/docs";
     }
     if (pathname.startsWith("/notifications")) return "/dashboard";
     if (pathname.startsWith("/admin/") || pathname === "/admin") {
@@ -628,8 +651,8 @@ export default function AppShell() {
         ? "Notifications"
         : pathname.startsWith("/admin")
           ? "Admin"
-          : pathname.startsWith("/help")
-            ? "Help"
+          : pathname.startsWith("/docs") || pathname.startsWith("/help")
+            ? "App manual"
             : pathname === "/support"
               ? "Support"
               : pathname.startsWith("/security")
@@ -894,8 +917,8 @@ export default function AppShell() {
                 <a role="menuitem" href="/security" onClick={() => setAccountMenuOpen(false)}>
                   Security
                 </a>
-                <a role="menuitem" href="/help" onClick={() => setAccountMenuOpen(false)}>
-                  Help
+                <a role="menuitem" href="/docs" onClick={() => setAccountMenuOpen(false)}>
+                  How to use this app
                 </a>
                 <a role="menuitem" href="/support" onClick={() => setAccountMenuOpen(false)}>
                   Support tickets
@@ -969,14 +992,13 @@ export default function AppShell() {
             <span className="mark">v</span>
             <div>
               <strong>Vantage</strong>
-              <small>Navigation</small>
             </div>
           </div>
           <button className="soft-icon-btn" type="button" aria-label="Close" onClick={() => setOpen(false)}>
             <Icon name="x" />
           </button>
         </div>
-        <div className="soft-profile-block">
+        <div className="soft-profile-block soft-profile-compact">
           <a className="soft-profile-link" href="/account" onClick={() => setOpen(false)}>
             <span className="soft-avatar">
               {me.image ? (
@@ -987,12 +1009,9 @@ export default function AppShell() {
               )}
             </span>
             <div>
-              <strong>{accountLabel ?? "Signed-in user"}</strong>
-              <span>{me.email ?? "Account settings"}</span>
+              <strong>{accountLabel ?? "Account"}</strong>
+              <span>{orgLabel}</span>
             </div>
-            <span className="soft-profile-chev" aria-hidden="true">
-              <Icon name="chevron" />
-            </span>
           </a>
           <div className={`soft-workspace-manager${workspaceOpen ? " is-open" : ""}`}>
             <button
@@ -1006,11 +1025,7 @@ export default function AppShell() {
               <Icon name="users" />
               <div>
                 <strong>{orgLabel}</strong>
-                <span>
-                  {orgId
-                    ? `${rolePlanCue} · links use this team`
-                    : "No workspace — accept an invite or pick a team"}
-                </span>
+                <span>{orgId ? rolePlanCue : "Pick a team"}</span>
               </div>
               <span className={`soft-nav-caret${workspaceOpen ? " open" : ""}`} aria-hidden="true">
                 <Icon name="chevron" />
@@ -1019,9 +1034,7 @@ export default function AppShell() {
             {workspaceOpen ? (
               <div id="soft-workspace-picker" className="soft-workspace-picker" role="listbox" aria-label="Team workspaces">
                 {memberships.length === 0 ? (
-                  <p className="soft-workspace-empty">
-                    No real team memberships yet. Exact-email invites only — never DEMO organizations.
-                  </p>
+                  <p className="soft-workspace-empty">No team yet — open an invite from email.</p>
                 ) : (
                   orderedMemberships.map((row) => (
                     <a
@@ -1039,7 +1052,6 @@ export default function AppShell() {
                       <span>
                         {row.role ?? "member"}
                         {row.orgId === orgId ? " · active" : ""}
-                        {recentOrgIds.includes(row.orgId) && row.orgId !== orgId ? " · recent" : ""}
                       </span>
                     </a>
                   ))
@@ -1051,38 +1063,13 @@ export default function AppShell() {
                   <a href="/invite" onClick={() => setOpen(false)}>
                     Invite
                   </a>
-                  <a href="/account" onClick={() => setOpen(false)}>
-                    Account
-                  </a>
-                  {me.platformAdmin ? (
-                    <a href="/admin" onClick={() => setOpen(false)}>
-                      Teams admin
-                    </a>
-                  ) : null}
                 </div>
               </div>
             ) : null}
           </div>
-          <div className="soft-profile-actions">
-            <a href="/account" onClick={() => setOpen(false)}>
-              Account
-            </a>
-            <button type="button" disabled={signingOut} onClick={() => void handleSignOut()}>
-              {signingOut ? "Signing out…" : "Sign out"}
-            </button>
-          </div>
         </div>
-        <nav className="soft-drawer-pillars" aria-label="Six pillars">
-          {visiblePillarLinks.map((link) => (
-            <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setOpen(false)}>
-              <Icon name={link.icon} />
-              {link.label}
-            </a>
-          ))}
-        </nav>
         {visibleNavGroups.map((group) => {
           const expanded = !!expandedGroups[group.label];
-          const visibleCount = group.items.filter((item) => item.state !== "planned").length;
           const isActiveGroup = activeGroupLabel === group.label;
           return (
             <section
@@ -1100,7 +1087,6 @@ export default function AppShell() {
                   <Icon name={group.icon} />
                 </i>
                 <span>{group.label}</span>
-                <em className="soft-nav-count">{visibleCount}</em>
                 <span className={`soft-nav-caret${expanded ? " open" : ""}`} aria-hidden="true">
                   <Icon name="chevron" />
                 </span>
@@ -1126,13 +1112,7 @@ export default function AppShell() {
                         <Icon name={item.icon} />
                         {item.label}
                         {navItemBadge(item.href) ??
-                          (item.state === "setup" ? (
-                            <small>Setup</small>
-                          ) : (
-                            <span className="chev">
-                              <Icon name="chevron" />
-                            </span>
-                          ))}
+                          (item.state === "setup" ? <small>Setup</small> : null)}
                       </a>
                     ),
                   )}
@@ -1152,14 +1132,22 @@ export default function AppShell() {
             <div className="soft-nav-items">
               <a href="/admin" onClick={() => setOpen(false)}>
                 <Icon name="grid" />
-                Global Team Manager
-                <span className="chev">
-                  <Icon name="chevron" />
-                </span>
+                Team manager
               </a>
             </div>
           </section>
         ) : null}
+        <footer className="soft-drawer-foot">
+          <a href="/account" onClick={() => setOpen(false)}>
+            Account
+          </a>
+          <a href="/docs" onClick={() => setOpen(false)}>
+            App manual
+          </a>
+          <button type="button" disabled={signingOut} onClick={() => void handleSignOut()}>
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
+        </footer>
       </aside>
 
       <nav
@@ -1252,9 +1240,9 @@ export default function AppShell() {
             <Icon name="gear" />
             Island
           </button>
-          <a href="/help" onClick={() => setMoreOpen(false)}>
+          <a href="/docs" onClick={() => setMoreOpen(false)}>
             <Icon name="clipboard" />
-            Help
+            App manual
           </a>
           <a href={withOrgHref("/chat", orgId)} onClick={() => setMoreOpen(false)}>
             <Icon name="chat" />
@@ -1304,7 +1292,7 @@ export default function AppShell() {
             </div>
             {islandMessage ? <p className="soft-island-editor-error" role="alert">{islandMessage}</p> : null}
             <footer>
-              <a href="/help/bottom-island">How to customize</a>
+              <a href="/docs/bottom-island">How to customize</a>
               <a href={withOrgHref("/dashboard?customize=1", orgId)}>Customize dashboard</a>
               <a href={withOrgHref("/competition?tab=forms", orgId)}>Build scouting forms</a>
               <button type="button" onClick={() => setIslandDraft(defaultIslandHrefs())}>Reset default</button>

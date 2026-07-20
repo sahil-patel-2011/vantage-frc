@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { HowToUseLink } from "../help/how-to-use-link";
 import { mediaKitAssetKindLabel } from "../../lib/media-kit";
 import type { MediaKitView } from "../../lib/media-kit/compute-media-kit";
 import {
@@ -112,7 +111,6 @@ function MediaKitShell({
         title="Media Kit"
         description={description}
       >
-        <HowToUseLink slug="media-workspace" />
         <MediaKitRelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
@@ -307,7 +305,6 @@ export default function MediaKitClient() {
         description="Build a sponsor- and media-ready team media kit — logos, bio, mission, and a generated one-pager grounded only in what you've recorded. Never DEMO media metrics."
       >
         <div className="media-kit-header-actions">
-          <HowToUseLink slug="media-workspace" />
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season

@@ -38,8 +38,8 @@ describe("dashboard Soft-UI related", () => {
 
   it("keeps no-org next actions invite-safe and DEMO-free", () => {
     const actions = dashboardNextActions({ orgId: null, shell: "no_org" });
-    expect(actions[0]?.href).toBe("/workspace");
-    expect(actions.some((action) => action.href === "/invite")).toBe(true);
+    expect(actions[0]?.href).toBe("/invite");
+    expect(actions.some((action) => action.href === "/workspace")).toBe(true);
     expect(actions.every((action) => !/demo/i.test(`${action.label} ${action.detail}`))).toBe(true);
   });
 
@@ -66,7 +66,7 @@ describe("dashboard Soft-UI related", () => {
     });
     const ai = actions.find((action) => action.id === "ai-provider");
     expect(ai?.href).toBe(`/team/ai-keys?orgId=${ORG}`);
-    expect(ai?.label.toLowerCase()).toContain("api keys");
+    expect(ai?.label.toLowerCase()).toMatch(/ai keys|api keys/);
   });
 
   it("keeps ready next actions to blockers only — no hub tour", () => {

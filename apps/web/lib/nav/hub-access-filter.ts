@@ -23,6 +23,7 @@ export const HUB_ACCESS_ALWAYS_PATHS = new Set([
   "/dashboard",
   "/account",
   "/security",
+  "/docs",
   "/help",
   "/notifications",
   "/support",

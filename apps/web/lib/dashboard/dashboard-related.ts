@@ -84,12 +84,13 @@ export function classifyDashboardShell(input: {
   return "ready";
 }
 
-/** Soft-UI next actions — honest when TBA / event / workspace missing; never DEMO metrics. */
+/** Soft-UI next actions — short labels; one primary when blocked. */
 export function dashboardNextActions(input: {
   orgId?: string | null;
   shell: DashboardShellKind;
   hasScoutingSchemas?: boolean;
   hasAiProvider?: boolean;
+  role?: string | null;
 }): DashboardNextAction[] {
   const { orgId, shell } = input;
   if (shell === "loading") return [];
@@ -97,23 +98,17 @@ export function dashboardNextActions(input: {
   if (shell === "no_org") {
     return [
       {
-        id: "workspace",
-        label: "Select workspace",
-        detail: "Pick a real team membership — nothing is pre-seeded.",
-        href: "/workspace",
+        id: "invite",
+        label: "Open invite",
+        detail: "Use the link sent to your email.",
+        href: "/invite",
         primary: true,
       },
       {
-        id: "invite",
-        label: "Accept invite",
-        detail: "Exact-email invites only — team numbers never open a workspace.",
-        href: "/invite",
-      },
-      {
-        id: "account",
-        label: "Account",
-        detail: "Profile and notification prefs while you wait for a membership.",
-        href: "/account",
+        id: "workspace",
+        label: "Workspace",
+        detail: "Pick a team if you already joined.",
+        href: "/workspace",
       },
     ];
   }
@@ -124,7 +119,7 @@ export function dashboardNextActions(input: {
     actions.push({
       id: "tba",
       label: "Connect TBA",
-      detail: "Live match and rank widgets stay empty until The Blue Alliance is configured.",
+      detail: "Needed for live match and rank widgets.",
       href: withOrgHref("/team/data", orgId),
       primary: true,
     });
@@ -133,20 +128,19 @@ export function dashboardNextActions(input: {
   if (shell === "setup") {
     actions.push({
       id: "event",
-      label: "Select active event",
-      detail: "Competition widgets wait for a real event context — never invent schedules.",
+      label: "Set active event",
+      detail: "Competition widgets need an event.",
       href: hubHref("/competition", "command", orgId),
       primary: true,
     });
   }
 
-  // Ready home already has the hub rail — only surface real blockers here.
   if (shell === "ready") {
     if (input.hasScoutingSchemas === false) {
       actions.push({
         id: "scouting-forms",
         label: "Create scouting forms",
-        detail: "Starter match and pit forms stay blank until your team publishes them.",
+        detail: "Publish match and pit forms.",
         href: hubHref("/competition", "forms", orgId),
         primary: true,
       });
@@ -154,39 +148,13 @@ export function dashboardNextActions(input: {
     if (input.hasAiProvider === false) {
       actions.push({
         id: "ai-provider",
-        label: "Add AI API keys",
-        detail: "Paste OpenAI, Anthropic, or Google keys for Free / your-keys routing — no DEMO spend.",
+        label: "Add AI keys",
+        detail: "Optional — for Free / your-keys routing.",
         href: withOrgHref("/team/ai-keys", orgId),
         primary: actions.length === 0,
       });
     }
     return actions;
-  }
-
-  actions.push({
-    id: "competition",
-    label: "Competition hub",
-    detail: "Command, My Day, strategy, and scouting in one Soft-UI shell.",
-    href: dashboardHubHref("competition", orgId),
-    primary: actions.length === 0,
-  });
-
-  if (input.hasScoutingSchemas === false) {
-    actions.push({
-      id: "scouting-forms",
-      label: "Create scouting forms",
-      detail: "Starter match and pit forms stay blank until your team publishes them.",
-      href: hubHref("/competition", "forms", orgId),
-    });
-  }
-
-  if (input.hasAiProvider === false) {
-    actions.push({
-      id: "ai-provider",
-      label: "Add AI API keys",
-      detail: "Paste OpenAI, Anthropic, or Google keys for Free / your-keys routing — no DEMO spend.",
-      href: withOrgHref("/team/ai-keys", orgId),
-    });
   }
 
   return actions;
@@ -212,35 +180,35 @@ export function dashboardSetupSteps(input: {
     {
       id: "workspace",
       label: "Join workspace",
-      detail: "Accept a team invite or select your org",
+      detail: "Accept an invite or select your team",
       href: hasOrg ? withOrgHref("/workspace", orgId) : "/invite",
       state: hasOrg ? "done" : "current",
     },
     {
       id: "event",
       label: "Select event",
-      detail: "Set the active competition context",
+      detail: "Set the active competition",
       href: hubHref("/competition", "command", orgId),
       state: !hasOrg ? "pending" : eventDone ? "done" : "current",
     },
     {
       id: "tba",
-      label: "Sync TBA",
-      detail: "Match and rank data from The Blue Alliance",
+      label: "Connect TBA",
+      detail: "Match and rank data",
       href: withOrgHref("/team/data", orgId),
       state: !hasOrg ? "pending" : tbaDone ? "done" : tbaCurrent ? "current" : "pending",
     },
     {
       id: "scout",
-      label: "Scout",
-      detail: "Starter match and pit forms for the season",
+      label: "Scout forms",
+      detail: "Match and pit forms",
       href: hubHref("/competition", "forms", orgId),
       state: !hasOrg || input.setupRequired ? "pending" : scoutDone ? "done" : "current",
     },
     {
       id: "ai",
-      label: "AI API keys",
-      detail: "Paste OpenAI, Anthropic, or Google keys for Free / your-keys",
+      label: "AI keys",
+      detail: "Optional provider keys",
       href: withOrgHref("/team/ai-keys", orgId),
       state: !hasOrg ? "pending" : aiDone ? "done" : "current",
     },
@@ -250,14 +218,29 @@ export function dashboardSetupSteps(input: {
 export function dashboardSetupTitle(shell: DashboardShellKind): string {
   switch (shell) {
     case "no_org":
-      return "Join your team workspace";
+      return "Join your team";
     case "setup":
-      return "Select an active event";
+      return "Set an active event";
     case "tba":
-      return "Connect TBA for live data";
+      return "Connect TBA";
     case "loading":
-      return "Loading your workspace…";
+      return "Loading…";
     default:
-      return "Home is ready";
+      return "Home";
+  }
+}
+
+export function dashboardSetupBlurb(shell: DashboardShellKind): string {
+  switch (shell) {
+    case "no_org":
+      return "Open the invite sent to your email.";
+    case "setup":
+      return "Pick the event this board should follow.";
+    case "tba":
+      return "Sync The Blue Alliance for live match data.";
+    case "loading":
+      return "Checking your workspace.";
+    default:
+      return "";
   }
 }

@@ -15,7 +15,7 @@ describe("dashboard catalog persistence helpers", () => {
     expect(DEFAULT_DASHBOARD_LAYOUT.length).toBeGreaterThanOrEqual(3);
     expect(DEFAULT_DASHBOARD_LAYOUT.length).toBeLessThanOrEqual(6);
     expect(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type)).toEqual(
-      expect.arrayContaining(["next_match", "robot_readiness", "alerts"]),
+      expect.arrayContaining(["next_match", "competition_snapshot", "robot_readiness", "alerts"]),
     );
     const validated = validateDashboardLayout(DEFAULT_DASHBOARD_LAYOUT, "scout");
     expect(validated.ok).toBe(true);

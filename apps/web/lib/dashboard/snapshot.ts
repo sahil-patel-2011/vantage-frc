@@ -221,49 +221,91 @@ export async function loadDashboardSnapshot(
   }
 
   async function competitionSnapshot() {
-    if (!eventKey || !teamKey) {
+    if (!teamKey) {
       widgets.competition_snapshot = stamp(
         "setup_required",
         "competition_snapshot",
         undefined,
-        "Select an active event and team workspace.",
+        "Select a team workspace so Statbotics/TBA EPA can load.",
       );
       return;
     }
-    const metrics = await client.query<{
+    if (eventKey) {
+      const metrics = await client.query<{
+        epaTotal: number | null;
+        epaAuto: number | null;
+        epaTeleop: number | null;
+        epaEndgame: number | null;
+        rank: number | null;
+        wins: number | null;
+        losses: number | null;
+        ties: number | null;
+        source: string;
+        syncedAt: string | null;
+      }>(
+        `SELECT epa_total AS "epaTotal", epa_auto AS "epaAuto", epa_teleop AS "epaTeleop", epa_endgame AS "epaEndgame",
+                rank, wins, losses, ties, source, synced_at::text AS "syncedAt"
+         FROM team_event_metrics
+         WHERE team_key = $1 AND event_key = $2
+         ORDER BY CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END, synced_at DESC
+         LIMIT 1`,
+        [teamKey, eventKey],
+      );
+      if (metrics.rows[0]) {
+        const m = metrics.rows[0];
+        widgets.competition_snapshot = stamp("live", "competition_snapshot", {
+          ...m,
+          record: `${m.wins ?? 0}-${m.losses ?? 0}-${m.ties ?? 0}`,
+          scope: "event",
+        });
+        return;
+      }
+    }
+    // No event metrics yet — fall back to year EPA from Neon Statbotics cache (never invent).
+    const year = new Date().getFullYear();
+    const yearMetrics = await client.query<{
       epaTotal: number | null;
       epaAuto: number | null;
       epaTeleop: number | null;
       epaEndgame: number | null;
-      rank: number | null;
-      wins: number | null;
-      losses: number | null;
-      ties: number | null;
       source: string;
       syncedAt: string | null;
+      year: number;
     }>(
       `SELECT epa_total AS "epaTotal", epa_auto AS "epaAuto", epa_teleop AS "epaTeleop", epa_endgame AS "epaEndgame",
-              rank, wins, losses, ties, source, synced_at::text AS "syncedAt"
-       FROM team_event_metrics
-       WHERE team_key = $1 AND event_key = $2
+              source, synced_at::text AS "syncedAt", year
+       FROM team_year_metrics
+       WHERE team_key = $1 AND year = $2
        ORDER BY CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END, synced_at DESC
        LIMIT 1`,
-      [teamKey, eventKey],
+      [teamKey, year],
     );
-    if (!metrics.rows[0]) {
-      widgets.competition_snapshot = stamp(
-        "empty",
-        "competition_snapshot",
-        undefined,
-        "Reference metrics not synced for this team/event yet.",
-      );
+    if (yearMetrics.rows[0]) {
+      const m = yearMetrics.rows[0];
+      widgets.competition_snapshot = stamp("live", "competition_snapshot", {
+        epaTotal: m.epaTotal,
+        epaAuto: m.epaAuto,
+        epaTeleop: m.epaTeleop,
+        epaEndgame: m.epaEndgame,
+        rank: null,
+        wins: null,
+        losses: null,
+        ties: null,
+        source: m.source,
+        syncedAt: m.syncedAt,
+        record: `${m.year} season`,
+        scope: "year",
+      });
       return;
     }
-    const m = metrics.rows[0];
-    widgets.competition_snapshot = stamp("live", "competition_snapshot", {
-      ...m,
-      record: `${m.wins ?? 0}-${m.losses ?? 0}-${m.ties ?? 0}`,
-    });
+    widgets.competition_snapshot = stamp(
+      eventKey ? "empty" : "setup_required",
+      "competition_snapshot",
+      undefined,
+      eventKey
+        ? "Statbotics/TBA metrics not synced for this team yet — open Team → Data."
+        : "Set an active event or sync Statbotics year EPA under Team → Data.",
+    );
   }
 
   async function scoutingCoverage() {

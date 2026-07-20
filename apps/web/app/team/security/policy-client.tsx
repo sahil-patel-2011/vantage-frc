@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader, Panel } from "../../../components/ui";
-import { HowToUseLink } from "../../help/how-to-use-link";
 
 export default function AuthPolicyClient({ orgId }: { orgId: string }) {
   const [policy, setPolicy] = useState({
@@ -41,7 +40,6 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         description="Organization sign-in policy, 2FA requirements, hub access for scouts/viewers, and delegated admin powers. Personal authenticator setup lives under Account → Security."
       >
         <nav className="settings-inline-links" aria-label="Related settings">
-          <HowToUseLink slug="hub-access" />
           <a href={`/team?orgId=${orgId}`}>Team admin</a>
           <a href={`/team/budgets?orgId=${orgId}`}>API budgets</a>
           <a href={`/team?orgId=${orgId}#custom-providers`}>API keys</a>

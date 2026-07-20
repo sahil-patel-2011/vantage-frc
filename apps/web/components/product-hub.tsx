@@ -178,7 +178,7 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
           <a className="app-button" href="/dashboard">
             Back to Home
           </a>
-          <a className="app-button secondary" href="/help?q=hub+access">
+          <a className="app-button secondary" href="/docs?q=hub+access">
             How section access works
           </a>
         </EmptyState>

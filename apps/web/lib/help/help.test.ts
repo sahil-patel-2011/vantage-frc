@@ -29,7 +29,7 @@ describe("help articles", () => {
 
   it("resolves slug lookups and deep links", () => {
     expect(getHelpArticle("edit-home")?.title).toMatch(/Edit Home/i);
-    expect(helpArticleHref("byok-automode")).toBe("/help/byok-automode");
+    expect(helpArticleHref("byok-automode")).toBe("/docs/byok-automode");
     expect(getHelpArticle("missing")).toBeUndefined();
   });
 });
@@ -38,7 +38,7 @@ describe("help search index", () => {
   it("jumps to island docs from island keywords", () => {
     const hits = searchHelpArticles("bottom island");
     expect(hits[0]?.slug).toBe("bottom-island");
-    expect(hits[0]?.href).toBe("/help/bottom-island");
+    expect(hits[0]?.href).toBe("/docs/bottom-island");
   });
 
   it("finds BYOK / Automode and Edit Home", () => {

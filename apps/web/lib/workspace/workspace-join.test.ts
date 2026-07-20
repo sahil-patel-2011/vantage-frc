@@ -26,13 +26,10 @@ describe("workspaceRelatedLinks", () => {
 
   it("keeps org-exempt Invite / Support / Account without DEMO paths", () => {
     const links = workspaceRelatedLinks("org-1", {
-      include: [...WORKSPACE_RELATED_INCLUDE, "onboarding-buddy"],
+      include: [...WORKSPACE_RELATED_INCLUDE],
     });
     expect(links.find((l) => l.id === "invite")?.href).toBe("/invite");
     expect(links.find((l) => l.id === "support")?.href).toBe("/support");
-    expect(links.find((l) => l.id === "onboarding-buddy")?.href).toBe(
-      "/team?tab=onboarding-buddy&orgId=org-1",
-    );
     expect(links.every((l) => !/demo/i.test(l.href))).toBe(true);
   });
 });
@@ -43,13 +40,13 @@ describe("workspace Soft-UI join helpers", () => {
     expect(formatWorkspaceOrgLabel({ orgName: "Solo", teamNumber: null })).toBe("Solo");
   });
 
-  it("keeps empty join copy invite-based and never DEMO orgs", () => {
+  it("keeps empty join copy invite-based and concise", () => {
     const empty = workspaceShellCopy("empty");
-    expect(empty.description).toMatch(/exact email/i);
-    expect(empty.description).toMatch(/never DEMO organizations/i);
-    expect(empty.badge).toMatch(/No memberships/i);
-    expect(workspaceJoinCopy("select").title).toMatch(/Select/i);
-    expect(workspaceShellCopy("select").description).toMatch(/no DEMO organizations/i);
+    expect(empty.description).toMatch(/invite/i);
+    expect(empty.description).not.toMatch(/DEMO/i);
+    expect(empty.badge).toMatch(/Invite/i);
+    expect(workspaceJoinCopy("select").title).toMatch(/Choose|Select/i);
+    expect(workspaceShellCopy("select").description).not.toMatch(/DEMO/i);
   });
 
   it("classifies shells from real membership counts only", () => {
@@ -78,9 +75,7 @@ describe("workspace Soft-UI join helpers", () => {
     expect(none.find((a) => a.id === "invite")?.href).toBe("/invite");
     expect(none.find((a) => a.id === "account")?.href).toBe("/account?tab=profile");
     expect(none.find((a) => a.id === "support")?.href).toBe("/support");
-    expect(none.find((a) => a.id === "onboarding-buddy")?.href).toBe(
-      "/team?tab=onboarding-buddy",
-    );
+    expect(none.find((a) => a.id === "onboarding-buddy")).toBeUndefined();
 
     const select = workspaceJoinNextActions("select", "org-1");
     expect(select.find((a) => a.id === "invite")?.href).toBe("/invite");
@@ -88,14 +83,12 @@ describe("workspace Soft-UI join helpers", () => {
     expect(select.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
 
-  it("builds setup steps with hubHref / withOrgHref — never DEMO orgs", () => {
+  it("builds setup steps with Invite / Account / Support — no Onboarding Buddy", () => {
     const steps = workspaceSetupSteps("org-1");
     expect(steps.find((s) => s.id === "invite")?.href).toBe("/invite");
     expect(steps.find((s) => s.id === "account")?.href).toBe("/account?tab=profile");
     expect(steps.find((s) => s.id === "support")?.href).toBe("/support");
-    expect(steps.find((s) => s.id === "onboarding-buddy")?.href).toBe(
-      "/team?tab=onboarding-buddy&orgId=org-1",
-    );
+    expect(steps.find((s) => s.id === "onboarding-buddy")).toBeUndefined();
     expect(workspaceOrgHref("org-1")).toBe("/workspace?orgId=org-1");
     expect(workspaceOrgHref(null)).toBe("/workspace");
   });

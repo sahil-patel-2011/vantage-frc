@@ -35,8 +35,8 @@ export function SoftAccessDenied({
             <a className="app-button" href="/dashboard">
               Back to Home
             </a>
-            <a className="app-button secondary" href="/help">
-              Help
+            <a className="app-button secondary" href="/docs">
+              App manual
             </a>
           </>
         )}
@@ -64,7 +64,7 @@ export function HubTabForbidden({
         <a className="app-button" href="/dashboard">
           Back to Home
         </a>
-        <a className="app-button secondary" href="/help?q=hub+access">
+        <a className="app-button secondary" href="/docs?q=hub+access">
           How section access works
         </a>
       </div>
@@ -88,8 +88,8 @@ export function SponsorsFundingForbidden({ breadcrumbs = "Business / Sponsors" }
           <a className="app-button secondary" href="/team/background">
             Funding profile
           </a>
-          <a className="app-button secondary" href="/help?q=sponsors">
-            Help
+          <a className="app-button secondary" href="/docs?q=sponsors">
+            App manual
           </a>
         </>
       }

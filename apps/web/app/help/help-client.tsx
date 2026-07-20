@@ -12,9 +12,9 @@ export default function HelpClient() {
   return (
     <main className="module-page help-page soft-gate">
       <PageHeader
-        breadcrumbs="Settings / Help"
-        title="Help"
-        description="Short tutorials for Soft-UI — island, Home widgets, scouting offline, BYOK, Event Day, alliance/season, and credits. Search also works from Cmd+K."
+        breadcrumbs="Settings / App manual"
+        title="How to use this app"
+        description="Searchable Soft-UI manual — hubs, island, Home widgets, scouting offline, TBA, BYOK, Event Day, Business/Media, and AI. Also available from Cmd+K."
       >
         <a className="app-button secondary" href="/support">
           Support tickets
@@ -22,12 +22,12 @@ export default function HelpClient() {
       </PageHeader>
 
       <label className="help-search" htmlFor="help-search-input">
-        <span className="eyebrow">Search tutorials</span>
+        <span className="eyebrow">Search the manual</span>
         <input
           id="help-search-input"
           type="search"
           value={query}
-          placeholder="e.g. island, Edit Home, Automode, credits…"
+          placeholder="e.g. island, Edit Home, TBA, Automode, credits…"
           autoComplete="off"
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -35,7 +35,7 @@ export default function HelpClient() {
 
       {articles.length === 0 ? (
         <p className="help-empty app-muted" role="status">
-          No tutorials match “{query.trim()}”. Try island, scouting, BYOK, or credits — or open Support tickets.
+          No topics match “{query.trim()}”. Try island, scouting, BYOK, or credits — or open Support tickets.
         </p>
       ) : (
         <ul className="help-article-list">
@@ -53,7 +53,7 @@ export default function HelpClient() {
 
       {query.trim().length < 2 ? (
         <p className="help-hint app-muted">
-          {HELP_ARTICLES.length} tutorials in-repo — no CMS. Cmd+K or /search also jump here when you type a topic.
+          {HELP_ARTICLES.length} topics in-repo — no CMS. Empty product surfaces stay honest until real TBA/scout data exists.
         </p>
       ) : null}
     </main>

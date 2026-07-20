@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { SoftAccessDenied } from "../../components/hub-access-gate";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AIAttribution, EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
-import { HowToUseLink } from "../help/how-to-use-link";
 import {
   formatMediaMetric,
   isMediaReminderOverdue,
@@ -162,7 +161,6 @@ function MediaShell({
     <main className="module-page media-page soft-gate">
       <PageHeader breadcrumbs="Media / Media hub" title="Media" description={description}>
         <div className="media-header-actions">
-          <HowToUseLink slug="media-workspace" />
           <MediaRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
@@ -777,7 +775,6 @@ function LiveMediaWorkspace({
         description={`${view.orgName}${view.teamNumber != null ? ` · Team ${view.teamNumber}` : ""} · ${view.seasonYear} content calendar, drafts, kit, and impact — recorded rows only.`}
       >
         <div className="media-header-actions">
-          <HowToUseLink slug="media-workspace" />
           <MediaRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>

@@ -85,7 +85,7 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA schedule rows into Neon — never invent DEMO match times.",
+      detail: "Pull TBA schedule rows into Neon.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -103,7 +103,7 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Alliance prep uses the same event — never DEMO callouts.",
+      detail: "Alliance prep uses the same event.",
       href: hubHref("/competition", "strategy", orgId),
     },
     {
@@ -115,7 +115,7 @@ export function eventDaySetupSteps(orgId?: string | null): EventDaySetupStep[] {
   ];
 }
 
-/** Real match counts only — never invent DEMO totals. */
+/** Real match counts only. */
 export function formatEventDayMatchCount(value: unknown, loaded: boolean): string {
   if (!loaded) return "…";
   const n = Number(value ?? 0);
@@ -133,7 +133,7 @@ export function isEventDayScheduleEmpty(input: {
   return (input.matchCount ?? 0) === 0;
 }
 
-/** Classify Event Day Soft-UI shell — never invents DEMO schedule. */
+/** Classify Event Day Soft-UI shell. */
 export function classifyEventDayShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -153,53 +153,48 @@ export function classifyEventDayShell(input: {
   return "ready";
 }
 
-/** Soft-UI empty / setup / error copy — never DEMO schedule. */
+/** Soft-UI empty / setup / error copy. */
 export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
   switch (kind) {
     case "loading":
       return {
         kind,
-        title: "Loading Event Day…",
-        description:
-          "Checking workspace membership and the active event schedule — never DEMO match times.",
+        title: "Loading…",
+        description: "Checking your event schedule.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Event Day",
-        description:
-          "A network or server issue blocked the command board. Retry, or open My Day / Schedule / Strategy / Scouting while it reloads — never invent DEMO matches.",
+        title: "Could not load Command",
+        description: "Retry, or open Schedule while this reloads.",
       };
     case "setup":
       return {
         kind,
-        badge: "Setup required",
-        title: "Finish setup to go live",
-        description:
-          "Event Day is org-scoped. Pick a workspace, set an active event, and sync TBA before the match queue appears — nothing is pre-seeded.",
+        badge: "Setup",
+        title: "Set an active event",
+        description: "Connect TBA and pick the event Command should follow.",
       };
     case "empty":
       return {
         kind,
-        badge: "No matches yet",
-        title: "Waiting on the event schedule",
-        description:
-          "Upcoming matches appear after TBA reference sync for the active event — never DEMO times. Open My Day, Schedule, Strategy, or Scouting while sync catches up.",
+        badge: "No matches",
+        title: "No upcoming matches",
+        description: "Matches appear after TBA sync for this event.",
       };
     default:
       return {
         kind,
-        title: "Event Day Command",
-        description:
-          "Next match, scout gaps, and labeled model briefs from real TBA rows — never DEMO schedule.",
+        title: "Command",
+        description: "Next match, scout gaps, and briefs.",
       };
   }
 }
 
 /**
  * Soft-UI next actions for Event Day empty/setup shells.
- * Points at real My Day / Schedule / Strategy / Scouting paths — never DEMO schedule.
+ * Points at real My Day / Schedule / Strategy / Scouting paths.
  */
 export function eventDayShellNextActions(input: {
   orgId?: string | null;
@@ -214,14 +209,14 @@ export function eventDayShellNextActions(input: {
         {
           id: "workspace",
           label: "Select workspace",
-          detail: "Command is org-scoped — pick a team before loading TBA rows.",
+          detail: "Pick a team first.",
           href: "/workspace",
           primary: true,
         },
         {
           id: "my-day",
           label: "Open My Day",
-          detail: "Personal next-match glance stays blank until a workspace exists — never DEMO matches.",
+          detail: "Personal next-match glance stays blank until a workspace exists.",
           href: hubHref("/competition", "my-day", null),
         },
         {
@@ -243,7 +238,7 @@ export function eventDayShellNextActions(input: {
         {
           id: "event",
           label: "Set active event",
-          detail: "Owners/admins pick the TBA event key Command reads — empty until you choose one.",
+          detail: "Owners/admins set the event Command reads.",
           href: withOrgHref("/command", orgId),
           primary: true,
         },
@@ -277,7 +272,7 @@ export function eventDayShellNextActions(input: {
       {
         id: "team-data",
         label: "Sync Team Data",
-        detail: "Pull TBA schedules into Neon — Command never invents DEMO match times.",
+        detail: "Pull TBA schedules into Neon.",
         href: withOrgHref("/team/data", orgId),
         primary: true,
       },
@@ -290,7 +285,7 @@ export function eventDayShellNextActions(input: {
       {
         id: "schedule",
         label: "Open Schedule",
-        detail: "Full board and Command share TBA match rows — never DEMO placeholders.",
+        detail: "Full board and Command share TBA match rows.",
         href: withOrgHref("/schedule", orgId),
       },
       {
@@ -337,7 +332,7 @@ export function eventDayShellNextActions(input: {
       {
         id: "schedule",
         label: "Open Schedule",
-        detail: "Confirm TBA rows on the full board — never DEMO match assignments.",
+        detail: "Confirm TBA rows on the full board.",
         href: withOrgHref("/schedule", orgId),
         primary: true,
       },
@@ -350,7 +345,7 @@ export function eventDayShellNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Prep while waiting — Strategy never invents DEMO EPA or win rates.",
+        detail: "Prep while waiting — Strategy stays blank without metrics.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
