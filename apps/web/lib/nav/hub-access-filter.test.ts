@@ -4,6 +4,7 @@ import {
   clientCanAccessHubTab,
   filterSponsorTabs,
   filterTabsByHubAccess,
+  hubIdForPath,
   pathAllowedByHubAccess,
   pathAllowedBySponsors,
   type ClientHubAccessRow,
@@ -61,5 +62,12 @@ describe("hub-access-filter", () => {
     expect(pathAllowedByHubAccess("/media?tab=calendar", restricted)).toBe(true);
     expect(pathAllowedByHubAccess("/media?tab=impact", restricted)).toBe(false);
     expect(pathAllowedByHubAccess("/competition", restricted)).toBe(false);
+  });
+
+  it("maps business and sponsor paths to the business hub", () => {
+    expect(hubIdForPath("/business")).toBe("business");
+    expect(hubIdForPath("/sponsor-suite")).toBe("business");
+    expect(hubIdForPath("/matching-gift-finder")).toBe("business");
+    expect(hubIdForPath("/media")).toBe("media");
   });
 });

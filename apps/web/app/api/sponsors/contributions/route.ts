@@ -1,7 +1,7 @@
 import { withRls } from "@vantage/db";
 import {
-  requireOrgAdmin,
-  requireOrgMember,
+  requireSponsorsAdmin,
+  requireSponsorsMember,
   requireSponsorInOrg,
   requireTenantSession,
   tenantErrorResponse,
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       conditions.push(`season_year=$${params.length}`);
     }
     const contributions = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgMember(client, orgId, current.user.id);
+      await requireSponsorsMember(client, orgId, current.user.id);
       if (sponsorId) await requireSponsorInOrg(client, orgId, sponsorId);
       const result = await client.query(
         `SELECT ${RETURNING} FROM sponsor_contributions WHERE ${conditions.join(" AND ")} ORDER BY received_at DESC`,
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     const estimatedValueUsd =
       body.estimatedValueUsd != null && body.estimatedValueUsd !== "" ? Number(body.estimatedValueUsd) : null;
     const contribution = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, current.user.id);
+      await requireSponsorsAdmin(client, orgId, current.user.id);
       await requireSponsorInOrg(client, orgId, sponsorId);
       const result = await client.query(
         `INSERT INTO sponsor_contributions(sponsor_id, org_id, season_year, type, amount_usd, estimated_value_usd, description, received_at, created_by)
@@ -96,7 +96,7 @@ export async function PATCH(request: Request) {
     const id = String(body.id ?? "");
     if (!orgId || !id) throw new Error("orgId and id are required");
     const contribution = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, current.user.id);
+      await requireSponsorsAdmin(client, orgId, current.user.id);
       const result = await client.query(
         `UPDATE sponsor_contributions SET thank_you_sent_at=now() WHERE id=$1::uuid AND org_id=$2::uuid RETURNING ${RETURNING}`,
         [id, orgId],

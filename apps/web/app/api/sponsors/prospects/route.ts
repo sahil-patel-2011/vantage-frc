@@ -1,8 +1,8 @@
 import { withRls } from "@vantage/db";
 import { suggestProspectCategories } from "../../../../lib/sponsor-research";
 import {
-  requireOrgAdmin,
-  requireOrgMember,
+  requireSponsorsAdmin,
+  requireSponsorsMember,
   requireTenantSession,
   tenantErrorResponse,
 } from "../../../../lib/tenant-org-access";
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const status = url.searchParams.get("status");
     if (!orgId) throw new Error("orgId is required");
     const prospects = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgMember(client, orgId, current.user.id);
+      await requireSponsorsMember(client, orgId, current.user.id);
       const result = await client.query(
         `SELECT id, company_name AS "companyName", website, rationale, source_urls AS "sourceUrls", status,
                 related_sponsor_id AS "relatedSponsorId", suggested_by AS "suggestedBy", created_at AS "createdAt"
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
     const prospects = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, current.user.id);
+      await requireSponsorsAdmin(client, orgId, current.user.id);
       const existing = await client.query(
         `SELECT industry, tier, state_prov AS "stateProv" FROM sponsors WHERE org_id=$1::uuid`,
         [orgId],
@@ -79,7 +79,7 @@ export async function PATCH(request: Request) {
     if (!orgId || !id) throw new Error("orgId and id are required");
     if (!["suggested", "reviewing", "contacted", "dismissed"].includes(status)) throw new Error("Invalid status");
     const prospect = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, current.user.id);
+      await requireSponsorsAdmin(client, orgId, current.user.id);
       const result = await client.query(
         `UPDATE sponsor_prospects SET status=$1 WHERE id=$2::uuid AND org_id=$3::uuid
          RETURNING id, company_name AS "companyName", status`,

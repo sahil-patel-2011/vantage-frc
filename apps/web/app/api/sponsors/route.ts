@@ -1,8 +1,8 @@
 import { withRls } from "@vantage/db";
 import { needsFollowUp } from "../../../lib/sponsors";
 import {
-  requireOrgAdmin,
-  requireOrgMember,
+  requireSponsorsAdmin,
+  requireSponsorsMember,
   requireTenantSession,
   tenantErrorResponse,
 } from "../../../lib/tenant-org-access";
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const status = url.searchParams.get("status");
     if (!orgId) throw new Error("orgId is required");
     const sponsors = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgMember(client, orgId, current.user.id);
+      await requireSponsorsMember(client, orgId, current.user.id);
       const result = await client.query(
         `SELECT s.id, s.name, s.website, s.tier, s.status, s.industry, s.city, s.state_prov AS "stateProv",
                 s.notes, s.first_sponsored_season AS "firstSponsoredSeason", s.created_at AS "createdAt",
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     if (!orgId) throw new Error("orgId is required");
     if (!name) throw new Error("Sponsor name is required");
     const sponsor = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, current.user.id);
+      await requireSponsorsAdmin(client, orgId, current.user.id);
       const result = await client.query(
         `INSERT INTO sponsors(org_id, name, website, tier, status, industry, city, state_prov, notes, first_sponsored_season, created_by)
          VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::uuid)
@@ -83,7 +83,7 @@ export async function PATCH(request: Request) {
     if (!orgId || !id) throw new Error("orgId and id are required");
     if (!name) throw new Error("Sponsor name is required");
     const sponsor = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, current.user.id);
+      await requireSponsorsAdmin(client, orgId, current.user.id);
       const result = await client.query(
         `UPDATE sponsors SET name=$1, website=$2, tier=$3, status=$4, industry=$5, city=$6, state_prov=$7, notes=$8,
            first_sponsored_season=$9, updated_at=now()

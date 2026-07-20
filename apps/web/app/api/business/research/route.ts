@@ -1,5 +1,5 @@
 import { createSearchProvider, type SearchResult } from "@vantage/intel-research";
-import { auth } from "@vantage/core";
+import { assertHubTabAccess, assertSponsorsAllowed, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { rankSponsorFit } from "../../../../lib/business-portal";
@@ -34,6 +34,8 @@ export async function POST(request: Request) {
         [body.orgId, session.user.id],
       );
       if (!org.rows[0]) throw new Error("Organization access denied");
+      await assertHubTabAccess(client, body.orgId!, session.user.id, "business", "sponsors");
+      await assertSponsorsAllowed(client, body.orgId!);
       const sponsors = await client.query<{ name: string; industry: string | null; website: string | null }>(
         `SELECT name, industry, website FROM sponsors WHERE org_id = $1`,
         [body.orgId],
@@ -134,6 +136,10 @@ export async function POST(request: Request) {
     const message = error instanceof Error && error.name === "AbortError"
       ? "Sponsor research timed out. Please try again."
       : error instanceof Error ? error.message : "Sponsor research failed";
-    return Response.json({ error: message }, { status: 400 });
+    const status =
+      /access denied|do not have access|membership required|Sponsor tools are disabled/i.test(message)
+        ? 403
+        : 400;
+    return Response.json({ error: message }, { status });
   }
 }

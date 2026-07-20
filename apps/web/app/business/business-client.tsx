@@ -16,7 +16,13 @@ import {
   type Sponsor,
 } from "../../lib/business-portal";
 import { BUSINESS_GRANTS_RELATED_INCLUDE } from "../../lib/business/business-related";
-import { filterSponsorTabs, SPONSOR_TAB_IDS } from "../../lib/nav/hub-access-filter";
+import { SoftAccessDenied } from "../../components/hub-access-gate";
+import {
+  clientCanAccessHub,
+  filterSponsorTabs,
+  filterTabsByHubAccess,
+  SPONSOR_TAB_IDS,
+} from "../../lib/nav/hub-access-filter";
 import {
   hubById,
   hubLegacyHref,
@@ -24,6 +30,7 @@ import {
   hubPrimaryTabs,
   isHubTab,
 } from "../../lib/nav/hubs";
+import { useClientAccessProfile } from "../../lib/nav/use-client-access";
 import { FundraisingGlance } from "./fundraising-glance";
 import { PartnerPlacementsPanel } from "./partner-placements-panel";
 import { SponsorPipelinePanel } from "./sponsor-pipeline-panel";
@@ -120,6 +127,7 @@ function Field({ label, hint, children, wide = false }: { label: string; hint?: 
 }
 
 export default function BusinessClient() {
+  const access = useClientAccessProfile();
   const [view, setView] = useState<BusinessPortalView | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
   const [busy, setBusy] = useState(false);
@@ -154,21 +162,36 @@ export default function BusinessClient() {
   }, [load]);
 
   const live = view?.status === "live" ? view : null;
+  const sponsorsAllowed = live?.sponsorsAllowed ?? access.sponsorsAllowed;
   const visibleTabs = useMemo(
-    () => filterSponsorTabs(TABS, live?.sponsorsAllowed),
-    [live?.sponsorsAllowed],
+    () =>
+      filterTabsByHubAccess(
+        filterSponsorTabs(TABS, sponsorsAllowed),
+        access.hubAccess,
+        "business",
+      ),
+    [access.hubAccess, sponsorsAllowed],
   );
   const visibleMoreTabs = useMemo(
-    () => filterSponsorTabs(MORE_TABS, live?.sponsorsAllowed),
-    [live?.sponsorsAllowed],
+    () =>
+      filterTabsByHubAccess(
+        filterSponsorTabs(MORE_TABS, sponsorsAllowed),
+        access.hubAccess,
+        "business",
+      ),
+    [access.hubAccess, sponsorsAllowed],
   );
+  const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, "business");
 
   useEffect(() => {
-    if (!live) return;
-    if (SPONSOR_TAB_IDS.has(tab) && live.sponsorsAllowed === false) {
+    if (SPONSOR_TAB_IDS.has(tab) && sponsorsAllowed === false) {
       selectTab("overview");
+      return;
     }
-  }, [live, selectTab, tab]);
+    if (!access.ready || !visibleTabs.length) return;
+    if (visibleTabs.some((entry) => entry.id === tab)) return;
+    selectTab((visibleTabs[0]?.id as Tab) ?? "overview");
+  }, [access.ready, selectTab, sponsorsAllowed, tab, visibleTabs]);
 
   const mutate = useCallback(async (payload: Record<string, unknown>): Promise<boolean> => {
     if (!live || busy) return false;
@@ -235,6 +258,17 @@ export default function BusinessClient() {
 
   const orgId = live?.orgId;
   const q = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+
+  if (hubDenied) {
+    return (
+      <SoftAccessDenied
+        breadcrumbs="Business / Business Hub"
+        title="Business"
+        heading="Business is not available"
+        description="Your team admin limited which sections you can open. Ask an owner to update section access under Team → Security."
+      />
+    );
+  }
 
   return (
     <main className="module-page business-page">
@@ -373,7 +407,11 @@ export default function BusinessClient() {
               research={research}
             />
           ) : null}
-          {tab === "sponsorship" ? (<div className="product-hub-panel"><SponsorshipClient /></div>) : null}
+          {tab === "sponsorship" ? (
+            <div className="product-hub-panel">
+              <SponsorshipClient embedded />
+            </div>
+          ) : null}
           {tab === "placements" ? (
             <PartnerPlacementsPanel orgId={live.orgId} seasonYear={live.seasonYear} canManage={live.canManageFinance} />
           ) : null}

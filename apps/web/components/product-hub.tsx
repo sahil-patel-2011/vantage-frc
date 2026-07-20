@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { PageHeader, TabBar } from "./ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { HubTabForbidden } from "./hub-access-gate";
+import { EmptyState, PageHeader, TabBar } from "./ui";
+import {
+  clientCanAccessHub,
+  filterTabsByHubAccess,
+  type ClientHubId,
+} from "../lib/nav/hub-access-filter";
 import {
   hubById,
   hubFeaturedMoreTabs,
@@ -12,6 +18,7 @@ import {
   type ProductHubDef,
 } from "../lib/nav/hubs";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { useClientAccessProfile } from "../lib/nav/use-client-access";
 
 type ProductHubShellProps = {
   hubId: ProductHubDef["id"];
@@ -102,9 +109,21 @@ export function HubLegacyOpen({ label, href }: { label: string; href: string }) 
 
 export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }: ProductHubShellProps) {
   const hub = hubById(hubId);
-  const primaryTabs = hubPrimaryTabs(hub);
-  const moreTabs = hubMoreTabs(hub);
-  const featuredMore = hubFeaturedMoreTabs(hub);
+  const access = useClientAccessProfile();
+  const accessHubId = hubId as ClientHubId;
+  const primaryTabs = useMemo(
+    () => filterTabsByHubAccess(hubPrimaryTabs(hub), access.hubAccess, accessHubId),
+    [access.hubAccess, accessHubId, hub],
+  );
+  const moreTabs = useMemo(
+    () => filterTabsByHubAccess(hubMoreTabs(hub), access.hubAccess, accessHubId),
+    [access.hubAccess, accessHubId, hub],
+  );
+  const featuredMore = useMemo(
+    () => filterTabsByHubAccess(hubFeaturedMoreTabs(hub), access.hubAccess, accessHubId),
+    [access.hubAccess, accessHubId, hub],
+  );
+  const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, accessHubId);
   const [tab, setTab] = useState(hub.defaultTab);
   const [orgId, setOrgId] = useState<string | null>(null);
 
@@ -113,9 +132,20 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
     setOrgId(readOrgId());
   }, [hub]);
 
+  useEffect(() => {
+    if (!access.ready || hubDenied || !primaryTabs.length) return;
+    if (primaryTabs.some((entry) => entry.id === tab)) return;
+    const fallback = primaryTabs[0]?.id ?? hub.defaultTab;
+    setTab(fallback);
+    writeTabToUrl(fallback, hub.defaultTab);
+  }, [access.ready, hub.defaultTab, hubDenied, primaryTabs, tab]);
+
   const selectTab = useCallback(
     (next: string) => {
       if (!isHubTab(hub, next)) return;
+      if (access.ready && !clientCanAccessHub(access.hubAccess, accessHubId)) return;
+      const allowed = filterTabsByHubAccess(hub.tabs, access.hubAccess, accessHubId);
+      if (access.ready && !allowed.some((entry) => entry.id === next)) return;
       const def = hub.tabs.find((entry) => entry.id === next);
       // Non-primary tools live as standalone pages — jump there instead of a blank panel.
       if (def?.primary === false && def.legacyHref && typeof window !== "undefined") {
@@ -125,8 +155,40 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
       setTab(next);
       writeTabToUrl(next, hub.defaultTab);
     },
-    [hub, orgId],
+    [access.hubAccess, access.ready, accessHubId, hub, orgId],
   );
+
+  if (access.ready && hubDenied) {
+    return (
+      <main className={`module-page product-hub product-hub--${hub.id} soft-gate`}>
+        <PageHeader
+          breadcrumbs={breadcrumbs ?? `${hub.label} hub`}
+          title={hub.title}
+          description={hub.description}
+        >
+          {headerActions}
+        </PageHeader>
+        <EmptyState
+          soft
+          badge="Access limited"
+          badgeTone="setup"
+          title={`${hub.label} is not available`}
+          description={`Your team admin limited which sections you can open. Ask an owner to update section access under Team → Security, or return Home.`}
+        >
+          <a className="app-button" href="/dashboard">
+            Back to Home
+          </a>
+          <a className="app-button secondary" href="/help?q=hub+access">
+            How section access works
+          </a>
+        </EmptyState>
+      </main>
+    );
+  }
+
+  const tabAllowed =
+    !access.ready ||
+    filterTabsByHubAccess(hub.tabs, access.hubAccess, accessHubId).some((entry) => entry.id === tab);
 
   return (
     <main className={`module-page product-hub product-hub--${hub.id}`}>
@@ -139,7 +201,7 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
       </PageHeader>
       <TabBar
         aria-label={`${hub.label} sections`}
-        value={primaryTabs.some((entry) => entry.id === tab) ? tab : hub.defaultTab}
+        value={primaryTabs.some((entry) => entry.id === tab) ? tab : (primaryTabs[0]?.id ?? hub.defaultTab)}
         onChange={selectTab}
         tabs={primaryTabs.map((entry) => ({ id: entry.id, label: entry.label }))}
         className="product-hub-tabs"
@@ -171,6 +233,10 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
       ) : null}
       <div className="product-hub-panel" data-hub-tab={tab}>
         {(() => {
+          if (access.ready && !tabAllowed) {
+            const active = hub.tabs.find((entry) => entry.id === tab);
+            return <HubTabForbidden hubLabel={hub.label} tabLabel={active?.label} />;
+          }
           const active = hub.tabs.find((entry) => entry.id === tab);
           if (active?.primary === false && active.legacyHref) {
             return <HubLegacyOpen label={active.label} href={hubLegacyHref(active, orgId)} />;

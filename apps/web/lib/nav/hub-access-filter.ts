@@ -132,6 +132,7 @@ export function hubIdForPath(pathname: string): ClientHubId | null {
     pathname.startsWith("/orders") ||
     pathname.startsWith("/sponsorship") ||
     pathname.startsWith("/sponsor") ||
+    pathname.startsWith("/matching-gift") ||
     pathname.startsWith("/grant")
   ) {
     return "business";
