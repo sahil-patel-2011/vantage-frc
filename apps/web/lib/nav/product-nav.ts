@@ -366,18 +366,22 @@ export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: Prod
   { href: "/ai", label: "AI", icon: "bolt" },
 ];
 
-/** Glanceable ops shortcuts under the pillars — keep short to avoid clutter. */
+/**
+ * Glanceable ops under the pillars — short list only.
+ * Key Soft-UI tools stay here so the More sheet does not need a second “featured” grid.
+ */
 export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/competition?tab=forms", label: "Forms", icon: "clipboard" },
-  { href: "/competition?tab=match-checklist", label: "Checklist", icon: "clipboard" },
   { href: "/team?tab=messages", label: "Messages", icon: "chat" },
+  { href: "/alliance-selection-desk", label: "Alliance", icon: "swords" },
+  { href: "/team/ai-keys", label: "AI keys", icon: "gear" },
+  { href: "/writer", label: "Writer", icon: "bolt" },
 ];
 
-/** Newly polished Soft-UI tools — discoverable without dumping the full catalog. */
+/** @deprecated Prefer MORE_SHEET_LINKS — kept for any residual imports. */
 export const FEATURED_SOFT_UI_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/alliance-selection-desk", label: "Alliance desk", icon: "swords" },
-  { href: "/season-planning-workspace", label: "Season planning", icon: "calendar" },
   { href: "/team/ai-keys", label: "AI API keys", icon: "gear" },
   { href: "/writer", label: "Writer", icon: "bolt" },
 ];

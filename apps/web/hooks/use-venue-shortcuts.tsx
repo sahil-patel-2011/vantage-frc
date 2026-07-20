@@ -73,8 +73,16 @@ export function VenueShortcutCheatsheet({
 }) {
   if (!open) return null;
   return (
-    <div className="venue-shortcut-dialog" role="dialog" aria-modal="true" aria-labelledby="venue-shortcut-title">
-      <div>
+    <div
+      className="venue-shortcut-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="venue-shortcut-title"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div onClick={(event) => event.stopPropagation()}>
         <header>
           <h2 id="venue-shortcut-title">Venue shortcuts</h2>
           <button type="button" aria-label="Close" onClick={onClose}>

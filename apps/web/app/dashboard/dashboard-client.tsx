@@ -726,8 +726,6 @@ export default function DashboardClient() {
           </p>
         </div>
         <div className="dash-home-actions">
-          <CopyShareLink orgId={orgId || null} />
-          <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
           {nextMatchData && !editing ? (
             <a className="dash-next-glance" href={withOrgHref("/intel", orgId || null)}>
               <span>Next</span>
@@ -736,9 +734,6 @@ export default function DashboardClient() {
               </strong>
               <b>{countdownLabel(nextMatchData.scheduledTime as string | undefined)}</b>
             </a>
-          ) : null}
-          {updatedAt && orgId && !editing ? (
-            <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small>
           ) : null}
           {!orgId ? (
             <a className="app-button secondary" href="/workspace">
@@ -766,8 +761,18 @@ export default function DashboardClient() {
               Edit Home Screen
             </button>
           ) : null}
+          <details className="dash-home-more">
+            <summary aria-label="More home tools">More</summary>
+            <div>
+              <CopyShareLink orgId={orgId || null} />
+              {updatedAt && orgId && !editing ? (
+                <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small>
+              ) : null}
+            </div>
+          </details>
         </div>
       </header>
+      <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       {orgId && !editing && homeStripItems.length > 0 ? (
         <section
@@ -877,27 +882,21 @@ export default function DashboardClient() {
         </nav>
       ) : null}
 
-      {meLoaded && (dashShell !== "ready" || !hasScoutingSchemas || !hasAiProvider) ? (
+      {meLoaded && dashShell !== "ready" ? (
         <section className="dash-setup-banner" aria-label="First-run setup">
           <div>
             <Badge tone="setup">Setup required</Badge>
-            <h2>
-              {dashShell !== "ready"
-                ? dashboardSetupTitle(dashShell)
-                : !hasScoutingSchemas
-                  ? "Create scouting forms"
-                  : "Configure metered AI"}
-            </h2>
+            <h2>{dashboardSetupTitle(dashShell)}</h2>
             <p>
-              Live widgets stay empty on purpose until this path is complete. Vantage will not invent ranks, EPA, match
-              times, or readiness percentages.
-            </p>
-            <p className="dash-setup-note">
-              You can rearrange the board anytime — saving layouts requires a workspace.
+              Live widgets stay empty until this path is complete — Vantage will not invent ranks, EPA, match times, or
+              readiness percentages.
             </p>
           </div>
           <ol className="dash-setup-steps">
-            {setupSteps.map((step, index) => (
+            {setupSteps
+              .filter((step) => step.state !== "done" || step.id === "workspace")
+              .slice(0, 4)
+              .map((step, index) => (
               <li key={step.id} className={step.state === "pending" ? undefined : step.state}>
                 <b>{index + 1}</b>
                 <div>
@@ -905,7 +904,7 @@ export default function DashboardClient() {
                   <span>{step.detail}</span>
                 </div>
                 {step.state === "done" ? (
-                  <em>{step.id === "tba" || step.id === "scout" || step.id === "ai" ? "Ready" : "Done"}</em>
+                  <em>Done</em>
                 ) : step.state === "current" ? (
                   <a href={step.href}>
                     {step.id === "workspace" && !orgId ? "Invite" : step.id === "tba" ? "Connect" : "Open"}
@@ -922,18 +921,18 @@ export default function DashboardClient() {
       {meLoaded && nextActions.length > 0 ? (
         <section
           className="dash-next-actions app-card soft-panel edc-next-actions"
-          aria-label={dashShell === "ready" ? "Explore hubs" : "Next actions"}
+          aria-label="Next actions"
         >
           <header>
-            <h2>{dashShell === "ready" ? "Explore hubs" : "Next actions"}</h2>
+            <h2>{dashShell === "ready" ? "Finish setup" : "Next actions"}</h2>
             <p>
               {dashShell === "ready"
-                ? "Jump into the Soft-UI pillars — live numbers only appear when your workspace has real data."
-                : "Honest handoffs into Competition, Team, Business, Build, and AI — never DEMO metrics."}
+                ? "A few workspace steps still block live widgets — nothing here is DEMO data."
+                : "Honest handoffs into the Soft-UI hubs — never DEMO metrics."}
             </p>
           </header>
           <ol>
-            {nextActions.slice(0, 5).map((action) => (
+            {nextActions.slice(0, 3).map((action) => (
               <li key={action.id} className={action.primary ? "primary" : undefined}>
                 <div>
                   <strong>{action.label}</strong>

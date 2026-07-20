@@ -5,16 +5,42 @@ import { useEffect, useState } from "react";
 import AppShell from "../components/app-shell";
 import PaidSessionSplash from "../components/paid-session-splash";
 
+/** Resolved color scheme applied to the document. */
 export type Theme = "light" | "dark";
 
+/** User preference — System follows prefers-color-scheme. */
+export type ThemePreference = Theme | "system";
+
 const STORAGE_KEY = "vantage-theme";
+const PREF_STORAGE_KEY = "vantage-theme-pref";
+
+function systemTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function resolveTheme(pref: ThemePreference): Theme {
+  return pref === "system" ? systemTheme() : pref;
+}
+
+function readStoredPreference(): ThemePreference {
+  try {
+    const pref = localStorage.getItem(PREF_STORAGE_KEY);
+    if (pref === "light" || pref === "dark" || pref === "system") return pref;
+    const legacy = localStorage.getItem(STORAGE_KEY);
+    if (legacy === "dark" || legacy === "light") return legacy;
+  } catch {
+    /* ignore */
+  }
+  return "light";
+}
 
 function syncBrowserColor(theme: Theme) {
   document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
     .forEach((meta) => { meta.content = theme === "dark" ? "#0b1014" : "#f7f6f2"; });
 }
 
-function applyTheme(theme: Theme) {
+function applyResolvedTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
   syncBrowserColor(theme);
@@ -23,21 +49,49 @@ function applyTheme(theme: Theme) {
   window.dispatchEvent(new CustomEvent("vantage-theme", { detail: theme }));
 }
 
+function applyPreference(pref: ThemePreference) {
+  localStorage.setItem(PREF_STORAGE_KEY, pref);
+  document.cookie = `vantage-theme-pref=${pref}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  applyResolvedTheme(resolveTheme(pref));
+}
+
 export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
+  const [preference, setPreference] = useState<ThemePreference>("light");
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
+    const pref = readStoredPreference();
+    setPreference(pref);
     const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
     setTheme(current);
     syncBrowserColor(current);
-    const sync = (event: Event) => setTheme((event as CustomEvent<Theme>).detail);
-    window.addEventListener("vantage-theme", sync);
-    return () => window.removeEventListener("vantage-theme", sync);
+
+    const syncTheme = (event: Event) => setTheme((event as CustomEvent<Theme>).detail);
+    const syncPref = (event: Event) => {
+      const next = (event as CustomEvent<ThemePreference>).detail;
+      if (next === "light" || next === "dark" || next === "system") setPreference(next);
+    };
+    window.addEventListener("vantage-theme", syncTheme);
+    window.addEventListener("vantage-theme-pref", syncPref);
+
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystem = () => {
+      if (readStoredPreference() === "system") applyResolvedTheme(systemTheme());
+    };
+    mq.addEventListener("change", onSystem);
+
+    return () => {
+      window.removeEventListener("vantage-theme", syncTheme);
+      window.removeEventListener("vantage-theme-pref", syncPref);
+      mq.removeEventListener("change", onSystem);
+    };
   }, []);
 
-  async function choose(next: Theme) {
-    setTheme(next);
-    applyTheme(next);
+  async function choose(next: ThemePreference) {
+    setPreference(next);
+    applyPreference(next);
+    window.dispatchEvent(new CustomEvent("vantage-theme-pref", { detail: next }));
+    if (next === "system") return;
     try {
       await fetch("/api/theme", {
         method: "PUT",
@@ -53,19 +107,20 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
     return (
       <fieldset className="theme-setting">
         <legend>Appearance</legend>
-        <p>Vantage starts in light mode. Dark mode is used only when you choose it.</p>
+        <p>Choose Light, Dark, or System (follows your device). Change lives in Account settings — not the top bar.</p>
         <div role="radiogroup" aria-label="Color theme">
-          {(["light", "dark"] as const).map((option) => (
+          {(["light", "dark", "system"] as const).map((option) => (
             <button
-              aria-checked={theme === option}
-              className={theme === option ? "active" : ""}
+              aria-checked={preference === option}
+              className={preference === option ? "active" : ""}
               key={option}
               onClick={() => void choose(option)}
               role="radio"
               type="button"
             >
-              <span aria-hidden="true">{option === "light" ? "☀" : "☾"}</span>
-              {option === "light" ? "Light" : "Dark"}
+              <span aria-hidden="true">{option === "light" ? "☀" : option === "dark" ? "☾" : "◐"}</span>
+              {option === "light" ? "Light" : option === "dark" ? "Dark" : "System"}
+              {option === "system" ? <small>Now {theme}</small> : null}
             </button>
           ))}
         </div>
@@ -73,6 +128,7 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
     );
   }
 
+  // Compact toggle kept for rare embeds — product chrome uses Account → Appearance.
   return (
     <button
       className="theme-toggle"
@@ -96,21 +152,33 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (!productRoute) return;
+    const localPref = readStoredPreference();
+    if (localPref === "system") {
+      applyPreference("system");
+      document.documentElement.classList.add("theme-ready");
+      return;
+    }
     void fetch("/api/theme")
       .then(async (response) => response.ok ? response.json() as Promise<{ theme?: Theme; persisted?: boolean }> : null)
       .then((result) => {
         if (result?.persisted && (result.theme === "light" || result.theme === "dark")) {
-          applyTheme(result.theme);
+          applyPreference(result.theme);
           setTimeout(() => document.documentElement.classList.add("theme-ready"), 0);
+        } else {
+          applyPreference(localPref);
+          document.documentElement.classList.add("theme-ready");
         }
       })
-      .catch(() => document.documentElement.classList.add("theme-ready"));
+      .catch(() => {
+        applyPreference(localPref);
+        document.documentElement.classList.add("theme-ready");
+      });
   }, [productRoute]);
 
   return (
     <>
       <div id="main-content">{children}</div>
-      {productRoute && <AppShell themeControl={<ThemeToggle />} />}
+      {productRoute && <AppShell />}
       {productRoute && <PaidSessionSplash />}
     </>
   );

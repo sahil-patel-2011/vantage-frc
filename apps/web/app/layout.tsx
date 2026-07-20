@@ -36,7 +36,7 @@ export const viewport: Viewport = {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const domain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
-  const themeBootstrap = `(function(){try{var c=document.cookie.match(/(?:^|; )vantage-theme=(light|dark)/);var s=localStorage.getItem("vantage-theme");var t=c?c[1]:(s==="dark"?"dark":"light");document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.dataset.theme="light";document.documentElement.style.colorScheme="light";}})();`;
+  const themeBootstrap = `(function(){try{var p=(document.cookie.match(/(?:^|; )vantage-theme-pref=(light|dark|system)/)||[])[1]||localStorage.getItem("vantage-theme-pref");var c=document.cookie.match(/(?:^|; )vantage-theme=(light|dark)/);var s=localStorage.getItem("vantage-theme");var t;if(p==="system"){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}else if(p==="light"||p==="dark"){t=p;}else{t=c?c[1]:(s==="dark"?"dark":"light");}document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.dataset.theme="light";document.documentElement.style.colorScheme="light";}})();`;
   return (
     <html
       lang="en"

@@ -4,7 +4,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import {
-  FEATURED_SOFT_UI_LINKS,
   ISLAND_TAB_CATALOG,
   MORE_SHEET_LINKS,
   ORG_EXEMPT_HREFS,
@@ -58,7 +57,6 @@ type IconName = ProductNavIcon;
 const groups = PRODUCT_NAV_GROUPS;
 const pillarSheetLinks = PILLAR_SHEET_LINKS;
 const moreSheetLinks = MORE_SHEET_LINKS;
-const featuredSoftUiLinks = FEATURED_SOFT_UI_LINKS;
 
 function formatMembershipLabel(row: MembershipOption): string {
   const team =
@@ -261,7 +259,7 @@ function defaultExpandedGroups(activeLabel: string | undefined): Record<string, 
   return next;
 }
 
-export default function AppShell({ themeControl }: { themeControl: React.ReactNode }) {
+export default function AppShell() {
   const pathname = usePathname();
   const router = useRouter();
   const [orgId, setOrgId] = useState("");
@@ -291,6 +289,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
   const [searchLoading, setSearchLoading] = useState(false);
   const commandInputRef = useRef<HTMLInputElement>(null);
   const searchRequestId = useRef(0);
+  const islandQueryOpened = useRef(false);
 
   const activeNav = findNavMatch(pathname);
   const activeGroupLabel = activeNav?.group.label;
@@ -405,6 +404,25 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
       })
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    if (islandQueryOpened.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("island") === "1" || params.get("customize") === "island") {
+      islandQueryOpened.current = true;
+      setIslandDraft(islandHrefs);
+      setIslandMessage("");
+      setIslandEditorOpen(true);
+    }
+  }, [pathname, islandHrefs]);
+
+  function openIslandEditor() {
+    setIslandDraft(islandHrefs);
+    setIslandMessage("");
+    setMoreOpen(false);
+    setOpen(false);
+    setIslandEditorOpen(true);
+  }
 
   useEffect(() => {
     if (!orgId) {
@@ -745,37 +763,18 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
                     ))}
                   </div>
                 ) : null}
-                <a role="menuitem" href={withOrgHref("/workspace", orgId)} onClick={() => setAccountMenuOpen(false)}>
-                  Workspace manager
-                </a>
-                <a role="menuitem" href="/invite" onClick={() => setAccountMenuOpen(false)}>
-                  Accept invite
-                </a>
                 <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
                   Account settings
                 </a>
-                <a role="menuitem" href="/support" onClick={() => setAccountMenuOpen(false)}>
-                  Help &amp; Support
-                </a>
-                <a role="menuitem" href="/account?tab=notifications" onClick={() => setAccountMenuOpen(false)}>
-                  Notification &amp; email prefs
-                </a>
-                <a role="menuitem" href="/notifications" onClick={() => setAccountMenuOpen(false)}>
-                  Inbox
-                  {unreadCount >= 1 ? <b>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
-                </a>
-                <a role="menuitem" href={withOrgHref("/team?tab=messages", orgId)} onClick={() => setAccountMenuOpen(false)}>
-                  Team messages
-                  {unreadMessages >= 1 ? <b>{unreadMessages > 99 ? "99+" : unreadMessages}</b> : null}
+                <a role="menuitem" href="/account?tab=appearance" onClick={() => setAccountMenuOpen(false)}>
+                  Appearance
                 </a>
                 <a role="menuitem" href="/security" onClick={() => setAccountMenuOpen(false)}>
                   Security
                 </a>
-                {orgId ? (
-                  <a role="menuitem" href={withOrgHref("/team/admin", orgId)} onClick={() => setAccountMenuOpen(false)}>
-                    API keys &amp; team admin
-                  </a>
-                ) : null}
+                <a role="menuitem" href="/support" onClick={() => setAccountMenuOpen(false)}>
+                  Help &amp; Support
+                </a>
                 {me.platformAdmin ? (
                   <a role="menuitem" href="/admin" onClick={() => setAccountMenuOpen(false)}>
                     Global Team Manager
@@ -793,7 +792,6 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
               </div>
             ) : null}
           </div>
-          <span className="soft-theme-slot">{themeControl}</span>
         </div>
       </header>
       {eventFocus ? (
@@ -937,12 +935,6 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             <a href="/account" onClick={() => setOpen(false)}>
               Account
             </a>
-            <a href="/account?tab=notifications" onClick={() => setOpen(false)}>
-              Prefs
-            </a>
-            <a href="/security" onClick={() => setOpen(false)}>
-              Security
-            </a>
             <button type="button" disabled={signingOut} onClick={() => void handleSignOut()}>
               {signingOut ? "Signing out…" : "Sign out"}
             </button>
@@ -956,9 +948,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             </a>
           ))}
         </nav>
-        <p className="soft-drawer-hint">
-          Expand a pillar for tools. Featured Soft-UI surfaces stay in More — unfinished items stay Planned.
-        </p>
+        <p className="soft-drawer-hint">Expand a pillar for tools. Planned items stay marked until ready.</p>
         {groups.map((group) => {
           const expanded = !!expandedGroups[group.label];
           const visibleCount = group.items.filter((item) => item.state !== "planned").length;
@@ -1041,7 +1031,15 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
         ) : null}
       </aside>
 
-      <nav className="soft-island" aria-label="Primary tabs">
+      <nav
+        className="soft-island"
+        aria-label="Primary tabs"
+        title="Right-click or use More → Customize island to change these four apps"
+        onContextMenu={(event) => {
+          event.preventDefault();
+          openIslandEditor();
+        }}
+      >
         {islandTabs.map((tab) => (
           <a
             aria-current={activeIslandTabHref === tab.href ? "page" : undefined}
@@ -1081,7 +1079,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
         <div className="soft-more-head">
           <div>
             <strong>More</strong>
-            <small>Six pillars · quick tools · featured Soft-UI</small>
+            <small>Pillars and quick tools</small>
           </div>
           <button className="soft-icon-btn" type="button" aria-label="Close more menu" onClick={() => setMoreOpen(false)}>
             <Icon name="x" />
@@ -1109,21 +1107,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
             </a>
           ))}
         </div>
-        <p className="soft-more-section-label">Featured Soft-UI</p>
-        <div className="soft-more-featured">
-          {featuredSoftUiLinks.map((link) => (
-            <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
-              <Icon name={link.icon} />
-              {link.label}
-            </a>
-          ))}
-        </div>
-        <div className="soft-more-actions soft-more-actions-3">
-          <a href="/notifications" onClick={() => setMoreOpen(false)}>
-            <Icon name="bell" />
-            Notifications
-            {unreadCount >= 1 ? <b>{unreadCount > 99 ? "99+" : unreadCount}</b> : null}
-          </a>
+        <div className="soft-more-actions">
           <button
             type="button"
             onClick={() => {
@@ -1137,10 +1121,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
           <button
             type="button"
             onClick={() => {
-              setIslandDraft(islandHrefs);
-              setIslandMessage("");
-              setMoreOpen(false);
-              setIslandEditorOpen(true);
+              openIslandEditor();
             }}
           >
             <Icon name="gear" />
@@ -1205,8 +1186,16 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
       </a>
 
       {commandOpen ? (
-        <div className="command-dialog" role="dialog" aria-modal="true" aria-labelledby="command-title">
-          <div>
+        <div
+          className="command-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="command-title"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setCommandOpen(false);
+          }}
+        >
+          <div onClick={(event) => event.stopPropagation()}>
             <header>
               <h2 id="command-title">Search &amp; jump</h2>
               <button type="button" aria-label="Close" onClick={() => setCommandOpen(false)}>
