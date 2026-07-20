@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
+import FundingProfileClient from "./funding-profile-client";
 import "./background.css";
 
 type FormState = {
@@ -137,6 +138,8 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
         <a href={`/team/grants?orgId=${encodeURIComponent(orgId)}`}>Grants</a>
         <a href={`/team/sponsors?orgId=${encodeURIComponent(orgId)}`}>Sponsors</a>
       </nav>
+
+      <FundingProfileClient orgId={orgId} />
 
       {message ? (
         <p className={messageTone === "error" ? "status-bad" : "status-good"} role="status">
