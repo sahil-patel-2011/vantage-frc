@@ -148,7 +148,8 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   const productRoute = !["/", "/features", "/features/cad", "/features/strategy", "/features/code", "/workflow", "/for-teams", "/pricing", "/privacy", "/terms", "/signin", "/sign-in", "/offline"].includes(pathname)
     && !pathname.startsWith("/display/kiosk")
     && !pathname.startsWith("/showcase/present")
-    && !pathname.startsWith("/support");
+    // Public sponsor storefront stays shell-free; /support tickets use the Soft-UI app chrome.
+    && !/^\/support\/[^/]+/.test(pathname);
 
   useEffect(() => {
     if (!productRoute) return;

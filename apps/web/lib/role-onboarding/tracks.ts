@@ -163,7 +163,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Support travel, volunteering, and team communications.",
     source: "role",
     checks: checks([
-      ["announcements", "Read announcements", "Trip forms and schedule changes land here.", "/announcements"],
+      ["announcements", "Read announcements", "Trip forms and schedule changes land here.", "/notifications"],
       ["logistics_parent", "Check logistics", "Hotels and leave times for competition weekends.", "/logistics"],
       ["visit", "Visit invites", "Guest pit / stands access when the team uses them.", "/visit-invites"],
       ["hours_parent", "See build hours", "Understand how student time is tracked.", "/hours"],

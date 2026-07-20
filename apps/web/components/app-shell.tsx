@@ -38,6 +38,8 @@ type MembershipOption = {
 
 type Me = {
   name?: string | null;
+  firstName?: string | null;
+  displayName?: string | null;
   email?: string | null;
   image?: string | null;
   orgId?: string | null;
@@ -480,13 +482,25 @@ export default function AppShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const initial = (me.name?.trim()?.[0] ?? me.email?.trim()?.[0] ?? "V").toUpperCase();
+  const accountLabel =
+    me.displayName?.trim() ||
+    me.name?.trim() ||
+    me.firstName?.trim() ||
+    me.email?.trim() ||
+    null;
+  const initial = (accountLabel?.[0] ?? "?").toUpperCase();
   const flat = useMemo(() => {
     const items = groups.flatMap((group) => group.items);
     if (me.platformAdmin) {
       items.push({ href: "/admin", label: "Global Team Manager", icon: "grid" });
     }
-    return items;
+    // Dedupe by href so Cmd+K never lists the same module twice (e.g. Offline Shell).
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      if (seen.has(item.href)) return false;
+      seen.add(item.href);
+      return true;
+    });
   }, [me.platformAdmin]);
 
   const filteredNav = useMemo(() => {
@@ -714,7 +728,7 @@ export default function AppShell() {
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="soft-account-pop-head">
-                  <strong>{me.name ?? "Signed-in user"}</strong>
+                  <strong>{accountLabel ?? "Signed-in user"}</strong>
                   <span>{me.email ?? "Account"}</span>
                   <span className="soft-account-org">{orgLabel}</span>
                   <span className="soft-account-org">{rolePlanCue}</span>
@@ -837,7 +851,7 @@ export default function AppShell() {
           <a className="soft-profile-link" href="/account" onClick={() => setOpen(false)}>
             <span className="soft-avatar">{initial}</span>
             <div>
-              <strong>{me.name ?? "Signed-in user"}</strong>
+              <strong>{accountLabel ?? "Signed-in user"}</strong>
               <span>{me.email ?? "Account settings"}</span>
             </div>
             <span className="soft-profile-chev" aria-hidden="true">

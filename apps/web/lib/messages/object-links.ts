@@ -58,7 +58,7 @@ export function objectAppHref(orgId: string, objectType: DiscordObjectType, obje
     case "event":
       return withOrgQuery("/team/calendar", orgId, { eventId: objectId });
     case "announcement":
-      return withOrgQuery("/announcements", orgId, { announcementId: objectId });
+      return withOrgQuery("/notifications", orgId, { announcementId: objectId });
     case "goal":
       return withOrgQuery("/goals", orgId, { goalId: objectId });
     case "risk":

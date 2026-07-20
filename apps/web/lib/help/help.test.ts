@@ -49,6 +49,12 @@ describe("help search index", () => {
     expect(scoreHelpArticle(HELP_ARTICLES[0]!, "zzzznotatopic")).toBe(0);
   });
 
+  it("does not flood weak body-only sponsor matches", () => {
+    const hits = searchHelpArticles("sponsor");
+    expect(hits.every((hit) => hit.score >= 20)).toBe(true);
+    expect(hits.length).toBeLessThanOrEqual(2);
+  });
+
   it("filters the hub list without inventing articles", () => {
     expect(filterHelpArticles("").length).toBe(HELP_ARTICLES.length);
     const credits = filterHelpArticles("credits");
