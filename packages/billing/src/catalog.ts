@@ -1,11 +1,15 @@
 /**
  * Catalog defaults for marketing + product billing copy.
  * Neon `pricing_plans` / `plan_entitlement_versions` are the runtime source of truth after
- * migration; keep this file in sync when raising prices. Stripe Price IDs are never invented
+ * migration; keep this file in sync when changing prices. Stripe Price IDs are never invented
  * here — update Dashboard / admin-configured `stripe_price_id` values to match.
  *
- * Capability raise (2026-07-20): Soft-UI hubs, scouting trust, competition ops, CAD/strategy/AI.
- * Usage Credits remain 1.0× (no Vantage markup on provider list rates).
+ * Appealing pricing (2026-07-20): slightly lower Soft-UI / ops ladder for conversion.
+ *
+ * Hosted API economics (internal — do not expose wholesale to users):
+ * - Wholesale capacity ≈ 0.5× typical provider list → Vantage margin ≈ 0.25× of list
+ * - Hosted metered debit = 0.75× typical list → users save ~25% vs BYOK (1.0× at the provider)
+ * - BYOK / supply-your-own-key ≈ 1.0× list paid directly to the provider (no Vantage markup)
  */
 
 export type CatalogPlanCode =
@@ -27,8 +31,14 @@ export type CatalogPlan = {
   scope: "free" | "user" | "org" | "trial";
 };
 
-/** Launch debit: 1 Usage Credit = $1 provider API at list rates. */
-export const CATALOG_SERVICE_MULTIPLIER = 1;
+/**
+ * Hosted Usage Credits debit vs typical provider list rates.
+ * 0.75× ⇒ $1 list API costs 0.75 credits (~25% cheaper than BYOK at 1.0×).
+ */
+export const CATALOG_SERVICE_MULTIPLIER = 0.75;
+
+/** Typical BYOK cost multiplier (user pays provider list directly). */
+export const BYOK_LIST_MULTIPLIER = 1;
 
 export const TEAM_TRIAL_DAYS = 7;
 
@@ -43,35 +53,35 @@ export const PRICING_CATALOG: Record<CatalogPlanCode, CatalogPlan> = {
   access: {
     code: "access",
     label: "Access",
-    monthlyUsd: 79,
+    monthlyUsd: 69,
     includedAllowanceUsd: 0,
     scope: "user",
   },
   individual_pro: {
     code: "individual_pro",
     label: "Individual Pro",
-    monthlyUsd: 129,
+    monthlyUsd: 109,
     includedAllowanceUsd: 75,
     scope: "user",
   },
   individual_max: {
     code: "individual_max",
     label: "Individual Max",
-    monthlyUsd: 189,
+    monthlyUsd: 159,
     includedAllowanceUsd: 130,
     scope: "user",
   },
   team_pro: {
     code: "team_pro",
     label: "Team Pro",
-    monthlyUsd: 349,
+    monthlyUsd: 299,
     includedAllowanceUsd: 225,
     scope: "org",
   },
   team_max: {
     code: "team_max",
     label: "Team Max",
-    monthlyUsd: 649,
+    monthlyUsd: 549,
     includedAllowanceUsd: 450,
     scope: "org",
   },
@@ -79,13 +89,33 @@ export const PRICING_CATALOG: Record<CatalogPlanCode, CatalogPlan> = {
     code: "team_trial",
     label: "Week team trial",
     monthlyUsd: 0,
-    includedAllowanceUsd: 45,
+    includedAllowanceUsd: 39,
     scope: "trial",
   },
 };
 
 export function formatCatalogUsd(amount: number): string {
   return `$${amount}`;
+}
+
+/** Typical list-API value covered by a purchased Usage Credit pack at the hosted multiplier. */
+export function hostedCreditPackListApiUsd(purchaseUsd: number): number {
+  return Math.round(purchaseUsd / CATALOG_SERVICE_MULTIPLIER);
+}
+
+/** Short marketing line for the hosted vs BYOK discount (no wholesale disclosure). */
+export function hostedApiSavingsCopy(): string {
+  return (
+    "Hosted AI usage is billed at 75% of typical API rates — about 25% less than running the same models on your own keys."
+  );
+}
+
+/** Compact debit explanation for pricing cards / budgets. */
+export function hostedUsageDebitCopy(): string {
+  return (
+    `Hosted Usage Credits debit at ${CATALOG_SERVICE_MULTIPLIER}× typical provider list ` +
+    `(~25% less than BYOK at ${BYOK_LIST_MULTIPLIER}×).`
+  );
 }
 
 /** Short strip for Soft-UI waitlist / home / sign-in CTAs. */
@@ -127,7 +157,8 @@ export function catalogDefaultsFootnote(): string {
     `Catalog defaults: Free $0 / $0 API · Individual Pro $${c.individual_pro.monthlyUsd} / $${c.individual_pro.includedAllowanceUsd} · ` +
     `Individual Max $${c.individual_max.monthlyUsd} / $${c.individual_max.includedAllowanceUsd} · Team Pro $${c.team_pro.monthlyUsd} / ` +
     `$${c.team_pro.includedAllowanceUsd} · Team Max $${c.team_max.monthlyUsd} / $${c.team_max.includedAllowanceUsd} · ` +
-    `Access $${c.access.monthlyUsd} + PAYG · Week team trial $${c.team_trial.includedAllowanceUsd} API / ${TEAM_TRIAL_DAYS} days.`
+    `Access $${c.access.monthlyUsd} + PAYG · Week team trial $${c.team_trial.includedAllowanceUsd} API / ${TEAM_TRIAL_DAYS} days · ` +
+    `Hosted debit ${CATALOG_SERVICE_MULTIPLIER}× typical list (~25% vs BYOK).`
   );
 }
 

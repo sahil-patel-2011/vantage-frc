@@ -1028,7 +1028,8 @@
   --m-accent-dark:#000;
   --m-blue:#0071e3;
   --m-pad-x:clamp(22px,6vw,96px);
-  --m-pad-y:clamp(72px,10vw,128px);
+  --m-pad-y:clamp(64px,8vw,104px);
+  --m-content:1080px;
   color:var(--m-ink);
   background:
     radial-gradient(1200px 600px at 70% -10%,rgba(0,0,0,.035),transparent 60%),
@@ -1143,17 +1144,20 @@
   border-top:1px solid var(--m-line);
   background:rgba(255,255,255,.65);
 }
-.marketing-lux .product-glances{gap:clamp(28px,4vw,40px)}
-.marketing-lux .product-glance{gap:12px}
+.marketing-lux .product-glances{gap:clamp(20px,3vw,28px)}
+.marketing-lux .product-glances-dense{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.marketing-lux .product-glance{gap:10px}
 .marketing-lux .product-glance h3{
-  margin:0;font:600 24px/1.15 var(--m-sans);letter-spacing:-.03em;
+  margin:0;font:600 20px/1.15 var(--m-sans);letter-spacing:-.03em;
 }
 .marketing-lux .product-glance>p{
-  margin:0;max-width:28ch;color:var(--m-muted);font-size:15px;line-height:1.5;
+  margin:0;max-width:28ch;color:var(--m-muted);font-size:14px;line-height:1.45;
 }
 .marketing-lux .product-glance-frame{
-  margin-top:8px;min-height:176px;border-radius:16px;
-  border:1px solid rgba(0,0,0,.08);background:#fafafa;
+  margin-top:8px;min-height:148px;border-radius:14px;
+  border:1px solid rgba(0,0,0,.1);background:#fafafa;
   box-shadow:none;
 }
 .marketing-lux .product-glance-frame>header{
@@ -1325,27 +1329,86 @@
 .marketing-lux .pricing-page .payg h2{
   font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);letter-spacing:-.03em;
 }
+
+/* Tight Individual/Team ↔ cards rhythm (was a huge empty gap from dual section pads). */
+.marketing-lux .pricing-page > .pricing-plans{
+  padding:clamp(8px,1.5vw,16px) var(--m-pad-x) clamp(36px,5vw,56px);
+}
+.marketing-lux .pricing-plans-chrome{
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;
+  margin:0 0 14px;
+}
+.marketing-lux .pricing-page .pricing-toggle{
+  display:inline-flex;gap:6px!important;
+  margin:0;padding:3px!important;
+  border:1px solid rgba(0,0,0,.1);border-radius:980px;background:var(--m-paper);
+}
+.marketing-lux .pricing-toggle a,
+.marketing-lux .pricing-toggle button{
+  min-height:34px;padding:7px 16px;border:0;border-radius:980px;
+  background:transparent;color:var(--m-muted);
+  font:600 13px var(--m-sans);cursor:pointer;
+}
+.marketing-lux .pricing-toggle button:hover{color:var(--m-ink)}
+.marketing-lux .pricing-toggle button.active{
+  background:var(--m-ink);border-color:var(--m-ink);color:#fff;
+}
+.marketing-lux .pricing-savings-callout{
+  flex:1 1 240px;max-width:42rem;margin:0;
+  color:var(--m-muted);font-size:14px;line-height:1.45;
+}
+.marketing-lux .pricing-savings-callout strong{
+  color:var(--m-ink);font-weight:600;
+}
+.marketing-lux .pricing-page #pricing-plan-panel{
+  margin:0;padding:0;
+}
+.marketing-lux .pricing-page .pricing-grid{
+  margin-top:0;gap:16px;
+}
 .marketing-lux .pricing-grid article{
   border-radius:16px;border:1px solid rgba(0,0,0,.08);
-  box-shadow:none;background:#fff;padding:28px;
+  box-shadow:none;background:#fff;padding:24px 24px 22px;
+  min-height:0;display:flex;flex-direction:column;
 }
 .marketing-lux .pricing-grid article.featured{
   border-color:var(--m-ink);
   box-shadow:0 0 0 1px var(--m-ink);
 }
-.marketing-lux .pricing-grid article>span,
-.marketing-lux .plan-flag{
-  font-family:var(--m-sans)!important;
+.marketing-lux .pricing-grid .plan-flag{
+  display:inline-block;align-self:flex-start;
+  margin:0 0 10px;padding:4px 10px;
+  border-radius:999px;background:var(--m-ink);color:#fff;
+  font:600 11px/1.2 var(--m-sans)!important;letter-spacing:.02em;
+  font-style:normal;
+}
+.marketing-lux .pricing-grid .plan-signal,
+.marketing-lux .pricing-grid article>span.plan-signal{
+  color:var(--m-muted);font:500 12px/1.3 var(--m-sans)!important;
+  letter-spacing:.01em;text-transform:none;
+}
+.marketing-lux .pricing-grid h2{
+  margin:8px 0 6px;font:600 22px/1.15 var(--m-sans);letter-spacing:-.02em;
+}
+.marketing-lux .pricing-grid .plan-price{
+  display:flex;align-items:baseline;gap:8px;margin:0 0 4px;
 }
 .marketing-lux .pricing-grid .plan-price strong{
   font:600 28px/1.1 var(--m-sans)!important;letter-spacing:-.02em;
 }
-.marketing-lux .pricing-toggle a,
-.marketing-lux .pricing-toggle button{
-  border-radius:980px;font:600 13px var(--m-sans);
+.marketing-lux .pricing-grid .plan-price small{
+  color:var(--m-muted);font-size:13px;
 }
-.marketing-lux .pricing-toggle button.active{
-  background:var(--m-ink);border-color:var(--m-ink);color:#fff;
+.marketing-lux .pricing-grid ul{
+  gap:10px;margin:16px 0 20px;font-size:14px;line-height:1.45;flex:1;
+}
+.marketing-lux .pricing-grid article .button{
+  margin-top:auto;align-self:stretch;text-align:center;
+}
+.marketing-lux .pricing-grid-team{grid-template-columns:repeat(2,1fr)}
+@media(max-width:900px){
+  .marketing-lux .pricing-grid-team{grid-template-columns:1fr}
+  .marketing-lux .pricing-plans-chrome{flex-direction:column;align-items:flex-start}
 }
 
 .marketing-lux .assistant-story,
@@ -1354,22 +1417,106 @@
 .marketing-lux .workflow-principles,
 .marketing-lux .flow-map,
 .marketing-lux .technical-note{
-  padding-inline:var(--m-pad-x);
+  padding:var(--m-pad-y) var(--m-pad-x);
+}
+/* Stack section chrome — kill legacy .45fr / 1.55fr header grids that
+   left-align the eyebrow with cards while indenting H2/lede. */
+.marketing-lux .assistant-story>header,
+.marketing-lux .scout-integration>header,
+.marketing-lux .supporting-gallery>header{
+  display:grid;grid-template-columns:1fr;gap:10px;
+  max-width:var(--m-content);margin:0 0 clamp(28px,4vw,40px);
+}
+.marketing-lux .assistant-story>header .section-id,
+.marketing-lux .scout-integration>header .section-id,
+.marketing-lux .supporting-gallery>header .section-id{
+  padding-top:0;
+}
+.marketing-lux .assistant-story>header h2,
+.marketing-lux .scout-integration>header h2,
+.marketing-lux .supporting-gallery>header h2{
+  grid-column:1;max-width:18ch;margin:0;
+  font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);
+  letter-spacing:-.03em;
+}
+.marketing-lux .assistant-story>header p,
+.marketing-lux .scout-integration>header p{
+  grid-column:1;max-width:40rem;margin:0;
+  color:var(--m-muted);font-size:16px;line-height:1.5;
+}
+.marketing-lux .assistant-story-grid{
+  display:block;max-width:var(--m-content);
+}
+.marketing-lux .assistant-job-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
 }
 .marketing-lux .assistant-job-grid article,
 .marketing-lux .scout-feed-grid article,
 .marketing-lux .supporting-status-grid article,
 .marketing-lux .integration-steps li{
-  border-radius:14px;border:1px solid rgba(0,0,0,.08);
+  display:flex;flex-direction:column;gap:8px;
+  min-height:132px;padding:22px 22px 20px;
+  border-radius:14px;border:1px solid rgba(0,0,0,.12);
   box-shadow:none;background:#fff;
+}
+.marketing-lux .assistant-job-grid b,
+.marketing-lux .integration-steps b{
+  color:var(--m-muted);font:600 11px/1 var(--m-sans);letter-spacing:.06em;
+}
+.marketing-lux .assistant-job-grid h3,
+.marketing-lux .supporting-status-grid h3,
+.marketing-lux .scout-feed-grid h3{
+  margin:0;font:600 17px/1.25 var(--m-sans);letter-spacing:-.02em;color:var(--m-ink);
+}
+.marketing-lux .assistant-job-grid p,
+.marketing-lux .supporting-status-grid p,
+.marketing-lux .scout-feed-grid p,
+.marketing-lux .integration-steps span{
+  margin:0;margin-top:auto;color:var(--m-muted);font-size:14px;line-height:1.45;
+}
+.marketing-lux .supporting-status-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;max-width:var(--m-content);margin:0;
+}
+.marketing-lux .integration-steps{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;max-width:var(--m-content);
 }
 .marketing-lux .assistant-story{background:var(--m-paper)}
 .marketing-lux .workflow-integration{background:var(--m-paper)}
-.marketing-lux .workflow-principles{background:transparent}
+.marketing-lux .workflow-principles{
+  background:transparent;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:28px;max-width:var(--m-content);margin:0 auto;
+}
+.marketing-lux .workflow-principles article{padding:0;border:0;background:transparent}
+.marketing-lux .workflow-principles h2{
+  margin:8px 0 8px;font:600 20px/1.2 var(--m-sans);letter-spacing:-.02em;
+}
+.marketing-lux .workflow-principles p{
+  margin:0;color:var(--m-muted);font-size:14px;line-height:1.5;
+}
 .marketing-lux .technical-note{
-  margin:0 var(--m-pad-x) var(--m-pad-y);padding:36px 40px;
-  border-left:2px solid var(--m-ink);border-radius:0 14px 14px 0;
-  background:#fff;
+  max-width:var(--m-content);margin:0 auto var(--m-pad-y);
+  padding:28px 0 0;border-top:1px solid var(--m-line);
+  border-left:0;border-radius:0;background:transparent;
+}
+.marketing-lux .lux-feature-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;margin:0;padding:0;list-style:none;
+  max-width:var(--m-content);
+}
+.marketing-lux .lux-feature-grid li{
+  display:flex;flex-direction:column;gap:8px;
+  min-height:120px;padding:22px;
+  border:1px solid rgba(0,0,0,.12);border-radius:14px;background:#fff;
+}
+.marketing-lux .lux-feature-grid strong{
+  font:600 16px/1.25 var(--m-sans);letter-spacing:-.02em;
+}
+.marketing-lux .lux-feature-grid span{
+  margin-top:auto;color:var(--m-muted);font-size:14px;line-height:1.45;
 }
 .marketing-lux .flow-map>article>div b{
   background:var(--m-ink);border-radius:980px;
@@ -1390,7 +1537,13 @@
 @media(max-width:900px){
   .marketing-lux .lux-hero{grid-template-columns:1fr;min-height:auto;gap:40px}
   .marketing-lux .hero-product-visual{justify-self:stretch;width:100%;max-width:400px}
-  .marketing-lux .product-glances{grid-template-columns:1fr}
+  .marketing-lux .product-glances,
+  .marketing-lux .product-glances-dense{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .marketing-lux .lux-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .marketing-lux .assistant-job-grid,
+  .marketing-lux .supporting-status-grid,
+  .marketing-lux .integration-steps,
+  .marketing-lux .workflow-principles{grid-template-columns:repeat(2,minmax(0,1fr))}
   .marketing-lux .lux-faq,
   .marketing-lux .faq-section,
   .marketing-lux .lux-waitlist,
@@ -1405,6 +1558,11 @@
   .marketing-lux .lux-hero .actions,
   .marketing-lux .lux-route-hero .actions{flex-direction:column;align-items:stretch}
   .marketing-lux .lux-pillar-list li{grid-template-columns:1fr;gap:14px}
+  .marketing-lux .lux-feature-grid,
+  .marketing-lux .assistant-job-grid,
+  .marketing-lux .supporting-status-grid,
+  .marketing-lux .integration-steps,
+  .marketing-lux .workflow-principles{grid-template-columns:1fr}
   .marketing-lux .pricing-preview-actions{width:100%}
   .marketing-lux .pricing-preview-actions .button{flex:1;justify-content:center}
 }

@@ -3,32 +3,15 @@ import { SiteFooter, SiteHeader } from "../../../components/marketing/site-heade
 
 export const metadata: Metadata = {
   title: "FRC Code Builder / Debugger — Vantage",
-  description:
-    "FRC code review that flags risky robot patterns, explains why they matter, teaches safer WPILib habits, and proposes human-approved diffs—not autonomous robot code.",
+  description: "Code Coach flags risky WPILib patterns, teaches safer habits, and proposes human-approved diffs.",
   alternates: { canonical: "/features/code" },
 };
 
 const capabilities = [
-  {
-    id: "01",
-    title: "Review risk",
-    body: "Flag blocking loops, hard-coded CAN IDs, unbounded motor output, missing units, and disabled-state actuator writes with file evidence.",
-  },
-  {
-    id: "02",
-    title: "Explain why",
-    body: "Each finding carries a teaching note—why Timer.delay in periodic() starves scheduling, sensors, and safety feeds—so students learn the failure mode.",
-  },
-  {
-    id: "03",
-    title: "Suggest safer habits",
-    body: "Show WPILib-aligned alternatives: timestamps, stateful commands, typed control requests, and reviewed hardware maps—not an opaque one-click rewrite.",
-  },
-  {
-    id: "04",
-    title: "Build & debug assist",
-    body: "Package proposals as unified diffs that require mentor or student approval. Simulation and code-freeze checks stay with the team.",
-  },
+  { id: "01", title: "Review risk", body: "Blocking loops, hard-coded CAN, unsafe actuators." },
+  { id: "02", title: "Explain why", body: "Teaching notes tied to match-pressure failure modes." },
+  { id: "03", title: "Safer habits", body: "WPILib-aligned alternatives—not opaque rewrites." },
+  { id: "04", title: "Approve diffs", body: "Human-gated proposals; sim stays with the team." },
 ];
 
 export default function CodeFeaturePage() {
@@ -38,14 +21,11 @@ export default function CodeFeaturePage() {
       <main className="route-page">
         <header className="lux-route-hero">
           <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
-          <h1>Flag risky patterns—then teach the safer habit.</h1>
-          <p>
-            A learning coach for FRC software: reviews repository input for robot-loop and hardware risks, explains why
-            those patterns fail under match pressure, and shows better approaches. Changes stay human-approved diffs.
-          </p>
+          <h1>Flag risk. Teach the fix.</h1>
+          <p>Soft-UI Code Coach—human-approved diffs only.</p>
           <div className="actions">
             <a className="button primary" href="/signin">
-              Sign in to use Code
+              Sign in
             </a>
             <a className="button secondary" href="/features">
               Product overview
@@ -55,7 +35,7 @@ export default function CodeFeaturePage() {
 
         <section className="lux-pillars" aria-labelledby="code-capabilities-title">
           <header className="lux-section-head">
-            <h2 id="code-capabilities-title">Review, explain, suggest—always with an approval gate.</h2>
+            <h2 id="code-capabilities-title">Review → explain → suggest → approve.</h2>
           </header>
           <ul className="lux-pillar-list">
             {capabilities.map((item) => (
@@ -67,14 +47,12 @@ export default function CodeFeaturePage() {
               </li>
             ))}
           </ul>
-          <p className="product-glances-note">
-            Marketing copy only. Signed-in Code stays empty until a repository and review context exist.
-          </p>
+          <p className="product-glances-note">Marketing copy. Code stays empty until a repo is connected.</p>
         </section>
 
         <section className="lux-pricing">
           <div>
-            <h2>Join the waitlist or explore the product.</h2>
+            <h2>Join the waitlist.</h2>
           </div>
           <div className="pricing-preview-actions">
             <a className="button primary" href="/#waitlist">

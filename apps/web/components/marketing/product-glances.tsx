@@ -1,35 +1,56 @@
 /**
- * Quiet marketing product glances — title, one sentence, calm composition.
- * Labeled as marketing preview only; signed-in product stays empty until real data.
+ * Quiet marketing product glances — Soft-UI surface names + short blurbs.
+ * Preview chrome only; signed-in product stays empty until real data.
  */
 
 const panels = [
   {
     id: "scouting",
     title: "Scouting",
-    copy: "Match and pit forms that keep working offline—then sync with attribution.",
-    frame: "Match form",
-    lines: ["Auto · observed", "Tele · observed", "Voice note · attached"],
+    copy: "Offline match/pit forms, voice notes, sync.",
+    frame: "Scouting hub",
+    lines: ["Form builder · published", "Voice note · opt-in", "Offline · outbox ready"],
+  },
+  {
+    id: "event-day",
+    title: "Event Day",
+    copy: "Command + My Day for the whole crew.",
+    frame: "Command",
+    lines: ["Next match · from TBA", "Checklist · pit run", "Empty until event linked"],
   },
   {
     id: "strategy",
-    title: "Strategy",
-    copy: "Win/loss and playbooks from real event and scout facts—never DEMO win rates.",
-    frame: "Alliance brief",
-    lines: ["Evidence-weighted picks", "Playbook for drive team", "Empty until data exists"],
+    title: "Strategy & picks",
+    copy: "Alliance Selection Desk and Pick clock.",
+    frame: "Pick desk",
+    lines: ["Shared alliance slots", "Scout evidence attached", "No DEMO win rates"],
   },
   {
     id: "cad",
-    title: "CAD",
-    copy: "Kickoff intent becomes an approval-gated brief before geometry changes.",
+    title: "CAD agent",
+    copy: "Approval-gated brief → Onshape or Fusion.",
     frame: "CAD brief",
-    lines: ["Human checkpoints", "Onshape or Fusion", "Setup when connected"],
+    lines: ["Human checkpoints", "Setup when connected", "Empty until OAuth"],
+  },
+  {
+    id: "season",
+    title: "Season planning",
+    copy: "Goals, milestones, owners on Soft-UI.",
+    frame: "Season workspace",
+    lines: ["Milestones · owners", "Calendar hooks", "Progress from real logs"],
+  },
+  {
+    id: "ops",
+    title: "Team & Business",
+    copy: "Logistics, sponsors, grants, knowledge.",
+    frame: "Business hub",
+    lines: ["Travel · lodging", "Sponsor pipeline", "Grants · drafts"],
   },
 ] as const;
 
 export function ProductGlances() {
   return (
-    <div className="product-glances" aria-label="Marketing product previews">
+    <div className="product-glances product-glances-dense" aria-label="Marketing product previews">
       {panels.map((panel) => (
         <article className="product-glance" key={panel.id}>
           <h3>{panel.title}</h3>
@@ -48,7 +69,7 @@ export function ProductGlances() {
         </article>
       ))}
       <p className="product-glances-note">
-        Marketing preview. Signed-in workspaces stay empty until your event and data exist.
+        Marketing preview. Signed-in workspaces stay empty until TBA / scouts connect.
       </p>
     </div>
   );
@@ -64,16 +85,16 @@ export function HeroProductVisual() {
         </header>
         <div className="hero-product-body">
           <div className="hero-product-row">
-            <span>Next match</span>
-            <strong>Qual 24</strong>
-          </div>
-          <div className="hero-product-row muted">
-            <span>Readiness</span>
-            <strong>Shared with crew</strong>
+            <span>Event Day</span>
+            <strong>Command · My Day</strong>
           </div>
           <div className="hero-product-row muted">
             <span>Scouting</span>
-            <strong>Synced facts</strong>
+            <strong>Offline · voice</strong>
+          </div>
+          <div className="hero-product-row muted">
+            <span>Strategy</span>
+            <strong>Pick desk</strong>
           </div>
           <div className="hero-product-row muted">
             <span>Assistant</span>

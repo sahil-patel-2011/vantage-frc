@@ -74,14 +74,14 @@ const graph = {
           name: "Access",
           price: String(c.access.monthlyUsd),
           priceCurrency: "USD",
-          description: "Light plan unlocking managed Soft-UI routing at provider list rates; use Usage Credits or PAYG.",
+          description: "Light plan unlocking managed Soft-UI routing; hosted AI at 75% of typical API rates; use Usage Credits or PAYG.",
         },
         {
           "@type": "Offer",
           name: "Individual Pro",
           price: String(c.individual_pro.monthlyUsd),
           priceCurrency: "USD",
-          description: `Private Soft-UI workspace with $${c.individual_pro.includedAllowanceUsd} included managed API allowance at list rates.`,
+          description: `Private Soft-UI workspace with $${c.individual_pro.includedAllowanceUsd} included managed API; hosted usage ~25% less than BYOK.`,
         },
         {
           "@type": "Offer",
