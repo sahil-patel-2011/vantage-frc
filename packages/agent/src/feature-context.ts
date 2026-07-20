@@ -35,6 +35,8 @@ export type FeatureContextRelation =
  */
 export const CROSS_FEATURE_TOOL_GRAPH = {
   chat: [
+    "web.search",
+    "web.fetch",
     "knowledge.search",
     "knowledge.get_page",
     "fmea.open_risks",
@@ -56,6 +58,16 @@ export const CROSS_FEATURE_TOOL_GRAPH = {
     "cad.briefs",
     "cad.create_brief",
     "inventory.availability",
+  ],
+  agent: [
+    "web.search",
+    "web.fetch",
+    "knowledge.search",
+    "reference.team",
+    "research.findings",
+    "kickoff.rules",
+    "strategy.match",
+    "scouting.team",
   ],
   cad: [
     "knowledge.search",

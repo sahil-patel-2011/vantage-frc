@@ -90,10 +90,11 @@ describe("product hubs", () => {
     expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("bin-shelf-locator");
   });
 
-  it("surfaces AI hub tabs for chat, budgets, writer, code, and memory", () => {
+  it("surfaces AI hub tabs for chat, agent, budgets, writer, code, and memory", () => {
     const ai = hubById("ai");
     expect(hubPrimaryTabs(ai).map((tab) => tab.id)).toEqual([
       "chat",
+      "agent",
       "budgets",
       "writer",
       "code",

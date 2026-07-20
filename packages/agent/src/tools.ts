@@ -145,6 +145,45 @@ export function createVantageToolRegistry(): AIToolRegistry {
   return new AIToolRegistry()
     .register(
       tool({
+        name: "web.search",
+        description:
+          "Search the public web via configured search API (Brave or RESEARCH_SEARCH_*). Soft-degrades to setup_required when no key is configured — never invents search hits.",
+        parseInput: (value) => {
+          const input = object(value);
+          const query = String(input.query ?? "").trim();
+          if (!query) throw new Error("query is required");
+          return {
+            query: query.slice(0, 500),
+            limit: input.limit != null ? Number(input.limit) : 5,
+          };
+        },
+        parseOutput: objectOutput,
+        async execute(_context, input) {
+          const { executeWebSearch } = await import("./web-tools");
+          return executeWebSearch(input);
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "web.fetch",
+        description:
+          "HTTPS GET an allowlisted public FRC docs URL (FIRST, TBA, Statbotics, WPILib docs). SSRF-guarded; returns truncated text excerpt only. Soft-degrades when browse is disabled.",
+        parseInput: (value) => {
+          const input = object(value);
+          const url = String(input.url ?? "").trim();
+          if (!url) throw new Error("url is required");
+          return { url: url.slice(0, 2000) };
+        },
+        parseOutput: objectOutput,
+        async execute(_context, input) {
+          const { executeWebFetch } = await import("./web-tools");
+          return executeWebFetch(input);
+        },
+      }),
+    )
+    .register(
+      tool({
         name: "reference.team",
         description: "Read platform-global team and event metrics",
         parseInput: teamInput,
