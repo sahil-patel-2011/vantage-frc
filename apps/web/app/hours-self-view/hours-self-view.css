@@ -1,0 +1,16 @@
+/* Soft-UI My Hours — never DEMO hour totals. */
+.hsv-page{display:grid;gap:16px}
+.hsv-related{display:flex;flex-wrap:wrap;gap:8px}
+.hsv-next-actions{margin:0}
+.hsv-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.hsv-panel{display:grid;gap:12px}
+.hsv-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.hsv-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.hsv-tip{margin:0}
+.hsv-kind-list,.hsv-kiosk-list,.hsv-entry-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.hsv-kind-row,.hsv-kiosk-row,.hsv-entry-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.hsv-bio-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.hsv-block{display:block}
+@media(max-width:900px){
+  .hsv-next-actions li,.hsv-setup-steps li,.hsv-kind-row,.hsv-kiosk-row,.hsv-entry-row{flex-direction:column;align-items:stretch}
+}
