@@ -1,45 +1,225 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  EmptyState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  StatTile,
+} from "../../components/ui";
 import type { ScoutDataImpactView } from "../../lib/scout-data-impact/compute-scout-data-impact";
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+import {
+  SCOUT_DATA_IMPACT_RELATED_INCLUDE,
+  classifyScoutDataImpactShell,
+  formatScoutDataImpactMetric,
+  formatScoutDataImpactRate,
+  scoutDataImpactNextActions,
+  scoutDataImpactRelatedLinks,
+  scoutDataImpactSetupSteps,
+  scoutDataImpactShellCopy,
+  shouldShowScoutDataImpactSummaryTiles,
+  type ScoutDataImpactNextAction,
+  type ScoutDataImpactShellKind,
+} from "../../lib/scout-data-impact/scout-data-impact-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./scout-data-impact.css";
 
 type LiveView = Extract<ScoutDataImpactView, { status: "live" }>;
 
-export default function ScoutDataImpactClient() {
+function ScoutDataImpactRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = scoutDataImpactRelatedLinks(orgId, {
+    include: [...SCOUT_DATA_IMPACT_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related scout-data-impact-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function ScoutDataImpactNextActionsPanel({ actions }: { actions: ScoutDataImpactNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions scout-data-impact-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Scouting, Strategy, and Accuracy — never DEMO pick credit.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ScoutDataImpactShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+  logPick,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: ScoutDataImpactShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+  logPick?: ReactNode;
+}) {
+  const actions = scoutDataImpactNextActions({ orgId, shell });
+  const copy = scoutDataImpactShellCopy(shell);
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const steps = shell === "setup" ? scoutDataImpactSetupSteps(orgId) : [];
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const strategyHref = hubHref("/competition", "strategy", orgId);
+  const accuracyHref = withOrgHref("/scout-accuracy", orgId);
+
+  return (
+    <main className="module-page scout-data-impact-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Scout Data Impact"}
+          </>
+        }
+        title="Scout Data Impact"
+        description={description}
+      >
+        <ScoutDataImpactRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No picks yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? strategyHref : "/workspace"}>
+            {orgId ? "Open Strategy" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href="#log-alliance-pick">
+              Log an alliance pick
+            </a>
+            <a className="app-button secondary" href={strategyHref}>
+              Open Strategy
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+            <a className="app-button secondary" href={accuracyHref}>
+              Open Accuracy
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {shell === "empty" || shell === "setup" ? logPick : null}
+      {steps.length > 0 ? (
+        <Panel className="scout-data-impact-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Scouting, Strategy, and Accuracy — never DEMO pick credit.</p>
+          </header>
+          <ul className="scout-data-impact-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted scout-data-impact-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <ScoutDataImpactNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
+export default function ScoutDataImpactClient({ orgId: initialOrgId }: { orgId?: string }) {
   const [view, setView] = useState<ScoutDataImpactView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [eventKey, setEventKey] = useState<string | null>(null);
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
+  const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
-  const load = useCallback((eventOverride?: string) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const eventQuery = eventOverride ?? params.get("eventKey");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (eventQuery) query.set("eventKey", eventQuery);
-    void fetch(`/api/scout-data-impact${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as ScoutDataImpactView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+  const load = useCallback(
+    (eventOverride?: string) => {
+      setFetchFailed(false);
+      setError("");
+      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+      const urlOrg = initialOrgId ?? params.get("orgId");
+      const eventQuery = eventOverride ?? params.get("eventKey");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (eventQuery) query.set("eventKey", eventQuery);
+      void fetch(`/api/scout-data-impact${query.toString() ? `?${query.toString()}` : ""}`)
+        .then(async (response) => {
+          const data = (await response.json()) as ScoutDataImpactView | { error?: string };
+          if (!response.ok || !("status" in data)) {
+            setFetchFailed(true);
+            setError("error" in data && data.error ? data.error : "Could not load scout data impact.");
+            return;
+          }
+          setView(data);
+          if ("eventKey" in data) setEventKey(data.eventKey);
+        })
+        .catch(() => {
           setFetchFailed(true);
-          return;
-        }
-        setView(data);
-        if ("eventKey" in data) setEventKey(data.eventKey);
-      })
-      .catch(() => setFetchFailed(true));
-  }, []);
+          setError("Network error — please try again.");
+        });
+    },
+    [initialOrgId],
+  );
 
   useEffect(() => {
     load();
@@ -72,135 +252,195 @@ export default function ScoutDataImpactClient() {
     [orgId, eventKey, busy],
   );
 
+  const pickCount = view?.status === "live" ? view.picks.length : 0;
+  const uncoveredPicks =
+    view?.status === "live" ? view.picks.filter((item) => item.totalEntries === 0).length : 0;
+
+  const shell = classifyScoutDataImpactShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    pickCount,
+  });
+  const shellCopy = scoutDataImpactShellCopy(shell);
+  const nextActions = scoutDataImpactNextActions({
+    orgId,
+    shell,
+    pickCount,
+    uncoveredPicks,
+  });
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const showTiles =
+    view?.status === "live" &&
+    shouldShowScoutDataImpactSummaryTiles({
+      pickCount: view.picks.length,
+      totalEntries: view.totalEntries,
+    });
+  const loaded = view?.status === "live";
+  const logPickForm = <LogPickForm busy={busy} mutate={mutate} />;
+
+  if (shell === "loading") {
+    return <ScoutDataImpactShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <ScoutDataImpactShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup") {
+    return (
+      <ScoutDataImpactShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+        logPick={orgId ? logPickForm : null}
+      />
+    );
+  }
+  if (shell === "empty" || view?.status !== "live") {
+    return (
+      <ScoutDataImpactShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="empty"
+        logPick={logPickForm}
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page scout-data-impact-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Scout Data Impact"}
           </>
         }
         title="Scout Data Impact"
-        description="After alliance selection, see which of your scouting entries informed each pick — the where-your-data-went feedback loop."
+        description="After alliance selection, see which real scouting entries informed each pick — where-your-data-went, never DEMO credit."
       >
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          {view?.status === "live" && view.events.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Event
-              <select
-                value={eventKey ?? view.eventKey}
-                onChange={(event) => {
-                  const next = event.target.value;
-                  setEventKey(next);
-                  load(next);
-                }}
-              >
-                {view.events.map((e) => (
-                  <option key={e.eventKey} value={e.eventKey}>
-                    {e.name ?? e.eventKey}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+        <div className="scout-data-impact-header-meta">
+          <ScoutDataImpactRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p className="form-message" role="status">
           {error}
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Scout Data Impact"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-          {view.orgId ? <LogPickForm busy={busy} mutate={mutate} /> : null}
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <LogPickForm busy={busy} mutate={mutate} />
-          <ScoutSummaries view={view} />
-          <PicksList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      {view.events.length > 0 ? (
+        <section className="scout-data-impact-event" aria-label="Event filter">
+          <label>
+            Event
+            <select
+              value={eventKey ?? view.eventKey}
+              onChange={(event) => {
+                const next = event.target.value;
+                setEventKey(next);
+                load(next);
+              }}
+            >
+              {view.events.map((e) => (
+                <option key={e.eventKey} value={e.eventKey}>
+                  {e.name ?? e.eventKey}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="app-muted">{view.eventKey}</span>
+        </section>
+      ) : null}
+
+      {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
+      {logPickForm}
+      <ScoutSummaries view={view} loaded={loaded} />
+      <PicksList view={view} busy={busy} mutate={mutate} loaded={loaded} />
+      <ScoutDataImpactNextActionsPanel actions={nextActions} />
+      <p className="app-muted scout-data-impact-footer-links">
+        Also see{" "}
+        <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+        {" · "}
+        <a href={hubHref("/competition", "strategy", orgId)}>Strategy</a>
+        {" · "}
+        <a href={withOrgHref("/scout-accuracy", orgId)}>Accuracy</a>
+      </p>
     </main>
   );
 }
 
-function SummaryTiles({ view }: { view: LiveView }) {
-  const tiles = [
-    { label: "Picks logged", value: String(view.picks.length) },
-    { label: "Entries that informed picks", value: String(view.totalEntries) },
-    { label: "Pick coverage", value: pct(view.coverageRatio) },
-    { label: "Scouts credited", value: String(view.scoutSummaries.length) },
-  ];
+function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
+  const hasPicks = view.picks.length > 0;
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <section className="scout-data-impact-kpis" aria-label="Data impact summary">
+      <StatTile
+        label="Picks logged"
+        value={formatScoutDataImpactMetric(view.picks.length, loaded)}
+        unit="alliance selections"
+      />
+      <StatTile
+        label="Entries credited"
+        value={formatScoutDataImpactMetric(view.totalEntries, loaded)}
+        unit="match scout rows"
+      />
+      <StatTile
+        label="Scouts credited"
+        value={formatScoutDataImpactMetric(view.scoutSummaries.length, loaded)}
+        unit="membership-bound"
+      />
+      <StatTile
+        label="Pick coverage"
+        value={formatScoutDataImpactRate(view.coverageRatio, loaded, { hasPicks })}
+        unit="picks with scout rows"
+      />
+    </section>
   );
 }
 
-function ScoutSummaries({ view }: { view: LiveView }) {
-  if (view.scoutSummaries.length === 0) {
-    return (
-      <EmptyState
-        badge="No attributable entries yet"
-        badgeTone="setup"
-        title="No scouting entries match the logged picks"
-        description="Once match scouting entries exist for a picked team, this list will show who contributed."
-      />
-    );
-  }
+function ScoutSummaries({ view, loaded }: { view: LiveView; loaded: boolean }) {
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Your data, credited</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
-        {view.scoutSummaries.map((scout) => (
-          <li key={scout.scoutUserId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-            <div>
-              <strong>{scout.scoutName}</strong>
-              <small className="app-muted" style={{ display: "block" }}>
-                {scout.teamsScoutedThatWerePicked.length} picked team(s) informed
-              </small>
-            </div>
-            <small className="app-muted">
-              {scout.totalEntries} entries · {scout.picksInformed} pick(s)
-            </small>
-          </li>
-        ))}
-      </ul>
+    <Panel className="scout-data-impact-panel">
+      <header>
+        <h2>Your data, credited</h2>
+        <p className="app-muted">
+          Scouts appear only when their real match entries match a logged pick — never DEMO influence.
+        </p>
+      </header>
+      {view.scoutSummaries.length === 0 ? (
+        <p className="app-muted">
+          No scouting entries match the logged picks yet. Once match rows exist for a picked team, contributors show
+          here.
+        </p>
+      ) : (
+        <ul className="scout-data-impact-list">
+          {view.scoutSummaries.map((scout) => (
+            <li key={scout.scoutUserId}>
+              <div className="scout-data-impact-row-head">
+                <div>
+                  <strong>{scout.scoutName}</strong>
+                  <small>
+                    {formatScoutDataImpactMetric(scout.teamsScoutedThatWerePicked.length, loaded)} picked team(s)
+                    informed
+                  </small>
+                </div>
+                <small className="app-muted">
+                  {formatScoutDataImpactMetric(scout.totalEntries, loaded)} entries ·{" "}
+                  {formatScoutDataImpactMetric(scout.picksInformed, loaded)} pick(s)
+                </small>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </Panel>
   );
 }
@@ -209,70 +449,75 @@ function PicksList({
   view,
   busy,
   mutate,
+  loaded,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  loaded: boolean;
 }) {
-  if (view.picks.length === 0) {
-    return (
-      <EmptyState
-        badge="No picks yet"
-        badgeTone="setup"
-        title="Log your first alliance pick"
-        description="Once picks are logged, matching scouting entries will surface here automatically."
-      />
-    );
-  }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Picks and their evidence</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
-        {view.picks.map((item) => (
-          <li key={item.pick.id} className="app-card soft-panel" style={{ padding: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-              <div>
-                <strong>
-                  Alliance {item.pick.allianceNumber} · Pick {item.pick.pickOrder} — Team{" "}
-                  {item.pick.teamNumber ?? item.pick.teamKey}
-                </strong>
-                <small className="app-muted" style={{ display: "block" }}>
-                  {item.totalEntries} scouting entr{item.totalEntries === 1 ? "y" : "ies"} informed this pick
-                  {item.pick.notes ? ` · ${item.pick.notes}` : ""}
-                </small>
+    <Panel className="scout-data-impact-panel" id="pick-evidence">
+      <header>
+        <h2>Picks and their evidence</h2>
+        <p className="app-muted">Each pick lists only attributable scout entries for that team — never DEMO credit.</p>
+      </header>
+      {view.picks.length === 0 ? (
+        <p className="app-muted">Log an alliance pick below to start the where-your-data-went loop.</p>
+      ) : (
+        <ul className="scout-data-impact-list">
+          {view.picks.map((item) => (
+            <li key={item.pick.id}>
+              <div className="scout-data-impact-row-head">
+                <div>
+                  <strong>
+                    Alliance {item.pick.allianceNumber} · Pick {item.pick.pickOrder} — Team{" "}
+                    {item.pick.teamNumber ?? item.pick.teamKey}
+                  </strong>
+                  <small>
+                    {formatScoutDataImpactMetric(item.totalEntries, loaded)} scouting entr
+                    {item.totalEntries === 1 ? "y" : "ies"} informed this pick
+                    {item.pick.notes ? ` · ${item.pick.notes}` : ""}
+                  </small>
+                </div>
+                <button
+                  type="button"
+                  className="app-button secondary"
+                  disabled={busy}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Remove pick for Team ${item.pick.teamNumber ?? item.pick.teamKey}?`,
+                      )
+                    ) {
+                      void mutate({ action: "delete-pick", pickId: item.pick.id });
+                    }
+                  }}
+                >
+                  Delete
+                </button>
               </div>
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Remove pick for Team ${item.pick.teamNumber ?? item.pick.teamKey}?`)) {
-                    mutate({ action: "delete-pick", pickId: item.pick.id });
-                  }
-                }}
-              >
-                Delete
-              </button>
-            </div>
-            {item.contributions.length > 0 ? (
-              <ul style={{ listStyle: "none", padding: 0, marginTop: 8, display: "grid", gap: 4 }}>
-                {item.contributions.map((c) => (
-                  <li key={c.scoutUserId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                    <span>{c.scoutName}</span>
-                    <small className="app-muted">
-                      {c.entryCount} entr{c.entryCount === 1 ? "y" : "ies"} · {c.matchKeys.length} match(es)
-                    </small>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="app-muted" style={{ marginTop: 8 }}>
-                No scouting entries were found for this team at this event.
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+              {item.contributions.length > 0 ? (
+                <ul className="scout-data-impact-contrib">
+                  {item.contributions.map((c) => (
+                    <li key={c.scoutUserId}>
+                      <span>{c.scoutName}</span>
+                      <small className="app-muted">
+                        {formatScoutDataImpactMetric(c.entryCount, loaded)} entr
+                        {c.entryCount === 1 ? "y" : "ies"} · {c.matchKeys.length} match(es)
+                      </small>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="app-muted" style={{ margin: 0 }}>
+                  No scouting entries were found for this team at this event.
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </Panel>
   );
 }
@@ -301,10 +546,12 @@ function LogPickForm({
   return (
     <Panel
       as="form"
+      id="log-alliance-pick"
+      className="scout-data-impact-panel scout-data-impact-form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.eventKey.trim() || !form.teamKey.trim()) return;
-        mutate({
+        void mutate({
           action: "log-pick",
           eventKey: form.eventKey.trim(),
           teamKey: form.teamKey.trim(),
@@ -314,9 +561,11 @@ function LogPickForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Log alliance pick</h2>
+      <header>
+        <h2>Log alliance pick</h2>
+        <p className="app-muted">Real picks only — credit attaches when matching scout rows exist.</p>
+      </header>
       <FormGrid min={160}>
         <FormRow label="Event key">
           <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026txho" required />

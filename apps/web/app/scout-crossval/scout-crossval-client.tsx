@@ -1,53 +1,231 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  PageHeader,
+  Panel,
+  StatTile,
+} from "../../components/ui";
 import { crossvalStatusLabel } from "../../lib/scout-crossval";
 import type { ScoutCrossvalView } from "../../lib/scout-crossval/compute-scout-crossval";
 import type { CrossvalEntry, CrossvalStatus } from "../../lib/scout-crossval/types";
+import {
+  SCOUT_CROSSVAL_RELATED_INCLUDE,
+  classifyScoutCrossvalShell,
+  formatScoutCrossvalMetric,
+  formatScoutCrossvalRate,
+  scoutCrossvalNextActions,
+  scoutCrossvalRelatedLinks,
+  scoutCrossvalSetupSteps,
+  scoutCrossvalShellCopy,
+  shouldShowScoutCrossvalSummaryTiles,
+  type ScoutCrossvalNextAction,
+  type ScoutCrossvalShellKind,
+} from "../../lib/scout-crossval/scout-crossval-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./scout-crossval.css";
 
-function statusTone(status: CrossvalStatus): string {
-  if (status === "agree") return "good";
-  if (status === "conflict") return "demo";
-  return "setup";
-}
+const STATUS_TONE: Record<CrossvalStatus, BadgeTone> = {
+  agree: "good",
+  conflict: "demo",
+  unverifiable: "setup",
+};
 
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
+function statusTone(status: CrossvalStatus): BadgeTone {
+  return STATUS_TONE[status] ?? "setup";
 }
 
 type LiveView = Extract<ScoutCrossvalView, { status: "live" }>;
 
-export default function ScoutCrossvalClient() {
+function ScoutCrossvalRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = scoutCrossvalRelatedLinks(orgId, {
+    include: [...SCOUT_CROSSVAL_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related scout-crossval-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function ScoutCrossvalNextActionsPanel({ actions }: { actions: ScoutCrossvalNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions scout-crossval-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Scouting, Coverage Live, and Accuracy — never DEMO agreement.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ScoutCrossvalShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: ScoutCrossvalShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = scoutCrossvalNextActions({ orgId, shell });
+  const copy = scoutCrossvalShellCopy(shell);
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const steps = shell === "setup" ? scoutCrossvalSetupSteps(orgId) : [];
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const coverageHref = withOrgHref("/scout-coverage-live", orgId);
+  const accuracyHref = withOrgHref("/scout-accuracy", orgId);
+
+  return (
+    <main className="module-page scout-crossval-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Scout Cross-Validation"}
+          </>
+        }
+        title="Scout Cross-Validation"
+        description={description}
+      >
+        <ScoutCrossvalRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No entries yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
+            {orgId ? "Open Scouting" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={scoutingHref}>
+              Log scout entries
+            </a>
+            <a className="app-button secondary" href={coverageHref}>
+              Open Coverage Live
+            </a>
+            <a className="app-button secondary" href={accuracyHref}>
+              Open Accuracy
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="scout-crossval-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Scouting, Coverage Live, and Accuracy — never DEMO agreement.</p>
+          </header>
+          <ul className="scout-crossval-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted scout-crossval-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <ScoutCrossvalNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
+export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: string }) {
   const [view, setView] = useState<ScoutCrossvalView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [eventKey, setEventKey] = useState<string | null>(null);
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
+  const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
-  const load = useCallback((eventOverride?: string) => {
-    setFetchFailed(false);
-    setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
-    const eventQuery = eventOverride ?? params.get("eventKey");
-    const query = new URLSearchParams();
-    if (urlOrg) query.set("orgId", urlOrg);
-    if (eventQuery) query.set("eventKey", eventQuery);
-    void fetch(`/api/scout-crossval${query.toString() ? `?${query.toString()}` : ""}`)
-      .then(async (response) => {
-        const data = (await response.json()) as ScoutCrossvalView | { error?: string };
-        if (!response.ok || !("status" in data)) {
+  const load = useCallback(
+    (eventOverride?: string) => {
+      setFetchFailed(false);
+      setError("");
+      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+      const urlOrg = initialOrgId ?? params.get("orgId");
+      const eventQuery = eventOverride ?? params.get("eventKey");
+      const query = new URLSearchParams();
+      if (urlOrg) query.set("orgId", urlOrg);
+      if (eventQuery) query.set("eventKey", eventQuery);
+      void fetch(`/api/scout-crossval${query.toString() ? `?${query.toString()}` : ""}`)
+        .then(async (response) => {
+          const data = (await response.json()) as ScoutCrossvalView | { error?: string };
+          if (!response.ok || !("status" in data)) {
+            setFetchFailed(true);
+            setError("error" in data && data.error ? data.error : "Could not load scout cross-validation.");
+            return;
+          }
+          setView(data);
+          if ("eventKey" in data) setEventKey(data.eventKey);
+        })
+        .catch(() => {
           setFetchFailed(true);
-          return;
-        }
-        setView(data);
-        if ("eventKey" in data) setEventKey(data.eventKey);
-      })
-      .catch(() => setFetchFailed(true));
-  }, []);
+          setError("Network error — please try again.");
+        });
+    },
+    [initialOrgId],
+  );
 
   useEffect(() => {
     load();
@@ -80,20 +258,82 @@ export default function ScoutCrossvalClient() {
     [orgId, eventKey, busy],
   );
 
+  const totalEntries = view?.status === "live" ? view.summary.totalEntries : 0;
+  const conflictEntries = view?.status === "live" ? view.summary.conflictEntries : 0;
+
+  const shell = classifyScoutCrossvalShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    totalEntries,
+  });
+  const shellCopy = scoutCrossvalShellCopy(shell);
+  const nextActions = scoutCrossvalNextActions({
+    orgId,
+    shell,
+    conflictEntries,
+    totalEntries,
+  });
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const showTiles =
+    view?.status === "live" &&
+    shouldShowScoutCrossvalSummaryTiles({ totalEntries: view.summary.totalEntries });
+  const loaded = view?.status === "live";
+
+  if (shell === "loading") {
+    return <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <ScoutCrossvalShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup") {
+    return (
+      <ScoutCrossvalShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+  if (shell === "empty" || view?.status !== "live") {
+    return <ScoutCrossvalShell description={shellCopy.description} orgId={orgId} shell="empty" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page scout-crossval-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Scout Cross-Validation"}
           </>
         }
         title="Scout Cross-Validation"
-        description="Compares saved match-scout entries against cached official (TBA) results and flags per-field agree, conflict, or unverifiable badges."
+        description="Compares saved match-scout entries against cached TBA score breakdowns — agree, conflict, or unverifiable, never DEMO agreement rates."
       >
-        {view?.status === "live" && view.events.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div className="scout-crossval-header-meta">
+          <ScoutCrossvalRelatedStrip orgId={orgId} />
+        </div>
+      </PageHeader>
+
+      {error ? (
+        <p className="form-message" role="status">
+          {error}
+        </p>
+      ) : null}
+
+      {view.events.length > 0 ? (
+        <section className="scout-crossval-event" aria-label="Event filter">
+          <label>
             Event
             <select
               value={eventKey ?? view.eventKey ?? ""}
@@ -110,70 +350,56 @@ export default function ScoutCrossvalClient() {
               ))}
             </select>
           </label>
-        ) : null}
-      </PageHeader>
-
-      {error ? (
-        <p className="telemetry-status" role="alert">
-          {error}
-        </p>
+          <span className="app-muted">{view.eventKey}</span>
+        </section>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load scout cross-validation"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryPanel view={view} />
-          <EntriesList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
+      <EntriesList view={view} busy={busy} mutate={mutate} />
+      <ScoutCrossvalNextActionsPanel actions={nextActions} />
+      <p className="app-muted scout-crossval-footer-links">
+        Also see{" "}
+        <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+        {" · "}
+        <a href={withOrgHref("/scout-coverage-live", orgId)}>Coverage Live</a>
+        {" · "}
+        <a href={withOrgHref("/scout-accuracy", orgId)}>Accuracy</a>
+      </p>
     </main>
   );
 }
 
-function SummaryPanel({ view }: { view: LiveView }) {
+function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
   const { summary } = view;
-  const tiles = [
-    { label: "Scout entries", value: String(summary.totalEntries) },
-    { label: "Agree", value: String(summary.agreeEntries) },
-    { label: "Conflict", value: String(summary.conflictEntries) },
-    { label: "Unverifiable", value: String(summary.unverifiableEntries) },
-    { label: "Agreement rate", value: pct(summary.agreementRate) },
-  ];
+  const hasVerifiable = summary.agreeEntries + summary.conflictEntries > 0;
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <section className="scout-crossval-kpis" aria-label="Cross-validation summary">
+      <StatTile
+        label="Scout entries"
+        value={formatScoutCrossvalMetric(summary.totalEntries, loaded)}
+        unit="match scout rows"
+      />
+      <StatTile
+        label="Agree"
+        value={formatScoutCrossvalMetric(summary.agreeEntries, loaded)}
+        unit="vs TBA"
+      />
+      <StatTile
+        label="Conflict"
+        value={formatScoutCrossvalMetric(summary.conflictEntries, loaded)}
+        unit="needs review"
+      />
+      <StatTile
+        label="Unverifiable"
+        value={formatScoutCrossvalMetric(summary.unverifiableEntries, loaded)}
+        unit="no official field"
+      />
+      <StatTile
+        label="Agreement rate"
+        value={formatScoutCrossvalRate(summary.agreementRate, loaded, { hasVerifiable })}
+        unit="verifiable only"
+      />
+    </section>
   );
 }
 
@@ -186,24 +412,33 @@ function EntriesList({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
-  if (view.entries.length === 0) {
-    return (
-      <EmptyState
-        badge="No scout entries yet"
-        badgeTone="setup"
-        title="No match-scout entries to cross-validate"
-        description="Once scouts log match entries for this event, they'll appear here compared against cached official results."
-      />
-    );
-  }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Match entries</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
-        {view.entries.map((entry) => (
-          <EntryRow key={entry.matchScoutEntryId} entry={entry} busy={busy} mutate={mutate} />
-        ))}
-      </ul>
+    <Panel className="scout-crossval-panel" id="crossval-entries">
+      <header>
+        <h2>Match entries vs TBA</h2>
+        <p className="app-muted">
+          Per-field badges use cached official score breakdowns only — never DEMO agreement.
+        </p>
+      </header>
+      {view.entries.length === 0 ? (
+        <EmptyState
+          soft
+          badge="No scout entries yet"
+          badgeTone="setup"
+          title="No match-scout entries to cross-validate"
+          description="Once scouts log match entries for this event, they appear here compared against cached official results."
+        >
+          <a className="app-button" href={hubHref("/competition", "scouting", view.orgId)}>
+            Open Scouting
+          </a>
+        </EmptyState>
+      ) : (
+        <ul className="scout-crossval-list">
+          {view.entries.map((entry) => (
+            <EntryRow key={entry.matchScoutEntryId} entry={entry} busy={busy} mutate={mutate} />
+          ))}
+        </ul>
+      )}
     </Panel>
   );
 }
@@ -218,42 +453,35 @@ function EntryRow({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <li style={{ display: "grid", gap: 6, borderTop: "1px solid var(--app-border, #2a2a33)", paddingTop: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+    <li>
+      <div className="scout-crossval-row-head">
         <div>
           <strong>
             {entry.teamNumber != null ? `Team ${entry.teamNumber}` : entry.teamKey} · {entry.matchKey}
           </strong>
-          <small className="app-muted" style={{ display: "block" }}>
+          <small>
             {entry.allianceColor ? `${entry.allianceColor} alliance` : "Alliance unknown"}
           </small>
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span className={`app-badge ${statusTone(entry.overallStatus)}`}>
-            {crossvalStatusLabel(entry.overallStatus)}
-          </span>
+        <div className="scout-crossval-actions">
+          <Badge tone={statusTone(entry.overallStatus)}>{crossvalStatusLabel(entry.overallStatus)}</Badge>
           <button
             type="button"
-            className="text-button"
+            className="app-button secondary"
             disabled={busy}
-            onClick={() => mutate({ action: "run-crossval", matchScoutEntryId: entry.matchScoutEntryId })}
+            onClick={() => void mutate({ action: "run-crossval", matchScoutEntryId: entry.matchScoutEntryId })}
           >
             Re-check
           </button>
         </div>
       </div>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 4 }}>
+      <ul className="scout-crossval-fields">
         {entry.fields.map((field) => (
-          <li
-            key={field.fieldKey}
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: "0.9rem" }}
-          >
+          <li key={field.fieldKey}>
             <span>{field.fieldLabel}</span>
             <span className="app-muted">
               {field.scoutValue ?? "—"} vs {field.officialValue ?? "—"}{" "}
-              <span className={`app-badge ${statusTone(field.status)}`} style={{ marginLeft: 6 }}>
-                {crossvalStatusLabel(field.status)}
-              </span>
+              <Badge tone={statusTone(field.status)}>{crossvalStatusLabel(field.status)}</Badge>
             </span>
           </li>
         ))}
