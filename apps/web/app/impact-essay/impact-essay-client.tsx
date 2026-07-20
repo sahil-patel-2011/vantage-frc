@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AWARD_LABEL, IMPACT_ESSAY_AWARDS, awardLabel } from "../../lib/impact-essay";
 import type { ImpactEssayView } from "../../lib/impact-essay/compute-impact-essay";
 import {
@@ -154,6 +155,7 @@ export default function ImpactEssayClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [season, setSeason] = useState<number | null>(null);
   const [award, setAward] = useState<ImpactEssayAward>("impact");
 
@@ -221,14 +223,21 @@ export default function ImpactEssayClient() {
       if (!orgId || busy) return;
       setBusy(true);
       setError("");
+      setCutoffCode(null);
       try {
         const response = await fetch("/api/impact-essay", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
         });
-        const data = (await response.json()) as ImpactEssayView | { error?: string };
+        const data = (await response.json()) as ImpactEssayView | { error?: string; code?: string };
         if (!response.ok || !("status" in data)) {
+          const cutoff = resolveCutoffErrorCode(response.status, data);
+          if (cutoff) {
+            setCutoffCode(cutoff);
+            setError("AI usage limit reached — raise budgets or wait for the billing period to reset.");
+            return;
+          }
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
@@ -332,6 +341,7 @@ export default function ImpactEssayClient() {
           {error}
         </p>
       ) : null}
+      {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       <ImpactEssayNextActionsPanel actions={nextActions} />
 

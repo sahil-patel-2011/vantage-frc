@@ -239,7 +239,7 @@ export default function BusinessClient() {
   return (
     <main className="module-page business-page">
       <PageHeader
-        breadcrumbs="Business"
+        breadcrumbs="Business / Business Hub"
         title="Business"
         description={
           live

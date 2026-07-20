@@ -12,6 +12,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
+import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import type { SponsorRenewalRoiView } from "../../lib/sponsor-renewal-roi/compute-sponsor-renewal-roi";
 import type { SponsorRenewalRiskTier } from "../../lib/sponsor-renewal-roi/types";
 import {
@@ -185,6 +186,7 @@ export default function SponsorRenewalRoiClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [season, setSeason] = useState<number | null>(null);
 
   const load = useCallback((seasonOverride?: number) => {
@@ -243,14 +245,21 @@ export default function SponsorRenewalRoiClient() {
       if (!orgId || busy) return;
       setBusy(busyKey);
       setError("");
+      setCutoffCode(null);
       try {
         const response = await fetch("/api/sponsor-renewal-roi", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
         });
-        const data = (await response.json()) as SponsorRenewalRoiView | { error?: string };
+        const data = (await response.json()) as SponsorRenewalRoiView | { error?: string; code?: string };
         if (!response.ok || !("status" in data)) {
+          const cutoff = resolveCutoffErrorCode(response.status, data);
+          if (cutoff) {
+            setCutoffCode(cutoff);
+            setError("AI usage limit reached — raise budgets or wait for the billing period to reset.");
+            return;
+          }
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
@@ -356,6 +365,7 @@ export default function SponsorRenewalRoiClient() {
           {error}
         </p>
       ) : null}
+      {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       <NextActionsPanel actions={nextActions} />
 

@@ -5,6 +5,7 @@ import {
   filterSponsorTabs,
   filterTabsByHubAccess,
   pathAllowedByHubAccess,
+  pathAllowedBySponsors,
   type ClientHubAccessRow,
 } from "./hub-access-filter";
 
@@ -44,6 +45,15 @@ describe("hub-access-filter", () => {
     const tabs = [{ id: "budget" }, { id: "sponsors" }, { id: "grants" }];
     expect(filterSponsorTabs(tabs, false).map((t) => t.id)).toEqual(["budget", "grants"]);
     expect(filterSponsorTabs(tabs, null).map((t) => t.id)).toEqual(["budget", "sponsors", "grants"]);
+  });
+
+  it("hides sponsor drawer paths when sponsors not allowed", () => {
+    expect(pathAllowedBySponsors("/sponsor-wall", false)).toBe(false);
+    expect(pathAllowedBySponsors("/matching-gift-finder", false)).toBe(false);
+    expect(pathAllowedBySponsors("/business?tab=sponsors", false)).toBe(false);
+    expect(pathAllowedBySponsors("/business?tab=grants", false)).toBe(true);
+    expect(pathAllowedBySponsors("/sponsor-suite", null)).toBe(true);
+    expect(pathAllowedBySponsors("/costs", false)).toBe(true);
   });
 
   it("filters nav hrefs by hub access", () => {
