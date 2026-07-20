@@ -463,7 +463,7 @@ function SessionDetail({
   );
 }
 
-export default function AttendanceClient() {
+export default function AttendanceClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<AttendanceView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -546,9 +546,13 @@ export default function AttendanceClient() {
 
   if (fetchFailed || !view) {
     return (
-      <main className="module-page att-page">
-        <PageHeader breadcrumbs="Team / Attendance" title="Attendance" />
-        <TeamOpsNav active="attendance" />
+      <main className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
+        {!embedded ? (
+          <>
+            <PageHeader breadcrumbs="Team / Attendance" title="Attendance" />
+            <TeamOpsNav active="attendance" />
+          </>
+        ) : null}
         <EmptyState
           soft
           badge={fetchFailed ? "Setup" : undefined}
@@ -581,13 +585,17 @@ export default function AttendanceClient() {
 
   if (view.status === "setup_required") {
     return (
-      <main className="module-page att-page">
-        <PageHeader
-          breadcrumbs="Team / Attendance"
-          title="Attendance"
-          description="Log who showed up to practice and meetings — real marks only, never DEMO rates."
-        />
-        <TeamOpsNav active="attendance" />
+      <main className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
+        {!embedded ? (
+          <>
+            <PageHeader
+              breadcrumbs="Team / Attendance"
+              title="Attendance"
+              description="Log who showed up to practice and meetings — real marks only, never DEMO rates."
+            />
+            <TeamOpsNav active="attendance" />
+          </>
+        ) : null}
         <EmptyState soft title="Select a team workspace" description={view.message} badge="Setup" badgeTone="setup">
           <a className="app-button" href="/workspace">
             Choose workspace
@@ -612,59 +620,75 @@ export default function AttendanceClient() {
     filtered[0] ??
     null;
 
-  return (
-    <main className="module-page att-page">
-      <PageHeader
-        breadcrumbs="Team / Attendance"
-        title="Attendance"
-        description={
-          <>
-            Practice and meeting presence for {context.orgName ?? "your team"}
-            {context.teamNumber ? ` (Team ${context.teamNumber})` : ""}. Totals use only marks you enter — never DEMO
-            rates.
-          </>
-        }
-      >
-        <div className="att-header-actions">
-          <label className="att-season">
-            Season
-            <select
-              value={seasonYear}
-              disabled={busy}
-              onChange={(e) => {
-                const year = Number(e.target.value);
-                setSeasonYear(year);
-                setSelectedId(null);
-                void load(year);
-              }}
-            >
-              {seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
+  const headerActions = (
+    <div className="att-header-actions">
+      <label className="att-season">
+        Season
+        <select
+          value={seasonYear}
+          disabled={busy}
+          onChange={(e) => {
+            const year = Number(e.target.value);
+            setSeasonYear(year);
+            setSelectedId(null);
+            void load(year);
+          }}
+        >
+          {seasons.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+      </label>
+      {!embedded ? (
+        <>
           <a className="app-button secondary" href={attendancePracticeHref(orgId)}>
             Practice
           </a>
           <a className="app-button secondary" href={attendanceCalendarHref(orgId)}>
             Calendar
           </a>
-          {canManage ? (
-            <button type="button" className="app-button" onClick={() => setShowCreate((v) => !v)}>
-              {showCreate ? "Close form" : "New event"}
-            </button>
-          ) : null}
-        </div>
-      </PageHeader>
-      <TeamOpsNav orgId={orgId} active="attendance" />
-      <TeamHubRelated
-        orgId={orgId}
-        active="attendance"
-        include={[...ATTENDANCE_TEAM_RELATED_INCLUDE]}
-        ariaLabel="Related team ops for attendance"
-      />
+        </>
+      ) : null}
+      {canManage ? (
+        <button type="button" className="app-button" onClick={() => setShowCreate((v) => !v)}>
+          {showCreate ? "Close form" : "New event"}
+        </button>
+      ) : null}
+    </div>
+  );
+
+  return (
+    <main className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
+      {!embedded ? (
+        <PageHeader
+          breadcrumbs="Team / Attendance"
+          title="Attendance"
+          description={
+            <>
+              Practice and meeting presence for {context.orgName ?? "your team"}
+              {context.teamNumber ? ` (Team ${context.teamNumber})` : ""}. Totals use only marks you enter — never DEMO
+              rates.
+            </>
+          }
+        >
+          {headerActions}
+        </PageHeader>
+      ) : (
+        headerActions
+      )}
+      {!embedded ? (
+        <>
+          <TeamOpsNav orgId={orgId} active="attendance" />
+          <TeamHubRelated
+            orgId={orgId}
+            active="attendance"
+            include={[...ATTENDANCE_TEAM_RELATED_INCLUDE]}
+            ariaLabel="Related team ops for attendance"
+          />
+        </>
+      ) : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">

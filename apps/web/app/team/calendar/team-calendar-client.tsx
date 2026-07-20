@@ -1143,7 +1143,7 @@ function CalendarSyncPanel({
   );
 }
 
-export default function TeamCalendarClient() {
+export default function TeamCalendarClient({ embedded = false }: { embedded?: boolean } = {}) {
   const online = useOnline();
   const [view, setView] = useState<SubteamCalendarView | null>(null);
   const [error, setError] = useState("");
@@ -1295,15 +1295,19 @@ export default function TeamCalendarClient() {
 
   if (fetchFailed || !view) {
     return (
-      <main className="module-page tc-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Team / Calendar</span>
-            <h1>Calendar</h1>
-            <p>Subteam calendars for practices, build sessions, and deadlines — never DEMO events.</p>
-          </div>
-        </header>
-        <TeamOpsNav active="calendar" />
+      <main className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
+        {!embedded ? (
+          <>
+            <header className="app-page-header">
+              <div>
+                <span className="breadcrumbs">Team / Calendar</span>
+                <h1>Calendar</h1>
+                <p>Subteam calendars for practices, build sessions, and deadlines — never DEMO events.</p>
+              </div>
+            </header>
+            <TeamOpsNav active="calendar" />
+          </>
+        ) : null}
         <OfflineBanner feature="Calendar" fromCache={Boolean(view) && fromCache} cachedAt={cachedAt} />
         <div className="app-card tc-empty">
           {fetchFailed ? (
@@ -1340,15 +1344,19 @@ export default function TeamCalendarClient() {
       canManage: false,
     });
     return (
-      <main className="module-page tc-page">
-        <header className="app-page-header">
-          <div>
-            <span className="breadcrumbs">Team / Calendar</span>
-            <h1>Calendar</h1>
-            <p>Subteam calendars for practices, build sessions, and deadlines.</p>
-          </div>
-        </header>
-        <TeamOpsNav active="calendar" />
+      <main className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
+        {!embedded ? (
+          <>
+            <header className="app-page-header">
+              <div>
+                <span className="breadcrumbs">Team / Calendar</span>
+                <h1>Calendar</h1>
+                <p>Subteam calendars for practices, build sessions, and deadlines.</p>
+              </div>
+            </header>
+            <TeamOpsNav active="calendar" />
+          </>
+        ) : null}
         <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         <div className="app-card tc-empty">
           <strong>Select a team workspace</strong>
@@ -1399,27 +1407,31 @@ export default function TeamCalendarClient() {
   );
 
   return (
-    <main className="module-page tc-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Team / Calendar</span>
-          <h1>Calendar</h1>
-          <p>
-            {teamLabel} — practices, subteams, and “I’m going.” Season milestones stay on{" "}
-            <a href={withOrg("/calendar", orgId)}>Season Calendar</a>. Nothing is seeded as DEMO.
-          </p>
-        </div>
-      </header>
-      <TeamOpsNav orgId={orgId} active="calendar" />
-      <TeamHubRelated orgId={orgId} active="calendar" include={[...CALENDAR_TEAM_RELATED_INCLUDE]} />
-      {opsLinks.length > 0 ? (
-        <nav className="product-hub-related tc-ops-related" aria-label="Related ops tools">
-          {opsLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
+    <main className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>
+      {!embedded ? (
+        <>
+          <header className="app-page-header">
+            <div>
+              <span className="breadcrumbs">Team / Calendar</span>
+              <h1>Calendar</h1>
+              <p>
+                {teamLabel} — practices, subteams, and “I’m going.” Season milestones stay on{" "}
+                <a href={withOrg("/calendar", orgId)}>Season Calendar</a>. Nothing is seeded as DEMO.
+              </p>
+            </div>
+          </header>
+          <TeamOpsNav orgId={orgId} active="calendar" />
+          <TeamHubRelated orgId={orgId} active="calendar" include={[...CALENDAR_TEAM_RELATED_INCLUDE]} />
+          {opsLinks.length > 0 ? (
+            <nav className="product-hub-related tc-ops-related" aria-label="Related ops tools">
+              {opsLinks.map((link) => (
+                <a key={link.id} className="app-button secondary" href={link.href}>
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          ) : null}
+        </>
       ) : null}
       <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
 

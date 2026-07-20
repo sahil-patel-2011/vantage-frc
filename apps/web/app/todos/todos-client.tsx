@@ -69,7 +69,7 @@ function NextActions({
   );
 }
 
-export default function TodosClient() {
+export default function TodosClient({ embedded = false }: { embedded?: boolean } = {}) {
   const online = useOnline();
   const [fromCache] = useState(false);
   const [cachedAt] = useState<string | null>(null);
@@ -140,30 +140,34 @@ export default function TodosClient() {
   );
 
   return (
-    <main className="module-page todos-page">
-      <PageHeader
-        breadcrumbs="Team / Todos"
-        title="Team todos"
-        description={
-          <>
-            Shared action items for this org — assignees, due dates, and optional calendar subteam tags. Empty until
-            your team adds real work; never a DEMO task list.
-          </>
-        }
-      >
-        {view?.status === "live" ? (
-          <a className="app-button secondary" href={withOrgHref("/tasks", orgId)}>
-            Build-season board
-          </a>
-        ) : null}
-      </PageHeader>
-      <TeamOpsNav orgId={orgId} active="todos" />
-      <TeamHubRelated
-        orgId={orgId}
-        active="todos"
-        include={[...TODOS_RELATED_INCLUDE]}
-        ariaLabel="Related team ops for todos"
-      />
+    <main className={`module-page todos-page${embedded ? " is-embedded" : ""}`}>
+      {!embedded ? (
+        <>
+          <PageHeader
+            breadcrumbs="Team / Todos"
+            title="Team todos"
+            description={
+              <>
+                Shared action items for this org — assignees, due dates, and optional calendar subteam tags. Empty until
+                your team adds real work; never a DEMO task list.
+              </>
+            }
+          >
+            {view?.status === "live" ? (
+              <a className="app-button secondary" href={withOrgHref("/tasks", orgId)}>
+                Build-season board
+              </a>
+            ) : null}
+          </PageHeader>
+          <TeamOpsNav orgId={orgId} active="todos" />
+          <TeamHubRelated
+            orgId={orgId}
+            active="todos"
+            include={[...TODOS_RELATED_INCLUDE]}
+            ariaLabel="Related team ops for todos"
+          />
+        </>
+      ) : null}
       <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
 
       {!online ? (

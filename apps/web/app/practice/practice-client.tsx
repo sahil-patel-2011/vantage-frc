@@ -392,7 +392,7 @@ function NewSessionForm({
   );
 }
 
-export default function PracticeClient() {
+export default function PracticeClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<DriverPracticeView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -507,24 +507,32 @@ export default function PracticeClient() {
   });
 
   return (
-    <main className="practice-page">
-      <TeamOpsNav orgId={orgId} active="practice" />
-      <TeamHubRelated orgId={orgId} active="practice" include={[...PRACTICE_TEAM_RELATED_INCLUDE]} />
+    <main className={`practice-page${embedded ? " is-embedded" : ""}`}>
+      {!embedded ? (
+        <>
+          <TeamOpsNav orgId={orgId} active="practice" />
+          <TeamHubRelated orgId={orgId} active="practice" include={[...PRACTICE_TEAM_RELATED_INCLUDE]} />
+        </>
+      ) : null}
       <header className="practice-hero">
         <div>
-          <p className="practice-kicker">Team / Practice{context.teamNumber ? ` · ${context.teamNumber}` : ""}</p>
-          <h1>Practice</h1>
+          {!embedded ? (
+            <p className="practice-kicker">Team / Practice{context.teamNumber ? ` · ${context.teamNumber}` : ""}</p>
+          ) : null}
+          {!embedded ? <h1>Practice</h1> : null}
           <p>
             Schedule drive sessions, write the goal for the day, time every cycle, and link roll calls by occurred_on
             for {context.orgName ?? "your team"} — never DEMO attendance %.
           </p>
-          <div className="practice-hero-links">
-            <a href={teamTab("calendar", orgId)}>Calendar</a>
-            <a href={teamTab("attendance", orgId)}>Attendance</a>
-            <a href={teamTab("batteries", orgId)}>Batteries</a>
-            <a href={teamTab("todos", orgId)}>Todos</a>
-            <a href={teamTab("messages", orgId)}>Messages</a>
-          </div>
+          {!embedded ? (
+            <div className="practice-hero-links">
+              <a href={teamTab("calendar", orgId)}>Calendar</a>
+              <a href={teamTab("attendance", orgId)}>Attendance</a>
+              <a href={teamTab("batteries", orgId)}>Batteries</a>
+              <a href={teamTab("todos", orgId)}>Todos</a>
+              <a href={teamTab("messages", orgId)}>Messages</a>
+            </div>
+          ) : null}
         </div>
         <div className="practice-hero-score">
           <strong>{overall.reps > 0 ? overall.reps : "—"}</strong>

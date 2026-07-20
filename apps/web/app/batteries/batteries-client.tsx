@@ -140,8 +140,9 @@ function BatteriesRelated({ orgId }: { orgId: string }) {
   );
 }
 
-export default function BatteriesClient() {
-  const embed = useHubEmbed();
+export default function BatteriesClient({ embedded = false }: { embedded?: boolean } = {}) {
+  const pathEmbed = useHubEmbed();
+  const embed = pathEmbed ?? (embedded ? "team" : null);
   const [view, setView] = useState<View | null>(null);
   const [error, setError] = useState("");
   const [okMessage, setOkMessage] = useState("");
@@ -330,7 +331,7 @@ export default function BatteriesClient() {
         </div>
       </PageHeader>
       {!embed ? <TeamOpsNav orgId={orgId} active="batteries" /> : null}
-      <BatteriesRelated orgId={orgId} />
+      {!embed ? <BatteriesRelated orgId={orgId} /> : null}
 
       {error ? (
         <p className="batt-alert" role="alert">

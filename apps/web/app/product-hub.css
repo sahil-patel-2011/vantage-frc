@@ -22,6 +22,9 @@
   font: 650 13px/1.35 var(--font-source-sans), ui-sans-serif;
   color: var(--soft-ink);
   list-style-position: outside;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 .product-hub-more-links {
   display: flex;
@@ -33,6 +36,10 @@
   font: 600 12px/1.35 var(--font-source-sans), ui-sans-serif;
   color: var(--soft-accent);
   text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 2px;
 }
 .product-hub-more-links a:hover { text-decoration: underline; }
 .product-hub-more-links a[data-featured="yes"] {
@@ -46,6 +53,16 @@
 .product-hub-panel > main .intel-header,
 .product-hub-panel .app-page-header { display: none; }
 .product-hub-panel .team-ops-nav { display: none; }
+/* Kill triple chrome: hub TabBar already covers sibling Team surfaces */
+.product-hub-panel .team-hub-related,
+.product-hub-panel .product-hub-related,
+.product-hub-panel .tc-ops-related,
+.product-hub-panel .fmea-related,
+.product-hub-panel .batt-related,
+.product-hub-panel .practice-hero-links,
+.product-hub-panel .kb-hero-actions {
+  display: none !important;
+}
 .product-hub-setup { display: grid; gap: 12px; justify-items: start; padding: 20px; }
 .product-hub-setup h2 { margin: 0; font-size: 1.25rem; }
 .product-hub-finance { display: grid; gap: 14px; max-width: 52rem; }
@@ -96,6 +113,13 @@
 .product-hub-panel .att-page {
   padding-top: 0;
 }
+.product-hub-panel .att-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+  align-items: center;
+}
 .product-hub-panel .batt-page {
   padding-top: 0;
 }
@@ -119,6 +143,11 @@
 }
 .product-hub-panel .messages-page .app-page-header {
   display: none;
+}
+.product-hub-panel .messages-embed-status {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 10px;
 }
 
 /* Nested Build surfaces: drop duplicate page chrome */
@@ -144,4 +173,54 @@
 .product-hub--competition .edc-page .app-page-header,
 .product-hub--competition .myday-page .app-page-header {
   display: none;
+}
+
+@media (max-width: 720px) {
+  .product-hub .app-page-header p {
+    display: none;
+  }
+  .product-hub-tabs.soft-tab-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    width: 100%;
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+  }
+  .product-hub-tabs.soft-tab-bar::-webkit-scrollbar { display: none; }
+  .product-hub-tabs.soft-tab-bar button {
+    flex: 0 0 auto;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  .product-hub-featured {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .product-hub-featured::-webkit-scrollbar { display: none; }
+  .product-hub-featured .app-button {
+    flex: 0 0 auto;
+    min-height: 44px;
+  }
+  .product-hub-panel .practice-hero {
+    grid-template-columns: 1fr;
+  }
+  .product-hub-panel .messages-page .messages-layout {
+    min-height: min(70dvh, 640px);
+  }
+  .product-hub-setup-actions,
+  .product-hub-setup .soft-btn-row {
+    display: grid;
+    width: 100%;
+    gap: 8px;
+  }
+  .product-hub-setup-actions .app-button,
+  .product-hub-setup .soft-btn-row .app-button {
+    width: 100%;
+    justify-content: center;
+  }
 }
