@@ -1,0 +1,133 @@
+/* Soft-UI AI API keys — scoped to .ai-keys-page */
+
+.ai-keys-page .ai-keys-related {
+  margin: 0 0 16px;
+}
+
+.ai-keys-page .ai-keys-shell,
+.ai-keys-page .ai-keys-billing {
+  margin: 0 0 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.ai-keys-page .ai-keys-shell .eyebrow,
+.ai-keys-page .ai-keys-billing .eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.ai-keys-page .ai-keys-shell h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.ai-keys-page .ai-keys-billing p {
+  margin: 0;
+  max-width: 62ch;
+  line-height: 1.45;
+}
+
+.ai-keys-page .ai-keys-flash {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--soft-accent, #3d6b8e) 12%, transparent);
+}
+
+.ai-keys-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.ai-keys-provider {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.ai-keys-provider-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ai-keys-provider-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.ai-keys-provider-head strong {
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.ai-keys-status {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.ai-keys-status.ok {
+  color: color-mix(in srgb, #1f6b4a 90%, black);
+  background: color-mix(in srgb, #1f6b4a 12%, transparent);
+}
+
+.ai-keys-status.missing {
+  color: color-mix(in srgb, #8a5a20 90%, black);
+  background: color-mix(in srgb, #8a5a20 12%, transparent);
+}
+
+.ai-keys-meta {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.ai-keys-form {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-keys-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.ai-keys-form input {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: color-mix(in srgb, var(--soft-surface, #fff) 92%, transparent);
+  font: inherit;
+}
+
+.ai-keys-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-keys-actions .primary-action,
+.ai-keys-actions .danger-action {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 640px) {
+  .ai-keys-provider-head {
+    flex-direction: column;
+  }
+}

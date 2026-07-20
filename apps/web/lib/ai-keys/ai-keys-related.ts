@@ -1,0 +1,156 @@
+import { hubHref } from "../nav/hubs";
+import { withOrgHref } from "../nav/product-nav";
+
+/** Soft-UI cross-links for `/team/ai-keys` — never DEMO billing figures. */
+export type AiKeysRelatedId =
+  | "chat"
+  | "budgets"
+  | "usage"
+  | "pricing"
+  | "account"
+  | "admin"
+  | "getting-started";
+
+export type AiKeysRelatedLink = {
+  id: AiKeysRelatedId;
+  label: string;
+  href: string;
+};
+
+export function aiKeysRelatedLinks(
+  orgId?: string | null,
+  options?: { active?: AiKeysRelatedId; include?: AiKeysRelatedId[] },
+): AiKeysRelatedLink[] {
+  const include = options?.include ? new Set(options.include) : null;
+  const all: AiKeysRelatedLink[] = [
+    { id: "chat", label: "Chat", href: hubHref("/ai", "chat", orgId) },
+    { id: "budgets", label: "API budgets", href: hubHref("/ai", "budgets", orgId) },
+    { id: "usage", label: "AI usage", href: withOrgHref("/team/usage", orgId) },
+    { id: "pricing", label: "Pricing", href: withOrgHref("/pricing", orgId) },
+    { id: "account", label: "Account", href: withOrgHref("/account", orgId) },
+    { id: "admin", label: "Custom providers", href: `${withOrgHref("/team/admin", orgId)}#custom-providers` },
+    {
+      id: "getting-started",
+      label: "Team setup",
+      href: withOrgHref("/team/getting-started", orgId),
+    },
+  ];
+  return all.filter((link) => {
+    if (link.id === options?.active) return false;
+    if (include && !include.has(link.id)) return false;
+    return true;
+  });
+}
+
+export const AI_KEYS_RELATED_INCLUDE: AiKeysRelatedId[] = [
+  "chat",
+  "budgets",
+  "pricing",
+  "account",
+];
+
+export type AiKeysShellKind =
+  | "loading"
+  | "ready"
+  | "empty"
+  | "setup"
+  | "forbidden"
+  | "auth_required"
+  | "error";
+
+export function classifyAiKeysShell(input: {
+  loading: boolean;
+  authRequired?: boolean;
+  setupRequired?: boolean;
+  forbidden?: boolean;
+  error?: string;
+  hasOrg: boolean;
+}): AiKeysShellKind {
+  if (input.loading) return "loading";
+  if (input.authRequired) return "auth_required";
+  if (!input.hasOrg) return "empty";
+  if (input.setupRequired) return "setup";
+  if (input.forbidden) return "forbidden";
+  if (input.error?.trim()) return "error";
+  return "ready";
+}
+
+export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): {
+  eyebrow: string;
+  title: string;
+  description: string;
+  badge?: string;
+} {
+  if (kind === "loading") {
+    return {
+      eyebrow: "AI KEYS",
+      title: "Loading encrypted key status…",
+      description: "Checking which first-party providers are configured for this workspace.",
+    };
+  }
+  if (kind === "auth_required") {
+    return {
+      eyebrow: "SIGN IN REQUIRED",
+      title: "Sign in to manage API keys",
+      description: "BYOK keys are org-scoped and encrypted. Sign in, then open this page from Account or Team setup.",
+      badge: "Auth required",
+    };
+  }
+  if (kind === "empty") {
+    return {
+      eyebrow: "CHOOSE A WORKSPACE",
+      title: "Select a team to add API keys",
+      description: "Open Workspace, pick your organization, then return here to paste OpenAI, Anthropic, or Google keys.",
+      badge: "No workspace",
+    };
+  }
+  if (kind === "setup") {
+    return {
+      eyebrow: "SETUP REQUIRED",
+      title: "Key encryption is not available",
+      description:
+        detail?.trim() ||
+        "This deployment cannot envelope-encrypt API keys yet (KMS / local vault missing). Keys are not accepted until encryption is configured — nothing crashes, and no plaintext is stored.",
+      badge: "Setup required",
+    };
+  }
+  if (kind === "forbidden") {
+    return {
+      eyebrow: "PERMISSION NEEDED",
+      title: "You can view status, not change keys",
+      description:
+        detail?.trim() ||
+        "Saving or removing BYOK keys requires the Manage API keys capability (owners/admins or a delegated member).",
+      badge: "View only",
+    };
+  }
+  if (kind === "error") {
+    return {
+      eyebrow: "COULD NOT LOAD",
+      title: "Could not load AI key status",
+      description: detail?.trim() || "Retry when the network or database is available. No DEMO keys are invented.",
+      badge: "Retry",
+    };
+  }
+  return {
+    eyebrow: "YOUR KEYS",
+    title: "Workspace AI API keys",
+    description:
+      "Paste OpenAI, Anthropic, or Google keys for Free / bring-your-own routing. Paid plans add Vantage-hosted AI—cheaper than own keys—with the product built in natively. Your keys never consume hosted usage.",
+  };
+}
+
+/** Billing framing — your keys vs hosted native AI (aligned with pricing soft-copy). */
+export function aiKeysBillingNote(tier: string | null | undefined): { title: string; body: string } {
+  const normalized = (tier ?? "free").toLowerCase();
+  if (normalized === "free") {
+    return {
+      title: "Free · your keys",
+      body: "Free keeps Soft-UI competition core with your own keys or a local relay—no managed hosted AI. Add OpenAI, Anthropic, or Google below. Paid plans unlock Vantage-hosted AI (cheaper than typical own-key rates) plus native scouting, strategy, and Event Day.",
+    };
+  }
+  return {
+    title: "Paid · hosted native AI",
+    body: "Prefer Vantage-hosted AI (included window, then Credits or PAYG)—cheaper than running your own keys for the same Soft-UI product. You can still paste BYOK keys; that traffic does not consume hosted usage, so you are not billed twice for one call.",
+  };
+}

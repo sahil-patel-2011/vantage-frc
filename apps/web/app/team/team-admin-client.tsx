@@ -474,9 +474,13 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           <strong>Security &amp; delegation</strong>
           <span>Auth policy and API-key powers</span>
         </a>
+        <a href={withOrgHref("/team/ai-keys", orgId)}>
+          <strong>Add your API keys</strong>
+          <span>OpenAI · Anthropic · Google</span>
+        </a>
         <a href="#custom-providers">
-          <strong>API keys</strong>
-          <span>BYOK / local model providers</span>
+          <strong>Custom providers</strong>
+          <span>OpenAI-compatible / local relay</span>
         </a>
         <a href={withOrgHref("/team/budgets", orgId)}>
           <strong>API budgets</strong>
@@ -937,8 +941,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         <div className="admin-grid">
           <form className="intel-panel" onSubmit={saveProvider}>
             <p>
-              Configure an OpenAI-compatible HTTPS endpoint or a local desktop relay. Keys are encrypted at rest and never
-              returned. Free workspaces use BYOK/local here; managed routing stays on platform models when entitled.
+              Prefer first-party OpenAI, Anthropic, or Google? Use{" "}
+              <a href={withOrgHref("/team/ai-keys", orgId)}>AI API keys</a> — encrypted paste stop for Free / your-keys
+              workspaces. Below is for custom OpenAI-compatible HTTPS endpoints or a local desktop relay. Keys are
+              encrypted at rest and never returned. Paid plans can use Vantage-hosted AI instead (cheaper than own keys).
             </p>
             <label>
               Label

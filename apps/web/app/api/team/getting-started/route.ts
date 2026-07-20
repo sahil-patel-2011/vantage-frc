@@ -64,11 +64,21 @@ export async function GET(request: Request) {
       ]);
 
       let budgetsConfigured: boolean | null = null;
+      let byokKeysConfigured: boolean | null = null;
       let discordConnected: boolean | null = null;
       let hasLocation: boolean | null = null;
       if (isAdmin) {
         budgetsConfigured =
           (await count(`SELECT count(*) AS c FROM org_api_budget_policies WHERE org_id=$1`)) > 0;
+        byokKeysConfigured =
+          (await count(
+            `SELECT count(*) AS c FROM org_llm_keys
+             WHERE org_id=$1 AND lower(provider) IN ('openai','anthropic','google','gemini')`,
+          )) > 0 ||
+          (await count(
+            `SELECT count(*) AS c FROM org_provider_configs
+             WHERE org_id=$1 AND enabled=true AND disabled_at IS NULL AND key_ciphertext IS NOT NULL`,
+          )) > 0;
         discordConnected = (await count(`SELECT count(*) AS c FROM team_discord WHERE org_id=$1`)) > 0;
         const orgRow = membership.rows[0]!;
         hasLocation = Boolean(orgRow.city?.trim() && orgRow.stateProv?.trim());
@@ -88,6 +98,7 @@ export async function GET(request: Request) {
           alumni: alumniCount,
           assistantRuns: runsCount,
           budgetsConfigured,
+          byokKeysConfigured,
           discordConnected,
           joinedSubteam: mySubteams > 0,
           logisticsTrips,
