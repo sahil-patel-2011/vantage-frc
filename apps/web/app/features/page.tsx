@@ -7,7 +7,7 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Product map — Vantage",
   description:
-    "Soft-UI hubs FRC teams open after sign-in: Competition, Team, Business, Build, and AI—plus Alliance Selection Desk, Season Planning, CAD agent, and AI API keys.",
+    "Soft-UI hubs FRC teams open after sign-in: Competition, Team, Logistics, Business, Build, and AI—plus Alliance Selection Desk, Season Planning, CAD agent, and AI API keys.",
   path: "/features",
 });
 
@@ -24,6 +24,11 @@ const pillars: {
   {
     title: "Team",
     copy: "Calendar, todos, practice, attendance, knowledge — Season Planning Workspace in More.",
+    href: "/for-teams",
+  },
+  {
+    title: "Logistics",
+    copy: "Event Logistics, packing list, duty roster, visit invites.",
     href: "/for-teams",
   },
   {
@@ -73,8 +78,8 @@ export default function FeaturesPage() {
         <header className="lux-route-hero">
           <h1>The product map.</h1>
           <p>
-            Soft-UI hubs teams open after sign-in: Competition, Team, Business, Build, and AI—plus featured tools like
-            Alliance Selection Desk and Season Planning.
+            Soft-UI hubs teams open after sign-in: Competition, Team, Logistics, Business, Build, and AI—plus Alliance
+            Selection Desk and Season Planning.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
@@ -90,7 +95,7 @@ export default function FeaturesPage() {
           <div className="lux-content">
             <header className="lux-section-head">
               <h2 id="product-show-title">Hubs with real module names.</h2>
-              <p>Competition, Team, Business, Build, and AI—the same structure after sign-in.</p>
+              <p>Competition, Team, Logistics, Business, Build, and AI—the same structure after sign-in.</p>
             </header>
             <ProductGlances />
           </div>

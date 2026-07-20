@@ -2,64 +2,59 @@ import type { Metadata } from "next";
 import { WaitlistForm } from "../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import { FAQ } from "../components/marketing/faq";
-import { HeroProductVisual, ProductGlances } from "../components/marketing/product-glances";
-import {
-  hostedApiSavingsCopy,
-  raisedPricingStrip,
-  raisedPricingSummaryLine,
-} from "@vantage/billing/catalog";
+import { HeroProductVisual } from "../components/marketing/product-glances";
+import { raisedPricingStrip } from "@vantage/billing/catalog";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
 
 export const metadata: Metadata = marketingPageMetadata({
   title: "Vantage — Competition ops for FRC teams",
   description:
-    "Soft-UI hubs for FRC scouting, Event Day Command, strategy, Alliance Selection Desk, season planning, CAD, and team ops. Invite-only. Empty until real data connects.",
+    "Soft-UI hubs for FRC scouting, Event Day, alliance selection, season planning, logistics, build, and AI—with BYOK or credits. Invite-only.",
   path: "/",
 });
 
 const hubs = [
   {
     name: "Competition",
-    blurb: "Command, My Day, Scouting, Strategy, Form builder, Pick clock, Alliance Selection Desk.",
-    href: "/features",
+    blurb: "Scouting, Event Day Command, Strategy, Alliance Selection Desk.",
   },
   {
     name: "Team",
-    blurb: "Calendar, practice, attendance, knowledge — Season Planning Workspace in More.",
-    href: "/for-teams",
+    blurb: "Calendar, practice, attendance, Season Planning Workspace.",
+  },
+  {
+    name: "Logistics",
+    blurb: "Packing, duty roster, visit invites.",
   },
   {
     name: "Business",
-    blurb: "Budget, sponsors, grants, partners, and award evidence.",
-    href: "/for-teams",
+    blurb: "Budget, sponsors, grants, award evidence.",
   },
   {
     name: "Build",
-    blurb: "Kickoff, CAD agent, Code Coach, FMEA, shop readiness.",
-    href: "/features/cad",
+    blurb: "Kickoff, CAD agent, Code Coach, shop readiness.",
   },
   {
     name: "AI",
-    blurb: "Assistant chat, writer, budgets — start free with keys or buy AI credits; hosted on paid plans.",
-    href: "/pricing",
+    blurb: "Assistant and writer—bring your own keys or buy credits.",
   },
 ] as const;
 
 const seasonBeat = [
   {
     step: "01",
-    title: "Set the season",
-    copy: "Invite the org, link TBA, publish scout forms, plan goals.",
+    title: "Plan the season",
+    copy: "Invite the org, link TBA, publish scout forms, set goals.",
   },
   {
     step: "02",
-    title: "Capture at the venue",
-    copy: "Offline scouting and Competition Command / My Day when Wi-Fi drops.",
+    title: "Run event day",
+    copy: "Offline scouting plus Competition Command and My Day at the venue.",
   },
   {
     step: "03",
-    title: "Decide with sources",
-    copy: "Strategy, Alliance Selection Desk, and Assistant cite scout and public facts—or stay empty.",
+    title: "Pick with sources",
+    copy: "Strategy and Alliance Selection Desk use scout and public facts—or stay empty.",
   },
 ] as const;
 
@@ -70,13 +65,11 @@ export default function Home() {
       <SiteHeader />
       <main>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(entityLd) }} />
+
         <section className="lux-hero" aria-labelledby="lux-hero-title">
           <div className="lux-hero-copy">
             <h1 id="lux-hero-title">Competition ops for FRC teams.</h1>
-            <p>
-              Scouting, Strategy, Event Day Command, alliance selection, season planning, CAD, and team ops—in Soft-UI
-              hubs that stay empty until your data connects.
-            </p>
+            <p>Scouting, Event Day, alliance desk, season planning, and team hubs—in one Soft-UI workspace.</p>
             <div className="actions">
               <a className="button primary" href="#waitlist">
                 Join the waitlist
@@ -85,32 +78,15 @@ export default function Home() {
                 See the product
               </a>
             </div>
-            <p className="lux-hero-meta">
-              <a href="/workflow">How it works</a>
-              <span aria-hidden="true">·</span>
-              <a href="/pricing">Pricing</a>
-              <span aria-hidden="true">·</span>
-              <a href="/signin">Sign in</a>
-            </p>
           </div>
           <HeroProductVisual />
-        </section>
-
-        <section className="lux-showcase" aria-labelledby="lux-showcase-title">
-          <div className="lux-content">
-            <header className="lux-section-head">
-              <h2 id="lux-showcase-title">Five hubs. Real module names.</h2>
-              <p>Competition, Team, Business, Build, and AI—the same structure you open after sign-in.</p>
-            </header>
-            <ProductGlances />
-          </div>
         </section>
 
         <section className="lux-season" aria-labelledby="lux-season-title">
           <div className="lux-content">
             <header className="lux-section-head">
               <h2 id="lux-season-title">Season → venue → picks.</h2>
-              <p>One org event context from kickoff through alliance selection.</p>
+              <p>One org context from kickoff through alliance selection.</p>
             </header>
             <ol className="lux-season-steps">
               {seasonBeat.map((item) => (
@@ -123,34 +99,39 @@ export default function Home() {
             </ol>
             <p className="lux-inline-cta">
               <a className="text-link" href="/workflow">
-                Full workflow →
+                How it works →
               </a>
             </p>
           </div>
         </section>
 
-        <section className="lux-thesis" aria-labelledby="lux-surfaces-title">
+        <section className="lux-thesis" aria-labelledby="lux-hubs-title">
           <div className="lux-content">
-            <h2 id="lux-surfaces-title">Where work lives.</h2>
-            <ul className="lux-feature-grid">
+            <header className="lux-section-head">
+              <h2 id="lux-hubs-title">Six hubs after sign-in.</h2>
+              <p>The same pillars in the Soft-UI drawer: Competition, Team, Logistics, Business, Build, AI.</p>
+            </header>
+            <ul className="lux-feature-grid lux-hub-strip">
               {hubs.map((item) => (
                 <li key={item.name}>
-                  <a href={item.href}>
-                    <strong>{item.name}</strong>
-                    <span>{item.blurb}</span>
-                  </a>
+                  <strong>{item.name}</strong>
+                  <span>{item.blurb}</span>
                 </li>
               ))}
             </ul>
+            <p className="lux-inline-cta">
+              <a className="text-link" href="/features">
+                Full product map →
+              </a>
+            </p>
           </div>
         </section>
 
         <section className="lux-pricing" id="pricing-preview" aria-labelledby="lux-pricing-title">
           <div>
-            <h2 id="lux-pricing-title">Start free. Buy AI credits anytime.</h2>
+            <h2 id="lux-pricing-title">Start free. Buy credits when you need AI.</h2>
             <p>
-              Free is the starting plan—your own keys or credit top-ups. Individual and Team add hosted AI in the
-              product. {hostedApiSavingsCopy()}
+              Free includes the product with your own keys. Individual and Team add hosted AI. Top up credits anytime.
             </p>
             <ul className="pricing-price-strip" aria-label="Monthly plan prices">
               {raisedPricingStrip().map((item) => (
@@ -162,11 +143,11 @@ export default function Home() {
             </ul>
           </div>
           <div className="pricing-preview-actions">
-            <a className="button primary" href="/pricing#credits">
-              Buy AI credits
+            <a className="button primary" href="/pricing">
+              See pricing
             </a>
-            <a className="button secondary" href="/pricing">
-              See plans
+            <a className="button secondary" href="/pricing#credits">
+              AI credits
             </a>
           </div>
         </section>
@@ -176,9 +157,7 @@ export default function Home() {
         <section className="lux-waitlist" id="waitlist">
           <div>
             <h2>Join the waitlist.</h2>
-            <p>
-              Invite-only access. {raisedPricingSummaryLine()} on <a href="/pricing">pricing</a>.
-            </p>
+            <p>Invite-only access for FRC teams.</p>
           </div>
           <WaitlistForm idPrefix="hero" />
         </section>
