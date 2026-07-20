@@ -134,9 +134,9 @@ export default function FeaturesPage() {
 
         <section className="lux-pricing">
           <div>
-            <h2>Waitlist or plans.</h2>
+            <h2>Start free. Credits anytime.</h2>
             <p>
-              Free core with your own keys. {hostedApiSavingsCopy()}{" "}
+              Free with your own keys, or buy AI credits. {hostedApiSavingsCopy()}{" "}
               <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
             </p>
             <ul className="pricing-price-strip" aria-label="Monthly plan prices">
@@ -149,8 +149,8 @@ export default function FeaturesPage() {
             </ul>
           </div>
           <div className="pricing-preview-actions">
-            <a className="button primary" href="/#waitlist">
-              Join waitlist
+            <a className="button primary" href="/pricing#credits">
+              Buy AI credits
             </a>
             <a className="button secondary" href="/pricing">
               Pricing

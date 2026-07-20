@@ -28,12 +28,12 @@ const body = `# Vantage
 - FRC Assistant answers cite labeled sources (official, scout, prediction); no invented DEMO win rates.
 - Vantage never auto-deploys robot code.
 
-## Pricing (hosted AI as a service — not an API wallet)
-- Free: competition core with bring-your-own-key or local OpenAI-compatible models.
-- Access: $${c.access.monthlyUsd}/mo for light managed routing; add Credits or PAYG as needed.
-- Individual Pro / Max: $${c.individual_pro.monthlyUsd} / $${c.individual_max.monthlyUsd} per month.
-- Team Pro / Max: $${c.team_pro.monthlyUsd} / $${c.team_max.monthlyUsd} per month.
-- ${hostedApiSavingsCopy()} Hard stop after the included hosted window unless Usage Credits or explicit PAYG with a spend cap.
+## Pricing (Free first · credits anytime)
+- Free: competition core with your own keys, local models, or buy AI credits for hosted usage.
+- Individual Pro / Max: $${c.individual_pro.monthlyUsd} / $${c.individual_max.monthlyUsd} per month — hosted AI in the product.
+- Team Pro / Max: $${c.team_pro.monthlyUsd} / $${c.team_max.monthlyUsd} per month — shared org hosted AI.
+- Access: $${c.access.monthlyUsd}/mo light managed routing; add credits or PAYG as needed.
+- ${hostedApiSavingsCopy()} Hard stop when hosted usage runs out unless AI credits or explicit PAYG with a spend cap.
 - Week team trial: ${TEAM_TRIAL_DAYS} days. No per-seat student pricing.
 
 ## Principles

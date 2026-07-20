@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: `Free competition core with bring-your-own-key or local AI. Paid: Individual Pro $${c.individual_pro.monthlyUsd}/mo, Max $${c.individual_max.monthlyUsd}/mo; Team Pro $${c.team_pro.monthlyUsd}/mo, Max $${c.team_max.monthlyUsd}/mo. ${hostedApiSavingsCopy()} Hard stop after the included hosted window unless Credits or PAYG. Week team trial: ${TEAM_TRIAL_DAYS} days.`,
+    a: `Start free ($0) with your own keys or buy AI credits anytime. Individual $${c.individual_pro.monthlyUsd}/$${c.individual_max.monthlyUsd}/mo; Team $${c.team_pro.monthlyUsd}/$${c.team_max.monthlyUsd}/mo. ${hostedApiSavingsCopy()} Hard stop when hosted usage runs out unless you add credits or PAYG. Week team trial: ${TEAM_TRIAL_DAYS} days.`,
   },
   {
     q: "Is team data private?",

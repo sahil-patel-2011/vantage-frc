@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import {
-  PRICING_CATALOG,
   catalogDefaultsFootnote,
-  hostedApiEconomicsSoftLine,
   hostedApiSavingsCopy,
   raisedPricingSummaryLine,
 } from "@vantage/billing/catalog";
@@ -14,37 +12,30 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Pricing — Vantage",
   description:
-    "Free competition core with your own AI keys. Paid plans add Vantage-hosted AI as a service—cheaper than BYOK—with scouting, strategy, and Event Day built in. Hard cutoffs; no surprise overage.",
+    "Start free with your own AI keys or buy AI credits. Individual and Team plans add hosted AI in the product. Credits go further than bringing your own keys. Hard cutoffs; no surprise overage.",
   path: "/pricing",
 });
 
 export default function PricingPage() {
   const catalogNote = catalogDefaultsFootnote();
-  const accessPrice = PRICING_CATALOG.access.monthlyUsd;
-  const individualPro = PRICING_CATALOG.individual_pro;
-  const individualMax = PRICING_CATALOG.individual_max;
-  const teamPro = PRICING_CATALOG.team_pro;
-  const teamMax = PRICING_CATALOG.team_max;
-  const hostedSavings = hostedApiSavingsCopy();
-  const economicsSoft = hostedApiEconomicsSoftLine();
+  const creditsLine = hostedApiSavingsCopy();
 
   return (
     <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="pricing-page">
         <section className="lux-route-hero pricing-hero">
-          <h1>Free core. Hosted AI when you want it.</h1>
+          <h1>Start free. Buy AI credits when you need them.</h1>
           <p>
-            Free keeps Competition, Team, Business, and Build with your own keys or local models. Paid plans add
-            Vantage-hosted AI as a service—cheaper than BYOK—with scouting, strategy, and Event Day built in. Hard
-            cutoffs; no surprise overage.
+            Free is the clear starting plan—competition core with your own keys, or top up with AI credits. Upgrade to
+            Individual or Team for hosted AI in the product. {creditsLine} Hard cutoffs; no surprise overage.
           </p>
           <div className="actions">
-            <a className="button primary" href="/#waitlist">
-              Join the waitlist
+            <a className="button primary" href="#credits">
+              Buy AI credits
             </a>
-            <a className="button secondary" href="/features">
-              See the product
+            <a className="button secondary" href="/#waitlist">
+              Join the waitlist
             </a>
           </div>
         </section>
@@ -53,22 +44,16 @@ export default function PricingPage() {
 
         <section className="payg">
           <div>
-            <span className="section-id">HOSTED AI</span>
-            <h2>A service—not an API wallet.</h2>
+            <h2>How usage works</h2>
           </div>
           <div>
             <p>
-              <strong>{hostedSavings}</strong> Scouting, strategy, Event Day, CAD assistant, and more live inside the
-              product. You are not renting a generic model meter.
+              <strong>{creditsLine}</strong> Hosted calls run inside scouting, strategy, Event Day, CAD, and Assistant—not
+              a generic API wallet.
             </p>
             <p>
-              {economicsSoft} Bring-your-own-key stays on Free and never consumes managed hosted usage. After the
-              included hosted window: hard stop unless you add Usage Credits or enable PAYG with an explicit spend
-              cap.
-            </p>
-            <p>
-              Free teams add keys at <a href="/team/ai-keys">/team/ai-keys</a> after sign-in. Checkout opens when
-              Stripe Price IDs are configured—until then, join the waitlist.
+              Free teams add keys at <a href="/team/ai-keys">/team/ai-keys</a>, or buy credits for hosted usage. Paid
+              plans include hosted AI; when you need more, buy credits or enable PAYG with an explicit spend cap.
             </p>
             <p className="pricing-note">{catalogNote}</p>
             <p className="pricing-footnote">
@@ -82,8 +67,7 @@ export default function PricingPage() {
           <div>
             <h2>Join the waitlist.</h2>
             <p>
-              Access ${accessPrice} · Individual ${individualPro.monthlyUsd}/${individualMax.monthlyUsd} · Team $
-              {teamPro.monthlyUsd}/${teamMax.monthlyUsd}. {raisedPricingSummaryLine()}. Terms required.
+              Free $0 · Individual and Team plans · AI credits anytime. {raisedPricingSummaryLine()}. Terms required.
             </p>
           </div>
           <WaitlistForm idPrefix="pricing" />

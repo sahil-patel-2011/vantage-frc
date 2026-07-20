@@ -92,18 +92,18 @@ export default function ForTeamsPage() {
 
         <section className="lux-pricing">
           <div>
-            <h2>Start free. Add hosted AI when ready.</h2>
+            <h2>Start free. Buy AI credits anytime.</h2>
             <p>
-              Free includes the competition core with your own keys. Paid plans add managed AI as a service—see{" "}
-              <a href="/pricing">pricing</a>. Or walk the <a href="/workflow">workflow</a>.
+              Free is the starting plan—your keys or credit top-ups. Individual and Team add hosted AI. See{" "}
+              <a href="/pricing">pricing</a> or walk the <a href="/workflow">workflow</a>.
             </p>
           </div>
           <div className="pricing-preview-actions">
-            <a className="button primary" href="/#waitlist">
-              Join waitlist
+            <a className="button primary" href="/pricing#credits">
+              Buy AI credits
             </a>
-            <a className="button secondary" href="/features">
-              Product map
+            <a className="button secondary" href="/pricing">
+              See plans
             </a>
           </div>
         </section>

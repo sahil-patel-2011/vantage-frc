@@ -103,14 +103,14 @@ export function hostedCreditPackListApiUsd(purchaseUsd: number): number {
   return Math.round(purchaseUsd / CATALOG_SERVICE_MULTIPLIER);
 }
 
-/** Soft marketing line for hosted vs BYOK (no wholesale; avoid wallet-style allotment talk). */
+/** Soft marketing line for hosted credits vs BYOK (no wholesale; avoid wallet-style allotment talk). */
 export function hostedApiSavingsCopy(): string {
-  return "Cheaper than bringing your own keys—with the full product built in natively.";
+  return "Credits go further than bringing your own keys—with the full product built in.";
 }
 
 /** One optional soft economics line (~25%) for pricing footnotes — not plan-card headers. */
 export function hostedApiEconomicsSoftLine(): string {
-  return "Hosted usage is billed below typical API list rates—about 25% less than running the same models on your own keys.";
+  return "Hosted credits bill below typical API list rates—about 25% less than the same models on your own keys.";
 }
 
 /** Compact debit explanation for budgets / admin (not plan-card marketing). */
@@ -123,21 +123,20 @@ export function hostedUsageDebitCopy(): string {
 
 /** Short strip for Soft-UI waitlist / home / sign-in CTAs. */
 export function raisedPricingStrip(): Array<{ id: string; label: string; price: string }> {
-  const access = PRICING_CATALOG.access;
   const pro = PRICING_CATALOG.individual_pro;
   const max = PRICING_CATALOG.individual_max;
   const teamPro = PRICING_CATALOG.team_pro;
   const teamMax = PRICING_CATALOG.team_max;
   return [
-    { id: "access", label: "Access", price: formatCatalogUsd(access.monthlyUsd) },
+    { id: "free", label: "Free", price: "$0" },
     {
       id: "individual",
-      label: "Individual Pro / Max",
+      label: "Individual",
       price: `${formatCatalogUsd(pro.monthlyUsd)} / ${formatCatalogUsd(max.monthlyUsd)}`,
     },
     {
       id: "team",
-      label: "Team Pro / Max",
+      label: "Team",
       price: `${formatCatalogUsd(teamPro.monthlyUsd)} / ${formatCatalogUsd(teamMax.monthlyUsd)}`,
     },
   ];
@@ -145,23 +144,21 @@ export function raisedPricingStrip(): Array<{ id: string; label: string; price: 
 
 /** One-line raised catalog for waitlist / pricing CTAs. */
 export function raisedPricingSummaryLine(): string {
-  const a = PRICING_CATALOG.access.monthlyUsd;
   const ip = PRICING_CATALOG.individual_pro.monthlyUsd;
   const im = PRICING_CATALOG.individual_max.monthlyUsd;
   const tp = PRICING_CATALOG.team_pro.monthlyUsd;
   const tm = PRICING_CATALOG.team_max.monthlyUsd;
-  return `Access $${a} · Individual $${ip}/$${im} · Team $${tp}/$${tm}`;
+  const a = PRICING_CATALOG.access.monthlyUsd;
+  return `Free $0 · Individual $${ip}/$${im} · Team $${tp}/$${tm} · Access $${a}`;
 }
 
-/** Full catalog defaults footnote (pricing page economics section). */
+/** Full catalog defaults footnote (pricing page — soft framing, no allotment headlines). */
 export function catalogDefaultsFootnote(): string {
   const c = PRICING_CATALOG;
   return (
-    `Catalog defaults: Free $0 / $0 API · Individual Pro $${c.individual_pro.monthlyUsd} / $${c.individual_pro.includedAllowanceUsd} · ` +
-    `Individual Max $${c.individual_max.monthlyUsd} / $${c.individual_max.includedAllowanceUsd} · Team Pro $${c.team_pro.monthlyUsd} / ` +
-    `$${c.team_pro.includedAllowanceUsd} · Team Max $${c.team_max.monthlyUsd} / $${c.team_max.includedAllowanceUsd} · ` +
-    `Access $${c.access.monthlyUsd} + PAYG · Week team trial $${c.team_trial.includedAllowanceUsd} API / ${TEAM_TRIAL_DAYS} days · ` +
-    `Hosted debit ${CATALOG_SERVICE_MULTIPLIER}× typical list (~25% vs BYOK).`
+    `Catalog defaults: Free $0 · Individual Pro $${c.individual_pro.monthlyUsd} · Individual Max $${c.individual_max.monthlyUsd} · ` +
+    `Team Pro $${c.team_pro.monthlyUsd} · Team Max $${c.team_max.monthlyUsd} · Access $${c.access.monthlyUsd} + PAYG · ` +
+    `Week team trial ${TEAM_TRIAL_DAYS} days · Hosted credits debit at ${CATALOG_SERVICE_MULTIPLIER}× typical list (~25% vs BYOK).`
   );
 }
 

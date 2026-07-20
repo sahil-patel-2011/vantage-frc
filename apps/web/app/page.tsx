@@ -40,7 +40,7 @@ const hubs = [
   },
   {
     name: "AI",
-    blurb: "Assistant chat, writer, budgets — BYOK at /team/ai-keys or hosted on paid plans.",
+    blurb: "Assistant chat, writer, budgets — start free with keys or buy AI credits; hosted on paid plans.",
     href: "/pricing",
   },
 ] as const;
@@ -147,10 +147,10 @@ export default function Home() {
 
         <section className="lux-pricing" id="pricing-preview" aria-labelledby="lux-pricing-title">
           <div>
-            <h2 id="lux-pricing-title">Free competition core. Paid for hosted AI.</h2>
+            <h2 id="lux-pricing-title">Start free. Buy AI credits anytime.</h2>
             <p>
-              Free keeps your own keys at /team/ai-keys. Paid adds Vantage-hosted AI as a service—{hostedApiSavingsCopy()}{" "}
-              Hard stop after the included window unless Credits or PAYG.
+              Free is the starting plan—your own keys or credit top-ups. Individual and Team add hosted AI in the
+              product. {hostedApiSavingsCopy()}
             </p>
             <ul className="pricing-price-strip" aria-label="Monthly plan prices">
               {raisedPricingStrip().map((item) => (
@@ -162,11 +162,11 @@ export default function Home() {
             </ul>
           </div>
           <div className="pricing-preview-actions">
-            <a className="button primary" href="#waitlist">
-              Join the waitlist
+            <a className="button primary" href="/pricing#credits">
+              Buy AI credits
             </a>
             <a className="button secondary" href="/pricing">
-              Review plans
+              See plans
             </a>
           </div>
         </section>

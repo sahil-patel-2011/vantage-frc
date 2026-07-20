@@ -51,7 +51,8 @@ export function cutoffBudgetsHref(orgId?: string | null): string {
 }
 
 export function cutoffPricingHref(orgId?: string | null): string {
-  return withOrgHref("/pricing", orgId);
+  const base = withOrgHref("/pricing", orgId);
+  return `${base}#credits`;
 }
 
 export function cutoffChatHref(orgId?: string | null): string {
@@ -150,8 +151,8 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
       return {
         level: "at",
         reason: "allowance",
-        title: "Included API allowance exhausted",
-        body: "Managed AI hard-stopped at the included allowance. Buy Usage Credits, enable PAYG with a spend cap, or upgrade — there is no silent overage.",
+        title: "Hosted AI usage exhausted",
+        body: "Managed AI hard-stopped for this period. Buy AI credits, enable PAYG with a spend cap, or upgrade — there is no silent overage.",
         percent: allowance,
       };
     }
@@ -159,8 +160,8 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
       return {
         level: "at",
         reason: "credits",
-        title: "Usage Credits depleted",
-        body: "Included allowance is gone and prepaid Usage Credits are at $0. Buy another credit pack or raise the PAYG spend cap to resume managed calls.",
+        title: "AI credits depleted",
+        body: "Plan hosted usage is used up and prepaid AI credits are at $0. Buy another credit pack or raise the PAYG spend cap to resume managed calls.",
         percent: allowance,
       };
     }
@@ -173,7 +174,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
         level: "at",
         reason: "spend_cap",
         title: "PAYG spend cap reached",
-        body: "Overage is hard-stopped at the monthly PAYG spend cap. Raise the cap, buy Usage Credits, or wait for the next billing period.",
+        body: "Overage is hard-stopped at the monthly PAYG spend cap. Raise the cap, buy AI credits, or wait for the next billing period.",
         percent: 100,
       };
     }
@@ -194,8 +195,8 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
     candidates.push({
       percent: allowance,
       reason: "allowance",
-      title: "Approaching included API allowance",
-      body: `${Math.round(allowance)}% of this period’s included allowance is used. After 100%, managed AI hard-stops unless you buy Usage Credits or enable PAYG.`,
+      title: "Approaching hosted AI limit",
+      body: `${Math.round(allowance)}% of this period’s hosted AI usage is used. After 100%, managed AI hard-stops unless you buy AI credits or enable PAYG.`,
     });
   }
   if (snapshot.orgMonthlyBudgetPercent != null && snapshot.orgMonthlyBudgetPercent >= floor) {
@@ -210,7 +211,7 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
     candidates.push({
       percent: null,
       reason: "credits",
-      title: "Usage Credits running low",
+      title: "AI credits running low",
       body: `About $${snapshot.walletBalanceUsd.toFixed(2)} prepaid credits remain. Buy another pack before managed calls hard-stop.`,
     });
   }
@@ -239,7 +240,7 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
   if (alert.reason === "allowance" || alert.reason === "payg_required" || alert.reason === "credits") {
     ctas.push({
       id: "credits",
-      label: "Buy Usage Credits",
+      label: "Buy AI credits",
       checkoutAction: "credits",
       packCode: "credits_100",
       href: pricingHref,
@@ -255,7 +256,7 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
   if (alert.reason === "spend_cap") {
     ctas.push({
       id: "credits",
-      label: "Buy Usage Credits",
+      label: "Buy AI credits",
       checkoutAction: "credits",
       packCode: "credits_100",
       href: pricingHref,
@@ -300,7 +301,7 @@ export function messageForCutoffError(
   let reason: CutoffReason = "allowance";
   let title = "Managed AI hard-stopped";
   let body =
-    "This workspace hit a usage hard cut-off. Buy Usage Credits, enable PAYG with a spend cap, or upgrade — Vantage does not silently overage.";
+    "This workspace hit a usage hard cut-off. Buy AI credits, enable PAYG with a spend cap, or upgrade — Vantage does not silently overage.";
 
   if (match("kill_switch") || match("billingdisabled") || match("billing_disabled")) {
     reason = "kill_switch";
@@ -312,18 +313,18 @@ export function messageForCutoffError(
     body = "Overage is hard-stopped at the monthly PAYG spend cap.";
   } else if (match("insufficient_prepaid") || match("credit_cap") || match("credit limit") || match("usage_hard_cutoff")) {
     reason = match("payg_not_enabled") ? "payg_required" : "credits";
-    title = match("payg_not_enabled") ? "PAYG or credits required" : "Usage Credits exhausted";
+    title = match("payg_not_enabled") ? "PAYG or credits required" : "AI credits exhausted";
     body = match("payg_not_enabled")
-      ? "Included allowance is exhausted and PAYG is off. Enable PAYG or buy Usage Credits to continue."
-      : "Prepaid Usage Credits cannot cover this call. Buy a credit pack or enable PAYG.";
+      ? "Hosted AI usage is exhausted and PAYG is off. Enable PAYG or buy AI credits to continue."
+      : "Prepaid AI credits cannot cover this call. Buy a credit pack or enable PAYG.";
   } else if (match("payg_not_enabled")) {
     reason = "payg_required";
     title = "PAYG or credits required";
-    body = "Included allowance is exhausted and PAYG is off. Enable PAYG or buy Usage Credits to continue.";
+    body = "Hosted AI usage is exhausted and PAYG is off. Enable PAYG or buy AI credits to continue.";
   } else if (match("managed_allowance") || match("sponsored_allowance") || match("allowance")) {
     reason = "allowance";
-    title = "Included allowance exhausted";
-    body = "Managed AI hard-stopped at the included allowance. No silent overage.";
+    title = "Hosted AI usage exhausted";
+    body = "Managed AI hard-stopped for this period. Buy AI credits or upgrade — no silent overage.";
   } else if (match("budget") || match("daily_spend") || match("monthly_spend") || match("daily_tokens") || match("monthly_tokens")) {
     reason = "org_budget";
     title = "Org API budget limit reached";

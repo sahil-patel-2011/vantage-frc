@@ -353,7 +353,7 @@ export function aiBudgetsNextActions(input: {
     {
       id: "pricing",
       label: "View pricing",
-      detail: "Buy Usage Credits, enable PAYG, or upgrade after included allowance.",
+      detail: "Buy AI credits, enable PAYG, or upgrade after hosted usage runs out.",
       href: pricingHref,
     },
     {
@@ -576,7 +576,7 @@ export function aiUsageNextActions(input: {
     {
       id: "pricing",
       label: "View pricing",
-      detail: "Buy Usage Credits or upgrade when allowance is exhausted.",
+      detail: "Buy AI credits or upgrade when hosted usage is exhausted.",
       href: pricingHref,
     },
     {
