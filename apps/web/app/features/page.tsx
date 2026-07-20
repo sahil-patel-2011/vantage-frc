@@ -105,8 +105,8 @@ export default function FeaturesPage() {
         <section className="lux-showcase" aria-labelledby="product-show-title">
           <div className="lux-content">
             <header className="lux-section-head">
-              <h2 id="product-show-title">Hubs with real tab names.</h2>
-              <p>CSS recreation of Soft-UI chrome—not live screenshots, not DEMO metrics.</p>
+              <h2 id="product-show-title">Hubs with real module names.</h2>
+              <p>Competition, Team, Business, Build, and AI—the same structure after sign-in.</p>
             </header>
             <ProductGlances />
           </div>
