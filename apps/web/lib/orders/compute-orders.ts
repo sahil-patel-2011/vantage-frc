@@ -8,37 +8,26 @@ import {
   unitCostFromEstimate,
   validateOrderSubmit,
 } from "./evaluate";
-import type { OrderAiSummary, OrderMember, OrderMetrics, OrderRequest, OrderStatus } from "./types";
+import type {
+  OrderAiSummary,
+  OrderMember,
+  OrderMetrics,
+  OrderRequest,
+  OrderStatus,
+  OrdersView,
+} from "./types";
 import { ORDER_STATUSES } from "./types";
 
 export { ORDER_STATUSES, canTransitionOrder, statusLabel, showBuyPanel, validateOrderSubmit } from "./evaluate";
 export type { OrderStatus };
-export type { OrderAiSummary, OrderMember, OrderMetrics, OrderRequest } from "./types";
-
-export type OrdersSetupStep = { id: string; label: string; detail: string; href: string };
-
-export type OrdersView =
-  | {
-      status: "setup_required";
-      message: string;
-      steps: OrdersSetupStep[];
-      orgId: string | null;
-    }
-  | {
-      status: "live";
-      orgId: string;
-      teamNumber: number | null;
-      seasonYear: number;
-      currentUserId: string;
-      isAdmin: boolean;
-      orders: OrderRequest[];
-      members: OrderMember[];
-      metrics: OrderMetrics;
-      financeAiEnabled: boolean;
-      aiSummary: OrderAiSummary | null;
-      focusOrderId: string | null;
-      computedAt: string;
-    };
+export type {
+  OrderAiSummary,
+  OrderMember,
+  OrderMetrics,
+  OrderRequest,
+  OrdersSetupStep,
+  OrdersView,
+} from "./types";
 
 type OrderRow = {
   id: string;

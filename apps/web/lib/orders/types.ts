@@ -61,3 +61,30 @@ export type OrderAiSummary = {
   openCount: number;
   openTotalUsd: number;
 };
+
+export type OrdersSetupStep = { id: string; label: string; detail: string; href: string };
+
+/** Client-safe view shape returned by /api/orders (no server imports). */
+export type OrdersView =
+  | {
+      status: "setup_required";
+      message: string;
+      steps: OrdersSetupStep[];
+      orgId: string | null;
+    }
+  | {
+      status: "live";
+      orgId: string;
+      teamNumber: number | null;
+      seasonYear: number;
+      currentUserId: string;
+      isAdmin: boolean;
+      orders: OrderRequest[];
+      members: OrderMember[];
+      metrics: OrderMetrics;
+      financeAiEnabled: boolean;
+      aiSummary: OrderAiSummary | null;
+      focusOrderId: string | null;
+      computedAt: string;
+    };
+

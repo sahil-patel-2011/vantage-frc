@@ -46,3 +46,27 @@ export type TodoMetrics = {
   dueSoon: number;
   mineOpen: number;
 };
+
+export type TodosSetupStep = { id: string; label: string; detail: string; href: string };
+
+/** Client-safe view shape returned by /api/todos (no server imports). */
+export type TodosView =
+  | {
+      status: "setup_required";
+      message: string;
+      steps: TodosSetupStep[];
+      orgId: string | null;
+    }
+  | {
+      status: "live";
+      orgId: string;
+      teamNumber: number | null;
+      currentUserId: string;
+      todos: TeamTodo[];
+      members: TodoMember[];
+      subteams: TodoSubteam[];
+      metrics: TodoMetrics;
+      focusTodoId: string | null;
+      computedAt: string;
+    };
+

@@ -6,33 +6,18 @@ import {
 } from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
 import { asOfUtcDate, computeMetrics, sortTodos, withFlags } from "./evaluate";
-import type { TeamTodo, TodoMember, TodoMetrics, TodoStatus, TodoSubteam } from "./types";
+import type {
+  TeamTodo,
+  TodoMember,
+  TodoMetrics,
+  TodoStatus,
+  TodoSubteam,
+  TodosView,
+} from "./types";
 import { TODO_STATUSES } from "./types";
 
 export { TODO_STATUSES };
-export type { TodoStatus };
-
-export type TodosSetupStep = { id: string; label: string; detail: string; href: string };
-
-export type TodosView =
-  | {
-      status: "setup_required";
-      message: string;
-      steps: TodosSetupStep[];
-      orgId: string | null;
-    }
-  | {
-      status: "live";
-      orgId: string;
-      teamNumber: number | null;
-      currentUserId: string;
-      todos: TeamTodo[];
-      members: TodoMember[];
-      subteams: TodoSubteam[];
-      metrics: TodoMetrics;
-      focusTodoId: string | null;
-      computedAt: string;
-    };
+export type { TodoStatus, TodosSetupStep, TodosView } from "./types";
 
 type TodoRow = {
   id: string;
