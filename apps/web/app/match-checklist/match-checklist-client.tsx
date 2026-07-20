@@ -17,7 +17,7 @@ import "./match-checklist.css";
 
 type LiveView = Extract<MatchChecklistView, { status: "live" }>;
 
-export default function MatchChecklistClient() {
+export default function MatchChecklistClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<MatchChecklistView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);

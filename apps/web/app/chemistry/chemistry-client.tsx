@@ -168,7 +168,7 @@ function ChemistryShell({
   );
 }
 
-export default function ChemistryClient() {
+export default function ChemistryClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [orgId, setOrgId] = useState("");
   const [view, setView] = useState<ChemistryView | null>(null);
   const [error, setError] = useState("");

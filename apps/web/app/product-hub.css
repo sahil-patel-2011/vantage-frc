@@ -153,7 +153,10 @@
 /* Nested Build surfaces: drop duplicate page chrome */
 .product-hub--build .kick-page,
 .product-hub--build .cad-module,
-.product-hub--build .cdc-page {
+.product-hub--build .cdc-page,
+.product-hub--build .batt-page,
+.product-hub--build .fmea-page,
+.product-hub--build .proto-page {
   width: 100%;
   max-width: none;
   margin: 0;
@@ -161,18 +164,63 @@
 }
 .product-hub--build .kick-page .app-page-header,
 .product-hub--build .cad-module .app-page-header,
-.product-hub--build .cdc-page .app-page-header {
+.product-hub--build .cdc-page .app-page-header,
+.product-hub--build .batt-page .app-page-header,
+.product-hub--build .fmea-page .app-page-header,
+.product-hub--build .proto-page .app-page-header {
   display: none;
 }
+.product-hub--build .build-hub-related {
+  display: none !important;
+}
+
 .product-hub--competition .edc-page,
-.product-hub--competition .myday-page {
+.product-hub--competition .myday-page,
+.product-hub--competition .strategy-page,
+.product-hub--competition .scout-page,
+.product-hub--competition .sfb-page,
+.product-hub--competition .pck-page,
+.product-hub--competition .chem-page,
+.product-hub--competition .mcl-page,
+.product-hub--competition .match-checklist-page {
   max-width: none;
   margin: 0;
   padding: 0 0 24px;
 }
 .product-hub--competition .edc-page .app-page-header,
-.product-hub--competition .myday-page .app-page-header {
+.product-hub--competition .myday-page .app-page-header,
+.product-hub--competition .strategy-page .app-page-header,
+.product-hub--competition .scout-page .app-page-header,
+.product-hub--competition .sfb-page .app-page-header,
+.product-hub--competition .pck-page .app-page-header,
+.product-hub--competition .chem-page .app-page-header,
+.product-hub--competition .mcl-page .app-page-header,
+.product-hub--competition .match-checklist-page .app-page-header {
   display: none;
+}
+.product-hub--competition .edc-related,
+.product-hub--competition .myday-related,
+.product-hub--competition .strategy-header-actions .product-hub-related,
+.product-hub--competition .sfb-related {
+  display: none !important;
+}
+
+/* Business hub nested panels (Orders / Sponsorship) */
+.business-page .product-hub-panel .orders-embedded,
+.business-page .product-hub-panel .svp-page {
+  max-width: none;
+  margin: 0;
+  padding: 0 0 16px;
+}
+.business-page .product-hub-panel .svp-page .app-page-header {
+  display: none;
+}
+.business-page .product-hub-panel .svp-embed-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+  align-items: center;
 }
 
 @media (max-width: 720px) {

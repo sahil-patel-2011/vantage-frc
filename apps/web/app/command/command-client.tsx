@@ -263,7 +263,7 @@ function EventDayShell({
   );
 }
 
-export default function CommandClient() {
+export default function CommandClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [me, setMe] = useState<Me>({});
   const [orgId, setOrgId] = useState("");
   const [snap, setSnap] = useState<CommandSnapshot | null>(null);

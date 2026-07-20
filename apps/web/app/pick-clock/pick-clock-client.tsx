@@ -218,7 +218,7 @@ function PickClockShell({
   );
 }
 
-export default function PickClockClient() {
+export default function PickClockClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [orgId, setOrgId] = useState("");
   const [view, setView] = useState<PickClockView | null>(null);
   const [error, setError] = useState("");

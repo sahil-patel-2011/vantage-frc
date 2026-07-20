@@ -769,7 +769,7 @@ function StrategyShell({
   );
 }
 
-export default function StrategyClient() {
+export default function StrategyClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<StrategyView | null>(null);
   const [demo, setDemo] = useState(false);
   const [error, setError] = useState("");
