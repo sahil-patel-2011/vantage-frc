@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -240,6 +241,22 @@ export function countdownLabel(iso: string | null | undefined) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/** Tick once per second so countdownLabel stays live (next match, leave times, etc.). */
+export function useCountdownTick(active = true) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [active]);
+}
+
+/** Live Soft-UI countdown — only renders when a real ISO schedule exists (never DEMO). */
+export function LiveCountdown({ iso }: { iso: string | null | undefined }) {
+  useCountdownTick(Boolean(iso));
+  return <>{countdownLabel(iso)}</>;
+}
+
 function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
   const links: Array<{ href: string; label: string; detail: string }> = [];
   if (!orgId) {
@@ -292,7 +309,9 @@ export function DashboardWidgetView({
               </div>
               <div className="dash-countdown">
                 <span>Starts in</span>
-                <strong>{countdownLabel(scheduled)}</strong>
+                <strong>
+                  <LiveCountdown iso={scheduled} />
+                </strong>
               </div>
               {typeof data.bumperCue === "string" && data.bumperCue ? (
                 <p className="dash-bumper-cue">{data.bumperCue}</p>
@@ -661,22 +680,32 @@ export function DashboardWidgetView({
         >
           {payload?.status === "live" && items.length > 0 ? (
             <ul className="dash-checklist dash-subteam-strip">
-              {items.map((item) => (
-                <li key={item.id}>
-                  <span>
-                    <i
-                      className="dash-subteam-dot"
-                      style={{ background: item.subteamColor ?? "var(--app-accent, #0f766e)" }}
-                      aria-hidden
-                    />
-                    <a href={calendarHref}>{item.title}</a>
-                  </span>
-                  <b>
-                    {fmt(item.startsAt)}
-                    {item.subteamName ? ` · ${item.subteamName}` : " · Whole team"}
-                  </b>
-                </li>
-              ))}
+              {items.map((item) => {
+                const startMs = new Date(item.startsAt).getTime();
+                const live = Number.isFinite(startMs) && startMs > Date.now() - 60_000;
+                return (
+                  <li key={item.id}>
+                    <span>
+                      <i
+                        className="dash-subteam-dot"
+                        style={{ background: item.subteamColor ?? "var(--app-accent, #0f766e)" }}
+                        aria-hidden
+                      />
+                      <a href={calendarHref}>{item.title}</a>
+                    </span>
+                    <b>
+                      {live ? (
+                        <>
+                          <LiveCountdown iso={item.startsAt} />
+                          {" · "}
+                        </>
+                      ) : null}
+                      {fmt(item.startsAt)}
+                      {item.subteamName ? ` · ${item.subteamName}` : " · Whole team"}
+                    </b>
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
         </Shell>

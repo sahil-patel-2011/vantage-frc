@@ -6,6 +6,7 @@ import {
   formatHomeLodgingDetail,
   formatStripWhen,
   homeAudienceFromTeamRole,
+  prioritizeHomeStrip,
 } from "./home-workflows";
 
 describe("home-workflows", () => {
@@ -70,13 +71,33 @@ describe("home-workflows", () => {
       "kickoff_summary",
     ]);
     expect(strip[0]!.detail).toContain("Drive practice");
+    expect(strip[0]!.at).toBe("2026-01-20T22:00:00.000Z");
     expect(strip[1]!.detail).toBe("Marriott · Room 412");
     expect(strip[2]!.detail).toContain("Leave for venue");
+    expect(strip[2]!.at).toBe("2026-03-01T12:00:00.000Z");
     expect(strip[3]!.detail).toBe("3 open");
     expect(strip[3]!.href).toContain("/todos");
     expect(strip[4]!.href).toContain("/build?tab=kickoff");
     expect(formatStripWhen("not-a-date")).toBeNull();
     expect(formatHomeLodgingDetail(null, null)).toBe("No lodging assigned yet");
+  });
+
+  it("prioritizes warn and timed strip items for a lean Home viewport", () => {
+    const strip = buildStudentHomeStrip({
+      orgId: "org-1",
+      nextPracticeTitle: "Drive practice",
+      nextPracticeAt: "2026-01-20T22:00:00.000Z",
+      hotelName: null,
+      roomLabel: null,
+      nextTravelLabel: "Leave for venue",
+      nextTravelAt: "2026-03-01T12:00:00.000Z",
+      mineOpenTodos: 2,
+      kickoffReady: false,
+    });
+    const lean = prioritizeHomeStrip(strip, 3);
+    expect(lean).toHaveLength(3);
+    expect(lean.some((item) => item.key === "my_todos")).toBe(true);
+    expect(lean.filter((item) => item.at).length).toBeGreaterThanOrEqual(1);
   });
 
   it("exposes season first-run steps for subteam → wiki → logistics → kickoff → CAD", () => {

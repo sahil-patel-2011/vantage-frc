@@ -28,8 +28,8 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
-import { countdownLabel, DashboardWidgetView } from "./widgets";
-import type { HomeStripItem } from "../../lib/home-workflows";
+import { DashboardWidgetView, LiveCountdown } from "./widgets";
+import { prioritizeHomeStrip, type HomeStripItem } from "../../lib/home-workflows";
 import { Badge } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
@@ -650,7 +650,10 @@ export default function DashboardClient() {
   const homeStripRaw = context.homeStrip as
     | { audience?: string; items?: HomeStripItem[] }
     | undefined;
-  const homeStripItems = Array.isArray(homeStripRaw?.items) ? homeStripRaw.items : [];
+  const homeStripItems = prioritizeHomeStrip(
+    Array.isArray(homeStripRaw?.items) ? homeStripRaw.items : [],
+    3,
+  );
   const homeAudience =
     homeStripRaw?.audience === "mentor" || homeStripRaw?.audience === "student"
       ? homeStripRaw.audience
@@ -718,7 +721,7 @@ export default function DashboardClient() {
           <h1>
             {greeting()}, {firstName}
           </h1>
-          {orgId && board ? (
+          {orgId && board && !(board.isDefault && switcherBoards.length <= 1) ? (
             <p className="dash-board-current">
               <strong>{board.name}</strong>
               <span>{boards.length ? `${boards.length} board${boards.length === 1 ? "" : "s"}` : "Home Screen"}</span>
@@ -728,14 +731,14 @@ export default function DashboardClient() {
             {!meLoaded
               ? "Loading your workspace…"
               : !orgId
-                ? "Select a team workspace to load live command-center data. No fabricated ranks, EPA, or match times are shown."
+                ? "Select a team workspace to load live data. No fabricated ranks, EPA, or match times."
                 : tbaConfigured === false
-                  ? "TBA not configured — connect The Blue Alliance before expecting live match/rank sync."
+                  ? "TBA not configured — connect The Blue Alliance for live match/rank sync."
                   : setupRequired
-                    ? "Select an active event (and team number) to load live competition data."
+                    ? "Select an active event to load live competition data."
                     : context.eventName
-                      ? `${String(context.eventName)} — rearrange widgets like a Home Screen.`
-                      : "Next match, readiness, and alerts — Edit Home to rearrange or remove widgets."}
+                      ? String(context.eventName)
+                      : "Next match and alerts when real TBA data exists — Edit Home to rearrange."}
           </p>
         </div>
         <div className="dash-home-actions">
@@ -745,7 +748,9 @@ export default function DashboardClient() {
               <strong>
                 {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
               </strong>
-              <b>{countdownLabel(nextMatchData.scheduledTime as string | undefined)}</b>
+              <b>
+                <LiveCountdown iso={nextMatchData.scheduledTime as string | undefined} />
+              </b>
             </a>
           ) : null}
           {!orgId ? (
@@ -780,6 +785,21 @@ export default function DashboardClient() {
             <summary aria-label="More home tools">More</summary>
             <div>
               <CopyShareLink orgId={orgId || null} />
+              {orgId && meLoaded && !editing ? (
+                <button
+                  type="button"
+                  className="dash-board-manage"
+                  data-testid="dash-manage-boards"
+                  disabled={saving}
+                  aria-expanded={boardsOpen}
+                  onClick={() => {
+                    setBoardsOpen(true);
+                    setRenameId(null);
+                  }}
+                >
+                  Manage boards
+                </button>
+              ) : null}
               {updatedAt && orgId && !editing ? (
                 <small className="dash-updated">Synced · {new Date(updatedAt).toLocaleTimeString()}</small>
               ) : null}
@@ -797,13 +817,7 @@ export default function DashboardClient() {
         >
           <header className="dash-role-strip-head">
             <span>{homeAudience === "mentor" ? "Mentor focus" : "Student focus"}</span>
-            <a
-              href={
-                homeAudience === "mentor"
-                  ? withOrgHref("/logistics", orgId)
-                  : withOrgHref("/logistics", orgId)
-              }
-            >
+            <a href={withOrgHref("/logistics", orgId)}>
               {homeAudience === "mentor" ? "Hotels & travel" : "My hotel & leave times"}
             </a>
           </header>
@@ -812,7 +826,19 @@ export default function DashboardClient() {
               <li key={item.key} data-tone={item.tone}>
                 <a href={item.href}>
                   <span>{item.label}</span>
-                  <strong>{item.detail}</strong>
+                  <strong>
+                    {item.at ? (
+                      <>
+                        {item.detail}
+                        <em className="dash-strip-countdown">
+                          {" · "}
+                          <LiveCountdown iso={item.at} />
+                        </em>
+                      </>
+                    ) : (
+                      item.detail
+                    )}
+                  </strong>
                 </a>
               </li>
             ))}
@@ -826,27 +852,21 @@ export default function DashboardClient() {
         </p>
       ) : null}
 
-      {orgId && meLoaded && !editing ? (
+      {orgId && meLoaded && !editing && switcherBoards.length > 1 ? (
         <div className="dash-board-bar" role="navigation" aria-label="Dashboard boards">
           <div className="dash-board-switcher" data-testid="dash-board-switcher">
-            {switcherBoards.length === 0 ? (
-              <button type="button" aria-pressed={true} disabled>
-                Default home
+            {switcherBoards.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={board?.id === item.id}
+                disabled={saving || editing}
+                onClick={() => void switchBoard(item.id)}
+                title={item.scope === "org" ? "Team board" : "Personal board"}
+              >
+                {item.name}
               </button>
-            ) : (
-              switcherBoards.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-pressed={board?.id === item.id}
-                  disabled={saving || editing}
-                  onClick={() => void switchBoard(item.id)}
-                  title={item.scope === "org" ? "Team board" : "Personal board"}
-                >
-                  {item.name}
-                </button>
-              ))
-            )}
+            ))}
             <button
               type="button"
               className="dash-board-add"
@@ -858,19 +878,17 @@ export default function DashboardClient() {
               +
             </button>
           </div>
-          {switcherBoards.length > 1 ? (
-            <div className="dash-board-dots" aria-hidden="true">
-              {switcherBoards.map((item) => (
-                <button
-                  key={`dot-${item.id}`}
-                  type="button"
-                  aria-current={board?.id === item.id ? "true" : undefined}
-                  disabled={saving || editing}
-                  onClick={() => void switchBoard(item.id)}
-                />
-              ))}
-            </div>
-          ) : null}
+          <div className="dash-board-dots" aria-hidden="true">
+            {switcherBoards.map((item) => (
+              <button
+                key={`dot-${item.id}`}
+                type="button"
+                aria-current={board?.id === item.id ? "true" : undefined}
+                disabled={saving || editing}
+                onClick={() => void switchBoard(item.id)}
+              />
+            ))}
+          </div>
           <button
             type="button"
             className="dash-board-manage"
@@ -887,7 +905,7 @@ export default function DashboardClient() {
         </div>
       ) : null}
 
-      {meLoaded && !editing ? (
+      {meLoaded && !editing && dashShell !== "ready" ? (
         <nav className="dash-hub-rail" aria-label="Product hubs">
           {hubLinks.map((link) => (
             <a key={link.id} href={link.href}>
@@ -933,18 +951,14 @@ export default function DashboardClient() {
         </section>
       ) : null}
 
-      {meLoaded && nextActions.length > 0 ? (
+      {meLoaded && dashShell === "ready" && nextActions.length > 0 ? (
         <section
           className="dash-next-actions app-card soft-panel edc-next-actions"
           aria-label="Next actions"
         >
           <header>
-            <h2>{dashShell === "ready" ? "Finish setup" : "Next actions"}</h2>
-            <p>
-              {dashShell === "ready"
-                ? "A few workspace steps still block live widgets — nothing here is DEMO data."
-                : "Honest handoffs into the Soft-UI hubs — never DEMO metrics."}
-            </p>
+            <h2>Finish setup</h2>
+            <p>A few workspace steps still block live widgets — nothing here is DEMO data.</p>
           </header>
           <ol>
             {nextActions.slice(0, 3).map((action) => (
