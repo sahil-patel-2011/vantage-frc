@@ -1,0 +1,15 @@
+/* Soft-UI Equipment Maintenance — never DEMO service packs. */
+.em-page{display:grid;gap:16px}
+.em-related{display:flex;flex-wrap:wrap;gap:8px}
+.em-next-actions{margin:0}
+.em-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.em-panel{display:grid;gap:12px}
+.em-panel h2{margin:0}
+.em-setup-steps,.em-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.em-setup-steps li,.em-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.em-tip,.em-block{margin:0;display:block}
+.em-name{margin-left:8px}
+.em-actions{display:flex;gap:8px;flex-shrink:0}
+@media(max-width:900px){
+  .em-next-actions li,.em-setup-steps li,.em-row{flex-direction:column;align-items:stretch}
+}
