@@ -1,0 +1,23 @@
+/* Soft-UI Event-Day Stress Planner — never DEMO schedule blocks. */
+.edp-page{display:grid;gap:16px}
+.edp-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.edp-filter{display:flex;gap:6px;align-items:center}
+.edp-related{display:flex;flex-wrap:wrap;gap:8px}
+.edp-next-actions{margin:0}
+.edp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.edp-panel{display:grid;gap:12px}
+.edp-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.edp-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.edp-tip{margin:0}
+.edp-conflict-list{margin:8px 0 0;padding-left:18px}
+.edp-hourly{display:grid;gap:12px}
+.edp-hour-row{display:grid;grid-template-columns:72px 1fr;gap:10px}
+.edp-block-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.edp-block-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.edp-block-title{display:block;margin-top:2px}
+.edp-block-actions{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:900px){
+  .edp-header-actions{justify-content:flex-start}
+  .edp-hour-row{grid-template-columns:1fr}
+  .edp-next-actions li,.edp-setup-steps li,.edp-block-row{flex-direction:column;align-items:stretch}
+}
