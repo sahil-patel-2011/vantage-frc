@@ -129,5 +129,16 @@ export function eventDayNextActions(
     });
   }
 
-  return actions;
+  const missingTravel =
+    snap?.myDay != null && !snap.myDay.lodgingLabel && !snap.myDay.nextTravelLabel;
+  if (missingTravel || (snap?.eventKey && !snap.myDay?.lodgingLabel && !snap.myDay?.nextTravelLabel)) {
+    actions.push({
+      id: "logistics",
+      label: "Open Logistics",
+      detail: "Hotels and leave times stay blank until mentors publish a real trip — never DEMO lodging.",
+      href: snap?.links.logistics ?? withOrgHref("/logistics", orgId),
+    });
+  }
+
+  return actions.slice(0, 5);
 }

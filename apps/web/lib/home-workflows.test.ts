@@ -3,6 +3,7 @@ import {
   buildMentorHomeStrip,
   buildSeasonFirstRunSteps,
   buildStudentHomeStrip,
+  formatHomeLodgingDetail,
   formatStripWhen,
   homeAudienceFromTeamRole,
 } from "./home-workflows";
@@ -27,30 +28,55 @@ describe("home-workflows", () => {
       "needs_assignment",
       "lodging_gaps",
       "unsigned_checklists",
+      "event_day",
     ]);
     expect(strip[0]!.tone).toBe("warn");
     expect(strip[0]!.href).toContain("orgId=org-1");
     expect(strip[1]!.tone).toBe("ok");
     expect(strip[2]!.tone).toBe("warn");
+    expect(strip[3]!.href).toContain("/competition?tab=command");
   });
 
-  it("builds student strip with practice, hotel, todos, and kickoff", () => {
+  it("surfaces visit host gaps on mentor strip when present", () => {
+    const strip = buildMentorHomeStrip({
+      orgId: "org-1",
+      needsAssignment: 0,
+      lodgingGaps: 0,
+      unsignedChecklists: 0,
+      visitHostGaps: 2,
+    });
+    expect(strip.some((item) => item.key === "visit_hosts")).toBe(true);
+    expect(strip.find((item) => item.key === "visit_hosts")?.href).toContain("/visit-invites");
+    expect(strip.find((item) => item.key === "visit_hosts")?.tone).toBe("warn");
+  });
+
+  it("builds student strip with practice, hotel, travel, todos, and kickoff", () => {
     const strip = buildStudentHomeStrip({
       orgId: "org-1",
       nextPracticeTitle: "Drive practice",
       nextPracticeAt: "2026-01-20T22:00:00.000Z",
       hotelName: "Marriott",
       roomLabel: "412",
+      nextTravelLabel: "Leave for venue",
+      nextTravelAt: "2026-03-01T12:00:00.000Z",
       mineOpenTodos: 3,
       kickoffReady: true,
     });
-    expect(strip).toHaveLength(4);
+    expect(strip.map((item) => item.key)).toEqual([
+      "next_practice",
+      "my_hotel",
+      "next_travel",
+      "my_todos",
+      "kickoff_summary",
+    ]);
     expect(strip[0]!.detail).toContain("Drive practice");
     expect(strip[1]!.detail).toBe("Marriott · Room 412");
-    expect(strip[2]!.detail).toBe("3 open");
-    expect(strip[2]!.href).toContain("/todos");
-    expect(strip[3]!.href).toContain("/kickoff");
+    expect(strip[2]!.detail).toContain("Leave for venue");
+    expect(strip[3]!.detail).toBe("3 open");
+    expect(strip[3]!.href).toContain("/todos");
+    expect(strip[4]!.href).toContain("/build?tab=kickoff");
     expect(formatStripWhen("not-a-date")).toBeNull();
+    expect(formatHomeLodgingDetail(null, null)).toBe("No lodging assigned yet");
   });
 
   it("exposes season first-run steps for subteam → wiki → logistics → kickoff → CAD", () => {

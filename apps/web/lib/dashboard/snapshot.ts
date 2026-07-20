@@ -740,10 +740,13 @@ export async function loadDashboardSnapshot(
     let needsAssignment = 0;
     let lodgingGaps = 0;
     let unsignedChecklists = 0;
+    let visitHostGaps = 0;
     let nextPracticeTitle: string | null = null;
     let nextPracticeAt: string | null = null;
     let hotelName: string | null = null;
     let roomLabel: string | null = null;
+    let nextTravelLabel: string | null = null;
+    let nextTravelAt: string | null = null;
     let mineOpenTodos = 0;
     let kickoffReady = false;
 
@@ -853,6 +856,39 @@ export async function loadDashboardSnapshot(
       kickoffReady = false;
     }
 
+    try {
+      const travel = await client.query<{ title: string; startsAt: string }>(
+        `SELECT title, starts_at::text AS "startsAt"
+         FROM logistics_travel_legs
+         WHERE org_id = $1 AND starts_at >= now()
+         ORDER BY starts_at ASC
+         LIMIT 1`,
+        [orgId],
+      );
+      nextTravelLabel = travel.rows[0]?.title ?? null;
+      nextTravelAt = travel.rows[0]?.startsAt ?? null;
+    } catch {
+      nextTravelLabel = null;
+      nextTravelAt = null;
+    }
+
+    try {
+      const hosts = await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count
+         FROM visit_invites v
+         WHERE v.org_id = $1
+           AND v.status IN ('draft', 'scheduled')
+           AND NOT EXISTS (
+             SELECT 1 FROM visit_invite_hosts h
+             WHERE h.visit_id = v.id AND h.org_id = v.org_id
+           )`,
+        [orgId],
+      );
+      visitHostGaps = Number(hosts.rows[0]?.count ?? 0);
+    } catch {
+      visitHostGaps = 0;
+    }
+
     context.homeStrip = {
       audience,
       items:
@@ -862,6 +898,7 @@ export async function loadDashboardSnapshot(
               needsAssignment,
               lodgingGaps,
               unsignedChecklists,
+              visitHostGaps,
             })
           : buildStudentHomeStrip({
               orgId,
@@ -869,6 +906,8 @@ export async function loadDashboardSnapshot(
               nextPracticeAt,
               hotelName,
               roomLabel,
+              nextTravelLabel,
+              nextTravelAt,
               mineOpenTodos,
               kickoffReady,
             }),

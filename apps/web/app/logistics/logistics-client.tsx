@@ -1,9 +1,16 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { LogisticsRelated } from "../../components/logistics-related";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import {
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  Panel,
+  TextBlockSkeleton,
+  CardGridSkeleton,
+} from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
@@ -21,6 +28,16 @@ import {
   type LogisticsView,
   type TravelLegKind,
 } from "../../lib/logistics";
+import {
+  LOGISTICS_RELATED_INCLUDE,
+  classifyLogisticsShell,
+  formatLodgingClarity,
+  logisticsShellCopy,
+  logisticsShellNextActions,
+  logisticsSetupSteps,
+  type LogisticsShellKind,
+  type LogisticsShellNextAction,
+} from "../../lib/logistics/logistics-related";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -45,6 +62,141 @@ function canActOnline(online: boolean, fromCache: boolean): boolean {
   return online && !fromCache;
 }
 
+function LogisticsNextActionsPanel({ actions }: { actions: LogisticsShellNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <Panel className="log-next-actions edc-next-actions soft-panel">
+      <header>
+        <h2>Next actions</h2>
+        <p>Event Day, My Day, Calendar, and Visit invites — never DEMO lodging.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </Panel>
+  );
+}
+
+function LogisticsShell({
+  orgId,
+  shell,
+  canManage,
+  error,
+  onRetry,
+  children,
+}: {
+  orgId?: string | null;
+  shell: LogisticsShellKind;
+  canManage?: boolean;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = logisticsShellNextActions({ orgId, shell, canManage });
+  const copy = logisticsShellCopy(shell);
+  const steps = shell === "setup" || shell === "empty" ? logisticsSetupSteps(orgId) : [];
+  const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+
+  if (shell === "loading") {
+    return (
+      <main className="log-page soft-gate">
+        <PageHeader
+          navPath="/logistics"
+          title="Logistics"
+          description="Hotels, rooming, travel legs, and day-of checklists — never DEMO lodging."
+        >
+          <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
+        </PageHeader>
+        <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
+        {children}
+        <div aria-busy="true" aria-label="Loading logistics">
+          <TextBlockSkeleton lines={2} />
+          <div style={{ height: 16 }} />
+          <CardGridSkeleton cols={2} rows={2} />
+        </div>
+      </main>
+    );
+  }
+
+  if (shell === "error") {
+    return (
+      <main className="log-page soft-gate">
+        <PageHeader
+          navPath="/logistics"
+          title="Logistics"
+          description="Hotels, rooming, travel legs, and day-of checklists — never DEMO lodging."
+        >
+          <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
+        </PageHeader>
+        <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
+        {children}
+        <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
+        <LogisticsNextActionsPanel actions={actions} />
+      </main>
+    );
+  }
+
+  return (
+    <main className="log-page soft-gate">
+      <PageHeader
+        navPath="/logistics"
+        title="Logistics"
+        description="Hotels, rooming, travel legs, and day-of checklists — never DEMO lodging."
+      >
+        <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
+      </PageHeader>
+      <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
+      {children}
+      <EmptyState
+        soft
+        badge={copy.badge}
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+      >
+        {shell === "setup" ? (
+          <a className="app-button" href={workspaceHref}>
+            Open Workspace
+          </a>
+        ) : null}
+        {shell === "empty" && canManage ? (
+          <a className="app-button" href={withOrgHref("/logistics", orgId) + "#logistics-create-trip"}>
+            Add a trip
+          </a>
+        ) : null}
+        <LogisticsRelated
+          orgId={orgId}
+          include={shell === "setup" ? ["command", "my-day", "visit-invites"] : [...LOGISTICS_RELATED_INCLUDE]}
+        />
+        {steps.length > 0 ? (
+          <ol className="strategy-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <span>{step.detail}</span>
+                </div>
+                <a href={step.href}>Open</a>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </EmptyState>
+      <LogisticsNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function LogisticsClient() {
   const online = useOnline();
   const [view, setView] = useState<LogisticsView | null>(null);
@@ -54,6 +206,7 @@ export default function LogisticsClient() {
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [fetchFailed, setFetchFailed] = useState(false);
 
   const load = useCallback(async () => {
     setError("");
@@ -73,6 +226,7 @@ export default function LogisticsClient() {
       setView(data);
       setFromCache(false);
       setCachedAt(null);
+      setFetchFailed(false);
       const cacheOrg = data.status === "ready" ? data.context.orgId : orgId;
       if (cacheOrg) await putFeatureSnapshot("logistics", cacheOrg, data);
       if (data.status === "ready") {
@@ -82,7 +236,10 @@ export default function LogisticsClient() {
         });
       }
     } catch (err: unknown) {
-      if (!cached) setError(err instanceof Error ? err.message : "Could not load logistics");
+      if (!cached) {
+        setFetchFailed(true);
+        setError(err instanceof Error ? err.message : "Could not load logistics");
+      }
     }
   }, []);
 
@@ -135,53 +292,47 @@ export default function LogisticsClient() {
   );
 
   const orgIdParam = view?.status === "ready" ? view.context.orgId : view?.context?.orgId ?? null;
+  const urlOrg =
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("orgId") : null;
 
   if (error && !view) {
     return (
-      <main className="log-page">
-        <PageHeader navPath="/logistics" title="Logistics" description={error} />
-        <TeamOpsNav active="logistics" />
-        <OfflineBanner feature="Logistics" fromCache={false} detail={!online ? "Open once online to cache trip info." : undefined} />
-        <EmptyState soft title="Could not load logistics" description={error}>
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
-            Retry
-          </button>
-        </EmptyState>
-      </main>
+      <LogisticsShell
+        orgId={urlOrg}
+        shell="error"
+        error={error}
+        onRetry={() => {
+          setFetchFailed(false);
+          void load();
+        }}
+      >
+        <OfflineBanner
+          feature="Logistics"
+          fromCache={false}
+          detail={!online ? "Open once online to cache trip info." : undefined}
+        />
+      </LogisticsShell>
     );
   }
 
   if (!view) {
     return (
-      <main className="log-page">
-        <PageHeader navPath="/logistics" title="Logistics" description="Loading trip times and lodging…" />
-        <TeamOpsNav active="logistics" />
-        <EmptyState soft title="Loading logistics…" description="Checking lodging, travel legs, and day-of checklists." aria-busy />
-      </main>
+      <LogisticsShell
+        orgId={urlOrg}
+        shell={classifyLogisticsShell({ loading: !fetchFailed, fetchFailed })}
+      />
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className="log-page">
-        <PageHeader navPath="/logistics" title="Logistics" description={view.message} />
-        <TeamOpsNav orgId={orgIdParam} active="logistics" />
+      <LogisticsShell
+        orgId={orgIdParam}
+        shell="setup"
+        error={view.message}
+      >
         <OfflineBanner feature="Logistics" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState
-          soft
-          badge="Setup required"
-          badgeTone="setup"
-          title="Logistics not ready yet"
-          description="Select a team workspace, or apply the event logistics migration if this org is missing tables."
-        >
-          <div className="log-inline-actions">
-            <a className="app-button" href={orgIdParam ? withOrgHref("/workspace", orgIdParam) : "/workspace"}>
-              Workspace
-            </a>
-            <LogisticsRelated orgId={orgIdParam} include={["command", "my-day", "calendar"]} />
-          </div>
-        </EmptyState>
-      </main>
+      </LogisticsShell>
     );
   }
 
@@ -207,6 +358,33 @@ export default function LogisticsClient() {
   const busy = busyKey != null;
   const act = canActOnline(online, fromCache);
   const hasPlan = trips.length > 0;
+  const hotelCount = trips.reduce((n, t) => n + t.hotels.length, 0);
+  const travelLegCount = trips.reduce((n, t) => n + t.travelLegs.length, 0);
+  const lodgingLine = formatLodgingClarity({
+    hotelName: myLodging?.hotelName,
+    roomLabel: myLodging?.roomLabel,
+  });
+  const readyActions = logisticsShellNextActions({
+    orgId,
+    shell: hasPlan ? "ready" : "empty",
+    canManage,
+    lodgingGaps,
+    hotelCount,
+    travelLegCount,
+  });
+
+  if (!hasPlan) {
+    return (
+      <LogisticsShell orgId={orgId} shell="empty" canManage={canManage}>
+        <OfflineBanner
+          feature="Logistics"
+          fromCache={fromCache}
+          cachedAt={cachedAt}
+          detail={!online ? "Showing cached logistics from this device." : undefined}
+        />
+      </LogisticsShell>
+    );
+  }
 
   const toggleChecklist = (item: ChecklistItem, checked: boolean) => {
     void run({ action: "toggle_checklist", orgId, id: item.id, checked }, `chk:${item.id}`);
@@ -219,11 +397,11 @@ export default function LogisticsClient() {
         title="Logistics"
         description={
           canManage
-            ? `${context.orgName ?? "Team"} — plan hotels, travel legs, contacts, and day-of checklists.`
-            : `${context.orgName ?? "Team"} — your lodging, who to call, and day-of checklist.`
+            ? `${context.orgName ?? "Team"} — plan hotels, travel legs, contacts, and day-of checklists. Never DEMO lodging.`
+            : `${context.orgName ?? "Team"} — your lodging, leave times, who to call, and day-of checklist.`
         }
       >
-        <LogisticsRelated orgId={orgId} />
+        <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
       </PageHeader>
       <TeamOpsNav orgId={orgId} active="logistics" />
       <OfflineBanner
@@ -235,19 +413,7 @@ export default function LogisticsClient() {
       {error ? <p className="log-banner error">{error}</p> : null}
       {okMessage ? <p className="log-banner ok">{okMessage}</p> : null}
 
-      {!hasPlan ? (
-        <EmptyState
-          soft
-          title={canManage ? "No trips yet" : "Travel plan not published"}
-          description={
-            canManage
-              ? "Add a trip to publish hotels, rooming, and leave/arrive times. Nothing here invents demo lodging."
-              : "Mentors publish hotels and travel times when the event is booked. Check My Day once a plan exists."
-          }
-        >
-          <LogisticsRelated orgId={orgId} include={["command", "my-day", "calendar"]} />
-        </EmptyState>
-      ) : null}
+      <LogisticsNextActionsPanel actions={readyActions} />
 
       {nextLeg ? (
         <Panel className="logistics-mine">
@@ -261,10 +427,10 @@ export default function LogisticsClient() {
             {nextLeg.location ? ` · ${nextLeg.location}` : ""}
           </p>
         </Panel>
-      ) : hasPlan && !canManage ? (
+      ) : !canManage ? (
         <Panel>
           <span className="log-kicker">Next on my trip</span>
-          <p className="app-muted">No upcoming travel times published yet.</p>
+          <p className="app-muted">No upcoming travel times published yet — never DEMO departures.</p>
         </Panel>
       ) : null}
 
@@ -287,12 +453,10 @@ export default function LogisticsClient() {
         </Panel>
       ) : null}
 
-      {myLodging ? (
+      {myLodging && lodgingLine ? (
         <Panel className="logistics-mine">
           <span className="log-kicker">My lodging</span>
-          <h2>
-            {myLodging.hotelName} · Room {myLodging.roomLabel}
-          </h2>
+          <h2>{lodgingLine}</h2>
           <p className="app-muted">{myLodging.tripTitle}</p>
           {myLodging.hotelAddress ? <p>{myLodging.hotelAddress}</p> : null}
           {myLodging.hotelPhone ? (
@@ -306,10 +470,12 @@ export default function LogisticsClient() {
             </p>
           )}
         </Panel>
-      ) : hasPlan && !canManage ? (
+      ) : !canManage ? (
         <Panel>
           <span className="log-kicker">My lodging</span>
-          <p className="app-muted">No room assignment yet. Mentors add hotels and rooming lists when travel is booked.</p>
+          <p className="app-muted">
+            No room assignment yet. Mentors add hotels and rooming lists when travel is booked — never DEMO rooms.
+          </p>
         </Panel>
       ) : null}
 
@@ -329,7 +495,7 @@ export default function LogisticsClient() {
           ) : null}
           {activeOnDuty.notes ? <p className="app-muted">{activeOnDuty.notes}</p> : null}
         </Panel>
-      ) : hasPlan && !canManage ? (
+      ) : !canManage ? (
         <Panel>
           <span className="log-kicker">Mentor on duty</span>
           <p className="app-muted">No on-duty schedule posted yet.</p>
@@ -611,13 +777,13 @@ export default function LogisticsClient() {
         </Panel>
       ) : null}
 
-      <Panel className="log-trip-panel">
+      <Panel id="logistics-create-trip" className="log-trip-panel">
         <div className="log-section-head">
           <div>
             <h2>Trips, hotels, and travel times</h2>
             <p className="app-muted">
               Publish leave, hotel, venue, and return times. Legs sync to Team Calendar when configured. Counts reflect
-              saved lodging only — never demo fillers.
+              saved lodging only — never DEMO fillers.
             </p>
           </div>
         </div>

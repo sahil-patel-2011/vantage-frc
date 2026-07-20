@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
-import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { CardGridSkeleton, EmptyState, ErrorState, PageHeader, Panel, StatRowSkeleton } from "../../components/ui";
 import { countdownLabel } from "../dashboard/widgets";
 import { eventDayNextActions } from "../../lib/command/event-day-actions";
 import {
@@ -147,6 +147,46 @@ function EventDayShell({
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
 
+  if (shell === "loading") {
+    return (
+      <main className="edc-page soft-gate">
+        <PageHeader
+          breadcrumbs="Competition / Event Day"
+          title="Event Day Command"
+          description="Next match, scout gaps, and labeled model briefs from real TBA rows — never DEMO schedule."
+        >
+          <EventDayRelatedStrip orgId={orgId} />
+        </PageHeader>
+        {children}
+        <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading Event Day Command">
+          <StatRowSkeleton count={3} />
+          <CardGridSkeleton cols={3} rows={1} />
+        </div>
+      </main>
+    );
+  }
+
+  if (shell === "error") {
+    return (
+      <main className="edc-page soft-gate">
+        <PageHeader
+          breadcrumbs="Competition / Event Day"
+          title="Event Day Command"
+          description="Next match, scout gaps, and labeled model briefs from real TBA rows — never DEMO schedule."
+        >
+          <EventDayRelatedStrip orgId={orgId} />
+        </PageHeader>
+        {children}
+        <ErrorState
+          title={copy.title}
+          message={error ?? copy.description}
+          onRetry={onRetry}
+        />
+        <EventDayNextActionsPanel actions={actions} />
+      </main>
+    );
+  }
+
   return (
     <main className="edc-page soft-gate">
       <PageHeader
@@ -160,25 +200,11 @@ function EventDayShell({
       <EmptyState
         soft
         className="edc-empty"
-        badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
-              : shell === "empty"
-                ? copy.badge
-                : copy.badge
-        }
+        badge={shell === "setup" ? "Setup required" : copy.badge}
         badgeTone="setup"
         title={copy.title}
         description={error ?? copy.description}
-        aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
-            Retry
-          </button>
-        ) : null}
         {shell === "setup" ? (
           <>
             {canSetEvent && onSelectEvent ? (
@@ -228,7 +254,7 @@ function EventDayShell({
           </ol>
         ) : null}
       </EmptyState>
-      {shell !== "loading" ? <EventDayNextActionsPanel actions={actions} /> : null}
+      <EventDayNextActionsPanel actions={actions} />
     </main>
   );
 }
@@ -608,27 +634,33 @@ export default function CommandClient() {
                   <AllianceChips keys={next.blue.teamKeys} ours={snap?.teamKey ?? null} highlight="blue" />
                 </div>
               </div>
-              {snap?.myDay &&
-              (snap.myDay.nextTravelLabel || snap.myDay.lodgingLabel || snap.myDay.onDutyLabel) ? (
-                <ul className="edc-myday-strip">
-                  {snap.myDay.nextTravelLabel ? (
-                    <li>
-                      <span>Travel</span>
-                      <b>{snap.myDay.nextTravelLabel}</b>
-                    </li>
-                  ) : null}
-                  {snap.myDay.lodgingLabel ? (
-                    <li>
-                      <span>Room</span>
-                      <b>{snap.myDay.lodgingLabel}</b>
-                    </li>
-                  ) : null}
+              {snap?.myDay ? (
+                <ul className="edc-myday-strip" aria-label="Hotels and travel">
+                  <li>
+                    <span>Travel</span>
+                    <b>
+                      {snap.myDay.nextTravelLabel ??
+                        "No leave time published — open Logistics (never DEMO departures)"}
+                    </b>
+                  </li>
+                  <li>
+                    <span>Room</span>
+                    <b>
+                      {snap.myDay.lodgingLabel ??
+                        "No lodging assigned — mentors publish hotels on Logistics"}
+                    </b>
+                  </li>
                   {snap.myDay.onDutyLabel ? (
                     <li>
                       <span>On duty</span>
                       <b>{snap.myDay.onDutyLabel}</b>
                     </li>
-                  ) : null}
+                  ) : (
+                    <li>
+                      <span>On duty</span>
+                      <b>No on-duty mentor posted yet</b>
+                    </li>
+                  )}
                 </ul>
               ) : null}
               <footer className="edc-after edc-myday-links">
@@ -648,8 +680,23 @@ export default function CommandClient() {
             <div className="dash-empty">
               <strong>No upcoming match</strong>
               <p>{snap?.message ?? "Sync TBA and select your event to load the queue — never DEMO times."}</p>
+              {snap?.myDay ? (
+                <ul className="edc-myday-strip" aria-label="Hotels and travel">
+                  <li>
+                    <span>Travel</span>
+                    <b>{snap.myDay.nextTravelLabel ?? "No leave time published yet"}</b>
+                  </li>
+                  <li>
+                    <span>Room</span>
+                    <b>{snap.myDay.lodgingLabel ?? "No lodging assigned yet"}</b>
+                  </li>
+                </ul>
+              ) : null}
               <a className="dash-empty-cta" href={scheduleHref}>
                 Open Schedule
+              </a>
+              <a className="dash-empty-cta" href={logisticsHref}>
+                Open Logistics
               </a>
             </div>
           )}

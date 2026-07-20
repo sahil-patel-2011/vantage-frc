@@ -5,6 +5,8 @@ import {
   visitInvitesShareHref,
   visitNextActions,
   visitRelatedLinks,
+  visitSetupSteps,
+  visitShellCopy,
 } from "./visit-related";
 
 describe("visitRelatedLinks", () => {
@@ -83,6 +85,23 @@ describe("visitNextActions", () => {
     expect(actions[0]?.id).toBe("workspace");
     expect(actions.some((a) => a.id === "logistics")).toBe(true);
     expect(actions.some((a) => a.id === "command")).toBe(true);
+  });
+});
+
+describe("visitShellCopy / visitSetupSteps", () => {
+  it("setup steps use hubHref / withOrgHref and never DEMO invites", () => {
+    const steps = visitSetupSteps("org-1");
+    expect(steps.find((s) => s.id === "workspace")?.href).toBe("/workspace?orgId=org-1");
+    expect(steps.find((s) => s.id === "logistics")?.href).toBe("/logistics?orgId=org-1");
+    expect(steps.find((s) => s.id === "calendar")?.href).toBe("/team?tab=calendar&orgId=org-1");
+    expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
+    expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
+  });
+
+  it("shell copy never invents DEMO invite rows", () => {
+    const copy = visitShellCopy("empty");
+    expect(copy.badge).toBe("No visits yet");
+    expect(copy.description).toMatch(/never DEMO invite/i);
   });
 });
 
