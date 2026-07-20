@@ -31,6 +31,8 @@ import type { DataSourceHealthView } from "../../lib/reference-health";
 import { countdownLabel, DashboardWidgetView } from "./widgets";
 import type { HomeStripItem } from "../../lib/home-workflows";
 import { Badge } from "../../components/ui";
+import { CopyShareLink } from "../../components/copy-share-link";
+import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import "react-grid-layout/css/styles.css";
 import "./dashboard-editor.css";
 import "./dashboard-dnd.css";
@@ -145,6 +147,7 @@ export default function DashboardClient() {
   const [renameDraft, setRenameDraft] = useState("");
 
   const orgId = me.orgId ?? "";
+  const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId || null);
 
   const loadBoard = useCallback(async (id: string, preferredBoardId?: string | null) => {
     const stored = preferredBoardId === undefined ? readStoredBoardId(id) : preferredBoardId;
@@ -723,6 +726,8 @@ export default function DashboardClient() {
           </p>
         </div>
         <div className="dash-home-actions">
+          <CopyShareLink orgId={orgId || null} />
+          <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
           {nextMatchData && !editing ? (
             <a className="dash-next-glance" href={withOrgHref("/intel", orgId || null)}>
               <span>Next</span>
