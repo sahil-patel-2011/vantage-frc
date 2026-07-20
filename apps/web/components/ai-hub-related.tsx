@@ -5,6 +5,7 @@ import { withOrgHref } from "../lib/nav/product-nav";
 
 const AI_TABS = [
   { id: "chat", label: "Chat" },
+  { id: "agent", label: "Autonomous agent" },
   { id: "budgets", label: "Budgets" },
   { id: "writer", label: "Writer" },
   { id: "code", label: "Code assist" },

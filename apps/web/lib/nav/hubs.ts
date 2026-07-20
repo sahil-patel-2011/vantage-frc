@@ -239,10 +239,11 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     label: "AI",
     title: "AI",
     description:
-      "Assistant chat, API budgets, grant/sponsor writer, code assist, memory, governance, finance-in-AI — and AI API keys in More tools.",
+      "Assistant chat, autonomous agent, API budgets, grant/sponsor writer, code assist, memory, governance, finance-in-AI — and AI API keys in More tools.",
     defaultTab: "chat",
     tabs: [
       { id: "chat", label: "Chat", legacyHref: "/chat" },
+      { id: "agent", label: "Autonomous agent" },
       { id: "budgets", label: "Budgets", legacyHref: "/team/budgets" },
       { id: "writer", label: "Writer", legacyHref: "/writer" },
       { id: "code", label: "Code assist", legacyHref: "/code" },

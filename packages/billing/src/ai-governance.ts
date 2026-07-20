@@ -69,6 +69,7 @@ const KNOWN_FEATURES = [
   "chat",
   "writer",
   "scout_voice_stt",
+  "agent",
 ] as const;
 
 const KNOWN_TOOLS = [
@@ -91,6 +92,8 @@ const KNOWN_TOOLS = [
   "finance.summary",
   "finance.orders",
   "finance.create_purchase_request",
+  "web.search",
+  "web.fetch",
 ] as const;
 
 export function knownAiFeatures() {

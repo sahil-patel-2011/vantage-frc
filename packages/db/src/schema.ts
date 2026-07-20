@@ -3542,3 +3542,67 @@ export const supportTickets = pgTable(
     index("support_tickets_status_created_idx").on(table.status, table.createdAt),
   ],
 );
+
+/** Soft-UI Autonomous Agent run metadata (ReAct loop). Truncated answers only — no secrets. */
+export const autonomousAgentRuns = pgTable(
+  "autonomous_agent_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    goal: text("goal").notNull(),
+    status: text("status").notNull().default("running"),
+    feature: text("feature").notNull().default("agent"),
+    requestId: text("request_id").notNull().unique(),
+    provider: text("provider"),
+    model: text("model"),
+    stepCount: integer("step_count").notNull().default(0),
+    maxSteps: integer("max_steps").notNull().default(8),
+    finalAnswer: text("final_answer"),
+    errorClass: text("error_class"),
+    errorMessage: text("error_message"),
+    usageEventIds: jsonb("usage_event_ids").$type<string[]>().notNull().default([]),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    index("autonomous_agent_runs_org_started_idx").on(table.orgId, table.startedAt),
+    index("autonomous_agent_runs_org_user_idx").on(table.orgId, table.userId, table.startedAt),
+  ],
+);
+
+/** Per-step tool/plan log — summaries + truncated web excerpts, not full HTML. */
+export const autonomousAgentSteps = pgTable(
+  "autonomous_agent_steps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => autonomousAgentRuns.id, { onDelete: "cascade" }),
+    sequence: integer("sequence").notNull(),
+    kind: text("kind").notNull(),
+    toolName: text("tool_name"),
+    argsSummary: text("args_summary"),
+    resultSummary: text("result_summary"),
+    resultExcerpt: text("result_excerpt"),
+    sourceUrl: text("source_url"),
+    status: text("status").notNull().default("ok"),
+    requestId: text("request_id"),
+    usageEventId: uuid("usage_event_id").references(() => aiUsageEvents.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamps.createdAt,
+  },
+  (table) => [
+    index("autonomous_agent_steps_run_seq_idx").on(table.runId, table.sequence),
+    index("autonomous_agent_steps_org_created_idx").on(table.orgId, table.createdAt),
+  ],
+);

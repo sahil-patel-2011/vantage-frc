@@ -58,7 +58,18 @@ describe("cross-feature AI tool graph", () => {
 
   it("documents what each surface can call", () => {
     expect(CROSS_FEATURE_TOOL_GRAPH.chat).toEqual(
-      expect.arrayContaining(["cad.create_brief", "finance.summary", "my_day.summary", "scouting.team", "scouting.schema"]),
+      expect.arrayContaining([
+        "web.search",
+        "web.fetch",
+        "cad.create_brief",
+        "finance.summary",
+        "my_day.summary",
+        "scouting.team",
+        "scouting.schema",
+      ]),
+    );
+    expect(CROSS_FEATURE_TOOL_GRAPH.agent).toEqual(
+      expect.arrayContaining(["web.search", "web.fetch", "knowledge.search"]),
     );
     expect(CROSS_FEATURE_TOOL_GRAPH.cad).toEqual(
       expect.arrayContaining([

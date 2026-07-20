@@ -13,6 +13,10 @@ const WriterClient = dynamic(() => import("../writer/writer-client"), { ssr: fal
 const CodeClient = dynamic(() => import("../code/code-client").then((m) => m.CodeClient), { ssr: false });
 const AiMemoryClient = dynamic(() => import("../team/ai-memory/ai-memory-client"), { ssr: false });
 const AiPolicyClient = dynamic(() => import("../team/ai-policy/ai-policy-client"), { ssr: false });
+const AutonomousAgentPanel = dynamic(
+  () => import("./autonomous-agent-panel").then((m) => m.AutonomousAgentPanel),
+  { ssr: false },
+);
 
 export default function AiHub() {
   return (
@@ -21,6 +25,7 @@ export default function AiHub() {
         <HubOrgGate orgId={orgId} label="AI">
           {(id) => {
             if (tab === "chat") return <ChatClient orgId={id} initialPrompt="" source="" contextId="" />;
+            if (tab === "agent") return <AutonomousAgentPanel orgId={id} />;
             if (tab === "budgets") return <BudgetClient orgId={id} />;
             if (tab === "writer") return <WriterClient orgId={id} />;
             if (tab === "code") return <CodeClient orgId={id} related="ai" />;
