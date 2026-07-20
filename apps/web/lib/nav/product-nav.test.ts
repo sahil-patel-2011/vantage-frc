@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   breadcrumbForPath,
+  FEATURED_SOFT_UI_LINKS,
   findNavMatch,
   MORE_SHEET_LINKS,
   PILLAR_SHEET_LINKS,
@@ -50,6 +51,22 @@ describe("product-nav", () => {
     ]);
   });
 
+  it("features Alliance desk, Season planning, and AI keys in More Soft-UI", () => {
+    expect(FEATURED_SOFT_UI_LINKS.map((link) => link.href)).toEqual([
+      "/alliance-selection-desk",
+      "/season-planning-workspace",
+      "/team/ai-keys",
+      "/writer",
+    ]);
+  });
+
+  it("keeps Alliance desk and Season planning in the drawer", () => {
+    const competition = PRODUCT_NAV_GROUPS.find((g) => g.label === "Competition")!;
+    const team = PRODUCT_NAV_GROUPS.find((g) => g.label === "Team")!;
+    expect(competition.items.some((i) => i.href === "/alliance-selection-desk")).toBe(true);
+    expect(team.items.some((i) => i.href === "/season-planning-workspace")).toBe(true);
+  });
+
   it("resolves breadcrumbs by longest live nav href and hub legacy paths", () => {
     expect(breadcrumbForPath("/team")).toBe("Team / Team hub");
     expect(breadcrumbForPath("/team/calendar")).toBe("Team / Calendar");
@@ -84,6 +101,8 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
     expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Form builder");
     expect(breadcrumbForPath("/competition")).toBe("Competition / Competition hub");
+    expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance Selection Desk");
+    expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season Planning Workspace");
   });
 
   it("resolves form builder via hub tab when using competition?tab=forms href", () => {

@@ -186,9 +186,9 @@ export function dashboardNextActions(input: {
   if (input.hasAiProvider === false) {
     actions.push({
       id: "ai-provider",
-      label: "Configure metered AI",
-      detail: "BYO provider key for free-tier AI — usage stays honest.",
-      href: hubHref("/ai", "budgets", orgId),
+      label: "Add AI API keys",
+      detail: "Paste OpenAI, Anthropic, or Google keys for Free / your-keys routing — no DEMO spend.",
+      href: withOrgHref("/team/ai-keys", orgId),
     });
   }
 
@@ -242,9 +242,9 @@ export function dashboardSetupSteps(input: {
     },
     {
       id: "ai",
-      label: "Metered AI",
-      detail: "BYO provider key for free-tier AI features",
-      href: hubHref("/ai", "budgets", orgId),
+      label: "AI API keys",
+      detail: "Paste OpenAI, Anthropic, or Google keys for Free / your-keys",
+      href: withOrgHref("/team/ai-keys", orgId),
       state: !hasOrg ? "pending" : aiDone ? "done" : "current",
     },
   ];

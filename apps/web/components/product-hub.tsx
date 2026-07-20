@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { PageHeader, TabBar } from "./ui";
 import {
   hubById,
+  hubFeaturedMoreTabs,
   hubLegacyHref,
   hubMoreTabs,
   hubPrimaryTabs,
@@ -103,6 +104,7 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
   const hub = hubById(hubId);
   const primaryTabs = hubPrimaryTabs(hub);
   const moreTabs = hubMoreTabs(hub);
+  const featuredMore = hubFeaturedMoreTabs(hub);
   const [tab, setTab] = useState(hub.defaultTab);
   const [orgId, setOrgId] = useState<string | null>(null);
 
@@ -142,12 +144,25 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
         tabs={primaryTabs.map((entry) => ({ id: entry.id, label: entry.label }))}
         className="product-hub-tabs"
       />
+      {featuredMore.length ? (
+        <nav className="product-hub-featured" aria-label={`Featured ${hub.label} tools`}>
+          {featuredMore.map((entry) => (
+            <a key={entry.id} className="app-button secondary" href={hubLegacyHref(entry, orgId)}>
+              {entry.label}
+            </a>
+          ))}
+        </nav>
+      ) : null}
       {moreTabs.length ? (
         <details className="product-hub-more">
           <summary>More tools ({moreTabs.length})</summary>
           <div className="product-hub-more-links">
             {moreTabs.map((entry) => (
-              <a key={entry.id} href={hubLegacyHref(entry, orgId)}>
+              <a
+                key={entry.id}
+                href={hubLegacyHref(entry, orgId)}
+                data-featured={entry.featured ? "yes" : undefined}
+              >
                 {entry.label}
               </a>
             ))}
@@ -190,9 +205,14 @@ export function HubOrgGate({
             Choose workspace
           </a>
           {label === "AI" ? (
-            <a className="app-button secondary" href={withOrgHref("/account", null)}>
-              Account
-            </a>
+            <>
+              <a className="app-button secondary" href={withOrgHref("/account", null)}>
+                Account
+              </a>
+              <a className="app-button secondary" href="/team/ai-keys">
+                AI API keys
+              </a>
+            </>
           ) : null}
         </div>
       </section>

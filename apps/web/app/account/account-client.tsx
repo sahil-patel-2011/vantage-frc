@@ -305,11 +305,12 @@ function OrgContextCard({ org }: { org: OrgContext }) {
         </div>
       </div>
       <p className="app-muted">
-        Display name and notification prefs are personal. Billing, AI usage, TBA connectors, and team security follow
+        Display name and notification prefs are personal. AI API keys, billing, TBA connectors, and team security follow
         this workspace.
       </p>
       <div className="settings-inline-links">
         <a href="/workspace">Switch workspace</a>
+        <a href={withOrgHref("/team/ai-keys", org.orgId)}>AI API keys</a>
         <a href={withOrgHref("/ai?tab=budgets", org.orgId)}>Billing</a>
         <a href={withOrgHref("/team/usage", org.orgId)}>AI usage</a>
       </div>
@@ -605,6 +606,30 @@ export default function AccountClient() {
             />
           ) : null}
 
+          {orgId ? (
+            <section className="account-ai-keys app-card soft-panel" aria-label="AI API keys">
+              <header>
+                <span className="app-badge">Your keys</span>
+                <h2>AI API keys</h2>
+                <p>
+                  Paste OpenAI, Anthropic, or Google keys for this workspace. Keys are encrypted at rest; your-key
+                  traffic does not invent hosted spend.
+                </p>
+              </header>
+              <div className="account-ai-keys-actions">
+                <a className="app-button" href={withOrgHref("/team/ai-keys", orgId)}>
+                  Manage API keys
+                </a>
+                <a className="app-button secondary" href={withOrgHref("/ai?tab=budgets", orgId)}>
+                  API budgets
+                </a>
+                <a className="app-button secondary" href={withOrgHref("/team/usage", orgId)}>
+                  AI usage
+                </a>
+              </div>
+            </section>
+          ) : null}
+
           <nav className="settings-hub" aria-label="Related settings">
             <a href="/security">
               <strong>Security</strong>
@@ -624,6 +649,10 @@ export default function AccountClient() {
             </a>
             {orgId ? (
               <>
+                <a href={withOrgHref("/team/ai-keys", orgId)}>
+                  <strong>AI API keys</strong>
+                  <span>OpenAI, Anthropic, Google — encrypted paste stop</span>
+                </a>
                 <a href={withOrgHref("/ai?tab=budgets", orgId)}>
                   <strong>Billing</strong>
                   <span>API budgets and Usage Credits</span>
@@ -636,15 +665,11 @@ export default function AccountClient() {
                   <strong>Team security</strong>
                   <span>Auth policy and delegated powers</span>
                 </a>
-                <a href={withOrgHref("/team/ai-keys", orgId)}>
-                  <strong>Add your API keys</strong>
-                  <span>OpenAI, Anthropic, Google — your keys</span>
-                </a>
               </>
             ) : (
               <a href="/workspace">
                 <strong>Workspace</strong>
-                <span>Choose a team for billing and usage</span>
+                <span>Choose a team for keys, billing, and usage</span>
               </a>
             )}
           </nav>
@@ -850,16 +875,16 @@ export default function AccountClient() {
               </div>
 
               <Panel as="article" className="settings-connection-footer">
-                <h2>Security, billing &amp; usage</h2>
+                <h2>Security, keys &amp; usage</h2>
                 <p>
-                  Personal 2FA lives on Security. Workspace billing, AI usage, BYOK keys, and budgets follow the active
-                  team — never invented spend. Team connectors above stay empty until real links exist.
+                  Personal 2FA lives on Security. Workspace AI keys, billing, and usage follow the active team — never
+                  invented spend. Team connectors above stay empty until real links exist.
                 </p>
                 <div className="settings-inline-links">
                   <a href="/security">Security</a>
+                  {orgId ? <a href={withOrgHref("/team/ai-keys", orgId)}>AI API keys</a> : null}
                   {orgId ? <a href={withOrgHref("/ai?tab=budgets", orgId)}>Billing</a> : null}
                   {orgId ? <a href={withOrgHref("/team/usage", orgId)}>AI usage</a> : null}
-                  {orgId ? <a href={withOrgHref("/team/ai-keys", orgId)}>Add your API keys</a> : null}
                   {orgId ? <a href={withOrgHref("/cad/connections", orgId)}>CAD Connections</a> : null}
                   {orgId ? <a href={withOrgHref("/team/discord", orgId)}>Discord</a> : null}
                   <a href="/account?tab=profile">Account</a>

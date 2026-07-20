@@ -12,6 +12,10 @@ export type HubTabDef = {
    * instead of the primary TabBar. Defaults to true.
    */
   primary?: boolean;
+  /**
+   * When true (and primary === false), pin above the More tools list for discoverability.
+   */
+  featured?: boolean;
 };
 
 export type ProductHubDef = {
@@ -31,7 +35,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     label: "Competition",
     title: "Competition",
     description:
-      "Event day command, personal schedule, strategy, scouting, form builder, match checklist, picks, and alliance chemistry.",
+      "Event day command, personal schedule, strategy, scouting, form builder, match checklist, picks, chemistry — plus Alliance Selection Desk in More tools.",
     defaultTab: "command",
     tabs: [
       { id: "command", label: "Command", legacyHref: "/command" },
@@ -43,7 +47,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "pick-clock", label: "Pick clock", legacyHref: "/pick-clock" },
       { id: "chemistry", label: "Chemistry", legacyHref: "/chemistry" },
       { id: "alliance-partner-brief", label: "Alliance-Partner Brief", legacyHref: "/alliance-partner-brief", primary: false },
-      { id: "alliance-selection-desk", label: "Alliance Selection Desk 2.0", legacyHref: "/alliance-selection-desk", primary: false },
+      {
+        id: "alliance-selection-desk",
+        label: "Alliance Selection Desk 2.0",
+        legacyHref: "/alliance-selection-desk",
+        primary: false,
+        featured: true,
+      },
       { id: "alliance-sim", label: "Alliance Sim", legacyHref: "/alliance-sim", primary: false },
       { id: "battery-rotation", label: "Battery Rotation & Charge Planner", legacyHref: "/battery-rotation", primary: false },
       { id: "counter-book", label: "Opponent Counter-book", legacyHref: "/counter-book", primary: false },
@@ -84,7 +94,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     label: "Team",
     title: "Team",
     description:
-      "Calendar & subteams, todos, practice, attendance, knowledge, messages, batteries, and FMEA — day-to-day ops in one Soft-UI hub.",
+      "Calendar & subteams, todos, practice, attendance, knowledge, messages, batteries, and FMEA — Season Planning in More tools.",
     defaultTab: "calendar",
     tabs: [
       { id: "calendar", label: "Calendar", legacyHref: "/team/calendar" },
@@ -107,7 +117,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "exit-interview", label: "Graduation Exit Interviews", legacyHref: "/exit-interview", primary: false },
       { id: "field-reset-timer", label: "Field Reset Timer", legacyHref: "/field-reset-timer", primary: false },
       { id: "goals-tracker", label: "Season Goals Tracker", legacyHref: "/goals-tracker", primary: false },
-      { id: "season-planning-workspace", label: "Season Planning Workspace", legacyHref: "/season-planning-workspace", primary: false },
+      {
+        id: "season-planning-workspace",
+        label: "Season Planning Workspace",
+        legacyHref: "/season-planning-workspace",
+        primary: false,
+        featured: true,
+      },
       { id: "hours-self-view", label: "My Hours (Self-View & Kiosk)", legacyHref: "/hours-self-view", primary: false },
       { id: "knowledge-gap", label: "Knowledge-gap detective", legacyHref: "/knowledge-gap", primary: false },
       { id: "meeting-autopilot", label: "Meeting-Agenda Autopilot", legacyHref: "/meeting-autopilot", primary: false },
@@ -201,7 +217,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     label: "AI",
     title: "AI",
     description:
-      "Assistant chat, API budgets, grant/sponsor writer, code assist, memory, governance, and finance-in-AI.",
+      "Assistant chat, API budgets, grant/sponsor writer, code assist, memory, governance, finance-in-AI — and AI API keys in More tools.",
     defaultTab: "chat",
     tabs: [
       { id: "chat", label: "Chat", legacyHref: "/chat" },
@@ -211,6 +227,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "memory", label: "Memory", legacyHref: "/team/ai-memory" },
       { id: "governance", label: "Governance", legacyHref: "/team/ai-policy" },
       { id: "finance", label: "Finance" },
+      { id: "ai-keys", label: "AI API keys", legacyHref: "/team/ai-keys", primary: false, featured: true },
       { id: "usage", label: "Usage", legacyHref: "/team/usage", primary: false },
       { id: "decisions", label: "Decision Log", legacyHref: "/decisions", primary: false },
       { id: "decision-search", label: "Decision Search", legacyHref: "/decision-search", primary: false },
@@ -236,6 +253,11 @@ export function hubPrimaryTabs(hub: ProductHubDef): HubTabDef[] {
 
 export function hubMoreTabs(hub: ProductHubDef): HubTabDef[] {
   return hub.tabs.filter((tab) => tab.primary === false && tab.legacyHref);
+}
+
+/** Featured More-tools pins — Alliance desk / Season planning / AI keys, etc. */
+export function hubFeaturedMoreTabs(hub: ProductHubDef): HubTabDef[] {
+  return hubMoreTabs(hub).filter((tab) => tab.featured === true);
 }
 
 export function hubHref(hubPath: string, tab: string, orgId?: string | null): string {

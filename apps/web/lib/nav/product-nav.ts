@@ -100,6 +100,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/schedule", label: "Match Schedule", icon: "calendar" },
       { href: "/competition?tab=pick-clock", label: "Pick clock", icon: "target" },
       { href: "/competition?tab=chemistry", label: "Chemistry", icon: "users" },
+      { href: "/alliance-selection-desk", label: "Alliance Selection Desk", icon: "swords" },
       { href: "/dossier", label: "Team Dossier", icon: "clipboard" },
       { href: "/rankings", label: "Rankings", icon: "stats" },
       { href: "/video", label: "Video Review", icon: "display" },
@@ -158,6 +159,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/team?tab=todos", label: "Todos", icon: "clipboard" },
       { href: "/team?tab=messages", label: "Messages", icon: "chat" },
       { href: "/goals", label: "Goals", icon: "target" },
+      { href: "/season-planning-workspace", label: "Season Planning Workspace", icon: "calendar" },
       { href: "/risks", label: "Risk Register", icon: "bolt" },
       { href: "/roles", label: "Roles", icon: "users" },
       { href: "/team/getting-started", label: "Team setup", icon: "pin" },
@@ -367,9 +369,9 @@ export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: Produc
 
 /** Newly polished Soft-UI tools — discoverable without dumping the full catalog. */
 export const FEATURED_SOFT_UI_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
-  { href: "/sponsor-wall", label: "Sponsor Wall", icon: "clipboard" },
-  { href: "/award-tracker", label: "Award Tracker", icon: "clipboard" },
-  { href: "/grant-report", label: "Grant Report", icon: "clipboard" },
+  { href: "/alliance-selection-desk", label: "Alliance desk", icon: "swords" },
+  { href: "/season-planning-workspace", label: "Season planning", icon: "calendar" },
+  { href: "/team/ai-keys", label: "AI API keys", icon: "gear" },
   { href: "/writer", label: "Writer", icon: "bolt" },
 ];
 

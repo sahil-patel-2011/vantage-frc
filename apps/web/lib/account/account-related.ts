@@ -3,6 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces from Account (never DEMO plan/usage figures). */
 export const ACCOUNT_RELATED_LINKS = [
+  { id: "ai-keys", label: "AI API keys", kind: "path" as const, path: "/team/ai-keys" },
   { id: "billing", label: "Billing", kind: "hub" as const, hub: "/ai" as const, tab: "budgets" },
   { id: "usage", label: "AI usage", kind: "path" as const, path: "/team/usage" },
   { id: "support", label: "Help & Support", kind: "path" as const, path: "/support" },
@@ -19,12 +20,12 @@ export type AccountRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Billing · Usage · Support · What’s new. */
+/** Focused Soft-UI strip — AI keys · Billing · Usage · Support. */
 export const ACCOUNT_RELATED_INCLUDE: AccountRelatedId[] = [
+  "ai-keys",
   "billing",
   "usage",
   "support",
-  "whats-new",
 ];
 
 /** Cross-links for Account Soft-UI (never DEMO billing or release history). */
@@ -90,7 +91,7 @@ export function formatAccountOrgLabel(input: AccountOrgContext): string | null {
 
 /**
  * Soft-UI next actions for Account empty / setup.
- * Points at Workspace, Billing, Usage, Support, and What’s new — never invents DEMO plan history.
+ * Points at Workspace, AI keys, Billing, Usage, and Support — never invents DEMO plan history.
  */
 export function accountNextActions(input: {
   orgId?: string | null;
@@ -106,7 +107,7 @@ export function accountNextActions(input: {
       {
         id: "workspace",
         label: "Select a workspace",
-        detail: "Billing, AI usage, and team connectors need an active team — profile prefs still save for this login.",
+        detail: "AI keys, billing, and team connectors need an active team — profile prefs still save for this login.",
         href: "/workspace",
         primary: true,
       },
@@ -168,23 +169,23 @@ export function accountNextActions(input: {
 
   actions.push(
     {
+      id: "ai-keys",
+      label: "Add AI API keys",
+      detail: "Paste OpenAI, Anthropic, or Google keys for this workspace — encrypted; no invented spend.",
+      href: withOrgHref("/team/ai-keys", orgId),
+      primary: actions.length === 0,
+    },
+    {
       id: "billing",
       label: "Open billing & budgets",
       detail: "API spend caps and Usage Credits for this workspace — figures come from the live ledger only.",
       href: hubHref("/ai", "budgets", orgId),
-      primary: actions.length === 0,
     },
     {
       id: "usage",
       label: "Review AI usage",
       detail: "Metered feature spend for the active team. Empty until real AI calls land in the ledger.",
       href: withOrgHref("/team/usage", orgId),
-    },
-    {
-      id: "whats-new",
-      label: "What’s new",
-      detail: "Product releases that target your plan entitlement — never a seeded DEMO changelog.",
-      href: "/whats-new",
     },
     {
       id: "support",

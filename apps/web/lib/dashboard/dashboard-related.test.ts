@@ -55,5 +55,17 @@ describe("dashboard Soft-UI related", () => {
     expect(steps.find((step) => step.id === "event")?.state).toBe("current");
     expect(steps.find((step) => step.id === "tba")?.state).toBe("current");
     expect(steps.find((step) => step.id === "tba")?.href).toContain("orgId=");
+    expect(steps.find((step) => step.id === "ai")?.href).toContain("/team/ai-keys");
+  });
+
+  it("points missing AI provider next action at AI API keys", () => {
+    const actions = dashboardNextActions({
+      orgId: ORG,
+      shell: "ready",
+      hasAiProvider: false,
+    });
+    const ai = actions.find((action) => action.id === "ai-provider");
+    expect(ai?.href).toBe(`/team/ai-keys?orgId=${ORG}`);
+    expect(ai?.label.toLowerCase()).toContain("api keys");
   });
 });
