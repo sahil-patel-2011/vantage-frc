@@ -1,5 +1,9 @@
 /** Landing-page FAQ — visible accordion + FAQPage JSON-LD for SEO rich results and GEO. */
 
+import { PRICING_CATALOG, TEAM_TRIAL_DAYS } from "@vantage/billing/catalog";
+
+const c = PRICING_CATALOG;
+
 const faqs = [
   {
     q: "What is Vantage?",
@@ -27,7 +31,7 @@ const faqs = [
   },
   {
     q: "How much does Vantage cost?",
-    a: "The complete non-AI competition core is free, with bring-your-own-key or local AI. Paid plans: Individual Pro $79/mo ($50 API), Individual Max $119/mo ($85 API), Team Pro $229/mo ($150 pooled API), Team Max $449/mo ($300 pooled API). Usage is debited at provider list rates with no Vantage markup; after the included allowance, usage hard-stops unless you buy Usage Credits or enable PAYG. Access ($55/mo) unlocks managed routing without a large included bucket. There is no per-seat student pricing.",
+    a: `The complete non-AI Soft-UI competition core is free, with bring-your-own-key or local AI. Paid plans: Individual Pro $${c.individual_pro.monthlyUsd}/mo ($${c.individual_pro.includedAllowanceUsd} API), Individual Max $${c.individual_max.monthlyUsd}/mo ($${c.individual_max.includedAllowanceUsd} API), Team Pro $${c.team_pro.monthlyUsd}/mo ($${c.team_pro.includedAllowanceUsd} pooled API), Team Max $${c.team_max.monthlyUsd}/mo ($${c.team_max.includedAllowanceUsd} pooled API). Usage is debited at provider list rates with no Vantage markup; after the included allowance, usage hard-stops unless you buy Usage Credits or enable PAYG. Access ($${c.access.monthlyUsd}/mo) unlocks managed routing without a large included bucket. Week team trial: ${TEAM_TRIAL_DAYS} days / $${c.team_trial.includedAllowanceUsd} API. There is no per-seat student pricing.`,
   },
   {
     q: "Is our team's data private?",

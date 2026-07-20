@@ -9,9 +9,28 @@ import {
   evaluateManagedUsage,
   isPlanPeriodActive,
   processStripeEvent,
+  PRICING_CATALOG,
+  CATALOG_SERVICE_MULTIPLIER,
+  raisedPricingStrip,
+  raisedPricingSummaryLine,
 } from "../src";
 import type { PoolClient } from "@neondatabase/serverless";
 import type Stripe from "stripe";
+
+describe("ops-capability pricing catalog", () => {
+  it("keeps raised Soft-UI / ops ladder and 1.0× credits aligned", () => {
+    expect(CATALOG_SERVICE_MULTIPLIER).toBe(1);
+    expect(DEFAULT_SERVICE_MULTIPLIER).toBe(1);
+    expect(PRICING_CATALOG.access.monthlyUsd).toBe(79);
+    expect(PRICING_CATALOG.individual_pro).toMatchObject({ monthlyUsd: 129, includedAllowanceUsd: 75 });
+    expect(PRICING_CATALOG.individual_max).toMatchObject({ monthlyUsd: 189, includedAllowanceUsd: 130 });
+    expect(PRICING_CATALOG.team_pro).toMatchObject({ monthlyUsd: 349, includedAllowanceUsd: 225 });
+    expect(PRICING_CATALOG.team_max).toMatchObject({ monthlyUsd: 649, includedAllowanceUsd: 450 });
+    expect(PRICING_CATALOG.team_trial.includedAllowanceUsd).toBe(45);
+    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$79", "$129 / $189", "$349 / $649"]);
+    expect(raisedPricingSummaryLine()).toMatch(/Access \$79/);
+  });
+});
 
 describe("managed allowance and opt-in PAYG", () => {
   const base = {
