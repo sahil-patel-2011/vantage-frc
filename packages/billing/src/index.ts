@@ -86,11 +86,31 @@ export {
   type UsageCutoffReason,
 } from "./usage-cutoff";
 
+export {
+  SPONSORED_PROMO_ENDS_AT,
+  SPONSORED_PROMO_EXPIRED_NOTIFICATION,
+  SPONSORED_PROMO_TEAM_NUMBER,
+  evaluateSponsoredPromoEligibility,
+  hasAnySponsoredProviderEnvKey,
+  isSponsoredPromoWindowOpen,
+  loadOrgTeamNumber,
+  maybeNotifySponsoredPromoExpired,
+  resolveSponsoredPromoForOrg,
+  sponsoredPromoEndsAtIso,
+  sponsoredPromoExpiredMessage,
+  type SponsoredPromoStatus,
+} from "./sponsored-promo";
+
 import {
   UsageHardCutoffError,
   classifyMeteredAiError,
   meteredAiErrorResponse,
 } from "./usage-cutoff";
+import {
+  maybeNotifySponsoredPromoExpired,
+  resolveSponsoredPromoForOrg,
+  sponsoredPromoEndsAtIso,
+} from "./sponsored-promo";
 
 /** Stable machine codes for Soft-UI + API clients — never silent overage. */
 export type UsageCutoffCode =
@@ -181,10 +201,10 @@ export type UsageReceipt<T> = {
 };
 
 /**
- * Platform-billed, org BYOK, OpenAI-compatible local gateway, or local CLI.
- * `byo` / `local` / `local_cli` never debit hosted Usage Credits.
+ * Platform-billed, org BYOK, OpenAI-compatible local gateway, local CLI, or
+ * platform-sponsored promo pool (`sponsored` — $0 Vantage charge).
  */
-export type MeterKeySource = "platform" | "byo" | "local" | "local_cli";
+export type MeterKeySource = "platform" | "byo" | "local" | "local_cli" | "sponsored";
 
 export type MeteredAIInput<T> = {
   client: PoolClient;
@@ -202,6 +222,7 @@ export type MeteredAIInput<T> = {
   /**
    * When `local_cli`, Vantage never charges and ledger cost is forced to 0.
    * When `byo` / `local`, skip hosted credit caps (caller already resolved org keys).
+   * When `sponsored`, platform promo pool — ledger cost 0, no credit debit.
    * When omitted, prefer configured org BYOK/local over hosted platform for any tier.
    */
   keySource?: MeterKeySource;
@@ -265,7 +286,7 @@ export async function detectOrgByokKeySource(
 }
 
 function isExternalKeySource(source: MeterKeySource): boolean {
-  return source === "byo" || source === "local" || source === "local_cli";
+  return source === "byo" || source === "local" || source === "local_cli" || source === "sponsored";
 }
 type LockedCreditWallet={accountId:string;included:number;purchased:number;gifted:number;serviceMultiplier:number;entitlementSnapshot:Record<string,unknown>;planCode:string};
 async function lockCreditWallet<T>(input:MeteredAIInput<T>,keySource:MeterKeySource):Promise<LockedCreditWallet|null>{
@@ -559,14 +580,24 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   if (account.kill_switch) throw new BillingDisabledError();
 
   let keySource: MeterKeySource;
-  if (input.keySource === "byo" || input.keySource === "local") {
+  if (input.keySource === "byo" || input.keySource === "local" || input.keySource === "sponsored") {
     keySource = input.keySource;
   } else {
     const detected = await detectOrgByokKeySource(input.client, input.orgId);
     if (detected) {
       keySource = detected;
     } else if (account.tier === "free") {
-      throw new Error("Free organizations must configure a BYO AI key");
+      const promo = await resolveSponsoredPromoForOrg(input.client, input.orgId);
+      if (promo.eligible) {
+        keySource = "sponsored";
+      } else if (promo.reason === "promo_expired") {
+        await maybeNotifySponsoredPromoExpired(input.client, input.orgId, promo);
+        throw new CommitAndThrowError(
+          new UsageHardCutoffError("sponsored_promo_expired"),
+        );
+      } else {
+        throw new Error("Free organizations must configure a BYO AI key");
+      }
     } else {
       keySource = "platform";
     }
@@ -581,6 +612,16 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       [input.orgId],
     );
     if (!key.rows.length) throw new Error("Free organizations must configure a BYO AI key");
+  }
+  if (keySource === "sponsored") {
+    const promo = await resolveSponsoredPromoForOrg(input.client, input.orgId);
+    if (!promo.eligible) {
+      if (promo.reason === "promo_expired") {
+        await maybeNotifySponsoredPromoExpired(input.client, input.orgId, promo);
+        throw new CommitAndThrowError(new UsageHardCutoffError("sponsored_promo_expired"));
+      }
+      throw new Error(promo.message || "Sponsored AI is not available for this organization");
+    }
   }
   const creditWallet = await lockCreditWallet(input, keySource);
   await enforceApiBudgets(input, account.tier, keySource);
@@ -665,7 +706,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
 
   const receipt = await input.invoke(keySource);
   if (receipt.costUsd < 0) throw new Error("Provider returned a negative cost");
-  const ledgerCostUsd = keySource === "local" ? 0 : receipt.costUsd;
+  const ledgerCostUsd = keySource === "local" || keySource === "sponsored" ? 0 : receipt.costUsd;
   await input.client.query(
     `INSERT INTO ai_usage_events
       (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
@@ -687,7 +728,17 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       JSON.stringify({
         ...(input.metadata ?? {}),
         ...(isExternalKeySource(keySource)
-          ? { vantageChargeUsd: 0, path: keySource }
+          ? {
+              vantageChargeUsd: 0,
+              path: keySource,
+              ...(keySource === "sponsored"
+                ? {
+                    fundingMode: "sponsored",
+                    providerCostUsd: receipt.costUsd,
+                    promoEndsAt: sponsoredPromoEndsAtIso(),
+                  }
+                : {}),
+            }
           : {}),
       }),
       receipt.cacheReadInputTokens ?? 0,

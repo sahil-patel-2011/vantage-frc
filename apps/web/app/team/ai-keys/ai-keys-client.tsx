@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
+import { SponsoredPromoBanner } from "../../../components/sponsored-promo-banner";
 import { hubHref } from "../../../lib/nav/hubs";
 import {
   AI_KEYS_RELATED_INCLUDE,
@@ -477,6 +478,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       </PageHeader>
 
       {orgId ? <RelatedStrip orgId={orgId} /> : null}
+      {orgId ? <SponsoredPromoBanner orgId={orgId} /> : null}
 
       {shell === "loading" ? (
         <div aria-busy="true" aria-label="Loading AI API keys">

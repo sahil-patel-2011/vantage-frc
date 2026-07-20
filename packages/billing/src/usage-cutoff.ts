@@ -11,6 +11,7 @@ export type UsageCutoffReason =
   | "credit_cap"
   | "managed_allowance_exhausted"
   | "sponsored_allowance_exhausted"
+  | "sponsored_promo_expired"
   | "budget_limit"
   | "billing_disabled"
   | "policy_denied"
@@ -53,6 +54,10 @@ const CTA_BUDGETS: UsageCutoffCta = {
   href: "/team/budgets",
   label: "Review API budgets",
 };
+const CTA_AI_KEYS: UsageCutoffCta = {
+  href: "/team/ai-keys",
+  label: "Add AI API keys",
+};
 
 /** Thrown when managed allowance / PAYG gate refuses a platform-billed call. */
 export class UsageHardCutoffError extends Error {
@@ -80,6 +85,8 @@ export function cutoffMessage(reason: string): string {
       return "This organization has reached its Vantage AI credit limit.";
     case "sponsored_allowance_exhausted":
       return "Sponsored AI is exhausted for this period.";
+    case "sponsored_promo_expired":
+      return "Promotional sponsored AI for team 1111 has ended (2026-10-18). Add your own AI keys under Team → AI API keys, or upgrade for hosted AI.";
     case "budget_limit":
       return "An API budget limit was reached for this organization.";
     case "policy_denied":
@@ -99,6 +106,7 @@ function ctaFor(reason: string): UsageCutoffCta {
   if (reason.includes("daily_") || reason.includes("monthly_") || reason === "budget_limit") {
     return CTA_BUDGETS;
   }
+  if (reason === "sponsored_promo_expired") return CTA_AI_KEYS;
   if (reason === "managed_allowance_exhausted" || reason === "sponsored_allowance_exhausted") {
     return CTA_UPGRADE;
   }
@@ -188,12 +196,12 @@ export function classifyMeteredAiError(error: unknown): ClassifiedMeteredAiError
   }
 
   if (
-    /payg_not_enabled|insufficient_prepaid_balance|spend_cap|managed_allowance_exhausted|sponsored_allowance_exhausted/i.test(
+    /payg_not_enabled|insufficient_prepaid_balance|spend_cap|managed_allowance_exhausted|sponsored_allowance_exhausted|sponsored_promo_expired/i.test(
       message,
     )
   ) {
     const reason = message.match(
-      /payg_not_enabled|insufficient_prepaid_balance|spend_cap|managed_allowance_exhausted|sponsored_allowance_exhausted/i,
+      /payg_not_enabled|insufficient_prepaid_balance|spend_cap|managed_allowance_exhausted|sponsored_allowance_exhausted|sponsored_promo_expired/i,
     )?.[0]?.toLowerCase() ?? "payg_not_enabled";
     return {
       status: 402,

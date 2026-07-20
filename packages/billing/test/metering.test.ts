@@ -117,7 +117,7 @@ describe("serialized AI metering", () => {
   it("does not treat admin grants as silent included overage without PAYG", async () => {
     // Grants count as prepaid credits, not an expanded included cap.
     const { client } = paidClient(10, 10, 5);
-    const invoke = vi.fn(async (source: "platform" | "byo" | "local" | "local_cli") => ({
+    const invoke = vi.fn(async (source: "platform" | "byo" | "local" | "local_cli" | "sponsored") => ({
       value: "ok",
       promptTokens: 1,
       completionTokens: 1,
@@ -224,7 +224,7 @@ describe("serialized AI metering", () => {
         return { rows: [], rowCount: 1 };
       }
     } as unknown as PoolClient;
-    const invoke = vi.fn(async (source: "platform" | "byo" | "local" | "local_cli") => ({
+    const invoke = vi.fn(async (source: "platform" | "byo" | "local" | "local_cli" | "sponsored") => ({
       value: { ok: true },
       promptTokens: 10,
       completionTokens: 5,
@@ -281,7 +281,7 @@ describe("serialized AI metering", () => {
         return { rows: [], rowCount: 1 };
       },
     } as unknown as PoolClient;
-    const invoke = vi.fn(async (source: "platform" | "byo" | "local" | "local_cli") => ({
+    const invoke = vi.fn(async (source: "platform" | "byo" | "local" | "local_cli" | "sponsored") => ({
       value: "byok-ok",
       promptTokens: 5,
       completionTokens: 5,
@@ -308,7 +308,7 @@ describe("serialized AI metering", () => {
   it("keeps hosted platform metering when no BYOK is configured", async () => {
     const { client } = paidClient(1, 10);
     // paidClient returns empty for org_llm_keys / org_provider_configs → platform path
-    const invoke = vi.fn(async (source: "platform" | "byo" | "local" | "local_cli") => ({
+    const invoke = vi.fn(async (source: "platform" | "byo" | "local" | "local_cli" | "sponsored") => ({
       value: "hosted",
       promptTokens: 1,
       completionTokens: 1,

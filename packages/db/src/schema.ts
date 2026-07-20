@@ -44,7 +44,13 @@ export const billingTier = pgEnum("billing_tier", [
   "team",
   "enterprise",
 ]);
-export const keySource = pgEnum("key_source", ["platform", "byo", "local", "local_cli"]);
+export const keySource = pgEnum("key_source", [
+  "platform",
+  "byo",
+  "local",
+  "local_cli",
+  "sponsored",
+]);
 export const scoutSchemaType = pgEnum("scout_schema_type", ["match", "pit"]);
 export const scoutFormFieldType = pgEnum("scout_form_field_type", [
   "dropdown",

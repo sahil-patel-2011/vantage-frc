@@ -199,6 +199,7 @@ describe("resolveOrgChatAdapter", () => {
       () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+      () => ({ rowCount: 1, rows: [{ teamNumber: 254 }] }), // sponsored promo N/A
     ]);
 
     await expect(
@@ -208,5 +209,56 @@ describe("resolveOrgChatAdapter", () => {
         decrypt: async () => "unused",
       }),
     ).rejects.toThrow(/OpenAI, Anthropic, or Google key under Team/);
+  });
+
+  it("uses sponsored failover pool for team 1111 within promo window", async () => {
+    const prev = process.env.MISTRAL_API_KEY;
+    process.env.MISTRAL_API_KEY = "mistral-test-key";
+    try {
+      const client = fakeClient([
+        () => ({ rowCount: 0, rows: [] }),
+        () => ({ rowCount: 0, rows: [] }),
+        () => ({ rowCount: 0, rows: [] }),
+        () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+        () => ({ rowCount: 1, rows: [{ teamNumber: 1111 }] }),
+      ]);
+
+      const adapter = await resolveOrgChatAdapter(client as never, {
+        orgId: "org-1",
+        promptCachingEnabled: false,
+        decrypt: async () => "unused",
+      });
+
+      expect(adapter.provider.startsWith("sponsored")).toBe(true);
+    } finally {
+      if (prev === undefined) delete process.env.MISTRAL_API_KEY;
+      else process.env.MISTRAL_API_KEY = prev;
+    }
+  });
+
+  it("surfaces promo-expired message for team 1111 after the window", async () => {
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+      () => ({ rowCount: 1, rows: [{ teamNumber: 1111 }] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [] }),
+    ]);
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-20T12:00:00.000Z"));
+    try {
+      await expect(
+        resolveOrgChatAdapter(client as never, {
+          orgId: "org-1",
+          promptCachingEnabled: false,
+          decrypt: async () => "unused",
+        }),
+      ).rejects.toThrow(/Promotional sponsored AI for team 1111 ended/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
