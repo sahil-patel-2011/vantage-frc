@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { raisedPricingStrip } from "@vantage/billing/catalog";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import {
   AssistantPreview,
@@ -206,18 +207,12 @@ export default function FeaturesPage() {
               Legal: <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
             </p>
             <ul className="pricing-price-strip" aria-label="Raised monthly plan prices">
-              <li>
-                <span>Access</span>
-                <strong>$55</strong>
-              </li>
-              <li>
-                <span>Individual Pro / Max</span>
-                <strong>$79 / $119</strong>
-              </li>
-              <li>
-                <span>Team Pro / Max</span>
-                <strong>$229 / $449</strong>
-              </li>
+              {raisedPricingStrip().map((item) => (
+                <li key={item.id}>
+                  <span>{item.label}</span>
+                  <strong>{item.price}</strong>
+                </li>
+              ))}
             </ul>
           </div>
           <div className="pricing-preview-actions">

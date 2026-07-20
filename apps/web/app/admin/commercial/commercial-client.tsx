@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PRICING_CATALOG, TEAM_TRIAL_DAYS } from "@vantage/billing/catalog";
 type Org = { id:string;name:string;teamNumber:number;planCode:string|null;status:string|null;validUntil:string|null;creditBalance:string;modelCost:string };
 export default function CommercialClient() {
   const [orgs,setOrgs]=useState<Org[]>([]); const [orgId,setOrgId]=useState(""); const [message,setMessage]=useState(""); const [ok,setOk]=useState(false);
@@ -8,10 +9,11 @@ export default function CommercialClient() {
   async function load(){const r=await fetch("/api/admin/commercial");const d=await r.json();setOrgs(d.organizations??[]);setMargin(d.margin??null);if(!r.ok){setMessage(d.error);setOk(false);}}
   useEffect(()=>{void load();},[]);
   async function post(body:unknown){const r=await fetch("/api/admin/commercial",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});const d=await r.json();setMessage(r.ok?"Commercial ledger updated.":d.error);setOk(r.ok);if(r.ok)await load();}
+  const trialApi = PRICING_CATALOG.team_trial.includedAllowanceUsd;
   return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / COMMERCIAL CONTROL</span><h1>Entitlements + credits</h1></div><a href="/admin/models">Model routing →</a></header>
     {message&&<p className={`telemetry-status${ok?" success":""}`}>{message}</p>}<section className="admin-grid"><section className="intel-panel"><span className="eyebrow">ORGANIZATIONS</span>{orgs.map((o)=><button className="similar-team" key={o.id} onClick={()=>setOrgId(o.id)}><b>#{o.teamNumber}</b><span>{o.name}<small>{o.planCode??"Free"} · {o.status??"no entitlement"}</small></span><em>${Number(o.creditBalance).toFixed(2)} credits</em></button>)}</section>
       <section className="intel-panel"><span className="eyebrow">AUDITED ACTIONS</span><label>Selected organization<select value={orgId} onChange={(e)=>setOrgId(e.target.value)}><option value="">Choose team</option>{orgs.map((o)=><option key={o.id} value={o.id}>#{o.teamNumber} {o.name}</option>)}</select></label>
-        <div className="intel-actions"><button disabled={!orgId} onClick={()=>void post({action:"trial",orgId,planCode:"team_trial"})}>Grant 7-day team trial ($30 API)</button><button disabled={!orgId} onClick={()=>void post({action:"trial",orgId,planCode:"individual_pro"})}>Grant 7-day Individual Pro trial</button><button disabled={!orgId} onClick={()=>confirm("Revoke the active trial now?")&&void post({action:"revoke-trial",orgId})}>Revoke trial</button></div>
+        <div className="intel-actions"><button disabled={!orgId} onClick={()=>void post({action:"trial",orgId,planCode:"team_trial"})}>Grant {TEAM_TRIAL_DAYS}-day team trial (${trialApi} API)</button><button disabled={!orgId} onClick={()=>void post({action:"trial",orgId,planCode:"individual_pro"})}>Grant {TEAM_TRIAL_DAYS}-day Individual Pro trial</button><button disabled={!orgId} onClick={()=>confirm("Revoke the active trial now?")&&void post({action:"revoke-trial",orgId})}>Revoke trial</button></div>
         <label>Gift amount USD<input type="number" min="0.01" step="0.01" value={gift.amountUsd} onChange={(e)=>setGift({...gift,amountUsd:e.target.value})}/></label><label>Required reason<input value={gift.reason} onChange={(e)=>setGift({...gift,reason:e.target.value})}/></label><button className="primary-action" disabled={!orgId} onClick={()=>void post({action:"gift",orgId,...gift})}>Gift credits + notify</button>
       </section></section>
     {margin&&<MarginPanel value={margin}/>}
