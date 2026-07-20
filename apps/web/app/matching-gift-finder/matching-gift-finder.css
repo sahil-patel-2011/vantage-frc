@@ -1,0 +1,15 @@
+/* Soft-UI Matching Gift Finder — never DEMO matches or pledges. */
+.mgf-page{display:grid;gap:16px}
+.mgf-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.mgf-related{display:flex;flex-wrap:wrap;gap:8px}
+.mgf-next-actions{margin:0}
+.mgf-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.mgf-panel{display:grid;gap:12px}
+.mgf-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.mgf-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.mgf-tip{margin:0}
+.mgf-status{margin:0}
+@media(max-width:900px){
+  .mgf-header-actions{justify-content:flex-start}
+  .mgf-next-actions li,.mgf-setup-steps li{flex-direction:column;align-items:stretch}
+}

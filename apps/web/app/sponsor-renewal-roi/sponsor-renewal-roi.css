@@ -1,0 +1,22 @@
+/* Soft-UI Sponsor Renewal ROI — never DEMO churn scores. */
+.srr-page{display:grid;gap:16px}
+.srr-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.srr-filter{display:flex;gap:6px;align-items:center}
+.srr-related{display:flex;flex-wrap:wrap;gap:8px}
+.srr-next-actions{margin:0}
+.srr-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.srr-list{display:grid;gap:16px}
+.srr-panel{display:grid;gap:12px}
+.srr-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.srr-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.srr-tip{margin:0}
+.srr-card{display:grid;gap:12px}
+.srr-card-head{display:flex;justify-content:space-between;gap:12px}
+.srr-score{text-align:right}
+.srr-score-value{font-size:20px;font-weight:600;margin-top:4px}
+.srr-components{display:grid;gap:8px}
+.srr-report-sections{display:grid;gap:6px;margin-top:8px}
+@media(max-width:900px){
+  .srr-header-actions{justify-content:flex-start}
+  .srr-next-actions li,.srr-setup-steps li{flex-direction:column;align-items:stretch}
+}
