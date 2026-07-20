@@ -1790,6 +1790,12 @@
   to{opacity:1;transform:none}
 }
 
+@media(max-width:1100px){
+  .marketing-lux .lux-hub-strip,
+  .marketing-lux .product-glances-hubs{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .marketing-lux .product-glance{border-bottom:1px solid var(--m-line)}
+  .marketing-lux .product-glance:nth-child(3n){border-right:0}
+}
 @media(max-width:900px){
   .marketing-lux .lux-hero{
     grid-template-columns:1fr;min-height:auto;gap:32px;

@@ -135,11 +135,11 @@ export function HeroProductVisual() {
                 </li>
                 <li>
                   <span>Season Planning</span>
-                  <em>Team · More</em>
+                  <em>Team</em>
                 </li>
                 <li>
                   <span>AI API keys</span>
-                  <em>/team/ai-keys</em>
+                  <em>AI</em>
                 </li>
               </ul>
             </div>
