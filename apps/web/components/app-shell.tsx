@@ -648,7 +648,7 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
       <a className="soft-skip-link" href="#main-content">
         Skip to main content
       </a>
-      <header className="soft-topbar">
+      <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
         {showBack ? (
           <div className="soft-page-head">
             <button className="soft-icon-btn" type="button" aria-label="Go back" onClick={() => router.back()}>
@@ -710,7 +710,12 @@ export default function AppShell({ themeControl }: { themeControl: React.ReactNo
               {initial}
             </button>
             {accountMenuOpen ? (
-              <div className="soft-account-pop" role="menu" aria-label="Account">
+              <div
+                className="soft-account-pop"
+                role="menu"
+                aria-label="Account"
+                onClick={(event) => event.stopPropagation()}
+              >
                 <div className="soft-account-pop-head">
                   <strong>{me.name ?? "Signed-in user"}</strong>
                   <span>{me.email ?? "Account"}</span>
