@@ -24,7 +24,7 @@ export default function PricingPage() {
   const teamMax = PRICING_CATALOG.team_max;
 
   return (
-    <div className="marketing-site marketing-v2 marketing-dense marketing-pro">
+    <div className="marketing-site marketing-v2 marketing-dense marketing-pro marketing-quiet">
       <SiteHeader />
       <main className="pricing-page">
         <section className="pricing-hero brand-route-hero">

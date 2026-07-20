@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../../components/marketing/site-header";
-import { CodePreview } from "../../../components/marketing/product-demos";
 
 export const metadata: Metadata = {
   title: "FRC Code Builder / Debugger — Vantage",
@@ -23,7 +22,7 @@ const capabilities = [
   {
     id: "03",
     title: "Suggest safer habits",
-    body: "Show WPILib-aligned alternatives: timestamps, stateful commands, typed control requests, and reviewed hardware maps—not a opaque one-click rewrite.",
+    body: "Show WPILib-aligned alternatives: timestamps, stateful commands, typed control requests, and reviewed hardware maps—not an opaque one-click rewrite.",
   },
   {
     id: "04",
@@ -34,108 +33,58 @@ const capabilities = [
 
 export default function CodeFeaturePage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense">
+    <div className="marketing-site marketing-v2 marketing-dense marketing-quiet">
       <SiteHeader />
       <main className="route-page">
-        <header className="route-hero split-hero code-route-hero">
-          <div>
-            <div className="showcase-kicker">
-              <span className="brand-chip">Vantage</span>
-              <span className="section-id">FRC CODE COACH · AVAILABLE</span>
-            </div>
-            <h1>Flag risky robot-code patterns—then teach the safer habit.</h1>
-            <p>
-              Vantage is a learning coach for FRC software practice: it reviews repository input for robot-loop and
-              hardware risks, explains why those patterns fail under match pressure, and shows better approaches.
-              Proposed changes stay human-approved unified diffs. It does not write your whole robot for you.
-            </p>
+        <header className="route-hero brand-route-hero">
+          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
+          <span className="section-id">FRC CODE COACH</span>
+          <h1>Flag risky robot-code patterns—then teach the safer habit.</h1>
+          <p>
+            A learning coach for FRC software: reviews repository input for robot-loop and hardware risks, explains why
+            those patterns fail under match pressure, and shows better approaches. Changes stay human-approved diffs.
+          </p>
+          <div className="route-hero-actions">
             <a className="button primary" href="/signin">
-              Sign in to use Code Builder / Debugger
+              Sign in to use Code
+            </a>
+            <a className="button secondary" href="/features">
+              Product overview
             </a>
           </div>
-          <CodePreview />
         </header>
 
-        <section className="code-capability-grid" aria-labelledby="code-capabilities-title">
+        <section className="ops-preview-band product-show" aria-labelledby="code-capabilities-title">
           <header>
             <span className="section-id">WHAT IT COVERS</span>
-            <h2 id="code-capabilities-title">More than a findings panel.</h2>
-            <p>Review, explain, suggest, and assist—always with evidence and an approval gate.</p>
+            <h2 id="code-capabilities-title">Review, explain, suggest—always with an approval gate.</h2>
           </header>
-          <div>
+          <div className="product-glances">
             {capabilities.map((item) => (
-              <article key={item.id}>
-                <b>{item.id}</b>
+              <article className="product-glance" key={item.id}>
                 <h3>{item.title}</h3>
                 <p>{item.body}</p>
               </article>
             ))}
+            <p className="product-glances-note">
+              Marketing copy only. Signed-in Code stays empty until a repository and review context exist.
+            </p>
           </div>
         </section>
 
-        <section className="code-lesson-band" aria-labelledby="code-lesson-title">
+        <section className="pricing-preview">
           <div>
-            <span className="section-id">TEACH, DON&apos;T JUST DO</span>
-            <h2 id="code-lesson-title">A coach walks through the failure, then the fix.</h2>
-            <p>
-              Mentors stay in the loop. Students see the risky line, the match-day consequence, and a pattern they
-              can reuse on the next subsystem—not an unreviewable bulk rewrite.
-            </p>
+            <span className="section-id">NEXT</span>
+            <h2>Join the waitlist or explore the product.</h2>
           </div>
-          <ol className="code-lesson-flow">
-            <li>
-              <b>01</b>
-              <div>
-                <h3>Flag</h3>
-                <p>
-                  <code>Timer.delay</code> inside <code>periodic()</code> blocks the robot thread.
-                </p>
-              </div>
-            </li>
-            <li>
-              <b>02</b>
-              <div>
-                <h3>Explain</h3>
-                <p>Command scheduling, sensor reads, and safety checks stall for the entire delay.</p>
-              </div>
-            </li>
-            <li>
-              <b>03</b>
-              <div>
-                <h3>Correct pattern</h3>
-                <p>Use timestamps or stateful commands so the loop keeps running while work advances on a schedule.</p>
-              </div>
-            </li>
-          </ol>
-        </section>
-
-        <section className="detail-proof-grid">
-          <article>
-            <b>01</b>
-            <h2>FRC-specific findings</h2>
-            <p>Severity, rule name, file/line evidence, and required robot-safe checks travel with every review.</p>
-          </article>
-          <article>
-            <b>02</b>
-            <h2>Versioned artifacts</h2>
-            <p>Review output and code proposals store as organization-scoped artifacts with source provenance.</p>
-          </article>
-          <article>
-            <b>03</b>
-            <h2>No autonomous robot deploy</h2>
-            <p>
-              Teams still run tests, code review, code-freeze policy, and deployment through their own tooling.
-            </p>
-          </article>
-        </section>
-
-        <section className="technical-note">
-          <span className="section-id">BOUNDARY</span>
-          <h2>AI assistance is a coach—not engineering certification.</h2>
-          <p>
-            Suggested patterns and diffs are starting points for learning and review. Teams remain responsible for
-            correctness, safety, rules compliance, and what runs on a robot.
-          </p>
+          <div className="pricing-preview-actions">
+            <a className="button primary" href="/#waitlist">
+              Join waitlist
+            </a>
+            <a className="button secondary" href="/pricing">
+              Pricing
+            </a>
+          </div>
         </section>
       </main>
       <SiteFooter />

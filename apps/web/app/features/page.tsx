@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { raisedPricingStrip } from "@vantage/billing/catalog";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
-import {
-  AssistantPreview,
-  CadPreview,
-  CodePreview,
-  StrategyPreview,
-} from "../../components/marketing/product-demos";
+import { ProductGlances } from "../../components/marketing/product-glances";
 
 export const metadata: Metadata = {
   title: "Product — Vantage",
@@ -54,7 +49,7 @@ const surfaces: {
   },
   {
     title: "Strategy Soft-UI tools",
-    copy: "Win/loss, what-if, playbooks, and Soft-UI pick desk (draft, collab, pick clock) from real event data—empty until metrics and scout facts exist.",
+    copy: "Win/loss, what-if, playbooks, and Soft-UI pick desk from real event data—empty until metrics and scout facts exist.",
     status: "Available",
   },
   {
@@ -92,16 +87,15 @@ function StatusBadge({ status }: { status: Status }) {
 
 export default function FeaturesPage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense marketing-pro">
+    <div className="marketing-site marketing-v2 marketing-dense marketing-pro marketing-quiet">
       <SiteHeader />
       <main className="route-page">
         <header className="route-hero brand-route-hero">
           <p className="brand-hero-wordmark route-wordmark">Vantage</p>
           <h1>Shipped competition ops. Honest status labels.</h1>
           <p>
-            From custom scouting forms and voice notes through Soft-UI hubs, strategy pick tools, Business fundraising,
-            kickoff CAD, and hard AI cutoffs—previews use labeled fixtures; live product stays empty until real data
-            exists.
+            From scouting and Event Day through Soft-UI hubs, strategy, Business fundraising, kickoff CAD, and hard AI
+            cutoffs—live product stays empty until real data exists.
           </p>
           <div className="route-hero-actions">
             <a className="button primary" href="/#waitlist">
@@ -111,81 +105,26 @@ export default function FeaturesPage() {
               Pricing
             </a>
           </div>
-          <div className="status-legend route-status-legend" aria-label="Status legend">
-            <StatusBadge status="Available" />
-            <StatusBadge status="Shipping" />
-            <StatusBadge status="Setup required" />
-          </div>
         </header>
 
-        <section className="gallery-feature">
-          <div>
-            <small className="section-id">FRC ASSISTANT</small>
-            <StatusBadge status="Available" />
-            <h2>Competition ops and intel in one grounded thread.</h2>
-            <p>
-              Strategy, matchups, opponent history, and robot capabilities—fed by scouting and public metrics with
-              provenance intact. Empty workspace stays empty.
-            </p>
-            <a className="text-link" href="/features/strategy#frc-assistant">
-              Open Assistant &amp; Strategy →
-            </a>
-          </div>
-          <AssistantPreview />
-        </section>
-
-        <section className="gallery-feature reverse">
-          <div>
-            <small className="section-id">STRATEGY</small>
-            <StatusBadge status="Available" />
-            <h2>Inspectable win/loss, then a playbook the drive team can use.</h2>
-            <p>
-              Probabilities, confidence, factors, what-if assumptions, and pick lists weighted with your synced scout
-              observations—not volume alone.
-            </p>
-            <a className="text-link" href="/features/strategy">
-              Open strategy detail →
-            </a>
-          </div>
-          <StrategyPreview />
-        </section>
-
-        <section className="gallery-feature">
-          <div>
-            <small className="section-id">CAD</small>
-            <StatusBadge status="Setup required" />
-            <h2>Confirm the brief before geometry changes.</h2>
-            <p>
-              Kickoff and strategy constraints become an action plan with human approval on each step—Onshape OAuth or a
-              paired Fusion/terminal relay.
-            </p>
-            <a className="text-link" href="/features/cad">
-              Open CAD detail →
-            </a>
-          </div>
-          <CadPreview />
-        </section>
-
-        <section className="gallery-feature reverse">
-          <div>
-            <small className="section-id">CODE</small>
-            <StatusBadge status="Available" />
-            <h2>Flag robot-code risk. Teach the safer habit.</h2>
-            <p>
-              Repository-aware WPILib reviews return human-approved diffs. Vantage never claims to deploy code to a
-              robot.
-            </p>
-            <a className="text-link" href="/features/code">
-              Open code detail →
-            </a>
-          </div>
-          <CodePreview />
+        <section className="ops-preview-band product-show" aria-labelledby="product-show-title">
+          <header>
+            <span className="section-id">PRODUCT</span>
+            <h2 id="product-show-title">Simple looks at the work that matters.</h2>
+            <p>Marketing previews only—not live dashboards.</p>
+          </header>
+          <ProductGlances />
         </section>
 
         <section className="supporting-gallery" id="supporting-ops">
           <header>
             <span className="section-id">AROUND THE SEASON</span>
             <h2>The rest of the product, labeled honestly.</h2>
+            <div className="status-legend route-status-legend" aria-label="Status legend">
+              <StatusBadge status="Available" />
+              <StatusBadge status="Shipping" />
+              <StatusBadge status="Setup required" />
+            </div>
           </header>
           <div className="supporting-status-grid">
             {surfaces.map((item) => (
@@ -203,8 +142,8 @@ export default function FeaturesPage() {
             <span className="section-id">NEXT</span>
             <h2>Join the waitlist or review raised plans.</h2>
             <p>
-              Free competition core with BYOK. Managed API at list rates, then hard stop unless Credits or PAYG.
-              Legal: <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
+              Free competition core with BYOK. Managed API at list rates, then hard stop unless Credits or PAYG. Legal:{" "}
+              <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
             </p>
             <ul className="pricing-price-strip" aria-label="Raised monthly plan prices">
               {raisedPricingStrip().map((item) => (

@@ -1,11 +1,7 @@
 import { WaitlistForm } from "../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
-import {
-  CadPreview,
-  ScoutPreview,
-  StrategyPreview,
-} from "../components/marketing/product-demos";
 import { FAQ } from "../components/marketing/faq";
+import { HeroProductVisual, ProductGlances } from "../components/marketing/product-glances";
 import { raisedPricingStrip, raisedPricingSummaryLine } from "@vantage/billing/catalog";
 
 type Status = "Available" | "Shipping" | "Setup required";
@@ -121,48 +117,27 @@ function StatusBadge({ status }: { status: Status }) {
 
 export default function Home() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense marketing-pro">
+    <div className="marketing-site marketing-v2 marketing-dense marketing-pro marketing-quiet">
       <SiteHeader />
       <main>
-        <section className="brand-hero brand-hero-pro" aria-labelledby="brand-hero-title">
-          <div className="brand-hero-plane" aria-hidden="true">
-            <div className="brand-hero-grid" />
-            <div className="brand-hero-field">
-              <span />
-              <span />
-              <span />
-            </div>
-            <svg className="brand-hero-mark" viewBox="0 0 120 120" fill="none">
-              <path d="M18 22h14l36 68 36-68h14L68 108z" fill="currentColor" opacity=".18" />
-              <path d="M18 46h14l36 42-8 14zM18 70h14l28 28-8 14z" fill="currentColor" />
-              <rect x="60" y="88" width="12" height="12" fill="currentColor" />
-            </svg>
-          </div>
+        <section className="brand-hero brand-hero-light" aria-labelledby="brand-hero-title">
           <div className="brand-hero-copy">
             <p className="brand-hero-wordmark">Vantage</p>
-            <h1 id="brand-hero-title">Competition operations for FRC teams—shipped, not vapor.</h1>
+            <h1 id="brand-hero-title">Competition operations for FRC teams.</h1>
             <p>
-              Scout with trust, run Event Day, move kickoff into CAD, manage logistics and fundraising, keep knowledge
-              durable, and meter AI under one invite-only organization.
+              One shared season for scouting, Event Day, strategy, CAD, logistics, and metered AI—invite-only, with
+              honest empty states.
             </p>
             <div className="actions">
               <a className="button primary" href="#waitlist">
                 Join the waitlist
               </a>
-              <a className="button secondary" href="#capabilities">
-                See what&apos;s available
+              <a className="button secondary" href="/pricing">
+                View pricing
               </a>
             </div>
           </div>
-        </section>
-
-        <section className="status-legend-band" aria-label="Feature status legend">
-          <StatusBadge status="Available" />
-          <span>Works in the product today</span>
-          <StatusBadge status="Shipping" />
-          <span>In active build; not claimed as complete</span>
-          <StatusBadge status="Setup required" />
-          <span>Needs connector or admin config</span>
+          <HeroProductVisual />
         </section>
 
         <section className="product-thesis thesis-rule" id="capabilities" aria-labelledby="thesis-title">
@@ -170,19 +145,34 @@ export default function Home() {
           <h2 id="thesis-title">One shared season—not five tabs and a group chat.</h2>
           <p>
             Vantage connects scouting, day-of ops, build, travel, fundraising, knowledge, and metered AI under the same
-            organization and active event. Empty context stays empty. Approvals stay human. Status badges below are
-            deliberate.
+            organization and active event. Empty context stays empty. Approvals stay human.
           </p>
+        </section>
+
+        <section className="ops-preview-band product-show" aria-labelledby="proof-title">
+          <header>
+            <span className="section-id">IN THE PRODUCT</span>
+            <h2 id="proof-title">Clear surfaces. No dashboard clutter.</h2>
+            <p>Three calm looks at how teams actually work in Vantage.</p>
+          </header>
+          <ProductGlances />
         </section>
 
         <section className="capability-overview" aria-labelledby="cap-title">
           <header>
             <span className="section-id">CAPABILITIES</span>
-            <h2 id="cap-title">Real surfaces teams already use.</h2>
+            <h2 id="cap-title">What ships today.</h2>
             <p>
-              These are product routes and workflows—not a roadmap slide. Labels match what is live versus still
-              shipping.
+              Product routes and workflows—not a roadmap slide. Status labels match what is live versus still shipping.
             </p>
+            <div className="status-legend" aria-label="Feature status legend">
+              <StatusBadge status="Available" />
+              <span className="status-legend-note">Works today</span>
+              <StatusBadge status="Shipping" />
+              <span className="status-legend-note">In active build</span>
+              <StatusBadge status="Setup required" />
+              <span className="status-legend-note">Needs connector</span>
+            </div>
           </header>
           <div className="capability-grid">
             {capabilities.map((item) => (
@@ -195,31 +185,14 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="ops-preview-band" aria-labelledby="proof-title">
-          <header>
-            <span className="section-id">IN THE PRODUCT</span>
-            <h2 id="proof-title">Labeled previews of the loop that matters.</h2>
-            <p>
-              Deterministic demo fixtures for marketing only. Signed-in surfaces stay empty until real workspace, event,
-              and data exist.
-            </p>
-          </header>
-          <div className="ops-preview-grid">
-            <ScoutPreview />
-            <StrategyPreview />
-            <CadPreview />
-          </div>
-        </section>
-
         <section className="hub-band" aria-labelledby="hubs-title">
           <header>
             <span className="section-id">HUBS</span>
             <h2 id="hubs-title">Soft-UI hubs match how teams work.</h2>
             <p>
-              Five Soft-UI hubs group competition (including form builder and voice notes), team ops, business,
-              build, and AI—so members land where their job actually lives.
+              Five hubs group competition, team ops, business, build, and AI—so members land where their job actually
+              lives.
             </p>
-            <StatusBadge status="Available" />
           </header>
           <div className="hub-grid">
             {hubs.map((hub) => (
@@ -255,7 +228,7 @@ export default function Home() {
                 <li>Event Day / My Day for shared and personal work</li>
                 <li>Soft-UI Business hub for sponsors, grants, and orders</li>
                 <li>Kickoff → Soft-UI strategy/picks → approval-gated CAD</li>
-                <li>Assistant grounded and source-labeled; hard AI cutoffs; tool graph still shipping</li>
+                <li>Assistant grounded and source-labeled; hard AI cutoffs</li>
               </ul>
               <p>One continuous loop—with honest empty states and human gates.</p>
             </article>
@@ -298,8 +271,8 @@ export default function Home() {
             <span className="section-id">EARLY ACCESS</span>
             <h2>Put one operational picture in front of the whole team.</h2>
             <p>
-              Join the prelaunch list—terms acceptance is required. Account verification and administrator-created
-              team access remain separate launch steps. Raised plans: {raisedPricingSummaryLine()} on{" "}
+              Join the prelaunch list—terms acceptance is required. Account verification and administrator-created team
+              access remain separate launch steps. Raised plans: {raisedPricingSummaryLine()} on{" "}
               <a href="/pricing">pricing</a>. Read <a href="/terms">terms</a> and <a href="/privacy">privacy</a>.
             </p>
           </div>
