@@ -11,7 +11,8 @@ export type CutoffReason =
   | "spend_cap"
   | "org_budget"
   | "kill_switch"
-  | "payg_required";
+  | "payg_required"
+  | "sponsored_promo_expired";
 
 export type UsageCutoffSnapshot = {
   planCode: string | null;
@@ -36,7 +37,7 @@ export type UsageCutoffAlert = {
 };
 
 export type CutoffCta = {
-  id: "credits" | "payg" | "upgrade" | "budgets" | "pricing" | "chat" | "account";
+  id: "credits" | "payg" | "upgrade" | "budgets" | "pricing" | "chat" | "account" | "ai-keys";
   label: string;
   /** Checkout action when Stripe is wired; otherwise UI falls back to /pricing. */
   checkoutAction?: "credits" | "payg" | "subscription";
@@ -63,6 +64,10 @@ export function cutoffAccountHref(orgId?: string | null): string {
   return withOrgHref("/account", orgId);
 }
 
+export function cutoffAiKeysHref(orgId?: string | null): string {
+  return hubHref("/ai", "ai-keys", orgId);
+}
+
 /** Machine codes returned by meteredAI / evaluateManagedUsage / budget denials. */
 export const CUTOFF_ERROR_CODES = [
   "usage_hard_cutoff",
@@ -74,6 +79,7 @@ export const CUTOFF_ERROR_CODES = [
   "kill_switch",
   "org.kill_switch",
   "sponsored_allowance_exhausted",
+  "sponsored_promo_expired",
   "budget_limit_exceeded",
   "billing_disabled",
 ] as const;
@@ -231,7 +237,14 @@ export function evaluateUsageCutoff(snapshot: UsageCutoffSnapshot): UsageCutoffA
 export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] {
   const budgetsHref = cutoffBudgetsHref(orgId);
   const pricingHref = cutoffPricingHref(orgId);
+  const aiKeysHref = cutoffAiKeysHref(orgId);
   const ctas: CutoffCta[] = [];
+
+  if (alert.reason === "sponsored_promo_expired") {
+    ctas.push({ id: "ai-keys", label: "Add AI API keys", href: aiKeysHref });
+    ctas.push({ id: "pricing", label: "Upgrade for hosted AI", href: pricingHref });
+    return ctas;
+  }
 
   if (alert.reason === "kill_switch" || alert.reason === "org_budget") {
     ctas.push({ id: "budgets", label: "Open API budgets", href: budgetsHref });
@@ -303,7 +316,12 @@ export function messageForCutoffError(
   let body =
     "This workspace hit a usage hard cut-off. Buy AI credits, enable PAYG with a spend cap, or upgrade — Vantage does not silently overage.";
 
-  if (match("kill_switch") || match("billingdisabled") || match("billing_disabled")) {
+  if (match("sponsored_promo_expired") || match("promotional sponsored ai")) {
+    reason = "sponsored_promo_expired";
+    title = "Sponsored AI ended";
+    body =
+      "Promotional sponsored AI for team 1111 ended on 2026-10-18. Add your own AI keys or upgrade for hosted AI — the rest of the workspace keeps working.";
+  } else if (match("kill_switch") || match("billingdisabled") || match("billing_disabled")) {
     reason = "kill_switch";
     title = "AI routing paused";
     body = "The organization kill switch blocked this call. An admin can clear it on API budgets.";
@@ -334,12 +352,17 @@ export function messageForCutoffError(
   const alert: UsageCutoffAlert = { level: "at", reason, title, body, percent: null };
   const ctas = org
     ? cutoffCtas(alert, org)
-    : [
-        { id: "pricing" as const, label: "View pricing", href: pricingHref },
-        { id: "budgets" as const, label: "API budgets", href: budgetsHref },
-        { id: "chat" as const, label: "Chat", href: cutoffChatHref(null) },
-        { id: "account" as const, label: "Account", href: cutoffAccountHref(null) },
-      ];
+    : reason === "sponsored_promo_expired"
+      ? [
+          { id: "ai-keys" as const, label: "Add AI API keys", href: cutoffAiKeysHref(null) },
+          { id: "pricing" as const, label: "Upgrade for hosted AI", href: pricingHref },
+        ]
+      : [
+          { id: "pricing" as const, label: "View pricing", href: pricingHref },
+          { id: "budgets" as const, label: "API budgets", href: budgetsHref },
+          { id: "chat" as const, label: "Chat", href: cutoffChatHref(null) },
+          { id: "account" as const, label: "Account", href: cutoffAccountHref(null) },
+        ];
 
   return { title, body, ctas };
 }
@@ -367,6 +390,10 @@ export function resolveCutoffErrorCode(status: number, body?: unknown): string |
   const error = record?.error != null ? String(record.error) : "";
   const hardCutoff = record?.hardCutoff === true;
   if (status === 402 || hardCutoff || isCutoffError(code) || isCutoffError(reason) || isCutoffError(error)) {
+    // Prefer specific promo-expiry reason so Soft-UI shows BYOK CTAs, not generic credit copy.
+    if (/sponsored_promo_expired/i.test(reason) || /sponsored_promo_expired/i.test(error)) {
+      return "sponsored_promo_expired";
+    }
     return code || reason || error || "usage_hard_cutoff";
   }
   return null;
