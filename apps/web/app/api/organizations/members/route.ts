@@ -1,10 +1,15 @@
 import {
   assertOrgCapability,
   auth,
+  HUB_ACCESS_HUB_IDS,
+  listMemberHubAccess,
   listOrganizationMembers,
   ORG_CAPABILITIES,
   setMemberCapabilities,
+  setMemberHubAccess,
   setMemberRole,
+  type HubAccessHubId,
+  type MemberHubAccessRow,
   type OrgCapability,
   type OrgRole,
 } from "@vantage/core";
@@ -35,9 +40,15 @@ export async function GET(request: Request) {
         `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2`,
         [orgId, current.user.id],
       );
+      const hubAccessByUser: Record<string, MemberHubAccessRow[]> = {};
+      for (const member of members) {
+        hubAccessByUser[member.userId] = await listMemberHubAccess(client, orgId, member.userId);
+      }
       return {
         members,
         catalog: ORG_CAPABILITIES,
+        hubCatalog: HUB_ACCESS_HUB_IDS,
+        hubAccessByUser,
         actorRole: actor.rows[0]?.role ?? null,
       };
     });
@@ -53,9 +64,10 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as {
       orgId?: string;
       userId?: string;
-      action?: "set_capabilities" | "set_role";
+      action?: "set_capabilities" | "set_role" | "set_hub_access";
       capabilities?: string[];
       role?: OrgRole;
+      hubAccess?: Array<{ hubId: string; allowedTabIds?: string[] }>;
     };
     if (!body.orgId || !body.userId || !body.action) {
       throw new Error("orgId, userId, and action are required");
@@ -86,6 +98,22 @@ export async function PATCH(request: Request) {
           orgId,
           userId: body.userId!,
           role: body.role,
+        });
+        return;
+      }
+      if (body.action === "set_hub_access") {
+        const access: MemberHubAccessRow[] = (body.hubAccess ?? [])
+          .filter((entry): entry is { hubId: HubAccessHubId; allowedTabIds?: string[] } =>
+            (HUB_ACCESS_HUB_IDS as readonly string[]).includes(entry.hubId),
+          )
+          .map((entry) => ({
+            hubId: entry.hubId,
+            allowedTabIds: entry.allowedTabIds ?? [],
+          }));
+        await setMemberHubAccess(client, current.user.id, {
+          orgId,
+          userId: body.userId!,
+          access,
         });
         return;
       }

@@ -101,6 +101,21 @@ export function onboardingCanSubmit(input: {
   return input.termsAccepted === true;
 }
 
+export type TeamAffiliationOption = "private_school" | "public_school" | "community";
+
+/** Team heads must pick affiliation + at least one funding path before complete. */
+export function onboardingFundingReady(input: {
+  isTeamHead: boolean;
+  teamAffiliation: TeamAffiliationOption | null | undefined;
+  schoolFunded: boolean;
+  outsideGrants: boolean;
+  sponsorsAllowed: boolean;
+}): boolean {
+  if (!input.isTeamHead) return true;
+  if (!input.teamAffiliation) return false;
+  return Boolean(input.schoolFunded || input.outsideGrants || input.sponsorsAllowed);
+}
+
 /** Soft-UI copy for loading / error / setup shells — preserves invite + closed membership model. */
 export function onboardingLoadCopy(kind: OnboardingLoadKind, detail?: string | null): OnboardingLoadCopy {
   if (kind === "loading") {
