@@ -271,6 +271,7 @@ export { emitNotification } from "./notifications-emit";
 export * from "./in-app-notifications";
 export * from "./membership";
 export * from "./capabilities";
+export * from "./hub-access";
 export * from "./platform-admin";
 
 export * from "./legal";

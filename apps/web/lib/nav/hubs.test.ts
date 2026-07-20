@@ -10,9 +10,9 @@ import {
 } from "./hubs";
 
 describe("product hubs", () => {
-  it("defines the five shipping hubs", () => {
+  it("defines the six shipping hubs", () => {
     expect(PRODUCT_HUBS.map((hub) => hub.id)).toEqual([
-      "competition", "team", "business", "build", "ai",
+      "competition", "team", "business", "build", "ai", "media",
     ]);
   });
   it("validates tabs and builds deep links", () => {
@@ -42,7 +42,20 @@ describe("product hubs", () => {
     expect(more).toContain("sponsor-renewal-roi");
     expect(more).toContain("grant-eligibility-matcher");
     expect(more).toContain("matching-gift-finder");
-    expect(more).toContain("media");
+    expect(more).not.toContain("media");
+    expect(more).toContain("media-kit");
+  });
+
+  it("surfaces Media hub tabs for calendar, drafts, reminders, kit, and impact", () => {
+    const media = hubById("media");
+    expect(hubPrimaryTabs(media).map((tab) => tab.id)).toEqual([
+      "calendar",
+      "drafts",
+      "reminders",
+      "kit",
+      "impact",
+    ]);
+    expect(media.tabs.find((tab) => tab.id === "kit")?.legacyHref).toBe("/media-kit");
   });
 
   it("surfaces Team ops tabs including batteries and FMEA", () => {

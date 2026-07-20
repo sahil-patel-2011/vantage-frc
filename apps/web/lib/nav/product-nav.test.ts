@@ -19,6 +19,7 @@ describe("product-nav", () => {
       "Team",
       "Logistics",
       "Business",
+      "Media",
       "Build",
       "AI",
       "Settings",
@@ -40,6 +41,7 @@ describe("product-nav", () => {
       "Team",
       "Logistics",
       "Business",
+      "Media",
       "Build",
       "AI",
     ]);
@@ -102,7 +104,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/competition")).toBe("Competition / Competition hub");
     expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance Selection Desk");
     expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season Planning Workspace");
-    expect(breadcrumbForPath("/media")).toBe("Business / Media");
+    expect(breadcrumbForPath("/media")).toBe("Media / Media hub");
   });
 
   it("resolves form builder via hub tab when using competition?tab=forms href", () => {
@@ -162,7 +164,14 @@ describe("product-nav", () => {
     expect(business.items.some((i) => i.href === "/business?tab=grants")).toBe(true);
     expect(business.items.some((i) => i.href === "/team/grants")).toBe(true);
     expect(business.items.some((i) => i.href === "/team/sponsors")).toBe(false);
-    expect(business.items.some((i) => i.href === "/media")).toBe(true);
+    expect(business.items.some((i) => i.href === "/media")).toBe(false);
+  });
+
+  it("keeps Media hub and kit in the Media drawer group", () => {
+    const media = PRODUCT_NAV_GROUPS.find((g) => g.label === "Media")!;
+    expect(media.items.some((i) => i.href === "/media")).toBe(true);
+    expect(media.items.some((i) => i.href === "/media-kit")).toBe(true);
+    expect(media.items.some((i) => i.href === "/media?tab=drafts")).toBe(true);
   });
 
   it("marks unfinished destinations as planned instead of dead links", () => {

@@ -7,11 +7,13 @@ import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbo
 import {
   buildOnboardingStepMeta,
   onboardingCanSubmit,
+  onboardingFundingReady,
   onboardingLoadCopy,
   onboardingMembershipNote,
   onboardingProgressLabel,
   onboardingTermsRequired,
   type OnboardingFlowStep,
+  type TeamAffiliationOption,
 } from "../../lib/onboarding";
 import { PENDING_INVITE_KEY } from "../invite/invite-client";
 import { safeAppPath } from "../../lib/security/safe-navigation";
@@ -44,6 +46,10 @@ type OnboardingState = {
   orgCity: string | null;
   orgStateProv: string | null;
   orgDescription: string | null;
+  orgTeamAffiliation: TeamAffiliationOption | null;
+  orgSchoolFunded: boolean | null;
+  orgOutsideGrants: boolean | null;
+  orgSponsorsAllowed: boolean | null;
   termsAcceptedAt: string | null;
   currentStep: "profile" | "team" | "preferences" | "complete";
   startedAt: string | null;
@@ -65,6 +71,12 @@ const ROLES = [
   { value: "parent", label: "Parent / guardian" },
   { value: "other", label: "Other" },
 ] as const;
+
+const AFFILIATIONS: Array<{ value: TeamAffiliationOption; label: string }> = [
+  { value: "private_school", label: "Private school" },
+  { value: "public_school", label: "Public school" },
+  { value: "community", label: "Community team" },
+];
 
 const FOCUS_OPTIONS: Array<{
   value: PrimaryFocus;
@@ -103,6 +115,71 @@ function githubConnectionHref(orgId: string | null | undefined) {
   return `/team/admin?orgId=${encodeURIComponent(orgId)}#github-connection`;
 }
 
+function FundingFields({
+  teamAffiliation,
+  setTeamAffiliation,
+  schoolFunded,
+  setSchoolFunded,
+  outsideGrants,
+  setOutsideGrants,
+  sponsorsAllowed,
+  setSponsorsAllowed,
+}: {
+  teamAffiliation: TeamAffiliationOption | "";
+  setTeamAffiliation: (value: TeamAffiliationOption | "") => void;
+  schoolFunded: boolean;
+  setSchoolFunded: (value: boolean) => void;
+  outsideGrants: boolean;
+  setOutsideGrants: (value: boolean) => void;
+  sponsorsAllowed: boolean;
+  setSponsorsAllowed: (value: boolean) => void;
+}) {
+  return (
+    <fieldset className="onboarding-team-profile onboarding-funding-profile">
+      <legend>Team affiliation &amp; funding</legend>
+      <p className="onboarding-team-profile-hint">
+        Required for owners and admins. Shapes Business Soft-UI — for example, teams that disallow sponsors hide sponsor tools.
+      </p>
+      <fieldset className="onboarding-affiliation">
+        <legend>Affiliation</legend>
+        {AFFILIATIONS.map((option) => (
+          <label key={option.value} className="check-field">
+            <input
+              type="radio"
+              name="teamAffiliation"
+              value={option.value}
+              checked={teamAffiliation === option.value}
+              onChange={() => setTeamAffiliation(option.value)}
+              required
+            />
+            {option.label}
+          </label>
+        ))}
+      </fieldset>
+      {teamAffiliation === "private_school" ? (
+        <p className="onboarding-funding-note">
+          Many private schools self-fund and disallow outside sponsors. Uncheck Sponsors allowed if that matches your school.
+        </p>
+      ) : null}
+      <fieldset className="onboarding-funding-paths">
+        <legend>Funding paths <small>Select at least one</small></legend>
+        <label className="check-field">
+          <input type="checkbox" checked={schoolFunded} onChange={(event) => setSchoolFunded(event.target.checked)} />
+          School funds
+        </label>
+        <label className="check-field">
+          <input type="checkbox" checked={outsideGrants} onChange={(event) => setOutsideGrants(event.target.checked)} />
+          Outside grants
+        </label>
+        <label className="check-field">
+          <input type="checkbox" checked={sponsorsAllowed} onChange={(event) => setSponsorsAllowed(event.target.checked)} />
+          Sponsors allowed
+        </label>
+      </fieldset>
+    </fieldset>
+  );
+}
+
 export default function OnboardingClient() {
   const searchParams = useSearchParams();
   const [state, setState] = useState<OnboardingState | null>(null);
@@ -119,6 +196,10 @@ export default function OnboardingClient() {
   const [orgCity, setOrgCity] = useState("");
   const [orgStateProv, setOrgStateProv] = useState("");
   const [orgDescription, setOrgDescription] = useState("");
+  const [teamAffiliation, setTeamAffiliation] = useState<TeamAffiliationOption | "">("");
+  const [schoolFunded, setSchoolFunded] = useState(false);
+  const [outsideGrants, setOutsideGrants] = useState(false);
+  const [sponsorsAllowed, setSponsorsAllowed] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -140,6 +221,10 @@ export default function OnboardingClient() {
     setOrgCity(data.orgCity ?? "");
     setOrgStateProv(data.orgStateProv ?? "");
     setOrgDescription(data.orgDescription ?? "");
+    setTeamAffiliation(data.orgTeamAffiliation ?? "");
+    setSchoolFunded(Boolean(data.orgSchoolFunded));
+    setOutsideGrants(Boolean(data.orgOutsideGrants));
+    setSponsorsAllowed(data.orgSponsorsAllowed == null ? true : Boolean(data.orgSponsorsAllowed));
     if (data.termsAcceptedAt) setTermsAccepted(true);
   }
 
@@ -200,6 +285,13 @@ export default function OnboardingClient() {
 
   const locked = state?.lockedTeamNumber != null;
   const termsNeeded = onboardingTermsRequired(state?.termsAcceptedAt);
+  const fundingReady = onboardingFundingReady({
+    isTeamHead: Boolean(state?.isTeamHead),
+    teamAffiliation: teamAffiliation || null,
+    schoolFunded,
+    outsideGrants,
+    sponsorsAllowed,
+  });
   const canSubmit = onboardingCanSubmit({
     termsAccepted,
     termsAcceptedAt: state?.termsAcceptedAt,
@@ -211,6 +303,11 @@ export default function OnboardingClient() {
   async function saveProgress(completedStep: "profile" | "team") {
     setBusy(true);
     setMessage("");
+    if (completedStep === "team" && state?.isTeamHead && !fundingReady) {
+      setMessage("Select affiliation and at least one funding path (school funds, grants, or sponsors).");
+      setBusy(false);
+      return;
+    }
     const body = completedStep === "profile"
       ? { step: "profile" as const, firstName, lastName, dateOfBirth, gender }
       : {
@@ -255,6 +352,11 @@ export default function OnboardingClient() {
         setBusy(false);
         return;
       }
+      if (isTeamHead && !fundingReady) {
+        setMessage("Select affiliation and at least one funding path (school funds, grants, or sponsors).");
+        setBusy(false);
+        return;
+      }
       const response = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -272,6 +374,10 @@ export default function OnboardingClient() {
           city: isTeamHead ? orgCity.trim() || null : undefined,
           stateProv: isTeamHead ? orgStateProv.trim() || null : undefined,
           description: isTeamHead ? orgDescription.trim() || null : undefined,
+          teamAffiliation: isTeamHead ? teamAffiliation || null : undefined,
+          schoolFunded: isTeamHead ? schoolFunded : undefined,
+          outsideGrants: isTeamHead ? outsideGrants : undefined,
+          sponsorsAllowed: isTeamHead ? sponsorsAllowed : undefined,
         }),
       });
       const data = (await response.json()) as OnboardingState & { error?: string };
@@ -445,26 +551,38 @@ export default function OnboardingClient() {
               </select>
             </label>
             {state.isTeamHead ? (
-              <fieldset className="onboarding-team-profile">
-                <legend>Team location</legend>
-                <p className="onboarding-team-profile-hint">
-                  Required for owners and admins. Used in sponsorship one-pagers and grant proposals — this workspace only.
-                </p>
-                <div className="onboarding-row">
+              <>
+                <fieldset className="onboarding-team-profile">
+                  <legend>Team location</legend>
+                  <p className="onboarding-team-profile-hint">
+                    Required for owners and admins. Used in sponsorship one-pagers and grant proposals — this workspace only.
+                  </p>
+                  <div className="onboarding-row">
+                    <label>
+                      City
+                      <input required maxLength={120} value={orgCity} onChange={(event) => setOrgCity(event.target.value)} autoComplete="address-level2" placeholder="Portland" />
+                    </label>
+                    <label>
+                      State / province
+                      <input required maxLength={80} value={orgStateProv} onChange={(event) => setOrgStateProv(event.target.value)} autoComplete="address-level1" placeholder="OR" />
+                    </label>
+                  </div>
                   <label>
-                    City
-                    <input required maxLength={120} value={orgCity} onChange={(event) => setOrgCity(event.target.value)} autoComplete="address-level2" placeholder="Portland" />
+                    Describe your FRC team <small>Optional</small>
+                    <textarea maxLength={2000} rows={3} value={orgDescription} onChange={(event) => setOrgDescription(event.target.value)} placeholder="A short blurb about who you are — students served, focus areas, community." />
                   </label>
-                  <label>
-                    State / province
-                    <input required maxLength={80} value={orgStateProv} onChange={(event) => setOrgStateProv(event.target.value)} autoComplete="address-level1" placeholder="OR" />
-                  </label>
-                </div>
-                <label>
-                  Describe your FRC team <small>Optional</small>
-                  <textarea maxLength={2000} rows={3} value={orgDescription} onChange={(event) => setOrgDescription(event.target.value)} placeholder="A short blurb about who you are — students served, focus areas, community." />
-                </label>
-              </fieldset>
+                </fieldset>
+                <FundingFields
+                  teamAffiliation={teamAffiliation}
+                  setTeamAffiliation={setTeamAffiliation}
+                  schoolFunded={schoolFunded}
+                  setSchoolFunded={setSchoolFunded}
+                  outsideGrants={outsideGrants}
+                  setOutsideGrants={setOutsideGrants}
+                  sponsorsAllowed={sponsorsAllowed}
+                  setSponsorsAllowed={setSponsorsAllowed}
+                />
+              </>
             ) : null}
             <fieldset className="onboarding-focus-grid">
               <legend>What should Vantage prioritize for you?</legend>
@@ -477,7 +595,9 @@ export default function OnboardingClient() {
             </fieldset>
             <div className="onboarding-actions">
               <button type="button" className="signin-link" onClick={() => setStep("profile")}>Back</button>
-              <button className="signin-submit" type="submit" disabled={busy}>{busy ? "Saving…" : "Save and review request"}</button>
+              <button className="signin-submit" type="submit" disabled={busy || (state.isTeamHead && !fundingReady)}>
+                {busy ? "Saving…" : "Save and review request"}
+              </button>
             </div>
           </form>
         ) : null}
@@ -489,6 +609,18 @@ export default function OnboardingClient() {
               <div><span>ROLE</span><strong>{ROLES.find((option) => option.value === teamRole)?.label ?? teamRole}</strong></div>
               <div><span>STARTING VIEW</span><strong>{FOCUS_OPTIONS.find((option) => option.value === primaryFocus)?.label}</strong></div>
             </section>
+            {state.isTeamHead ? (
+              <FundingFields
+                teamAffiliation={teamAffiliation}
+                setTeamAffiliation={setTeamAffiliation}
+                schoolFunded={schoolFunded}
+                setSchoolFunded={setSchoolFunded}
+                outsideGrants={outsideGrants}
+                setOutsideGrants={setOutsideGrants}
+                sponsorsAllowed={sponsorsAllowed}
+                setSponsorsAllowed={setSponsorsAllowed}
+              />
+            ) : null}
             {primaryFocus === "build" ? (
               <div className="onboarding-security-note" style={{ marginTop: 0 }}>
                 <b aria-hidden="true">↳</b>
@@ -531,7 +663,9 @@ export default function OnboardingClient() {
             </div>
             <div className="onboarding-actions">
               <button type="button" className="signin-link" onClick={() => setStep("team")}>Back</button>
-              <button className="signin-submit" type="submit" disabled={busy || !canSubmit}>{busy ? "Submitting…" : "Submit access request"}</button>
+              <button className="signin-submit" type="submit" disabled={busy || !canSubmit || (state.isTeamHead && !fundingReady)}>
+                {busy ? "Submitting…" : "Submit access request"}
+              </button>
             </div>
           </form>
         ) : null}

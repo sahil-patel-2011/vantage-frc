@@ -19,7 +19,7 @@ export type HubTabDef = {
 };
 
 export type ProductHubDef = {
-  id: "competition" | "team" | "business" | "build" | "ai";
+  id: "competition" | "team" | "business" | "build" | "ai" | "media";
   href: string;
   label: string;
   title: string;
@@ -80,6 +80,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "scout-data-impact", label: "Scout Data Impact", legacyHref: "/scout-data-impact", primary: false },
       { id: "scout-disagreements", label: "Scout Disagreements", legacyHref: "/scout-disagreements", primary: false },
       { id: "scout-field-budget", label: "Scouting Field-Count Budget", legacyHref: "/scout-field-budget", primary: false },
+      { id: "district-advancement", label: "District Advancement", legacyHref: "/district-advancement", primary: false },
+      { id: "ranking-projection", label: "Ranking Projection", legacyHref: "/ranking-projection", primary: false },
       { id: "scout-p2p-relay", label: "Scout P2P Relay", legacyHref: "/scout-p2p-relay", primary: false },
       { id: "scout-schema-negotiate", label: "Scout Schema Negotiate", legacyHref: "/scout-schema-negotiate", primary: false },
       { id: "scout-training-mode", label: "Scout Training Mode", legacyHref: "/scout-training-mode", primary: false },
@@ -167,7 +169,6 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "awards-workbench", label: "Awards workbench", legacyHref: "/team/awards", primary: false },
       { id: "impact-essay", label: "FIRST Impact Essay Generator", legacyHref: "/impact-essay", primary: false },
       { id: "judge-sim", label: "Judge-Pitch Simulator", legacyHref: "/judge-sim", primary: false },
-      { id: "media", label: "Media", legacyHref: "/media", primary: false },
       { id: "media-kit", label: "Media Kit", legacyHref: "/media-kit", primary: false },
       { id: "outreach-calendar", label: "Outreach Calendar", legacyHref: "/outreach-calendar", primary: false },
       { id: "sponsor-suite", label: "Sponsor Suite", legacyHref: "/sponsor-suite", primary: false },
@@ -254,6 +255,22 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "decisions", label: "Decision Log", legacyHref: "/decisions", primary: false },
       { id: "decision-search", label: "Decision Search", legacyHref: "/decision-search", primary: false },
       { id: "season-report", label: "Season Report", legacyHref: "/season-report", primary: false },
+    ],
+  },
+  {
+    id: "media",
+    href: "/media",
+    label: "Media",
+    title: "Media",
+    description:
+      "Content calendar, drafts, reminders, Media Kit readiness, and media impact — Soft-UI for press and social teammates.",
+    defaultTab: "calendar",
+    tabs: [
+      { id: "calendar", label: "Calendar" },
+      { id: "drafts", label: "Drafts" },
+      { id: "reminders", label: "Reminders" },
+      { id: "kit", label: "Kit", legacyHref: "/media-kit" },
+      { id: "impact", label: "Impact", legacyHref: "/impact" },
     ],
   },
 ];

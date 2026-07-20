@@ -2,7 +2,7 @@
  * Product navigation — single source of truth for the app-shell drawer,
  * command palette, and breadcrumb labels.
  *
- * Pillars: Competition · Team · Logistics · Business · Build · AI
+ * Pillars: Competition · Team · Logistics · Business · Media · Build · AI
  * (+ Home entry + Settings). See docs/FEATURE_MAP.md.
  */
 
@@ -103,6 +103,8 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/alliance-selection-desk", label: "Alliance Selection Desk", icon: "swords" },
       { href: "/dossier", label: "Team Dossier", icon: "clipboard" },
       { href: "/rankings", label: "Rankings", icon: "stats" },
+      { href: "/ranking-projection", label: "Ranking Projection", icon: "stats" },
+      { href: "/district-advancement", label: "District Advancement", icon: "target" },
       { href: "/video", label: "Video Review", icon: "display" },
       { href: "/pit", label: "Pit Command", icon: "cube" },
       { href: "/incidents", label: "Incidents", icon: "gear" },
@@ -233,8 +235,6 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/grant-report", label: "Grant Report", icon: "clipboard" },
       { href: "/impact-essay", label: "FIRST Impact Essay Generator", icon: "clipboard" },
       { href: "/judge-sim", label: "Judge-Pitch Simulator", icon: "clipboard" },
-      { href: "/media", label: "Media", icon: "clipboard" },
-      { href: "/media-kit", label: "Media Kit", icon: "clipboard" },
       { href: "/outreach-calendar", label: "Outreach Calendar", icon: "clipboard" },
       { href: "/sponsor-suite", label: "Sponsor Suite", icon: "clipboard" },
       { href: "/sponsor-tier-calculator", label: "Sponsor Tier Calculator", icon: "clipboard" },
@@ -243,6 +243,20 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/grant-eligibility-matcher", label: "Grant Eligibility Matcher", icon: "clipboard" },
       { href: "/matching-gift-finder", label: "Matching Gift Finder", icon: "clipboard" },
       { href: "/vendor-lead-times", label: "Vendor Lead-Time Tracker", icon: "clipboard" },
+    ],
+  },
+  {
+    label: "Media",
+    ...TONE,
+    icon: "clipboard",
+    items: [
+      { href: "/media", label: "Media hub", icon: "clipboard" },
+      { href: "/media?tab=calendar", label: "Calendar", icon: "calendar" },
+      { href: "/media?tab=drafts", label: "Drafts", icon: "clipboard" },
+      { href: "/media?tab=reminders", label: "Reminders", icon: "bell" },
+      { href: "/media?tab=kit", label: "Kit", icon: "clipboard" },
+      { href: "/media?tab=impact", label: "Impact", icon: "target" },
+      { href: "/media-kit", label: "Media Kit", icon: "clipboard" },
     ],
   },
   {
@@ -347,6 +361,7 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   ...PRIMARY_TABS,
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/ai", label: "AI", icon: "bolt" },
+  { href: "/media", label: "Media", icon: "clipboard" },
   { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
@@ -354,14 +369,15 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
 ];
 
 /**
- * Six Soft-UI pillars for the More sheet / drawer — readable hierarchy first.
- * Competition · Team · Logistics · Business · Build · AI
+ * Soft-UI pillars for the More sheet / drawer — readable hierarchy first.
+ * Competition · Team · Logistics · Business · Media · Build · AI
  */
 export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition", label: "Competition", icon: "swords" },
   { href: "/team", label: "Team", icon: "users" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
   { href: "/business", label: "Business", icon: "clipboard" },
+  { href: "/media", label: "Media", icon: "clipboard" },
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/ai", label: "AI", icon: "bolt" },
 ];

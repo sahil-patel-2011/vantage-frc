@@ -1,8 +1,16 @@
 // Pure, unit-testable Media workspace helpers. No I/O, no framework imports.
 
 export * from "./types";
+export {
+  buildMediaPostDraft,
+  isMediaReminderOverdue,
+  mediaCalendarItems,
+  mediaDraftItems,
+  mediaReminderItems,
+} from "./media-content-helpers";
 
 import type {
+  MediaContentItem,
   MediaImpactSummary,
   MediaKitSummary,
   MediaOutreachSummary,
@@ -15,8 +23,11 @@ export function isMediaWorkspaceEmpty(input: {
   outreach: Pick<MediaOutreachSummary, "upcomingCount" | "mediaCategoryCount">;
   impact: Pick<MediaImpactSummary, "mediaActivityCount">;
   sponsorWall: Pick<MediaSponsorWallSummary, "publishedEntryCount">;
+  items?: Pick<MediaContentItem, "id">[];
 }): boolean {
+  const itemCount = input.items?.length ?? 0;
   return (
+    itemCount === 0 &&
     input.kit.assetCount === 0 &&
     input.kit.documentCount === 0 &&
     input.kit.readinessScore <= 0 &&
@@ -33,6 +44,7 @@ export function shouldShowMediaSummaryTiles(input: {
   outreach: Pick<MediaOutreachSummary, "upcomingCount" | "mediaCategoryCount">;
   impact: Pick<MediaImpactSummary, "mediaActivityCount">;
   sponsorWall: Pick<MediaSponsorWallSummary, "publishedEntryCount">;
+  items?: Pick<MediaContentItem, "id">[];
 }): boolean {
   return !isMediaWorkspaceEmpty(input);
 }

@@ -283,6 +283,12 @@ export const organizations = pgTable("organizations", {
   city: text("city"),
   stateProv: text("state_prov"),
   description: text("description"),
+  teamAffiliation: text("team_affiliation").$type<
+    "private_school" | "public_school" | "community" | null
+  >(),
+  schoolFunded: boolean("school_funded"),
+  outsideGrants: boolean("outside_grants"),
+  sponsorsAllowed: boolean("sponsors_allowed"),
   createdAt: timestamps.createdAt,
 });
 
