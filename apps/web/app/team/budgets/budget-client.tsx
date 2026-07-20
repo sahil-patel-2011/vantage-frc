@@ -371,7 +371,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
             <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>After included allowance</h2>
             <p className="app-muted" style={{ marginTop: 0 }}>
               Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} included API allowance hard-stops at 100%. Resume
-              with prepaid Usage Credits (1 credit = $1 provider API at list rates), explicit PAYG + spend cap, or a
+              with prepaid Usage Credits (hosted debit at 0.75× typical API list — about 25% less than BYOK), explicit PAYG + spend cap, or a
               higher plan. BYOK / local does not consume the managed allowance.
             </p>
             <div className="usage-cutoff-banner-ctas" style={{ marginTop: 4 }}>
