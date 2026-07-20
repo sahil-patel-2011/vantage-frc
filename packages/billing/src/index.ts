@@ -104,18 +104,18 @@ export type UsageCutoffCode =
 
 export const USAGE_CUTOFF_MESSAGES: Record<UsageCutoffCode, string> = {
   credit_cap_exceeded:
-    "This organization has reached its Vantage AI credit limit. Buy Usage Credits or enable PAYG with a spend cap — there is no silent overage.",
+    "This organization has reached its Vantage AI credit limit. Buy AI credits or enable PAYG with a spend cap — there is no silent overage.",
   payg_not_enabled:
-    "Included API allowance is exhausted and pay-as-you-go is off. Buy Usage Credits or enable PAYG with a spend cap to continue.",
+    "Hosted AI usage is exhausted and pay-as-you-go is off. Buy AI credits or enable PAYG with a spend cap to continue.",
   insufficient_prepaid_balance:
-    "Prepaid Usage Credits cannot cover this call. Buy a credit pack or raise the PAYG spend cap.",
+    "Prepaid AI credits cannot cover this call. Buy a credit pack or raise the PAYG spend cap.",
   spend_cap:
-    "PAYG overage is hard-stopped at the monthly spend cap. Raise the cap or buy Usage Credits.",
+    "PAYG overage is hard-stopped at the monthly spend cap. Raise the cap or buy AI credits.",
   kill_switch: "AI usage is currently disabled for this organization.",
   managed_allowance_exhausted:
-    "Managed plan allowance is exhausted for this period. Buy Usage Credits or enable PAYG with a spend cap.",
+    "Hosted AI usage is exhausted for this period. Buy AI credits or enable PAYG with a spend cap.",
   sponsored_allowance_exhausted:
-    "Sponsored AI allowance is exhausted. Use BYO keys, local AI, or upgrade.",
+    "Sponsored AI is exhausted. Use your own keys, local AI, buy AI credits, or upgrade.",
 };
 
 export class CreditCapExceededError extends Error {

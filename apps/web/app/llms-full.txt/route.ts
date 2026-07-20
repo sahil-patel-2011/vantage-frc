@@ -43,15 +43,15 @@ ${hostedApiEconomicsSoftLine()}
 
 | Plan | Monthly USD | Notes |
 | --- | --- | --- |
-| Free | 0 | BYOK / local models; competition core |
-| Access | ${c.access.monthlyUsd} | Light managed routing; Credits/PAYG optional |
-| Individual Pro | ${c.individual_pro.monthlyUsd} | Hosted AI included |
+| Free | 0 | Start here — own keys, local models, or buy AI credits |
+| Access | ${c.access.monthlyUsd} | Light managed routing; credits/PAYG optional |
+| Individual Pro | ${c.individual_pro.monthlyUsd} | Hosted AI in the product |
 | Individual Max | ${c.individual_max.monthlyUsd} | Higher hosted capacity |
 | Team Pro | ${c.team_pro.monthlyUsd} | Org Soft-UI + hosted AI |
 | Team Max | ${c.team_max.monthlyUsd} | Higher org capacity |
 | Week team trial | — | ${TEAM_TRIAL_DAYS} days; no surprise auto-charge |
 
-Exact included API-dollar allotments are not the public framing — plans sell hosted AI as a product service with hard cutoffs.
+Public framing: Free → Individual → Team; AI credits top up hosted usage. Exact included API-dollar allotments are not plan-card copy.
 
 ## Security / tenancy (high level)
 Invite-only orgs; request DB access uses RLS (\`withRls\`). Platform admin surfaces require a platform_admins row. See Privacy and Terms for legal detail.

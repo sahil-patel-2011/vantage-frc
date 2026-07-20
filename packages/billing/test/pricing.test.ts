@@ -32,9 +32,9 @@ describe("appealing pricing catalog", () => {
     expect(PRICING_CATALOG.team_pro).toMatchObject({ monthlyUsd: 299, includedAllowanceUsd: 225 });
     expect(PRICING_CATALOG.team_max).toMatchObject({ monthlyUsd: 549, includedAllowanceUsd: 450 });
     expect(PRICING_CATALOG.team_trial.includedAllowanceUsd).toBe(39);
-    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$69", "$109 / $159", "$299 / $549"]);
-    expect(raisedPricingSummaryLine()).toMatch(/Access \$69/);
-    expect(hostedApiSavingsCopy()).toMatch(/Cheaper than bringing your own keys/i);
+    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$0", "$109 / $159", "$299 / $549"]);
+    expect(raisedPricingSummaryLine()).toMatch(/Free \$0/);
+    expect(hostedApiSavingsCopy()).toMatch(/Credits go further/i);
     expect(hostedApiEconomicsSoftLine()).toMatch(/25% less/);
     expect(hostedCreditPackListApiUsd(100)).toBe(133);
   });
