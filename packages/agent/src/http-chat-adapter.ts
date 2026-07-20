@@ -19,7 +19,10 @@ export type HttpChatAdapterConfig = {
   fetchImpl?: typeof fetch;
 };
 
-/** Distinct 429 / quota failure so sponsored failover can try the next provider. */
+/**
+ * Distinct rate-limit / quota / payment failure so sponsored failover can try
+ * the next provider (429 capacity, 402 payment/quota, 503 overload).
+ */
 export class ProviderRateLimitError extends Error {
   readonly status: number;
   constructor(message: string, status = 429) {
@@ -29,14 +32,22 @@ export class ProviderRateLimitError extends Error {
   }
 }
 
+/** HTTP statuses that should skip to the next sponsored provider, not hard-fail. */
+export function isProviderQuotaOrCapacityStatus(status: number): boolean {
+  return status === 402 || status === 429 || status === 503;
+}
+
 function throwIfHttpFailed(providerLabel: string, status: number): void {
   if (status === 401 || status === 403) {
     throw new Error(
       `${providerLabel} API key was rejected (${status}). Update the key under Team → AI API keys.`,
     );
   }
-  if (status === 429 || status === 503) {
-    throw new ProviderRateLimitError(`${providerLabel} rate-limited or at capacity (${status})`, status);
+  if (isProviderQuotaOrCapacityStatus(status)) {
+    throw new ProviderRateLimitError(
+      `${providerLabel} rate-limited, quota exhausted, or at capacity (${status})`,
+      status,
+    );
   }
   throw new Error(`${providerLabel} chat failed (${status})`);
 }
