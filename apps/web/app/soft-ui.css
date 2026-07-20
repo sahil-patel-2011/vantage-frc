@@ -257,6 +257,25 @@ body.has-app-shell .app-topbar{display:none}
 .soft-account-teams a small{color:var(--soft-muted);font-size:10px;font-weight:600;text-transform:capitalize}
 .soft-account-teams a[aria-current="true"]{background:var(--soft-accent-soft);color:var(--soft-accent)}
 .soft-drawer-hint{margin:0 4px 10px;color:var(--soft-muted);font-size:12px}
+.soft-drawer-flat{
+  display:grid;gap:4px;padding:4px 2px 12px;
+}
+.soft-drawer-hub{
+  display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 12px;border-radius:14px;
+  color:var(--soft-ink);text-decoration:none;font:650 14px/1.2 var(--font-source-sans),ui-sans-serif;
+  background:transparent;border:1px solid transparent;transition:background .15s ease,border-color .15s ease;
+}
+.soft-drawer-hub:hover{background:color-mix(in srgb,var(--soft-bg) 72%,transparent)}
+.soft-drawer-hub.is-active,.soft-drawer-hub[aria-current="page"]{
+  background:var(--tone-bg,var(--soft-accent-soft));border-color:color-mix(in srgb,var(--soft-accent) 22%,transparent);
+  color:var(--tone,var(--soft-accent));
+}
+.soft-drawer-hub i{
+  display:grid;place-items:center;width:32px;height:32px;border-radius:11px;flex:none;
+  background:var(--tone-bg,var(--soft-accent-soft));color:var(--tone,var(--soft-accent));
+}
+.soft-drawer-hub i svg{width:17px;height:17px}
+.soft-drawer-hub.soft-drawer-platform{margin:4px 2px 8px;color:var(--soft-muted);font-weight:600}
 .soft-nav-group{
   margin-bottom:10px;padding:4px;border-radius:var(--soft-radius);background:var(--soft-card);
   box-shadow:var(--soft-shadow);border:1px solid transparent;

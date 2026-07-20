@@ -262,14 +262,14 @@ export function LiveCountdown({ iso }: { iso: string | null | undefined }) {
 function setupQuickActions(orgId: string, tbaConfigured?: boolean) {
   const links: Array<{ href: string; label: string; detail: string }> = [];
   if (!orgId) {
-    links.push({ href: "/invite", label: "Workspace", detail: "Accept invite" });
+    links.push({ href: "/invite", label: "Invite", detail: "Open invite from email" });
   } else {
     links.push({ href: hubHref("/competition", "command", orgId), label: "Event", detail: "Select event" });
+    links.push({ href: withOrgHref("/team/admin", orgId), label: "Members", detail: "Invite teammates" });
   }
   if (tbaConfigured === false) {
     links.push({ href: withOrgHref("/team/data", orgId), label: "TBA", detail: "Connect TBA" });
   }
-  links.push({ href: withOrgHref("/team", orgId), label: "Invite", detail: "Invite members" });
   return links;
 }
 

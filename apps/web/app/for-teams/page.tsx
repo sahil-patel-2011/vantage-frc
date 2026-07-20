@@ -29,9 +29,9 @@ const roles = [
 ] as const;
 
 const season = [
-  { title: "Preseason", copy: "Goals, forms, TBA link, AI keys or hosted plan." },
-  { title: "Build season", copy: "Build hub: CAD briefs, Code Coach, knowledge, logistics." },
-  { title: "Event weekend", copy: "Scouting sync, Command board, Alliance Selection Desk." },
+  { title: "Before the event", copy: "Invite members, link TBA, publish scout forms, set the active event." },
+  { title: "At the venue", copy: "Offline scouting, Command, and My Day share that event context." },
+  { title: "Alliance selection", copy: "Strategy and Alliance Selection Desk use scout + public facts—or stay empty." },
   { title: "After", copy: "Exports, season report, next milestones." },
 ] as const;
 
@@ -75,18 +75,17 @@ export default function ForTeamsPage() {
         <section className="lux-season" aria-labelledby="season-title">
           <div className="lux-content">
             <header className="lux-section-head">
-              <h2 id="season-title">Season rhythm.</h2>
-              <p>Same hubs from kickoff through alliance selection.</p>
+              <h2 id="season-title">What happens when.</h2>
+              <p>Concrete moments on a real team timeline—not a numbered marketing strip.</p>
             </header>
-            <ol className="lux-season-steps lux-season-steps-4">
-              {season.map((item, index) => (
+            <ul className="lux-feature-grid lux-feature-grid-4">
+              {season.map((item) => (
                 <li key={item.title}>
-                  <b>{String(index + 1).padStart(2, "0")}</b>
                   <strong>{item.title}</strong>
                   <span>{item.copy}</span>
                 </li>
               ))}
-            </ol>
+            </ul>
           </div>
         </section>
 

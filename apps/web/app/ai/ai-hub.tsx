@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { AiSponsorBranding } from "../../components/ai-sponsor-branding";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
 import { FinanceInAiPanel } from "./finance-in-ai-panel";
 import "../product-hub.css";
@@ -20,7 +21,7 @@ const AutonomousAgentPanel = dynamic(
 
 export default function AiHub() {
   return (
-    <ProductHubShell hubId="ai">
+    <ProductHubShell hubId="ai" headerActions={<AiSponsorBranding />}>
       {({ tab, orgId }) => (
         <HubOrgGate orgId={orgId} label="AI">
           {(id) => {

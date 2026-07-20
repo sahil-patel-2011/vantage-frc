@@ -28,6 +28,8 @@ export type AdminNextAction = {
 export const ADMIN_RELATED_LINKS = [
   { id: "teams", label: "Teams", href: "/admin" },
   { id: "waitlist", label: "Waitlist", href: "/admin/waitlist" },
+  { id: "partners", label: "Partners", href: "/admin/partners" },
+  { id: "outreach", label: "Outreach", href: "/admin/outreach" },
   { id: "plans", label: "Org plans", href: "/admin/plans" },
   { id: "support", label: "Support", href: "/admin/support" },
   { id: "releases", label: "Releases", href: "/admin/releases" },

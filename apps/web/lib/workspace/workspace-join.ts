@@ -177,22 +177,10 @@ export function workspaceSetupSteps(orgId?: string | null): WorkspaceSetupStep[]
       detail: "Use the full link sent to your login address.",
       href: "/invite",
     },
-    {
-      id: "account",
-      label: "Confirm email",
-      detail: "Invites must match your signed-in address.",
-      href: withOrgHref("/account?tab=profile", orgId),
-    },
-    {
-      id: "support",
-      label: "Need a new invite?",
-      detail: "Contact support if you expected access.",
-      href: withOrgHref("/support", orgId),
-    },
   ];
 }
 
-/** Deduped next actions — one primary CTA, no laundry list. */
+/** Deduped next actions — one primary CTA; support only as secondary quiet link. */
 export function workspaceJoinNextActions(
   kind: Exclude<WorkspaceJoinKind, "loading" | "ready"> | WorkspaceShellKind,
   orgId?: string | null,
@@ -208,12 +196,6 @@ export function workspaceJoinNextActions(
         detail: "Join an additional team with an email invite.",
         href: "/invite",
       },
-      {
-        id: "support",
-        label: "Support",
-        detail: "Missing a team you expected?",
-        href: withOrgHref("/support", orgId),
-      },
     ];
   }
 
@@ -224,18 +206,6 @@ export function workspaceJoinNextActions(
       detail: "Use the full invitation link.",
       href: "/invite",
       primary: true,
-    },
-    {
-      id: "account",
-      label: "Confirm email",
-      detail: "Must match your signed-in address.",
-      href: withOrgHref("/account?tab=profile", orgId),
-    },
-    {
-      id: "support",
-      label: "Support",
-      detail: "Ask for a fresh invite if needed.",
-      href: withOrgHref("/support", orgId),
     },
   ];
 }

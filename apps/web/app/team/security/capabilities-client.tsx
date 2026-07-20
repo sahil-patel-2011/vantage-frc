@@ -18,6 +18,12 @@ type Member = {
   joinedAt: string;
 };
 
+type AdminTenure = {
+  inviteHint: string | null;
+  lastAdminLocked: boolean;
+  bootstrapActive: boolean;
+};
+
 const LABELS: Record<OrgCapability, { title: string; hint: string }> = {
   manage_api_keys: {
     title: "Manage API keys / connectors",
@@ -42,6 +48,7 @@ const ALL_CAPS = Object.keys(LABELS) as OrgCapability[];
 export default function CapabilitiesClient({ orgId }: { orgId: string }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [actorRole, setActorRole] = useState<string | null>(null);
+  const [adminTenure, setAdminTenure] = useState<AdminTenure | null>(null);
   const [drafts, setDrafts] = useState<Record<string, OrgCapability[]>>({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -57,6 +64,7 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
     }
     setMembers(data.members ?? []);
     setActorRole(data.actorRole ?? null);
+    setAdminTenure((data.adminTenure as AdminTenure | undefined) ?? null);
     const next: Record<string, OrgCapability[]> = {};
     for (const member of data.members ?? []) {
       next[member.userId] = [...(member.capabilities ?? [])];
@@ -131,6 +139,11 @@ export default function CapabilitiesClient({ orgId }: { orgId: string }) {
         Grant elevated capabilities to scouts and viewers without promoting them to full team admin. Includes API keys /
         connectors and budgets. Changes are enforced on API routes and audited.
       </p>
+      {adminTenure?.inviteHint ? (
+        <p className="app-muted" role="note">
+          {adminTenure.inviteHint}
+        </p>
+      ) : null}
       {message ? (
         <p role="status" className="telemetry-status">
           {message}

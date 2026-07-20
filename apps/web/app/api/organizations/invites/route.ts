@@ -1,6 +1,7 @@
 import {
   auth,
   createOrganizationInvite,
+  getAdminTenureSnapshot,
   listOrganizationInvites,
   resendOrganizationInvite,
   revokeOrganizationInvite,
@@ -14,8 +15,12 @@ import { parseSecureJson, securityErrorResponse } from "../../../../lib/security
 
 const mutateLimiter = createRateLimiter({ limit: 15, windowMs: 10 * 60_000, namespace: "org-invites" });
 const orgRole = z.enum(["owner", "admin", "scout", "viewer"]);
-const createSchema = z.object({ orgId: z.string().uuid(), email: z.string().trim().email().max(254), role: orgRole }).strict();
-const actionSchema = z.object({ orgId: z.string().uuid(), inviteId: z.string().uuid(), action: z.enum(["resend", "revoke"]) }).strict();
+const createSchema = z
+  .object({ orgId: z.string().uuid(), email: z.string().trim().email().max(254), role: orgRole })
+  .strict();
+const actionSchema = z
+  .object({ orgId: z.string().uuid(), inviteId: z.string().uuid(), action: z.enum(["resend", "revoke"]) })
+  .strict();
 
 function privateJson(value: unknown, init?: ResponseInit) {
   const response = Response.json(value, init);
@@ -29,18 +34,21 @@ async function userId() {
   return session.user.id;
 }
 
-const failure = (error: unknown) =>
-  securityErrorResponse(error, "Request failed");
+const failure = (error: unknown) => securityErrorResponse(error, "Request failed");
 
 export async function GET(request: Request) {
   try {
     const actor = await userId();
     const orgId = new URL(request.url).searchParams.get("orgId");
-    if (!orgId || !z.string().uuid().safeParse(orgId).success) return Response.json({ error: "A valid orgId is required" }, { status: 400 });
-    const invites = await withRls({ userId: actor, orgId }, (client) =>
-      listOrganizationInvites(client, orgId),
-    );
-    return privateJson({ invites });
+    if (!orgId || !z.string().uuid().safeParse(orgId).success) {
+      return Response.json({ error: "A valid orgId is required" }, { status: 400 });
+    }
+    const data = await withRls({ userId: actor, orgId }, async (client) => {
+      const invites = await listOrganizationInvites(client, orgId);
+      const adminTenure = await getAdminTenureSnapshot(client, orgId);
+      return { invites, adminTenure };
+    });
+    return privateJson(data);
   } catch (error) {
     return failure(error);
   }
