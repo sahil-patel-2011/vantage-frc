@@ -36,7 +36,7 @@ describe("sign-in Soft-UI helpers", () => {
     const actions = signInNextActions();
     expect(actions.find((a) => a.id === "waitlist")?.href).toBe("/#waitlist");
     expect(actions.find((a) => a.id === "pricing")?.detail).toMatch(/\$69/);
-    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$69", "$109 / $159", "$299 / $549"]);
+    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$0", "$109 / $159", "$299 / $549"]);
   });
 
   it("maps OAuth waitlist denials to closed-access copy", () => {

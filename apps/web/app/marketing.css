@@ -1432,6 +1432,40 @@
 .marketing-lux .pricing-page > .pricing-plans{
   padding:clamp(8px,1.5vw,16px) var(--m-pad-x) clamp(36px,5vw,56px);
 }
+.marketing-lux .pricing-page > .pricing-free-lead{
+  padding-bottom:clamp(12px,2vw,20px);
+}
+.marketing-lux .pricing-grid-free{
+  grid-template-columns:minmax(0,1fr);
+  max-width:420px;
+}
+.marketing-lux .pricing-ladder-hint{
+  margin:14px 0 0;color:var(--m-muted);font-size:14px;line-height:1.45;
+}
+.marketing-lux .pricing-card-actions{
+  display:grid;gap:10px;margin-top:auto;
+}
+.marketing-lux .pricing-card-actions .button{width:100%;justify-content:center;text-align:center}
+.marketing-lux .pricing-credits{
+  padding:clamp(28px,4vw,48px) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+}
+.marketing-lux .pricing-credits > h2{
+  max-width:720px;margin:0 0 8px;
+  font:600 clamp(24px,3vw,34px)/1.15 var(--m-sans);letter-spacing:-.02em;
+}
+.marketing-lux .pricing-credits > p{
+  max-width:680px;margin:0 0 22px;color:var(--m-muted);font-size:15px;line-height:1.55;
+}
+.marketing-lux .pricing-grid-credits{
+  grid-template-columns:repeat(3,1fr);margin-top:0;
+}
+.marketing-lux .pricing-grid-credits article .pricing-card-note{
+  margin:0 0 18px;flex:1;
+}
+@media(max-width:900px){
+  .marketing-lux .pricing-grid-credits{grid-template-columns:1fr}
+}
 .marketing-lux .pricing-plans-chrome{
   display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;
   margin:0 0 14px;

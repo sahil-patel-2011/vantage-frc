@@ -139,7 +139,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     eyebrow: "YOUR KEYS",
     title: "Workspace AI API keys",
     description:
-      "Paste OpenAI, Anthropic, or Google keys for Free / bring-your-own routing. Paid plans add Vantage-hosted AI—cheaper than own keys—with the product built in natively. Your keys never consume hosted usage.",
+      "Paste OpenAI, Anthropic, or Google keys for Free, or buy AI credits for hosted usage. Paid plans add Vantage-hosted AI—credits go further than own keys—with the product built in. Your keys never consume hosted usage.",
   };
 }
 
@@ -148,12 +148,12 @@ export function aiKeysBillingNote(tier: string | null | undefined): { title: str
   const normalized = (tier ?? "free").toLowerCase();
   if (normalized === "free") {
     return {
-      title: "Free · your keys",
-      body: "Free keeps Soft-UI competition core with your own keys or a local relay—no managed hosted AI. Add OpenAI, Anthropic, or Google below. Paid plans unlock Vantage-hosted AI (cheaper than typical own-key rates) plus native scouting, strategy, and Event Day.",
+      title: "Free · keys or credits",
+      body: "Free is the starting plan: competition core with your own keys, a local relay, or buy AI credits for hosted usage. Credits go further than typical own-key rates. Paid Individual/Team plans unlock more hosted AI in the product.",
     };
   }
   return {
-    title: "Paid · hosted native AI",
-    body: "Prefer Vantage-hosted AI (included window, then Credits or PAYG)—cheaper than running your own keys for the same Soft-UI product. You can still paste BYOK keys; that traffic does not consume hosted usage, so you are not billed twice for one call.",
+    title: "Paid · hosted AI",
+    body: "Prefer Vantage-hosted AI in the product, then buy AI credits or enable PAYG when you need more. Credits go further than running the same models on your own keys. You can still paste BYOK keys; that traffic does not consume hosted usage.",
   };
 }

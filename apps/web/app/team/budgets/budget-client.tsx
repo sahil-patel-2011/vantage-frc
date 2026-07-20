@@ -368,11 +368,11 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
 
           <section className="intel-panel budget-cutoff-panel" aria-label="Hard cut-off options">
             <span className="eyebrow">Hard cut-offs</span>
-            <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>After included allowance</h2>
+            <h2 style={{ margin: "4px 0 8px", fontSize: 18 }}>After hosted AI runs out</h2>
             <p className="app-muted" style={{ marginTop: 0 }}>
-              Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} included API allowance hard-stops at 100%. Resume
-              with prepaid Usage Credits (hosted debit at 0.75× typical API list — about 25% less than BYOK), explicit PAYG + spend cap, or a
-              higher plan. BYOK / local does not consume the managed allowance.
+              Plan{cutoff?.planCode ? ` (${cutoff.planCode})` : ""} hosted AI usage hard-stops at 100%. Resume with AI
+              credits (hosted debit ~25% less than typical own-key rates), explicit PAYG + spend cap, or a higher plan.
+              Your own keys / local do not consume hosted usage.
             </p>
             <div className="usage-cutoff-banner-ctas" style={{ marginTop: 4 }}>
               <UsageCutoffQuickActions
@@ -627,7 +627,7 @@ function UsageCutoffQuickActions({
         disabled={busy != null}
         onClick={() => void checkout("credits", { packCode: "credits_100" })}
       >
-        {busy === "credits" ? "Opening…" : "Buy Usage Credits"}
+        {busy === "credits" ? "Opening…" : "Buy AI credits"}
       </button>
       <button
         type="button"

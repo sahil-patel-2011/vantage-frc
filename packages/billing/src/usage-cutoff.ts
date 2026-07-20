@@ -70,16 +70,16 @@ export function cutoffMessage(reason: string): string {
     case "billing_disabled":
       return "AI usage is currently disabled for this organization.";
     case "payg_not_enabled":
-      return "Included AI allowance is exhausted. Buy Usage Credits or enable pay-as-you-go to continue.";
+      return "Hosted AI usage is exhausted. Buy AI credits or enable pay-as-you-go to continue.";
     case "insufficient_prepaid_balance":
-      return "Prepaid Usage Credits are insufficient for this request.";
+      return "Prepaid AI credits are insufficient for this request.";
     case "spend_cap":
       return "Pay-as-you-go spend cap has been reached for this organization.";
     case "credit_cap":
     case "managed_allowance_exhausted":
       return "This organization has reached its Vantage AI credit limit.";
     case "sponsored_allowance_exhausted":
-      return "Sponsored AI allowance is exhausted for this period.";
+      return "Sponsored AI is exhausted for this period.";
     case "budget_limit":
       return "An API budget limit was reached for this organization.";
     case "policy_denied":
