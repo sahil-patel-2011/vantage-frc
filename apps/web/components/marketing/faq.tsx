@@ -1,25 +1,25 @@
 /** Landing-page FAQ — short answers + FAQPage JSON-LD. */
 
-import { PRICING_CATALOG, TEAM_TRIAL_DAYS, hostedApiSavingsCopy } from "@vantage/billing/catalog";
+import { PRICING_CATALOG, TEAM_TRIAL_DAYS } from "@vantage/billing/catalog";
 
 const c = PRICING_CATALOG;
 
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Vantage is invite-only competition operations software for FRC teams. Soft-UI hubs cover Competition (Scouting, Command, My Day, Strategy, Alliance Selection Desk), Team (including Season Planning), Business, Build (CAD agent, Code Coach), and AI (Assistant + /team/ai-keys). Surfaces stay empty until real data exists.",
+    a: "Invite-only competition ops for FRC teams. Soft-UI hubs cover Competition (scouting, Event Day Command, Alliance Selection Desk), Team (Season Planning), Logistics, Business, Build (CAD agent, Code Coach), and AI (BYOK or credits).",
   },
   {
     q: "What do teams open first?",
-    a: "Competition hub for Scouting, Command, and My Day; Alliance Selection Desk for picks; Season Planning on Team; then Business and Build when the season needs them. Free teams add AI keys at /team/ai-keys.",
+    a: "Competition for scouting and Event Day; Alliance Selection Desk for picks; Season Planning on Team; Logistics, Business, and Build as the season needs them.",
   },
   {
     q: "Does it work offline?",
-    a: "Yes. Match and pit forms keep working when venue Wi-Fi drops; sync resumes with attribution when you reconnect.",
+    a: "Yes. Match and pit forms keep working when venue Wi-Fi drops; sync resumes when you reconnect.",
   },
   {
     q: "How much does it cost?",
-    a: `Start free ($0) with your own keys or buy AI credits anytime. Individual $${c.individual_pro.monthlyUsd}/$${c.individual_max.monthlyUsd}/mo; Team $${c.team_pro.monthlyUsd}/$${c.team_max.monthlyUsd}/mo. ${hostedApiSavingsCopy()} Hard stop when hosted usage runs out unless you add credits or PAYG. Week team trial: ${TEAM_TRIAL_DAYS} days.`,
+    a: `Free ($0) with your own keys, or buy AI credits anytime. Individual $${c.individual_pro.monthlyUsd}/$${c.individual_max.monthlyUsd}/mo; Team $${c.team_pro.monthlyUsd}/$${c.team_max.monthlyUsd}/mo. Hosted plans include a week team trial (${TEAM_TRIAL_DAYS} days).`,
   },
   {
     q: "Is team data private?",
