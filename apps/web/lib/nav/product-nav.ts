@@ -319,7 +319,8 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
     items: [
       { href: "/account", label: "Account", icon: "users" },
       { href: "/whats-new", label: "What’s new", icon: "bell" },
-      { href: "/support", label: "Help & Support", icon: "chat" },
+      { href: "/help", label: "Help", icon: "clipboard" },
+      { href: "/support", label: "Support tickets", icon: "chat" },
       { href: "/notifications", label: "Notifications", icon: "bell" },
       { href: "/security", label: "Security", icon: "gear" },
       { href: "/team/security", label: "Team security", icon: "gear" },
@@ -372,7 +373,7 @@ export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: Prod
 export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/competition?tab=forms", label: "Forms", icon: "clipboard" },
-  { href: "/competition?tab=match-checklist", label: "Checklist", icon: "clipboard" },
+  { href: "/help", label: "Help", icon: "clipboard" },
   { href: "/team?tab=messages", label: "Messages", icon: "chat" },
 ];
 

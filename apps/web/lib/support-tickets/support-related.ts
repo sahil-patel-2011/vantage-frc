@@ -19,9 +19,9 @@ export type SupportRelatedLink = {
 
 /**
  * Focused Soft-UI strip on `/support`.
- * Omits Help by default — `/help` redirects here (legacy Settings path).
+ * Includes Help docs hub — tickets stay on this page.
  */
-export const SUPPORT_RELATED_INCLUDE: SupportRelatedId[] = ["account", "workspace", "notifications"];
+export const SUPPORT_RELATED_INCLUDE: SupportRelatedId[] = ["account", "help", "workspace", "notifications"];
 
 /** Cross-links for Support Soft-UI — Account / Help / Workspace when included. Never DEMO tickets. */
 export function supportRelatedLinks(
@@ -120,8 +120,8 @@ export function supportNextActions(input: {
       },
       {
         id: "help",
-        label: "Help alias",
-        detail: "Legacy /help redirects to this Support page — tickets are never pre-filled.",
+        label: "Open Help docs",
+        detail: "Short Soft-UI tutorials (island, Home, scouting, BYOK) — separate from tickets.",
         href: "/help",
       },
     ];
@@ -158,6 +158,13 @@ export function supportNextActions(input: {
   }
 
   actions.push(
+    {
+      id: "help",
+      label: "Help docs",
+      detail: "Tutorials for Soft-UI surfaces — island, Edit Home, scouting, BYOK, Event Day, credits.",
+      href: "/help",
+      primary: false,
+    },
     {
       id: "account",
       label: "Account settings",

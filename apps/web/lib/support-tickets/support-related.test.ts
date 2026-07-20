@@ -25,14 +25,15 @@ function ticket(partial: Partial<SupportTicket> & Pick<SupportTicket, "id" | "st
 }
 
 describe("support Soft-UI helpers", () => {
-  it("builds Account / Workspace / Notifications cross-links (Help optional)", () => {
+  it("builds Account / Help / Workspace / Notifications cross-links", () => {
     const links = supportRelatedLinks("org-1", { include: [...SUPPORT_RELATED_INCLUDE] });
-    expect(links.map((l) => l.id)).toEqual(["account", "workspace", "notifications"]);
+    expect(links.map((l) => l.id)).toEqual(["account", "help", "workspace", "notifications"]);
     expect(links.find((l) => l.id === "account")?.href).toBe("/account");
+    expect(links.find((l) => l.id === "help")?.href).toBe("/help");
     expect(links.every((l) => !/demo/i.test(l.label))).toBe(true);
   });
 
-  it("includes Help when requested — legacy alias path", () => {
+  it("includes Help when requested", () => {
     const links = supportRelatedLinks(null, { include: ["account", "help"] });
     expect(links.map((l) => l.id)).toEqual(["account", "help"]);
     expect(links.find((l) => l.id === "help")?.href).toBe("/help");
@@ -42,13 +43,14 @@ describe("support Soft-UI helpers", () => {
     const actions = supportNextActions({});
     expect(actions.map((a) => a.id)).toEqual(["workspace", "account", "help"]);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /DEMO|never pre-filled/i.test(a.detail))).toBe(true);
+    expect(actions.some((a) => /tutorials|Help docs|Soft-UI/i.test(a.detail))).toBe(true);
   });
 
   it("asks for first ticket when empty — never DEMO tickets", () => {
     const actions = supportNextActions({ orgId: "org-1", ticketCount: 0 });
     expect(actions[0]?.id).toBe("submit");
     expect(actions[0]?.primary).toBe(true);
+    expect(actions.map((a) => a.id)).toContain("help");
     expect(actions.map((a) => a.id)).toContain("account");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.some((a) => /never DEMO/i.test(a.detail))).toBe(true);
