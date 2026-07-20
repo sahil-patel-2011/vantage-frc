@@ -3,9 +3,9 @@ import { HttpChatAdapter, ProviderRateLimitError } from "./http-chat-adapter";
 
 /**
  * Platform-sponsored promotional AI pool (env keys only — never commit values).
- * Env: MISTRAL_API_KEY, CEREBRAS_API_KEY, GROQ_API_KEY, COHERE_API_KEY
- * Order: Mistral (primary free/promo) → Cerebras → Groq → Cohere.
- * Cheap OpenAI-compatible models; failover on rate-limit / quota (429/503).
+ * Env: MISTRAL_API_KEY, GROQ_API_KEY, COHERE_API_KEY, CEREBRAS_API_KEY
+ * Order: Mistral (primary) → Groq → Cohere → Cerebras (last; chat often 402 when
+ * models list still works). Failover on rate-limit / payment / quota (429/402/503).
  */
 
 export type SponsoredProviderId = "mistral" | "cerebras" | "groq" | "cohere";
@@ -19,7 +19,7 @@ type SponsoredCandidate = {
   prices: { inputPerMillionUsd: number; outputPerMillionUsd: number };
 };
 
-/** Prefer small / fast free-tier friendly models. */
+/** Prefer small / fast free-tier friendly models; working keys before Cerebras. */
 export const SPONSORED_PROVIDER_ORDER: SponsoredCandidate[] = [
   {
     id: "mistral",
@@ -27,13 +27,6 @@ export const SPONSORED_PROVIDER_ORDER: SponsoredCandidate[] = [
     baseUrl: "https://api.mistral.ai/v1",
     model: "mistral-small-latest",
     prices: { inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.3 },
-  },
-  {
-    id: "cerebras",
-    envKey: "CEREBRAS_API_KEY",
-    baseUrl: "https://api.cerebras.ai/v1",
-    model: "llama3.1-8b",
-    prices: { inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.1 },
   },
   {
     id: "groq",
@@ -49,6 +42,13 @@ export const SPONSORED_PROVIDER_ORDER: SponsoredCandidate[] = [
     model: "command-r-08-2024",
     prices: { inputPerMillionUsd: 0.15, outputPerMillionUsd: 0.6 },
   },
+  {
+    id: "cerebras",
+    envKey: "CEREBRAS_API_KEY",
+    baseUrl: "https://api.cerebras.ai/v1",
+    model: "llama3.1-8b",
+    prices: { inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.1 },
+  },
 ];
 
 export function listConfiguredSponsoredProviders(
@@ -62,10 +62,13 @@ export function isSponsoredRateLimitError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   const msg = error.message.toLowerCase();
   return (
+    /\b402\b/.test(msg) ||
     /\b429\b/.test(msg) ||
     msg.includes("rate limit") ||
     msg.includes("rate_limit") ||
     msg.includes("quota") ||
+    msg.includes("payment") ||
+    msg.includes("insufficient") ||
     msg.includes("too many requests") ||
     msg.includes("capacity")
   );
@@ -104,7 +107,7 @@ export class SponsoredFailoverChatAdapter implements ChatAdapter {
     }));
     if (this.adapters.length === 0) {
       throw new Error(
-        "No sponsored provider API keys configured (MISTRAL_API_KEY / CEREBRAS_API_KEY / GROQ_API_KEY / COHERE_API_KEY).",
+        "No sponsored provider API keys configured (MISTRAL_API_KEY / GROQ_API_KEY / COHERE_API_KEY / CEREBRAS_API_KEY).",
       );
     }
     this.provider = `sponsored:${this.adapters[0]!.id}`;
@@ -150,8 +153,10 @@ function isRetryableSponsoredFailure(error: unknown): boolean {
   if (isSponsoredRateLimitError(error)) return true;
   if (!(error instanceof Error)) return false;
   const msg = error.message;
-  // Transient upstream / capacity
-  return /\b(503|502|504|529)\b/.test(msg) || /overloaded|unavailable|timeout/i.test(msg);
+  // Transient upstream / capacity / payment-quota (402) when not already typed
+  return (
+    /\b(402|502|503|504|529)\b/.test(msg) || /overloaded|unavailable|timeout/i.test(msg)
+  );
 }
 
 export function tryCreateSponsoredFailoverAdapter(input?: {
