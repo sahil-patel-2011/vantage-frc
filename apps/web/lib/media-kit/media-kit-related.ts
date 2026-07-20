@@ -3,6 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Media Kit (never DEMO asset counts). */
 export const MEDIA_KIT_RELATED_LINKS = [
+  { id: "media", label: "Media workspace", kind: "path" as const, path: "/media" },
   { id: "sponsor-suite", label: "Sponsor Suite", kind: "business" as const, tab: "sponsor-suite" },
   { id: "outreach-calendar", label: "Outreach Calendar", kind: "business" as const, tab: "outreach-calendar" },
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
@@ -17,15 +18,16 @@ export type MediaKitRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Sponsor Suite / Outreach / Impact. */
+/** Focused Soft-UI strip — Media workspace / Suite / Outreach / Impact. */
 export const MEDIA_KIT_RELATED_INCLUDE: MediaKitRelatedId[] = [
+  "media",
   "sponsor-suite",
   "outreach-calendar",
   "impact",
 ];
 
 /**
- * Soft-UI cross-links from Media Kit → Suite / Outreach / Impact.
+ * Soft-UI cross-links from Media Kit → Media / Suite / Outreach / Impact.
  * Build with hubHref / withOrgHref — never broken JSX href templates.
  */
 export function mediaKitRelatedLinks(
@@ -40,7 +42,12 @@ export function mediaKitRelatedLinks(
   }).map((link) => ({
     id: link.id,
     label: link.label,
-    href: hubHref("/business", link.tab, orgId),
+    href:
+      link.kind === "business"
+        ? hubHref("/business", link.tab, orgId)
+        : orgId
+          ? withOrgHref(link.path, orgId)
+          : link.path,
   }));
 }
 

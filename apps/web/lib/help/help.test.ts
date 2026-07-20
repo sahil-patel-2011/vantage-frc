@@ -13,6 +13,7 @@ describe("help articles", () => {
       "event-day-command",
       "alliance-season",
       "credits-vs-free",
+      "media-workspace",
     ]);
   });
 

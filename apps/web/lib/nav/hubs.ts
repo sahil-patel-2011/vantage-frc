@@ -167,6 +167,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "awards-workbench", label: "Awards workbench", legacyHref: "/team/awards", primary: false },
       { id: "impact-essay", label: "FIRST Impact Essay Generator", legacyHref: "/impact-essay", primary: false },
       { id: "judge-sim", label: "Judge-Pitch Simulator", legacyHref: "/judge-sim", primary: false },
+      { id: "media", label: "Media", legacyHref: "/media", primary: false },
       { id: "media-kit", label: "Media Kit", legacyHref: "/media-kit", primary: false },
       { id: "outreach-calendar", label: "Outreach Calendar", legacyHref: "/outreach-calendar", primary: false },
       { id: "sponsor-suite", label: "Sponsor Suite", legacyHref: "/sponsor-suite", primary: false },

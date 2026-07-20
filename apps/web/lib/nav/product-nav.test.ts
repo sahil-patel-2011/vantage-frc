@@ -102,6 +102,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/competition")).toBe("Competition / Competition hub");
     expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance Selection Desk");
     expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season Planning Workspace");
+    expect(breadcrumbForPath("/media")).toBe("Business / Media");
   });
 
   it("resolves form builder via hub tab when using competition?tab=forms href", () => {
@@ -161,6 +162,7 @@ describe("product-nav", () => {
     expect(business.items.some((i) => i.href === "/business?tab=grants")).toBe(true);
     expect(business.items.some((i) => i.href === "/team/grants")).toBe(true);
     expect(business.items.some((i) => i.href === "/team/sponsors")).toBe(false);
+    expect(business.items.some((i) => i.href === "/media")).toBe(true);
   });
 
   it("marks unfinished destinations as planned instead of dead links", () => {

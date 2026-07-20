@@ -315,6 +315,52 @@ export const HELP_ARTICLES: HelpArticle[] = [
       },
     ],
   },
+  {
+    id: "media-workspace",
+    slug: "media-workspace",
+    title: "Media workspace for press and business",
+    summary:
+      "One Soft-UI home for Media Kit, outreach dates, media impact, and sponsor visuals — empty until real rows exist.",
+    category: "Business",
+    keywords: [
+      "media",
+      "press kit",
+      "social",
+      "media kit",
+      "outreach",
+      "sponsor wall",
+      "business media",
+      "photos",
+      "captions",
+    ],
+    relatedHref: "/media",
+    sections: [
+      {
+        heading: "Open Media",
+        body: [
+          "From Business → More tools → Media, or search “Media” in Cmd+K / the drawer.",
+          "Pick a team workspace first — Media is org-scoped like other Soft-UI business tools.",
+        ],
+      },
+      {
+        heading: "What the tiles mean",
+        body: [
+          "Kit readiness and asset counts come from Media Kit profile fields and uploaded URLs.",
+          "Upcoming outreach and “tagged media” come from Outreach Calendar events you scheduled.",
+          "Media impact and people reached come only from Community Impact rows with category media.",
+          "Sponsor wall counts come from published Sponsor Wall entries — never invented logos.",
+        ],
+      },
+      {
+        heading: "Where to edit",
+        body: [
+          "Use Open Media Kit to edit bios, logos, and one-pagers.",
+          "Use Outreach Calendar for press days and demos; Community Impact to log completed media work; Sponsor Wall for thank-you visuals.",
+          "Empty states stay empty until you add real data — Vantage never invents DEMO media metrics.",
+        ],
+      },
+    ],
+  },
 ];
 
 export function getHelpArticle(slug: string): HelpArticle | undefined {

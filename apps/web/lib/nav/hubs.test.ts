@@ -42,6 +42,7 @@ describe("product hubs", () => {
     expect(more).toContain("sponsor-renewal-roi");
     expect(more).toContain("grant-eligibility-matcher");
     expect(more).toContain("matching-gift-finder");
+    expect(more).toContain("media");
   });
 
   it("surfaces Team ops tabs including batteries and FMEA", () => {

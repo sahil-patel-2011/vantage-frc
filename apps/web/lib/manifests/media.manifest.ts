@@ -1,0 +1,21 @@
+export const manifest = {
+  slug: "media",
+  title: "Media",
+  route: "/media",
+  apiRoute: "/api/media",
+  hub: "Business",
+  navGroup: "Business",
+  metered: false,
+  tables: [
+    "media_kit_profiles",
+    "media_kit_assets",
+    "media_kit_documents",
+    "outreach_calendar_events",
+    "impact_activities",
+    "sponsor_wall_entries",
+    "sponsor_wall_settings",
+  ],
+  aiTools: [],
+  exportAdapters: [],
+  placeholderRoute: false,
+} as const;

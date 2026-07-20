@@ -1,0 +1,20 @@
+/* Soft-UI Media workspace — .media-* + shared Soft-UI tokens. Never DEMO media metrics. */
+.media-page{display:grid;gap:16px}
+.media-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.media-related{display:flex;flex-wrap:wrap;gap:8px}
+.media-next-actions{margin:0}
+.media-stats{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.media-stats strong{font-size:1.5rem}
+.media-layout{display:grid;gap:16px}
+.media-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.media-panel-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.media-panel-list li{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.media-panel-list li > div{display:grid;gap:2px}
+.media-panel-list strong{font-weight:600}
+.media-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.media-missing span{font-size:0.85rem;opacity:0.85}
+@media(max-width:900px){
+  .media-header-actions{justify-content:flex-start}
+  .media-next-actions li{flex-direction:column;align-items:stretch}
+  .media-panel-list li{flex-direction:column;align-items:stretch}
+}
