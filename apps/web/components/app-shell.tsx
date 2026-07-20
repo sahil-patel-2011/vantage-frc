@@ -18,7 +18,7 @@ import {
 } from "../lib/nav/product-nav";
 import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
-import { formatMyDayWhen, matchAlertTitle, type MyDayView } from "../lib/my-day";
+import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
 
@@ -623,29 +623,6 @@ export default function AppShell() {
     }
   }
 
-  function renderGlance() {
-    const myDayHref = withOrgHref("/my-day", orgId);
-    if (myDayGlance?.status === "ready" && myDayGlance.next) {
-      const next = myDayGlance.next;
-      const when = formatMyDayWhen(next.scheduledTime);
-      const allianceClass = next.alliance === "red" ? "soft-glance-red" : next.alliance === "blue" ? "soft-glance-blue" : "";
-      return (
-        <a className={`soft-glance ${allianceClass}`} href={myDayHref} onClick={() => setMoreOpen(false)}>
-          <span className="soft-glance-kicker">My Day</span>
-          <strong>{matchAlertTitle(next)}</strong>
-          <span>{[next.bumperCue, when].filter(Boolean).join(" · ") || "Open My Day"}</span>
-        </a>
-      );
-    }
-    return (
-      <a className="soft-glance soft-glance-empty" href={myDayHref} onClick={() => setMoreOpen(false)}>
-        <span className="soft-glance-kicker">My Day</span>
-        <strong>No upcoming match</strong>
-        <span>Open My Day for schedule and logistics</span>
-      </a>
-    );
-  }
-
   function navItemBadge(itemHref: string) {
     const path = itemHref.split("?")[0] || itemHref;
     const isMessages =
@@ -948,7 +925,6 @@ export default function AppShell() {
             </a>
           ))}
         </nav>
-        <p className="soft-drawer-hint">Expand a pillar for tools. Planned items stay marked until ready.</p>
         {groups.map((group) => {
           const expanded = !!expandedGroups[group.label];
           const visibleCount = group.items.filter((item) => item.state !== "planned").length;
@@ -1077,16 +1053,11 @@ export default function AppShell() {
       <div className={`soft-more-sheet${moreOpen ? " open" : ""}`} role="dialog" aria-label="More destinations" aria-hidden={!moreOpen}>
         <div className="soft-more-handle" aria-hidden="true" />
         <div className="soft-more-head">
-          <div>
-            <strong>More</strong>
-            <small>Pillars and quick tools</small>
-          </div>
+          <strong>More</strong>
           <button className="soft-icon-btn" type="button" aria-label="Close more menu" onClick={() => setMoreOpen(false)}>
             <Icon name="x" />
           </button>
         </div>
-        {renderGlance()}
-        <p className="soft-more-section-label">Pillars</p>
         <div className="soft-more-grid soft-more-pillars">
           {pillarSheetLinks.map((link) => (
             <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
@@ -1095,7 +1066,6 @@ export default function AppShell() {
             </a>
           ))}
         </div>
-        <p className="soft-more-section-label">Quick tools</p>
         <div className="soft-more-grid soft-more-quick">
           {moreSheetLinks.map((link) => (
             <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
@@ -1107,7 +1077,7 @@ export default function AppShell() {
             </a>
           ))}
         </div>
-        <div className="soft-more-actions">
+        <div className="soft-more-actions soft-more-actions-3">
           <button
             type="button"
             onClick={() => {
@@ -1116,7 +1086,7 @@ export default function AppShell() {
             }}
           >
             <Icon name="menu" />
-            Full menu
+            Menu
           </button>
           <button
             type="button"
@@ -1125,8 +1095,12 @@ export default function AppShell() {
             }}
           >
             <Icon name="gear" />
-            Customize island
+            Island
           </button>
+          <a href={withOrgHref("/chat", orgId)} onClick={() => setMoreOpen(false)}>
+            <Icon name="chat" />
+            Chat
+          </a>
         </div>
       </div>
 
@@ -1181,9 +1155,11 @@ export default function AppShell() {
         </div>
       ) : null}
 
-      <a className="soft-fab" href={withOrgHref("/chat", orgId)} aria-label="Open Vantage AI chat">
-        <Icon name="chat" />
-      </a>
+      {!moreOpen && !islandEditorOpen ? (
+        <a className="soft-fab soft-fab-desktop" href={withOrgHref("/chat", orgId)} aria-label="Open Vantage AI chat">
+          <Icon name="chat" />
+        </a>
+      ) : null}
 
       {commandOpen ? (
         <div
