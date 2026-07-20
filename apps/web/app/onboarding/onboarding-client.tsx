@@ -513,7 +513,6 @@ export default function OnboardingClient() {
             </fieldset>
             {termsNeeded ? (
               <div className="onboarding-terms-block">
-                <p className="onboarding-terms-required-label">Required before submit</p>
                 <LegalAgreementCheckbox
                   id="onboarding-terms"
                   checked={termsAccepted}
@@ -522,15 +521,13 @@ export default function OnboardingClient() {
                   required
                 />
               </div>
-            ) : (
-              <p className="onboarding-terms-already" role="status">
-                <b>✓</b>
-                <span>Terms already accepted for this account. You can submit your closed-membership access request.</span>
-              </p>
-            )}
+            ) : null}
             <div className="onboarding-security-note">
               <b aria-hidden="true">✓</b>
-              <p><strong>Submitting does not grant access.</strong><span>Your verified request goes to a team owner or administrator. Approval creates membership, ends this temporary session, and emails you a fresh sign-in link. Prefer an invite? Use the invitation email instead.</span></p>
+              <p>
+                <strong>Submit sends a request—not access.</strong>
+                <span> A team owner must approve. Prefer an invite? Use the invitation email.</span>
+              </p>
             </div>
             <div className="onboarding-actions">
               <button type="button" className="signin-link" onClick={() => setStep("team")}>Back</button>

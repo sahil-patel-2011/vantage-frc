@@ -5,7 +5,7 @@ import { marketingPageMetadata } from "../../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "CAD agent — Vantage",
   description:
-    "Approval-gated CAD briefs for Onshape or Fusion on the Build hub. Setup required until connectors are configured. No unreviewed mutations.",
+    "Approval-gated CAD briefs for Onshape or Fusion on the Build hub. Connectors required before jobs run. No unreviewed mutations.",
   path: "/features/cad",
 });
 
@@ -20,7 +20,7 @@ const steps = [
     title: "Connectors",
     copy: "Onshape OAuth or Fusion relay.",
     frame: "Setup",
-    lines: ["Onshape hosted", "Fusion desktop", "Setup required"],
+    lines: ["Onshape hosted", "Fusion desktop", "Credentials required"],
   },
   {
     title: "Review",
@@ -55,7 +55,7 @@ export default function CadFeaturePage() {
           <div className="lux-content">
             <header className="lux-section-head">
               <h2>Confirm. Connect. Review.</h2>
-              <p>Build hub · CAD tab. Setup required until Onshape or Fusion is connected.</p>
+              <p>Build hub · CAD tab. Connect Onshape or Fusion before briefs run.</p>
             </header>
             <ul className="lux-feature-grid">
               {steps.map((step) => (

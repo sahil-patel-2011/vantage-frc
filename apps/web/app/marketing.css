@@ -949,8 +949,7 @@
   outline:none;
 }
 .soft-waitlist-form .consent.legal-agreement{
-  padding:12px 14px;border:1px solid var(--m-line);border-radius:var(--m-radius-sm);
-  background:color-mix(in srgb,var(--m-paper) 70%,var(--m-white));
+  padding:0;border:0;border-radius:0;background:transparent;
 }
 .soft-waitlist-form .form-hint{
   margin:0;color:var(--m-muted);font-size:12px;line-height:1.45;
@@ -1037,19 +1036,21 @@
   font-family:var(--m-sans);
 }
 .marketing-lux .nav{
-  height:52px;
+  height:56px;
   border-bottom:1px solid transparent;
   background:rgba(255,255,255,.72);
   backdrop-filter:saturate(1.8) blur(20px);
   -webkit-backdrop-filter:saturate(1.8) blur(20px);
 }
+.marketing-lux .nav nav{gap:32px}
 .marketing-lux .nav nav a,
 .marketing-lux .marketing-footer a{
   color:var(--m-muted);
-  font-size:12px;
+  font-size:14px;
   font-weight:500;
-  letter-spacing:-.01em;
+  letter-spacing:.01em;
 }
+.marketing-lux .nav .sign-in-link{font-size:14px;letter-spacing:.01em}
 .marketing-lux .nav nav a:hover,
 .marketing-lux .marketing-footer a:hover,
 .marketing-lux .sign-in-link{color:var(--m-ink)!important}
@@ -1299,7 +1300,7 @@
   border-top:1px solid var(--m-line);
 }
 .marketing-lux .lux-pillar-list li{
-  display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start;
+  display:grid;grid-template-columns:1fr;gap:8px;align-items:start;
   padding:28px 0;border-bottom:1px solid var(--m-line);
 }
 .marketing-lux .lux-pillar-list h3{

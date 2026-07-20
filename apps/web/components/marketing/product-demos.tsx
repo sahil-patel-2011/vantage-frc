@@ -132,10 +132,9 @@ export function CadPreview({ compact = false }: { compact?: boolean }) {
       className={`product-demo cad-product-demo ${compact ? "compact" : ""}`}
       aria-label="Demo data preview of the AI CAD Builder"
     >
-      <DemoChrome title="AI CAD Builder · Engineering thread" meta="Setup required" />
+      <DemoChrome title="AI CAD Builder · Engineering thread" meta="CAD agent" />
       <div className="cad-demo-shell">
         <section>
-          <span className="app-badge setup">Setup required</span>
           <small>CONFIRMED BRIEF</small>
           <h3>{cadFixture.title}</h3>
           <p>{cadFixture.brief}</p>
