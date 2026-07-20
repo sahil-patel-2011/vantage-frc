@@ -14,7 +14,7 @@ const panels = [
   {
     id: "strategy",
     title: "Strategy",
-    copy: "Win/loss and playbooks built from real event and scout facts—never DEMO win rates.",
+    copy: "Win/loss and playbooks from real event and scout facts—never DEMO win rates.",
     frame: "Alliance brief",
     lines: ["Evidence-weighted picks", "Playbook for drive team", "Empty until data exists"],
   },
@@ -74,6 +74,10 @@ export function HeroProductVisual() {
           <div className="hero-product-row muted">
             <span>Scouting</span>
             <strong>Synced facts</strong>
+          </div>
+          <div className="hero-product-row muted">
+            <span>Assistant</span>
+            <strong>Sources labeled</strong>
           </div>
         </div>
       </div>
