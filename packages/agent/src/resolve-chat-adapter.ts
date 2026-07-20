@@ -537,6 +537,7 @@ export async function resolveOrgChatAdapter(
   }
 
   // Platform-sponsored promo pool (team 1111 within window) before free-tier BYOK hard fail.
+  // Expiry only cuts off this pool — never org membership or non-AI product routes.
   if (tier === "free") {
     const promo = await resolveSponsoredPromoForOrg(client, input.orgId);
     if (promo.eligible) {

@@ -86,7 +86,7 @@ export function cutoffMessage(reason: string): string {
     case "sponsored_allowance_exhausted":
       return "Sponsored AI is exhausted for this period.";
     case "sponsored_promo_expired":
-      return "Promotional sponsored AI for team 1111 has ended (2026-10-18). Add your own AI keys under Team → AI API keys, or upgrade for hosted AI.";
+      return "Promotional sponsored AI for team 1111 has ended (2026-10-18). Add your own AI keys under Team → AI API keys, or upgrade for hosted AI. The rest of the workspace keeps working.";
     case "budget_limit":
       return "An API budget limit was reached for this organization.";
     case "policy_denied":

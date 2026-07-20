@@ -29,6 +29,21 @@ describe("sponsored promo eligibility", () => {
     if (!status.eligible) {
       expect(status.reason).toBe("promo_expired");
       expect(status.message).toMatch(/ended on 2026-10-18/);
+      expect(status.message).toMatch(/keeps working/i);
+    }
+  });
+
+  it("expiry is AI-pool eligibility only (no org lockout signal)", () => {
+    const status = evaluateSponsoredPromoEligibility({
+      teamNumber: 1111,
+      now: new Date("2026-10-19T00:00:00.000Z"),
+    });
+    expect(status.eligible).toBe(false);
+    if (!status.eligible) {
+      expect(status.reason).toBe("promo_expired");
+      // Status shape is sponsored-pool eligibility — never membership/hub access denial.
+      expect(status).not.toHaveProperty("lockout");
+      expect(status).not.toHaveProperty("membershipRevoked");
     }
   });
 

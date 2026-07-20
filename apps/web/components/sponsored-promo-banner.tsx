@@ -14,6 +14,7 @@ type PromoPayload = {
 /**
  * Surfaces team 1111 sponsored-promo state (active window or expired reminder).
  * Only renders for the promo team or when the API returns a promo-related message.
+ * Expiry is AI-pool only — never used to lock out non-AI product surfaces.
  */
 export function SponsoredPromoBanner({
   orgId,
@@ -66,7 +67,7 @@ export function SponsoredPromoBanner({
       }}
     >
       <strong style={{ display: "block", marginBottom: "0.2rem" }}>
-        {expired ? "Sponsored promo ended" : "Sponsored promo AI"}
+        {expired ? "Sponsored AI ended" : "Sponsored promo AI"}
       </strong>
       <span>{payload.message}</span>
       {expired ? (

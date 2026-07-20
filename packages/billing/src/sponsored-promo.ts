@@ -42,7 +42,8 @@ export function sponsoredPromoExpiredMessage(teamNumber = SPONSORED_PROMO_TEAM_N
   return (
     `Promotional sponsored AI for team ${teamNumber} ended on ` +
     `${SPONSORED_PROMO_ENDS_AT.toISOString().slice(0, 10)}. ` +
-    `Add your own OpenAI, Anthropic, or Google key under Team → AI API keys, or upgrade for hosted AI.`
+    `Add your own OpenAI, Anthropic, or Google key under Team → AI API keys, or upgrade for hosted AI. ` +
+    `The rest of the workspace (dashboard, hubs, membership, Media/Business) keeps working.`
   );
 }
 
