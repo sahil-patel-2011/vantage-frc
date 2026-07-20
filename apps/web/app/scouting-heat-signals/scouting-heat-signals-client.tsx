@@ -1,15 +1,46 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  Button,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { HEAT_DIRECTIONS, directionLabel } from "../../lib/scouting-heat-signals";
 import type { ScoutingHeatSignalsView } from "../../lib/scouting-heat-signals/compute-scouting-heat-signals";
 import type { HeatDirection } from "../../lib/scouting-heat-signals/types";
+import {
+  SCOUTING_HEAT_SIGNALS_RELATED_INCLUDE,
+  classifyScoutingHeatSignalsShell,
+  formatScoutingHeatSignalsMetric,
+  scoutingHeatSignalsNextActions,
+  scoutingHeatSignalsRelatedLinks,
+  scoutingHeatSignalsSetupSteps,
+  scoutingHeatSignalsShellCopy,
+  shouldShowScoutingHeatSignalsSummaryTiles,
+  type ScoutingHeatSignalsNextAction,
+  type ScoutingHeatSignalsShellKind,
+} from "../../lib/scouting-heat-signals/scouting-heat-signals-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./scouting-heat-signals.css";
 
-function directionTone(direction: HeatDirection): string {
-  if (direction === "up") return "good";
-  if (direction === "down") return "demo";
-  return "setup";
+const directionToneMap: Record<HeatDirection, BadgeTone> = {
+  up: "good",
+  down: "danger",
+  steady: "setup",
+};
+
+function directionTone(direction: HeatDirection): BadgeTone {
+  return directionToneMap[direction] ?? "setup";
 }
 
 function directionArrow(direction: HeatDirection): string {
@@ -20,13 +51,144 @@ function directionArrow(direction: HeatDirection): string {
 
 type LiveView = Extract<ScoutingHeatSignalsView, { status: "live" }>;
 
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = scoutingHeatSignalsRelatedLinks(orgId, {
+    include: [...SCOUTING_HEAT_SIGNALS_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related shs-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: ScoutingHeatSignalsNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions shs-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Scouting, Watchlist, and Pick List — never DEMO trend arrows.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function HeatShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: ScoutingHeatSignalsShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = scoutingHeatSignalsNextActions({ orgId, shell });
+  const copy = scoutingHeatSignalsShellCopy(shell);
+  const competitionHref = hubHref("/competition", "scouting-heat-signals", orgId);
+  const steps = shell === "setup" ? scoutingHeatSignalsSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page shs-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Scouting Heat Signals"}
+          </>
+        }
+        title="Scouting Heat Signals"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading scouting heat signals">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href="#scouting-heat-log">
+                Log a heat signal
+              </a>
+              <a className="app-button secondary" href={hubHref("/competition", "scouting", orgId)}>
+                Open Scouting
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="shs-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Scouting and Pick List — never DEMO trend arrows.</p>
+          </header>
+          <ul className="shs-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted shs-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function ScoutingHeatSignalsClient() {
   const [view, setView] = useState<ScoutingHeatSignalsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -50,6 +212,28 @@ export default function ScoutingHeatSignalsClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const entryCount = view?.status === "live" ? view.summary.totalEntries : 0;
+  const risingCount = view?.status === "live" ? view.summary.risingTeams : 0;
+
+  const shell = classifyScoutingHeatSignalsShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    entryCount,
+  });
+  const shellCopy = scoutingHeatSignalsShellCopy(shell);
+  const nextActions = scoutingHeatSignalsNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    entryCount,
+    risingCount,
+  });
+  const competitionHref = hubHref("/competition", "scouting-heat-signals", orgId);
+  const showTiles = shouldShowScoutingHeatSignalsSummaryTiles(entryCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -77,18 +261,44 @@ export default function ScoutingHeatSignalsClient() {
     [orgId, busy],
   );
 
+  if (shell === "loading") {
+    return <HeatShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <HeatShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <HeatShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page shs-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Scouting Heat Signals"}
           </>
         }
         title="Scouting Heat Signals"
-        description="Highlight teams trending up or down from what scouts have actually observed — a quick read to inform pick strategy. Only teams with logged observations show up here."
-      />
+        description="Highlight teams trending up or down from what scouts have actually observed — never DEMO trend arrows."
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -96,62 +306,22 @@ export default function ScoutingHeatSignalsClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Scouting Heat Signals"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <LogEntryForm busy={busy} mutate={mutate} />
-          <TeamHeatList view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
-    </main>
-  );
-}
-
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Teams tracked", value: String(summary.totalTeams) },
-    { label: "Observations", value: String(summary.totalEntries) },
-    { label: "Trending up", value: String(summary.risingTeams) },
-    { label: "Trending down", value: String(summary.fallingTeams) },
-    { label: "Steady", value: String(summary.steadyTeams) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
+      {showTiles ? (
+        <Panel className="shs-panel">
+          <div className="shs-stats">
+            <StatTile label="Teams tracked" value={formatScoutingHeatSignalsMetric(view.summary.totalTeams, loaded)} />
+            <StatTile label="Observations" value={formatScoutingHeatSignalsMetric(view.summary.totalEntries, loaded)} />
+            <StatTile label="Trending up" value={formatScoutingHeatSignalsMetric(view.summary.risingTeams, loaded)} />
+            <StatTile label="Trending down" value={formatScoutingHeatSignalsMetric(view.summary.fallingTeams, loaded)} />
+            <StatTile label="Steady" value={formatScoutingHeatSignalsMetric(view.summary.steadyTeams, loaded)} />
           </div>
-        ))}
-      </div>
-    </Panel>
+        </Panel>
+      ) : null}
+
+      <LogEntryForm busy={busy} mutate={mutate} />
+      <TeamHeatList view={view} busy={busy} mutate={mutate} />
+      <NextActionsPanel actions={nextActions} />
+    </main>
   );
 }
 
@@ -167,52 +337,55 @@ function TeamHeatList({
   if (view.teams.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No observations yet"
         badgeTone="setup"
         title="Log your first heat signal"
-        description="Record a team as trending up or down after a match to build the pick-strategy trend view."
+        description="Record a team as trending up or down after a match — never DEMO trend packs."
       />
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Team heat signals</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12 }}>
+    <Panel id="scouting-heat-list" className="shs-panel">
+      <h2>Team heat signals</h2>
+      <ul className="shs-team-list">
         {view.teams.map((team) => (
-          <li key={team.teamKey} className="app-card soft-panel" style={{ padding: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+          <li key={team.teamKey} className="app-card soft-panel shs-team-card">
+            <div className="shs-team-header">
               <div>
-                <span className={`app-badge ${directionTone(team.direction)}`}>
+                <Badge tone={directionTone(team.direction)}>
                   {directionArrow(team.direction)} {directionLabel(team.direction)}
-                </span>
-                <strong style={{ display: "block", marginTop: 4 }}>
+                </Badge>
+                <strong className="shs-team-name">
                   {team.teamNumber ?? team.teamKey} {team.nickname ? `— ${team.nickname}` : ""}
                 </strong>
                 <small className="app-muted">
                   {team.entryCount} observation(s) · last {team.lastObservedOn}
-                  {team.metricDelta != null ? ` · metric delta ${team.metricDelta > 0 ? "+" : ""}${team.metricDelta}` : ""}
+                  {team.metricDelta != null
+                    ? ` · metric delta ${team.metricDelta > 0 ? "+" : ""}${team.metricDelta}`
+                    : ""}
                 </small>
               </div>
-              <small className="app-muted" style={{ textAlign: "right" }}>
+              <small className="app-muted">
                 {team.risingCount}↑ · {team.fallingCount}↓ · {team.steadyCount}→
               </small>
             </div>
-            <ul style={{ listStyle: "none", padding: 0, marginTop: 8, display: "grid", gap: 4 }}>
+            <ul className="shs-entry-list">
               {team.recentEntries.map((entry) => (
-                <li key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <li key={entry.id} className="shs-entry-row">
                   <small className="app-muted">
                     {entry.observedOn} · {directionArrow(entry.direction)} {directionLabel(entry.direction)}
                     {entry.metricValue != null ? ` · ${entry.metricValue}` : ""}
                     {entry.note ? ` · ${entry.note}` : ""}
                   </small>
-                  <button
-                    type="button"
-                    className="text-button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     disabled={busy}
                     onClick={() => mutate({ action: "delete-entry", entryId: entry.id })}
                   >
                     Delete
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -247,7 +420,9 @@ function LogEntryForm({
 
   return (
     <Panel
+      id="scouting-heat-log"
       as="form"
+      className="shs-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.teamNumber || !form.observedOn) return;
@@ -262,9 +437,8 @@ function LogEntryForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Log a heat signal</h2>
+      <h2>Log a heat signal</h2>
       <FormGrid min={160}>
         <FormRow label="Team number">
           <input type="number" min={1} value={form.teamNumber} onChange={set("teamNumber")} required />
@@ -292,9 +466,9 @@ function LogEntryForm({
         <textarea value={form.note} onChange={set("note")} rows={2} />
       </FormRow>
       <div>
-        <button type="submit" className="app-button" disabled={busy || !form.teamNumber || !form.observedOn}>
+        <Button type="submit" variant="primary" disabled={busy || !form.teamNumber || !form.observedOn}>
           Log signal
-        </button>
+        </Button>
       </div>
     </Panel>
   );

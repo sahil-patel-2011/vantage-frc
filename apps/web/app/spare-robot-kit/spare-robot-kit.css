@@ -1,0 +1,28 @@
+/* Soft-UI Spare Robot Kit — never DEMO pack lists. */
+.srk-page{display:grid;gap:16px}
+.srk-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.srk-filter{display:flex;gap:6px;align-items:center}
+.srk-related{display:flex;flex-wrap:wrap;gap:8px}
+.srk-next-actions{margin:0}
+.srk-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.srk-panel{display:grid;gap:12px}
+.srk-panel h2{margin:0}
+.srk-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.srk-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.srk-tip{margin:0}
+.srk-candidates-header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.srk-generate{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.srk-generate input{min-width:220px}
+.srk-candidate-list,.srk-checklist-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.srk-candidate-card,.srk-checklist-card{display:grid;gap:6px}
+.srk-candidate-header,.srk-checklist-header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.srk-item-name{display:block;margin-top:4px}
+.srk-block{display:block}
+.srk-pack-list{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.srk-pack-row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.srk-pack-label{display:flex;gap:8px;align-items:center}
+.srk-status-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:900px){
+  .srk-header-actions{justify-content:flex-start}
+  .srk-next-actions li,.srk-setup-steps li,.srk-candidate-header,.srk-checklist-header,.srk-pack-row{flex-direction:column;align-items:stretch}
+}
