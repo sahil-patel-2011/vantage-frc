@@ -1,13 +1,37 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import {
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { robotWeighInStationLabel } from "../../lib/robot-weigh-in";
 import {
   ROBOT_WEIGH_IN_STATIONS,
   type RobotWeighInView,
 } from "../../lib/robot-weigh-in/compute-robot-weigh-in";
 import type { RobotWeighInStation } from "../../lib/robot-weigh-in/types";
+import {
+  ROBOT_WEIGH_IN_RELATED_INCLUDE,
+  classifyRobotWeighInShell,
+  formatRobotWeighInMetric,
+  robotWeighInNextActions,
+  robotWeighInRelatedLinks,
+  robotWeighInSetupSteps,
+  robotWeighInShellCopy,
+  shouldShowRobotWeighInSummaryTiles,
+  type RobotWeighInNextAction,
+  type RobotWeighInShellKind,
+} from "../../lib/robot-weigh-in/robot-weigh-in-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./robot-weigh-in.css";
 
 type LiveView = Extract<RobotWeighInView, { status: "live" }>;
 
@@ -15,11 +39,143 @@ function fmtLbs(value: number | null): string {
   return value == null ? "—" : `${value.toFixed(1)} lbs`;
 }
 
-function marginTone(margin: number | null): string {
-  if (margin == null) return "";
-  if (margin < 0) return "demo";
+type MarginTone = "good" | "setup" | "danger" | undefined;
+
+function marginTone(margin: number | null): MarginTone {
+  if (margin == null) return undefined;
+  if (margin < 0) return "danger";
   if (margin < 3) return "setup";
   return "good";
+}
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = robotWeighInRelatedLinks(orgId, {
+    include: [...ROBOT_WEIGH_IN_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related rwi-related" aria-label="Related build tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: RobotWeighInNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions rwi-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Readiness, Inspection, and Spare Kit — never DEMO scale readings.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function WeighShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: RobotWeighInShellKind;
+  error?: string;
+  onRetry?: () => void;
+}) {
+  const actions = robotWeighInNextActions({ orgId, shell });
+  const copy = robotWeighInShellCopy(shell);
+  const buildHref = hubHref("/build", "robot-weigh-in", orgId);
+  const steps = shell === "setup" ? robotWeighInSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page rwi-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={buildHref}>Build</a>
+            {" / Robot Weigh-In"}
+          </>
+        }
+        title="Robot Weigh-In Log"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading Robot Weigh-In">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={hubHref("/build", "readiness-score", orgId)}>
+                Open Readiness
+              </a>
+              <a className="app-button secondary" href={hubHref("/build", "inspection-copilot", orgId)}>
+                Open Inspection Copilot
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="rwi-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Readiness and Inspection — never DEMO scale readings.</p>
+          </header>
+          <ul className="rwi-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted rwi-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
 }
 
 export default function RobotWeighInClient() {
@@ -28,8 +184,6 @@ export default function RobotWeighInClient() {
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -56,6 +210,28 @@ export default function RobotWeighInClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const entryCount = view?.status === "live" ? view.summary.totalEntries : 0;
+  const overLimitCount = view?.status === "live" ? view.summary.overLimitCount : 0;
+
+  const shell = classifyRobotWeighInShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    entryCount,
+  });
+  const shellCopy = robotWeighInShellCopy(shell);
+  const nextActions = robotWeighInNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    entryCount,
+    overLimitCount,
+  });
+  const buildHref = hubHref("/build", "robot-weigh-in", orgId);
+  const showTiles = shouldShowRobotWeighInSummaryTiles(entryCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -84,37 +260,64 @@ export default function RobotWeighInClient() {
     [orgId, season, busy],
   );
 
+  if (shell === "loading") {
+    return <WeighShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <WeighShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <WeighShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page rwi-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/build?orgId=${encodeURIComponent(orgId)}` : "/build"}>Build</a>
+            <a href={buildHref}>Build</a>
             {" / Robot Weigh-In"}
           </>
         }
         title="Robot Weigh-In Log"
-        description="Log robot weigh-ins and track the trend against the competition weight limit through the build season."
+        description="Log robot weigh-ins and track the trend against the competition weight limit — never DEMO scale readings."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="rwi-header-actions">
+          <RelatedStrip orgId={orgId} />
+          {view.seasons.length > 0 ? (
+            <label className="app-muted rwi-filter">
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -123,70 +326,34 @@ export default function RobotWeighInClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Robot Weigh-In"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <LogWeighInForm busy={busy} mutate={mutate} />
-          {view.summary.totalEntries > 0 ? <TrendPanel view={view} /> : null}
-          <RecentEntries view={view} busy={busy} mutate={mutate} />
-        </div>
-      )}
+      {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
+      <LogWeighInForm busy={busy} mutate={mutate} />
+      {view.summary.totalEntries > 0 ? <TrendPanel view={view} /> : null}
+      <RecentEntries view={view} busy={busy} mutate={mutate} />
+      <NextActionsPanel actions={nextActions} />
     </main>
   );
 }
 
-function SummaryTiles({ view }: { view: LiveView }) {
+function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
   const { summary } = view;
-  const tiles = [
-    { label: "Weigh-ins", value: String(summary.totalEntries) },
-    { label: "Latest weight", value: fmtLbs(summary.latestWeightLbs) },
-    { label: "Weight limit", value: fmtLbs(summary.latestWeightLimitLbs) },
-    { label: "Margin", value: summary.latestMarginLbs == null ? "—" : `${summary.latestMarginLbs.toFixed(1)} lbs` },
-    { label: "Over limit", value: String(summary.overLimitCount) },
-  ];
+  const marginValue = summary.latestMarginLbs == null ? "—" : `${summary.latestMarginLbs.toFixed(1)} lbs`;
+  const tone = marginTone(summary.latestMarginLbs);
   const hasGrounding = view.configuredLimitLbs != null || view.bomEstimatedLbs != null;
   return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong
-              style={{ fontSize: "1.6rem", display: "block" }}
-              className={tile.label === "Margin" ? `app-badge-text ${marginTone(summary.latestMarginLbs)}` : undefined}
-            >
-              {tile.value}
-            </strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
+    <Panel className="rwi-panel">
+      <div className="rwi-stats">
+        <StatTile label="Weigh-ins" value={formatRobotWeighInMetric(summary.totalEntries, loaded)} />
+        <StatTile label="Latest weight" value={fmtLbs(summary.latestWeightLbs)} />
+        <StatTile label="Weight limit" value={fmtLbs(summary.latestWeightLimitLbs)} />
+        <StatTile
+          label="Margin"
+          value={<span className={tone ? `app-badge-text ${tone}` : undefined}>{marginValue}</span>}
+        />
+        <StatTile label="Over limit" value={formatRobotWeighInMetric(summary.overLimitCount, loaded)} />
       </div>
       {hasGrounding ? (
-        <small className="app-muted" style={{ display: "block", marginTop: 10 }}>
+        <small className="app-muted rwi-block">
           From weight budget:
           {view.configuredLimitLbs != null ? ` configured limit ${view.configuredLimitLbs.toFixed(1)} lbs` : ""}
           {view.configuredLimitLbs != null && view.bomEstimatedLbs != null ? " ·" : ""}
@@ -202,17 +369,13 @@ function SummaryTiles({ view }: { view: LiveView }) {
 
 function TrendPanel({ view }: { view: LiveView }) {
   const { summary } = view;
-  const max = Math.max(
-    summary.maxWeightLbs ?? 0,
-    summary.latestWeightLimitLbs ?? 0,
-    1,
-  );
+  const max = Math.max(summary.maxWeightLbs ?? 0, summary.latestWeightLimitLbs ?? 0, 1);
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Weight trend vs. limit</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+    <Panel className="rwi-panel">
+      <h2>Weight trend vs. limit</h2>
+      <ul className="rwi-trend">
         {summary.trend.map((point) => (
-          <li key={point.weighedOn} style={{ display: "grid", gridTemplateColumns: "100px 1fr 90px", gap: 8, alignItems: "center" }}>
+          <li key={point.weighedOn}>
             <small className="app-muted">{point.weighedOn}</small>
             <span className="mini-probability" aria-hidden="true">
               <i
@@ -222,13 +385,13 @@ function TrendPanel({ view }: { view: LiveView }) {
                 }}
               />
             </span>
-            <small className="app-muted" style={{ textAlign: "right" }}>
-              {point.weightLbs.toFixed(1)} lbs
-            </small>
+            <small className="app-muted rwi-trend-val">{point.weightLbs.toFixed(1)} lbs</small>
           </li>
         ))}
       </ul>
-      <small className="app-muted">Min {fmtLbs(summary.minWeightLbs)} · Max {fmtLbs(summary.maxWeightLbs)}</small>
+      <small className="app-muted">
+        Min {fmtLbs(summary.minWeightLbs)} · Max {fmtLbs(summary.maxWeightLbs)}
+      </small>
     </Panel>
   );
 }
@@ -245,26 +408,25 @@ function RecentEntries({
   if (view.summary.totalEntries === 0) {
     return (
       <EmptyState
+        soft
         badge="No weigh-ins yet"
         badgeTone="setup"
         title="Log your first robot weigh-in"
-        description="Track weight readings from the shop scale and event inspections to spot the trend before competition."
+        description="Track weight readings from the shop scale and event inspections — never DEMO scale packs."
       />
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Recent weigh-ins</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel id="robot-weigh-in-entries" className="rwi-panel">
+      <h2>Recent weigh-ins</h2>
+      <ul className="rwi-list">
         {view.entries.slice(0, 20).map((item) => (
-          <li
-            key={item.id}
-            style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-          >
+          <li key={item.id} className="rwi-row">
             <div>
               <strong>{item.weightLbs.toFixed(1)} lbs</strong>
-              <small className="app-muted" style={{ display: "block" }}>
-                {item.weighedOn} · {robotWeighInStationLabel(item.station)} · limit {item.weightLimitLbs.toFixed(1)} lbs
+              <small className="app-muted rwi-block">
+                {item.weighedOn} · {robotWeighInStationLabel(item.station)} · limit {item.weightLimitLbs.toFixed(1)}{" "}
+                lbs
               </small>
               <small className="app-muted">
                 {item.bumpersOn ? "Bumpers on" : "No bumpers"} · {item.batteryOn ? "Battery on" : "No battery"}
@@ -315,6 +477,8 @@ function LogWeighInForm({
 
   return (
     <Panel
+      id="robot-weigh-in-form"
+      className="rwi-panel"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -331,9 +495,9 @@ function LogWeighInForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Log weigh-in</h2>
+      <h2>Log weigh-in</h2>
+      <p className="app-muted rwi-tip">Real scale readings only — never DEMO weights.</p>
       <FormGrid min={160}>
         <FormRow label="Date">
           <input type="date" value={form.weighedOn} onChange={set("weighedOn")} required />
@@ -354,8 +518,8 @@ function LogWeighInForm({
           </select>
         </FormRow>
       </FormGrid>
-      <fieldset style={{ border: "none", padding: 0, margin: 0, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      <fieldset className="rwi-checks">
+        <label>
           <input
             type="checkbox"
             checked={form.bumpersOn}
@@ -363,7 +527,7 @@ function LogWeighInForm({
           />
           Bumpers on
         </label>
-        <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <label>
           <input
             type="checkbox"
             checked={form.batteryOn}

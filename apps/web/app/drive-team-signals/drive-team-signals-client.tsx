@@ -1,7 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import { SIGNAL_KINDS, SIGNAL_PRIORITIES, SIGNAL_ROLES, signalKindLabel, signalRoleLabel } from "../../lib/drive-team-signals";
 import type { DriveTeamSignalsView } from "../../lib/drive-team-signals/compute-drive-team-signals";
 import type {
@@ -10,13 +21,158 @@ import type {
   SignalPriority,
   SignalRole,
 } from "../../lib/drive-team-signals/types";
+import {
+  DRIVE_TEAM_SIGNALS_RELATED_INCLUDE,
+  classifyDriveTeamSignalsShell,
+  formatDriveTeamSignalsMetric,
+  driveTeamSignalsNextActions,
+  driveTeamSignalsRelatedLinks,
+  driveTeamSignalsSetupSteps,
+  driveTeamSignalsShellCopy,
+  shouldShowDriveTeamSignalsSummaryTiles,
+  type DriveTeamSignalsNextAction,
+  type DriveTeamSignalsShellKind,
+} from "../../lib/drive-team-signals/drive-team-signals-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./drive-team-signals.css";
 
 type LiveView = Extract<DriveTeamSignalsView, { status: "live" }>;
 
-function priorityTone(priority: SignalPriority): string {
-  if (priority === "critical") return "demo";
-  if (priority === "important") return "setup";
-  return "good";
+const priorityTone: Record<SignalPriority, BadgeTone> = {
+  critical: "danger",
+  important: "setup",
+  fyi: "good",
+};
+
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = driveTeamSignalsRelatedLinks(orgId, {
+    include: [...DRIVE_TEAM_SIGNALS_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related dts-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: DriveTeamSignalsNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions dts-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Match Checklist, Strategy Cards, and Copilot — never DEMO cheat sheets.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function SignalsShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: DriveTeamSignalsShellKind;
+  error?: string;
+  onRetry?: () => void;
+}) {
+  const actions = driveTeamSignalsNextActions({ orgId, shell });
+  const copy = driveTeamSignalsShellCopy(shell);
+  const competitionHref = hubHref("/competition", "drive-team-signals", orgId);
+  const steps = shell === "setup" ? driveTeamSignalsSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page dts-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Drive-Team Signals"}
+          </>
+        }
+        title="Drive-Team Signal Board"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading drive-team signals">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={hubHref("/competition", "match-checklist", orgId)}>
+                Open Match Checklist
+              </a>
+              <a className="app-button secondary" href={hubHref("/team", "field-reset-timer", orgId)}>
+                Open Field Reset Timer
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="dts-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Match Checklist and Strategy Cards — never DEMO cheat sheets.</p>
+          </header>
+          <ul className="dts-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted dts-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
 }
 
 export default function DriveTeamSignalsClient() {
@@ -24,8 +180,6 @@ export default function DriveTeamSignalsClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -49,6 +203,28 @@ export default function DriveTeamSignalsClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const sheetCount = view?.status === "live" ? view.summary.totalSheets : 0;
+  const signalCount = view?.status === "live" ? view.summary.totalSignals : 0;
+
+  const shell = classifyDriveTeamSignalsShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    sheetCount,
+  });
+  const shellCopy = driveTeamSignalsShellCopy(shell);
+  const nextActions = driveTeamSignalsNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    sheetCount,
+    signalCount,
+  });
+  const competitionHref = hubHref("/competition", "drive-team-signals", orgId);
+  const showTiles = shouldShowDriveTeamSignalsSummaryTiles(sheetCount, signalCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -76,18 +252,44 @@ export default function DriveTeamSignalsClient() {
     [orgId, busy],
   );
 
+  if (shell === "loading") {
+    return <SignalsShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <SignalsShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <SignalsShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page dts-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Drive-Team Signals"}
           </>
         }
         title="Drive-Team Signal Board"
-        description="Build and share standardized driver/human-player comms cheat-sheets — hand signals, verbal callouts, radio codes, field markers — so the whole drive team speaks the same language."
-      />
+        description="Standardized driver/human-player comms cheat-sheets — never DEMO signal packs."
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -95,60 +297,18 @@ export default function DriveTeamSignalsClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the signal board"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryTiles view={view} />
-          <CreateSheetForm busy={busy} mutate={mutate} />
-          <SheetList view={view} busy={busy} mutate={mutate} />
+      {showTiles ? (
+        <div className="dts-stats">
+          <StatTile label="Sheets" value={formatDriveTeamSignalsMetric(view.summary.totalSheets, loaded)} />
+          <StatTile label="Signals" value={formatDriveTeamSignalsMetric(view.summary.totalSignals, loaded)} />
+          <StatTile label="Critical" value={formatDriveTeamSignalsMetric(view.summary.criticalSignals, loaded)} />
         </div>
-      )}
-    </main>
-  );
-}
+      ) : null}
 
-function SummaryTiles({ view }: { view: LiveView }) {
-  const { summary } = view;
-  const tiles = [
-    { label: "Sheets", value: String(summary.totalSheets) },
-    { label: "Signals", value: String(summary.totalSignals) },
-    { label: "Critical", value: String(summary.criticalSignals) },
-  ];
-  return (
-    <Panel>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        {tiles.map((tile) => (
-          <div key={tile.label}>
-            <strong style={{ fontSize: "1.6rem", display: "block" }}>{tile.value}</strong>
-            <span className="app-muted">{tile.label}</span>
-          </div>
-        ))}
-      </div>
-    </Panel>
+      <CreateSheetForm busy={busy} mutate={mutate} />
+      <SheetList view={view} busy={busy} mutate={mutate} />
+      <NextActionsPanel actions={nextActions} />
+    </main>
   );
 }
 
@@ -166,6 +326,8 @@ function CreateSheetForm({
 
   return (
     <Panel
+      id="drive-team-signals-new"
+      className="dts-panel"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -179,9 +341,9 @@ function CreateSheetForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>New signal sheet</h2>
+      <h2>New signal sheet</h2>
+      <p className="app-muted dts-tip">Real drive-crew language only — never DEMO cheat sheets.</p>
       <FormGrid min={160}>
         <FormRow label="Title">
           <input value={form.title} onChange={set("title")} placeholder="2026 Reefscape signals" required />
@@ -217,15 +379,16 @@ function SheetList({
   if (view.sheets.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No sheets yet"
         badgeTone="setup"
         title="Create your first signal sheet"
-        description="Standardize the hand signals, callouts, and radio codes your drive team and human player use on the field."
+        description="Standardize hand signals, callouts, and radio codes your drive team uses — never DEMO cheat sheets."
       />
     );
   }
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <div id="drive-team-signals-sheets" className="dts-sheets">
       {view.sheets.map((sheet) => (
         <SheetCard key={sheet.id} sheet={sheet} busy={busy} mutate={mutate} />
       ))}
@@ -243,15 +406,15 @@ function SheetCard({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   return (
-    <Panel>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+    <Panel className="dts-panel">
+      <header className="dts-sheet-header">
         <div>
-          <h2 style={{ margin: 0 }}>{sheet.title}</h2>
+          <h2>{sheet.title}</h2>
           <small className="app-muted">
             {sheet.gameYear}
             {sheet.eventKey ? ` · ${sheet.eventKey}` : ""} · {sheet.signals.length} signal(s)
           </small>
-          {sheet.notes ? <p className="app-muted" style={{ margin: "6px 0 0" }}>{sheet.notes}</p> : null}
+          {sheet.notes ? <p className="app-muted dts-tip">{sheet.notes}</p> : null}
         </div>
         <button
           type="button"
@@ -268,16 +431,13 @@ function SheetCard({
       </header>
 
       {sheet.signals.length > 0 ? (
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8, marginTop: 12 }}>
+        <ul className="dts-list">
           {sheet.signals.map((signal) => (
-            <li
-              key={signal.id}
-              style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}
-            >
+            <li key={signal.id} className="dts-row">
               <div>
-                <span className={`app-badge ${priorityTone(signal.priority)}`}>{signal.priority.toUpperCase()}</span>
-                <strong style={{ marginLeft: 8 }}>{signal.code}</strong>
-                <small className="app-muted" style={{ display: "block" }}>
+                <Badge tone={priorityTone[signal.priority]}>{signal.priority.toUpperCase()}</Badge>
+                <strong className="dts-code">{signal.code}</strong>
+                <small className="app-muted dts-block">
                   {signalKindLabel(signal.kind)} · called by {signalRoleLabel(signal.calledBy)}
                 </small>
                 <small className="app-muted">{signal.meaning}</small>
@@ -339,7 +499,7 @@ function AddSignalForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 8, marginTop: 12, borderTop: "1px solid var(--app-border, #33415522)", paddingTop: 12 }}
+      className="dts-add-signal"
     >
       <FormGrid min={140}>
         <FormRow label="Code / gesture">
@@ -374,10 +534,19 @@ function AddSignalForm({
         </FormRow>
       </FormGrid>
       <FormRow label="Meaning / what to do">
-        <input value={form.meaning} onChange={set("meaning")} placeholder="Ready for endgame — start climb sequence" required />
+        <input
+          value={form.meaning}
+          onChange={set("meaning")}
+          placeholder="Ready for endgame — start climb sequence"
+          required
+        />
       </FormRow>
       <div>
-        <button type="submit" className="app-button secondary" disabled={busy || !form.code.trim() || !form.meaning.trim()}>
+        <button
+          type="submit"
+          className="app-button secondary"
+          disabled={busy || !form.code.trim() || !form.meaning.trim()}
+        >
           Add signal
         </button>
       </div>

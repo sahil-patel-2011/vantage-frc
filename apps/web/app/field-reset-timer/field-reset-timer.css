@@ -1,0 +1,23 @@
+/* Soft-UI Field Reset Timer — never DEMO drill times. */
+.frt-page{display:grid;gap:16px}
+.frt-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.frt-filter{display:flex;gap:6px;align-items:center}
+.frt-related{display:flex;flex-wrap:wrap;gap:8px}
+.frt-next-actions{margin:0}
+.frt-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:12px}
+.frt-panel{display:grid;gap:12px}
+.frt-panel h2{margin:0}
+.frt-setup-steps,.frt-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.frt-setup-steps li,.frt-session{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.frt-tip,.frt-block{margin:0;display:block}
+.frt-readiness-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.frt-score{font-size:2rem}
+.frt-recs{margin:4px 0 0;padding-left:18px}
+.frt-session{padding:8px;border-radius:8px}
+.frt-session.selected{background:rgba(120,120,255,.08)}
+.frt-session-btn{text-align:left}
+.frt-cycle-form{display:grid;gap:10px;margin-bottom:16px}
+@media(max-width:900px){
+  .frt-header-actions{justify-content:flex-start}
+  .frt-next-actions li,.frt-setup-steps li,.frt-session{flex-direction:column;align-items:stretch}
+}

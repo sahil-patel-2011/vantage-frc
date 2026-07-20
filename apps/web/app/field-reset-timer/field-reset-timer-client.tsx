@@ -1,14 +1,40 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  ErrorState,
+  FormGrid,
+  FormRow,
+  PageHeader,
+  Panel,
+  SoftBlockSkeleton,
+  StatTile,
+} from "../../components/ui";
 import type { FieldResetTimerView } from "../../lib/field-reset-timer/compute-field-reset-timer";
 import type { FieldResetTimerTier } from "../../lib/field-reset-timer/types";
+import {
+  FIELD_RESET_TIMER_RELATED_INCLUDE,
+  classifyFieldResetTimerShell,
+  formatFieldResetTimerMetric,
+  fieldResetTimerNextActions,
+  fieldResetTimerRelatedLinks,
+  fieldResetTimerSetupSteps,
+  fieldResetTimerShellCopy,
+  shouldShowFieldResetTimerSummaryTiles,
+  type FieldResetTimerNextAction,
+  type FieldResetTimerShellKind,
+} from "../../lib/field-reset-timer/field-reset-timer-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./field-reset-timer.css";
 
-function tierTone(tier: FieldResetTimerTier): string {
+function tierTone(tier: FieldResetTimerTier): BadgeTone {
   if (tier === "tight") return "good";
   if (tier === "developing") return "setup";
-  return "demo";
+  return "neutral";
 }
 
 function pct(value: number): string {
@@ -17,6 +43,139 @@ function pct(value: number): string {
 
 type LiveView = Extract<FieldResetTimerView, { status: "live" }>;
 
+function RelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = fieldResetTimerRelatedLinks(orgId, {
+    include: [...FIELD_RESET_TIMER_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related frt-related" aria-label="Related team tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function NextActionsPanel({ actions }: { actions: FieldResetTimerNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section className="app-card soft-panel edc-next-actions frt-next-actions" aria-label="Next actions">
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Practice, Tryouts, and Drive-Team Signals — never DEMO drill times.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function TimerShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: FieldResetTimerShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = fieldResetTimerNextActions({ orgId, shell });
+  const copy = fieldResetTimerShellCopy(shell);
+  const teamHref = hubHref("/team", "field-reset-timer", orgId);
+  const steps = shell === "setup" ? fieldResetTimerSetupSteps(orgId) : [];
+
+  return (
+    <main className="module-page frt-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={teamHref}>Team</a>
+            {" / Field Reset Timer"}
+          </>
+        }
+        title="Field Reset Timer"
+        description={description}
+      >
+        <RelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading Field Reset Timer">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={shell === "setup" ? "Setup required" : copy.badge}
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>
+              Open Workspace
+            </a>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={hubHref("/team", "practice", orgId)}>
+                Open Practice
+              </a>
+              <a className="app-button secondary" href={hubHref("/competition", "drive-team-signals", orgId)}>
+                Open Drive-Team Signals
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
+      {steps.length > 0 ? (
+        <Panel className="frt-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Practice and Drive-Team Signals — never DEMO drill times.</p>
+          </header>
+          <ul className="frt-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted frt-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <NextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
 export default function FieldResetTimerClient() {
   const [view, setView] = useState<FieldResetTimerView | null>(null);
   const [error, setError] = useState("");
@@ -24,8 +183,6 @@ export default function FieldResetTimerClient() {
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-
-  const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -52,6 +209,28 @@ export default function FieldResetTimerClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const orgId = view && "orgId" in view ? view.orgId : null;
+  const sessionCount = view?.status === "live" ? view.sessions.length : 0;
+  const cycleCount = view?.status === "live" ? view.cycles.length : 0;
+
+  const shell = classifyFieldResetTimerShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    sessionCount,
+  });
+  const shellCopy = fieldResetTimerShellCopy(shell);
+  const nextActions = fieldResetTimerNextActions({
+    orgId,
+    shell: shell === "empty" ? "ready" : shell,
+    sessionCount,
+    cycleCount,
+  });
+  const teamHref = hubHref("/team", "field-reset-timer", orgId);
+  const showTiles = shouldShowFieldResetTimerSummaryTiles(sessionCount, cycleCount);
+  const loaded = view?.status === "live";
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -87,37 +266,64 @@ export default function FieldResetTimerClient() {
     }
   }, [view, selectedSessionId]);
 
+  if (shell === "loading") {
+    return <TimerShell description={shellCopy.description} orgId={null} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <TimerShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup" || view?.status !== "live") {
+    return (
+      <TimerShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page frt-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
+            <a href={teamHref}>Team</a>
             {" / Field Reset Timer"}
           </>
         }
         title="Field Reset Timer"
-        description="Time field-reset and cycle speed during driver practice — see whether reset drills are actually getting faster and more consistent."
+        description="Time field-reset and cycle speed during driver practice — real sessions only, never DEMO drill times."
       >
-        {view?.status === "live" && view.seasons.length > 0 ? (
-          <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            Season
-            <select
-              value={season ?? view.seasonYear}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setSeason(next);
-                load(next);
-              }}
-            >
-              {view.seasons.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
+        <div className="frt-header-actions">
+          <RelatedStrip orgId={orgId} />
+          {view.seasons.length > 0 ? (
+            <label className="app-muted frt-filter">
+              Season
+              <select
+                value={season ?? view.seasonYear}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setSeason(next);
+                  load(next);
+                }}
+              >
+                {view.seasons.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
       </PageHeader>
 
       {error ? (
@@ -126,99 +332,58 @@ export default function FieldResetTimerClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Field Reset Timer"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <ReadinessPanel view={view} />
-          <NewSessionForm busy={busy} mutate={mutate} />
-          <SessionList
-            view={view}
-            busy={busy}
-            mutate={mutate}
-            selectedSessionId={selectedSessionId}
-            onSelect={setSelectedSessionId}
-          />
-          {selectedSessionId ? (
-            <CycleLog
-              view={view}
-              sessionId={selectedSessionId}
-              busy={busy}
-              mutate={mutate}
+      {showTiles ? (
+        <Panel className="frt-panel" aria-label="Reset-drill readiness">
+          <header className="frt-readiness-header">
+            <div>
+              <Badge tone={tierTone(view.readiness.tier)}>{view.readiness.tier.toUpperCase()}</Badge>
+              <h2>Reset-drill readiness</h2>
+              <small className="app-muted">
+                {formatFieldResetTimerMetric(view.readiness.sessionsLogged, loaded)} session(s) ·{" "}
+                {formatFieldResetTimerMetric(view.readiness.totalCycles, loaded)} cycle(s) logged
+              </small>
+            </div>
+            <strong className="frt-score">{pct(view.readiness.score)}</strong>
+          </header>
+          <div className="frt-stats">
+            <StatTile
+              label="Avg reset"
+              value={view.readiness.avgResetSeconds != null ? view.readiness.avgResetSeconds : "—"}
+              unit={view.readiness.avgResetSeconds != null ? "s" : undefined}
             />
+            <StatTile
+              label="Best reset"
+              value={view.readiness.bestResetSeconds != null ? view.readiness.bestResetSeconds : "—"}
+              unit={view.readiness.bestResetSeconds != null ? "s" : undefined}
+            />
+            <StatTile label="Consistency" value={pct(view.readiness.consistency)} />
+          </div>
+          {view.readiness.recommendations.length > 0 ? (
+            <div>
+              <strong className="app-muted">Next steps</strong>
+              <ul className="frt-recs">
+                {view.readiness.recommendations.map((rec) => (
+                  <li key={rec}>{rec}</li>
+                ))}
+              </ul>
+            </div>
           ) : null}
-        </div>
-      )}
-    </main>
-  );
-}
-
-function ReadinessPanel({ view }: { view: LiveView }) {
-  const { readiness } = view;
-  return (
-    <Panel aria-label="Reset-drill readiness">
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-        <div>
-          <span className={`app-badge ${tierTone(readiness.tier)}`}>{readiness.tier.toUpperCase()}</span>
-          <h2 style={{ margin: "6px 0 0" }}>Reset-drill readiness</h2>
-          <small className="app-muted">
-            {readiness.sessionsLogged} session(s) · {readiness.totalCycles} cycle(s) logged
-          </small>
-        </div>
-        <strong style={{ fontSize: "2rem" }}>{pct(readiness.score)}</strong>
-      </header>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginTop: 12 }}>
-        <div>
-          <strong style={{ fontSize: "1.4rem", display: "block" }}>
-            {readiness.avgResetSeconds != null ? `${readiness.avgResetSeconds}s` : "—"}
-          </strong>
-          <span className="app-muted">Avg reset</span>
-        </div>
-        <div>
-          <strong style={{ fontSize: "1.4rem", display: "block" }}>
-            {readiness.bestResetSeconds != null ? `${readiness.bestResetSeconds}s` : "—"}
-          </strong>
-          <span className="app-muted">Best reset</span>
-        </div>
-        <div>
-          <strong style={{ fontSize: "1.4rem", display: "block" }}>{pct(readiness.consistency)}</strong>
-          <span className="app-muted">Consistency</span>
-        </div>
-      </div>
-      {readiness.recommendations.length > 0 ? (
-        <div style={{ marginTop: 12 }}>
-          <strong className="app-muted">Next steps</strong>
-          <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
-            {readiness.recommendations.map((rec) => (
-              <li key={rec}>{rec}</li>
-            ))}
-          </ul>
-        </div>
+        </Panel>
       ) : null}
-    </Panel>
+
+      <NewSessionForm busy={busy} mutate={mutate} />
+      <SessionList
+        view={view}
+        busy={busy}
+        mutate={mutate}
+        selectedSessionId={selectedSessionId}
+        onSelect={setSelectedSessionId}
+      />
+      {selectedSessionId ? (
+        <CycleLog view={view} sessionId={selectedSessionId} busy={busy} mutate={mutate} />
+      ) : null}
+      <NextActionsPanel actions={nextActions} />
+    </main>
   );
 }
 
@@ -236,6 +401,8 @@ function NewSessionForm({
 
   return (
     <Panel
+      id="field-reset-new-session"
+      className="frt-panel"
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
@@ -248,9 +415,9 @@ function NewSessionForm({
         });
         setForm(empty);
       }}
-      style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Start a practice session</h2>
+      <h2>Start a practice session</h2>
+      <p className="app-muted frt-tip">Real practice dates only — never DEMO drill packs.</p>
       <FormGrid min={160}>
         <FormRow label="Label">
           <input value={form.label} onChange={set("label")} placeholder="Tuesday driver practice" required />
@@ -287,40 +454,28 @@ function SessionList({
   if (view.sessions.length === 0) {
     return (
       <EmptyState
+        soft
         badge="No sessions yet"
         badgeTone="setup"
         title="Create your first practice session"
-        description="Start a session, then log reset cycles as your drive team runs them."
+        description="Start a session, then log reset cycles as your drive team runs them — never DEMO drill times."
       />
     );
   }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Sessions</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
+    <Panel id="field-reset-sessions" className="frt-panel">
+      <h2>Sessions</h2>
+      <ul className="frt-list">
         {view.sessions.map((sessionItem) => {
           const summary = view.sessionSummaries.find((s) => s.sessionId === sessionItem.id);
           return (
             <li
               key={sessionItem.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 8,
-                alignItems: "flex-start",
-                padding: 8,
-                borderRadius: 8,
-                background: sessionItem.id === selectedSessionId ? "rgba(120,120,255,0.08)" : "transparent",
-              }}
+              className={sessionItem.id === selectedSessionId ? "frt-session selected" : "frt-session"}
             >
-              <button
-                type="button"
-                className="text-button"
-                style={{ textAlign: "left" }}
-                onClick={() => onSelect(sessionItem.id)}
-              >
+              <button type="button" className="text-button frt-session-btn" onClick={() => onSelect(sessionItem.id)}>
                 <strong>{sessionItem.label}</strong>
-                <small className="app-muted" style={{ display: "block" }}>
+                <small className="app-muted frt-block">
                   {sessionItem.occurredOn} · {sessionItem.cycleCount} cycle(s)
                   {summary ? ` · avg ${summary.avgResetSeconds}s · best ${summary.bestResetSeconds}s` : ""}
                 </small>
@@ -367,8 +522,10 @@ function CycleLog({
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>{sessionLabel} · reset cycles</h2>
+    <Panel id="field-reset-cycles" className="frt-panel">
+      <h2>
+        {sessionLabel} · reset cycles
+      </h2>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -384,7 +541,7 @@ function CycleLog({
           });
           setForm(empty);
         }}
-        style={{ display: "grid", gap: 10, marginBottom: 16 }}
+        className="frt-cycle-form"
       >
         <FormGrid min={140}>
           <FormRow label={`Cycle #${nextCycleNumber} reset (s)`}>
@@ -406,19 +563,21 @@ function CycleLog({
 
       {sessionCycles.length === 0 ? (
         <EmptyState
+          soft
           badge="No cycles yet"
           badgeTone="setup"
           title="Log your first reset cycle"
-          description="Time each field reset as your drive team runs it to build the session's trend."
+          description="Time each field reset as your drive team runs it — never DEMO timers."
         />
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
+        <ul className="frt-list">
           {sessionCycles.map((cycle) => (
-            <li key={cycle.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+            <li key={cycle.id} className="frt-session">
               <div>
                 <strong>Cycle #{cycle.cycleNumber}</strong>
-                <small className="app-muted" style={{ display: "block" }}>
-                  Reset {cycle.resetSeconds}s{cycle.cycleSeconds != null ? ` · full cycle ${cycle.cycleSeconds}s` : ""}
+                <small className="app-muted frt-block">
+                  Reset {cycle.resetSeconds}s
+                  {cycle.cycleSeconds != null ? ` · full cycle ${cycle.cycleSeconds}s` : ""}
                   {cycle.note ? ` · ${cycle.note}` : ""}
                 </small>
               </div>
