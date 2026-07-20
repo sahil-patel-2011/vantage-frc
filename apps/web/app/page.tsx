@@ -8,30 +8,49 @@ import {
   raisedPricingSummaryLine,
 } from "@vantage/billing/catalog";
 
-const surfaces = [
-  { name: "Scouting", blurb: "Offline forms, voice notes, sync.", href: "/features" },
-  { name: "Event Day", blurb: "Command, My Day, match checklist.", href: "/features" },
-  { name: "Strategy", blurb: "Alliance desk, Pick clock, playbooks.", href: "/features/strategy" },
-  { name: "Season planning", blurb: "Goals, milestones, owners.", href: "/features" },
-  { name: "CAD agent", blurb: "Approval-gated briefs → Onshape/Fusion.", href: "/features/cad" },
-  { name: "Team & Business", blurb: "Logistics, sponsors, grants, ops.", href: "/for-teams" },
+const hubs = [
+  {
+    name: "Competition",
+    blurb: "Command, My Day, Scouting, Strategy, Form builder, Pick clock, Alliance Selection Desk.",
+    href: "/features",
+  },
+  {
+    name: "Team",
+    blurb: "Calendar, practice, attendance, knowledge — Season Planning Workspace in More.",
+    href: "/for-teams",
+  },
+  {
+    name: "Business",
+    blurb: "Budget, sponsors, grants, partners, and award evidence.",
+    href: "/for-teams",
+  },
+  {
+    name: "Build",
+    blurb: "Kickoff, CAD agent, Code Coach, FMEA, shop readiness.",
+    href: "/features/cad",
+  },
+  {
+    name: "AI",
+    blurb: "Assistant chat, writer, budgets — BYOK at /team/ai-keys or hosted on paid plans.",
+    href: "/pricing",
+  },
 ] as const;
 
 const seasonBeat = [
   {
     step: "01",
-    title: "Build the season",
-    copy: "Plan goals, connect TBA, publish scout forms.",
+    title: "Set the season",
+    copy: "Invite the org, link TBA, publish scout forms, plan goals.",
   },
   {
     step: "02",
     title: "Capture at the venue",
-    copy: "Offline scouting and Event Day boards stay useful when Wi-Fi drops.",
+    copy: "Offline scouting and Competition Command / My Day when Wi-Fi drops.",
   },
   {
     step: "03",
     title: "Decide with sources",
-    copy: "Strategy, Pick desk, and Assistant cite scout and public facts—or stay empty.",
+    copy: "Strategy, Alliance Selection Desk, and Assistant cite scout and public facts—or stay empty.",
   },
 ] as const;
 
@@ -42,11 +61,10 @@ export default function Home() {
       <main>
         <section className="lux-hero" aria-labelledby="lux-hero-title">
           <div className="lux-hero-copy">
-            <p className="lux-wordmark">Vantage</p>
-            <h1 id="lux-hero-title">One place for the competition season.</h1>
+            <h1 id="lux-hero-title">Competition ops for FRC teams.</h1>
             <p>
-              Scouting, Event Day, alliance desk, season planning, CAD, and team ops—quiet Soft-UI hubs that stay
-              empty until your data connects.
+              Scouting, Strategy, Event Day Command, alliance selection, season planning, CAD, and team ops—in Soft-UI
+              hubs that stay empty until your data connects.
             </p>
             <div className="actions">
               <a className="button primary" href="#waitlist">
@@ -70,8 +88,8 @@ export default function Home() {
         <section className="lux-showcase" aria-labelledby="lux-showcase-title">
           <div className="lux-content">
             <header className="lux-section-head">
-              <h2 id="lux-showcase-title">What teams open.</h2>
-              <p>Calm product frames—not DEMO metrics.</p>
+              <h2 id="lux-showcase-title">Five hubs. Real module names.</h2>
+              <p>Competition, Team, Business, Build, and AI—the same structure you open after sign-in.</p>
             </header>
             <ProductGlances />
           </div>
@@ -102,9 +120,9 @@ export default function Home() {
 
         <section className="lux-thesis" aria-labelledby="lux-surfaces-title">
           <div className="lux-content">
-            <h2 id="lux-surfaces-title">Named surfaces, not fluff.</h2>
+            <h2 id="lux-surfaces-title">Where work lives.</h2>
             <ul className="lux-feature-grid">
-              {surfaces.map((item) => (
+              {hubs.map((item) => (
                 <li key={item.name}>
                   <a href={item.href}>
                     <strong>{item.name}</strong>
@@ -120,8 +138,8 @@ export default function Home() {
           <div>
             <h2 id="lux-pricing-title">Free competition core. Paid for hosted AI.</h2>
             <p>
-              Free keeps your own keys. Paid adds Vantage-hosted AI as a service—{hostedApiSavingsCopy()} Hard stop
-              after the included window unless Credits or PAYG.
+              Free keeps your own keys at /team/ai-keys. Paid adds Vantage-hosted AI as a service—{hostedApiSavingsCopy()}{" "}
+              Hard stop after the included window unless Credits or PAYG.
             </p>
             <ul className="pricing-price-strip" aria-label="Monthly plan prices">
               {raisedPricingStrip().map((item) => (
@@ -146,7 +164,6 @@ export default function Home() {
 
         <section className="lux-waitlist" id="waitlist">
           <div>
-            <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
             <h2>Join the waitlist.</h2>
             <p>
               Terms required. Access is invite-only. {raisedPricingSummaryLine()} on <a href="/pricing">pricing</a>.{" "}

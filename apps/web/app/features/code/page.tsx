@@ -20,9 +20,8 @@ export default function CodeFeaturePage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
-          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
           <h1>Flag risk. Teach the fix.</h1>
-          <p>Soft-UI Code Coach—human-approved diffs only. Never auto-deploys to a robot.</p>
+          <p>Build hub Code Coach—human-approved diffs only. Never auto-deploys to a robot.</p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
               Join the waitlist
