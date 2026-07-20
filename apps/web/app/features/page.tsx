@@ -6,76 +6,46 @@ import { ProductGlances } from "../../components/marketing/product-glances";
 export const metadata: Metadata = {
   title: "Product — Vantage",
   description:
-    "Vantage product showcase with honest Available, Shipping, and Setup-required labels: custom scouting forms, voice notes, Soft-UI hubs, strategy tools, Business hub, Event Day, CAD setup, and hard usage cutoffs.",
+    "Vantage product overview: scouting, Event Day, Soft-UI hubs, strategy, Business, CAD setup, and hard usage cutoffs—with honest Available, Shipping, and Setup-required labels.",
   alternates: { canonical: "/features" },
 };
 
 type Status = "Available" | "Shipping" | "Setup required";
 
-const surfaces: {
+const pillars: {
   title: string;
   copy: string;
   status: Status;
 }[] = [
   {
-    title: "Scouting trust & offline QR",
-    copy: "Offline match/pit forms, QR handoffs, disagreement review, coverage gaps, and reliability signals so strategy weighs evidence quality.",
+    title: "Scouting",
+    copy: "Offline match and pit forms, custom schemas, voice notes, QR handoffs, and trust signals—synced facts, not folklore.",
     status: "Available",
   },
   {
-    title: "Custom scouting form builder",
-    copy: "Versioned match and pit schemas with drivetrain, robot photos, and free-text—published by owners, filled on the Competition hub.",
+    title: "Event Day",
+    copy: "Shared next-match readiness plus personal shifts and todos so each person knows what they own.",
     status: "Available",
   },
   {
-    title: "Scout voice notes",
-    copy: "Opt-in voice notes attach to entries without writing form fields. Browser STT is local; cloud STT is metered when configured.",
+    title: "Strategy & Assistant",
+    copy: "Win/loss, playbooks, and Soft-UI picks from real event and scout facts. Empty until data exists.",
     status: "Available",
   },
   {
-    title: "Event Day + My Day",
-    copy: "Shared command for next match and readiness, plus personal shifts, todos, and acknowledgements for what you own today.",
+    title: "Business & logistics",
+    copy: "Sponsors, grants, orders, travel, and packing beside the competition calendar.",
     status: "Available",
   },
   {
     title: "Kickoff → CAD",
-    copy: "Season constraints become approval-gated Onshape or Fusion work. Connectors require OAuth or a paired local relay.",
+    copy: "Season intent becomes an approval-gated brief. Onshape or Fusion when connectors are configured.",
     status: "Setup required",
   },
   {
-    title: "Logistics",
-    copy: "Travel legs, lodging, packing, and duties beside the competition calendar—not a parallel spreadsheet season.",
+    title: "Metered AI",
+    copy: "Hard cutoffs at included allowance. Resume with Usage Credits, PAYG, or a higher plan—no silent overage.",
     status: "Available",
-  },
-  {
-    title: "Strategy Soft-UI tools",
-    copy: "Win/loss, what-if, playbooks, and Soft-UI pick desk from real event data—empty until metrics and scout facts exist.",
-    status: "Available",
-  },
-  {
-    title: "Business hub · sponsors · grants · orders",
-    copy: "Soft-UI fundraising glance, sponsor pipeline, grant writing assist with honest AI labels, and purchase orders in one hub.",
-    status: "Available",
-  },
-  {
-    title: "Team knowledge",
-    copy: "Org-scoped wiki and season notes the Assistant can read—durable procedures, not a lost Google Doc.",
-    status: "Available",
-  },
-  {
-    title: "Soft-UI product hubs",
-    copy: "Competition, Team, Business, Build, and AI hubs group the season in one Soft-UI shell so navigation matches how teams work.",
-    status: "Available",
-  },
-  {
-    title: "Hard usage cutoffs",
-    copy: "Managed AI hard-stops at included allowance—no silent overage. Resume with Usage Credits, PAYG + spend cap, or upgrade.",
-    status: "Available",
-  },
-  {
-    title: "AI tool graph",
-    copy: "CAD briefs already pull strategy, kickoff, and FMEA where wired. Broader cross-engine auto-routing is still shipping.",
-    status: "Shipping",
   },
 ];
 
@@ -87,17 +57,17 @@ function StatusBadge({ status }: { status: Status }) {
 
 export default function FeaturesPage() {
   return (
-    <div className="marketing-site marketing-v2 marketing-dense marketing-pro marketing-quiet">
+    <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main className="route-page">
-        <header className="route-hero brand-route-hero">
-          <p className="brand-hero-wordmark route-wordmark">Vantage</p>
-          <h1>Shipped competition ops. Honest status labels.</h1>
+        <header className="lux-route-hero">
+          <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
+          <h1>The product, without the noise.</h1>
           <p>
-            From scouting and Event Day through Soft-UI hubs, strategy, Business fundraising, kickoff CAD, and hard AI
-            cutoffs—live product stays empty until real data exists.
+            Competition ops in one Soft-UI shell—scouting through Event Day, strategy, Business, and CAD—with honest
+            status labels and empty states until real data exists.
           </p>
-          <div className="route-hero-actions">
+          <div className="actions">
             <a className="button primary" href="/#waitlist">
               Join the waitlist
             </a>
@@ -107,42 +77,37 @@ export default function FeaturesPage() {
           </div>
         </header>
 
-        <section className="ops-preview-band product-show" aria-labelledby="product-show-title">
-          <header>
-            <span className="section-id">PRODUCT</span>
-            <h2 id="product-show-title">Simple looks at the work that matters.</h2>
+        <section className="lux-showcase" aria-labelledby="product-show-title">
+          <header className="lux-section-head">
+            <h2 id="product-show-title">What teams open first.</h2>
             <p>Marketing previews only—not live dashboards.</p>
           </header>
           <ProductGlances />
         </section>
 
-        <section className="supporting-gallery" id="supporting-ops">
-          <header>
-            <span className="section-id">AROUND THE SEASON</span>
-            <h2>The rest of the product, labeled honestly.</h2>
-            <div className="status-legend route-status-legend" aria-label="Status legend">
-              <StatusBadge status="Available" />
-              <StatusBadge status="Shipping" />
-              <StatusBadge status="Setup required" />
-            </div>
+        <section className="lux-pillars" id="supporting-ops" aria-labelledby="pillars-title">
+          <header className="lux-section-head">
+            <h2 id="pillars-title">Around the season.</h2>
+            <p>Six surfaces. Clear status. No feature laundry list.</p>
           </header>
-          <div className="supporting-status-grid">
-            {surfaces.map((item) => (
-              <article key={item.title}>
+          <ul className="lux-pillar-list">
+            {pillars.map((item) => (
+              <li key={item.title}>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.copy}</p>
+                </div>
                 <StatusBadge status={item.status} />
-                <h3>{item.title}</h3>
-                <p>{item.copy}</p>
-              </article>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
 
-        <section className="pricing-preview">
+        <section className="lux-pricing">
           <div>
-            <span className="section-id">NEXT</span>
             <h2>Join the waitlist or review raised plans.</h2>
             <p>
-              Free competition core with BYOK. Managed API at list rates, then hard stop unless Credits or PAYG. Legal:{" "}
+              Free competition core with BYOK. Managed API at list rates, then hard stop unless Credits or PAYG.{" "}
               <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
             </p>
             <ul className="pricing-price-strip" aria-label="Raised monthly plan prices">

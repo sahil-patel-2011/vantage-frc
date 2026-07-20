@@ -1013,3 +1013,399 @@
 @media(max-width:700px){
   .nav{height:56px}
 }
+
+/* ============================================================
+   Marketing Lux — quiet Apple / Tesla / Stripe-marketing system.
+   Applied via .marketing-lux on public chrome only.
+   ============================================================ */
+.marketing-lux{
+  --m-ink:#1d1d1f;
+  --m-muted:#6e6e73;
+  --m-line:rgba(0,0,0,.08);
+  --m-paper:#f5f5f7;
+  --m-white:#ffffff;
+  --m-accent:#1d1d1f;
+  --m-accent-dark:#000;
+  --m-blue:#0071e3;
+  --m-pad-x:clamp(22px,6vw,96px);
+  --m-pad-y:clamp(72px,10vw,128px);
+  color:var(--m-ink);
+  background:
+    radial-gradient(1200px 600px at 70% -10%,rgba(0,0,0,.035),transparent 60%),
+    linear-gradient(180deg,#fff 0%,#fafafa 48%,#f5f5f7 100%);
+  font-family:var(--m-sans);
+}
+.marketing-lux .nav{
+  height:52px;
+  border-bottom:1px solid transparent;
+  background:rgba(255,255,255,.72);
+  backdrop-filter:saturate(1.8) blur(20px);
+  -webkit-backdrop-filter:saturate(1.8) blur(20px);
+}
+.marketing-lux .nav nav a,
+.marketing-lux .marketing-footer a{
+  color:var(--m-muted);
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:-.01em;
+}
+.marketing-lux .nav nav a:hover,
+.marketing-lux .marketing-footer a:hover,
+.marketing-lux .sign-in-link{color:var(--m-ink)!important}
+.marketing-lux .nav nav a[aria-current="page"]{
+  color:var(--m-ink);
+  box-shadow:inset 0 -1px var(--m-ink);
+}
+.marketing-lux .button{
+  min-height:44px;padding:11px 22px;border-radius:980px;
+  font:600 14px/1.2 var(--m-sans);letter-spacing:-.01em;
+  transition:opacity .2s ease,background .2s ease,border-color .2s ease,transform .2s ease;
+}
+.marketing-lux .button.primary{background:var(--m-ink);color:#fff;border-color:transparent}
+.marketing-lux .button.primary:hover{background:#000;opacity:.9}
+.marketing-lux .button.secondary{
+  background:transparent;color:var(--m-ink);border:1px solid rgba(0,0,0,.18);
+}
+.marketing-lux .button.secondary:hover{border-color:var(--m-ink);background:rgba(0,0,0,.03)}
+.marketing-lux .button.compact{min-height:32px;padding:6px 14px;font-size:12px}
+
+.marketing-lux .lux-wordmark{
+  margin:0 0 18px;
+  font:600 clamp(56px,10vw,104px)/.86 var(--m-sans);
+  letter-spacing:-.055em;color:var(--m-ink);
+  animation:lux-rise .75s cubic-bezier(.22,.8,.2,1) both;
+}
+.marketing-lux .lux-wordmark-sm{
+  margin:0 0 16px;
+  font-size:clamp(36px,6vw,56px);
+  letter-spacing:-.045em;
+  animation:none;
+}
+.marketing-lux .lux-hero{
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);
+  gap:clamp(40px,7vw,96px);
+  align-items:center;
+  min-height:min(92vh,820px);
+  padding:clamp(56px,9vw,112px) var(--m-pad-x) clamp(56px,8vw,96px);
+}
+.marketing-lux .lux-hero-copy{max-width:560px}
+.marketing-lux .lux-hero h1{
+  max-width:12ch;margin:0 0 18px;
+  font:600 clamp(28px,3.6vw,44px)/1.1 var(--m-sans);
+  letter-spacing:-.035em;color:var(--m-ink);
+  animation:lux-rise .8s .05s cubic-bezier(.22,.8,.2,1) both;
+}
+.marketing-lux .lux-hero-copy>p{
+  max-width:34rem;margin:0;color:var(--m-muted);
+  font-size:clamp(17px,1.5vw,20px);line-height:1.55;
+  animation:lux-rise .8s .1s cubic-bezier(.22,.8,.2,1) both;
+}
+.marketing-lux .lux-hero .actions{
+  margin:32px 0 0;gap:14px;
+  animation:lux-rise .8s .16s cubic-bezier(.22,.8,.2,1) both;
+}
+.marketing-lux .hero-product-visual{
+  justify-self:end;width:min(100%,440px);
+  animation:lux-rise .9s .12s cubic-bezier(.22,.8,.2,1) both;
+}
+.marketing-lux .hero-product-screen{
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:22px;overflow:hidden;
+  background:linear-gradient(180deg,#fff,#f7f7f8);
+  box-shadow:0 1px 2px rgba(0,0,0,.04),0 28px 64px rgba(0,0,0,.08);
+}
+.marketing-lux .hero-product-screen>header{
+  padding:16px 20px;border-bottom:1px solid rgba(0,0,0,.06);
+  font:600 13px/1 var(--m-sans);letter-spacing:-.01em;
+}
+.marketing-lux .hero-product-screen>header b{color:var(--m-muted);font-weight:500}
+.marketing-lux .hero-product-row{padding:18px 20px}
+.marketing-lux .hero-product-row span{font-size:13px;color:var(--m-muted)}
+.marketing-lux .hero-product-row strong{font-size:15px;font-weight:600;letter-spacing:-.02em}
+
+.marketing-lux .lux-section-head{max-width:640px;margin:0 0 clamp(36px,5vw,56px)}
+.marketing-lux .lux-section-head h2{
+  margin:0 0 12px;font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);
+  letter-spacing:-.03em;
+}
+.marketing-lux .lux-section-head p{margin:0;color:var(--m-muted);font-size:17px;line-height:1.55}
+
+.marketing-lux .lux-showcase{
+  padding:var(--m-pad-y) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:rgba(255,255,255,.65);
+}
+.marketing-lux .product-glances{gap:clamp(28px,4vw,40px)}
+.marketing-lux .product-glance{gap:12px}
+.marketing-lux .product-glance h3{
+  margin:0;font:600 24px/1.15 var(--m-sans);letter-spacing:-.03em;
+}
+.marketing-lux .product-glance>p{
+  margin:0;max-width:28ch;color:var(--m-muted);font-size:15px;line-height:1.5;
+}
+.marketing-lux .product-glance-frame{
+  margin-top:8px;min-height:176px;border-radius:16px;
+  border:1px solid rgba(0,0,0,.08);background:#fafafa;
+  box-shadow:none;
+}
+.marketing-lux .product-glance-frame>header{
+  padding:14px 16px;font:600 12px var(--m-sans);
+}
+.marketing-lux .product-glance-frame>header b{
+  font:500 11px var(--m-sans);color:var(--m-muted);letter-spacing:0;
+}
+.marketing-lux .product-glance-frame li{
+  padding:12px 16px;font-size:13px;color:#3a3a3c;
+}
+.marketing-lux .product-glances-note{
+  margin-top:12px;font-size:12px;color:var(--m-muted);
+}
+
+.marketing-lux .lux-thesis{
+  padding:var(--m-pad-y) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:transparent;
+}
+.marketing-lux .lux-thesis h2{
+  max-width:14ch;margin:0 0 18px;
+  font:600 clamp(32px,4.2vw,52px)/1.08 var(--m-sans);
+  letter-spacing:-.035em;
+}
+.marketing-lux .lux-thesis p{
+  max-width:38rem;margin:0;color:var(--m-muted);
+  font-size:18px;line-height:1.6;
+}
+
+.marketing-lux .lux-pillars{
+  padding:var(--m-pad-y) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:rgba(255,255,255,.5);
+}
+.marketing-lux .lux-pillar-list{
+  display:grid;gap:0;margin:0;padding:0;list-style:none;
+  border-top:1px solid var(--m-line);
+}
+.marketing-lux .lux-pillar-list li{
+  display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start;
+  padding:28px 0;border-bottom:1px solid var(--m-line);
+}
+.marketing-lux .lux-pillar-list h3{
+  margin:0 0 8px;font:600 20px/1.2 var(--m-sans);letter-spacing:-.025em;
+}
+.marketing-lux .lux-pillar-list p{
+  margin:0;max-width:46rem;color:var(--m-muted);font-size:15px;line-height:1.55;
+}
+.marketing-lux .status-badge{
+  font-family:var(--m-sans);font-weight:600;font-size:11px;
+  letter-spacing:.01em;border-radius:980px;padding:6px 10px;
+}
+
+.marketing-lux .lux-pricing,
+.marketing-lux .pricing-preview{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:48px;
+  padding:var(--m-pad-y) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:transparent;
+}
+.marketing-lux .lux-pricing h2,
+.marketing-lux .pricing-preview h2{
+  max-width:16ch;margin:0 0 14px;
+  font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);
+  letter-spacing:-.03em;
+}
+.marketing-lux .lux-pricing p,
+.marketing-lux .pricing-preview p{
+  max-width:40rem;margin:0;color:var(--m-muted);font-size:16px;line-height:1.55;
+}
+.marketing-lux .lux-pricing a:not(.button),
+.marketing-lux .pricing-preview a:not(.button),
+.marketing-lux .lux-waitlist a:not(.button){
+  color:var(--m-blue);font-weight:600;text-decoration:none;
+}
+.marketing-lux .lux-pricing a:not(.button):hover,
+.marketing-lux .pricing-preview a:not(.button):hover,
+.marketing-lux .lux-waitlist a:not(.button):hover{text-decoration:underline;text-underline-offset:3px}
+.marketing-lux .pricing-price-strip{margin-top:28px;gap:12px}
+.marketing-lux .pricing-price-strip li{
+  min-width:140px;padding:16px 18px;border-radius:14px;
+  border:1px solid rgba(0,0,0,.08);background:#fff;box-shadow:none;
+}
+.marketing-lux .pricing-price-strip span{
+  font:600 11px/1.2 var(--m-sans);letter-spacing:.04em;text-transform:uppercase;color:var(--m-muted);
+}
+.marketing-lux .pricing-price-strip strong{
+  font:600 20px/1.15 var(--m-sans);letter-spacing:-.02em;
+}
+
+.marketing-lux .lux-faq,
+.marketing-lux .faq-section{
+  display:grid;grid-template-columns:minmax(200px,.55fr) 1.45fr;gap:clamp(28px,5vw,72px);
+  padding:var(--m-pad-y) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:transparent;
+}
+.marketing-lux .faq-section>header .section-id{display:none}
+.marketing-lux .faq-item summary{font-size:17px;font-weight:600;padding:20px 0}
+.marketing-lux .faq-item p{font-size:15px;line-height:1.6}
+
+.marketing-lux .lux-waitlist,
+.marketing-lux .waitlist{
+  display:grid;grid-template-columns:1fr minmax(320px,.85fr);
+  gap:clamp(40px,6vw,88px);align-items:start;
+  padding:var(--m-pad-y) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:var(--m-paper);
+}
+.marketing-lux .lux-waitlist h2,
+.marketing-lux .waitlist h2{
+  margin:0 0 14px;max-width:14ch;
+  font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);
+  letter-spacing:-.03em;
+}
+.marketing-lux .lux-waitlist>div>p,
+.marketing-lux .waitlist>div>p{
+  max-width:36rem;margin:0;color:var(--m-muted);font-size:15px;line-height:1.6;
+}
+.marketing-lux .soft-waitlist-form,
+.marketing-lux .waitlist-form{
+  padding:24px;border-radius:18px;border:1px solid rgba(0,0,0,.08);
+  background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.03);
+}
+.marketing-lux .field label{
+  font:600 11px/1.2 var(--m-sans);letter-spacing:.04em;text-transform:uppercase;color:var(--m-muted);
+}
+.marketing-lux .field input{
+  border-radius:12px;border:1px solid rgba(0,0,0,.12);
+  background:#fafafa;padding:13px 14px;font:16px var(--m-sans);
+}
+.marketing-lux .field input:focus{
+  border-color:var(--m-ink);outline:none;
+  box-shadow:0 0 0 3px rgba(0,0,0,.08);background:#fff;
+}
+
+.marketing-lux .lux-route-hero,
+.marketing-lux .route-hero,
+.marketing-lux .pricing-hero{
+  padding:clamp(64px,9vw,112px) var(--m-pad-x) clamp(48px,6vw,72px);
+  border-bottom:1px solid var(--m-line);
+  background:transparent;
+}
+.marketing-lux .lux-route-hero h1,
+.marketing-lux .route-hero h1,
+.marketing-lux .pricing-hero h1{
+  max-width:14ch;margin:0 0 16px;
+  font:600 clamp(34px,4.4vw,56px)/1.08 var(--m-sans);
+  letter-spacing:-.035em;
+}
+.marketing-lux .lux-route-hero>p,
+.marketing-lux .route-hero>p,
+.marketing-lux .pricing-hero>p{
+  max-width:38rem;margin:0;color:var(--m-muted);font-size:17px;line-height:1.55;
+}
+.marketing-lux .lux-route-hero .actions,
+.marketing-lux .route-hero-actions{margin-top:28px;gap:14px}
+.marketing-lux .section-id{
+  font-family:var(--m-sans)!important;font-weight:600;font-size:11px;
+  letter-spacing:.08em;color:var(--m-muted);
+}
+
+.marketing-lux .pricing-page .payg{
+  gap:clamp(36px,5vw,72px);
+  padding:var(--m-pad-y) var(--m-pad-x);
+  background:var(--m-paper);border:0;
+}
+.marketing-lux .pricing-page .payg h2{
+  font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);letter-spacing:-.03em;
+}
+.marketing-lux .pricing-grid article{
+  border-radius:16px;border:1px solid rgba(0,0,0,.08);
+  box-shadow:none;background:#fff;padding:28px;
+}
+.marketing-lux .pricing-grid article.featured{
+  border-color:var(--m-ink);
+  box-shadow:0 0 0 1px var(--m-ink);
+}
+.marketing-lux .pricing-grid article>span,
+.marketing-lux .plan-flag{
+  font-family:var(--m-sans)!important;
+}
+.marketing-lux .pricing-grid .plan-price strong{
+  font:600 28px/1.1 var(--m-sans)!important;letter-spacing:-.02em;
+}
+.marketing-lux .pricing-toggle a,
+.marketing-lux .pricing-toggle button{
+  border-radius:980px;font:600 13px var(--m-sans);
+}
+.marketing-lux .pricing-toggle button.active{
+  background:var(--m-ink);border-color:var(--m-ink);color:#fff;
+}
+
+.marketing-lux .assistant-story,
+.marketing-lux .scout-integration,
+.marketing-lux .supporting-gallery,
+.marketing-lux .workflow-principles,
+.marketing-lux .flow-map,
+.marketing-lux .technical-note{
+  padding-inline:var(--m-pad-x);
+}
+.marketing-lux .assistant-job-grid article,
+.marketing-lux .scout-feed-grid article,
+.marketing-lux .supporting-status-grid article,
+.marketing-lux .integration-steps li{
+  border-radius:14px;border:1px solid rgba(0,0,0,.08);
+  box-shadow:none;background:#fff;
+}
+.marketing-lux .assistant-story{background:var(--m-paper)}
+.marketing-lux .workflow-integration{background:var(--m-paper)}
+.marketing-lux .workflow-principles{background:transparent}
+.marketing-lux .technical-note{
+  margin:0 var(--m-pad-x) var(--m-pad-y);padding:36px 40px;
+  border-left:2px solid var(--m-ink);border-radius:0 14px 14px 0;
+  background:#fff;
+}
+.marketing-lux .flow-map>article>div b{
+  background:var(--m-ink);border-radius:980px;
+  font-family:var(--m-sans)!important;
+}
+.marketing-lux .marketing-footer{
+  padding:40px var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:transparent;
+}
+.marketing-lux .marketing-footer p{color:var(--m-muted);font-size:12px}
+
+@keyframes lux-rise{
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:none}
+}
+
+@media(max-width:900px){
+  .marketing-lux .lux-hero{grid-template-columns:1fr;min-height:auto;gap:40px}
+  .marketing-lux .hero-product-visual{justify-self:stretch;width:100%;max-width:400px}
+  .marketing-lux .product-glances{grid-template-columns:1fr}
+  .marketing-lux .lux-faq,
+  .marketing-lux .faq-section,
+  .marketing-lux .lux-waitlist,
+  .marketing-lux .waitlist{grid-template-columns:1fr}
+  .marketing-lux .lux-pricing,
+  .marketing-lux .pricing-preview{flex-direction:column;align-items:flex-start}
+}
+@media(max-width:680px){
+  .marketing-lux .lux-hero{padding-top:48px;padding-bottom:48px}
+  .marketing-lux .lux-wordmark{font-size:clamp(48px,15vw,68px)}
+  .marketing-lux .lux-hero h1{font-size:clamp(26px,7vw,34px)}
+  .marketing-lux .lux-hero .actions,
+  .marketing-lux .lux-route-hero .actions{flex-direction:column;align-items:stretch}
+  .marketing-lux .lux-pillar-list li{grid-template-columns:1fr;gap:14px}
+  .marketing-lux .pricing-preview-actions{width:100%}
+  .marketing-lux .pricing-preview-actions .button{flex:1;justify-content:center}
+}
+@media(prefers-reduced-motion:reduce){
+  .marketing-lux .lux-wordmark,
+  .marketing-lux .lux-hero h1,
+  .marketing-lux .lux-hero-copy>p,
+  .marketing-lux .lux-hero .actions,
+  .marketing-lux .hero-product-visual{animation:none!important}
+}
+
