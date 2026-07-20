@@ -4,8 +4,12 @@ import { HttpChatAdapter, ProviderRateLimitError } from "./http-chat-adapter";
 /**
  * Platform-sponsored promotional AI pool (env keys only — never commit values).
  * Env: MISTRAL_API_KEY, GROQ_API_KEY, COHERE_API_KEY, CEREBRAS_API_KEY
- * Order: Mistral (primary) → Groq → Cohere → Cerebras (last; chat often 402 when
- * models list still works). Failover on rate-limit / payment / quota (429/402/503).
+ *
+ * Selection: weighted round-robin across configured keys (not fixed Mistral-first).
+ * Default weights — Mistral 2, Groq/Cohere/Cerebras 1 — so Mistral gets ~2× the
+ * first-attempt share when all four are present, without draining it alone.
+ * On 429/402/503 (and similar), try remaining providers in that request's order;
+ * never retry the same failed provider in the same attempt chain.
  */
 
 export type SponsoredProviderId = "mistral" | "cerebras" | "groq" | "cohere";
@@ -19,7 +23,10 @@ type SponsoredCandidate = {
   prices: { inputPerMillionUsd: number; outputPerMillionUsd: number };
 };
 
-/** Prefer small / fast free-tier friendly models; working keys before Cerebras. */
+/**
+ * Catalog order is stable for config listing only. Live attempt order comes from
+ * {@link orderSponsoredProvidersWeightedRoundRobin}.
+ */
 export const SPONSORED_PROVIDER_ORDER: SponsoredCandidate[] = [
   {
     id: "mistral",
@@ -51,6 +58,59 @@ export const SPONSORED_PROVIDER_ORDER: SponsoredCandidate[] = [
   },
 ];
 
+/** First-attempt share: Mistral twice the others when all keys are present. */
+export const SPONSORED_PROVIDER_WEIGHTS: Record<SponsoredProviderId, number> = {
+  mistral: 2,
+  groq: 1,
+  cohere: 1,
+  cerebras: 1,
+};
+
+/** Process-local RR cursor (fine for Hobby serverless; resets on cold start). */
+let sponsoredRotationCursor = 0;
+
+/** Test helper — reset the in-memory weighted RR cursor. */
+export function resetSponsoredRotationCursor(value = 0): void {
+  sponsoredRotationCursor = value;
+}
+
+export function peekSponsoredRotationCursor(): number {
+  return sponsoredRotationCursor;
+}
+
+/**
+ * Build a unique attempt order for one request using weighted round-robin.
+ * Walks an expanded weight wheel from `cursor % wheel.length`, then de-dupes
+ * so each configured provider appears once (primary first, then failover).
+ */
+export function orderSponsoredProvidersWeightedRoundRobin(
+  configured: SponsoredCandidate[],
+  cursor: number = sponsoredRotationCursor++,
+): SponsoredCandidate[] {
+  if (configured.length <= 1) return [...configured];
+
+  const byId = new Map(configured.map((c) => [c.id, c]));
+  const wheel: SponsoredProviderId[] = [];
+  for (const c of configured) {
+    const weight = Math.max(1, SPONSORED_PROVIDER_WEIGHTS[c.id] ?? 1);
+    for (let i = 0; i < weight; i++) {
+      wheel.push(c.id);
+    }
+  }
+
+  const start = ((cursor % wheel.length) + wheel.length) % wheel.length;
+  const seen = new Set<SponsoredProviderId>();
+  const order: SponsoredCandidate[] = [];
+  for (let i = 0; i < wheel.length; i++) {
+    const id = wheel[(start + i) % wheel.length]!;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const candidate = byId.get(id);
+    if (candidate) order.push(candidate);
+  }
+  return order;
+}
+
 export function listConfiguredSponsoredProviders(
   env: NodeJS.ProcessEnv = process.env,
 ): SponsoredCandidate[] {
@@ -79,11 +139,11 @@ export class SponsoredFailoverChatAdapter implements ChatAdapter {
   provider = "sponsored";
   model = "promo-pool";
 
-  private readonly adapters: Array<{
-    id: SponsoredProviderId;
-    model: string;
-    adapter: HttpChatAdapter;
-  }>;
+  private readonly adapters: Map<
+    SponsoredProviderId,
+    { id: SponsoredProviderId; model: string; adapter: HttpChatAdapter }
+  >;
+  private readonly catalog: SponsoredCandidate[];
 
   constructor(input?: {
     promptCachingEnabled?: boolean;
@@ -92,30 +152,36 @@ export class SponsoredFailoverChatAdapter implements ChatAdapter {
   }) {
     const env = input?.env ?? process.env;
     const caching = input?.promptCachingEnabled ?? false;
-    this.adapters = listConfiguredSponsoredProviders(env).map((c) => ({
-      id: c.id,
-      model: c.model,
-      adapter: new HttpChatAdapter({
-        provider: "openai-compatible",
-        model: c.model,
-        apiKey: env[c.envKey]!.trim(),
-        baseUrl: c.baseUrl,
-        promptCachingEnabled: caching,
-        prices: c.prices,
-        fetchImpl: input?.fetchImpl,
-      }),
-    }));
-    if (this.adapters.length === 0) {
+    this.catalog = listConfiguredSponsoredProviders(env);
+    this.adapters = new Map(
+      this.catalog.map((c) => [
+        c.id,
+        {
+          id: c.id,
+          model: c.model,
+          adapter: new HttpChatAdapter({
+            provider: "openai-compatible",
+            model: c.model,
+            apiKey: env[c.envKey]!.trim(),
+            baseUrl: c.baseUrl,
+            promptCachingEnabled: caching,
+            prices: c.prices,
+            fetchImpl: input?.fetchImpl,
+          }),
+        },
+      ]),
+    );
+    if (this.catalog.length === 0) {
       throw new Error(
         "No sponsored provider API keys configured (MISTRAL_API_KEY / GROQ_API_KEY / COHERE_API_KEY / CEREBRAS_API_KEY).",
       );
     }
-    this.provider = `sponsored:${this.adapters[0]!.id}`;
-    this.model = this.adapters[0]!.model;
+    this.provider = `sponsored:${this.catalog[0]!.id}`;
+    this.model = this.catalog[0]!.model;
   }
 
   get configuredProviders(): SponsoredProviderId[] {
-    return this.adapters.map((a) => a.id);
+    return this.catalog.map((a) => a.id);
   }
 
   async complete(input: {
@@ -123,8 +189,16 @@ export class SponsoredFailoverChatAdapter implements ChatAdapter {
     context: ContextItem[];
     promptCachingEnabled?: boolean;
   }) {
+    const attemptOrder = orderSponsoredProvidersWeightedRoundRobin(this.catalog);
     const errors: string[] = [];
-    for (const entry of this.adapters) {
+    const tried = new Set<SponsoredProviderId>();
+
+    for (const candidate of attemptOrder) {
+      if (tried.has(candidate.id)) continue;
+      tried.add(candidate.id);
+      const entry = this.adapters.get(candidate.id);
+      if (!entry) continue;
+
       try {
         const result = await entry.adapter.complete(input);
         this.provider = `sponsored:${entry.id}`;
