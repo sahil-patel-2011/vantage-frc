@@ -90,7 +90,7 @@ export function HeroProductVisual() {
             <strong>Competition</strong>
             <small>Command</small>
           </div>
-          <span className="hero-soft-avatar">V</span>
+          <span className="hero-soft-avatar">S</span>
         </header>
 
         <div className="hero-soft-body">
@@ -127,21 +127,8 @@ export function HeroProductVisual() {
               <div className="hero-soft-empty">
                 <b>No event linked</b>
                 <p>Connect TBA for this org to populate next match, pit tasks, and My Day.</p>
+                <span className="hero-soft-cta">Connect TBA</span>
               </div>
-              <ul className="hero-soft-pins">
-                <li>
-                  <span>Alliance Selection Desk</span>
-                  <em>More</em>
-                </li>
-                <li>
-                  <span>Season Planning</span>
-                  <em>Team</em>
-                </li>
-                <li>
-                  <span>AI API keys</span>
-                  <em>AI</em>
-                </li>
-              </ul>
             </div>
           </div>
         </div>

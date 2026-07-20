@@ -31,8 +31,8 @@ export default function DutiesClient() {
             <a className="app-button secondary" href="/workspace">
               Choose workspace
             </a>
-            <a className="app-button secondary" href="/help">
-              Help
+            <a className="app-button secondary" href="/docs">
+              App manual
             </a>
           </div>
         </EmptyState>

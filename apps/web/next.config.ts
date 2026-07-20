@@ -40,6 +40,8 @@ const LEGACY_REDIRECTS: Array<{ source: string; destination: string }> = [
   { source: "/team/ai-memory", destination: "/ai?tab=memory" },
   { source: "/travel", destination: "/logistics" },
   { source: "/travel/:path*", destination: "/logistics" },
+  { source: "/help", destination: "/docs" },
+  { source: "/help/:slug", destination: "/docs/:slug" },
 ];
 
 const config: NextConfig = {

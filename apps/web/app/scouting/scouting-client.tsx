@@ -21,7 +21,6 @@ import { useSearchParams } from "next/navigation";
 import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
-import { HowToUseLink } from "../help/how-to-use-link";
 import {
   clearScoutDraft,
   formatDraftSavedAgo,
@@ -200,7 +199,6 @@ function ScoutingShell({
         description="Match and pit forms cache on this device. Coverage stays empty until real scout rows exist — never DEMO entries."
       >
         <ScoutingRelatedStrip orgId={orgId} />
-        <HowToUseLink slug="scouting-offline" />
       </PageHeader>
       {children}
       <EmptyState
@@ -768,7 +766,6 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       >
         <div className="scout-header-meta">
           <ScoutingRelatedStrip orgId={orgId} />
-          <HowToUseLink slug="scouting-offline" />
           <CopyShareLink orgId={orgId} />
           <button type="button" className="app-button secondary" onClick={() => window.print()}>
             Print

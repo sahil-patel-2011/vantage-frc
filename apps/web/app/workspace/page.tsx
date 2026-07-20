@@ -5,15 +5,11 @@ import { redirect } from "next/navigation";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { loadDataSourceHealth } from "../../lib/reference-health";
 import {
-  WORKSPACE_RELATED_INCLUDE,
   classifyWorkspaceShell,
-  formatWorkspaceMembershipCount,
   formatWorkspaceOrgLabel,
   realWorkspaceMemberships,
   workspaceJoinNextActions,
   workspaceOrgHref,
-  workspaceRelatedLinks,
-  workspaceSetupSteps,
   workspaceShellCopy,
 } from "../../lib/workspace";
 import SyncIndicator from "./sync-indicator";
@@ -48,8 +44,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     if (shell === "empty") {
       const copy = workspaceShellCopy("empty");
       const actions = workspaceJoinNextActions("empty");
-      const related = workspaceRelatedLinks(null, { include: [...WORKSPACE_RELATED_INCLUDE] });
-      const steps = workspaceSetupSteps(null);
+      const primary = actions.find((a) => a.primary) ?? actions[0];
       return (
         <main className="onboarding-page invite-flow-page">
           <section className="onboarding-card invite-flow-card" aria-labelledby="workspace-join-title">
@@ -57,69 +52,26 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
               <div className="onboarding-brand">
                 <VantageLogo />
               </div>
-              {copy.badge ? <span className="invite-empty-badge">{copy.badge}</span> : null}
-              <span>{copy.eyebrow}</span>
               <h1 id="workspace-join-title">{copy.title}</h1>
               <p className="onboarding-sub">{copy.description}</p>
             </header>
-            <div className="invite-security-note">
-              <b aria-hidden="true">OK</b>
-              <p>
-                <strong>Closed membership</strong>
-                <span>
-                  Vantage does not open workspaces from team numbers alone, and never seeds DEMO
-                  organizations. Ask your coach or platform admin for an invite to your verified email.
-                </span>
-              </p>
-            </div>
-            <nav className="workspace-related-strip" aria-label="Related Soft-UI surfaces">
-              {related.map((link) => (
-                <a key={link.id} href={link.href}>
-                  {link.label}
+            {primary ? (
+              <p className="invite-primary-cta">
+                <a className="app-button" href={primary.href}>
+                  {primary.label}
                 </a>
-              ))}
-            </nav>
-            <section className="invite-next-actions" aria-label="Setup steps">
-              <header>
-                <h2>Setup</h2>
-                <p>
-                  {formatWorkspaceMembershipCount(0, true)} real memberships — invite-based join only;
-                  never DEMO organizations.
-                </p>
-              </header>
-              <ol>
-                {steps.map((step) => (
-                  <li key={step.id}>
-                    <div>
-                      <strong>{step.label}</strong>
-                      <span>{step.detail}</span>
-                    </div>
-                    <a className="signin-link" href={step.href}>
-                      Open
-                    </a>
+              </p>
+            ) : null}
+            <ul className="workspace-quiet-links">
+              {actions
+                .filter((a) => a.id !== primary?.id)
+                .map((action) => (
+                  <li key={action.id}>
+                    <a href={action.href}>{action.label}</a>
+                    <span>{action.detail}</span>
                   </li>
                 ))}
-              </ol>
-            </section>
-            <section className="invite-next-actions" aria-label="Next steps">
-              <header>
-                <h2>Next steps</h2>
-                <p>Exact-email invites only — Invite, Support, and Account stay honest while you wait.</p>
-              </header>
-              <ol>
-                {actions.map((action) => (
-                  <li key={action.id} className={action.primary ? "primary" : undefined}>
-                    <div>
-                      <strong>{action.label}</strong>
-                      <span>{action.detail}</span>
-                    </div>
-                    <a className="signin-link" href={action.href}>
-                      Open
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </section>
+            </ul>
           </section>
         </main>
       );
@@ -127,7 +79,6 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
 
     const copy = workspaceShellCopy("select");
     const actions = workspaceJoinNextActions("select");
-    const related = workspaceRelatedLinks(null, { include: [...WORKSPACE_RELATED_INCLUDE] });
     return (
       <main className="onboarding-page invite-flow-page">
         <section className="onboarding-card invite-flow-card" aria-labelledby="workspace-select-title">
@@ -135,15 +86,9 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
             <div className="onboarding-brand">
               <VantageLogo />
             </div>
-            {copy.badge ? <span className="invite-empty-badge">{copy.badge}</span> : null}
-            <span>{copy.eyebrow}</span>
             <h1 id="workspace-select-title">{copy.title}</h1>
             <p className="onboarding-sub">{copy.description}</p>
           </header>
-          <p className="workspace-membership-count" role="status">
-            {formatWorkspaceMembershipCount(options.length, true)} real team
-            {options.length === 1 ? "" : "s"} — never DEMO organizations.
-          </p>
           <ul className="dash-checklist workspace-org-pick">
             {options.map((row) => (
               <li key={row.orgId}>
@@ -151,32 +96,14 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
               </li>
             ))}
           </ul>
-          <nav className="workspace-related-strip" aria-label="Related Soft-UI surfaces">
-            {related.map((link) => (
-              <a key={link.id} href={link.href}>
-                {link.label}
-              </a>
+          <ul className="workspace-quiet-links">
+            {actions.map((action) => (
+              <li key={action.id}>
+                <a href={action.href}>{action.label}</a>
+                <span>{action.detail}</span>
+              </li>
             ))}
-          </nav>
-          <section className="invite-next-actions" aria-label="Next steps">
-            <header>
-              <h2>Next steps</h2>
-              <p>Pick a membership you already have — Invite, Support, and Account if you need another team.</p>
-            </header>
-            <ol>
-              {actions.map((action) => (
-                <li key={action.id} className={action.primary ? "primary" : undefined}>
-                  <div>
-                    <strong>{action.label}</strong>
-                    <span>{action.detail}</span>
-                  </div>
-                  <a className="signin-link" href={action.href}>
-                    Open
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </section>
+          </ul>
         </section>
       </main>
     );
@@ -240,16 +167,18 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     };
   });
 
+  const isOwnerAdmin = ["owner", "admin"].includes(data.role);
+
   return (
     <main className="workspace-page">
       <header className="workspace-top">
         <VantageLogo href="/dashboard" />
         <a className="display-nav" href={`/display?orgId=${orgId}`} aria-label="Open TV Display Mode setup">
-          Γûú <span>DISPLAY</span>
+          Display
         </a>
         <SyncIndicator />
         <span>
-          {session.user.name} ┬╖ {data.role.toUpperCase()}
+          {session.user.name} · {data.role}
         </span>
       </header>
       <section className={`active-event ${data.context.eventKey ? "" : "inactive"}`}>
@@ -259,17 +188,19 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
           <p>
             {data.context.eventKey
               ? data.context.eventKey
-              : "An owner or admin must set the active competition context before match queues populate."}
+              : isOwnerAdmin
+                ? "Set the active event to load match queues."
+                : "An owner or admin sets the active event."}
           </p>
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          {!data.context.eventKey && ["owner", "admin"].includes(data.role) ? (
+          {!data.context.eventKey && isOwnerAdmin ? (
             <a href={`/command?orgId=${encodeURIComponent(orgId)}`}>Select event</a>
           ) : null}
-          {["owner", "admin"].includes(data.role) ? (
+          {isOwnerAdmin ? (
             <>
               <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>TBA data</a>
-              <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team controls</a>
+              <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team</a>
             </>
           ) : null}
         </div>
@@ -277,17 +208,12 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
       <QuickActions orgId={orgId} />
       <DataSourceDegradedBanner health={data.dataSourceHealth} />
       <aside className="freshness-marker" role="status">
-        <strong>TBA reference cache</strong>
+        <strong>TBA cache</strong>
         <span>
           {data.freshness.syncedAt
-            ? `Last updated ${new Date(data.freshness.syncedAt).toLocaleString()}`
-            : "Not yet synced — connect TBA and run a sync before expecting live match times."}
+            ? `Updated ${new Date(data.freshness.syncedAt).toLocaleString()}`
+            : "Not synced yet."}
         </span>
-        {data.dataSourceHealth.usingLastGoodCache ? (
-          <small>Using last-known-good Neon cache · upstream temporarily degraded</small>
-        ) : data.freshness.lastError ? (
-          <small>Using last-known-good data · source temporarily unavailable</small>
-        ) : null}
       </aside>
       <section className="now-next">
         <div>
@@ -309,11 +235,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
             </article>
           ))
         ) : (
-          <p>
-            {data.context.eventKey
-              ? "No upcoming synced matches yet. Run TBA sync after the schedule is published."
-              : "Select an active event to load the match queue."}
-          </p>
+          <p>{data.context.eventKey ? "No upcoming matches synced yet." : "Select an active event first."}</p>
         )}
       </section>
     </main>

@@ -226,8 +226,8 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardWidgetLayout[] = [
   { i: "w-onboarding_checklist", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 4, minW: 6, minH: 3 },
   { i: "w-next_match", type: "next_match", x: 0, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
-  { i: "w-robot_readiness", type: "robot_readiness", x: 6, y: 4, w: 6, h: 4, minW: 3, minH: 3 },
-  { i: "w-subteam_upcoming", type: "subteam_upcoming", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
+  { i: "w-competition_snapshot", type: "competition_snapshot", x: 6, y: 4, w: 6, h: 4, minW: 3, minH: 2 },
+  { i: "w-robot_readiness", type: "robot_readiness", x: 0, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-alerts", type: "alerts", x: 4, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
   { i: "w-quick_actions", type: "quick_actions", x: 8, y: 8, w: 4, h: 3, minW: 3, minH: 2 },
 ];

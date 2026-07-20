@@ -29,21 +29,21 @@ describe("support Soft-UI helpers", () => {
     const links = supportRelatedLinks("org-1", { include: [...SUPPORT_RELATED_INCLUDE] });
     expect(links.map((l) => l.id)).toEqual(["account", "help", "workspace", "notifications"]);
     expect(links.find((l) => l.id === "account")?.href).toBe("/account");
-    expect(links.find((l) => l.id === "help")?.href).toBe("/help");
+    expect(links.find((l) => l.id === "help")?.href).toBe("/docs");
     expect(links.every((l) => !/demo/i.test(l.label))).toBe(true);
   });
 
   it("includes Help when requested", () => {
     const links = supportRelatedLinks(null, { include: ["account", "help"] });
     expect(links.map((l) => l.id)).toEqual(["account", "help"]);
-    expect(links.find((l) => l.id === "help")?.href).toBe("/help");
+    expect(links.find((l) => l.id === "help")?.href).toBe("/docs");
   });
 
   it("requires workspace before next actions", () => {
     const actions = supportNextActions({});
     expect(actions.map((a) => a.id)).toEqual(["workspace", "account", "help"]);
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
-    expect(actions.some((a) => /tutorials|Help docs|Soft-UI/i.test(a.detail))).toBe(true);
+    expect(actions.some((a) => /tutorials|App manual|Soft-UI|manual/i.test(a.detail))).toBe(true);
   });
 
   it("asks for first ticket when empty — never DEMO tickets", () => {

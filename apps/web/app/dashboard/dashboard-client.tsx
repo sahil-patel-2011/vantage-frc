@@ -20,6 +20,7 @@ import {
   classifyDashboardShell,
   dashboardHubLinks,
   dashboardNextActions,
+  dashboardSetupBlurb,
   dashboardSetupSteps,
   dashboardSetupTitle,
 } from "../../lib/dashboard/dashboard-related";
@@ -33,7 +34,6 @@ import { prioritizeHomeStrip, type HomeStripItem } from "../../lib/home-workflow
 import { Badge } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
-import { HowToUseLink } from "../help/how-to-use-link";
 import "react-grid-layout/css/styles.css";
 import "./dashboard-editor.css";
 import "./dashboard-dnd.css";
@@ -780,7 +780,6 @@ export default function DashboardClient() {
               Edit Home
             </button>
           ) : null}
-          <HowToUseLink slug="edit-home" />
           <details className="dash-home-more">
             <summary aria-label="More home tools">More</summary>
             <div>
@@ -918,36 +917,33 @@ export default function DashboardClient() {
       {meLoaded && dashShell !== "ready" ? (
         <section className="dash-setup-banner" aria-label="First-run setup">
           <div>
-            <Badge tone="setup">Setup required</Badge>
+            <Badge tone="setup">Setup</Badge>
             <h2>{dashboardSetupTitle(dashShell)}</h2>
-            <p>
-              Live widgets stay empty until this path is complete — Vantage will not invent ranks, EPA, match times, or
-              readiness percentages.
-            </p>
+            <p>{dashboardSetupBlurb(dashShell)}</p>
           </div>
-          <ol className="dash-setup-steps">
-            {setupSteps
-              .filter((step) => step.state !== "done" || step.id === "workspace")
-              .slice(0, 4)
-              .map((step, index) => (
-              <li key={step.id} className={step.state === "pending" ? undefined : step.state}>
-                <b>{index + 1}</b>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                {step.state === "done" ? (
-                  <em>Done</em>
-                ) : step.state === "current" ? (
-                  <a href={step.href}>
-                    {step.id === "workspace" && !orgId ? "Invite" : step.id === "tba" ? "Connect" : "Open"}
-                  </a>
-                ) : (
-                  <span />
-                )}
-              </li>
-            ))}
-          </ol>
+          {(() => {
+            const primary =
+              nextActions.find((a) => a.primary) ??
+              setupSteps.find((s) => s.state === "current") ??
+              null;
+            if (!primary) return null;
+            const href = "href" in primary ? primary.href : "#";
+            const label =
+              "label" in primary
+                ? primary.id === "invite"
+                  ? "Open invite"
+                  : primary.id === "tba"
+                    ? "Connect TBA"
+                    : primary.id === "event"
+                      ? "Set event"
+                      : primary.label
+                : "Continue";
+            return (
+              <a className="app-button" href={href}>
+                {label}
+              </a>
+            );
+          })()}
         </section>
       ) : null}
 
@@ -957,15 +953,14 @@ export default function DashboardClient() {
           aria-label="Next actions"
         >
           <header>
-            <h2>Finish setup</h2>
-            <p>A few workspace steps still block live widgets — nothing here is DEMO data.</p>
+            <h2>Next</h2>
+            <p>{nextActions[0]?.detail}</p>
           </header>
           <ol>
-            {nextActions.slice(0, 3).map((action) => (
+            {nextActions.slice(0, 2).map((action) => (
               <li key={action.id} className={action.primary ? "primary" : undefined}>
                 <div>
                   <strong>{action.label}</strong>
-                  <span>{action.detail}</span>
                 </div>
                 <a className="app-button secondary" href={action.href}>
                   Open
@@ -978,14 +973,6 @@ export default function DashboardClient() {
 
       {meLoaded && orgId && tbaConfigured !== false ? (
         <DataSourceDegradedBanner health={dataSourceHealth} />
-      ) : null}
-
-      {meLoaded && (!orgId || setupRequired) && !editing ? (
-        <ul className="dash-waiting-strip" aria-label="Widget status">
-          <li>Next match · waiting</li>
-          <li>Robot readiness · waiting</li>
-          <li>No fabricated stats</li>
-        </ul>
       ) : null}
 
       {editing ? (
@@ -1030,6 +1017,7 @@ export default function DashboardClient() {
         </section>
       ) : null}
 
+      {dashShell === "ready" || editing ? (
       <section
         ref={containerRef}
         className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${externalWidget ? " receiving-widget" : ""}`}
@@ -1157,8 +1145,9 @@ export default function DashboardClient() {
           </div>
         )}
       </section>
+      ) : null}
 
-      {!editing && secondaryTypes.length > 0 ? (
+      {!editing && dashShell === "ready" && secondaryTypes.length > 0 ? (
         <section className="dash-more">
           <button
             type="button"

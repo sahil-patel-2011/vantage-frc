@@ -1,23 +1,10 @@
-import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for `/workspace` join / select (never DEMO orgs). */
+/** Soft-UI related surfaces for `/workspace` join / select. */
 export const WORKSPACE_RELATED_LINKS = [
-  /** Personal invite accept — leave org-free (token in query, not orgId). */
   { id: "invite", label: "Accept invite", kind: "personal" as const, path: "/invite" },
-  { id: "support", label: "Help & Support", kind: "personal" as const, path: "/support" },
-  {
-    id: "account",
-    label: "Account",
-    kind: "personal" as const,
-    path: "/account?tab=profile",
-  },
-  {
-    id: "onboarding-buddy",
-    label: "Onboarding Buddy",
-    kind: "team" as const,
-    tab: "onboarding-buddy",
-  },
+  { id: "support", label: "Support", kind: "personal" as const, path: "/support" },
+  { id: "account", label: "Account", kind: "personal" as const, path: "/account?tab=profile" },
 ] as const;
 
 export type WorkspaceRelatedId = (typeof WORKSPACE_RELATED_LINKS)[number]["id"];
@@ -28,17 +15,8 @@ export type WorkspaceRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Invite · Support · Account. */
-export const WORKSPACE_RELATED_INCLUDE: WorkspaceRelatedId[] = [
-  "invite",
-  "support",
-  "account",
-];
+export const WORKSPACE_RELATED_INCLUDE: WorkspaceRelatedId[] = ["invite", "support", "account"];
 
-/**
- * Soft-UI cross-links from Workspace join/select → Invite / Support / Account.
- * Build with hubHref / withOrgHref — never broken JSX href templates.
- */
 export function workspaceRelatedLinks(
   orgId?: string | null,
   options?: { active?: WorkspaceRelatedId; include?: WorkspaceRelatedId[] },
@@ -49,19 +27,12 @@ export function workspaceRelatedLinks(
     if (include && !include.has(link.id)) return false;
     return true;
   }).map((link) => {
-    if (link.kind === "team") {
-      return { id: link.id, label: link.label, href: hubHref("/team", link.tab, orgId) };
-    }
-    // Invite stays token-scoped (not orgId). Support / Account are ORG_EXEMPT via withOrgHref.
-    if (link.id === "invite") {
-      return { id: link.id, label: link.label, href: link.path };
-    }
+    if (link.id === "invite") return { id: link.id, label: link.label, href: link.path };
     return { id: link.id, label: link.label, href: withOrgHref(link.path, orgId) };
   });
 }
 
 export type WorkspaceJoinKind = "loading" | "none" | "select" | "ready";
-
 export type WorkspaceShellKind = "loading" | "setup" | "empty" | "select" | "ready";
 
 export type WorkspaceJoinCopy = {
@@ -93,16 +64,11 @@ export type WorkspaceSetupStep = {
   href: string;
 };
 
-/** Org-scoped workspace deep link — never a DEMO seed path. */
 export function workspaceOrgHref(orgId?: string | null): string {
   if (!orgId) return "/workspace";
   return withOrgHref("/workspace", orgId);
 }
 
-/**
- * Keep only real membership rows with a non-empty org id.
- * Never invents DEMO organizations when the list is empty.
- */
 export function realWorkspaceMemberships(
   rows: Array<{ orgId?: string | null; orgName?: string | null; teamNumber?: number | null }>,
 ): WorkspaceMembershipOption[] {
@@ -120,7 +86,6 @@ export function realWorkspaceMemberships(
   return out;
 }
 
-/** Real membership count only — never invent DEMO totals. */
 export function formatWorkspaceMembershipCount(value: unknown, loaded: boolean): string {
   if (!loaded) return "…";
   const n = Number(value ?? 0);
@@ -139,7 +104,6 @@ export function formatWorkspaceOrgLabel(input: {
   return parts.length > 0 ? parts.join(" · ") : "Team workspace";
 }
 
-/** Classify Workspace join Soft-UI shell — never invents DEMO orgs. */
 export function classifyWorkspaceShell(input: {
   loading?: boolean;
   membershipCount?: number;
@@ -151,95 +115,84 @@ export function classifyWorkspaceShell(input: {
   return "select";
 }
 
-/** Soft-UI empty / setup / select copy — never DEMO organizations. */
+/** Brief Soft-UI copy — closed membership, no lecture. */
 export function workspaceShellCopy(kind: WorkspaceShellKind): WorkspaceJoinCopy {
   switch (kind) {
     case "loading":
       return {
         kind,
         eyebrow: "WORKSPACE",
-        title: "Loading memberships…",
-        description:
-          "Checking real organization memberships for this login — never DEMO organizations.",
+        title: "Loading…",
+        description: "Checking your team memberships.",
       };
     case "setup":
       return {
         kind,
-        eyebrow: "SETUP REQUIRED",
-        title: "Finish workspace setup",
-        description:
-          "Membership is closed and invite-based. Complete profile or access setup before a team can appear here — nothing is pre-seeded.",
-        badge: "Setup required",
+        eyebrow: "SETUP",
+        title: "Finish setup",
+        description: "Complete your profile before joining a team.",
+        badge: "Setup",
       };
     case "select":
       return {
         kind,
-        eyebrow: "CHOOSE WORKSPACE",
-        title: "Select your team workspace",
-        description:
-          "You belong to more than one real organization. Pick one to continue — no DEMO organizations appear here.",
+        eyebrow: "TEAMS",
+        title: "Choose a team",
+        description: "You belong to more than one workspace.",
         badge: "Multiple teams",
       };
     case "ready":
       return {
         kind,
         eyebrow: "WORKSPACE",
-        title: "Continue to your team",
-        description: "Only real memberships appear here — never DEMO organizations.",
+        title: "Continue",
+        description: "Open your team workspace.",
       };
     default:
       return {
         kind: "empty",
-        eyebrow: "JOIN A TEAM",
-        title: "Join a team workspace",
-        description:
-          "Access comes from a verified invitation to your exact email. Team numbers never open a workspace, and this list stays blank until a real membership exists — never DEMO organizations.",
-        badge: "No memberships",
+        eyebrow: "JOIN",
+        title: "No team yet",
+        description: "Ask a coach for an invite to your email, then open the link.",
+        badge: "Invite only",
       };
   }
 }
 
-/** @deprecated Prefer workspaceShellCopy — kept for existing call sites. */
+/** @deprecated Prefer workspaceShellCopy */
 export function workspaceJoinCopy(kind: Exclude<WorkspaceJoinKind, "loading" | "ready">): WorkspaceJoinCopy {
   if (kind === "select") return workspaceShellCopy("select");
   return workspaceShellCopy("empty");
 }
 
-/** Soft-UI setup steps — hubHref / withOrgHref only; never DEMO orgs. */
+/**
+ * Single short path for empty join — no Onboarding Buddy until membership exists.
+ * Prefer this over duplicated Setup + Next steps lists.
+ */
 export function workspaceSetupSteps(orgId?: string | null): WorkspaceSetupStep[] {
   return [
     {
       id: "invite",
       label: "Open invite from email",
-      detail: "Use the full invitation link — exact-email match required.",
-      // Invite accept is token-scoped; keep personal (no orgId) like Account.
+      detail: "Use the full link sent to your login address.",
       href: "/invite",
     },
     {
       id: "account",
-      label: "Confirm Account email",
-      detail: "Invites bind to your verified login address — check Account before accepting.",
+      label: "Confirm email",
+      detail: "Invites must match your signed-in address.",
       href: withOrgHref("/account?tab=profile", orgId),
     },
     {
       id: "support",
-      label: "Help & Support",
-      detail: "Ask for a fresh invite if you expected a membership and do not see a workspace.",
+      label: "Need a new invite?",
+      detail: "Contact support if you expected access.",
       href: withOrgHref("/support", orgId),
-    },
-    {
-      id: "onboarding-buddy",
-      label: "Onboarding Buddy",
-      detail: "Role / subteam Soft-UI path after you have a real membership — never DEMO orgs.",
-      href: hubHref("/team", "onboarding-buddy", orgId),
     },
   ];
 }
 
-/**
- * Soft-UI next actions for Workspace join / select shells.
- * Points at Invite / Support / Account — never invents DEMO organizations.
- */
+/** Deduped next actions — one primary CTA, no laundry list. */
 export function workspaceJoinNextActions(
   kind: Exclude<WorkspaceJoinKind, "loading" | "ready"> | WorkspaceShellKind,
   orgId?: string | null,
@@ -250,53 +203,39 @@ export function workspaceJoinNextActions(
   if (shell === "select") {
     return [
       {
-        id: "account",
-        label: "Account",
-        detail: "Confirm which verified email is signed in before accepting another invite.",
-        href: withOrgHref("/account?tab=profile", orgId),
-        primary: true,
-      },
-      {
         id: "invite",
         label: "Accept another invite",
-        detail: "Join an additional real team with an exact-email invitation — never DEMO orgs.",
+        detail: "Join an additional team with an email invite.",
         href: "/invite",
       },
       {
         id: "support",
-        label: "Help & Support",
-        detail: "Ask for access help if a membership you expected is missing from this list.",
+        label: "Support",
+        detail: "Missing a team you expected?",
         href: withOrgHref("/support", orgId),
       },
     ];
   }
 
-  // empty / setup / none — closed membership, invite-first
   return [
     {
       id: "invite",
       label: "Open invite from email",
-      detail: "Use the full invitation link sent to your verified address — exact-email match required.",
+      detail: "Use the full invitation link.",
       href: "/invite",
       primary: true,
     },
     {
       id: "account",
-      label: "Account",
-      detail: "Confirm your verified email before accepting — invites never invent DEMO organizations.",
+      label: "Confirm email",
+      detail: "Must match your signed-in address.",
       href: withOrgHref("/account?tab=profile", orgId),
     },
     {
       id: "support",
-      label: "Help & Support",
-      detail: "Ask for a fresh invite if you expected membership and do not see a workspace.",
+      label: "Support",
+      detail: "Ask for a fresh invite if needed.",
       href: withOrgHref("/support", orgId),
-    },
-    {
-      id: "onboarding-buddy",
-      label: "Onboarding Buddy",
-      detail: "Available after a real membership exists — the Team hub stays honest until then.",
-      href: hubHref("/team", "onboarding-buddy", orgId),
     },
   ];
 }

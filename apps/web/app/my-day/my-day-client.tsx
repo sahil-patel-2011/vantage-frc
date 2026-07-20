@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
-import { HowToUseLink } from "../help/how-to-use-link";
 import type { MyDayMatch, MyDayView } from "../../lib/my-day";
 import {
   MY_DAY_RELATED_INCLUDE,
@@ -353,7 +352,6 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
             : "Your matches at the active event — never DEMO times."
         }
       >
-        <HowToUseLink slug="event-day-command" />
         <MyDayRelatedStrip orgId={orgId} />
       </PageHeader>
 
