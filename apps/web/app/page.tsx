@@ -2,7 +2,20 @@ import { WaitlistForm } from "../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import { FAQ } from "../components/marketing/faq";
 import { HeroProductVisual, ProductGlances } from "../components/marketing/product-glances";
-import { raisedPricingStrip, raisedPricingSummaryLine } from "@vantage/billing/catalog";
+import {
+  hostedApiSavingsCopy,
+  raisedPricingStrip,
+  raisedPricingSummaryLine,
+} from "@vantage/billing/catalog";
+
+const surfaces = [
+  { name: "Scouting", blurb: "Offline forms, voice notes, sync." },
+  { name: "Event Day", blurb: "Command, My Day, match checklist." },
+  { name: "Strategy", blurb: "Alliance desk, Pick clock, playbooks." },
+  { name: "Season planning", blurb: "Goals, milestones, owners." },
+  { name: "CAD agent", blurb: "Approval-gated briefs → Onshape/Fusion." },
+  { name: "Team & Business", blurb: "Logistics, sponsors, grants, ops." },
+] as const;
 
 export default function Home() {
   return (
@@ -12,11 +25,8 @@ export default function Home() {
         <section className="lux-hero" aria-labelledby="lux-hero-title">
           <div className="lux-hero-copy">
             <p className="lux-wordmark">Vantage</p>
-            <h1 id="lux-hero-title">Competition operations for FRC teams.</h1>
-            <p>
-              One shared season for scouting, Event Day, strategy, CAD, logistics, and metered AI—invite-only, with
-              honest empty states.
-            </p>
+            <h1 id="lux-hero-title">Scouting, Event Day, strategy, CAD.</h1>
+            <p>Soft-UI hubs teams actually open—invite-only, empty until your data connects.</p>
             <div className="actions">
               <a className="button primary" href="#waitlist">
                 Join the waitlist
@@ -31,29 +41,32 @@ export default function Home() {
 
         <section className="lux-showcase" aria-labelledby="lux-showcase-title">
           <header className="lux-section-head">
-            <h2 id="lux-showcase-title">Built for how teams actually compete.</h2>
-            <p>Three quiet looks at the work that matters. Marketing preview only.</p>
+            <h2 id="lux-showcase-title">What teams open.</h2>
+            <p>Marketing preview. No DEMO metrics.</p>
           </header>
           <ProductGlances />
         </section>
 
-        <section className="lux-thesis" aria-labelledby="lux-thesis-title">
-          <h2 id="lux-thesis-title">One shared season—not five tabs and a group chat.</h2>
-          <p>
-            Scouting, day-of ops, build, travel, fundraising, knowledge, and metered AI live under the same organization
-            and active event. Empty context stays empty. Approvals stay human.
-          </p>
+        <section className="lux-thesis" aria-labelledby="lux-surfaces-title">
+          <h2 id="lux-surfaces-title">Named surfaces, not fluff.</h2>
+          <ul className="lux-feature-grid">
+            {surfaces.map((item) => (
+              <li key={item.name}>
+                <strong>{item.name}</strong>
+                <span>{item.blurb}</span>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="lux-pricing" id="pricing-preview" aria-labelledby="lux-pricing-title">
           <div>
-            <h2 id="lux-pricing-title">Free competition core. Raised plans for managed AI.</h2>
+            <h2 id="lux-pricing-title">Free competition core. Paid for managed AI.</h2>
             <p>
-              Free covers scouting, reference data, manual strategy, exports, and team ops with BYOK or local AI. Paid
-              plans add managed routing and included API allowance—then a hard stop unless you buy Usage Credits or enable
-              PAYG.
+              BYOK stays on Free. Hosted AI: {hostedApiSavingsCopy()} Hard stop after included allowance unless Credits
+              or PAYG.
             </p>
-            <ul className="pricing-price-strip" aria-label="Raised monthly plan prices">
+            <ul className="pricing-price-strip" aria-label="Monthly plan prices">
               {raisedPricingStrip().map((item) => (
                 <li key={item.id}>
                   <span>{item.label}</span>
@@ -77,11 +90,10 @@ export default function Home() {
         <section className="lux-waitlist" id="waitlist">
           <div>
             <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
-            <h2>Put one operational picture in front of the whole team.</h2>
+            <h2>Join the waitlist.</h2>
             <p>
-              Join the prelaunch list—terms acceptance is required. Account verification and administrator-created team
-              access remain separate launch steps. Raised plans: {raisedPricingSummaryLine()} on{" "}
-              <a href="/pricing">pricing</a>. Read <a href="/terms">terms</a> and <a href="/privacy">privacy</a>.
+              Terms required. Access is invite-only. {raisedPricingSummaryLine()} on <a href="/pricing">pricing</a>.{" "}
+              <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>.
             </p>
           </div>
           <WaitlistForm idPrefix="hero" />

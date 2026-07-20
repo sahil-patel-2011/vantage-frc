@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
   PRICING_CATALOG,
   catalogDefaultsFootnote,
+  hostedApiSavingsCopy,
   raisedPricingSummaryLine,
 } from "@vantage/billing/catalog";
 import { WaitlistForm } from "../../components/marketing/waitlist-form";
@@ -11,7 +12,7 @@ import { PricingCatalog } from "./pricing-catalog";
 export const metadata: Metadata = {
   title: "Pricing — Vantage",
   description:
-    "Individual and team Vantage plans with included managed API allowances at provider list rates, Usage Credits, Access + PAYG, Soft-UI hubs, and hard cut-offs—no Vantage markup on model spend.",
+    "Free Soft-UI competition core. Paid managed AI with hosted usage ~25% less than BYOK. Hard cutoffs—no surprise overage.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -22,6 +23,7 @@ export default function PricingPage() {
   const individualMax = PRICING_CATALOG.individual_max;
   const teamPro = PRICING_CATALOG.team_pro;
   const teamMax = PRICING_CATALOG.team_max;
+  const hostedSavings = hostedApiSavingsCopy();
 
   return (
     <div className="marketing-site marketing-lux">
@@ -29,11 +31,10 @@ export default function PricingPage() {
       <main className="pricing-page">
         <section className="lux-route-hero pricing-hero">
           <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
-          <h1>Fund private work or the whole team—deliberately.</h1>
+          <h1>Plans for private work or the whole team.</h1>
           <p>
-            Free keeps the Soft-UI competition core useful with BYOK/local AI. Raised paid plans add managed routing with
-            included API allowance at published provider rates—then a hard stop unless you buy Usage Credits or enable
-            PAYG. No per-seat student pricing and no surprise charges.
+            Free Soft-UI core with BYOK. Paid adds managed routing and included API—then a hard stop. Hosted AI is about
+            25% cheaper than own keys.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
@@ -49,37 +50,22 @@ export default function PricingPage() {
 
         <section className="payg">
           <div>
-            <span className="section-id">USAGE &amp; ECONOMICS</span>
-            <h2>No markup on model spend.</h2>
+            <span className="section-id">USAGE</span>
+            <h2>Hosted AI costs less than BYOK.</h2>
           </div>
           <div>
             <p>
-              <strong>Usage Credit = $1 of provider API cost at list rates</strong> (Anthropic, OpenAI, and other
-              published tables). Launch debit multiplier is <strong>1.0×</strong>—Vantage does not mark up model spend.
-              Included allowances reset with the paid period; purchased or gifted Usage Credits are separate and
-              non-withdrawable.
+              <strong>{hostedSavings}</strong> Prepaid credits buy hosted capacity at the same 0.75× debit.
             </p>
             <p>
-              After included allowance is exhausted: <strong>hard stop</strong> unless you opt into Usage Credits or PAYG
-              (explicit enable + spend cap). Prepaid stopping at zero is the default. BYOK/local cost does not consume
-              managed allowance, but plan entitlements and org limits still apply. Managed is stronger via integrated
-              routing, tools, and context—not because BYOK is sabotaged.
+              After included allowance: hard stop unless Usage Credits or PAYG (explicit cap). BYOK never consumes managed
+              allowance.
             </p>
-            <p>
-              Sponsored free AI, when available, is clearly labeled, low priority, capped per user/org/IP, and never falls
-              through to a paid model. Exhaustion offers BYOK, local relay, or upgrade.
-            </p>
-            <p>
-              Checkout stays inactive until Stripe credentials and admin-configured Price IDs exist. Until then, join the
-              early-access waitlist—plan numbers live in the admin-configurable catalog and can change for future periods
-              with notice; active paid periods keep their snapshotted terms.
-            </p>
+            <p>Checkout opens when Stripe Price IDs are configured—until then, join the waitlist.</p>
             <p className="pricing-note">{catalogNote}</p>
             <p className="pricing-footnote">
-              <strong>Free vs FRC Assistant:</strong> Free includes Soft-UI offline scouting, cached reference data,
-              manual strategy, and pick lists—the competition core that feeds the Assistant. Managed Assistant replies
-              (paid allowance, Usage Credits, PAYG, or BYOK/local) still need real event context; they do not invent DEMO
-              dashboards or fabricated win rates.
+              Free includes offline scouting, reference data, manual strategy, and pick lists. Managed Assistant still
+              needs real event context—no DEMO win rates.
             </p>
           </div>
         </section>
@@ -87,12 +73,10 @@ export default function PricingPage() {
         <section className="lux-waitlist pricing-waitlist" id="waitlist">
           <div>
             <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
-            <h2>Join the waitlist before checkout opens.</h2>
+            <h2>Join the waitlist.</h2>
             <p>
-              Catalog: Access ${accessPrice} · Individual Pro ${individualPro.monthlyUsd} / Max $
-              {individualMax.monthlyUsd} · Team Pro ${teamPro.monthlyUsd} / Max ${teamMax.monthlyUsd}. Stripe checkout
-              activates when credentials and Price IDs are configured—until then, the waitlist is the path in. Terms
-              acceptance is required.
+              Access ${accessPrice} · Individual ${individualPro.monthlyUsd}/${individualMax.monthlyUsd} · Team $
+              {teamPro.monthlyUsd}/${teamMax.monthlyUsd}. {raisedPricingSummaryLine()}. Terms required.
             </p>
           </div>
           <WaitlistForm idPrefix="pricing" />
