@@ -5,6 +5,9 @@ import {
   PRICING_CATALOG,
   TEAM_TRIAL_DAYS,
   formatCatalogUsd,
+  hostedApiSavingsCopy,
+  hostedCreditPackListApiUsd,
+  hostedUsageDebitCopy,
   teamCommitRangeCopy,
 } from "@vantage/billing/catalog";
 
@@ -27,44 +30,46 @@ const teamPro = PRICING_CATALOG.team_pro;
 const teamMax = PRICING_CATALOG.team_max;
 const teamTrial = PRICING_CATALOG.team_trial;
 const teamRange = teamCommitRangeCopy();
+const hostedDebit = hostedUsageDebitCopy();
+const hostedSavings = hostedApiSavingsCopy();
 
 const individualPlans: PlanCard[] = [
   {
     code: "free",
     name: "Free",
     price: "$0",
-    signal: "BYOK / LOCAL · $0 MANAGED",
+    signal: "BYOK · $0 managed",
     features: [
-      "Soft-UI competition core: scouting hub, strategy, Event Day / Pit ops, exports",
-      "Bring a supported API key or pair a local OpenAI-compatible relay",
-      "Managed routing is stronger because of integrated tools, context, and failover—not because BYOK is sabotaged",
-      "No included managed API allowance; no silent paid-model routing",
+      "Soft-UI competition core: scouting, strategy, Event Day / Pit ops",
+      "Bring your own key or a local OpenAI-compatible relay",
+      "Managed routing is stronger via tools and context—not BYOK sabotage",
+      "No included managed API; no silent paid-model routing",
     ],
   },
   {
     code: "individual_pro",
     name: "Individual Pro",
     price: formatCatalogUsd(individualPro.monthlyUsd),
-    signal: `PRIVATE · $${individualPro.includedAllowanceUsd} API INCLUDED`,
+    signal: `$${individualPro.includedAllowanceUsd} API included`,
     featured: true,
-    flag: "Popular starting point",
+    flag: "Popular",
     features: [
-      `$${individualPro.includedAllowanceUsd} included managed API allowance per month, then hard cut-off`,
-      "Debited at published provider list rates (1 Usage Credit = $1 API cost)",
-      "Private Soft-UI workspace: scouting trust, strategy, and CAD review hubs",
-      "After allowance: buy Usage Credits or enable PAYG with a spend cap",
+      `$${individualPro.includedAllowanceUsd}/mo managed API, then hard cut-off`,
+      "Hosted AI ~25% cheaper than BYOK (0.75× typical rates)",
+      "Private Soft-UI: scouting trust, strategy, CAD review",
+      "After allowance: Usage Credits or PAYG with a spend cap",
     ],
   },
   {
     code: "individual_max",
     name: "Individual Max",
     price: formatCatalogUsd(individualMax.monthlyUsd),
-    signal: `PRIVATE · $${individualMax.includedAllowanceUsd} API · ~2× PRO LIMITS`,
+    signal: `$${individualMax.includedAllowanceUsd} API · 2× limits`,
     features: [
-      `$${individualMax.includedAllowanceUsd} included managed API allowance per month, then hard cut-off`,
-      "~2× Individual Pro hourly, rate, and concurrency limits",
-      "Private Soft-UI workspace; priority features and scenario sweeps",
-      "After allowance: Usage Credits or explicit PAYG + spend cap",
+      `$${individualMax.includedAllowanceUsd}/mo managed API, then hard cut-off`,
+      "~2× Pro hourly, rate, and concurrency limits",
+      "Priority Soft-UI features and scenario sweeps",
+      "After allowance: Usage Credits or PAYG + spend cap",
     ],
   },
 ];
@@ -74,26 +79,26 @@ const teamPlans: PlanCard[] = [
     code: "team_pro",
     name: "Team Pro",
     price: formatCatalogUsd(teamPro.monthlyUsd),
-    signal: `ORG · $${teamPro.includedAllowanceUsd} API POOLED`,
+    signal: `$${teamPro.includedAllowanceUsd} pooled API`,
     featured: true,
-    flag: "Most teams start here",
+    flag: "Most teams",
     features: [
-      `$${teamPro.includedAllowanceUsd} pooled managed API allowance per month, then hard cut-off`,
-      "Shared Soft-UI AI, automations, and Event Day / Pit / logistics ops",
-      "Org budget, member, and feature controls with hard usage cutoffs",
-      "After allowance: pooled Usage Credits or PAYG with a hard monthly cap",
+      `$${teamPro.includedAllowanceUsd}/mo pooled managed API, then hard cut-off`,
+      "Hosted AI ~25% cheaper than BYOK (0.75× typical rates)",
+      "Shared Soft-UI AI, Event Day / Pit / logistics",
+      "After allowance: pooled Credits or PAYG with a monthly cap",
     ],
   },
   {
     code: "team_max",
     name: "Team Max",
     price: formatCatalogUsd(teamMax.monthlyUsd),
-    signal: `ORG · $${teamMax.includedAllowanceUsd} API · ~2× PRO LIMITS`,
+    signal: `$${teamMax.includedAllowanceUsd} API · 2× limits`,
     features: [
-      `$${teamMax.includedAllowanceUsd} pooled managed API allowance per month, then hard cut-off`,
+      `$${teamMax.includedAllowanceUsd}/mo pooled managed API, then hard cut-off`,
       "~2× Team Pro rate, hourly, and concurrency limits",
-      "Advanced CAD, strategy, code review, and admin Soft-UI workflows",
-      "Explore higher credit packs below when you need more pooled API",
+      "Advanced CAD, strategy, code review, and admin",
+      "Higher credit packs available when you need more API",
     ],
   },
 ];
@@ -101,11 +106,20 @@ const teamPlans: PlanCard[] = [
 const creditPackOptions = [
   {
     value: "team_max",
-    label: `$${teamMax.monthlyUsd}/mo subscription ($${teamMax.includedAllowanceUsd} included API)`,
+    label: `$${teamMax.monthlyUsd}/mo ($${teamMax.includedAllowanceUsd} included API)`,
   },
-  { value: "credits_100", label: "Add Usage Credits pack · $100 (= $100 API)" },
-  { value: "credits_250", label: "Add Usage Credits pack · $250 (= $250 API)" },
-  { value: "credits_500", label: "Add Usage Credits pack · $500 (= $500 API)" },
+  {
+    value: "credits_100",
+    label: `Credits $100 ≈ $${hostedCreditPackListApiUsd(100)} typical API`,
+  },
+  {
+    value: "credits_250",
+    label: `Credits $250 ≈ $${hostedCreditPackListApiUsd(250)} typical API`,
+  },
+  {
+    value: "credits_500",
+    label: `Credits $500 ≈ $${hostedCreditPackListApiUsd(500)} typical API`,
+  },
 ];
 
 const alternatePaths: PlanCard[] = [
@@ -114,24 +128,24 @@ const alternatePaths: PlanCard[] = [
     name: "Pay as you go",
     price: "$0",
     period: "subscription",
-    signal: "NO BIG SUBSCRIPTION",
+    signal: "No big subscription",
     features: [
-      "No included API bucket — enroll PAYG with a payment method and hard monthly spend cap",
-      "Usage debited at provider list rates (1 credit = $1 API)",
-      "Hard stop when prepaid credits and/or the spend cap are exhausted",
-      `Best when you want managed Soft-UI routing without a ${teamRange} commit`,
+      "Enroll PAYG with a payment method and hard monthly spend cap",
+      hostedDebit,
+      "Hard stop when credits and/or the spend cap are exhausted",
+      `Best without a ${teamRange} team commit`,
     ],
   },
   {
     code: "access",
     name: "Access + PAYG",
     price: formatCatalogUsd(access.monthlyUsd),
-    signal: "LIGHT PLAN · MANAGED ROUTING",
+    signal: "Light · managed routing",
     features: [
-      `$${access.monthlyUsd}/mo unlocks Vantage managed Soft-UI routing, tools, and context at API list rates`,
-      "No large included allowance — add Usage Credits or enable PAYG with a spend cap",
-      "Clearer vs Free: Free is BYOK/local; Access is managed platform routing without a big included bucket",
-      "Optional path for individuals and small teams avoiding Team Pro/Max commit",
+      `$${access.monthlyUsd}/mo unlocks managed Soft-UI routing`,
+      hostedSavings,
+      "No large included bucket — add Credits or enable PAYG",
+      "Free stays BYOK/local; Access is managed without a big allowance",
     ],
   },
 ];
@@ -154,7 +168,7 @@ function PlanArticle({
   return (
     <article className={plan.featured ? "featured" : undefined}>
       {plan.featured && plan.flag ? <em className="plan-flag">{plan.flag}</em> : null}
-      <span>{plan.signal}</span>
+      <span className="plan-signal">{plan.signal}</span>
       <h2>{plan.name}</h2>
       <div className="plan-price">
         <strong>{plan.price}</strong>
@@ -179,74 +193,78 @@ export function PricingCatalog() {
 
   return (
     <>
-      <section className="pricing-toggle" aria-label="Pricing groups" role="tablist">
-        <button
-          id="pricing-tab-individual"
-          type="button"
-          role="tab"
-          aria-selected={group === "individual"}
-          aria-controls="individual"
-          className={group === "individual" ? "active" : undefined}
-          onClick={() => setGroup("individual")}
-        >
-          Individual
-        </button>
-        <button
-          id="pricing-tab-team"
-          type="button"
-          role="tab"
-          aria-selected={group === "team"}
-          aria-controls="team"
-          className={group === "team" ? "active" : undefined}
-          onClick={() => setGroup("team")}
-        >
-          Team
-        </button>
-      </section>
+      <section className="pricing-plans" aria-label="Plan catalog">
+        <div className="pricing-plans-chrome">
+          <div className="pricing-toggle" role="tablist" aria-label="Pricing groups">
+            <button
+              id="pricing-tab-individual"
+              type="button"
+              role="tab"
+              aria-selected={group === "individual"}
+              aria-controls="pricing-plan-panel"
+              className={group === "individual" ? "active" : undefined}
+              onClick={() => setGroup("individual")}
+            >
+              Individual
+            </button>
+            <button
+              id="pricing-tab-team"
+              type="button"
+              role="tab"
+              aria-selected={group === "team"}
+              aria-controls="pricing-plan-panel"
+              className={group === "team" ? "active" : undefined}
+              onClick={() => setGroup("team")}
+            >
+              Team
+            </button>
+          </div>
+          <p className="pricing-savings-callout">
+            <strong>25% less than BYOK.</strong> {hostedSavings}
+          </p>
+        </div>
 
-      <section
-        id={group}
-        role="tabpanel"
-        aria-labelledby={group === "individual" ? "pricing-tab-individual" : "pricing-tab-team"}
-        aria-live="polite"
-      >
-        <span className="section-id">
-          {group === "individual" ? "INDIVIDUAL / PRIVATE WORKSPACE" : "TEAM / ENTIRE ORGANIZATION"}
-        </span>
-        <div className={`pricing-grid ${group === "team" ? "pricing-grid-team" : ""}`}>
-          {plans.map((plan) => (
-            <PlanArticle
-              key={plan.code}
-              plan={plan}
-              footer={
-                plan.code === "team_max" ? (
-                  <>
-                    <label className="team-max-pack">
-                      <span>Subscription &amp; credit packs</span>
-                      <select
-                        value={teamMaxOption}
-                        onChange={(e) => setTeamMaxOption(e.target.value)}
-                        aria-label="Team Max subscription or higher credit packs"
-                      >
-                        {creditPackOptions.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <Cta
-                      label={
-                        teamMaxOption === "team_max"
-                          ? "Join early access"
-                          : "Join waitlist for credit packs"
-                      }
-                    />
-                  </>
-                ) : undefined
-              }
-            />
-          ))}
+        <div
+          id="pricing-plan-panel"
+          role="tabpanel"
+          aria-labelledby={group === "individual" ? "pricing-tab-individual" : "pricing-tab-team"}
+          aria-live="polite"
+        >
+          <div className={`pricing-grid ${group === "team" ? "pricing-grid-team" : ""}`}>
+            {plans.map((plan) => (
+              <PlanArticle
+                key={plan.code}
+                plan={plan}
+                footer={
+                  plan.code === "team_max" ? (
+                    <>
+                      <label className="team-max-pack">
+                        <span>Subscription &amp; credit packs</span>
+                        <select
+                          value={teamMaxOption}
+                          onChange={(e) => setTeamMaxOption(e.target.value)}
+                          aria-label="Team Max subscription or higher credit packs"
+                        >
+                          {creditPackOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <Cta
+                        label={
+                          teamMaxOption === "team_max"
+                            ? "Join early access"
+                            : "Join waitlist for credit packs"
+                        }
+                      />
+                    </>
+                  ) : undefined
+                }
+              />
+            ))}
+          </div>
         </div>
       </section>
 

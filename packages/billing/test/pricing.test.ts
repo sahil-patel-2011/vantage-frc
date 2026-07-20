@@ -11,24 +11,31 @@ import {
   processStripeEvent,
   PRICING_CATALOG,
   CATALOG_SERVICE_MULTIPLIER,
+  BYOK_LIST_MULTIPLIER,
+  hostedApiSavingsCopy,
+  hostedCreditPackListApiUsd,
   raisedPricingStrip,
   raisedPricingSummaryLine,
 } from "../src";
 import type { PoolClient } from "@neondatabase/serverless";
 import type Stripe from "stripe";
 
-describe("ops-capability pricing catalog", () => {
-  it("keeps raised Soft-UI / ops ladder and 1.0× credits aligned", () => {
-    expect(CATALOG_SERVICE_MULTIPLIER).toBe(1);
-    expect(DEFAULT_SERVICE_MULTIPLIER).toBe(1);
-    expect(PRICING_CATALOG.access.monthlyUsd).toBe(79);
-    expect(PRICING_CATALOG.individual_pro).toMatchObject({ monthlyUsd: 129, includedAllowanceUsd: 75 });
-    expect(PRICING_CATALOG.individual_max).toMatchObject({ monthlyUsd: 189, includedAllowanceUsd: 130 });
-    expect(PRICING_CATALOG.team_pro).toMatchObject({ monthlyUsd: 349, includedAllowanceUsd: 225 });
-    expect(PRICING_CATALOG.team_max).toMatchObject({ monthlyUsd: 649, includedAllowanceUsd: 450 });
-    expect(PRICING_CATALOG.team_trial.includedAllowanceUsd).toBe(45);
-    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$79", "$129 / $189", "$349 / $649"]);
-    expect(raisedPricingSummaryLine()).toMatch(/Access \$79/);
+describe("appealing pricing catalog", () => {
+  it("keeps Soft-UI / ops ladder and 0.75× hosted credits aligned", () => {
+    expect(CATALOG_SERVICE_MULTIPLIER).toBe(0.75);
+    expect(DEFAULT_SERVICE_MULTIPLIER).toBe(0.75);
+    expect(BYOK_LIST_MULTIPLIER).toBe(1);
+    expect(PRICING_CATALOG.access.monthlyUsd).toBe(69);
+    expect(PRICING_CATALOG.individual_pro).toMatchObject({ monthlyUsd: 109, includedAllowanceUsd: 75 });
+    expect(PRICING_CATALOG.individual_max).toMatchObject({ monthlyUsd: 159, includedAllowanceUsd: 130 });
+    expect(PRICING_CATALOG.team_pro).toMatchObject({ monthlyUsd: 299, includedAllowanceUsd: 225 });
+    expect(PRICING_CATALOG.team_max).toMatchObject({ monthlyUsd: 549, includedAllowanceUsd: 450 });
+    expect(PRICING_CATALOG.team_trial.includedAllowanceUsd).toBe(39);
+    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$69", "$109 / $159", "$299 / $549"]);
+    expect(raisedPricingSummaryLine()).toMatch(/Access \$69/);
+    expect(hostedApiSavingsCopy()).toMatch(/75% of typical API rates/);
+    expect(hostedApiSavingsCopy()).toMatch(/25% less/);
+    expect(hostedCreditPackListApiUsd(100)).toBe(133);
   });
 });
 
@@ -82,12 +89,13 @@ describe("managed allowance and opt-in PAYG", () => {
   });
 });
 
-describe("1.0× usage credit debit (no Vantage markup)", () => {
-  it("defaults the service multiplier to 1.0 for list-rate equivalence", () => {
-    expect(DEFAULT_SERVICE_MULTIPLIER).toBe(1);
+describe("0.75× hosted usage credit debit (~25% vs BYOK)", () => {
+  it("defaults the service multiplier to 0.75 for hosted list discount", () => {
+    expect(DEFAULT_SERVICE_MULTIPLIER).toBe(0.75);
+    expect(DEFAULT_SERVICE_MULTIPLIER).toBe(CATALOG_SERVICE_MULTIPLIER);
   });
 
-  it("debits provider cost 1:1 as Usage Credits at the launch multiplier", () => {
+  it("debits provider list cost at 0.75× as Usage Credits", () => {
     const allocation = allocateCreditDebit({
       included: 27,
       purchased: 0,
@@ -95,33 +103,43 @@ describe("1.0× usage credit debit (no Vantage markup)", () => {
       providerCostUsd: 2.5,
       serviceMultiplier: DEFAULT_SERVICE_MULTIPLIER,
     });
-    expect(allocation.debit).toBeCloseTo(2.5);
-    expect(allocation.fromIncluded).toBeCloseTo(2.5);
+    expect(allocation.debit).toBeCloseTo(2.5 * 0.75);
+    expect(allocation.fromIncluded).toBeCloseTo(1.875);
     expect(allocation.bucket).toBe("included");
   });
 
-  it("hard-stops when included + purchased + gifted cannot cover the debit", () => {
+  it("hard-stops when included + purchased + gifted cannot cover the 0.75× debit", () => {
     expect(() =>
       allocateCreditDebit({
-        included: 1,
+        included: 0.75,
         purchased: 0,
         gifted: 0,
         providerCostUsd: 1.01,
-        serviceMultiplier: 1,
+        serviceMultiplier: 0.75,
       }),
     ).toThrow(CreditCapExceededError);
   });
 
-  it("does not apply the retired 1.25× markup default", () => {
-    const atParity = allocateCreditDebit({
+  it("is 25% cheaper than BYOK parity (1.0×) for the same list cost", () => {
+    const listCost = 8;
+    const hosted = allocateCreditDebit({
       included: 10,
       purchased: 0,
       gifted: 0,
-      providerCostUsd: 8,
-      serviceMultiplier: 1,
+      providerCostUsd: listCost,
+      serviceMultiplier: DEFAULT_SERVICE_MULTIPLIER,
     });
-    expect(atParity.debit).toBe(8);
-    expect(atParity.debit).not.toBeCloseTo(8 * 1.25);
+    const byokParity = allocateCreditDebit({
+      included: 10,
+      purchased: 0,
+      gifted: 0,
+      providerCostUsd: listCost,
+      serviceMultiplier: BYOK_LIST_MULTIPLIER,
+    });
+    expect(hosted.debit).toBeCloseTo(listCost * 0.75);
+    expect(byokParity.debit).toBe(listCost);
+    expect(hosted.debit / byokParity.debit).toBeCloseTo(0.75);
+    expect(hosted.debit).not.toBeCloseTo(listCost * 1.25);
   });
 });
 

@@ -38,18 +38,39 @@ export {
   parseOptionalUsd,
   type OrgAiPolicy,
 } from "./ai-governance";
-export {
+import {
+  BYOK_LIST_MULTIPLIER,
   CATALOG_SERVICE_MULTIPLIER,
   PRICING_CATALOG,
   TEAM_TRIAL_DAYS,
   catalogDefaultsFootnote,
   formatCatalogUsd,
+  hostedApiSavingsCopy,
+  hostedCreditPackListApiUsd,
+  hostedUsageDebitCopy,
   raisedPricingStrip,
   raisedPricingSummaryLine,
   teamCommitRangeCopy,
   type CatalogPlan,
   type CatalogPlanCode,
 } from "./catalog";
+
+export {
+  BYOK_LIST_MULTIPLIER,
+  CATALOG_SERVICE_MULTIPLIER,
+  PRICING_CATALOG,
+  TEAM_TRIAL_DAYS,
+  catalogDefaultsFootnote,
+  formatCatalogUsd,
+  hostedApiSavingsCopy,
+  hostedCreditPackListApiUsd,
+  hostedUsageDebitCopy,
+  raisedPricingStrip,
+  raisedPricingSummaryLine,
+  teamCommitRangeCopy,
+  type CatalogPlan,
+  type CatalogPlanCode,
+};
 
 export {
   UsageHardCutoffError,
@@ -786,8 +807,11 @@ export type PlanEntitlement={
   featureFlags:Record<string,boolean>;
 };
 
-/** Launch default: 1 Usage Credit = $1 provider API at list rates (no Vantage markup). */
-export const DEFAULT_SERVICE_MULTIPLIER = 1;
+/**
+ * Hosted default: debit at 0.75× typical provider list (~25% cheaper than BYOK at 1.0×).
+ * Wholesale ≈ 0.5× is internal only — never surface to users.
+ */
+export const DEFAULT_SERVICE_MULTIPLIER = CATALOG_SERVICE_MULTIPLIER;
 
 export type TrialPlanCode = "team_trial" | "team_pro" | "individual_pro" | "individual_max" | "managed_20" | "managed_50";
 export type FreeManagedPolicy={

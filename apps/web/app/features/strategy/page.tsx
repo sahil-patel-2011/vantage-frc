@@ -4,7 +4,7 @@ import { SiteFooter, SiteHeader } from "../../../components/marketing/site-heade
 export const metadata: Metadata = {
   title: "FRC Assistant & Strategy — Vantage",
   description:
-    "FRC Assistant for competition ops and intel: strategy, matchups, opponent history, robot capabilities, and scouting that feeds predictions, pick lists, and live awareness—with provenance, not vanity stats.",
+    "FRC Assistant, Soft-UI Strategy, Alliance Selection Desk, and Pick clock—sourced from TBA and your scouting, never DEMO win rates.",
   alternates: { canonical: "/features/strategy" },
 };
 
@@ -12,42 +12,30 @@ const assistantJobs = [
   {
     id: "01",
     title: "Strategy & playbooks",
-    copy: "Turn alliance context into inspectable priorities, role plans, and drive-team talk tracks—tied to the factors that produced them.",
+    copy: "Drive-team briefs from real scout + TBA facts.",
   },
   {
     id: "02",
-    title: "Matchups & game choices",
-    copy: "Ask which alliances, partners, or schedules favor your robot. Answers cite TBA/Statbotics history and your scouted observations—not a black-box scoreboard.",
+    title: "Matchups & picks",
+    copy: "Alliance Selection Desk and Pick clock, event-scoped.",
   },
   {
     id: "03",
-    title: "Opponent prediction from history",
-    copy: "Surface how teams tend to auto, cycle, defend, or climb based on prior matches and pit notes. Sparse data stays labeled; confidence stays visible.",
+    title: "Opponent history",
+    copy: "How teams tend to auto, cycle, defend, climb.",
   },
   {
     id: "04",
-    title: "Robot capability awareness",
-    copy: "Capability profiles from pit scouting and observed match play sit next to public metrics so “what can they do?” is evidence-backed, not folklore.",
+    title: "Robot capabilities",
+    copy: "Pit notes beside public metrics—empty until scouted.",
   },
 ];
 
 const scoutFeeds = [
-  {
-    title: "Strategy & what-if",
-    copy: "Attributed scout facts weight into win/loss factors. What-if deltas stay separate so guesses never look like observations.",
-  },
-  {
-    title: "Predictions",
-    copy: "Models combine TBA/Statbotics with your org’s synced scout data, then show intervals, key factors, and caveats.",
-  },
-  {
-    title: "Pick lists",
-    copy: "Alliance drafts pull from event-scoped coverage, reliability notes, and capability tags your scouts actually recorded.",
-  },
-  {
-    title: "Live match awareness",
-    copy: "Next-match boards and the Assistant read the same event context—schedule, readiness signals, and fresh scout sync—not a siloed chat transcript.",
-  },
+  { title: "Strategy Soft-UI", copy: "Win/loss factors from attributed scout facts." },
+  { title: "Pick desk", copy: "Shared alliance board with scout evidence attached." },
+  { title: "Event Day", copy: "Same event context on Command and My Day." },
+  { title: "FRC Assistant", copy: "Answers cite sources; no invented win %." },
 ];
 
 export default function StrategyFeaturePage() {
@@ -57,17 +45,14 @@ export default function StrategyFeaturePage() {
       <main className="route-page">
         <header className="lux-route-hero">
           <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
-          <h1>Competition intel you can inspect.</h1>
-          <p>
-            Strategy, matchups, opponent history, and robot capabilities inside your team’s active event. Synced
-            scouting feeds predictions and pick lists with source labels intact—empty until real data exists.
-          </p>
+          <h1>Strategy you can inspect.</h1>
+          <p>Soft-UI Strategy, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced facts only.</p>
           <div className="actions">
             <a className="button primary" href="/signin">
-              Sign in to use Strategy
+              Sign in
             </a>
             <a className="button secondary" href="#frc-assistant">
-              How the Assistant works
+              FRC Assistant
             </a>
           </div>
         </header>
@@ -75,12 +60,8 @@ export default function StrategyFeaturePage() {
         <section className="assistant-story" id="frc-assistant" aria-labelledby="assistant-title">
           <header>
             <span className="section-id">FRC ASSISTANT</span>
-            <h2 id="assistant-title">Ask anything competition-ops. Answers keep their sources.</h2>
-            <p>
-              Confident where evidence exists; honest where it doesn’t. The Assistant leans on season history, robot
-              capabilities, and your scouted facts—then keeps official metrics, observations, research, and assumptions
-              distinct so AI never invents a win percentage when the event isn’t wired up.
-            </p>
+            <h2 id="assistant-title">Ask competition-ops. Keep the sources.</h2>
+            <p>Grounded in TBA, Statbotics, and your scouts. Empty events stay empty.</p>
           </header>
           <div className="assistant-story-grid">
             <div className="assistant-job-grid">
@@ -97,8 +78,8 @@ export default function StrategyFeaturePage() {
 
         <section className="supporting-gallery" aria-labelledby="scout-feed-title">
           <header>
-            <span className="section-id">SCOUTING FEEDS</span>
-            <h2 id="scout-feed-title">Observations that travel with the season.</h2>
+            <span className="section-id">WHERE IT SHOWS UP</span>
+            <h2 id="scout-feed-title">Same scout feed across Soft-UI.</h2>
           </header>
           <div className="supporting-status-grid">
             {scoutFeeds.map((item) => (
@@ -112,7 +93,7 @@ export default function StrategyFeaturePage() {
 
         <section className="lux-pricing">
           <div>
-            <h2>See the rest of the product, or join the waitlist.</h2>
+            <h2>See the product, or join the waitlist.</h2>
           </div>
           <div className="pricing-preview-actions">
             <a className="button primary" href="/#waitlist">
