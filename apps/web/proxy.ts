@@ -11,6 +11,7 @@ const PUBLIC_PAGES = new Set([
   "/features/strategy",
   "/features/code",
   "/workflow",
+  "/for-teams",
   "/pricing",
   "/privacy",
   "/terms",

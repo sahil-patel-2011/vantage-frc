@@ -7,7 +7,7 @@ const c = PRICING_CATALOG;
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Soft-UI competition ops for FRC: Scouting, Event Day, Strategy / Pick desk, Season planning, CAD agent, Team & Business, and metered FRC Assistant. Empty until real data exists.",
+    a: "Competition ops for FRC: Scouting, Event Day, Strategy / Pick desk, Season planning, CAD agent, Team & Business, and metered FRC Assistant. Empty until real data exists.",
   },
   {
     q: "What do teams open first?",
@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: `Free Soft-UI competition core with bring-your-own-key or local AI. Paid plans: Individual Pro $${c.individual_pro.monthlyUsd}/mo, Max $${c.individual_max.monthlyUsd}/mo; Team Pro $${c.team_pro.monthlyUsd}/mo, Max $${c.team_max.monthlyUsd}/mo. ${hostedApiSavingsCopy()} Hard stop after the included hosted window unless Credits or PAYG. Week team trial: ${TEAM_TRIAL_DAYS} days. No per-seat student pricing.`,
+    a: `Free competition core with bring-your-own-key or local AI. Paid: Individual Pro $${c.individual_pro.monthlyUsd}/mo, Max $${c.individual_max.monthlyUsd}/mo; Team Pro $${c.team_pro.monthlyUsd}/mo, Max $${c.team_max.monthlyUsd}/mo. ${hostedApiSavingsCopy()} Hard stop after the included hosted window unless Credits or PAYG. Week team trial: ${TEAM_TRIAL_DAYS} days.`,
   },
   {
     q: "Is team data private?",
