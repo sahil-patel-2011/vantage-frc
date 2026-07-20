@@ -238,6 +238,13 @@ export default function DashboardClient() {
     if (params.get("customize") === "1") {
       setEditing(true);
       setLibraryOpen(true);
+      params.delete("customize");
+      const next = params.toString();
+      const cleaned = `${window.location.pathname}${next ? `?${next}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", cleaned);
+      window.requestAnimationFrame(() => {
+        document.querySelector(".dash-grid-wrap")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     }
   }, []);
 
@@ -365,7 +372,11 @@ export default function DashboardClient() {
   }
 
   function removeWidget(id: string) {
+    const removed = layout.find((item) => item.i === id);
     setLayout((current) => current.filter((item) => item.i !== id));
+    const label = removed ? catalogEntry(removed.type)?.label ?? removed.type : "Widget";
+    setMessageKind("success");
+    setMessage(`${label} removed. Tap Done to save, or add another from the palette.`);
   }
 
   async function save(activateScope: "personal" | "org" = scope) {
@@ -579,7 +590,8 @@ export default function DashboardClient() {
   function enterEditMode() {
     setEditing(true);
     setLibraryOpen(false);
-    setMessage("");
+    setMessageKind("success");
+    setMessage("Edit mode — drag by the grip, tap Remove on a card, or add widgets from the palette above.");
   }
 
   async function resetDefault() {
@@ -722,7 +734,7 @@ export default function DashboardClient() {
                     ? "Select an active event (and team number) to load live competition data."
                     : context.eventName
                       ? `${String(context.eventName)} — rearrange widgets like a Home Screen.`
-                      : "Next match, readiness, and alerts — Edit Home Screen to rearrange or add widgets."}
+                      : "Next match, readiness, and alerts — Edit Home to rearrange or remove widgets."}
           </p>
         </div>
         <div className="dash-home-actions">
@@ -756,9 +768,10 @@ export default function DashboardClient() {
               className="app-button dash-edit-trigger"
               type="button"
               data-testid="dash-customize"
+              aria-label="Edit Home — rearrange, add, or remove widgets"
               onClick={enterEditMode}
             >
-              Edit Home Screen
+              Edit Home
             </button>
           ) : null}
           <details className="dash-home-more">
@@ -811,7 +824,7 @@ export default function DashboardClient() {
         </p>
       ) : null}
 
-      {orgId && meLoaded ? (
+      {orgId && meLoaded && !editing ? (
         <div className="dash-board-bar" role="navigation" aria-label="Dashboard boards">
           <div className="dash-board-switcher" data-testid="dash-board-switcher">
             {switcherBoards.length === 0 ? (
@@ -872,7 +885,7 @@ export default function DashboardClient() {
         </div>
       ) : null}
 
-      {meLoaded ? (
+      {meLoaded && !editing ? (
         <nav className="dash-hub-rail" aria-label="Product hubs">
           {hubLinks.map((link) => (
             <a key={link.id} href={link.href}>
@@ -962,20 +975,19 @@ export default function DashboardClient() {
       {editing ? (
         <section className="dash-editor-bar" role="region" aria-label="Widget catalog">
           <div className="dash-editor-copy">
-            <strong>Build your command center</strong>
+            <strong>Customize Home</strong>
             <span>
-              Drag a widget below straight onto the canvas, move cards by their grip, or resize from either bottom corner.
-              Every move snaps to the 12-column grid
+              Drag widgets onto the board, move cards by the grip, resize from a corner, or tap Remove on any card.
               {orgId
                 ? canShareOrg
-                  ? " personally or for the team."
-                  : " as your personal layout."
-                : ". Select a workspace to persist."}
+                  ? " Save personally or for the team when you are done."
+                  : " Save as your personal layout when you are done."
+                : " Select a workspace to persist."}
             </span>
           </div>
           <div className="dash-palette-heading">
-            <span>Drag to place</span>
-            <small>{layout.length} on canvas · {addableCatalog.length} available</small>
+            <span>Add widgets</span>
+            <small>{layout.length} on board · {addableCatalog.length} available</small>
           </div>
           <div className="dash-widget-palette" data-testid="dash-catalog-inline">
             {addableCatalog.map((entry) => {
@@ -993,11 +1005,11 @@ export default function DashboardClient() {
                 >
                   <i><Icon name={icon} /></i>
                   <span><strong>{entry.label}</strong><small>{entry.description}</small></span>
-                  <em>{entry.defaultW} × {entry.defaultH}</em>
+                  <em>Add</em>
                 </button>
               );
             })}
-            {addableCatalog.length === 0 ? <p>Every available widget is already on the canvas.</p> : null}
+            {addableCatalog.length === 0 ? <p>Every available widget is already on the board.</p> : null}
           </div>
         </section>
       ) : null}
@@ -1038,7 +1050,7 @@ export default function DashboardClient() {
                 margin: [12, 12],
                 containerPadding: [0, 0],
               }}
-              dragConfig={{ enabled: editing, bounded: true, handle: ".dash-drag-handle", threshold: 4 }}
+              dragConfig={{ enabled: editing, bounded: true, handle: ".dash-drag-handle", threshold: 3 }}
               resizeConfig={{ enabled: editing, handles: ["se", "sw"] }}
               dropConfig={{
                 enabled: editing,
@@ -1069,27 +1081,38 @@ export default function DashboardClient() {
                       <button
                         type="button"
                         className="dash-remove-btn"
+                        data-testid="dash-remove-widget"
+                        title="Remove widget"
                         aria-label={`Remove ${catalogEntry(item.type)?.label ?? item.type}`}
-                        onClick={() => removeWidget(item.i)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          removeWidget(item.i);
+                        }}
                       >
-                        −
+                        <Icon name="x" />
+                        <span>Remove</span>
                       </button>
-                      <button
-                        type="button"
-                        className="dash-size-btn"
-                        title="Cycle compact, default, and full-width sizes"
-                        aria-label={`Change size of ${catalogEntry(item.type)?.label ?? item.type}`}
-                        onClick={() => cycleWidgetSize(item.i)}
-                      >
-                        {item.w} × {item.h}
-                      </button>
-                      <button
-                        type="button"
-                        className="dash-drag-handle dash-drag-surface"
-                        aria-label={`Move ${catalogEntry(item.type)?.label ?? item.type}`}
-                      >
-                        <span className="dash-drag-dots" aria-hidden="true" />
-                      </button>
+                      <div className="dash-item-tools-right">
+                        <button
+                          type="button"
+                          className="dash-size-btn"
+                          title="Cycle compact, default, and full-width sizes"
+                          aria-label={`Change size of ${catalogEntry(item.type)?.label ?? item.type}`}
+                          onClick={() => cycleWidgetSize(item.i)}
+                        >
+                          {item.w} × {item.h}
+                        </button>
+                        <button
+                          type="button"
+                          className="dash-drag-handle dash-drag-surface"
+                          aria-label={`Move ${catalogEntry(item.type)?.label ?? item.type}`}
+                          title="Drag to rearrange"
+                        >
+                          <span className="dash-drag-dots" aria-hidden="true" />
+                          <span className="dash-drag-label">Drag</span>
+                        </button>
+                      </div>
                     </div>
                   ) : null}
                   <div className="dash-widget-hit">
