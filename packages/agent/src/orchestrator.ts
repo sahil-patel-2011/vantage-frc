@@ -10,6 +10,10 @@ import {
 } from "./auto-tools";
 import { loadToolDataSourceNote } from "./data-source-note";
 import { toolUsesOrgData } from "./feature-context";
+import {
+  buildOrgSessionContextItem,
+  loadOrgSessionFacts,
+} from "./org-session-context";
 
 export type ClaimClassification="hard_metric"|"scout_observation"|"researched_claim"|"model_inference";
 export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact"|"github_file"|"vscode_selection";sourceUrl?:string;observedAt?:string;label?:string};
@@ -79,7 +83,16 @@ export class AIOrchestrator{
     const run=await this.client.query<{id:string}>(`INSERT INTO ai_runs(org_id,user_id,thread_id,capability,privacy_scope,request_id,input,billing_owner_type,billing_owner_id) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9) RETURNING id`,[request.orgId,request.userId,request.threadId??null,request.capability,request.privacyScope,request.requestId,JSON.stringify({message:request.message,activeEventKey:active,seasonYear,selected:request.selected??{},toolCalls:plannedToolCalls}),billingOwner.type,billingOwner.id]);
     const runId=run.rows[0]!.id;let sequence=0;
     try{
-      const context=buildUnifiedContext(request.contextSources,request.tokenBudget??4000);
+      const sessionFacts=await loadOrgSessionFacts(this.client,request.orgId);
+      const sessionItem=buildOrgSessionContextItem({
+        ...sessionFacts,
+        privacyScope:request.privacyScope,
+        capability:request.capability,
+      });
+      const contextSourcesWithSession:ContextSource[]=sessionItem
+        ?[sessionItem,...request.contextSources]
+        :request.contextSources;
+      const context=buildUnifiedContext(contextSourcesWithSession,request.tokenBudget??4000);
       await this.client.query(`INSERT INTO ai_run_steps(org_id,run_id,sequence,kind,input,output,provenance) VALUES($1,$2,$3,'context',$4::jsonb,$5::jsonb,$6::jsonb)`,[request.orgId,runId,sequence++,JSON.stringify({tokenBudget:request.tokenBudget??4000}),JSON.stringify({estimatedTokens:context.estimatedTokens}),JSON.stringify(context.provenance)]);
       const dataSourceNote=plannedToolCalls.length?await loadToolDataSourceNote(this.client):null;
       const annotatedTools:AnnotatedToolOutput[]=[];
