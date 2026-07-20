@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "../../components/ui/page-header";
-import { DUTY_KIND_LABELS, type DutyAssignment, type DutyRosterView } from "../../lib/duty-roster";
+import { DUTY_KIND_LABELS, type DutyAssignment, type DutyRosterView } from "../../lib/duty-roster-shared";
 
 export default function DutiesClient() {
   const [view, setView] = useState<DutyRosterView | null>(null);
@@ -59,8 +59,8 @@ export default function DutiesClient() {
           <a className="app-button secondary" href={`/logistics${orgQ}`}>
             Logistics
           </a>
-          <a className="app-button secondary" href={`/shifts${orgQ}`}>
-            Shifts
+          <a className="app-button secondary" href={`/packing${orgQ}`}>
+            Packing
           </a>
           <a className="app-button secondary" href={`/team/calendar${orgQ}`}>
             Calendar

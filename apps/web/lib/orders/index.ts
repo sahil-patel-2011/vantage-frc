@@ -1,3 +1,4 @@
+/** Client-safe orders barrel — never re-export compute-orders (@vantage/core). */
 export {
   ORDER_STATUSES,
   canTransitionOrder,
@@ -10,15 +11,6 @@ export {
   validateOrderSubmit,
 } from "./evaluate";
 export type { OrderSubmitInput } from "./evaluate";
-export {
-  assignBuyer,
-  computeOrdersView,
-  progressOrder,
-  reviewOrder,
-  submitOrder,
-  updateOrderItemUrl,
-  type OrdersView,
-} from "./compute-orders";
 export { ordersNextActions } from "./orders-next-actions";
 export type { OrdersNextAction, OrdersNextActionContext } from "./orders-next-actions";
 export type {
@@ -27,4 +19,6 @@ export type {
   OrderMetrics,
   OrderRequest,
   OrderStatus,
+  OrdersSetupStep,
+  OrdersView,
 } from "./types";
