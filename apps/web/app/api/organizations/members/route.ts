@@ -1,6 +1,7 @@
 import {
   assertOrgCapability,
   auth,
+  getAdminTenureSnapshot,
   HUB_ACCESS_HUB_IDS,
   listMemberHubAccess,
   listOrganizationMembers,
@@ -44,12 +45,14 @@ export async function GET(request: Request) {
       for (const member of members) {
         hubAccessByUser[member.userId] = await listMemberHubAccess(client, orgId, member.userId);
       }
+      const adminTenure = await getAdminTenureSnapshot(client, orgId);
       return {
         members,
         catalog: ORG_CAPABILITIES,
         hubCatalog: HUB_ACCESS_HUB_IDS,
         hubAccessByUser,
         actorRole: actor.rows[0]?.role ?? null,
+        adminTenure,
       };
     });
     return Response.json(data);

@@ -69,25 +69,23 @@ describe("workspace Soft-UI join helpers", () => {
     expect(formatWorkspaceMembershipCount(2, false)).toBe("…");
   });
 
-  it("uses hubHref / withOrgHref for Invite / Support / Account next actions", () => {
+  it("uses a single invite next action for empty join", () => {
     const none = workspaceJoinNextActions("none");
+    expect(none).toHaveLength(1);
     expect(none[0]?.primary).toBe(true);
     expect(none.find((a) => a.id === "invite")?.href).toBe("/invite");
-    expect(none.find((a) => a.id === "account")?.href).toBe("/account?tab=profile");
-    expect(none.find((a) => a.id === "support")?.href).toBe("/support");
     expect(none.find((a) => a.id === "onboarding-buddy")).toBeUndefined();
 
     const select = workspaceJoinNextActions("select", "org-1");
+    expect(select).toHaveLength(1);
     expect(select.find((a) => a.id === "invite")?.href).toBe("/invite");
-    expect(select.find((a) => a.id === "support")?.href).toBe("/support");
     expect(select.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
 
-  it("builds setup steps with Invite / Account / Support — no Onboarding Buddy", () => {
+  it("builds setup steps with Invite only — no Onboarding Buddy laundry list", () => {
     const steps = workspaceSetupSteps("org-1");
+    expect(steps).toHaveLength(1);
     expect(steps.find((s) => s.id === "invite")?.href).toBe("/invite");
-    expect(steps.find((s) => s.id === "account")?.href).toBe("/account?tab=profile");
-    expect(steps.find((s) => s.id === "support")?.href).toBe("/support");
     expect(steps.find((s) => s.id === "onboarding-buddy")).toBeUndefined();
     expect(workspaceOrgHref("org-1")).toBe("/workspace?orgId=org-1");
     expect(workspaceOrgHref(null)).toBe("/workspace");

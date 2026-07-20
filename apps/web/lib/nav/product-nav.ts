@@ -2,8 +2,11 @@
  * Product navigation — single source of truth for the app-shell drawer,
  * command palette, and breadcrumb labels.
  *
+ * Drawer IA is almost flat: one hub link per pillar. Deep tools live as
+ * hub tabs / More tools; Cmd+K searches the full catalog.
+ *
  * Pillars: Competition · Team · Logistics · Business · Media · Build · AI
- * (+ Home entry + Settings). See docs/FEATURE_MAP.md.
+ * (+ Home). Settings live in the drawer footer only.
  */
 
 import { PRODUCT_HUBS } from "./hubs";
@@ -67,119 +70,83 @@ export const ORG_EXEMPT_HREFS = new Set([
 ]);
 
 /**
- * Drawer IA — short lists only (≈3–6 per pillar). Deep tools live as hub tabs.
- * Cmd+K / hub More tools still reach the full catalog via PRODUCT_HUBS.
+ * Drawer IA — one link per pillar. Deep tools are hub tabs + Cmd+K.
+ * Settings / Account / App manual live in the drawer footer, not here.
  */
 export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
   {
     label: "Home",
     ...TONE,
     icon: "home",
-    items: [
-      { href: "/dashboard", label: "Home", icon: "home" },
-      { href: "/workspace", label: "Workspace", icon: "grid" },
-      { href: "/notifications", label: "Notifications", icon: "bell" },
-    ],
+    items: [{ href: "/dashboard", label: "Home", icon: "home" }],
   },
   {
     label: "Competition",
     ...TONE,
     icon: "swords",
-    items: [
-      { href: "/competition", label: "Competition hub", icon: "swords" },
-      { href: "/competition?tab=command", label: "Command", icon: "target" },
-      { href: "/competition?tab=scouting", label: "Scouting", icon: "scout" },
-      { href: "/competition?tab=strategy", label: "Strategy", icon: "stats" },
-      { href: "/schedule", label: "Schedule", icon: "calendar" },
-      { href: "/alliance-selection-desk", label: "Alliance desk", icon: "swords" },
-    ],
+    items: [{ href: "/competition", label: "Competition", icon: "swords" }],
   },
   {
     label: "Team",
     ...TONE,
     icon: "users",
-    items: [
-      { href: "/team", label: "Team hub", icon: "users" },
-      { href: "/team?tab=calendar", label: "Calendar", icon: "calendar" },
-      { href: "/team?tab=messages", label: "Messages", icon: "chat" },
-      { href: "/team?tab=todos", label: "Todos", icon: "clipboard" },
-      { href: "/season-planning-workspace", label: "Season planning", icon: "calendar" },
-      { href: "/team/data", label: "Team data", icon: "stats" },
-    ],
+    items: [{ href: "/team", label: "Team", icon: "users" }],
   },
   {
     label: "Logistics",
     ...TONE,
     icon: "pin",
-    items: [
-      { href: "/logistics", label: "Logistics", icon: "pin" },
-      { href: "/packing", label: "Packing", icon: "grid" },
-      { href: "/duties", label: "Duties", icon: "users" },
-      { href: "/visit-invites", label: "Visit invites", icon: "users" },
-    ],
+    items: [{ href: "/logistics", label: "Logistics", icon: "pin" }],
   },
   {
     label: "Business",
     ...TONE,
     icon: "clipboard",
-    items: [
-      { href: "/business", label: "Business hub", icon: "clipboard" },
-      { href: "/business?tab=budget", label: "Budget", icon: "stats" },
-      { href: "/business?tab=sponsors", label: "Sponsors", icon: "users" },
-      { href: "/business?tab=grants", label: "Grants", icon: "clipboard" },
-      { href: "/business?tab=orders", label: "Orders", icon: "clipboard" },
-    ],
+    items: [{ href: "/business", label: "Business", icon: "clipboard" }],
   },
   {
     label: "Media",
     ...TONE,
     icon: "camera",
-    items: [
-      { href: "/media", label: "Media hub", icon: "camera" },
-      { href: "/media?tab=calendar", label: "Calendar", icon: "calendar" },
-      { href: "/media?tab=drafts", label: "Drafts", icon: "clipboard" },
-      { href: "/media?tab=kit", label: "Kit", icon: "clipboard" },
-    ],
+    items: [{ href: "/media", label: "Media", icon: "camera" }],
   },
   {
     label: "Build",
     ...TONE,
     icon: "cube",
-    items: [
-      { href: "/build", label: "Build hub", icon: "cube" },
-      { href: "/build?tab=kickoff", label: "Kickoff", icon: "bolt" },
-      { href: "/build?tab=cad", label: "CAD", icon: "cube", state: "setup" },
-      { href: "/build?tab=code", label: "Code", icon: "code" },
-      { href: "/inventory", label: "Inventory", icon: "grid" },
-    ],
+    items: [{ href: "/build", label: "Build", icon: "cube" }],
   },
   {
     label: "AI",
     ...TONE,
     icon: "bolt",
-    items: [
-      { href: "/ai", label: "AI hub", icon: "bolt" },
-      { href: "/ai?tab=chat", label: "Chat", icon: "chat" },
-      { href: "/ai?tab=writer", label: "Writer", icon: "chat" },
-      { href: "/team/ai-keys", label: "API keys", icon: "gear" },
-      { href: "/ai?tab=budgets", label: "Budgets", icon: "stats" },
-    ],
-  },
-  {
-    label: "Settings",
-    ...TONE,
-    icon: "gear",
-    items: [
-      { href: "/account", label: "Account", icon: "users" },
-      { href: "/docs", label: "App manual", icon: "clipboard" },
-      { href: "/support", label: "Support", icon: "chat" },
-      { href: "/security", label: "Security", icon: "gear" },
-      { href: "/team/admin", label: "Team admin", icon: "gear" },
-    ],
+    items: [{ href: "/ai", label: "AI", icon: "bolt" }],
   },
 ];
 
-/** Bottom island — glanceable; full IA lives in the drawer / More sheet. */
+/** Standalone logistics tools — Cmd+K / breadcrumbs only (not drawer leaves). */
+export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
+  { href: "/packing", label: "Packing", icon: "grid" },
+  { href: "/duties", label: "Duties", icon: "users" },
+  { href: "/visit-invites", label: "Visit invites", icon: "users" },
+];
+
+/** Quiet chrome destinations — Cmd+K / footer, never drawer accordion dumps. */
+export const SETTINGS_DEEP_LINKS: ProductNavItem[] = [
+  { href: "/notifications", label: "Notifications", icon: "bell" },
+  { href: "/workspace", label: "Workspace", icon: "grid" },
+  { href: "/account", label: "Account", icon: "users" },
+  { href: "/docs", label: "App manual", icon: "clipboard" },
+  { href: "/support", label: "Support", icon: "chat" },
+  { href: "/security", label: "Security", icon: "gear" },
+  { href: "/team/admin", label: "Team admin", icon: "gear" },
+  { href: "/team/data", label: "Team data", icon: "stats" },
+  { href: "/team/ai-keys", label: "AI API keys", icon: "gear" },
+  { href: "/schedule", label: "Schedule", icon: "calendar" },
+  { href: "/inventory", label: "Inventory", icon: "grid" },
+];
+
+/** Bottom island — glanceable; full IA lives in hubs + Cmd+K. */
 export type IslandTabDefinition = { href: string; label: string; icon: ProductNavIcon };
 
 export const PRIMARY_TABS: IslandTabDefinition[] = [
@@ -194,7 +161,7 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   ...PRIMARY_TABS,
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/ai", label: "AI", icon: "bolt" },
-  { href: "/media", label: "Media", icon: "clipboard" },
+  { href: "/media", label: "Media", icon: "camera" },
   { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
@@ -202,8 +169,7 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
 ];
 
 /**
- * Soft-UI pillars for the More sheet / drawer — readable hierarchy first.
- * Competition · Team · Logistics · Business · Media · Build · AI
+ * Soft-UI pillars for the More sheet — hub roots only.
  */
 export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition", label: "Competition", icon: "swords" },
@@ -216,7 +182,7 @@ export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: Prod
 ];
 
 /**
- * Glanceable ops under the pillars — four shortcuts only (full IA lives in the drawer).
+ * Glanceable ops under the pillars — four shortcuts only.
  */
 export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
@@ -225,7 +191,7 @@ export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: Produc
   { href: "/team?tab=messages", label: "Messages", icon: "chat" },
 ];
 
-/** @deprecated Prefer MORE_SHEET_LINKS — kept for any residual imports. */
+/** @deprecated Prefer hub tabs + Cmd+K — kept for residual imports. */
 export const FEATURED_SOFT_UI_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/alliance-selection-desk", label: "Alliance desk", icon: "swords" },
   { href: "/season-planning-workspace", label: "Season planning", icon: "calendar" },
@@ -268,6 +234,39 @@ function navPathOnly(href: string): string {
   return href.split("?")[0] || href;
 }
 
+function dedupeNavItems(items: ProductNavItem[]): ProductNavItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.href)) return false;
+    seen.add(item.href);
+    return true;
+  });
+}
+
+/**
+ * Full Cmd+K catalog: drawer hubs + every Soft-UI hub tab + logistics/settings deep links.
+ * Drawer stays flat; typing unlocks the module list.
+ */
+export function cmdkNavCatalog(): ProductNavItem[] {
+  const items: ProductNavItem[] = [];
+  for (const group of PRODUCT_NAV_GROUPS) {
+    items.push(...group.items.filter((item) => item.state !== "planned"));
+  }
+  for (const hub of PRODUCT_HUBS) {
+    const group = PRODUCT_NAV_GROUPS.find((entry) => entry.label === hub.label);
+    const icon = group?.icon ?? "grid";
+    for (const tab of hub.tabs) {
+      items.push({
+        href: `${hub.href}?tab=${tab.id}`,
+        label: tab.label,
+        icon,
+      });
+    }
+  }
+  items.push(...LOGISTICS_DEEP_LINKS, ...SETTINGS_DEEP_LINKS, ...FEATURED_SOFT_UI_LINKS);
+  return dedupeNavItems(items);
+}
+
 /**
  * Longest matching nav href wins (so /team/security beats /team).
  * Also resolves Soft-UI hub legacy paths (/command → Competition / Command)
@@ -288,8 +287,6 @@ export function findNavMatch(
       if (!exact && !nested) continue;
       // Prefer specific Team routes over the hub root for nested paths.
       if (hrefPath === "/team" && nested) continue;
-      if (exact && hrefPath === "/team" && group.label === "Settings") continue;
-      // Prefer concrete hub tabs over bare hub roots when path is exactly the hub.
       const score =
         hrefPath.length +
         (exact ? 1_000 : 0) +
@@ -299,28 +296,72 @@ export function findNavMatch(
     }
   }
 
-  // Legacy Soft-UI redirects: /scouting, /kickoff, /messages, …
+  // Soft-UI hub tabs / legacy redirects — drawer no longer lists these leaves.
   if (!best || best.score < 1_000) {
+    let hubBest: { group: ProductNavGroup; item: ProductNavItem; score: number } | null = null;
     for (const hub of PRODUCT_HUBS) {
+      const group = PRODUCT_NAV_GROUPS.find((entry) => entry.label === hub.label);
+      if (!group) continue;
       for (const tab of hub.tabs) {
-        if (!tab.legacyHref || path !== tab.legacyHref) continue;
-        const group = PRODUCT_NAV_GROUPS.find((entry) => entry.label === hub.label);
-        const item = group?.items.find(
-          (entry) => entry.href === `${hub.href}?tab=${tab.id}` || navPathOnly(entry.href) === tab.legacyHref,
-        );
-        if (group && item) {
-          return { group, item };
-        }
-        if (group) {
-          return {
+        const legacy = tab.legacyHref;
+        if (!legacy) continue;
+        const exact = path === legacy;
+        const nested = path.startsWith(`${legacy}/`);
+        if (!exact && !nested) continue;
+        const score = legacy.length + (exact ? 1_000 : 0);
+        if (!hubBest || score > hubBest.score) {
+          hubBest = {
             group,
             item: {
               href: `${hub.href}?tab=${tab.id}`,
               label: tab.label,
               icon: group.icon,
             },
+            score,
           };
         }
+      }
+    }
+    if (hubBest) return { group: hubBest.group, item: hubBest.item };
+  }
+
+  // Logistics / settings deep links for breadcrumbs when not in the flat drawer.
+  if (!best || best.score < 1_000) {
+    const logisticsGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Logistics");
+    if (logisticsGroup) {
+      for (const item of LOGISTICS_DEEP_LINKS) {
+        const hrefPath = navPathOnly(item.href);
+        if (path === hrefPath || path.startsWith(`${hrefPath}/`)) {
+          return { group: logisticsGroup, item };
+        }
+      }
+    }
+    const homeGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Home");
+    const settingsPseudo: ProductNavGroup = {
+      label: "Settings",
+      ...TONE,
+      icon: "gear",
+      items: SETTINGS_DEEP_LINKS,
+    };
+    for (const item of SETTINGS_DEEP_LINKS) {
+      const hrefPath = navPathOnly(item.href);
+      if (path === hrefPath || (hrefPath !== "/" && path.startsWith(`${hrefPath}/`))) {
+        if (item.href === "/notifications" || item.href === "/workspace") {
+          return { group: homeGroup ?? settingsPseudo, item };
+        }
+        if (item.href.startsWith("/team/")) {
+          const teamGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Team");
+          if (teamGroup) return { group: teamGroup, item };
+        }
+        if (item.href === "/inventory") {
+          const buildGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Build");
+          if (buildGroup) return { group: buildGroup, item };
+        }
+        if (item.href === "/schedule") {
+          const competitionGroup = PRODUCT_NAV_GROUPS.find((entry) => entry.label === "Competition");
+          if (competitionGroup) return { group: competitionGroup, item };
+        }
+        return { group: settingsPseudo, item };
       }
     }
   }
@@ -331,6 +372,7 @@ export function findNavMatch(
 export function breadcrumbForPath(pathname: string): string {
   const match = findNavMatch(pathname);
   if (!match) return "Vantage";
+  if (match.item.label === match.group.label) return match.group.label;
   return `${match.group.label} / ${match.item.label}`;
 }
 

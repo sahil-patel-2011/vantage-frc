@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { assertAdminTenureAllowsRoleChange } from "./admin-tenure";
 import { hashEmail } from "./email";
 
 type OrgRole = "owner" | "admin" | "scout" | "viewer";
@@ -220,6 +221,12 @@ export async function setMemberRole(
   if (target.rows[0].role === "admin" && actor.rows[0].role !== "owner") {
     throw new Error("Only an owner may change another admin's role");
   }
+
+  await assertAdminTenureAllowsRoleChange(client, {
+    orgId: input.orgId,
+    targetCurrentRole: target.rows[0].role,
+    nextRole: input.role,
+  });
 
   const previousRole = target.rows[0].role;
   await client.query(
