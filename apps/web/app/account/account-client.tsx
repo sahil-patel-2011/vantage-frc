@@ -636,9 +636,9 @@ export default function AccountClient() {
                   <strong>Team security</strong>
                   <span>Auth policy and delegated powers</span>
                 </a>
-                <a href={withOrgHref("/team", orgId)}>
-                  <strong>API keys</strong>
-                  <span>BYOK providers and connectors</span>
+                <a href={withOrgHref("/team/ai-keys", orgId)}>
+                  <strong>Add your API keys</strong>
+                  <span>OpenAI, Anthropic, Google — your keys</span>
                 </a>
               </>
             ) : (
@@ -859,7 +859,7 @@ export default function AccountClient() {
                   <a href="/security">Security</a>
                   {orgId ? <a href={withOrgHref("/ai?tab=budgets", orgId)}>Billing</a> : null}
                   {orgId ? <a href={withOrgHref("/team/usage", orgId)}>AI usage</a> : null}
-                  {orgId ? <a href={withOrgHref("/team", orgId)}>Team API keys</a> : null}
+                  {orgId ? <a href={withOrgHref("/team/ai-keys", orgId)}>Add your API keys</a> : null}
                   {orgId ? <a href={withOrgHref("/cad/connections", orgId)}>CAD Connections</a> : null}
                   {orgId ? <a href={withOrgHref("/team/discord", orgId)}>Discord</a> : null}
                   <a href="/account?tab=profile">Account</a>

@@ -12,6 +12,7 @@ type Signals = {
   alumni: number;
   assistantRuns: number;
   budgetsConfigured: boolean | null;
+  byokKeysConfigured: boolean | null;
   discordConnected: boolean | null;
 };
 
@@ -66,6 +67,13 @@ function cards(data: Data, orgId: string): Card[] {
       blurb: "Full run history including failures and the sources behind each answer.",
       href: withOrgHref("/team/ai-runs", orgId),
       status: "View",
+      adminOnly: true,
+    },
+    {
+      title: "AI API keys",
+      blurb: "Paste OpenAI, Anthropic, or Google keys for Free / your-keys routing—or keep using hosted AI on paid.",
+      href: withOrgHref("/team/ai-keys", orgId),
+      status: s.byokKeysConfigured === true ? "Configured" : s.byokKeysConfigured === false ? "Missing" : "—",
       adminOnly: true,
     },
     {

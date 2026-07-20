@@ -14,6 +14,7 @@ type Signals = {
   alumni: number;
   assistantRuns: number;
   budgetsConfigured: boolean | null;
+  byokKeysConfigured: boolean | null;
   discordConnected: boolean | null;
   joinedSubteam: boolean;
   logisticsTrips: number;
@@ -112,6 +113,19 @@ function buildTasks(data: Data, orgId: string): Task[] {
       done: s.assistantRuns > 0,
       href: `/chat${q}`,
       cta: "Open assistant",
+    },
+    {
+      title: "Add your API keys",
+      detail:
+        s.byokKeysConfigured == null
+          ? "Free workspaces need OpenAI, Anthropic, or Google keys (or a local relay). Paid can use hosted AI instead."
+          : s.byokKeysConfigured
+            ? "At least one encrypted provider key or custom relay is on file."
+            : "Paste OpenAI / Anthropic / Google under AI API keys — or upgrade for Vantage-hosted AI.",
+      done: s.byokKeysConfigured === true,
+      href: `/team/ai-keys${q}`,
+      cta: "Add your API keys",
+      adminOnly: true,
     },
     {
       title: "Set AI budgets",

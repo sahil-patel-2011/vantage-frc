@@ -82,6 +82,37 @@ describe("resolveOrgChatAdapter", () => {
     expect(adapter.model).toContain("claude");
   });
 
+  it("uses org_llm_keys Google Gemini via OpenAI-compatible endpoint", async () => {
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            id: "k-google",
+            provider: "google",
+            keyCiphertext: "c",
+            keyNonce: "n",
+            keyAuthTag: "t",
+            encryptedDek: "d",
+            kmsKeyId: "k",
+          },
+        ],
+      }),
+      () => ({ rowCount: 0, rows: [] }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      decrypt: async () => "AIza-test",
+    });
+
+    expect(adapter).toBeInstanceOf(HttpChatAdapter);
+    expect(adapter.provider).toBe("openai-compatible");
+    expect(adapter.model).toContain("gemini");
+  });
+
   it("falls through to managed peek for paid orgs", async () => {
     const client = fakeClient([
       () => ({ rowCount: 0, rows: [] }),
@@ -166,6 +197,6 @@ describe("resolveOrgChatAdapter", () => {
         promptCachingEnabled: false,
         decrypt: async () => "unused",
       }),
-    ).rejects.toThrow(/BYOK or custom OpenAI\/Anthropic/);
+    ).rejects.toThrow(/OpenAI, Anthropic, or Google key under Team/);
   });
 });

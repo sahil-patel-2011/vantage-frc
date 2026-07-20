@@ -68,12 +68,25 @@ const DEFAULT_PRICES: Record<"openai" | "anthropic" | "openai-compatible", Promp
   "openai-compatible": { inputPerMillionUsd: 0.4, outputPerMillionUsd: 1.6 },
 };
 
+/** Google Gemini via the public OpenAI-compatible Generative Language endpoint. */
+const GOOGLE_OPENAI_COMPAT_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
+const GOOGLE_DEFAULT_MODEL = "gemini-2.0-flash";
+const GOOGLE_DEFAULT_PRICES: PromptCachePrices = {
+  inputPerMillionUsd: 0.1,
+  outputPerMillionUsd: 0.4,
+};
+
 function normalizeProvider(kind: string): HttpChatAdapterConfig["provider"] | null {
   const value = kind.trim().toLowerCase();
   if (value === "openai" || value === "anthropic" || value === "openai-compatible") return value;
   if (value.includes("anthropic") || value.includes("claude")) return "anthropic";
   if (value.includes("openai") || value.includes("compatible")) return "openai-compatible";
   return null;
+}
+
+function isGoogleByokProvider(kind: string): boolean {
+  const value = kind.trim().toLowerCase();
+  return value === "google" || value === "gemini" || value.includes("gemini");
 }
 
 function pickMappedModel(mappings: Record<string, string> | null | undefined, fallback: string) {
@@ -236,7 +249,20 @@ export async function resolveOrgChatAdapter(
     [input.orgId],
   );
   for (const row of orgKeys.rows) {
-    // Bare org_llm_keys have no base URL — only first-party OpenAI/Anthropic work.
+    // Bare org_llm_keys have no base URL — first-party OpenAI / Anthropic / Google (Gemini).
+    if (isGoogleByokProvider(row.provider)) {
+      const apiKey = await decryptRow(row, input.decrypt);
+      const prices = await catalogPrices(client, "google", GOOGLE_DEFAULT_MODEL, GOOGLE_DEFAULT_PRICES);
+      return new HttpChatAdapter({
+        provider: "openai-compatible",
+        model: GOOGLE_DEFAULT_MODEL,
+        apiKey,
+        baseUrl: GOOGLE_OPENAI_COMPAT_BASE,
+        promptCachingEnabled: input.promptCachingEnabled,
+        prices,
+        fetchImpl: input.fetchImpl,
+      });
+    }
     const provider = normalizeProvider(row.provider);
     if (provider !== "openai" && provider !== "anthropic") continue;
     const model = DEFAULT_MODELS[provider];
@@ -302,11 +328,11 @@ export async function resolveOrgChatAdapter(
 
   if (tier === "free") {
     throw new ChatProviderResolutionError(
-      "No AI provider key is configured for this organization. Free workspaces require a BYOK or custom OpenAI/Anthropic provider under Team Admin.",
+      "No AI provider key is configured for this organization. Free workspaces need your own OpenAI, Anthropic, or Google key under Team → AI API keys (or a custom/local provider under Team Admin).",
     );
   }
 
   throw new ChatProviderResolutionError(
-    "No AI provider key is available. Configure a team BYOK/custom OpenAI or Anthropic provider under Team Admin, or ask a platform admin to add a managed provider key.",
+    "No AI provider key is available. Add OpenAI / Anthropic / Google under Team → AI API keys, configure a custom provider under Team Admin, or ask a platform admin to add a managed hosted key.",
   );
 }

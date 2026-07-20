@@ -224,7 +224,11 @@ export function PricingCatalog() {
                 key={plan.code}
                 plan={plan}
                 footer={
-                  plan.code === "team_max" ? (
+                  plan.code === "free" ? (
+                    <a className="button primary" href="/team/ai-keys">
+                      Add your API keys
+                    </a>
+                  ) : plan.code === "team_max" ? (
                     <>
                       <label className="team-max-pack">
                         <span>Subscription &amp; credit packs</span>
