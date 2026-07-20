@@ -505,7 +505,22 @@ export default function AppShell() {
 
   const filteredNav = useMemo(() => {
     const q = commandQuery.trim().toLowerCase();
-    if (!q) return flat;
+    if (!q) {
+      // Empty query: glanceable shortcuts only — typing unlocks the full module list.
+      const shortcuts: Array<{ href: string; label: string; icon: ProductNavIcon; state?: undefined }> = [
+        { href: "/dashboard", label: "Home", icon: "home" },
+        ...pillarSheetLinks,
+        ...moreSheetLinks,
+        { href: "/help", label: "Help", icon: "clipboard" },
+        { href: "/account", label: "Account", icon: "gear" },
+      ];
+      const seen = new Set<string>();
+      return shortcuts.filter((item) => {
+        if (seen.has(item.href)) return false;
+        seen.add(item.href);
+        return true;
+      });
+    }
     return flat.filter((item) => {
       const hay = `${item.label} ${item.href} ${item.state ?? ""}`.toLowerCase();
       return hay.includes(q);
@@ -525,6 +540,26 @@ export default function AppShell() {
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/help") ||
     pathname === "/support";
+
+  const backHref = useMemo(() => {
+    if (pathname.startsWith("/account")) return "/dashboard";
+    if (pathname.startsWith("/security")) return "/account";
+    if (pathname === "/support") return "/help";
+    if (pathname.startsWith("/help/") || pathname === "/help") {
+      return pathname === "/help" ? "/dashboard" : "/help";
+    }
+    if (pathname.startsWith("/notifications")) return "/dashboard";
+    if (pathname.startsWith("/admin/") || pathname === "/admin") {
+      return pathname === "/admin" ? "/dashboard" : "/admin";
+    }
+    if (pathname.startsWith("/team/") || (pathname.startsWith("/team") && pathname !== "/team")) {
+      return withOrgHref("/team", orgId || null);
+    }
+    if (pathname === "/team" || pathname.startsWith("/team?")) {
+      return "/dashboard";
+    }
+    return "/dashboard";
+  }, [pathname, orgId]);
 
   const title =
     navTitleForPath(pathname) ??
@@ -598,6 +633,27 @@ export default function AppShell() {
     router.push(href);
   }, [commandQuery, orgId, router]);
 
+  const jumpCommandTopResult = useCallback(() => {
+    const firstHit = searchHits[0];
+    if (firstHit) {
+      setCommandOpen(false);
+      router.push(firstHit.href);
+      return;
+    }
+    const q = commandQuery.trim();
+    if (!q) {
+      openFullSearch();
+      return;
+    }
+    const firstNav = filteredNav[0];
+    if (firstNav) {
+      setCommandOpen(false);
+      router.push(withOrgHref(firstNav.href, orgId || null));
+      return;
+    }
+    openFullSearch();
+  }, [commandQuery, filteredNav, openFullSearch, orgId, router, searchHits]);
+
   async function handleSignOut() {
     if (signingOut) return;
     setSigningOut(true);
@@ -662,7 +718,12 @@ export default function AppShell() {
       <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
         {showBack ? (
           <div className="soft-page-head">
-            <button className="soft-icon-btn" type="button" aria-label="Go back" onClick={() => router.back()}>
+            <button
+              className="soft-icon-btn"
+              type="button"
+              aria-label="Go back"
+              onClick={() => router.push(backHref)}
+            >
               <Icon name="back" />
             </button>
             <div className="soft-page-head-copy">
@@ -718,7 +779,12 @@ export default function AppShell() {
               aria-haspopup="menu"
               onClick={() => setAccountMenuOpen((value) => !value)}
             >
-              {initial}
+              {me.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={me.image} alt="" />
+              ) : (
+                initial
+              )}
             </button>
             {accountMenuOpen ? (
               <div
@@ -849,7 +915,14 @@ export default function AppShell() {
         </div>
         <div className="soft-profile-block">
           <a className="soft-profile-link" href="/account" onClick={() => setOpen(false)}>
-            <span className="soft-avatar">{initial}</span>
+            <span className="soft-avatar">
+              {me.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={me.image} alt="" />
+              ) : (
+                initial
+              )}
+            </span>
             <div>
               <strong>{accountLabel ?? "Signed-in user"}</strong>
               <span>{me.email ?? "Account settings"}</span>
@@ -872,7 +945,7 @@ export default function AppShell() {
                 <strong>{orgLabel}</strong>
                 <span>
                   {orgId
-                    ? `${rolePlanCue} · org on links`
+                    ? `${rolePlanCue} · links use this team`
                     : "No workspace — accept an invite or pick a team"}
                 </span>
               </div>
@@ -1208,13 +1281,17 @@ export default function AppShell() {
                 ref={commandInputRef}
                 type="search"
                 value={commandQuery}
-                placeholder="Type to filter… Enter opens full search"
+                placeholder="Type to filter… Enter opens top result"
                 autoComplete="off"
                 onChange={(event) => setCommandQuery(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
-                    openFullSearch();
+                    if (event.metaKey || event.ctrlKey) {
+                      openFullSearch();
+                      return;
+                    }
+                    jumpCommandTopResult();
                   }
                 }}
               />
@@ -1248,19 +1325,24 @@ export default function AppShell() {
             ) : null}
             <nav aria-label="Modules">
               {filteredNav.length === 0 ? (
-                <p className="command-empty">No modules match — try full search with Enter.</p>
+                <p className="command-empty">No modules match — try full search (Ctrl/⌘+Enter).</p>
               ) : (
-                filteredNav.map((item) => (
-                  <a
-                    href={withOrgHref(item.href, orgId)}
-                    key={`${item.href}-${item.label}`}
-                    onClick={() => setCommandOpen(false)}
-                  >
-                    <Icon name={item.icon} />
-                    <span>{item.label}</span>
-                    {item.state ? <small>{item.state}</small> : null}
-                  </a>
-                ))
+                <>
+                  {!commandQuery.trim() ? (
+                    <p className="command-empty">Shortcuts — type to search every module.</p>
+                  ) : null}
+                  {filteredNav.map((item) => (
+                    <a
+                      href={withOrgHref(item.href, orgId)}
+                      key={`${item.href}-${item.label}`}
+                      onClick={() => setCommandOpen(false)}
+                    >
+                      <Icon name={item.icon} />
+                      <span>{item.label}</span>
+                      {item.state ? <small>{item.state}</small> : null}
+                    </a>
+                  ))}
+                </>
               )}
             </nav>
           </div>

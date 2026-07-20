@@ -77,7 +77,7 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/dashboard", label: "Home", icon: "home" },
       { href: "/start", label: "Your path", icon: "pin" },
       { href: "/workspace", label: "Workspace", icon: "grid" },
-      { href: "/notifications", label: "Announcements", icon: "bell" },
+      { href: "/notifications", label: "Notifications", icon: "bell" },
     ],
   },
   {
@@ -153,7 +153,6 @@ export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
       { href: "/team?tab=calendar", label: "Calendar", icon: "calendar" },
       { href: "/calendar", label: "Season Calendar", icon: "calendar" },
       { href: "/team?tab=practice", label: "Practice", icon: "target" },
-      { href: "/duties", label: "Shifts", icon: "users" },
       { href: "/team?tab=attendance", label: "Attendance", icon: "users" },
       { href: "/hours", label: "Build Hours", icon: "stats" },
       { href: "/team?tab=todos", label: "Todos", icon: "clipboard" },
@@ -372,7 +371,7 @@ export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: Prod
 export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/competition?tab=forms", label: "Forms", icon: "clipboard" },
-  { href: "/help", label: "Help", icon: "clipboard" },
+  { href: "/competition?tab=match-checklist", label: "Checklist", icon: "clipboard" },
   { href: "/team?tab=messages", label: "Messages", icon: "chat" },
 ];
 
