@@ -792,6 +792,18 @@ export const orgLlmKeys = pgTable(
   (table) => [index("org_llm_keys_org_idx").on(table.orgId)],
 );
 
+export const orgByokRoutingPrefs = pgTable("org_byok_routing_prefs", {
+  orgId: uuid("org_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  mode: text("mode").$type<"fixed" | "automode">().notNull().default("automode"),
+  fixedModelId: text("fixed_model_id"),
+  enabledModelIds: text("enabled_model_ids").array().notNull().default([]),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  createdAt: timestamps.createdAt,
+  updatedAt: timestamps.updatedAt,
+});
+
 export const aiUsageEvents = pgTable(
   "ai_usage_events",
   {

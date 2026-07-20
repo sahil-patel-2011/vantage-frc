@@ -21,12 +21,14 @@ function fakeClient(handlers: Array<(sql: string, params?: unknown[]) => QueryRe
 describe("resolveOrgChatAdapter", () => {
   it("prefers enabled HTTPS org provider configs (BYOK/custom)", async () => {
     const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }), // routing prefs miss
       () => ({
         rowCount: 1,
         rows: [
           {
             id: "p1",
             kind: "openai-compatible",
+            label: "Custom",
             baseUrl: "https://api.example.com/v1",
             localRelay: false,
             modelMappings: { default: "team-model" },
@@ -38,6 +40,7 @@ describe("resolveOrgChatAdapter", () => {
           },
         ],
       }),
+      () => ({ rowCount: 0, rows: [] }), // org_llm_keys
       () => ({ rowCount: 0, rows: [] }), // catalog prices miss → defaults
     ]);
 
@@ -54,6 +57,7 @@ describe("resolveOrgChatAdapter", () => {
 
   it("uses org_llm_keys OpenAI/Anthropic when no hosted custom provider exists", async () => {
     const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 0, rows: [] }),
       () => ({
         rowCount: 1,
@@ -75,6 +79,7 @@ describe("resolveOrgChatAdapter", () => {
     const adapter = await resolveOrgChatAdapter(client as never, {
       orgId: "org-1",
       promptCachingEnabled: false,
+      feature: "chat",
       decrypt: async () => "sk-ant",
     });
 
@@ -84,6 +89,7 @@ describe("resolveOrgChatAdapter", () => {
 
   it("uses org_llm_keys Google Gemini via OpenAI-compatible endpoint", async () => {
     const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 0, rows: [] }),
       () => ({
         rowCount: 1,
@@ -115,6 +121,7 @@ describe("resolveOrgChatAdapter", () => {
 
   it("falls through to managed peek for paid orgs", async () => {
     const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 1, rows: [{ tier: "team" }] }),
@@ -151,12 +158,14 @@ describe("resolveOrgChatAdapter", () => {
 
   it("errors honestly when free org has only a local relay", async () => {
     const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
       () => ({
         rowCount: 1,
         rows: [
           {
             id: "p1",
             kind: "openai-compatible",
+            label: "Relay",
             baseUrl: null,
             localRelay: true,
             modelMappings: { default: "local-model" },
@@ -186,6 +195,7 @@ describe("resolveOrgChatAdapter", () => {
 
   it("errors honestly when no key exists", async () => {
     const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 0, rows: [] }),
       () => ({ rowCount: 1, rows: [{ tier: "free" }] }),

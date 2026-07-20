@@ -126,6 +126,55 @@
   font-size: 0.88rem;
 }
 
+.ai-keys-page .ai-keys-local,
+.ai-keys-page .ai-keys-routing {
+  margin: 16px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.ai-keys-page .ai-keys-local h2,
+.ai-keys-page .ai-keys-routing h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.ai-keys-page .ai-keys-warn {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #8a5a20 14%, transparent);
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+.ai-keys-page .ai-keys-mode,
+.ai-keys-page .ai-keys-pool {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.ai-keys-page .check-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.ai-keys-page select {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: color-mix(in srgb, var(--soft-surface, #fff) 92%, transparent);
+  font: inherit;
+}
+
 @media (max-width: 640px) {
   .ai-keys-provider-head {
     flex-direction: column;

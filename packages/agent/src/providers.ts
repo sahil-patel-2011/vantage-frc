@@ -24,6 +24,68 @@ export async function validateHostedProviderUrl(value: string) {
   return url.toString().replace(/\/$/, "");
 }
 
+function isLoopbackHost(hostname: string) {
+  const host = hostname.toLowerCase();
+  return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+}
+
+/**
+ * OpenAI-compatible base URL for Ollama / LM Studio / self-hosted gateways.
+ * Allows http(s) to loopback for local-dev servers, and HTTPS public/tunnel URLs.
+ * Still blocks cloud-metadata and private LAN targets (SSRF).
+ *
+ * Honest note: cloud-hosted Vantage cannot reach the user's localhost unless they
+ * expose a reachable HTTPS URL (tunnel / self-hosted gateway).
+ */
+export async function validateOpenAiCompatibleBaseUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error("Base URL is required");
+  const url = new URL(trimmed);
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("Base URL must use http:// or https://");
+  }
+  if (url.username || url.password) {
+    throw new Error("Credentials must not be embedded in the base URL — use the optional API key field");
+  }
+  if (isLoopbackHost(url.hostname)) {
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error("Loopback base URL must use http:// or https://");
+    }
+    return url.toString().replace(/\/$/, "");
+  }
+  if (url.protocol !== "https:") {
+    throw new Error(
+      "Non-localhost OpenAI-compatible URLs must use HTTPS (use a tunnel or self-hosted gateway reachable from Vantage)",
+    );
+  }
+  const addresses = isIP(url.hostname)
+    ? [{ address: url.hostname }]
+    : await lookup(url.hostname, { all: true, verbatim: true });
+  if (!addresses.length || addresses.some(({ address }) => blockedIp(address))) {
+    throw new Error("Private, metadata, and local-network provider targets are blocked — use a public HTTPS tunnel URL");
+  }
+  return url.toString().replace(/\/$/, "");
+}
+
+export function describeOpenAiCompatibleReachability(baseUrl: string): {
+  loopback: boolean;
+  warning: string | null;
+} {
+  try {
+    const url = new URL(baseUrl);
+    if (isLoopbackHost(url.hostname)) {
+      return {
+        loopback: true,
+        warning:
+          "localhost / 127.0.0.1 only works when the Vantage server process can reach your machine (local `npm run dev`). Cloud Vantage cannot call your laptop unless you expose a reachable HTTPS URL (tunnel or self-hosted gateway).",
+      };
+    }
+    return { loopback: false, warning: null };
+  } catch {
+    return { loopback: false, warning: null };
+  }
+}
+
 export type LocalRelayRequest = {
   jobId: string;
   operation: "invoke_llm";

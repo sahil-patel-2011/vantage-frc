@@ -38,3 +38,12 @@ describe("ai keys soft-ui helpers", () => {
     expect(aiKeysBillingNote("team").body).toMatch(/not billed twice|does not consume/i);
   });
 });
+
+describe("byok model catalog re-export", () => {
+  it("exposes automode helpers from agent", async () => {
+    const { preferredTierForFeature, BYOK_MODEL_OPTIONS } = await import("./byok-model-catalog");
+    expect(preferredTierForFeature("cad")).toBe("high");
+    expect(BYOK_MODEL_OPTIONS.some((m) => m.modelId === "gpt-4.1-mini")).toBe(true);
+    expect(BYOK_MODEL_OPTIONS.every((m) => m.modelId.length > 0)).toBe(true);
+  });
+});

@@ -278,7 +278,11 @@ export async function POST(request: Request) {
           const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
           // Honest setup_required (via ChatProviderResolutionError → failMeteredAi) when no
           // provider key — never invent essays via LocalDeterministicChatAdapter.
-          const adapter = await resolveOrgChatAdapter(client, { orgId, promptCachingEnabled });
+          const adapter = await resolveOrgChatAdapter(client, {
+            orgId,
+            promptCachingEnabled,
+            feature: "writer",
+          });
 
           const requestId = randomUUID();
           const run = await new AIOrchestrator(client).run({

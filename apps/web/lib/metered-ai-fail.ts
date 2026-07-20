@@ -16,8 +16,8 @@ const PROVIDER_SETUP_STEPS: MeteredAiSetupStep[] = [
   {
     id: "keys",
     label: "Add an AI provider key",
-    detail: "BYOK or custom OpenAI/Anthropic under Team Admin — no invented model output without a key.",
-    href: "/team/admin",
+    detail: "BYOK OpenAI / Anthropic / Google or a local OpenAI-compatible base URL under Team → AI API keys.",
+    href: "/team/ai-keys",
   },
   {
     id: "budgets",
@@ -39,7 +39,7 @@ function isProviderSetupError(error: unknown): boolean {
   const name = "name" in error && typeof error.name === "string" ? error.name : "";
   if (name === "ChatProviderResolutionError") return true;
   const message = error instanceof Error ? error.message : String(error);
-  return /No AI provider key|No configured model|could not be decrypted|local desktop relay/i.test(
+  return /No AI provider key|No configured model|could not be decrypted|local desktop relay|API key was rejected|KMS setup/i.test(
     message,
   );
 }
