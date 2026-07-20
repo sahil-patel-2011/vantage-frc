@@ -7,15 +7,15 @@ const c = PRICING_CATALOG;
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Competition operations for FRC teams: Soft-UI hubs for Competition, Team, Business, Build, and AI—including Scouting, Command / My Day, Strategy, Alliance Selection Desk, Season Planning, CAD, and metered Assistant. Empty until real data exists.",
+    a: "Vantage is invite-only competition operations software for FRC teams. Soft-UI hubs cover Competition (Scouting, Command, My Day, Strategy, Alliance Selection Desk), Team (including Season Planning), Business, Build (CAD agent, Code Coach), and AI (Assistant + /team/ai-keys). Surfaces stay empty until real data exists.",
   },
   {
     q: "What do teams open first?",
-    a: "Competition hub (Scouting, Command, My Day, Strategy), Alliance Selection Desk for picks, Season Planning on Team, then Business and Build when the season needs them. Free teams add AI keys at /team/ai-keys.",
+    a: "Competition hub for Scouting, Command, and My Day; Alliance Selection Desk for picks; Season Planning on Team; then Business and Build when the season needs them. Free teams add AI keys at /team/ai-keys.",
   },
   {
     q: "Does it work offline?",
-    a: "Yes. Match/pit forms keep working when venue Wi-Fi drops; sync resumes with attribution when you reconnect.",
+    a: "Yes. Match and pit forms keep working when venue Wi-Fi drops; sync resumes with attribution when you reconnect.",
   },
   {
     q: "How much does it cost?",

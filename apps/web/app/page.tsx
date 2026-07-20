@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { WaitlistForm } from "../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import { FAQ } from "../components/marketing/faq";
@@ -7,6 +8,14 @@ import {
   raisedPricingStrip,
   raisedPricingSummaryLine,
 } from "@vantage/billing/catalog";
+import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
+
+export const metadata: Metadata = marketingPageMetadata({
+  title: "Vantage — Competition ops for FRC teams",
+  description:
+    "Soft-UI hubs for FRC scouting, Event Day Command, strategy, Alliance Selection Desk, season planning, CAD, and team ops. Invite-only. Empty until real data connects.",
+  path: "/",
+});
 
 const hubs = [
   {
@@ -55,10 +64,12 @@ const seasonBeat = [
 ] as const;
 
 export default function Home() {
+  const entityLd = organizationSoftwareJsonLd();
   return (
     <div className="marketing-site marketing-lux">
       <SiteHeader />
       <main>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(entityLd) }} />
         <section className="lux-hero" aria-labelledby="lux-hero-title">
           <div className="lux-hero-copy">
             <h1 id="lux-hero-title">Competition ops for FRC teams.</h1>

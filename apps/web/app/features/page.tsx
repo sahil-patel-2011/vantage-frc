@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { hostedApiSavingsCopy, raisedPricingStrip } from "@vantage/billing/catalog";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { ProductGlances } from "../../components/marketing/product-glances";
+import { marketingPageMetadata } from "../../lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "Product — Vantage",
+export const metadata: Metadata = marketingPageMetadata({
+  title: "Product map — Vantage",
   description:
-    "Soft-UI hubs for FRC: Competition, Team, Business, Build, and AI—plus Alliance Selection Desk, Season Planning, CAD, and AI keys.",
-  alternates: { canonical: "/features" },
-};
+    "Soft-UI hubs FRC teams open after sign-in: Competition, Team, Business, Build, and AI—plus Alliance Selection Desk, Season Planning, CAD agent, and AI API keys.",
+  path: "/features",
+});
 
 type Status = "Available" | "Shipping" | "Setup required";
 
