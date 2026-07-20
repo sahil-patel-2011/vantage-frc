@@ -29,11 +29,11 @@ export default async function TeamSecurityPage({
   return (
     <>
       <AuthPolicyClient orgId={orgId} />
-      <main className="module-page team-security-capabilities" style={{ paddingTop: 0 }}>
-        <CapabilitiesClient orgId={orgId} />
-      </main>
       <main className="module-page team-security-hub-access" style={{ paddingTop: 0 }}>
         <HubAccessClient orgId={orgId} />
+      </main>
+      <main className="module-page team-security-capabilities" style={{ paddingTop: 0 }}>
+        <CapabilitiesClient orgId={orgId} />
       </main>
     </>
   );

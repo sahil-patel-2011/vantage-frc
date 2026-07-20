@@ -11,6 +11,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
+import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   MATCHING_GIFT_PLEDGE_STATUSES,
   MATCHING_GIFT_RELATIONSHIPS,
@@ -170,6 +171,7 @@ export default function MatchingGiftFinderClient() {
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -223,14 +225,21 @@ export default function MatchingGiftFinderClient() {
       if (!orgId || busy) return;
       setBusy(true);
       setError("");
+      setCutoffCode(null);
       try {
         const response = await fetch("/api/matching-gift-finder", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
         });
-        const data = (await response.json()) as MatchingGiftFinderView | { error?: string };
+        const data = (await response.json()) as MatchingGiftFinderView | { error?: string; code?: string };
         if (!response.ok || !("status" in data)) {
+          const cutoff = resolveCutoffErrorCode(response.status, data);
+          if (cutoff) {
+            setCutoffCode(cutoff);
+            setError("AI usage limit reached — raise budgets or wait for the billing period to reset.");
+            return;
+          }
           setError("error" in data && data.error ? data.error : "Something went wrong.");
           return;
         }
@@ -322,6 +331,7 @@ export default function MatchingGiftFinderClient() {
           {error}
         </p>
       ) : null}
+      {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       <NextActionsPanel actions={nextActions} />
 

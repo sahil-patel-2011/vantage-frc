@@ -29,4 +29,7 @@
   .media-next-actions li{flex-direction:column;align-items:stretch}
   .media-panel-list li,.media-item-row{flex-direction:column;align-items:stretch}
   .media-item-actions{justify-content:flex-start}
+  .media-form{max-width:none;width:100%}
+  .media-form-actions{display:grid;width:100%;gap:8px}
+  .media-form-actions .app-button{width:100%;justify-content:center}
 }

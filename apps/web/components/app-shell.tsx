@@ -19,6 +19,7 @@ import {
 import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
 import {
   pathAllowedByHubAccess,
+  pathAllowedBySponsors,
   type ClientHubAccessRow,
 } from "../lib/nav/hub-access-filter";
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
@@ -510,27 +511,33 @@ export default function AppShell() {
   const initial = (accountLabel?.[0] ?? "?").toUpperCase();
 
   const hubAccess = me.hubAccess ?? null;
+  const sponsorsAllowed = me.sponsorsAllowed;
+  const navHrefAllowed = useCallback(
+    (href: string) =>
+      pathAllowedByHubAccess(href, hubAccess) && pathAllowedBySponsors(href, sponsorsAllowed),
+    [hubAccess, sponsorsAllowed],
+  );
   const visiblePillarLinks = useMemo(
-    () => pillarSheetLinks.filter((link) => pathAllowedByHubAccess(link.href, hubAccess)),
-    [hubAccess],
+    () => pillarSheetLinks.filter((link) => navHrefAllowed(link.href)),
+    [navHrefAllowed],
   );
   const visibleMoreLinks = useMemo(
-    () => moreSheetLinks.filter((link) => pathAllowedByHubAccess(link.href, hubAccess)),
-    [hubAccess],
+    () => moreSheetLinks.filter((link) => navHrefAllowed(link.href)),
+    [navHrefAllowed],
   );
   const visibleIslandCatalog = useMemo(
-    () => ISLAND_TAB_CATALOG.filter((item) => pathAllowedByHubAccess(item.href, hubAccess)),
-    [hubAccess],
+    () => ISLAND_TAB_CATALOG.filter((item) => navHrefAllowed(item.href)),
+    [navHrefAllowed],
   );
   const visibleNavGroups = useMemo(
     () =>
       groups
         .map((group) => ({
           ...group,
-          items: group.items.filter((item) => pathAllowedByHubAccess(item.href, hubAccess)),
+          items: group.items.filter((item) => navHrefAllowed(item.href)),
         }))
         .filter((group) => group.items.length > 0),
-    [hubAccess],
+    [navHrefAllowed],
   );
 
   const flat = useMemo(() => {
@@ -639,8 +646,8 @@ export default function AppShell() {
   const moreBadgeTotal = unreadCount + unreadMessages;
   const eventFocus = useMemo(() => buildEventFocus(myDayGlance, online), [myDayGlance, online]);
   const islandTabs = useMemo(
-    () => resolveIslandTabs(islandHrefs).filter((tab) => pathAllowedByHubAccess(tab.href, hubAccess)),
-    [islandHrefs, hubAccess],
+    () => resolveIslandTabs(islandHrefs).filter((tab) => navHrefAllowed(tab.href)),
+    [islandHrefs, navHrefAllowed],
   );
   const activeIslandTabHref = useMemo(
     () => activeIslandHref(pathname, pathSearch, islandTabs),

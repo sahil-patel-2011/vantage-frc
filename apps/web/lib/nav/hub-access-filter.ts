@@ -44,6 +44,16 @@ export const SPONSOR_TAB_IDS = new Set([
   "matching-gift-finder",
 ]);
 
+/** Standalone sponsor tool paths (drawer / Cmd+K), gated by org sponsors_allowed. */
+export const SPONSOR_PATHS = new Set([
+  "/sponsor-suite",
+  "/sponsor-tier-calculator",
+  "/sponsor-wall",
+  "/sponsor-renewal-roi",
+  "/matching-gift-finder",
+  "/sponsorship",
+]);
+
 export function clientHubUnrestricted(rows: ClientHubAccessRow[] | null | undefined): boolean {
   return !rows || rows.length === 0;
 }
@@ -86,6 +96,23 @@ export function filterSponsorTabs<T extends { id: string }>(
 ): T[] {
   if (sponsorsAllowed !== false) return tabs;
   return tabs.filter((tab) => !SPONSOR_TAB_IDS.has(tab.id));
+}
+
+/**
+ * Hide sponsor destinations when the org funding profile disallows sponsors.
+ * Null/undefined sponsorsAllowed keeps legacy “show sponsors” behavior.
+ */
+export function pathAllowedBySponsors(
+  href: string,
+  sponsorsAllowed: boolean | null | undefined,
+): boolean {
+  if (sponsorsAllowed !== false) return true;
+  const path = href.split("?")[0] ?? href;
+  if (SPONSOR_PATHS.has(path)) return false;
+  const params = new URLSearchParams(href.includes("?") ? href.slice(href.indexOf("?") + 1) : "");
+  const tab = params.get("tab");
+  if (tab && SPONSOR_TAB_IDS.has(tab)) return false;
+  return true;
 }
 
 /** Map path prefix → hub id for drawer/island filtering. */
