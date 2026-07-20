@@ -58,7 +58,10 @@ Live reference data from The Blue Alliance and Statbotics can be cached per even
 - Home: ${CANONICAL}/
 - Features / product gallery: ${CANONICAL}/features
 - FRC Assistant & Strategy: ${CANONICAL}/features/strategy
-- Workflow: ${CANONICAL}/workflow
+- CAD agent: ${CANONICAL}/features/cad
+- Code Coach: ${CANONICAL}/features/code
+- How it works: ${CANONICAL}/workflow
+- For teams: ${CANONICAL}/for-teams
 - Pricing: ${CANONICAL}/pricing
 - Privacy: ${CANONICAL}/privacy
 - Terms: ${CANONICAL}/terms

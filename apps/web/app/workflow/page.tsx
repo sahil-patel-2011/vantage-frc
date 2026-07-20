@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 
 export const metadata: Metadata = {
-  title: "System workflow — Vantage",
-  description: "How TBA reference, scouting, Strategy, Pick desk, Event Day, and CAD share one org event context.",
+  title: "How it works — Vantage",
+  description:
+    "How TBA reference, scouting, Strategy, Pick desk, Event Day, and CAD share one org event context.",
   alternates: { canonical: "/workflow" },
 };
 
@@ -22,11 +23,22 @@ export default function WorkflowPage() {
       <main className="route-page">
         <header className="lux-route-hero">
           <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
-          <h1>One event context.</h1>
-          <p>Scout facts feed Strategy, Pick desk, Event Day, and Assistant—never replace their sources.</p>
+          <h1>How it works.</h1>
+          <p>
+            One event context. Scout facts feed Strategy, Pick desk, Event Day, and Assistant—never replace their
+            sources.
+          </p>
+          <div className="actions">
+            <a className="button primary" href="/#waitlist">
+              Join the waitlist
+            </a>
+            <a className="button secondary" href="/features">
+              See the product
+            </a>
+          </div>
         </header>
 
-        <section className="flow-map" aria-label="Vantage context flow">
+        <section className="flow-map lux-content" aria-label="Vantage context flow">
           {stages.map(([id, title, detail, status], index) => (
             <article key={id}>
               <div>
@@ -34,7 +46,9 @@ export default function WorkflowPage() {
                 {index < stages.length - 1 && <i aria-hidden="true" />}
               </div>
               <section>
-                <span className={`status-badge ${status === "Available" ? "available" : "setup"}`}>{status}</span>
+                <span className={`status-badge ${status === "Available" ? "available" : "setup"}`}>
+                  {status}
+                </span>
                 <h2>{title}</h2>
                 <p>{detail}</p>
               </section>
@@ -43,36 +57,38 @@ export default function WorkflowPage() {
         </section>
 
         <section className="scout-integration workflow-integration" aria-labelledby="workflow-scout-title">
-          <header>
-            <span className="section-id">SCOUTING LOOP</span>
-            <h2 id="workflow-scout-title">Capture → sync → decide → present.</h2>
-            <p>Same feed across Soft-UI hubs.</p>
-          </header>
-          <ol className="integration-steps">
-            <li>
-              <b>01</b>
-              <strong>Capture</strong>
-              <span>Match/pit scouting offline.</span>
-            </li>
-            <li>
-              <b>02</b>
-              <strong>Sync</strong>
-              <span>Attributed facts + conflict review.</span>
-            </li>
-            <li>
-              <b>03</b>
-              <strong>Decide</strong>
-              <span>Strategy, Assistant, Pick desk.</span>
-            </li>
-            <li>
-              <b>04</b>
-              <strong>Present</strong>
-              <span>Event Day boards and exports.</span>
-            </li>
-          </ol>
+          <div className="lux-content">
+            <header>
+              <span className="section-id">SCOUTING LOOP</span>
+              <h2 id="workflow-scout-title">Capture → sync → decide → present.</h2>
+              <p>Same feed across Soft-UI hubs.</p>
+            </header>
+            <ol className="integration-steps">
+              <li>
+                <b>01</b>
+                <strong>Capture</strong>
+                <span>Match/pit scouting offline.</span>
+              </li>
+              <li>
+                <b>02</b>
+                <strong>Sync</strong>
+                <span>Attributed facts + conflict review.</span>
+              </li>
+              <li>
+                <b>03</b>
+                <strong>Decide</strong>
+                <span>Strategy, Assistant, Pick desk.</span>
+              </li>
+              <li>
+                <b>04</b>
+                <strong>Present</strong>
+                <span>Event Day boards and exports.</span>
+              </li>
+            </ol>
+          </div>
         </section>
 
-        <section className="workflow-principles">
+        <section className="workflow-principles lux-content">
           <article>
             <span className="section-id">PROVENANCE</span>
             <h2>Evidence types stay labeled.</h2>
@@ -88,6 +104,24 @@ export default function WorkflowPage() {
             <h2>Humans approve risk.</h2>
             <p>CAD briefs and metered AI check budgets first.</p>
           </article>
+        </section>
+
+        <section className="lux-pricing">
+          <div>
+            <h2>Ready when you are.</h2>
+            <p>
+              Explore the <a href="/features">product map</a>, or read how mentors run a season on{" "}
+              <a href="/for-teams">For teams</a>.
+            </p>
+          </div>
+          <div className="pricing-preview-actions">
+            <a className="button primary" href="/#waitlist">
+              Join waitlist
+            </a>
+            <a className="button secondary" href="/pricing">
+              Pricing
+            </a>
+          </div>
         </section>
       </main>
       <SiteFooter />

@@ -33,10 +33,10 @@ export default function PricingPage() {
       <main className="pricing-page">
         <section className="lux-route-hero pricing-hero">
           <p className="lux-wordmark lux-wordmark-sm">Vantage</p>
-          <h1>Plans for private work or the whole team.</h1>
+          <h1>Free core. Hosted AI when you want it.</h1>
           <p>
-            Free keeps the Soft-UI competition core with your own keys or local models. Paid plans add Vantage-hosted
-            AI—cheaper than BYOK, with scouting, strategy, and Event Day built in natively. Hard cutoffs; no surprise
+            Free keeps Soft-UI competition ops with your own keys or local models. Paid plans add Vantage-hosted AI as
+            a service—cheaper than BYOK, with scouting, strategy, and Event Day built in. Hard cutoffs; no surprise
             overage.
           </p>
           <div className="actions">
@@ -62,11 +62,14 @@ export default function PricingPage() {
               product. You are not renting a generic model meter.
             </p>
             <p>
-              {economicsSoft} Bring-your-own-key stays available on Free and never consumes managed hosted usage. After
-              the included hosted window: hard stop unless you add Usage Credits or enable PAYG with an explicit spend
+              {economicsSoft} Bring-your-own-key stays on Free and never consumes managed hosted usage. After the
+              included hosted window: hard stop unless you add Usage Credits or enable PAYG with an explicit spend
               cap.
             </p>
-            <p>Checkout opens when Stripe Price IDs are configured—until then, join the waitlist.</p>
+            <p>
+              Free teams add keys at <a href="/team/ai-keys">/team/ai-keys</a> after sign-in. Checkout opens when
+              Stripe Price IDs are configured—until then, join the waitlist.
+            </p>
             <p className="pricing-note">{catalogNote}</p>
             <p className="pricing-footnote">
               Free includes offline scouting, reference data, manual strategy, and pick lists. Managed Assistant still

@@ -1523,11 +1523,138 @@
   font-family:var(--m-sans)!important;
 }
 .marketing-lux .marketing-footer{
+  display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;
+  gap:28px 40px;
   padding:40px var(--m-pad-x);
   border-top:1px solid var(--m-line);
   background:transparent;
 }
-.marketing-lux .marketing-footer p{color:var(--m-muted);font-size:12px}
+.marketing-lux .marketing-footer-brand{
+  display:grid;gap:10px;max-width:280px;
+}
+.marketing-lux .marketing-footer p{margin:0;color:var(--m-muted);font-size:12px;line-height:1.45}
+.marketing-lux .marketing-footer nav{
+  display:flex;flex-wrap:wrap;gap:12px 22px;max-width:640px;justify-content:flex-end;
+}
+
+.marketing-lux .lux-content{
+  width:100%;max-width:var(--m-content);margin:0 auto;
+}
+.marketing-lux .lux-hero-meta{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  margin:18px 0 0;color:var(--m-muted);font-size:13px;
+  animation:lux-rise .8s .22s cubic-bezier(.22,.8,.2,1) both;
+}
+.marketing-lux .lux-hero-meta a{
+  color:var(--m-muted);font-weight:600;text-decoration:none;
+}
+.marketing-lux .lux-hero-meta a:hover{color:var(--m-ink)}
+.marketing-lux .lux-inline-cta{margin:28px 0 0}
+.marketing-lux .lux-inline-cta .text-link{font-size:14px}
+
+.marketing-lux .lux-season{
+  padding:var(--m-pad-y) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:rgba(255,255,255,.4);
+}
+.marketing-lux .lux-season-steps{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;margin:0;padding:0;list-style:none;
+}
+.marketing-lux .lux-season-steps-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.marketing-lux .lux-season-steps li{
+  display:flex;flex-direction:column;gap:8px;
+  min-height:140px;padding:22px;
+  border:1px solid rgba(0,0,0,.1);border-radius:16px;background:#fff;
+}
+.marketing-lux .lux-season-steps b{
+  color:var(--m-muted);font:600 11px/1 var(--m-sans);letter-spacing:.06em;
+}
+.marketing-lux .lux-season-steps strong{
+  font:600 17px/1.25 var(--m-sans);letter-spacing:-.02em;
+}
+.marketing-lux .lux-season-steps span{
+  margin-top:auto;color:var(--m-muted);font-size:14px;line-height:1.45;
+}
+
+.marketing-lux .lux-deep-links{
+  padding:var(--m-pad-y) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+}
+.marketing-lux .lux-deep-link-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;margin:0;padding:0;list-style:none;
+}
+.marketing-lux .lux-deep-link-grid a{
+  display:flex;flex-direction:column;gap:8px;
+  min-height:112px;padding:22px;
+  border:1px solid rgba(0,0,0,.1);border-radius:16px;background:#fff;
+  text-decoration:none;transition:border-color .2s ease,background .2s ease;
+}
+.marketing-lux .lux-deep-link-grid a:hover{
+  border-color:rgba(0,0,0,.22);background:#fafafa;
+}
+.marketing-lux .lux-deep-link-grid strong{
+  font:600 16px/1.25 var(--m-sans);letter-spacing:-.02em;
+}
+.marketing-lux .lux-deep-link-grid span{
+  margin-top:auto;color:var(--m-muted);font-size:14px;line-height:1.45;
+}
+
+.marketing-lux .lux-feature-grid a{
+  display:flex;flex-direction:column;gap:8px;height:100%;
+  color:inherit;text-decoration:none;
+}
+.marketing-lux .lux-feature-grid a:hover strong{text-decoration:underline;text-underline-offset:3px}
+.marketing-lux .lux-feature-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.marketing-lux .lux-pillar-list h3 a{
+  color:inherit;text-decoration:none;
+}
+.marketing-lux .lux-pillar-list h3 a:hover{text-decoration:underline;text-underline-offset:3px}
+.marketing-lux .lux-step-id{
+  display:inline-block;margin-right:8px;color:var(--m-muted);
+  font:600 12px/1 var(--m-sans);letter-spacing:.04em;
+}
+
+.marketing-lux .product-glance-dots{
+  display:inline-flex;align-items:center;gap:5px;margin-right:8px;
+}
+.marketing-lux .product-glance-dots i{
+  display:block;width:7px;height:7px;border-radius:50%;
+  background:rgba(0,0,0,.12);
+}
+.marketing-lux .hero-product-screen>header,
+.marketing-lux .product-glance-frame>header{
+  display:flex;align-items:center;gap:8px;
+}
+.marketing-lux .hero-product-screen>header>span:not(.product-glance-dots),
+.marketing-lux .product-glance-frame>header>span:not(.product-glance-dots){
+  flex:1;min-width:0;
+}
+.marketing-lux .hero-product-screen>header b,
+.marketing-lux .product-glance-frame>header b{margin-left:auto}
+.marketing-lux .product-glance-frame{
+  border-radius:16px;
+  background:linear-gradient(180deg,#fff,#f7f7f8);
+  box-shadow:0 1px 2px rgba(0,0,0,.03);
+}
+.marketing-lux .flow-map.lux-content{max-width:var(--m-content);padding-inline:0}
+.marketing-lux .flow-map{width:100%}
+.marketing-lux .pricing-page .pricing-alternates,
+.marketing-lux .pricing-page .pricing-trial{
+  padding:var(--m-pad-y) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  max-width:none;
+}
+.marketing-lux .pricing-page .pricing-alternates h2,
+.marketing-lux .pricing-page .pricing-trial h2{
+  max-width:18ch;margin:10px 0 12px;
+  font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);letter-spacing:-.03em;
+}
+.marketing-lux .pricing-page .pricing-alternates>p,
+.marketing-lux .pricing-page .pricing-trial>p{
+  max-width:40rem;margin:0 0 28px;color:var(--m-muted);font-size:16px;line-height:1.55;
+}
 
 @keyframes lux-rise{
   from{opacity:0;transform:translateY(16px)}
@@ -1539,7 +1666,11 @@
   .marketing-lux .hero-product-visual{justify-self:stretch;width:100%;max-width:400px}
   .marketing-lux .product-glances,
   .marketing-lux .product-glances-dense{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .marketing-lux .lux-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .marketing-lux .lux-feature-grid,
+  .marketing-lux .lux-feature-grid-4,
+  .marketing-lux .lux-season-steps,
+  .marketing-lux .lux-season-steps-4,
+  .marketing-lux .lux-deep-link-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .marketing-lux .assistant-job-grid,
   .marketing-lux .supporting-status-grid,
   .marketing-lux .integration-steps,
@@ -1550,6 +1681,7 @@
   .marketing-lux .waitlist{grid-template-columns:1fr}
   .marketing-lux .lux-pricing,
   .marketing-lux .pricing-preview{flex-direction:column;align-items:flex-start}
+  .marketing-lux .marketing-footer nav{justify-content:flex-start}
 }
 @media(max-width:680px){
   .marketing-lux .lux-hero{padding-top:48px;padding-bottom:48px}
@@ -1559,18 +1691,24 @@
   .marketing-lux .lux-route-hero .actions{flex-direction:column;align-items:stretch}
   .marketing-lux .lux-pillar-list li{grid-template-columns:1fr;gap:14px}
   .marketing-lux .lux-feature-grid,
+  .marketing-lux .lux-feature-grid-4,
+  .marketing-lux .lux-season-steps,
+  .marketing-lux .lux-season-steps-4,
+  .marketing-lux .lux-deep-link-grid,
   .marketing-lux .assistant-job-grid,
   .marketing-lux .supporting-status-grid,
   .marketing-lux .integration-steps,
   .marketing-lux .workflow-principles{grid-template-columns:1fr}
-  .marketing-lux .pricing-preview-actions{width:100%}
+  .marketing-lux .pricing-preview-actions{width:100%;display:flex;flex-wrap:wrap;gap:12px}
   .marketing-lux .pricing-preview-actions .button{flex:1;justify-content:center}
+  .marketing-lux .marketing-footer{flex-direction:column}
 }
 @media(prefers-reduced-motion:reduce){
   .marketing-lux .lux-wordmark,
   .marketing-lux .lux-hero h1,
   .marketing-lux .lux-hero-copy>p,
   .marketing-lux .lux-hero .actions,
+  .marketing-lux .lux-hero-meta,
   .marketing-lux .hero-product-visual{animation:none!important}
 }
 
