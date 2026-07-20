@@ -3,9 +3,13 @@ import { ProviderRateLimitError } from "../src/http-chat-adapter";
 import {
   SponsoredFailoverChatAdapter,
   SPONSORED_PROVIDER_WEIGHTS,
+  getSponsoredPoolStatus,
+  isSponsoredProviderDegraded,
   isSponsoredRateLimitError,
   listConfiguredSponsoredProviders,
+  markSponsoredProviderDegraded,
   orderSponsoredProvidersWeightedRoundRobin,
+  resetSponsoredProviderHealth,
   resetSponsoredRotationCursor,
 } from "../src/sponsored-provider-pool";
 
@@ -29,6 +33,7 @@ function okJson(text: string) {
 describe("sponsored provider pool", () => {
   afterEach(() => {
     resetSponsoredRotationCursor(0);
+    resetSponsoredProviderHealth();
   });
 
   it("lists configured providers in catalog order (weights applied at request time)", () => {
@@ -239,5 +244,68 @@ describe("sponsored provider pool", () => {
       /All sponsored promo providers are unavailable or rate-limited/,
     );
     expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(isSponsoredProviderDegraded("cerebras")).toBe(true);
+  });
+
+  it("moves degraded Cerebras to last-resort so it is not primary after 402", () => {
+    const configured = listConfiguredSponsoredProviders(allKeysEnv);
+    markSponsoredProviderDegraded("cerebras", 1_000, 60_000);
+    // Wheel index 4 would normally pick cerebras first — degraded pushes it last.
+    const order = orderSponsoredProvidersWeightedRoundRobin(configured, 4, 1_000).map((p) => p.id);
+    expect(order[0]).not.toBe("cerebras");
+    expect(order[order.length - 1]).toBe("cerebras");
+  });
+
+  it("exposes masked pool status without key material", () => {
+    const status = getSponsoredPoolStatus(allKeysEnv);
+    expect(status.configured).toEqual(["mistral", "groq", "cohere", "cerebras"]);
+    expect(status.models.cohere).toBe("command-r-08-2024");
+    expect(status.models.mistral).toBe("mistral-small-latest");
+    expect(status.balancing).toBe("weighted_round_robin");
+    expect(JSON.stringify(status)).not.toMatch(/mistral-test|groq-test|api[_-]?key/i);
+  });
+
+  it("passes the same context through failover (does not strip on provider switch)", async () => {
+    resetSponsoredRotationCursor(0);
+    const bodies: string[] = [];
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      bodies.push(String(init?.body ?? ""));
+      if (url.includes("mistral")) {
+        return new Response("Payment Required", { status: 402 });
+      }
+      if (url.includes("groq")) {
+        return okJson("ok");
+      }
+      throw new Error(`unexpected ${url}`);
+    });
+
+    const adapter = new SponsoredFailoverChatAdapter({
+      promptCachingEnabled: false,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      env: {
+        MISTRAL_API_KEY: "mistral-test",
+        GROQ_API_KEY: "groq-test",
+      } as NodeJS.ProcessEnv,
+    });
+
+    await adapter.complete({
+      message: "hi",
+      context: [
+        {
+          type: "module_data",
+          id: "org-session",
+          content: "FRC team number: 1111",
+          importance: 950,
+        },
+      ],
+    });
+
+    expect(bodies).toHaveLength(2);
+    for (const body of bodies) {
+      expect(body).toContain("FRC team number: 1111");
+      expect(body).toMatch(/You are Vantage/);
+      expect(body).toMatch(/DEMO/i);
+    }
   });
 });
