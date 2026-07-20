@@ -1,14 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  Badge,
+  type BadgeTone,
+  EmptyState,
+  FormRow,
+  PageHeader,
+  Panel,
+  StatTile,
+} from "../../components/ui";
 import type { CoverageStatus } from "../../lib/scout-coverage-live/types";
 import type { ScoutCoverageLiveView } from "../../lib/scout-coverage-live/compute-scout-coverage-live";
+import {
+  SCOUT_COVERAGE_LIVE_RELATED_INCLUDE,
+  classifyScoutCoverageLiveShell,
+  formatScoutCoverageLiveMetric,
+  formatScoutCoverageLiveRate,
+  scoutCoverageLiveNextActions,
+  scoutCoverageLiveRelatedLinks,
+  scoutCoverageLiveSetupSteps,
+  scoutCoverageLiveShellCopy,
+  shouldShowScoutCoverageLiveSummaryTiles,
+  type ScoutCoverageLiveNextAction,
+  type ScoutCoverageLiveShellKind,
+} from "../../lib/scout-coverage-live/scout-coverage-live-related";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./scout-coverage-live.css";
 
-function statusTone(status: CoverageStatus): string {
-  if (status === "zero") return "demo";
-  if (status === "thin") return "setup";
-  return "good";
+const statusToneMap: Record<CoverageStatus, BadgeTone> = {
+  zero: "demo",
+  thin: "setup",
+  covered: "good",
+};
+
+function statusTone(status: CoverageStatus): BadgeTone {
+  return statusToneMap[status] ?? "neutral";
 }
 
 function statusLabel(status: CoverageStatus): string {
@@ -17,26 +45,174 @@ function statusLabel(status: CoverageStatus): string {
   return "Covered";
 }
 
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
-
 type LiveView = Extract<ScoutCoverageLiveView, { status: "live" }>;
 
-export default function ScoutCoverageLiveClient() {
+function ScoutCoverageLiveRelatedStrip({ orgId }: { orgId?: string | null }) {
+  const links = scoutCoverageLiveRelatedLinks(orgId, {
+    include: [...SCOUT_COVERAGE_LIVE_RELATED_INCLUDE],
+  });
+  if (!links.length) return null;
+  return (
+    <nav className="product-hub-related scout-coverage-live-related" aria-label="Related competition tools">
+      {links.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function ScoutCoverageLiveNextActionsPanel({ actions }: { actions: ScoutCoverageLiveNextAction[] }) {
+  if (!actions.length) return null;
+  return (
+    <section
+      className="app-card soft-panel edc-next-actions scout-coverage-live-next-actions"
+      aria-label="Next actions"
+    >
+      <header>
+        <h2>Next actions</h2>
+        <p className="app-muted">Scouting, Lineup, and Cross-Validation — never DEMO coverage.</p>
+      </header>
+      <ol>
+        {actions.map((action) => (
+          <li key={action.id} className={action.primary ? "primary" : undefined}>
+            <div>
+              <strong>{action.label}</strong>
+              <span>{action.detail}</span>
+            </div>
+            <a className="app-button secondary" href={action.href}>
+              Open
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function ScoutCoverageLiveShell({
+  description,
+  orgId,
+  shell,
+  error,
+  onRetry,
+  children,
+}: {
+  description: string;
+  orgId?: string | null;
+  shell: ScoutCoverageLiveShellKind;
+  error?: string;
+  onRetry?: () => void;
+  children?: ReactNode;
+}) {
+  const actions = scoutCoverageLiveNextActions({ orgId, shell });
+  const copy = scoutCoverageLiveShellCopy(shell);
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const steps = shell === "setup" ? scoutCoverageLiveSetupSteps(orgId) : [];
+  const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const lineupHref = withOrgHref("/scouting/lineup", orgId);
+  const crossvalHref = withOrgHref("/scout-crossval", orgId);
+  const commandHref = hubHref("/competition", "command", orgId);
+
+  return (
+    <main className="module-page scout-coverage-live-page soft-gate">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={competitionHref}>Competition</a>
+            {" / Scout Coverage Live"}
+          </>
+        }
+        title="Scout Coverage Live"
+        description={description}
+      >
+        <ScoutCoverageLiveRelatedStrip orgId={orgId} />
+      </PageHeader>
+      {children}
+      <EmptyState
+        soft
+        badge={
+          shell === "setup"
+            ? "Setup required"
+            : shell === "error"
+              ? "Unavailable"
+              : shell === "empty"
+                ? "No schedule yet"
+                : copy.badge
+        }
+        badgeTone="setup"
+        title={copy.title}
+        description={error ?? copy.description}
+        aria-busy={shell === "loading"}
+      >
+        {shell === "error" && onRetry ? (
+          <button type="button" className="app-button secondary" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
+        {shell === "setup" ? (
+          <a className="app-button" href={orgId ? commandHref : "/workspace"}>
+            {orgId ? "Set active event" : "Select workspace"}
+          </a>
+        ) : null}
+        {shell === "empty" ? (
+          <>
+            <a className="app-button" href={commandHref}>
+              Sync event schedule
+            </a>
+            <a className="app-button secondary" href={scoutingHref}>
+              Open Scouting
+            </a>
+            <a className="app-button secondary" href={lineupHref}>
+              Open Lineup
+            </a>
+            <a className="app-button secondary" href={crossvalHref}>
+              Open Cross-Validation
+            </a>
+          </>
+        ) : null}
+      </EmptyState>
+      {steps.length > 0 ? (
+        <Panel className="scout-coverage-live-panel" aria-label="Setup steps">
+          <header>
+            <h2>Setup steps</h2>
+            <p className="app-muted">Scouting, Lineup, and Cross-Validation — never DEMO coverage.</p>
+          </header>
+          <ul className="scout-coverage-live-setup-steps">
+            {steps.map((step) => (
+              <li key={step.id}>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p className="app-muted scout-coverage-live-tip">{step.detail}</p>
+                </div>
+                <a className="app-button secondary" href={step.href}>
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      <ScoutCoverageLiveNextActionsPanel actions={actions} />
+    </main>
+  );
+}
+
+export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId?: string }) {
   const [view, setView] = useState<ScoutCoverageLiveView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [thresholdInput, setThresholdInput] = useState("");
 
-  const orgId = view && "orgId" in view ? view.orgId : null;
+  const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
     setError("");
-    const params = new URLSearchParams(window.location.search);
-    const urlOrg = params.get("orgId");
+    const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+    const urlOrg = initialOrgId ?? params.get("orgId");
     const urlEvent = params.get("eventKey");
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
@@ -46,13 +222,17 @@ export default function ScoutCoverageLiveClient() {
         const data = (await response.json()) as ScoutCoverageLiveView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setFetchFailed(true);
+          setError("error" in data && data.error ? data.error : "Could not load scout coverage.");
           return;
         }
         setView(data);
         if (data.status === "live") setThresholdInput(String(data.thinThreshold));
       })
-      .catch(() => setFetchFailed(true));
-  }, []);
+      .catch(() => {
+        setFetchFailed(true);
+        setError("Network error — please try again.");
+      });
+  }, [initialOrgId]);
 
   useEffect(() => {
     load();
@@ -86,189 +266,211 @@ export default function ScoutCoverageLiveClient() {
     [orgId, view, busy],
   );
 
+  const totalCells = view?.status === "live" ? view.summary.totalCells : 0;
+  const gapCount = view?.status === "live" ? view.gaps.length : 0;
+  const unackedNudges =
+    view?.status === "live" ? view.nudges.filter((nudge) => !nudge.acknowledged).length : 0;
+
+  const shell = classifyScoutCoverageLiveShell({
+    loading: view == null && !fetchFailed,
+    fetchFailed,
+    status: view?.status ?? null,
+    orgId,
+    totalCells,
+  });
+  const shellCopy = scoutCoverageLiveShellCopy(shell);
+  const nextActions = scoutCoverageLiveNextActions({
+    orgId,
+    shell,
+    gapCount,
+    unackedNudges,
+  });
+  const competitionHref = hubHref("/competition", "scouting", orgId);
+  const showTiles =
+    view?.status === "live" &&
+    shouldShowScoutCoverageLiveSummaryTiles({ totalCells: view.summary.totalCells });
+  const loaded = view?.status === "live";
+
+  if (shell === "loading") {
+    return <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="loading" />;
+  }
+  if (shell === "error") {
+    return (
+      <ScoutCoverageLiveShell
+        description={shellCopy.description}
+        orgId={orgId}
+        shell="error"
+        error={error || shellCopy.description}
+        onRetry={() => load()}
+      />
+    );
+  }
+  if (shell === "setup") {
+    return (
+      <ScoutCoverageLiveShell
+        description={view?.status === "setup_required" ? view.message : shellCopy.description}
+        orgId={orgId}
+        shell="setup"
+      />
+    );
+  }
+  if (shell === "empty" || view?.status !== "live") {
+    return <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="empty" />;
+  }
+
   return (
-    <main className="module-page">
+    <main className="module-page scout-coverage-live-page">
       <PageHeader
         breadcrumbs={
           <>
-            <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
+            <a href={competitionHref}>Competition</a>
             {" / Scout Coverage Live"}
           </>
         }
         title="Scout Coverage Live"
-        description="A live grid of which teams and matches have zero or thin scouting coverage, with push nudges to the coordinator mid-event."
+        description="Zero and thin match/team cells from real scout-entry counts, with coordinator nudges mid-event — never DEMO coverage."
       >
-        {orgId ? (
-          <a className="app-button secondary" href={`/competition?orgId=${encodeURIComponent(orgId)}`}>
-            Competition hub
-          </a>
-        ) : null}
+        <div className="scout-coverage-live-header-meta">
+          <ScoutCoverageLiveRelatedStrip orgId={orgId} />
+        </div>
       </PageHeader>
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p className="form-message" role="status">
           {error}
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Scout Coverage Live"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
-      ) : view == null ? (
-        <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
-      ) : view.status === "setup_required" ? (
-        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="strategy-setup-steps">
-            {view.steps.map((step) => (
-              <li key={step.id}>
-                <div>
-                  <strong>{step.label}</strong>
-                  <span>{step.detail}</span>
-                </div>
-                <a href={step.href}>Open</a>
-              </li>
-            ))}
-          </ol>
-        </EmptyState>
-      ) : (
-        <div style={{ display: "grid", gap: 16 }}>
-          <SummaryPanel view={view} busy={busy} thresholdInput={thresholdInput} setThresholdInput={setThresholdInput} mutate={mutate} />
-          <CoverageGrid view={view} busy={busy} mutate={mutate} />
-          <NudgeLog view={view} busy={busy} mutate={mutate} />
+      <section className="scout-coverage-live-event" aria-label="Event and thin threshold">
+        <div>
+          <span className="app-muted">Event</span>
+          <strong style={{ display: "block" }}>{view.eventKey}</strong>
         </div>
-      )}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const value = Number(thresholdInput);
+            if (Number.isFinite(value) && value > 0) {
+              void mutate({ action: "set-threshold", thinThreshold: Math.round(value) });
+            }
+          }}
+        >
+          <FormRow label="Thin threshold (entries)">
+            <input
+              type="number"
+              min={1}
+              value={thresholdInput}
+              onChange={(event) => setThresholdInput(event.target.value)}
+            />
+          </FormRow>
+          <button type="submit" className="app-button secondary" disabled={busy}>
+            Save threshold
+          </button>
+        </form>
+      </section>
+
+      {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
+      <CoverageGaps view={view} busy={busy} mutate={mutate} loaded={loaded} />
+      <NudgeLog view={view} busy={busy} mutate={mutate} />
+      <ScoutCoverageLiveNextActionsPanel actions={nextActions} />
+      <p className="app-muted scout-coverage-live-footer-links">
+        Also see{" "}
+        <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
+        {" · "}
+        <a href={withOrgHref("/scouting/lineup", orgId)}>Lineup</a>
+        {" · "}
+        <a href={withOrgHref("/scout-crossval", orgId)}>Cross-Validation</a>
+      </p>
     </main>
   );
 }
 
-function SummaryPanel({
-  view,
-  busy,
-  thresholdInput,
-  setThresholdInput,
-  mutate,
-}: {
-  view: LiveView;
-  busy: boolean;
-  thresholdInput: string;
-  setThresholdInput: (value: string) => void;
-  mutate: (payload: Record<string, unknown>) => void;
-}) {
+function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
   const { summary } = view;
+  const hasSchedule = summary.totalCells > 0;
   return (
-    <Panel>
-      <header style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <span className="app-muted">Event</span>
-          <h2 style={{ margin: "2px 0 0" }}>{view.eventKey}</h2>
-        </div>
-        <strong style={{ fontSize: "2rem" }}>{pct(summary.coveragePct)} covered</strong>
-      </header>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginTop: 12 }}>
-        <div>
-          <strong style={{ fontSize: "1.6rem", display: "block" }}>{summary.totalCells}</strong>
-          <span className="app-muted">Assignments</span>
-        </div>
-        <div>
-          <strong style={{ fontSize: "1.6rem", display: "block" }}>{summary.zeroCount}</strong>
-          <span className="app-muted">No coverage</span>
-        </div>
-        <div>
-          <strong style={{ fontSize: "1.6rem", display: "block" }}>{summary.thinCount}</strong>
-          <span className="app-muted">Thin</span>
-        </div>
-        <div>
-          <strong style={{ fontSize: "1.6rem", display: "block" }}>{summary.coveredCount}</strong>
-          <span className="app-muted">Covered</span>
-        </div>
-      </div>
-      <form
-        style={{ display: "flex", gap: 10, alignItems: "flex-end", marginTop: 16, flexWrap: "wrap" }}
-        onSubmit={(event) => {
-          event.preventDefault();
-          const value = Number(thresholdInput);
-          if (Number.isFinite(value) && value > 0) mutate({ action: "set-threshold", thinThreshold: Math.round(value) });
-        }}
-      >
-        <FormRow label="Thin threshold (entries per team/match)">
-          <input
-            type="number"
-            min={1}
-            value={thresholdInput}
-            onChange={(event) => setThresholdInput(event.target.value)}
-            style={{ width: 100 }}
-          />
-        </FormRow>
-        <button type="submit" className="app-button secondary" disabled={busy}>
-          Save threshold
-        </button>
-      </form>
-    </Panel>
+    <section className="scout-coverage-live-kpis" aria-label="Coverage summary">
+      <StatTile
+        label="Schedule cells"
+        value={formatScoutCoverageLiveMetric(summary.totalCells, loaded)}
+        unit="match · team"
+      />
+      <StatTile
+        label="No coverage"
+        value={formatScoutCoverageLiveMetric(summary.zeroCount, loaded)}
+        unit="zero entries"
+      />
+      <StatTile
+        label="Thin"
+        value={formatScoutCoverageLiveMetric(summary.thinCount, loaded)}
+        unit="below threshold"
+      />
+      <StatTile
+        label="Covered"
+        value={formatScoutCoverageLiveRate(summary.coveragePct, loaded, { hasSchedule })}
+        unit="real entry rate"
+      />
+    </section>
   );
 }
 
-function CoverageGrid({
+function CoverageGaps({
   view,
   busy,
   mutate,
+  loaded,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  loaded: boolean;
 }) {
-  if (view.cells.length === 0) {
-    return (
-      <EmptyState
-        badge="No schedule"
-        badgeTone="setup"
-        title="No match/team assignments to grade yet"
-        description="Once the event schedule syncs, this grid will populate automatically."
-      />
-    );
-  }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Coverage gaps</h2>
+    <Panel className="scout-coverage-live-panel" id="coverage-gaps">
+      <header>
+        <h2>Coverage gaps</h2>
+        <p className="app-muted">
+          Zero and thin cells from real scout-entry counts — never DEMO gaps. Nudge the coordinator mid-event.
+        </p>
+      </header>
       {view.gaps.length === 0 ? (
-        <p className="app-muted">No zero or thin coverage right now — every scheduled team/match meets the threshold.</p>
+        <p className="app-muted">
+          No zero or thin coverage right now — every scheduled team/match meets the threshold from real entries.
+        </p>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 8 }}>
-            {view.gaps.map((cell) => (
-              <li
-                key={`${cell.matchKey}::${cell.teamKey}`}
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}
-              >
-                <div>
-                  <span className={`app-badge ${statusTone(cell.status)}`}>{statusLabel(cell.status)}</span>{" "}
-                  <strong>{cell.matchLabel}</strong>
-                  <span className="app-muted"> · Team {cell.teamNumber} ({cell.alliance}) · {cell.entryCount} entr{cell.entryCount === 1 ? "y" : "ies"}</span>
+        <ul className="scout-coverage-live-list">
+          {view.gaps.map((cell) => (
+            <li key={`${cell.matchKey}::${cell.teamKey}`}>
+              <div>
+                <div className="scout-coverage-live-row-meta">
+                  <Badge tone={statusTone(cell.status)}>{statusLabel(cell.status)}</Badge>
+                  <strong>
+                    {cell.matchLabel} · Team {cell.teamNumber}
+                  </strong>
                 </div>
-                <button
-                  type="button"
-                  className="app-button secondary"
-                  disabled={busy}
-                  onClick={() =>
-                    mutate({
-                      action: "send-nudge",
-                      matchKey: cell.matchKey,
-                      teamKey: cell.teamKey,
-                      message: `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} scouting entr${cell.entryCount === 1 ? "y" : "ies"} — send a scout.`,
-                    })
-                  }
-                >
-                  Nudge coordinator
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+                <small>
+                  {cell.alliance} alliance · {formatScoutCoverageLiveMetric(cell.entryCount, loaded)} entr
+                  {cell.entryCount === 1 ? "y" : "ies"}
+                </small>
+              </div>
+              <button
+                type="button"
+                className="app-button secondary"
+                disabled={busy}
+                onClick={() =>
+                  void mutate({
+                    action: "send-nudge",
+                    matchKey: cell.matchKey,
+                    teamKey: cell.teamKey,
+                    message: `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} scouting entr${cell.entryCount === 1 ? "y" : "ies"} — send a scout.`,
+                  })
+                }
+              >
+                Nudge coordinator
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </Panel>
   );
@@ -283,46 +485,42 @@ function NudgeLog({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
-  if (view.nudges.length === 0) {
-    return (
-      <EmptyState
-        badge="No nudges yet"
-        badgeTone="setup"
-        title="No coverage nudges sent"
-        description="Send a nudge from the coverage gaps above and it will show up here."
-      />
-    );
-  }
   return (
-    <Panel>
-      <h2 style={{ marginTop: 0 }}>Nudge log</h2>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
-        {view.nudges.map((nudge) => (
-          <li key={nudge.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
-            <div>
-              <strong>{nudge.matchLabel}</strong>
-              <span className="app-muted"> · Team {nudge.teamNumber}</span>
-              <small className="app-muted" style={{ display: "block" }}>
-                {nudge.message}
-              </small>
-              <small className="app-muted">
-                Sent {new Date(nudge.sentAt).toLocaleString()}
-                {nudge.acknowledged ? " · Acknowledged" : ""}
-              </small>
-            </div>
-            {!nudge.acknowledged ? (
-              <button
-                type="button"
-                className="text-button"
-                disabled={busy}
-                onClick={() => mutate({ action: "acknowledge-nudge", nudgeId: nudge.id })}
-              >
-                Acknowledge
-              </button>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+    <Panel className="scout-coverage-live-panel" id="nudge-log">
+      <header>
+        <h2>Coordinator nudge log</h2>
+        <p className="app-muted">Real nudges only — acknowledge once a scout is seated.</p>
+      </header>
+      {view.nudges.length === 0 ? (
+        <p className="app-muted">No coverage nudges sent yet. Send one from the gaps above.</p>
+      ) : (
+        <ul className="scout-coverage-live-list">
+          {view.nudges.map((nudge) => (
+            <li key={nudge.id}>
+              <div>
+                <strong>
+                  {nudge.matchLabel} · Team {nudge.teamNumber}
+                </strong>
+                <small>{nudge.message}</small>
+                <small>
+                  Sent {new Date(nudge.sentAt).toLocaleString()}
+                  {nudge.acknowledged ? " · Acknowledged" : ""}
+                </small>
+              </div>
+              {!nudge.acknowledged ? (
+                <button
+                  type="button"
+                  className="app-button secondary"
+                  disabled={busy}
+                  onClick={() => void mutate({ action: "acknowledge-nudge", nudgeId: nudge.id })}
+                >
+                  Acknowledge
+                </button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
     </Panel>
   );
 }
