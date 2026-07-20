@@ -5,8 +5,10 @@ import {
   Badge,
   type BadgeTone,
   EmptyState,
+  ErrorState,
   PageHeader,
   Panel,
+  SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
 import { crossvalStatusLabel } from "../../lib/scout-crossval";
@@ -123,46 +125,46 @@ function ScoutCrossvalShell({
         <ScoutCrossvalRelatedStrip orgId={orgId} />
       </PageHeader>
       {children}
-      <EmptyState
-        soft
-        badge={
-          shell === "setup"
-            ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
+      {shell === "loading" ? (
+        <div aria-busy="true" aria-label="Loading scout cross-validation">
+          <SoftBlockSkeleton lines={4} />
+        </div>
+      ) : shell === "error" ? (
+        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+      ) : (
+        <EmptyState
+          soft
+          badge={
+            shell === "setup"
+              ? "Setup required"
               : shell === "empty"
                 ? "No entries yet"
                 : copy.badge
-        }
-        badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
-        aria-busy={shell === "loading"}
-      >
-        {shell === "error" && onRetry ? (
-          <button type="button" className="app-button secondary" onClick={onRetry}>
-            Retry
-          </button>
-        ) : null}
-        {shell === "setup" ? (
-          <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
-            {orgId ? "Open Scouting" : "Select workspace"}
-          </a>
-        ) : null}
-        {shell === "empty" ? (
-          <>
-            <a className="app-button" href={scoutingHref}>
-              Log scout entries
+          }
+          badgeTone="setup"
+          title={copy.title}
+          description={error ?? copy.description}
+        >
+          {shell === "setup" ? (
+            <a className="app-button" href={orgId ? scoutingHref : "/workspace"}>
+              {orgId ? "Open Scouting" : "Select workspace"}
             </a>
-            <a className="app-button secondary" href={coverageHref}>
-              Open Coverage Live
-            </a>
-            <a className="app-button secondary" href={accuracyHref}>
-              Open Accuracy
-            </a>
-          </>
-        ) : null}
-      </EmptyState>
+          ) : null}
+          {shell === "empty" ? (
+            <>
+              <a className="app-button" href={scoutingHref}>
+                Log scout entries
+              </a>
+              <a className="app-button secondary" href={coverageHref}>
+                Open Coverage Live
+              </a>
+              <a className="app-button secondary" href={accuracyHref}>
+                Open Accuracy
+              </a>
+            </>
+          ) : null}
+        </EmptyState>
+      )}
       {steps.length > 0 ? (
         <Panel className="scout-crossval-panel" aria-label="Setup steps">
           <header>

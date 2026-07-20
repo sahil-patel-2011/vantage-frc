@@ -1,0 +1,19 @@
+/* Soft-UI Code Deploy Log — never DEMO firmware trails. */
+.cdl-page{display:grid;gap:16px}
+.cdl-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
+.cdl-filter{display:flex;gap:6px;align-items:center}
+.cdl-related{display:flex;flex-wrap:wrap;gap:8px}
+.cdl-next-actions{margin:0}
+.cdl-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.cdl-status-row{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
+.cdl-panel{display:grid;gap:12px}
+.cdl-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.cdl-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.cdl-tip{margin:0}
+.cdl-history{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.cdl-history-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.cdl-history-row small{display:block}
+@media(max-width:900px){
+  .cdl-header-actions{justify-content:flex-start}
+  .cdl-next-actions li,.cdl-setup-steps li,.cdl-history-row{flex-direction:column;align-items:stretch}
+}
