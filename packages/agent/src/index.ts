@@ -213,6 +213,7 @@ export * from "./tools";
 export * from "./auto-tools";
 export * from "./prompt-caching";
 export * from "./http-chat-adapter";
+export * from "./hosted-platform-keys";
 export * from "./resolve-chat-adapter";
 export * from "./sponsored-provider-pool";
 export * from "./byok-model-routing";

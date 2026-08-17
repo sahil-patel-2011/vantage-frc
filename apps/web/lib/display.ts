@@ -127,6 +127,19 @@ export function isDisplayWidgetType(value: string): value is DisplayWidgetType {
   return (DISPLAY_WIDGET_TYPES as readonly string[]).includes(value);
 }
 
+export type DisplayKioskMode = "kiosk" | "pit";
+
+/** Read-only TV URL for a minted display token. Pit mode is the Pi / 16:9 kiosk. */
+export function displayKioskHref(origin: string, token: string, mode: DisplayKioskMode = "kiosk"): string {
+  const path = mode === "pit" ? "/display/pit" : "/display/kiosk";
+  return `${origin.replace(/\/$/, "")}${path}?token=${encodeURIComponent(token)}`;
+}
+
+/** Chromium kiosk launch for a Raspberry Pi or similar pit TV stick. */
+export function pitChromiumKioskCommand(url: string): string {
+  return `chromium-browser --kiosk --noerrdialogs --disable-infobars --app=${url}`;
+}
+
 export const LEAVE_PIT_MS = 15 * 60_000;
 
 export type CountdownState = {

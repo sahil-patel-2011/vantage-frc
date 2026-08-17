@@ -25,9 +25,9 @@ export const ONBOARDING_STEP_COPY: Record<
     description: "Name and youth-safe profile details stay private until review.",
   },
   team: {
-    label: "Team & focus",
+    label: "Team & role",
     shortLabel: "Team",
-    description: "Team number routes your request — it never unlocks a workspace by itself.",
+    description: "Team number is optional. An existing team's number only requests that team's approval — it never auto-joins you.",
   },
   preferences: {
     label: "Review",
@@ -151,6 +151,7 @@ export function onboardingLoadCopy(kind: OnboardingLoadKind, detail?: string | n
 /** Closed-membership callouts tied to access status (never invents approval). */
 export function onboardingMembershipNote(
   accessStatus: "approved" | "invited" | "pending" | "declined" | "withdrawn" | "none" | null | undefined,
+  options?: { preferredTeamNumber?: number | null },
 ): { title: string; body: string } {
   if (accessStatus === "invited") {
     return {
@@ -160,8 +161,8 @@ export function onboardingMembershipNote(
   }
   if (accessStatus === "pending") {
     return {
-      title: "Awaiting approval",
-      body: "An owner or administrator must approve this verified account before any team data opens.",
+      title: "Awaiting that team's approval",
+      body: "That workspace already exists. Only that team's owners or admins can let you in — a team number never joins you by itself.",
     };
   }
   if (accessStatus === "declined") {
@@ -170,8 +171,14 @@ export function onboardingMembershipNote(
       body: "Update the team number if needed and submit again. Closed membership is intentional.",
     };
   }
+  if (!options?.preferredTeamNumber) {
+    return {
+      title: "No team number yet",
+      body: "You can finish without a team number. If you later enter a number for a team that already has Vantage, that team must specifically approve you. You cannot join someone else's workspace automatically.",
+    };
+  }
   return {
     title: "Closed membership",
-    body: "Submitting a team number routes a request only. Access requires invite acceptance or owner/admin approval.",
+    body: "Entering a team number only requests that team's approval. If the workspace already exists, their owners decide — members still also join by exact-email invite. Team heads can claim an unused TBA number at /claim.",
   };
 }

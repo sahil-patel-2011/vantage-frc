@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { platformTbaEnvConfigured } from "@vantage/reference";
 import { loadDataSourceHealth } from "../../../lib/reference-health";
 import { computeStrategyView } from "../../../lib/strategy/compute-strategy";
+import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 import type { StrategyView } from "../../../lib/strategy/types";
 
 export type { StrategyView };
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
   const tbaConfigured = platformTbaEnvConfigured();
 
   try {
+    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg });
     // Strategy always reads Neon last-good cache; attach explicit health/ETag banner state.
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const strategy = await computeStrategyView(client, {

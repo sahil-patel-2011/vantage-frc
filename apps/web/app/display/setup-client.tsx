@@ -7,6 +7,8 @@ import {
   DISPLAY_WIDGET_TYPES,
   PRESET_META,
   PRESET_WIDGETS,
+  displayKioskHref,
+  pitChromiumKioskCommand,
   type DisplayWidget,
 } from "../../lib/display";
 import {
@@ -199,11 +201,11 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     }
   }
 
-  function copyMintedLink() {
+  function copyMintedLink(mode: "kiosk" | "pit" = "pit") {
     if (!minted) return;
-    const url = `${location.origin}/display/kiosk?token=${encodeURIComponent(minted.token)}`;
+    const url = displayKioskHref(location.origin, minted.token, mode);
     void navigator.clipboard.writeText(url);
-    setMessage("Kiosk link copied to clipboard.");
+    setMessage(mode === "pit" ? "Pit / Pi display link copied." : "Kiosk link copied to clipboard.");
     setMessageOk(true);
   }
 
@@ -230,7 +232,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
           </>
         }
         title="Pit TV boards"
-        description="Pick a preset, save a board, then pair a TV with a read-only token. Empty boards stay empty until TBA, Strategy, and Pit ops sync real data — never DEMO matches or ranks."
+        description="Pick a preset, save a board, then pair a TV or Raspberry Pi with a read-only token. Empty boards stay empty until TBA, Strategy, and Pit ops sync real data — never DEMO matches or ranks."
       />
 
       <div className="disp-related">
@@ -271,7 +273,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             <article className={step >= 3 ? "active" : undefined}>
               <span>Step 3</span>
               <strong>Pair TV</strong>
-              <p>Mint a kiosk token and open fullscreen on the pit display.</p>
+              <p>Mint a kiosk token and open fullscreen on the pit display or a Pi stick.</p>
             </article>
           </section>
 
@@ -403,7 +405,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                   </div>
                   <div className="saved-board-actions">
                     <a
-                      href={`/display/kiosk?orgId=${encodeURIComponent(orgId)}&boardId=${board.id}`}
+                      href={`/display/pit?orgId=${encodeURIComponent(orgId)}&boardId=${board.id}`}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -444,10 +446,19 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             {minted ? (
               <div className="token-once">
                 <strong>Token shown once — copy now</strong>
-                <code>{`${location.origin}/display/kiosk?token=${minted.token}`}</code>
-                <button type="button" className="app-button secondary" onClick={copyMintedLink}>
-                  Copy kiosk link
-                </button>
+                <code>{displayKioskHref(location.origin, minted.token, "pit")}</code>
+                <p>
+                  Raspberry Pi / Chromium kiosk:{" "}
+                  <code>{pitChromiumKioskCommand(displayKioskHref(location.origin, minted.token, "pit"))}</code>
+                </p>
+                <div className="display-actions">
+                  <button type="button" className="app-button" onClick={() => copyMintedLink("pit")}>
+                    Copy pit / Pi link
+                  </button>
+                  <button type="button" className="app-button secondary" onClick={() => copyMintedLink("kiosk")}>
+                    Copy standard kiosk link
+                  </button>
+                </div>
               </div>
             ) : null}
 

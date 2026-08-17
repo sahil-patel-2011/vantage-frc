@@ -16,6 +16,8 @@
     "@vantage/core": "*",
     "@vantage/db": "*",
     "@vantage/export-center": "*",
+    "@vantage/game-year": "*",
+    "@vantage/import": "*",
     "@vantage/intel-research": "*",
     "@vantage/prediction-strategy": "*",
     "@vantage/reference": "*",

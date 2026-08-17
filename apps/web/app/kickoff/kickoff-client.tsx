@@ -1,5 +1,6 @@
 "use client";
 
+import { packForYear } from "@vantage/game-year";
 import { useCallback, useEffect, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
@@ -1165,6 +1166,17 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
       </PageHeader>
 
       <BuildHubRelated orgId={orgId} active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
+      {(() => {
+        const pack = packForYear(year);
+        return (
+          <p className="app-muted" role="status">
+            {pack.gameName} {pack.year}
+            {pack.status === "awaiting_manual"
+              ? " — scoring keys stay empty until the official manual publishes. Do not invent BIOCORE metrics."
+              : " — published pack. Scoring keys come from the manual, not DEMO tables."}
+          </p>
+        );
+      })()}
 
       {error ? (
         <p className="telemetry-status" role="alert">

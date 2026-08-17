@@ -103,7 +103,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     return {
       eyebrow: "CHOOSE A WORKSPACE",
       title: "Select a team to add API keys",
-      description: "Open Workspace, pick your organization, then return here to paste OpenAI, Anthropic, or Google keys.",
+      description: "Open Workspace, pick your organization, then return here to paste OpenAI, Anthropic, Google, or OpenRouter keys.",
       badge: "No workspace",
     };
   }
@@ -139,7 +139,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     eyebrow: "YOUR KEYS",
     title: "Workspace AI API keys",
     description:
-      "Paste OpenAI, Anthropic, or Google keys for Free, or buy AI credits for hosted usage. Paid plans add Vantage-hosted AI—credits go further than own keys—with the product built in. Your keys never consume hosted usage.",
+      "Paste OpenAI, Anthropic, Google, or OpenRouter keys, or use hosted AI. Free workspaces use the platform OpenRouter free pool; paid plans use Anthropic Sonnet/Opus. Your keys never consume hosted usage.",
   };
 }
 
@@ -148,12 +148,12 @@ export function aiKeysBillingNote(tier: string | null | undefined): { title: str
   const normalized = (tier ?? "free").toLowerCase();
   if (normalized === "free") {
     return {
-      title: "Free · keys or credits",
-      body: "Free is the starting plan: competition core with your own keys, a local relay, or buy AI credits for hosted usage. Credits go further than typical own-key rates. Paid Individual/Team plans unlock more hosted AI in the product.",
+      title: "Free · hosted free models or your keys",
+      body: "Free workspaces use the platform OpenRouter free pool for chat unless you paste your own OpenAI, Anthropic, Google, or OpenRouter key. A local OpenAI-compatible relay still works. Paid Individual/Team plans use hosted Anthropic (Sonnet, or Opus for CAD/code).",
     };
   }
   return {
     title: "Paid · hosted AI",
-    body: "Prefer Vantage-hosted AI in the product, then buy AI credits or enable PAYG when you need more. Credits go further than running the same models on your own keys. You can still paste BYOK keys; that traffic does not consume hosted usage.",
+    body: "Prefer Vantage-hosted Anthropic (Sonnet for chat/strategy, Opus for CAD/code) in the product, then buy AI credits or enable PAYG when you need more. Credits go further than running the same models on your own keys. You can still paste BYOK keys; that traffic does not consume hosted usage.",
   };
 }

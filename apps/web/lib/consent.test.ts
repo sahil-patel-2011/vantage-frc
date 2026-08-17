@@ -24,7 +24,15 @@ describe("validateRecord", () => {
   it("defaults status to submitted", () => {
     const result = validateRecord({ formId: "f1", personName: "Sam" });
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.value.status).toBe("submitted");
+    if (result.ok) {
+      expect(result.value.status).toBe("submitted");
+      expect(result.value.userId).toBeNull();
+    }
+  });
+  it("keeps an optional membership user id", () => {
+    const result = validateRecord({ formId: "f1", personName: "Sam", userId: "u-9" });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.userId).toBe("u-9");
   });
 });
 

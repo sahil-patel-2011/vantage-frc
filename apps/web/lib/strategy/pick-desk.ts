@@ -1,7 +1,9 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { deriveFoulRisk, deriveReliability } from "@vantage/intel-research";
 import {
+  blendPrivateEpa,
   detectPickDataMode,
+  deriveScoutCapabilities,
   rankPickCandidates,
   type PickCandidate,
   type PickDataMode,
@@ -211,6 +213,17 @@ export async function loadPickDesk(
     const trusted = observationsForStrategyTrust(observations);
     const reliability = trusted.length ? deriveReliability(trusted) : null;
     const foulRisk = trusted.length ? deriveFoulRisk(trusted) : null;
+    const capabilities = trusted.length ? deriveScoutCapabilities(trusted) : null;
+    const pepaRow = blendPrivateEpa({
+      teamKey: metric.teamKey,
+      publicEpa: metric.epaTotal,
+      scout: {
+        autoRate: capabilities?.autoRate ?? null,
+        teleopRate: capabilities?.teleopRate ?? null,
+        endgameRate: capabilities?.endgameRate ?? null,
+        sampleSize: trusted.length,
+      },
+    });
     const hasRecord = metric.wins != null || metric.losses != null || metric.ties != null;
     const conflicts = conflictsByTeam.get(metric.teamKey);
     return {
@@ -228,6 +241,7 @@ export async function loadPickDesk(
       scoutSample: trusted.length,
       reliability: reliability?.score ?? null,
       foulRate: foulRisk?.rate ?? null,
+      pepa: pepaRow.skipped ? null : pepaRow.pepa,
       tbaConflictCount: conflicts?.conflictCount ?? 0,
       tbaConflictFields: conflicts?.conflictFields ?? [],
     };

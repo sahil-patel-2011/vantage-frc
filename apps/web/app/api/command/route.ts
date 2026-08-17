@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { loadEventDayCommand } from "../../../lib/command/load-command";
+import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 import { loadDataSourceHealth } from "../../../lib/reference-health";
 
 export async function GET(request: Request) {
@@ -12,6 +13,7 @@ export async function GET(request: Request) {
   if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
 
   try {
+    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
     const snapshot = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const command = await loadEventDayCommand(client, { orgId, userId: session.user.id });
       const dataSourceHealth = await loadDataSourceHealth(client, orgId);

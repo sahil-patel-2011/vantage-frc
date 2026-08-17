@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "latest",
-    "drizzle-orm": "latest"
+    "drizzle-orm": "latest",
+    "pg": "latest"
   },
   "devDependencies": {
     "@types/pg": "latest"

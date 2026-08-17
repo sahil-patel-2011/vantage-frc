@@ -42,6 +42,7 @@ const LEGACY_REDIRECTS: Array<{ source: string; destination: string }> = [
   { source: "/travel/:path*", destination: "/logistics" },
   { source: "/help", destination: "/docs" },
   { source: "/help/:slug", destination: "/docs/:slug" },
+  { source: "/pit-tv", destination: "/display/pit" },
 ];
 
 const config: NextConfig = {

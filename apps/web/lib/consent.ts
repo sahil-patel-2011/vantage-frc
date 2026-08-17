@@ -54,7 +54,7 @@ export function validateForm(raw: Record<string, unknown>): { ok: true; value: F
 
 export function validateRecord(
   raw: Record<string, unknown>,
-): { ok: true; value: { formId: string; personName: string; guardianName: string; status: RecordStatus; signedOn: string | null } } | { ok: false; error: string } {
+): { ok: true; value: { formId: string; personName: string; guardianName: string; status: RecordStatus; signedOn: string | null; userId: string | null } } | { ok: false; error: string } {
   const formId = typeof raw.formId === "string" ? raw.formId.trim() : "";
   if (!formId) return { ok: false, error: "Form is required" };
   const personName = typeof raw.personName === "string" ? raw.personName.trim() : "";
@@ -63,6 +63,7 @@ export function validateRecord(
   if (!RECORD_STATUSES.includes(status as RecordStatus)) return { ok: false, error: "Invalid status" };
   const signedRaw = typeof raw.signedOn === "string" ? raw.signedOn.trim() : "";
   if (signedRaw && Number.isNaN(new Date(signedRaw).getTime())) return { ok: false, error: "Invalid signed date" };
+  const userId = typeof raw.userId === "string" && raw.userId.trim() ? raw.userId.trim() : null;
   return {
     ok: true,
     value: {
@@ -71,6 +72,7 @@ export function validateRecord(
       guardianName: typeof raw.guardianName === "string" ? raw.guardianName.trim() : "",
       status: status as RecordStatus,
       signedOn: signedRaw || null,
+      userId,
     },
   };
 }
@@ -124,7 +126,7 @@ export function missingFormsFor(
 export type ConsentAction =
   | { action: "create_form"; orgId: string; seasonYear: number; name: string; formType: FormType; required: boolean; documentUrl: string | null }
   | { action: "delete_form"; orgId: string; id: string }
-  | { action: "add_record"; orgId: string; formId: string; personName: string; guardianName: string; status: RecordStatus; signedOn: string | null }
+  | { action: "add_record"; orgId: string; formId: string; personName: string; guardianName: string; status: RecordStatus; signedOn: string | null; userId: string | null }
   | { action: "set_record_status"; orgId: string; id: string; status: RecordStatus }
   | { action: "delete_record"; orgId: string; id: string };
 

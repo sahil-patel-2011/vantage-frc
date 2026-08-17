@@ -30,6 +30,8 @@ type OnboardingState = {
   gender: string | null;
   preferredTeamNumber: number | null;
   teamRole: string | null;
+  crewRole: string | null;
+  roleDescription: string | null;
   primaryFocus: PrimaryFocus;
   displayName: string | null;
   themePreference: "light" | "dark";
@@ -70,6 +72,19 @@ const ROLES = [
   { value: "coach", label: "Coach" },
   { value: "parent", label: "Parent / guardian" },
   { value: "other", label: "Other" },
+] as const;
+
+const CREW_ROLES = [
+  { value: "scout", label: "Scout" },
+  { value: "driver", label: "Driver" },
+  { value: "operator", label: "Operator" },
+  { value: "mechanical", label: "Mechanical" },
+  { value: "electrical", label: "Electrical" },
+  { value: "programming", label: "Programming" },
+  { value: "cad", label: "CAD" },
+  { value: "pit", label: "Pit crew" },
+  { value: "business", label: "Business" },
+  { value: "other", label: "Other crew" },
 ] as const;
 
 const AFFILIATIONS: Array<{ value: TeamAffiliationOption; label: string }> = [
@@ -189,7 +204,10 @@ export default function OnboardingClient() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState("prefer_not_to_say");
   const [teamNumber, setTeamNumber] = useState("");
+  const [noTeam, setNoTeam] = useState(false);
   const [teamRole, setTeamRole] = useState("student");
+  const [crewRole, setCrewRole] = useState("");
+  const [roleDescription, setRoleDescription] = useState("");
   const [primaryFocus, setPrimaryFocus] = useState<PrimaryFocus>("competition");
   const [displayName, setDisplayName] = useState("");
   const [themePreference, setThemePreference] = useState<"light" | "dark">("light");
@@ -214,7 +232,10 @@ export default function OnboardingClient() {
     setDateOfBirth(data.dateOfBirth ?? "");
     setGender(data.gender ?? "prefer_not_to_say");
     setTeamNumber(String(data.lockedTeamNumber ?? data.preferredTeamNumber ?? ""));
+    setNoTeam(Boolean(data.complete && !data.lockedTeamNumber && data.preferredTeamNumber == null));
     setTeamRole(data.teamRole ?? "student");
+    setCrewRole(data.crewRole ?? "");
+    setRoleDescription(data.roleDescription ?? "");
     setPrimaryFocus(data.primaryFocus ?? "competition");
     setDisplayName(data.displayName ?? "");
     setThemePreference(data.themePreference ?? "light");
@@ -298,7 +319,9 @@ export default function OnboardingClient() {
   });
   const stepMeta = useMemo(() => buildOnboardingStepMeta(step), [step]);
   const progressLabel = onboardingProgressLabel(step);
-  const membershipNote = onboardingMembershipNote(state?.accessStatus ?? "none");
+  const membershipNote = onboardingMembershipNote(state?.accessStatus ?? "none", {
+    preferredTeamNumber: state?.preferredTeamNumber ?? (noTeam || !teamNumber.trim() ? null : Number(teamNumber)),
+  });
 
   async function saveProgress(completedStep: "profile" | "team") {
     setBusy(true);
@@ -312,8 +335,10 @@ export default function OnboardingClient() {
       ? { step: "profile" as const, firstName, lastName, dateOfBirth, gender }
       : {
           step: "team" as const,
-          preferredTeamNumber: Number(teamNumber),
+          preferredTeamNumber: locked || (!noTeam && teamNumber.trim()) ? Number(teamNumber) : null,
           teamRole,
+          crewRole: crewRole || null,
+          roleDescription: roleDescription.trim() || null,
           primaryFocus,
         };
     try {
@@ -365,8 +390,10 @@ export default function OnboardingClient() {
           lastName,
           dateOfBirth,
           gender,
-          preferredTeamNumber: Number(teamNumber),
+          preferredTeamNumber: isTeamHead || (!noTeam && teamNumber.trim()) ? Number(teamNumber) : null,
           teamRole,
+          crewRole: crewRole || null,
+          roleDescription: roleDescription.trim() || null,
           primaryFocus,
           displayName: displayName.trim() || undefined,
           themePreference,
@@ -535,20 +562,62 @@ export default function OnboardingClient() {
           <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void saveProgress("team"); }}>
             <div className={`onboarding-team-lock${locked ? " locked" : ""}`}>
               <label>
-                FRC team number
-                <input required inputMode="numeric" min={1} max={99999} value={teamNumber} disabled={locked} onChange={(event) => setTeamNumber(event.target.value.replace(/\D/g, "").slice(0, 5))} />
+                FRC team number <small>{locked ? "" : "Optional"}</small>
+                <input
+                  required={locked || !noTeam}
+                  inputMode="numeric"
+                  min={1}
+                  max={99999}
+                  value={teamNumber}
+                  disabled={locked || noTeam}
+                  onChange={(event) => setTeamNumber(event.target.value.replace(/\D/g, "").slice(0, 5))}
+                />
               </label>
-              <p>
-                {locked
-                  ? `${state.lockedOrgName ?? "Your team"} is already tied to this invitation or request.`
-                  : "We use this to route your request to the correct team leaders. It does not unlock the workspace."}
-              </p>
+              {locked ? (
+                <p>{`${state.lockedOrgName ?? "Your team"} is already tied to this invitation or request.`}</p>
+              ) : (
+                <>
+                  <label className="check-field">
+                    <input
+                      type="checkbox"
+                      checked={noTeam}
+                      onChange={(event) => {
+                        setNoTeam(event.target.checked);
+                        if (event.target.checked) setTeamNumber("");
+                      }}
+                    />
+                    I don&apos;t have a team number yet
+                  </label>
+                  <p>
+                    {noTeam
+                      ? "You can finish without joining anyone. If you later enter a number for a team that already uses Vantage, that team must approve you."
+                      : "A number only requests that team's approval. You cannot join an existing workspace automatically."}
+                  </p>
+                </>
+              )}
             </div>
             <label>
               Your role
               <select value={teamRole} onChange={(event) => setTeamRole(event.target.value)}>
                 {ROLES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
+            </label>
+            <label>
+              Crew / what you do
+              <select value={crewRole} onChange={(event) => setCrewRole(event.target.value)}>
+                <option value="">Select a crew role</option>
+                {CREW_ROLES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+            <label>
+              Describe your role <small>Optional, 280 characters</small>
+              <textarea
+                maxLength={280}
+                rows={3}
+                value={roleDescription}
+                onChange={(event) => setRoleDescription(event.target.value)}
+                placeholder="Scout stand, drive team operator, CAD lead, pit repair, business outreach…"
+              />
             </label>
             {state.isTeamHead ? (
               <>
@@ -605,9 +674,13 @@ export default function OnboardingClient() {
         {step === "preferences" ? (
           <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void finish(); }}>
             <section className="onboarding-review-card" aria-label="Access request summary">
-              <div><span>TEAM</span><strong>FRC {teamNumber}</strong></div>
+              <div><span>TEAM</span><strong>{noTeam || !teamNumber.trim() ? "None yet" : `FRC ${teamNumber}`}</strong></div>
               <div><span>ROLE</span><strong>{ROLES.find((option) => option.value === teamRole)?.label ?? teamRole}</strong></div>
+              <div><span>CREW</span><strong>{CREW_ROLES.find((option) => option.value === crewRole)?.label ?? "Not specified"}</strong></div>
               <div><span>STARTING VIEW</span><strong>{FOCUS_OPTIONS.find((option) => option.value === primaryFocus)?.label}</strong></div>
+              {roleDescription.trim() ? (
+                <div><span>HOW YOU HELP</span><strong>{roleDescription.trim()}</strong></div>
+              ) : null}
             </section>
             {state.isTeamHead ? (
               <FundingFields
@@ -657,14 +730,18 @@ export default function OnboardingClient() {
             <div className="onboarding-security-note">
               <b aria-hidden="true">✓</b>
               <p>
-                <strong>Submit sends a request—not access.</strong>
-                <span> A team owner must approve. Prefer an invite? Use the invitation email.</span>
+                <strong>{noTeam || !teamNumber.trim() ? "Finish without a team" : "Submit sends a request—not access."}</strong>
+                <span>
+                  {noTeam || !teamNumber.trim()
+                    ? " You are not joining anyone. An invite or a later team-number request still needs that team's approval."
+                    : " That team's owners must approve. You cannot join an existing workspace just by knowing the number."}
+                </span>
               </p>
             </div>
             <div className="onboarding-actions">
               <button type="button" className="signin-link" onClick={() => setStep("team")}>Back</button>
               <button className="signin-submit" type="submit" disabled={busy || !canSubmit || (state.isTeamHead && !fundingReady)}>
-                {busy ? "Submitting…" : "Submit access request"}
+                {busy ? "Submitting…" : noTeam || !teamNumber.trim() ? "Finish without a team" : "Submit access request"}
               </button>
             </div>
           </form>
@@ -675,28 +752,59 @@ export default function OnboardingClient() {
             <div className={`onboarding-request-status ${state.accessStatus}`}>
               <i aria-hidden="true" />
               <div>
-                <span>{state.accessStatus === "declined" ? "REQUEST NEEDS ATTENTION" : state.accessStatus === "invited" ? "INVITATION READY" : "AWAITING TEAM APPROVAL"}</span>
-                <strong>{state.workspaceOrgName ?? (state.preferredTeamNumber ? `FRC Team ${state.preferredTeamNumber}` : "Your team workspace")}</strong>
+                <span>
+                  {state.accessStatus === "declined"
+                    ? "REQUEST NEEDS ATTENTION"
+                    : state.accessStatus === "invited"
+                      ? "INVITATION READY"
+                      : state.accessStatus === "pending"
+                        ? "AWAITING THAT TEAM'S APPROVAL"
+                        : "PROFILE COMPLETE"}
+                </span>
+                <strong>
+                  {state.workspaceOrgName
+                    ?? (state.preferredTeamNumber ? `FRC Team ${state.preferredTeamNumber}` : "No team selected")}
+                </strong>
               </div>
             </div>
 
-            <ol className="onboarding-approval-path">
-              <li className="done"><b>1</b><div><strong>Profile submitted</strong><span>Your identity and preferences are saved privately.</span></div></li>
-              <li className={state.accessStatus === "invited" ? "done" : "current"}><b>2</b><div><strong>Team leader review</strong><span>An owner or administrator confirms you belong in the workspace.</span></div></li>
-              <li><b>3</b><div><strong>Secure email handoff</strong><span>Approval ends this onboarding session and sends a link to sign in again.</span></div></li>
-            </ol>
+            {state.accessStatus === "none" && !state.preferredTeamNumber ? (
+              <ol className="onboarding-approval-path">
+                <li className="done"><b>1</b><div><strong>Profile submitted</strong><span>Your identity, role, and how you help the team are saved privately.</span></div></li>
+                <li className="current"><b>2</b><div><strong>Join a team when ready</strong><span>Use an invite, or enter a team number so that team's owners can approve you. You cannot join someone else's workspace automatically.</span></div></li>
+                <li><b>3</b><div><strong>Team-specific approval</strong><span>If that team already has Vantage, only they can let you in.</span></div></li>
+              </ol>
+            ) : (
+              <ol className="onboarding-approval-path">
+                <li className="done"><b>1</b><div><strong>Profile submitted</strong><span>Your identity, role description, and preferences are saved privately.</span></div></li>
+                <li className={state.accessStatus === "invited" ? "done" : "current"}><b>2</b><div><strong>That team's review</strong><span>An owner or administrator of that workspace confirms you belong there.</span></div></li>
+                <li><b>3</b><div><strong>Secure email handoff</strong><span>Approval ends this onboarding session and sends a link to sign in again.</span></div></li>
+              </ol>
+            )}
 
             <p className="onboarding-pending-help">
               {state.accessStatus === "declined"
                 ? "If you selected the wrong team, update the request and submit it again."
-                : "You can close this page. We will not open any team data while the request is pending."}
+                : state.accessStatus === "none" && !state.preferredTeamNumber
+                  ? "You can close this page. Nothing opens a team workspace until that team invites or approves you."
+                  : "You can close this page. We will not open any team data while the request is pending."}
             </p>
             <div className="onboarding-security-note">
               <b aria-hidden="true">✓</b>
-              <p><strong>Your private profile stays private.</strong><span>Team leaders review your verified email, requested role, and focus. They do not receive your birth date or gender.</span></p>
+              <p><strong>Your private profile stays private.</strong><span>Team leaders review your verified email, requested role, crew, and how you described your job. They do not receive your birth date or gender.</span></p>
             </div>
             <div className="onboarding-pending-actions">
-              {state.accessStatus === "declined" ? <button type="button" className="signin-submit" onClick={() => { setMessage(""); setStep("team"); }}>Update request</button> : <button type="button" className="signin-submit" disabled={checking} onClick={() => void refreshApproval()}>{checking ? "Checking…" : "Check approval status"}</button>}
+              {state.accessStatus === "declined" || (state.accessStatus === "none" && !state.preferredTeamNumber) ? (
+                <button type="button" className="signin-submit" onClick={() => { setMessage(""); setStep("team"); }}>
+                  {state.accessStatus === "declined" ? "Update request" : "Add a team number"}
+                </button>
+              ) : (
+                <button type="button" className="signin-submit" disabled={checking} onClick={() => void refreshApproval()}>
+                  {checking ? "Checking…" : "Check approval status"}
+                </button>
+              )}
+              <a className="signin-link" href="/invite">Have an invite?</a>
+              <a className="signin-link" href="/claim">Claim a team</a>
               <button type="button" className="signin-link" disabled={busy} onClick={() => void signOut()}>Sign out</button>
             </div>
           </div>

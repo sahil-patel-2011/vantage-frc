@@ -3,7 +3,7 @@ import AiKeysClient from "./ai-keys-client";
 export const metadata = {
   title: "AI API keys · Vantage",
   description:
-    "Add your OpenAI, Anthropic, or Google Gemini API keys — envelope-encrypted. Free uses your keys; paid adds hosted AI cheaper than own keys.",
+    "Add OpenAI, Anthropic, Google, or OpenRouter keys — envelope-encrypted. Free uses the OpenRouter pool or your keys; paid uses hosted Anthropic.",
 };
 
 export default async function TeamAiKeysPage({

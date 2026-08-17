@@ -31,7 +31,25 @@ export const EXPORT_EXCLUSIONS = [
   "Encryption material and payment credentials",
   "Display tokens and internal security fields",
   "Invite tokens",
+  "Other teams' workspaces (org_id isolation)",
 ] as const;
+
+/** Team-owned AI artifacts a workspace can take with them. Never keys. */
+export const AI_TAKEOUT_TEAM_IDS = [
+  "ai-team-conversations",
+  "ai-team-memory",
+  "ai-team-artifacts",
+  "cad-artifacts",
+  "cad-team-profile",
+  "usage",
+] as const;
+
+/** The requesting member's private AI only — not teammates' private threads. */
+export const AI_TAKEOUT_PRIVATE_IDS = ["ai-private-conversations", "ai-private-memory"] as const;
+
+export function aiTakeoutDomainIds(scope: ExportScope): string[] {
+  return scope === "private" ? [...AI_TAKEOUT_PRIVATE_IDS] : [...AI_TAKEOUT_TEAM_IDS];
+}
 
 function sqlAdapter(
   config: Omit<ExportAdapter, "rows"> & { query: string; params?: (context: ExportContext) => unknown[] },
@@ -289,6 +307,28 @@ export function createExportRegistry() {
       provenance: "Agent threads explicitly shared with the team",
       columns: ["thread_id", "thread_title", "message_id", "role", "content", "provider", "model", "created_at"],
       query: `SELECT t.id AS thread_id,t.title AS thread_title,m.id AS message_id,m.role,m.content,m.provider,m.model,m.created_at FROM agent_threads t JOIN agent_messages m ON m.thread_id=t.id AND m.org_id=t.org_id WHERE t.org_id=$1 AND t.scope='team' AND m.explicitly_shared=true ORDER BY t.created_at,m.created_at`,
+      params: (c) => [c.orgId],
+    }),
+    sqlAdapter({
+      id: "ai-team-memory",
+      fileName: "ai_team_memory.csv",
+      description: "Opt-in team-shared durable AI memory for this workspace only",
+      scope: "team",
+      category: "ai",
+      provenance: "team_memories rows for this org_id — never another team's memory",
+      columns: ["id", "content", "importance", "source_thread_id", "created_at", "updated_at"],
+      query: `SELECT id,content,importance,source_thread_id,created_at,updated_at FROM team_memories WHERE org_id=$1 AND disabled_at IS NULL ORDER BY created_at,id`,
+      params: (c) => [c.orgId],
+    }),
+    sqlAdapter({
+      id: "ai-team-artifacts",
+      fileName: "ai_team_artifacts.csv",
+      description: "AI run artifacts (briefs, drafts) stored for this workspace",
+      scope: "team",
+      category: "ai",
+      provenance: "ai_artifacts for this org_id; no API keys",
+      columns: ["id", "run_id", "kind", "title", "version", "content_json", "created_at"],
+      query: `SELECT id,run_id,kind,title,version,content::text AS content_json,created_at FROM ai_artifacts WHERE org_id=$1 ORDER BY created_at,id`,
       params: (c) => [c.orgId],
     }),
     sqlAdapter({

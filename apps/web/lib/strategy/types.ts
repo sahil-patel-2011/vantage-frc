@@ -4,6 +4,7 @@ import type {
   MatchPrediction,
   OpponentTendency,
   PickListHint,
+  PrivateEdgeView,
   ScoutProvenanceRef,
   StrategyEngineSummary,
   TeamOperationalSignal,
@@ -142,6 +143,8 @@ export type StrategyView =
       engineeringContext: StrategyEngineeringContext[];
       /** Active-season kickoff rules — compliance / CAD must use only this seasonYear. */
       gameRules: StrategyGameRulesContext;
+      /** Org-private scouting+EPA edge (pEPA, differentials, pit pings). Empty when no real scouts. */
+      privateEdge?: PrivateEdgeView;
       sources: Array<{ source: string; syncedAt: string | null; teamKey: string }>;
       computedAt: string;
       /** Soft-UI: active engine from org billing plan. */

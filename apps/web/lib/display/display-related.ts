@@ -93,7 +93,7 @@ export function displaySetupNextActions(input: {
     actions.push({
       id: "mint-token",
       label: "Pair a pit TV",
-      detail: "Mint a read-only kiosk token for a saved board, then open the link fullscreen on the display.",
+      detail: "Mint a read-only token, then open /display/pit on the TV or a Raspberry Pi Chromium kiosk.",
       href: setupHref,
       primary: true,
     });
