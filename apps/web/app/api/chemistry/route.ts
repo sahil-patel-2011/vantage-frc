@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { loadAllianceChemistry } from "../../../lib/chemistry/load-chemistry";
+import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
     const view = await withRls({ userId: session.user.id, orgId }, async (client) =>
       loadAllianceChemistry(client, {
         orgId,

@@ -1,5 +1,6 @@
 import {
   assertCronAuthorized,
+  runNexusEventSync,
   runTbaEventDaySync,
   runTbaSeasonSync,
 } from "../../../../lib/reference/run-ingest";
@@ -62,7 +63,8 @@ async function run(request: Request) {
           eventKeys,
         });
         const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
-        return Response.json({ ok: true, summary, matchAlerts });
+        const nexus = await runNexusEventSync(summary.eventKeys ?? []);
+        return Response.json({ ok: true, summary, matchAlerts, nexus });
       } catch (error) {
         if (error instanceof SyntaxError) {
           // empty body — fall through to query params
@@ -87,7 +89,8 @@ async function run(request: Request) {
       eventKeys: eventKey ? [eventKey] : undefined,
     });
     const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
-    return Response.json({ ok: true, summary, matchAlerts });
+    const nexus = await runNexusEventSync(summary.eventKeys ?? []);
+    return Response.json({ ok: true, summary, matchAlerts, nexus });
   } catch (error) {
     return Response.json(
       {

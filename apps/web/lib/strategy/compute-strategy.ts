@@ -19,6 +19,7 @@ import {
   type TeamOperationalSignal,
   type YearMetricRow,
 } from "@vantage/prediction-strategy";
+import type { PrivateEdgeView } from "@vantage/prediction-strategy";
 import { platformTbaEnvConfigured } from "@vantage/reference";
 import type {
   ReferenceAccessInfo,
@@ -27,6 +28,7 @@ import type {
   StrategyView,
   TbaAccessInfo,
 } from "./types";
+import { computePrivateEdgeView } from "./compute-private-edge";
 import { resolveActiveSeasonYear } from "@vantage/agent";
 import { VANTAGE_PRODUCT_VERSION } from "../product-version";
 
@@ -945,6 +947,25 @@ export async function computeStrategyView(
     // Deploys may briefly run before the cross-feature graph migration lands.
   }
 
+  const ourTeamKey = `frc${row.teamNumber}`;
+  const publicEpaByTeam = new Map(metricRows.map((metric) => [metric.teamKey, metric.epaTotal]));
+  let privateEdge: PrivateEdgeView | undefined;
+  try {
+    privateEdge = await computePrivateEdgeView(client, {
+      orgId: row.orgId,
+      eventKey: row.eventKey!,
+      matchKey: upcoming.matchKey,
+      ourTeamKey,
+      ourAlliance,
+      red,
+      blue,
+      operations,
+      publicEpaByTeam,
+    });
+  } catch {
+    privateEdge = undefined;
+  }
+
   return {
     status: "live",
     orgId: row.orgId,
@@ -970,6 +991,7 @@ export async function computeStrategyView(
     operations,
     engineeringContext,
     gameRules: gameRules!,
+    privateEdge,
     sources,
     computedAt: scoredAt,
     engine,

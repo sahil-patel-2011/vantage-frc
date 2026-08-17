@@ -43,6 +43,7 @@ const PUBLIC_PREFIXES = [
   "/showcase/present",
   "/strategy/board",
   "/display/kiosk",
+  "/display/pit",
   // CAD desktop CLI: pairing codes + device-token relay (no session cookie).
   "/api/cad/pair/start",
   "/api/cad/pair/poll",
@@ -184,8 +185,10 @@ export async function proxy(request: NextRequest) {
     if (
       pathname === "/onboarding" ||
       pathname === "/invite" ||
+      pathname === "/claim" ||
       pathname.startsWith("/api/onboarding") ||
       pathname.startsWith("/api/invites") ||
+      pathname.startsWith("/api/organizations/claim") ||
       pathname.startsWith("/api/auth") ||
       pathname.startsWith("/api/theme")
     ) {

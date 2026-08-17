@@ -35,6 +35,37 @@
   gap: 10px;
 }
 
+.strategy-private-edge header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.strategy-private-edge .eyebrow {
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.strategy-pepa-table {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.strategy-pepa-table li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.strategy-private-edge .app-badge {
+  margin-right: 6px;
+}
+
 .strategy-next-actions-panel li {
   display: flex;
   align-items: center;

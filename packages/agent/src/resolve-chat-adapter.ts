@@ -15,6 +15,13 @@ import {
 import type { ChatAdapter } from "./index";
 import { HttpChatAdapter, type HttpChatAdapterConfig } from "./http-chat-adapter";
 import type { PromptCachePrices } from "./prompt-caching";
+import {
+  OPENROUTER_BASE_URL,
+  openRouterFreeModel,
+  openRouterRequestHeaders,
+  tryCreateHostedAnthropicAdapter,
+  tryCreateOpenRouterFreeAdapter,
+} from "./hosted-platform-keys";
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
 
 export class ChatProviderResolutionError extends Error {
@@ -111,6 +118,10 @@ function normalizeProvider(kind: string): HttpChatAdapterConfig["provider"] | nu
 function isGoogleByokProvider(kind: string): boolean {
   const value = kind.trim().toLowerCase();
   return value === "google" || value === "gemini" || value.includes("gemini");
+}
+
+function isOpenRouterByokProvider(kind: string): boolean {
+  return kind.trim().toLowerCase() === "openrouter";
 }
 
 function isLoopbackUrl(value: string | null | undefined): boolean {
@@ -274,6 +285,7 @@ function availableProvidersFrom(
   const set = new Set<ByokModelProvider>();
   for (const row of orgKeys) {
     if (isGoogleByokProvider(row.provider)) set.add("google");
+    else if (isOpenRouterByokProvider(row.provider)) set.add("openai-compatible");
     else if (normalizeProvider(row.provider) === "openai") set.add("openai");
     else if (normalizeProvider(row.provider) === "anthropic") set.add("anthropic");
   }
@@ -287,8 +299,9 @@ function availableProvidersFrom(
 }
 
 /**
- * Resolve a live HTTP chat adapter for an org (BYOK → custom → managed).
- * Honors fixed / Automode prefs when BYOK keys are present.
+ * Resolve a live HTTP chat adapter for an org.
+ * Order: org BYOK / custom HTTPS → paid managed peek → paid Anthropic env →
+ * free OpenRouter env → local-relay hard-fail → team 1111 sponsored pool.
  * Never falls back to LocalDeterministicChatAdapter — callers get an honest error
  * when no usable key exists. Metering still goes through meteredAI in the orchestrator.
  */
@@ -346,6 +359,7 @@ export async function resolveOrgChatAdapter(
     const hasCloudKey = orgKeys.rows.some(
       (row) =>
         isGoogleByokProvider(row.provider) ||
+        isOpenRouterByokProvider(row.provider) ||
         normalizeProvider(row.provider) === "openai" ||
         normalizeProvider(row.provider) === "anthropic",
     );
@@ -397,6 +411,23 @@ export async function resolveOrgChatAdapter(
         });
       }
     }
+    if (chosen.provider === "openai-compatible") {
+      const row = orgKeys.rows.find((r) => isOpenRouterByokProvider(r.provider));
+      if (row) {
+        const apiKey = await decryptRow(row, input.decrypt);
+        return new HttpChatAdapter({
+          provider: "openai-compatible",
+          model: chosen.modelId || openRouterFreeModel(),
+          apiKey,
+          baseUrl: OPENROUTER_BASE_URL,
+          promptCachingEnabled: input.promptCachingEnabled,
+          prices: pricesFromOption(chosen),
+          fetchImpl: input.fetchImpl,
+          providerLabel: "openrouter",
+          extraHeaders: openRouterRequestHeaders(),
+        });
+      }
+    }
     if (chosen.provider === "openai" || chosen.provider === "anthropic") {
       const row = orgKeys.rows.find((r) => normalizeProvider(r.provider) === chosen.provider);
       if (row) {
@@ -445,6 +476,21 @@ export async function resolveOrgChatAdapter(
 
   // Fallback: first usable org_llm_keys row (pre-Automode behavior).
   for (const row of orgKeys.rows) {
+    if (isOpenRouterByokProvider(row.provider)) {
+      const apiKey = await decryptRow(row, input.decrypt);
+      const model = openRouterFreeModel();
+      return new HttpChatAdapter({
+        provider: "openai-compatible",
+        model,
+        apiKey,
+        baseUrl: OPENROUTER_BASE_URL,
+        promptCachingEnabled: input.promptCachingEnabled,
+        prices: { inputPerMillionUsd: 0, outputPerMillionUsd: 0 },
+        fetchImpl: input.fetchImpl,
+        providerLabel: "openrouter",
+        extraHeaders: openRouterRequestHeaders(),
+      });
+    }
     if (isGoogleByokProvider(row.provider)) {
       const apiKey = await decryptRow(row, input.decrypt);
       const prices = await catalogPrices(client, "google", GOOGLE_DEFAULT_MODEL, GOOGLE_DEFAULT_PRICES);
@@ -528,6 +574,21 @@ export async function resolveOrgChatAdapter(
         });
       }
     }
+    const hostedAnthropic = tryCreateHostedAnthropicAdapter({
+      promptCachingEnabled: input.promptCachingEnabled,
+      fetchImpl: input.fetchImpl,
+      feature: input.feature,
+    });
+    if (hostedAnthropic) return hostedAnthropic;
+  }
+
+  if (tier === "free") {
+    const openrouter = tryCreateOpenRouterFreeAdapter({
+      promptCachingEnabled: input.promptCachingEnabled,
+      fetchImpl: input.fetchImpl,
+      capability: input.feature,
+    });
+    if (openrouter) return openrouter;
   }
 
   if (orgProviders.rows.some((row) => row.localRelay)) {
@@ -552,11 +613,11 @@ export async function resolveOrgChatAdapter(
       throw new ChatProviderResolutionError(sponsoredPromoExpiredMessage(promo.teamNumber ?? 1111));
     }
     throw new ChatProviderResolutionError(
-      "No AI provider key is configured for this organization. Free workspaces need your own OpenAI, Anthropic, or Google key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
+      "No AI provider key is configured for this organization. Free workspaces use the platform OpenRouter free pool when OPENROUTER_API_KEY is set, or your own OpenAI, Anthropic, Google, or OpenRouter key under Team → AI API keys (or a local OpenAI-compatible base URL for Ollama / LM Studio).",
     );
   }
 
   throw new ChatProviderResolutionError(
-    "No AI provider key is available. Add OpenAI / Anthropic / Google under Team → AI API keys, configure a local OpenAI-compatible connector, or ask a platform admin to add a managed hosted key.",
+    "No AI provider key is available. Add OpenAI / Anthropic / Google / OpenRouter under Team → AI API keys, configure a local OpenAI-compatible connector, or set ANTHROPIC_API_KEY for paid hosted Sonnet/Opus.",
   );
 }

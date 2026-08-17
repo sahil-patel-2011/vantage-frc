@@ -23,7 +23,7 @@ describe("onboarding Soft-UI flow helpers", () => {
 
   it("builds readable progress labels", () => {
     expect(onboardingProgressLabel("profile")).toBe("Step 1 of 3 · You");
-    expect(onboardingProgressLabel("team")).toBe("Step 2 of 3 · Team & focus");
+    expect(onboardingProgressLabel("team")).toBe("Step 2 of 3 · Team & role");
     expect(onboardingProgressLabel("preferences")).toBe("Step 3 of 3 · Review");
     expect(onboardingProgressLabel("pending")).toMatch(/waiting for team approval/i);
   });
@@ -81,8 +81,9 @@ describe("onboarding Soft-UI flow helpers", () => {
     expect(onboardingLoadCopy("error").description).toMatch(/DEMO/i);
     expect(onboardingLoadCopy("setup_required").badge).toBe("Setup required");
     expect(onboardingLoadCopy("setup_required", "Sign in required.").description).toBe("Sign in required.");
-    expect(onboardingMembershipNote("none").title).toMatch(/Closed membership/i);
+    expect(onboardingMembershipNote("none").body).toMatch(/cannot join/i);
+    expect(onboardingMembershipNote("none", { preferredTeamNumber: 254 }).body).toMatch(/approval/i);
     expect(onboardingMembershipNote("invited").body).toMatch(/invite/i);
-    expect(onboardingMembershipNote("pending").body).toMatch(/approve/i);
+    expect(onboardingMembershipNote("pending").body).toMatch(/owners|approve/i);
   });
 });

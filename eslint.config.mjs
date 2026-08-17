@@ -25,6 +25,22 @@ export default tseslint.config(
     },
   },
   {
+    files: ["packages/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["apps/*", "**/apps/**"],
+              message: "Domain packages must not import apps/web. Put UI in the composition root.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["apps/**/app/**/*.{ts,tsx}", "apps/**/src/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [

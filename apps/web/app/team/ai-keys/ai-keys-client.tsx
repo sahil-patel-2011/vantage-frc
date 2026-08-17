@@ -213,6 +213,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     openai: "",
     anthropic: "",
     google: "",
+    openrouter: "",
   });
   const [localDraft, setLocalDraft] = useState({ baseUrl: "", model: "llama3.2", apiKey: "" });
   const [routingDraft, setRoutingDraft] = useState<RoutingPrefs>({
@@ -471,7 +472,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         }
         navPath="/team/ai-keys"
         title="AI API keys"
-        description="Bring your own OpenAI, Anthropic, Google, or local OpenAI-compatible server. Fixed model or Automode by task toughness. Never DEMO usage totals."
+        description="Bring your own OpenAI, Anthropic, Google, OpenRouter, or local OpenAI-compatible server. Fixed model or Automode by task toughness. Never DEMO usage totals."
       >
       </PageHeader>
 

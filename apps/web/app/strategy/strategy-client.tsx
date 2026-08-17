@@ -250,6 +250,127 @@ function ContributionColumn({
   );
 }
 
+function teamNum(teamKey: string) {
+  return teamKey.replace(/^frc/i, "");
+}
+
+function PrivateEdgePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }) {
+  const edge = view.privateEdge;
+  if (!edge) {
+    return (
+      <Panel className="strategy-private-edge">
+        <header>
+          <div>
+            <span className="eyebrow">ORG PRIVATE</span>
+            <h2>Private Edge</h2>
+          </div>
+          <span className="app-badge setup">one engine</span>
+        </header>
+        <p className="app-muted">
+          pEPA, scout-calibrated why-we-win/lose, opponent profiles, and pit pings live here — not ten
+          extra tools. Open this match after scouting; nothing is invented from public scores alone.
+        </p>
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel className="strategy-private-edge">
+      <header>
+        <div>
+          <span className="eyebrow">ORG PRIVATE · NOT STATBOTICS</span>
+          <h2>Private Edge</h2>
+        </div>
+        <span className={`app-badge ${edge.status === "live" ? "good" : "setup"}`}>{edge.status}</span>
+      </header>
+      <p className="app-muted">{edge.message}</p>
+      {edge.pepa.length ? (
+        <ul className="strategy-pepa-table">
+          {edge.pepa.map((row) => (
+            <li key={row.teamKey}>
+              <strong>{teamNum(row.teamKey)}</strong>
+              <span>
+                pEPA {row.pepa.toFixed(1)}{" "}
+                <small>
+                  public {row.publicEpa.toFixed(1)} · scout n={row.scoutSample}
+                </small>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {edge.calibrations.length ? (
+        <p className="app-muted">
+          Scout calibration vs TBA:{" "}
+          {edge.calibrations.slice(0, 4).map((row) => (
+            <span key={`${row.scoutUserId}-${row.fieldKey}`} className="app-badge setup">
+              {row.fieldKey} {Math.round(row.agreementRate * 100)}% (n={row.nSamples})
+            </span>
+          ))}
+        </p>
+      ) : null}
+      {edge.differentials.length ? (
+        <>
+          <h3>Why we win / lose</h3>
+          <ul className="factor-table">
+            {edge.differentials.map((row) => (
+              <li key={`${row.field}-${row.headline}`}>
+                <b>{row.field.replace("_", " ")}</b>
+                <span>{row.headline}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {edge.opponentProfiles.map((profile) => (
+        <p key={profile.teamKey} className="app-muted">
+          {profile.headlines.join(" · ")}
+        </p>
+      ))}
+      {edge.counterPick && !edge.counterPick.skipped ? (
+        <p>
+          <strong>Counter-pick:</strong> {edge.counterPick.reason}
+          {edge.counterPick.winRate != null
+            ? ` (${Math.round(edge.counterPick.winRate * 100)}% of ${edge.counterPick.trials} trials)`
+            : ""}
+        </p>
+      ) : null}
+      {!edge.digitalTwin.skipped ? <p>{edge.digitalTwin.headline}</p> : null}
+      {edge.pitAlerts.map((line) => (
+        <p key={line}>
+          <span className="app-badge danger">PIT</span> {line}
+        </p>
+      ))}
+      {edge.cadLinks.length ? (
+        <ul>
+          {edge.cadLinks.slice(0, 4).map((link) => (
+            <li key={`${link.subsystemId}-${link.fieldKey}`}>{link.headline}</li>
+          ))}
+        </ul>
+      ) : null}
+      {edge.knowledge.map((note) => (
+        <p key={`${note.kind}-${note.title}`} className="app-muted">
+          <strong>{note.kind}:</strong> {note.title} — {note.detail}
+        </p>
+      ))}
+      {edge.evidence.length ? (
+        <details>
+          <summary>Scout evidence cards</summary>
+          <ul>
+            {edge.evidence.slice(0, 8).map((card) => (
+              <li key={card.entryId}>
+                {teamNum(card.teamKey)}
+                {card.matchKey ? ` · ${card.matchKey}` : ""} — {card.note ?? "photo/voice attached"}
+                {card.mediaCount ? ` · ${card.mediaCount} media` : ""}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </Panel>
+  );
+}
+
 function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }) {
   const [whatIfOn, setWhatIfOn] = useState(false);
   const [showDeep, setShowDeep] = useState(false);
@@ -505,6 +626,8 @@ function LivePanel({ view }: { view: Extract<StrategyView, { status: "live" }> }
           ))}
         </div>
       </Panel>
+
+      <PrivateEdgePanel view={view} />
 
       <Panel className="strategy-engineering-card">
         <header>

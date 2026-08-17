@@ -5,7 +5,7 @@
 | Competition | `/competition` | Command · My Day · Strategy · Scouting · Form builder · Match checklist · Pick clock · Chemistry (+ More tools) |
 | Event Day Soft-UI | `/command` (also `/competition?tab=command`) | Field-side command; empty/setup + next actions; travel/lodging clarity strip; cross-links to My Day / Schedule / Strategy / Logistics — never DEMO schedule or lodging |
 | My Day Soft-UI | `/my-day` (also `/competition?tab=my-day`) | Live ops / now-next match; empty/setup + next actions; cross-links to Event Day / Schedule / Strategy — never DEMO matches |
-| Strategy Soft-UI | `/strategy`, `/strategy/draft`, `/pick-clock`, `/chemistry` | Main Strategy empty/setup + next actions; cross-links to Pick desk / Scouting / Event Day; explainability + coverage links; never DEMO win rates (no metered insights on matchup — UsageCutoffBanner N/A) |
+| Strategy Soft-UI | `/strategy`, `/strategy/draft`, `/pick-clock`, `/chemistry` | Main Strategy empty/setup + next actions; **Private Edge** (org pEPA + scout differentials + pit pings + opponent profiles) in the same workbench — not ten extra tools; Pick desk uses pEPA when scout n≥3; `GET /api/org/analytics/private-epa`; agent `strategy.private_edge`; never DEMO win rates |
 | Alliance Selection Desk 2.0 | `/alliance-selection-desk` (Competition More tools) | Live 8-alliance pick board with shared slots, scout evidence attach, TBA conflict flags vs `team_event_metrics`, drive-team export/print — never DEMO ranks |
 | Season Planning Workspace | `/season-planning-workspace` (Team More tools) | Goals → milestones → owners + ICS calendar hooks; progress from real attendance / build_tasks only — never DEMO completion % |
 | Scouting Soft-UI | `/scouting` (also `/competition?tab=scouting`) | Main Scouting Hub empty/setup + next actions; OfflineBanner from real outbox counts; cloud voice STT UsageCutoffBanner; cross-links to Forms / Coverage / Strategy / Offline — never DEMO entries |
@@ -14,7 +14,8 @@
 | Offline Shell Soft-UI | `/offline`, `/offline-shell` | Cold SW fallover + precache readiness; next actions + Scouting links; Soft-UI banners on Schedule / Scouting / Calendar / Todos / Logistics — never DEMO sync counts |
 | Match checklist Soft-UI | `/match-checklist` (also `/competition?tab=match-checklist`) | Timed pit runs/items, empty/setup + next actions; cross-links to Event Day / My Day / Scouting / Strategy — never DEMO checklist progress |
 | Defense Planner Soft-UI | `/defense-planner` (Competition More tools) | Mass/drivetrain vs scouted cycle defense plans; empty/setup + next actions; UsageCutoffBanner on metered matchup writes; Strategy / Scouting / Counter-book via hubHref — never DEMO defense metrics |
-| Displays Soft-UI | `/display`, `/display/kiosk` | Pit TV board setup + kiosk; empty/setup + next actions; cross-links to Event Day / Strategy / Scouting; TBA/prediction widgets stay blank until real rows — never DEMO ranks or coverage zeros |
+| Home dashboard | `/dashboard` | Apple-style snap-tile widgets (S/M/L/XL) on a drag-and-drop grid; saved layouts stay 12-col and scale to phone 4-col / tablet 8-col / laptop / TV; Reset restores the standard home — never DEMO widget metrics |
+| Displays Soft-UI | `/display`, `/display/kiosk`, `/display/pit` | Pit TV board setup + kiosk; dedicated pit/Pi mode (`/pit-tv` → `/display/pit`) with large type and tap-to-show chrome for Raspberry Pi Chromium `--kiosk`; empty/setup + next actions; TBA/prediction widgets stay blank until real rows — never DEMO ranks or coverage zeros |
 | Team | `/team` | Calendar · Todos · Messages · Practice · Knowledge · Attendance · Batteries · FMEA (+ More tools) |
 | Bus-Factor Soft-UI | `/bus-factor` (Team More tools) | Workload concentration / overload from logged entries only; empty/setup + next actions; Attendance / My Hours / Task board via hubHref — never DEMO risk scores |
 | Calendar Soft-UI | `/team?tab=calendar` (also `/team/calendar`) | Month / Week / List clarity, empty/setup + next actions; subteams + events only when created — never DEMO events; cross-links to Practice / Attendance / Logistics / Messages |
@@ -29,7 +30,9 @@
 | Business | `/business` | Overview · Budget · Orders · Sponsors · Sponsorship · Grants · … — sponsor tabs hide when org `sponsors_allowed=false` |
 | Media | `/media` | Calendar · Drafts · Reminders · Kit · Impact |
 | Section access | `/team/security` | Owner/admin hub+tab allowlists per scout/viewer (`membership_hub_access`); Hub access panel above capabilities; Help `/help/hub-access`; unrestricted when no rows |
-| Onboarding funding | `/onboarding` · `/team/background` | Team heads set affiliation + school funds / grants / sponsors_allowed; owners/admins can edit post-onboarding on Team Background (`/api/organizations/funding-profile`); Help `/help/funding-profile`; drawer hides sponsor paths when `sponsors_allowed=false` |
+| Onboarding | `/onboarding` · `/start` · `/team/background` | Per-person role + crew + short “how you help” description; team number is optional; entering a number for a team that already has Vantage only requests **that team’s** approval — never auto-join. Team heads set affiliation + school funds / grants / sponsors_allowed; owners/admins can edit post-onboarding on Team Background (`/api/organizations/funding-profile`) |
+| Exports Soft-UI | `/exports` | Audited CSV/ZIP takeout; team AI chats/memory/artifacts are org-scoped; private AI is member-only; keys never included |
+| Postgres host | Neon today · Supabase-ready | Same RLS tenancy; `docs/SUPABASE_CUTOVER.md`; Data API locked down (`0432`) |
 | Business Soft-UI CRM | `/business?tab=sponsors` · `/business?tab=placements` | Soft-UI pipeline / packages / placements; empty/setup + next actions; cross-links to fundraisers, grants, orders, Finance-in-AI; packageId org-scoped — never DEMO sponsor metrics |
 | Business Soft-UI grants | `/business?tab=grants` · `/team/grants` | Pipeline + draft library + guided grant writing; empty/setup + next actions; metered AI hard-stop via UsageCutoffBanner; cross-links to sponsors / fundraisers / writer — never DEMO award $ |
 | Business Soft-UI fundraisers | `/fundraisers` · Overview fundraising glance | Soft-UI events + goal progress from recorded deposits/goals only; empty/setup + next actions; cross-links to Sponsors / Grants / Orders — never DEMO raised totals |
@@ -59,6 +62,12 @@
 | AI Usage Soft-UI | `/ai?tab=usage` (also `/team/usage`) | Metered calls, funding source, denials, member/model breakdown; empty/setup shells; UsageCutoffBanner consistency; Chat/Budgets/Pricing/Account via hubHref/withOrgHref — never DEMO activity |
 | Finance-in-AI Soft-UI | `/ai?tab=finance` | Admin redaction consent toggle + honest empty/off; cross-links to Governance / Chat / Budgets / Memory — never DEMO ledger totals |
 | Connections Soft-UI | `/account?tab=integrations` (also `/cad/connections`) | TBA / Onshape / Google / Discord / GitHub setup_required + empty shells; Connected only from real rows; cross-links to Account / CAD / Discord — never DEMO connected status |
+| Bring your season | `/migrate` (Team More tools, featured) | ICS inbound + paste + pull; scout CSV commit with identity lock; hours CSV → attendance; Notion JSON → calendar/knowledge/tasks; OAuth stays setup_required until `NOTION_CLIENT_ID` — never invent events |
+| Claim team | `/claim` | Self-serve org via `claim_frc_team_workspace` (verified email, unused TBA team number in `teams_ref`); members still exact-email invite; STIMS remains official |
+| Shop hours | `/hours` (Team More tools, featured) | Clock-in kiosk + Lookout CSV import via Bring your season — never DEMO hour totals |
+| Robot | `/robot` (Build More tools, featured) | Subsystem blueprint plus FMEA / batteries / weigh-in / inspection links — Onshape/Fusion stay CAD systems of record |
+| District Advancement | `/district-advancement` | Wires `district-trajectory-sim` compute to a Competition page; EPA cache only — never DEMO qualification odds |
+| Ranking Projection | `/ranking-projection` | Current TBA rank + remaining quals from `matches_ref` — never a invented future rank |
 
 Team admin: `/team/admin`. Redirects: `apps/web/next.config.ts`.
 

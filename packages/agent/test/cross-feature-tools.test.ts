@@ -17,6 +17,7 @@ describe("cross-feature AI tool graph", () => {
     expect(names).toEqual(
       expect.arrayContaining([
         "strategy.match",
+        "strategy.private_edge",
         "strategy.design",
         "kickoff.intelligence",
         "kickoff.rules",
@@ -83,7 +84,15 @@ describe("cross-feature AI tool graph", () => {
       ]),
     );
     expect(CROSS_FEATURE_TOOL_GRAPH.strategy).toEqual(
-      expect.arrayContaining(["cad.design_context", "scouting.team", "scouting.schema", "my_day.summary", "knowledge.search"]),
+      expect.arrayContaining([
+        "strategy.match",
+        "strategy.private_edge",
+        "cad.design_context",
+        "scouting.team",
+        "scouting.schema",
+        "my_day.summary",
+        "knowledge.search",
+      ]),
     );
     expect(CROSS_FEATURE_TOOL_GRAPH.cad_brief).toEqual(
       expect.arrayContaining(["strategy.match", "scouting.team", "scouting.schema", "fmea.open_risks", "knowledge.search"]),

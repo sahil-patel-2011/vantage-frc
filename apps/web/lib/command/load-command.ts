@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { deriveReliability } from "@vantage/intel-research";
+import { nexusAttributionHref, parseNexusLive } from "@vantage/reference";
 import { batteryPitFlags } from "../battery-reliability";
 import { loadRepeatFailureAlerts } from "../fmea/repeat-failures";
 import { loadBatteryFleet } from "../load-battery-fleet";
@@ -15,6 +16,7 @@ import { buildScoutQueue, teamNumberFromKey, withScoutFormHrefs } from "./scout-
 import type {
   CommandMatch,
   CommandMyDay,
+  CommandNexus,
   CommandSnapshot,
   DriveCoachBrief,
   PitFlag,
@@ -44,6 +46,17 @@ function pitFlagsFromPayload(input: {
   const when = input.submittedAt ? ` · ${new Date(input.submittedAt).toLocaleString()}` : "";
   const cite = `${input.source === "pit" ? "Pit scout" : "Match scout"}${when}`;
 
+  if (p.jammed === true || p.intakeJammed === true || p.intake_jam === true) {
+    flags.push({
+      teamKey: input.teamKey,
+      teamNumber,
+      severity: "warning",
+      title: "Intake jam noted",
+      detail: String(p.notes ?? p.mechanicalNotes ?? "Scout marked an intake jam — pit ping."),
+      evidence: cite,
+      source: input.source,
+    });
+  }
   if (p.disabled === true || p.noShow === true) {
     flags.push({
       teamKey: input.teamKey,
@@ -72,7 +85,7 @@ function pitFlagsFromPayload(input: {
   for (const issue of issues.slice(0, 2)) {
     const lower = issue.toLowerCase();
     const severity =
-      /\b(break|dead|fail|smoke|fire|dnp|disabled|can't|cannot)\b/.test(lower) ? "critical"
+      /\b(break|dead|fail|smoke|fire|dnp|disabled|can't|cannot|jam(?:med|ming)?)\b/.test(lower) ? "critical"
       : /\b(slow|hot|loose|worn|concern|risk|intermittent)\b/.test(lower) ? "warning"
       : "info";
     flags.push({
@@ -191,6 +204,7 @@ export async function loadEventDayCommand(
     setupSteps,
     links,
     myDay: null,
+    nexus: null,
   };
 
   if (!row.eventKey || !teamKey) {
@@ -216,6 +230,7 @@ export async function loadEventDayCommand(
       prediction: emptyPrediction("setup_required"),
       record: emptyRecord("setup_required"),
       coverage: emptyCommandCoverage(),
+      nexus: null,
     };
   }
 
@@ -675,6 +690,24 @@ export async function loadEventDayCommand(
     href: links.myDay,
   };
 
+  const nexusRow = await client.query<{ pits: unknown; live: unknown; syncedAt: string | null }>(
+    `SELECT pits, live, synced_at::text AS "syncedAt"
+     FROM nexus_event_snapshots WHERE event_key = $1`,
+    [eventKey],
+  );
+  const snapshot = nexusRow.rows[0];
+  const nexus: CommandNexus | null = snapshot
+    ? {
+        ...parseNexusLive(snapshot.live, eventKey, snapshot.syncedAt ?? computedAt),
+        pitCount:
+          snapshot.pits && typeof snapshot.pits === "object"
+            ? Object.keys(snapshot.pits as Record<string, unknown>).length
+            : 0,
+        syncedAt: snapshot.syncedAt,
+        attributionHref: nexusAttributionHref(),
+      }
+    : null;
+
   return {
     ...base,
     status: matches.length || metric || scoutQueue.length ? "live" : "empty",
@@ -687,6 +720,7 @@ export async function loadEventDayCommand(
     briefs,
     pitFlags: uniqueFlags,
     myDay,
+    nexus,
     prediction,
     record,
     coverage: emptyCommandCoverage({
@@ -760,6 +794,7 @@ function emptySnapshot(input: {
     briefs: [],
     pitFlags: [],
     myDay: null,
+    nexus: null,
     prediction: emptyPrediction("setup_required"),
     record: emptyRecord("setup_required"),
     coverage: emptyCommandCoverage(),

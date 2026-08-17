@@ -6,6 +6,8 @@ import type { RoleOnboardingView, StartTrackView, TrackSource } from "./types";
 
 type ProfileRow = {
   teamRole: string | null;
+  crewRole: string | null;
+  roleDescription: string | null;
   primaryFocus: string | null;
 };
 
@@ -45,7 +47,8 @@ async function loadContext(client: PoolClient, userId: string, orgId: string) {
   if (!member.rows[0]) return null;
 
   const profile = await client.query<ProfileRow>(
-    `SELECT team_role AS "teamRole", primary_focus AS "primaryFocus"
+    `SELECT team_role AS "teamRole", crew_role AS "crewRole",
+            role_description AS "roleDescription", primary_focus AS "primaryFocus"
      FROM profiles WHERE user_id = $1::uuid LIMIT 1`,
     [userId],
   );
@@ -62,6 +65,8 @@ async function loadContext(client: PoolClient, userId: string, orgId: string) {
   return {
     orgName: org.rows[0].name,
     teamRole: profile.rows[0]?.teamRole ?? null,
+    crewRole: profile.rows[0]?.crewRole ?? null,
+    roleDescription: profile.rows[0]?.roleDescription ?? null,
     primaryFocus: profile.rows[0]?.primaryFocus ?? null,
     subteamNames: subteams.rows.map((row) => row.name),
   };
@@ -151,6 +156,8 @@ export async function loadRoleOnboarding(
 
   const assigned = assignOnboardingTracks({
     teamRole: ctx.teamRole,
+    crewRole: ctx.crewRole,
+    roleDescription: ctx.roleDescription,
     primaryFocus: ctx.primaryFocus,
     subteamNames: ctx.subteamNames,
   });
@@ -180,6 +187,8 @@ export async function loadRoleOnboarding(
     orgId,
     orgName: ctx.orgName,
     teamRole: ctx.teamRole,
+    crewRole: ctx.crewRole,
+    roleDescription: ctx.roleDescription,
     primaryFocus: ctx.primaryFocus,
     subteamNames: ctx.subteamNames,
     doneCount,
@@ -205,6 +214,8 @@ export async function setCheckCompleted(
   const context = await loadContext(client, input.userId, input.orgId);
   const assigned = context ? assignOnboardingTracks({
     teamRole: context.teamRole,
+    crewRole: context.crewRole,
+    roleDescription: context.roleDescription,
     primaryFocus: context.primaryFocus,
     subteamNames: context.subteamNames,
   }) : [];
@@ -244,6 +255,8 @@ export async function setTrackDismissed(
   const context = await loadContext(client, input.userId, input.orgId);
   const assigned = context ? assignOnboardingTracks({
     teamRole: context.teamRole,
+    crewRole: context.crewRole,
+    roleDescription: context.roleDescription,
     primaryFocus: context.primaryFocus,
     subteamNames: context.subteamNames,
   }) : [];

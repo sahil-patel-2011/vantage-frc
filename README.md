@@ -54,9 +54,11 @@ platform connectors/models/commercial settings, or cross-org admin APIs. Access 
 row (or re-run bootstrap for `PLATFORM_OWNER_EMAIL`) using the admin database role. Org Team Admin under
 `/team` is separate and stays limited to that org's owner/admin. See `SECURITY_OPERATIONS.md`.
 
-**Database:** Auth and product data use **Neon Postgres** (`DATABASE_AUTH_URL` / `DATABASE_URL`). Do not migrate
-identity or RLS data to Supabase for this stack — Neon is the linked production database. Resend is only the
-email transport for OTP / forgot-password / default email 2FA; it does not replace Google OAuth or Neon.
+**Database:** Auth and product data use Postgres (`DATABASE_AUTH_URL` / `DATABASE_URL` as `vantage_app`,
+`DATABASE_ADMIN_URL` as `vantage_worker`). Production today is **Neon**; a **Supabase Postgres host** cutover
+(same Better Auth + `withRls` org isolation, Data API off) is in `docs/SUPABASE_CUTOVER.md`. Do not put
+`anon` / `service_role` keys in the web app. Resend is only the email transport for OTP / forgot-password /
+default email 2FA; it does not replace Google OAuth or Postgres.
 
 **TBA shared cache:** Platform-global TBA/Statbotics reference tables in Neon are the shared cache. One ingest
 worker uses `TBA_AUTH_KEY` (or an encrypted platform credential) with ETag/`If-None-Match`, in-flight dedupe,

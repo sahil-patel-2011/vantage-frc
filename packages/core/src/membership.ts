@@ -245,6 +245,8 @@ export type WorkspaceAccessRequest = {
   name: string;
   email: string;
   requestedTeamRole: string | null;
+  crewRole: string | null;
+  roleDescription: string | null;
   primaryFocus: "competition" | "build" | "business" | "leadership";
   status: "pending" | "approved" | "declined" | "withdrawn";
   membershipRole: OrgRole | null;
@@ -260,6 +262,7 @@ export async function listWorkspaceAccessRequests(
   const result = await client.query<WorkspaceAccessRequest>(
     `SELECT r.id,r.user_id AS "userId",u.name,u.email,
             r.requested_team_role AS "requestedTeamRole",r.primary_focus AS "primaryFocus",
+            r.crew_role AS "crewRole",r.role_description AS "roleDescription",
             r.status,r.membership_role AS "membershipRole",
             r.created_at::text AS "createdAt",r.reviewed_at::text AS "reviewedAt"
      FROM workspace_access_requests r

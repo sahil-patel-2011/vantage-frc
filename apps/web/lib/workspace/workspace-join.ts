@@ -153,8 +153,8 @@ export function workspaceShellCopy(kind: WorkspaceShellKind): WorkspaceJoinCopy 
         kind: "empty",
         eyebrow: "JOIN",
         title: "No team yet",
-        description: "Ask a coach for an invite to your email, then open the link.",
-        badge: "Invite only",
+        description: "Claim your FRC team number, or open an invite sent to your login email.",
+        badge: "Claim or invite",
       };
   }
 }
@@ -176,6 +176,12 @@ export function workspaceSetupSteps(orgId?: string | null): WorkspaceSetupStep[]
       label: "Open invite from email",
       detail: "Use the full link sent to your login address.",
       href: "/invite",
+    },
+    {
+      id: "claim",
+      label: "Claim FRC team",
+      detail: "Create a workspace for an unused TBA team number.",
+      href: "/claim",
     },
   ];
 }
@@ -206,6 +212,12 @@ export function workspaceJoinNextActions(
       detail: "Use the full invitation link.",
       href: "/invite",
       primary: true,
+    },
+    {
+      id: "claim",
+      label: "Claim your FRC team",
+      detail: "Verified accounts can create one workspace per unused TBA team number.",
+      href: "/claim",
     },
   ];
 }

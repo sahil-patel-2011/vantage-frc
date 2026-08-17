@@ -8,12 +8,19 @@ import {
   DEFAULT_DASHBOARD_LAYOUT,
   SECONDARY_WIDGET_TYPES,
   WIDGET_CATALOG,
+  WIDGET_SIZE_KEYS,
+  WIDGET_SIZE_LABEL,
+  applyWidgetSize,
   canAccessWidget,
   catalogEntry,
+  dashboardGridForWidth,
   findDashboardSlot,
+  inferWidgetSize,
   packDashboardLayout,
+  scaleLayoutToCols,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
+  type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import {
@@ -280,14 +287,23 @@ export default function DashboardClient() {
     return ordered;
   }, [personalBoards, orgBoards, board]);
 
+  function currentGrid() {
+    return dashboardGridForWidth(width || 1280);
+  }
+
   function onLayoutChange(next: Layout) {
     if (!editing) return;
+    const cols = currentGrid().cols;
     setLayout((current) =>
-      current.map((item) => {
-        const match = next.find((row) => row.i === item.i);
-        if (!match) return item;
-        return { ...item, x: match.x, y: match.y, w: match.w, h: match.h };
-      }),
+      scaleLayoutToCols(
+        current.map((item) => {
+          const match = next.find((row) => row.i === item.i);
+          if (!match) return item;
+          return { ...item, x: match.x, y: match.y, w: match.w, h: match.h };
+        }),
+        cols,
+        DASHBOARD_COLUMNS,
+      ),
     );
   }
 
@@ -299,7 +315,17 @@ export default function DashboardClient() {
     }
     const entry = catalogEntry(type);
     if (!entry) return;
-    const position = drop ?? findDashboardSlot(layout, entry.defaultW, entry.defaultH);
+    const grid = currentGrid();
+    const dropCanonical = drop
+      ? scaleLayoutToCols(
+          [{ i: "drop", type, x: drop.x, y: drop.y, w: entry.defaultW, h: entry.defaultH }],
+          grid.cols,
+          DASHBOARD_COLUMNS,
+        )[0]
+      : null;
+    const position = dropCanonical
+      ? { x: dropCanonical.x, y: dropCanonical.y }
+      : findDashboardSlot(layout, entry.defaultW, entry.defaultH);
     setLayout((current) => [
       ...current,
       {
@@ -356,17 +382,11 @@ export default function DashboardClient() {
     setMessage("Widgets snapped upward into a clean, collision-free layout.");
   }
 
-  function cycleWidgetSize(id: string) {
+  function setWidgetSize(id: string, size: WidgetSizeKey) {
     setLayout((current) => {
       const resized = current.map((item) => {
         if (item.i !== id) return item;
-        const entry = catalogEntry(item.type);
-        if (!entry) return item;
-        const atCompact = item.w === entry.minW && item.h === entry.minH;
-        const atDefault = item.w === entry.defaultW && item.h === entry.defaultH;
-        if (atCompact) return { ...item, w: entry.defaultW, h: entry.defaultH };
-        if (atDefault) return { ...item, w: DASHBOARD_COLUMNS, h: Math.max(entry.defaultH, entry.minH) };
-        return { ...item, w: entry.minW, h: entry.minH };
+        return applyWidgetSize(item, size, catalogEntry(item.type));
       });
       return packDashboardLayout(resized);
     });
@@ -683,14 +703,15 @@ export default function DashboardClient() {
     hasAiProvider,
     role,
   });
-  const isNarrow = mounted && width < 640;
-  const gridLayout: Layout = layout.map((item, index) => ({
+  const grid = dashboardGridForWidth(mounted ? width : 1280);
+  const displayLayout = scaleLayoutToCols(layout, DASHBOARD_COLUMNS, grid.cols);
+  const gridLayout: Layout = displayLayout.map((item) => ({
     i: item.i,
-    x: isNarrow ? 0 : item.x,
-    y: isNarrow ? index : item.y,
-    w: isNarrow ? 1 : item.w,
+    x: item.x,
+    y: item.y,
+    w: item.w,
     h: item.h,
-    minW: isNarrow ? 1 : (item.minW ?? 2),
+    minW: 1,
     minH: item.minH ?? 2,
     static: !editing,
   }));
@@ -700,16 +721,16 @@ export default function DashboardClient() {
         i: "__vantage_widget_drop__",
         x: 0,
         y: 0,
-        w: isNarrow ? 1 : externalCatalogEntry.defaultW,
+        w: Math.max(1, Math.round((externalCatalogEntry.defaultW * grid.cols) / DASHBOARD_COLUMNS)),
         h: externalCatalogEntry.defaultH,
-        minW: isNarrow ? 1 : externalCatalogEntry.minW,
+        minW: 1,
         minH: externalCatalogEntry.minH,
       }
     : undefined;
   const canvasWidth = editing ? Math.max(1, width - 20) : width;
 
   return (
-    <main className={`dash-home${editing ? " is-editing" : ""}`}>
+    <main className={`dash-home${editing ? " is-editing" : ""}`} data-grid={grid.label}>
       <header className="dash-home-header">
         <div>
           <span className="breadcrumbs">
@@ -1000,7 +1021,7 @@ export default function DashboardClient() {
               return (
                 <button
                   className={externalWidget === entry.type ? "dragging" : ""}
-                  draggable={!isNarrow}
+                  draggable
                   key={entry.type}
                   type="button"
                   title={`${entry.description}. Drag onto the board or click to add.`}
@@ -1025,7 +1046,12 @@ export default function DashboardClient() {
         className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${externalWidget ? " receiving-widget" : ""}`}
         aria-label="Dashboard widgets"
       >
-        {editing ? <div className="dash-grid-guide"><span>12-column snap grid</span><small>Drag by grip · resize from corners</small></div> : null}
+        {editing ? (
+          <div className="dash-grid-guide">
+            <span>{grid.cols}-column snap · {grid.label}</span>
+            <small>Drag to move · S/M/L/XL like Apple widgets · corners resize</small>
+          </div>
+        ) : null}
         {snapFeedback ? (
           <output className="dash-snap-hud" aria-live="polite">
             <strong>{snapFeedback.mode}</strong>
@@ -1051,9 +1077,9 @@ export default function DashboardClient() {
               width={canvasWidth}
               layout={gridLayout}
               gridConfig={{
-                cols: isNarrow ? 1 : DASHBOARD_COLUMNS,
-                rowHeight: 56,
-                margin: [12, 12],
+                cols: grid.cols,
+                rowHeight: grid.rowHeight,
+                margin: grid.margin,
                 containerPadding: [0, 0],
               }}
               dragConfig={{ enabled: editing, bounded: true, handle: ".dash-drag-handle", threshold: 3 }}
@@ -1061,7 +1087,7 @@ export default function DashboardClient() {
               dropConfig={{
                 enabled: editing,
                 defaultItem: {
-                  w: droppingItem?.w ?? (isNarrow ? 1 : 4),
+                  w: droppingItem?.w ?? Math.max(1, Math.round((4 * grid.cols) / DASHBOARD_COLUMNS)),
                   h: droppingItem?.h ?? 3,
                 },
               }}
@@ -1069,7 +1095,7 @@ export default function DashboardClient() {
               compactor={verticalCompactor}
               onLayoutChange={onLayoutChange}
               onDropDragOver={() => externalCatalogEntry ? {
-                w: isNarrow ? 1 : externalCatalogEntry.defaultW,
+                w: Math.max(1, Math.round((externalCatalogEntry.defaultW * grid.cols) / DASHBOARD_COLUMNS)),
                 h: externalCatalogEntry.defaultH,
               } : false}
               onDrop={dropPaletteWidget}
@@ -1100,15 +1126,21 @@ export default function DashboardClient() {
                         <span>Remove</span>
                       </button>
                       <div className="dash-item-tools-right">
-                        <button
-                          type="button"
-                          className="dash-size-btn"
-                          title="Cycle compact, default, and full-width sizes"
-                          aria-label={`Change size of ${catalogEntry(item.type)?.label ?? item.type}`}
-                          onClick={() => cycleWidgetSize(item.i)}
-                        >
-                          {item.w} × {item.h}
-                        </button>
+                        <div className="dash-size-chips" role="group" aria-label="Widget size">
+                          {WIDGET_SIZE_KEYS.map((size) => (
+                            <button
+                              key={size}
+                              type="button"
+                              className="dash-size-btn"
+                              data-active={inferWidgetSize(item) === size}
+                              title={`${WIDGET_SIZE_LABEL[size]} widget`}
+                              aria-pressed={inferWidgetSize(item) === size}
+                              onClick={() => setWidgetSize(item.i, size)}
+                            >
+                              {WIDGET_SIZE_LABEL[size]}
+                            </button>
+                          ))}
+                        </div>
                         <button
                           type="button"
                           className="dash-drag-handle dash-drag-surface"
@@ -1181,7 +1213,7 @@ export default function DashboardClient() {
             Cancel
           </button>
           <button className="dash-dock-ghost" type="button" disabled={saving} onClick={() => void resetDefault()}>
-            Reset
+            Reset to standard
           </button>
           <button className="dash-dock-ghost dash-dock-tidy" type="button" disabled={saving} onClick={tidyLayout}>
             <span aria-hidden="true">⌗</span> Snap &amp; tidy

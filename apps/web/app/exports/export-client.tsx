@@ -38,6 +38,7 @@ const EXCLUSIONS = [
   "Encryption material and payment credentials",
   "Display tokens and internal security fields",
   "Invite tokens",
+  "Other teams' workspaces (org_id isolation)",
 ];
 
 function preselectedFromUrl(): string[] {
@@ -228,8 +229,8 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
           <span className="breadcrumbs">Team / Export Center</span>
           <h1>Exports</h1>
           <p>
-            Download audited CSV files or ZIP archives of team data. Every file carries source provenance; credentials
-            and security secrets are never included.
+            Download this team&apos;s data — including AI chats and memory — as audited CSV or ZIP. Each workspace is
+            isolated; credentials and other teams&apos; rows are never included.
           </p>
         </div>
         <div className="export-header-actions">
@@ -390,6 +391,29 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
             </button>
             <button type="button" className="app-button secondary" disabled={busy} onClick={() => void createZip(true)}>
               ZIP all {scope === "team" ? "team" : "private"} data
+            </button>
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy}
+              onClick={() => {
+                const ids = available
+                  .filter((item) =>
+                    scope === "private"
+                      ? item.id === "ai-private-conversations" || item.id === "ai-private-memory"
+                      : item.category === "ai" || item.id === "usage",
+                  )
+                  .map((item) => item.id);
+                setSelected(ids);
+                setMessage(
+                  scope === "private"
+                    ? "Selected your private AI chats and memory only."
+                    : "Selected this team's AI chats, memory, and artifacts — not other workspaces.",
+                );
+                setOk(true);
+              }}
+            >
+              {scope === "private" ? "Select my AI takeout" : "Select this team's AI takeout"}
             </button>
           </div>
         </section>

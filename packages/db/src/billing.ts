@@ -1,6 +1,6 @@
-import { Pool } from "@neondatabase/serverless";
+import { createSqlPool } from "./pool";
 
-let pool: Pool | undefined;
+let pool: ReturnType<typeof createSqlPool> | undefined;
 export function getBillingPool() {
   const connectionString =
     process.env.DATABASE_BILLING_URL ??
@@ -13,6 +13,6 @@ export function getBillingPool() {
   ) {
     throw new Error("DATABASE_BILLING_URL or DATABASE_URL is required for Stripe webhooks");
   }
-  pool ??= new Pool({ connectionString });
+  pool ??= createSqlPool(connectionString);
   return pool;
 }

@@ -10,6 +10,7 @@
   "dependencies": {
     "@aws-sdk/client-kms": "latest",
     "@neondatabase/serverless": "latest",
+    "@vantage/db": "*",
     "stripe": "latest"
   }
 }

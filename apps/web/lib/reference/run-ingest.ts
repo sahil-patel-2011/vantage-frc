@@ -29,6 +29,11 @@ export async function runTbaEventDaySync(
   });
 }
 
+export async function runNexusEventSync(eventKeys: string[]) {
+  const { syncNexusEvents } = await import("@vantage/reference/nexus-ingest");
+  return syncNexusEvents(eventKeys);
+}
+
 export function assertCronAuthorized(request: Request): Response | null {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret) {

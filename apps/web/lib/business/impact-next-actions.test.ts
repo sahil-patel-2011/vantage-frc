@@ -10,7 +10,14 @@ describe("impactNextActions Soft-UI helpers", () => {
 
   it("points empty impact log at first activity plus Awards / Grants / Sponsors", () => {
     const actions = impactNextActions({ orgId: "org-1", activityCount: 0, seasonYear: 2026 });
-    expect(actions.map((a) => a.id)).toEqual(["first-activity", "awards", "evidence", "grants", "sponsors"]);
+    expect(actions.map((a) => a.id)).toEqual([
+      "first-activity",
+      "awards",
+      "evidence",
+      "grants",
+      "sponsors",
+      "first-dashboard",
+    ]);
     expect(actions[0]?.href).toContain("/impact");
     expect(actions[0]?.href).toContain("orgId=org-1");
     expect(actions[0]?.href).toContain("season=2026");

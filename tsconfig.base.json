@@ -31,6 +31,9 @@
       "@vantage/reference/production-worker": [
         "packages/reference/src/production-worker.ts"
       ],
+      "@vantage/reference/nexus-ingest": [
+        "packages/reference/src/nexus-ingest.ts"
+      ],
       "@vantage/scouting": ["packages/scouting/src/index.ts"],
       "@vantage/scouting/repository": ["packages/scouting/src/repository.ts"],
       "@vantage/intel-research": ["packages/intel-research/src/index.ts"],
@@ -45,6 +48,8 @@
       "@vantage/cad": ["packages/cad/src/index.ts"],
       "@vantage/cad/fusion-relay": ["packages/cad/src/fusion-relay.ts"],
       "@vantage/export-center": ["packages/export-center/src/index.ts"],
+      "@vantage/game-year": ["packages/game-year/src/index.ts"],
+      "@vantage/import": ["packages/import/src/index.ts"],
       "@vantage/prediction-strategy": ["packages/prediction-strategy/src/index.ts"]
     }
   }

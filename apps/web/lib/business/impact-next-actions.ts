@@ -101,5 +101,12 @@ export function impactNextActions(ctx: ImpactNextActionContext): ImpactNextActio
     href: hubHref("/business", "sponsors", orgId),
   });
 
-  return actions.slice(0, 5);
+  actions.push({
+    id: "first-dashboard",
+    label: "Submit on FIRST Dashboard",
+    detail: "Vantage stores evidence and essays. Awards still submit on FIRST's site — never a Vantage submit button.",
+    href: "https://www.firstinspires.org/",
+  });
+
+  return actions.slice(0, 6);
 }

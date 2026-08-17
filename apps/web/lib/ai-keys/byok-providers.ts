@@ -1,6 +1,6 @@
 /** First-party BYOK providers for `/team/ai-keys` — stored in `org_llm_keys`. */
 
-export const BYOK_PROVIDERS = ["openai", "anthropic", "google"] as const;
+export const BYOK_PROVIDERS = ["openai", "anthropic", "google", "openrouter"] as const;
 export type ByokProvider = (typeof BYOK_PROVIDERS)[number];
 
 export type ByokProviderMeta = {
@@ -38,6 +38,14 @@ export const BYOK_PROVIDER_META: Record<ByokProvider, ByokProviderMeta> = {
     docsHint: "Gemini API key from AI Studio / Google AI",
     storageLabel: "Google Gemini (BYOK)",
   },
+  openrouter: {
+    id: "openrouter",
+    label: "OpenRouter",
+    shortLabel: "OpenRouter",
+    placeholder: "sk-or-v1-…",
+    docsHint: "API key from openrouter.ai — routes to free or paid models you choose",
+    storageLabel: "OpenRouter (BYOK)",
+  },
 };
 
 export function isByokProvider(value: string): value is ByokProvider {
@@ -59,7 +67,7 @@ export type ByokKeyStatus = {
   lastUsedAt: string | null;
 };
 
-/** Build the three Soft-UI status rows — configured / missing, never secret material. */
+/** Build the Soft-UI status rows — configured / missing, never secret material. */
 export function buildByokKeyStatuses(
   rows: Array<{ provider: string; createdAt: string | null; lastUsedAt: string | null }>,
 ): ByokKeyStatus[] {

@@ -1,6 +1,7 @@
 ﻿import { describe, expect, it } from "vitest";
 import {
   countdownState,
+  displayKioskHref,
   formatAlliance,
   hasEventCommandSignal,
   hasReadinessSignal,
@@ -8,6 +9,7 @@ import {
   isDisplayPreset,
   isDisplayWidgetType,
   matchLabel,
+  pitChromiumKioskCommand,
   rankLabel,
   recordLabel,
   stripFrc,
@@ -19,6 +21,14 @@ describe("display helpers", () => {
     expect(stripFrc("frc1678")).toBe("1678");
     expect(formatAlliance(["frc254", "frc1678"])).toBe("254 · 1678");
     expect(formatAlliance([])).toBe("-");
+  });
+
+  it("builds pit / Pi kiosk URLs without inventing board data", () => {
+    expect(displayKioskHref("https://app.example", "tok_1", "pit")).toBe(
+      "https://app.example/display/pit?token=tok_1",
+    );
+    expect(displayKioskHref("https://app.example/", "tok_1", "kiosk")).toContain("/display/kiosk?token=");
+    expect(pitChromiumKioskCommand("https://app.example/display/pit?token=tok_1")).toMatch(/chromium-browser --kiosk/);
   });
 
   it("labels matches and validates presets/widgets", () => {

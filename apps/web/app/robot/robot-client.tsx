@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   cadProvider,
   robotRollup,
@@ -422,6 +423,14 @@ export default function RobotClient() {
           </button>
         ) : null}
       </form>
+
+      <nav className="intel-actions" aria-label="Robot systems of record">
+        <a href={withOrgHref("/fmea", orgId)}>FMEA</a>
+        <a href={withOrgHref("/batteries", orgId)}>Batteries</a>
+        <a href={withOrgHref("/robot-weigh-in", orgId)}>Weigh-in</a>
+        <a href={withOrgHref("/inspection-copilot", orgId)}>Inspection</a>
+        <a href={withOrgHref("/hours", orgId)}>Hours</a>
+      </nav>
 
       <AiInsightPanel
         orgId={orgId}

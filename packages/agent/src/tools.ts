@@ -59,6 +59,7 @@ export const SHARED_STRATEGY_CAD_TOOLS = [
   "rules.compliance",
   "strategy.design",
   "strategy.match",
+  "strategy.private_edge",
   "scouting.team",
   "scouting.schema",
   "reference.team",
@@ -522,6 +523,79 @@ export function createVantageToolRegistry(): AIToolRegistry {
                 ? "Scout fields listed in scoutTbaConflicts contradicted TBA official results — do not trust those values."
                 : "No TBA-contradicted scout fields recorded for alliance teams.",
           };
+        },
+      }),
+    )
+    .register(
+      tool({
+        name: "strategy.private_edge",
+        description:
+          "Read org-private pEPA, scout-field calibration vs TBA, opponent scout profiles, and scout-to-pit signals for the active event. Empty when no org scouts — never invents Statbotics clones.",
+        parseInput: (value) => {
+          const input = object(value);
+          return {
+            eventKey: String(input.eventKey ?? "").trim() || undefined,
+            matchKey: String(input.matchKey ?? "").trim() || undefined,
+          };
+        },
+        parseOutput: objectOutput,
+        async execute({ client, orgId, activeEventKey }, input) {
+          const eventKey = input.eventKey || activeEventKey;
+          if (!eventKey) {
+            return {
+              status: "setup_required",
+              message: "Set an active event to read org-private pEPA.",
+              teams: [],
+            };
+          }
+          try {
+            const snapshots = await client.query(
+              `SELECT team_key AS "teamKey", public_epa::float AS "publicEpa", pepa::float AS pepa,
+                      scout_component_epa::float AS "scoutComponentEpa", scout_sample AS "scoutSample",
+                      components, computed_at::text AS "computedAt"
+               FROM private_epa_snapshots
+               WHERE org_id = $1 AND event_key = $2
+               ORDER BY pepa DESC
+               LIMIT 40`,
+              [orgId, eventKey],
+            );
+            const calibrations = await client.query(
+              `SELECT field_key AS "fieldKey", scout_user_id::text AS "scoutUserId",
+                      agreement_rate::float AS "agreementRate", n_samples AS "nSamples"
+               FROM scout_field_reliability
+               WHERE org_id = $1 AND event_key = $2
+               ORDER BY n_samples DESC
+               LIMIT 20`,
+              [orgId, eventKey],
+            );
+            const pit = await client.query(
+              `SELECT team_key AS "teamKey", match_key AS "matchKey", signal_kind AS "signalKind",
+                      note, alliance_color AS "alliance", created_at::text AS "createdAt"
+               FROM scout_pit_signals
+               WHERE org_id = $1 AND event_key = $2
+               ORDER BY created_at DESC
+               LIMIT 20`,
+              [orgId, eventKey],
+            );
+            return {
+              status: snapshots.rows.length ? "live" : "empty",
+              eventKey,
+              matchKey: input.matchKey ?? null,
+              teams: snapshots.rows,
+              calibrations: calibrations.rows,
+              pitSignals: pit.rows,
+              emptyReason: snapshots.rows.length
+                ? null
+                : "No org pEPA yet — scout 3+ matches and open Strategy. Public EPA alone is not cloned.",
+            };
+          } catch {
+            return {
+              status: "setup_required",
+              message: "Private Edge tables are not migrated yet.",
+              eventKey,
+              teams: [],
+            };
+          }
         },
       }),
     )

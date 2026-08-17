@@ -46,6 +46,83 @@ export type WidgetCatalogEntry = {
 
 export const DASHBOARD_COLUMNS = 12;
 
+/** iOS-style widget sizes. Canonical cells are for the 12-column laptop grid. */
+export const WIDGET_SIZE_KEYS = ["s", "m", "l", "xl"] as const;
+export type WidgetSizeKey = (typeof WIDGET_SIZE_KEYS)[number];
+
+export const WIDGET_SIZE_LABEL: Record<WidgetSizeKey, string> = {
+  s: "S",
+  m: "M",
+  l: "L",
+  xl: "XL",
+};
+
+/** Small / medium / large / extra-large on the saved 12-column board. */
+export const WIDGET_SIZE_CELLS_12: Record<WidgetSizeKey, { w: number; h: number }> = {
+  s: { w: 3, h: 2 },
+  m: { w: 4, h: 3 },
+  l: { w: 6, h: 4 },
+  xl: { w: 12, h: 4 },
+};
+
+export type DashboardGrid = {
+  cols: number;
+  rowHeight: number;
+  margin: [number, number];
+  label: "phone" | "tablet" | "laptop" | "tv";
+};
+
+/** Phone 4-col, tablet 8-col, laptop 12-col, pit TV larger tiles. */
+export function dashboardGridForWidth(width: number): DashboardGrid {
+  if (width < 640) return { cols: 4, rowHeight: 78, margin: [10, 10], label: "phone" };
+  if (width < 1024) return { cols: 8, rowHeight: 64, margin: [12, 12], label: "tablet" };
+  if (width >= 1600) return { cols: 12, rowHeight: 84, margin: [16, 16], label: "tv" };
+  return { cols: 12, rowHeight: 56, margin: [12, 12], label: "laptop" };
+}
+
+export function scaleLayoutToCols(
+  layout: DashboardWidgetLayout[],
+  fromCols: number,
+  toCols: number,
+): DashboardWidgetLayout[] {
+  if (fromCols === toCols || fromCols < 1 || toCols < 1) {
+    return layout.map((item) => ({ ...item }));
+  }
+  const factor = toCols / fromCols;
+  return layout.map((item) => {
+    const w = Math.max(1, Math.min(toCols, Math.round(item.w * factor)));
+    const x = Math.max(0, Math.min(toCols - w, Math.round(item.x * factor)));
+    return { ...item, x, w, minW: 1 };
+  });
+}
+
+export function applyWidgetSize(
+  item: DashboardWidgetLayout,
+  size: WidgetSizeKey,
+  entry?: WidgetCatalogEntry,
+): DashboardWidgetLayout {
+  const cells = WIDGET_SIZE_CELLS_12[size];
+  const minW = entry?.minW ?? item.minW ?? 1;
+  const minH = entry?.minH ?? item.minH ?? 1;
+  const w = Math.min(DASHBOARD_COLUMNS, Math.max(minW, cells.w));
+  const h = Math.max(minH, cells.h);
+  return { ...item, w, h, minW, minH };
+}
+
+export function inferWidgetSize(item: Pick<DashboardWidgetLayout, "w" | "h">): WidgetSizeKey {
+  let best: WidgetSizeKey = "m";
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (const key of WIDGET_SIZE_KEYS) {
+    const cells = WIDGET_SIZE_CELLS_12[key];
+    const dist = Math.abs(item.w - cells.w) + Math.abs(item.h - cells.h);
+    if (dist < bestDist) {
+      best = key;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+
 type DashboardRect = Pick<DashboardWidgetLayout, "x" | "y" | "w" | "h">;
 
 export function dashboardRectsOverlap(a: DashboardRect, b: DashboardRect): boolean {

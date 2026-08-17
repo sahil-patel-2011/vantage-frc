@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpChatAdapter } from "../src/http-chat-adapter";
 import {
   ChatProviderResolutionError,
@@ -18,7 +18,26 @@ function fakeClient(handlers: Array<(sql: string, params?: unknown[]) => QueryRe
   };
 }
 
+const PLATFORM_ENV_KEYS = ["OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "MISTRAL_API_KEY"] as const;
+
 describe("resolveOrgChatAdapter", () => {
+  const savedEnv: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    for (const key of PLATFORM_ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+  });
+
+  afterEach(() => {
+    for (const key of PLATFORM_ENV_KEYS) {
+      const previous = savedEnv[key];
+      if (previous === undefined) delete process.env[key];
+      else process.env[key] = previous;
+    }
+  });
+
   it("prefers enabled HTTPS org provider configs (BYOK/custom)", async () => {
     const client = fakeClient([
       () => ({ rowCount: 0, rows: [] }), // routing prefs miss
@@ -208,7 +227,7 @@ describe("resolveOrgChatAdapter", () => {
         promptCachingEnabled: false,
         decrypt: async () => "unused",
       }),
-    ).rejects.toThrow(/OpenAI, Anthropic, or Google key under Team/);
+    ).rejects.toThrow(/OpenRouter free pool|Team → AI API keys/);
   });
 
   it("uses sponsored failover pool for team 1111 within promo window", async () => {
@@ -260,5 +279,100 @@ describe("resolveOrgChatAdapter", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("uses platform OpenRouter for free orgs when OPENROUTER_API_KEY is set", async () => {
+    process.env.OPENROUTER_API_KEY = "sk-or-test";
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "free" }] }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      decrypt: async () => "unused",
+    });
+
+    expect(adapter).toBeInstanceOf(HttpChatAdapter);
+    expect(adapter.provider).toBe("openai-compatible");
+    expect(adapter.model).toBe("openrouter/free");
+  });
+
+  it("uses hosted Anthropic Sonnet for paid orgs when managed peek is empty", async () => {
+    process.env.ANTHROPIC_API_KEY = "sk-ant-hosted";
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "team" }] }),
+      () => ({ rowCount: 0, rows: [] }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      feature: "chat",
+      decrypt: async () => "unused",
+    });
+
+    expect(adapter.provider).toBe("anthropic");
+    expect(adapter.model).toBe("claude-sonnet-4-20250514");
+  });
+
+  it("uses hosted Anthropic Opus for paid CAD/code features", async () => {
+    process.env.ANTHROPIC_API_KEY = "sk-ant-hosted";
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 1, rows: [{ tier: "team" }] }),
+      () => ({ rowCount: 0, rows: [] }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      feature: "cad",
+      decrypt: async () => "unused",
+    });
+
+    expect(adapter.model).toBe("claude-opus-4-20250514");
+  });
+
+  it("prefers org BYOK over platform OpenRouter and Anthropic keys", async () => {
+    process.env.OPENROUTER_API_KEY = "sk-or-platform";
+    process.env.ANTHROPIC_API_KEY = "sk-ant-platform";
+    const client = fakeClient([
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({ rowCount: 0, rows: [] }),
+      () => ({
+        rowCount: 1,
+        rows: [
+          {
+            id: "k1",
+            provider: "anthropic",
+            keyCiphertext: "c",
+            keyNonce: "n",
+            keyAuthTag: "t",
+            encryptedDek: "d",
+            kmsKeyId: "k",
+          },
+        ],
+      }),
+      () => ({ rowCount: 0, rows: [] }),
+    ]);
+
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      feature: "chat",
+      decrypt: async () => "sk-ant-org",
+    });
+
+    expect(adapter.provider).toBe("anthropic");
+    expect(adapter.model).toContain("claude");
   });
 });

@@ -10,6 +10,7 @@ import {
   type RankedTeam,
   type RankingsView,
 } from "../../../lib/rankings";
+import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 
 class HttpError extends Error {
   constructor(
@@ -59,6 +60,7 @@ export async function GET(request: Request) {
     const session = await requireSession();
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
+    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg });
 
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const membership = await client.query<{

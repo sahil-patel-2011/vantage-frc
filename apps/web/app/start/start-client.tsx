@@ -125,6 +125,8 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
       <p className="start-meta" role="status">
         {[
           view.teamRole ? `Role: ${view.teamRole}` : null,
+          view.crewRole ? `Crew: ${view.crewRole}` : null,
+          view.roleDescription ? view.roleDescription : null,
           view.primaryFocus ? `Focus: ${view.primaryFocus}` : null,
           view.subteamNames.length
             ? `Subteams: ${view.subteamNames.join(", ")}`

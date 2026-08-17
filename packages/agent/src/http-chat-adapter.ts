@@ -27,6 +27,8 @@ export type HttpChatAdapterConfig = {
   timeoutMs?: number;
   /** Soft-UI capability for system prompt (chat, strategy, …). */
   capability?: string;
+  /** Extra headers (OpenRouter HTTP-Referer / X-Title). Never log values. */
+  extraHeaders?: Record<string, string>;
 };
 
 /**
@@ -102,6 +104,8 @@ export class HttpChatAdapter implements ChatAdapter {
   private readonly timeoutMs: number;
   private readonly systemPrompt: string;
 
+  private readonly extraHeaders: Record<string, string>;
+
   constructor(config: HttpChatAdapterConfig) {
     this.kind = config.provider;
     this.provider = config.provider === "openai-compatible" ? "openai-compatible" : config.provider;
@@ -114,6 +118,7 @@ export class HttpChatAdapter implements ChatAdapter {
     this.providerLabel = config.providerLabel?.trim() || this.provider;
     this.timeoutMs = config.timeoutMs ?? DEFAULT_CHAT_FETCH_TIMEOUT_MS;
     this.systemPrompt = buildVantageChatSystemPrompt({ capability: config.capability ?? "chat" });
+    this.extraHeaders = config.extraHeaders ?? {};
   }
 
   async complete(input: {
@@ -193,6 +198,7 @@ export class HttpChatAdapter implements ChatAdapter {
     const preference = openAiPromptCachePreference(caching);
     const headers: Record<string, string> = {
       "content-type": "application/json",
+      ...this.extraHeaders,
     };
     // Ollama and many local servers accept requests without Authorization.
     if (this.apiKey.trim()) {

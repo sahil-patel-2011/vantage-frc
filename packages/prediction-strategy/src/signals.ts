@@ -429,6 +429,8 @@ export type PickCandidate = {
   reliability: number | null;
   foulRate: number | null;
   suggestedTier: PickTier | null;
+  /** Org-private EPA when scout sample ≥ 3; never invented. */
+  pepa?: number | null;
   /** Scout fields that contradicted TBA official results (desk callout). */
   tbaConflictCount?: number;
   tbaConflictFields?: string[];
@@ -494,8 +496,10 @@ export function rankPickCandidates(
   options?: { mode?: PickDataMode },
 ): PickCandidate[] {
   const mode = options?.mode ?? "full";
+  const rankingMetric = (candidate: Omit<PickCandidate, "suggestedTier">) =>
+    candidate.pepa != null && Number.isFinite(candidate.pepa) ? candidate.pepa : candidate.epa;
   const withEpa = candidates
-    .map((candidate) => candidate.epa)
+    .map((candidate) => rankingMetric(candidate))
     .filter((epa): epa is number => epa != null && Number.isFinite(epa))
     .sort((a, b) => b - a);
   const percentileTier = (epa: number): PickTier => {
@@ -508,10 +512,11 @@ export function rankPickCandidates(
     return "watch";
   };
   const scored = candidates.map((candidate) => {
-    const hasEpa = candidate.epa != null && Number.isFinite(candidate.epa);
+    const metric = rankingMetric(candidate);
+    const hasEpa = metric != null && Number.isFinite(metric);
     let suggestedTier: PickTier | null = null;
     if (hasEpa) {
-      suggestedTier = percentileTier(candidate.epa as number);
+      suggestedTier = percentileTier(metric as number);
       if (
         mode === "full" &&
         (candidate.reliability ?? 100) < 65 &&
@@ -524,8 +529,8 @@ export function rankPickCandidates(
   });
   return scored.sort((a, b) => {
     if (mode === "low_data_tba") {
-      const epaA = a.epa ?? -Infinity;
-      const epaB = b.epa ?? -Infinity;
+      const epaA = rankingMetric(a) ?? -Infinity;
+      const epaB = rankingMetric(b) ?? -Infinity;
       if (epaA !== epaB) return epaB - epaA;
       const rankA = a.rank ?? 9999;
       const rankB = b.rank ?? 9999;
@@ -538,8 +543,8 @@ export function rankPickCandidates(
     const tierA = a.suggestedTier ? TIER_ORDER[a.suggestedTier] : 99;
     const tierB = b.suggestedTier ? TIER_ORDER[b.suggestedTier] : 99;
     if (tierA !== tierB) return tierA - tierB;
-    const epaA = a.epa ?? -Infinity;
-    const epaB = b.epa ?? -Infinity;
+    const epaA = rankingMetric(a) ?? -Infinity;
+    const epaB = rankingMetric(b) ?? -Infinity;
     if (epaA !== epaB) return epaB - epaA;
     const rankA = a.rank ?? 9999;
     const rankB = b.rank ?? 9999;

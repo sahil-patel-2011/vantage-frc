@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_DASHBOARD_LAYOUT,
+  applyWidgetSize,
   canAccessWidget,
   canWriteOrgDashboard,
+  dashboardGridForWidth,
   dashboardRectsOverlap,
   findDashboardSlot,
   filterLayoutForRole,
+  inferWidgetSize,
   packDashboardLayout,
+  scaleLayoutToCols,
   validateDashboardLayout,
 } from "./catalog";
 
@@ -124,5 +128,30 @@ describe("dashboard tenant and role isolation rules", () => {
       "admin",
     );
     expect(duplicate.ok).toBe(false);
+  });
+
+  it("picks phone / tablet / laptop / TV grids without collapsing to a 1-column stack", () => {
+    expect(dashboardGridForWidth(390).cols).toBe(4);
+    expect(dashboardGridForWidth(800).cols).toBe(8);
+    expect(dashboardGridForWidth(1280).cols).toBe(12);
+    expect(dashboardGridForWidth(1920).cols).toBe(12);
+    expect(dashboardGridForWidth(1920).rowHeight).toBeGreaterThan(dashboardGridForWidth(1280).rowHeight);
+  });
+
+  it("scales a 12-column standard layout onto a 4-column phone grid", () => {
+    const phone = scaleLayoutToCols(DEFAULT_DASHBOARD_LAYOUT, 12, 4);
+    expect(phone.every((item) => item.x + item.w <= 4)).toBe(true);
+    expect(phone.find((item) => item.type === "onboarding_checklist")?.w).toBe(4);
+    const back = scaleLayoutToCols(phone, 4, 12);
+    expect(back.find((item) => item.type === "onboarding_checklist")?.w).toBe(12);
+  });
+
+  it("applies Apple-style S/M/L/XL sizes on the canonical 12-column board", () => {
+    const base = DEFAULT_DASHBOARD_LAYOUT[1]!;
+    const large = applyWidgetSize(base, "l");
+    expect(large.w).toBe(6);
+    expect(inferWidgetSize(large)).toBe("l");
+    expect(applyWidgetSize(base, "xl").w).toBe(12);
+    expect(inferWidgetSize({ w: 3, h: 2 })).toBe("s");
   });
 });

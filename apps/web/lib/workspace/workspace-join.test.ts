@@ -44,7 +44,7 @@ describe("workspace Soft-UI join helpers", () => {
     const empty = workspaceShellCopy("empty");
     expect(empty.description).toMatch(/invite/i);
     expect(empty.description).not.toMatch(/DEMO/i);
-    expect(empty.badge).toMatch(/Invite/i);
+    expect(empty.badge).toMatch(/invite/i);
     expect(workspaceJoinCopy("select").title).toMatch(/Choose|Select/i);
     expect(workspaceShellCopy("select").description).not.toMatch(/DEMO/i);
   });
@@ -69,11 +69,12 @@ describe("workspace Soft-UI join helpers", () => {
     expect(formatWorkspaceMembershipCount(2, false)).toBe("…");
   });
 
-  it("uses a single invite next action for empty join", () => {
+  it("uses invite plus self-serve claim for empty join", () => {
     const none = workspaceJoinNextActions("none");
-    expect(none).toHaveLength(1);
+    expect(none).toHaveLength(2);
     expect(none[0]?.primary).toBe(true);
     expect(none.find((a) => a.id === "invite")?.href).toBe("/invite");
+    expect(none.find((a) => a.id === "claim")?.href).toBe("/claim");
     expect(none.find((a) => a.id === "onboarding-buddy")).toBeUndefined();
 
     const select = workspaceJoinNextActions("select", "org-1");
@@ -82,10 +83,11 @@ describe("workspace Soft-UI join helpers", () => {
     expect(select.every((a) => !/demo/i.test(a.href))).toBe(true);
   });
 
-  it("builds setup steps with Invite only — no Onboarding Buddy laundry list", () => {
+  it("builds setup steps with Invite and Claim — no Onboarding Buddy laundry list", () => {
     const steps = workspaceSetupSteps("org-1");
-    expect(steps).toHaveLength(1);
+    expect(steps).toHaveLength(2);
     expect(steps.find((s) => s.id === "invite")?.href).toBe("/invite");
+    expect(steps.find((s) => s.id === "claim")?.href).toBe("/claim");
     expect(steps.find((s) => s.id === "onboarding-buddy")).toBeUndefined();
     expect(workspaceOrgHref("org-1")).toBe("/workspace?orgId=org-1");
     expect(workspaceOrgHref(null)).toBe("/workspace");

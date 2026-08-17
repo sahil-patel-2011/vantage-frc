@@ -4,7 +4,7 @@ import type { AssignInput, AssignedTrack, TrackSource } from "./types";
 export const SUBTEAM_KEYWORD_MAP: Array<{ trackKey: string; keywords: string[] }> = [
   {
     trackKey: "mechanical",
-    keywords: ["mech", "mechanical", "fabricat", "machin", "chassis", "mechanism", "hardware", "build"],
+    keywords: ["mech", "mechanical", "fabricat", "machin", "chassis", "mechanism", "hardware", "build", "pit", "pit crew"],
   },
   {
     trackKey: "electrical",
@@ -109,6 +109,18 @@ export function assignOnboardingTracks(input: AssignInput): AssignedTrack[] {
   for (const name of input.subteamNames ?? []) {
     for (const trackKey of matchSubteamTracks(name)) {
       pushUnique(out, seen, trackKey, "subteam", `Matched subteam "${name}"`);
+    }
+  }
+
+  if (input.crewRole) {
+    for (const trackKey of matchSubteamTracks(input.crewRole.replaceAll("_", " "))) {
+      pushUnique(out, seen, trackKey, "role", `From your crew role (${input.crewRole})`);
+    }
+  }
+
+  if (input.roleDescription) {
+    for (const trackKey of matchSubteamTracks(input.roleDescription)) {
+      pushUnique(out, seen, trackKey, "role", "From how you described your role");
     }
   }
 

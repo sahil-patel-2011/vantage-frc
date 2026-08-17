@@ -152,7 +152,7 @@ describe("global reference worker", () => {
 
     tbaRound = 1;
     const second = await syncGlobalReferenceSeason(options, 2026);
-    expect(second.notModified).toBe(5);
+    expect(second.notModified).toBe(7);
     expect(store.teams).toHaveLength(1);
     expect(store.events).toHaveLength(1);
     expect(store.matches).toHaveLength(1);
@@ -247,5 +247,67 @@ describe("global reference worker", () => {
     expect(summary.eventKeys).toEqual(["2026miket"]);
     expect(summary.matches).toBe(1);
     expect(store.matches.has("2026miket_qm1")).toBe(true);
+  });
+
+  it("skips Statbotics HTTP when the Neon cursor is still fresh", async () => {
+    const store = new MemoryStore();
+    await store.upsertEvents([
+      {
+        eventKey: "2026miket",
+        year: 2026,
+        name: "Kettering",
+        shortName: "Kettering",
+        startDate: "2026-03-05",
+        endDate: "2026-03-07",
+        eventType: 1,
+        week: 1,
+        districtKey: "2026fim",
+        city: null,
+        stateProv: null,
+        country: null,
+        address: null,
+        postalCode: null,
+        timezone: null,
+        website: null,
+        parentEventKey: null,
+        webcasts: [],
+        syncedAt: new Date("2026-03-01T00:00:00.000Z"),
+      },
+    ]);
+    const tbaFetch: typeof fetch = async (request) => {
+      const path = new URL(String(request)).pathname.replace("/api/v3/", "");
+      const payloads: Record<string, unknown> = {
+        "event/2026miket/teams": tbaFixture.teams,
+        "event/2026miket/matches": tbaFixture.matches,
+        "event/2026miket/oprs": tbaFixture.oprs,
+        "event/2026miket/rankings": tbaFixture.rankings,
+      };
+      return new Response(JSON.stringify(payloads[path] ?? null), {
+        status: 200,
+        headers: { "content-type": "application/json", etag: `"${path}"` },
+      });
+    };
+    let statCalls = 0;
+    const statFetch: typeof fetch = async () => {
+      statCalls += 1;
+      return new Response(JSON.stringify(statboticsFixture.teamEvents), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    };
+    const { syncActiveEventDay } = await import("../src/worker");
+    const options = {
+      store,
+      tba: new TbaClient({ authKey: "fixture", fetch: tbaFetch }),
+      statbotics: new StatboticsClient({
+        fetch: statFetch,
+        minimumIntervalMs: 0,
+      }),
+      now: () => new Date("2026-03-06T12:00:00.000Z"),
+    };
+    await syncActiveEventDay(options, { year: 2026, withinDays: 1 });
+    await syncActiveEventDay(options, { year: 2026, withinDays: 1 });
+    expect(statCalls).toBe(1);
+    expect(store.eventMetrics.get("frc2337:2026miket:statbotics")?.epaTotal).toBe(42.5);
   });
 });

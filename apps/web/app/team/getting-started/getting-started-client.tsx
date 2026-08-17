@@ -118,7 +118,7 @@ function buildTasks(data: Data, orgId: string): Task[] {
       title: "Add your API keys",
       detail:
         s.byokKeysConfigured == null
-          ? "Free workspaces need OpenAI, Anthropic, or Google keys (or a local relay). Paid can use hosted AI instead."
+          ? "Free workspaces use the OpenRouter free pool, or your own OpenAI / Anthropic / Google / OpenRouter key (or a local relay). Paid uses hosted Anthropic."
           : s.byokKeysConfigured
             ? "At least one encrypted provider key or custom relay is on file."
             : "Paste OpenAI / Anthropic / Google under AI API keys — or upgrade for Vantage-hosted AI.",

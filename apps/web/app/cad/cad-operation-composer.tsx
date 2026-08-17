@@ -7,7 +7,23 @@ const ALL_OPERATIONS = [
   "set_variable","create_assembly","feature_script","verify_topology","render_views","create_checkpoint",
   "rollback_checkpoint","export_step","export_stl","export_gltf",
 ] as const;
-const FUSION_OPERATIONS = ["create_sketch","create_extrude","verify_topology","render_views","create_checkpoint"] as const;
+const FUSION_OPERATIONS = [
+  "create_sketch",
+  "create_extrude",
+  "create_fillet",
+  "create_chamfer",
+  "create_shell",
+  "create_pattern",
+  "set_variable",
+  "create_assembly",
+  "verify_topology",
+  "render_views",
+  "create_checkpoint",
+  "rollback_checkpoint",
+  "export_step",
+  "export_stl",
+  "export_gltf",
+] as const;
 
 const STARTERS: Record<string, Record<string, unknown>> = {
   create_sketch: { plane: "Top", profile: "Describe the dimensioned closed profile", units: "mm" },
@@ -63,7 +79,7 @@ export function CadOperationComposer({
       <div className="cad-operation-body">
         <p className="app-muted">
           {platform === "fusion360"
-            ? "Only operations implemented by the paired Fusion add-in are shown. Execution occurs on your desktop."
+            ? "Operations listed here match the paired Fusion add-in allowlist. Execution occurs on your desktop."
             : platform === "onshape"
               ? "Operations execute through the bound Onshape document after approval, then return a render and topology checkpoint."
               : "Mock operations prove the approval and verification loop; they are not production geometry."}

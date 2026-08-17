@@ -10,6 +10,7 @@ import {
   type DashboardWidgetLayout,
 } from "../../../lib/dashboard/catalog";
 import { loadDashboardSnapshot } from "../../../lib/dashboard/snapshot";
+import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 
 const MAX_BOARDS_PER_SCOPE = 12;
 
@@ -139,6 +140,9 @@ export async function GET(request: Request) {
     const mode = url.searchParams.get("mode") ?? "list";
     const boardId = url.searchParams.get("boardId");
     if (!orgId) throw new Error("orgId is required");
+    if (mode === "snapshot") {
+      await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
+    }
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const role = await membership(client, orgId, session.user.id);

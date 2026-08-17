@@ -23,6 +23,8 @@ export type AssignedTrack = {
 
 export type AssignInput = {
   teamRole: string | null | undefined;
+  crewRole?: string | null;
+  roleDescription?: string | null;
   primaryFocus: string | null | undefined;
   subteamNames: string[];
 };
@@ -58,6 +60,8 @@ export type RoleOnboardingView =
       orgId: string;
       orgName: string;
       teamRole: string | null;
+      crewRole: string | null;
+      roleDescription: string | null;
       primaryFocus: string | null;
       subteamNames: string[];
       doneCount: number;

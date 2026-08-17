@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import {
-  DEFAULT_MATCH_SCHEMA,
-  DEFAULT_PIT_SCHEMA,
   detectDisagreements,
+  matchSchemaForYear,
+  pitSchemaForYear,
   validatePayload,
   type EntryType,
   type ScoutSchema,
@@ -141,8 +141,8 @@ export class ScoutingRepository {
     if (!year) return;
 
     for (const entry of [
-      { type: "match" as EntryType, definition: DEFAULT_MATCH_SCHEMA },
-      { type: "pit" as EntryType, definition: DEFAULT_PIT_SCHEMA },
+      { type: "match" as EntryType, definition: matchSchemaForYear(year) },
+      { type: "pit" as EntryType, definition: pitSchemaForYear(year) },
     ]) {
       const existing = await this.client.query(
         `SELECT 1 FROM scout_schemas WHERE org_id = $1 AND year = $2 AND type = $3 LIMIT 1`,

@@ -1,6 +1,6 @@
-import { Pool } from "@neondatabase/serverless";
+import { createSqlPool } from "./pool";
 
-let pool: Pool | undefined;
+let pool: ReturnType<typeof createSqlPool> | undefined;
 export function getDisplayPool() {
   const connectionString =
     process.env.DATABASE_DISPLAY_URL ??
@@ -13,6 +13,6 @@ export function getDisplayPool() {
   ) {
     throw new Error("DATABASE_DISPLAY_URL or DATABASE_URL is required for read-only display tokens");
   }
-  pool ??= new Pool({ connectionString });
+  pool ??= createSqlPool(connectionString);
   return pool;
 }

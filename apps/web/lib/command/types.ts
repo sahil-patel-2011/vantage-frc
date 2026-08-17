@@ -59,6 +59,14 @@ export type CommandMyDay = {
   href: string;
 };
 
+export type CommandNexus = {
+  nowQueuing: string | null;
+  queuedMatchKey: string | null;
+  pitCount: number;
+  syncedAt: string | null;
+  attributionHref: string;
+};
+
 export type CommandSnapshot = {
   status: "live" | "setup_required" | "empty";
   message?: string;
@@ -82,6 +90,8 @@ export type CommandSnapshot = {
   pitFlags: PitFlag[];
   /** Personal next-match / bumper / travel strip. */
   myDay: CommandMyDay | null;
+  /** Nexus queue/pits from worker cache — null until a snapshot exists. */
+  nexus: CommandNexus | null;
   prediction: {
     status: "live" | "empty" | "setup_required";
     matchKey: string | null;

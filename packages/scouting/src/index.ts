@@ -1,3 +1,4 @@
+import { currentSeasonYear, defaultMatchSchema, defaultPitSchema, type GameField } from "@vantage/game-year";
 import { lockScoutPayload } from "./identity";
 import {
   assertStorageKeyForOrg,
@@ -84,6 +85,25 @@ export type FieldDefinition = {
 
 export type SchemaDefinition = { title: string; fields: FieldDefinition[] };
 
+function gameFieldToDefinition(field: GameField): FieldDefinition {
+  const widget: FieldWidget | undefined =
+    field.type === "drivetrain_type"
+      ? "drivetrain"
+      : field.type === "robot_image"
+        ? "robot_image"
+        : undefined;
+  return {
+    key: field.key,
+    label: field.label,
+    type: field.type,
+    required: field.required,
+    options: field.options,
+    helpText: field.helpText,
+    widget,
+  };
+}
+
+/** Generic interchange schema — video re-scout and imports that do not pin a season. */
 export const DEFAULT_MATCH_SCHEMA: SchemaDefinition = {
   title: "Match scouting",
   fields: [
@@ -122,6 +142,16 @@ export const DEFAULT_PIT_SCHEMA: SchemaDefinition = {
     { key: "notes", label: "Notes", type: "text" },
   ],
 };
+
+export function matchSchemaForYear(year: number = currentSeasonYear()): SchemaDefinition {
+  const schema = defaultMatchSchema(year);
+  return { title: schema.title, fields: schema.fields.map(gameFieldToDefinition) };
+}
+
+export function pitSchemaForYear(year: number = currentSeasonYear()): SchemaDefinition {
+  const schema = defaultPitSchema(year);
+  return { title: schema.title, fields: schema.fields.map(gameFieldToDefinition) };
+}
 
 /** True when a robot_image payload holds one or more media client ids. */
 export function isRobotImageValue(value: unknown): boolean {

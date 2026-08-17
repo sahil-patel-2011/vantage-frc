@@ -16,13 +16,16 @@ import {
 
 export default function KioskClient({
   params,
+  mode = "kiosk",
 }: {
   params: { orgId?: string; boardId?: string; token?: string };
+  mode?: "kiosk" | "pit";
 }) {
   const [data, setData] = useState<DisplaySnapshot | null>(null);
   const [error, setError] = useState("");
   const [online, setOnline] = useState(true);
   const [now, setNow] = useState(() => Date.now());
+  const [chromeVisible, setChromeVisible] = useState(mode !== "pit");
 
   const refresh = useCallback(async () => {
     if (!params.token && !(params.orgId && params.boardId)) {
@@ -60,13 +63,21 @@ export default function KioskClient({
     };
   }, [refresh]);
 
+  useEffect(() => {
+    if (mode !== "pit" || !chromeVisible) return;
+    const hide = window.setTimeout(() => setChromeVisible(false), 8_000);
+    return () => window.clearTimeout(hide);
+  }, [mode, chromeVisible]);
+
   if (!data) {
     return (
-      <main className={`display-kiosk ${error ? "error" : "loading"}`}>
+      <main className={`display-kiosk ${mode === "pit" ? "display-kiosk-pit " : ""}${error ? "error" : "loading"}`}>
         <h1>{error || "Loading display…"}</h1>
         <p>
           {params.token
-            ? "Using read-only TV token. If this fails, the token may be revoked or expired."
+            ? mode === "pit"
+              ? "Pit display token. If this fails, the token may be revoked or expired."
+              : "Using read-only TV token. If this fails, the token may be revoked or expired."
             : "Signed-in kiosk needs a saved board id for this workspace."}
         </p>
         <button type="button" onClick={() => void refresh()}>
@@ -83,10 +94,15 @@ export default function KioskClient({
   const readiness = data.readiness;
 
   return (
-    <main className={`display-kiosk preset-${data.board.preset}`}>
+    <main
+      className={`display-kiosk preset-${data.board.preset}${mode === "pit" ? " display-kiosk-pit" : ""}${mode === "pit" && chromeVisible ? " is-chrome" : ""}`}
+      onPointerDown={() => {
+        if (mode === "pit") setChromeVisible(true);
+      }}
+    >
       <header>
         <div className="kiosk-brand">
-          <span>VANTAGE DISPLAY</span>
+          <span>{mode === "pit" ? "VANTAGE PIT DISPLAY" : "VANTAGE DISPLAY"}</span>
           <strong>
             {data.organization.name} · #{data.organization.teamNumber}
           </strong>
@@ -324,7 +340,11 @@ export default function KioskClient({
       )}
 
       <footer>
-        <span>Layout is fixed until changed in Display Mode setup.</span>
+        <span>
+          {mode === "pit"
+            ? "Pit TV · tap to show controls · live snapshots only"
+            : "Layout is fixed until changed in Display Mode setup."}
+        </span>
         {error ? <strong className="kiosk-error">{error}</strong> : <span>Live refresh every 30s</span>}
       </footer>
     </main>

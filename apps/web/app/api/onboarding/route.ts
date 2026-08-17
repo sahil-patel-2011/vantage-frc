@@ -15,13 +15,18 @@ const focus = z.enum(["competition", "build", "business", "leadership"]);
 const role = z.enum(["student", "mentor", "coach", "parent", "other"]);
 const teamAffiliation = z.enum(["private_school", "public_school", "community"]);
 
+const crew = z.enum(["scout", "driver", "operator", "mechanical", "electrical", "programming", "cad", "pit", "business", "other"]);
+const teamNumber = z.number().int().min(1).max(99999).nullable();
+
 const completeSchema = z.object({
   firstName: z.string().trim().min(1).max(60),
   lastName: z.string().trim().min(1).max(60),
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gender: z.enum(["female", "male", "non_binary", "prefer_not_to_say", "other"]),
-  preferredTeamNumber: z.number().int().min(1).max(99999),
+  preferredTeamNumber: teamNumber,
   teamRole: role.nullable().optional(),
+  crewRole: crew.nullable().optional(),
+  roleDescription: z.string().trim().max(280).nullable().optional(),
   primaryFocus: focus,
   displayName: z.string().trim().max(80).nullable().optional(),
   themePreference: z.enum(["light", "dark"]).optional(),
@@ -45,8 +50,10 @@ const draftSchema = z.discriminatedUnion("step", [
   }).strict(),
   z.object({
     step: z.literal("team"),
-    preferredTeamNumber: z.number().int().min(1).max(99999),
+    preferredTeamNumber: teamNumber,
     teamRole: role.nullable().optional(),
+    crewRole: crew.nullable().optional(),
+    roleDescription: z.string().trim().max(280).nullable().optional(),
     primaryFocus: focus,
   }).strict(),
   z.object({

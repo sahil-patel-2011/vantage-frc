@@ -244,6 +244,18 @@ describe("chat auto-tool planning", () => {
     expect(emptyStrategy.status).toBe("empty");
   });
 
+  it("auto-selects strategy.private_edge for pEPA / why-we-lose questions", async () => {
+    const { planChatToolCalls, annotateToolOutput } = await import("../src/auto-tools");
+    const calls = planChatToolCalls("Why we lose to 254 — show pEPA and climb accuracy", {
+      activeEventKey: "2026miket",
+    });
+    expect(calls).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: "strategy.private_edge" })]),
+    );
+    const empty = annotateToolOutput("strategy.private_edge", { status: "empty", teams: [], eventKey: "2026miket" });
+    expect(empty.status).toBe("empty");
+  });
+
   it("does not invent tool calls for unrelated chat", async () => {
     const { planChatToolCalls } = await import("../src/auto-tools");
     expect(planChatToolCalls("Thanks — remind me how private memory works.")).toEqual([]);

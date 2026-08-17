@@ -1,10 +1,10 @@
-import { Pool } from "@neondatabase/serverless";
+import { createSqlPool } from "./pool";
 
 /**
  * Pairing/device-token pool for the VS Code editor connector.
  * Reuses DATABASE_CAD_RELAY_URL (vantage_pairing) when present; falls back to DATABASE_URL locally.
  */
-let pool: Pool | undefined;
+let pool: ReturnType<typeof createSqlPool> | undefined;
 
 export function getEditorRelayPool() {
   if (!pool) {
@@ -16,11 +16,9 @@ export function getEditorRelayPool() {
       if (process.env.NODE_ENV === "production") {
         throw new Error("DATABASE_EDITOR_RELAY_URL or DATABASE_CAD_RELAY_URL is required");
       }
-      return new Pool({
-        connectionString: "postgresql://vantage:local@localhost:5432/vantage",
-      });
+      return createSqlPool("postgresql://vantage:local@localhost:5432/vantage");
     }
-    pool = new Pool({ connectionString });
+    pool = createSqlPool(connectionString);
   }
   return pool;
 }

@@ -12,7 +12,7 @@ export default function OnboardingPage() {
               <span>SECURE ONBOARDING</span>
               <h1 id="onboarding-suspense-title">Loading your secure session…</h1>
               <p className="onboarding-sub">
-                Team access stays closed until an owner or invitation approves you.
+                Team access stays closed until an owner or invitation approves you. Team heads can claim an unused TBA number after verification.
               </p>
             </header>
             <div className="onboarding-load-shell loading">
