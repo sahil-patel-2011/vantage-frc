@@ -64,6 +64,8 @@ type AccessRequest = {
   name: string;
   email: string;
   requestedTeamRole: string | null;
+  crewRole: string | null;
+  roleDescription: string | null;
   primaryFocus: "competition" | "build" | "business" | "leadership";
   status: "pending" | "approved" | "declined" | "withdrawn";
   membershipRole: string | null;
@@ -677,7 +679,11 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
               </div>
               <dl>
                 <div><dt>TEAM ROLE</dt><dd>{request.requestedTeamRole ?? "Not specified"}</dd></div>
+                <div><dt>CREW</dt><dd>{request.crewRole ?? "Not specified"}</dd></div>
                 <div><dt>PRIMARY FOCUS</dt><dd>{request.primaryFocus}</dd></div>
+                {request.roleDescription ? (
+                  <div><dt>HOW THEY HELP</dt><dd>{request.roleDescription}</dd></div>
+                ) : null}
                 <div><dt>REQUESTED</dt><dd>{new Date(request.createdAt).toLocaleDateString()}</dd></div>
               </dl>
               <div className="team-access-actions">

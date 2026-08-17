@@ -352,7 +352,23 @@ export async function POST(request: Request) {
           )
         ).rows[0];
         if (!job) throw new Error("CAD job not found");
-        const fusionImplemented = new Set(["create_sketch","create_extrude","verify_topology","render_views","create_checkpoint"]);
+        const fusionImplemented = new Set([
+          "create_sketch",
+          "create_extrude",
+          "create_fillet",
+          "create_chamfer",
+          "create_shell",
+          "create_pattern",
+          "set_variable",
+          "create_assembly",
+          "verify_topology",
+          "render_views",
+          "create_checkpoint",
+          "rollback_checkpoint",
+          "export_step",
+          "export_stl",
+          "export_gltf",
+        ]);
         if (job.platform === "fusion360" && !fusionImplemented.has(operation)) {
           throw new Error(`${operation} is not implemented by the Fusion desktop add-in yet`);
         }

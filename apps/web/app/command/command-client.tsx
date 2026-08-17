@@ -476,6 +476,16 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
       <DataSourceDegradedBanner health={snap?.dataSourceHealth} />
+      {snap?.nexus ? (
+        <p className="edc-freshness" role="status">
+          Nexus queue: {snap.nexus.nowQueuing ?? "none posted"}
+          {snap.nexus.pitCount ? ` · ${snap.nexus.pitCount} pit addresses cached` : ""}
+          {" · "}
+          <a href={snap.nexus.attributionHref} rel="noreferrer" target="_blank">
+            frc.nexus
+          </a>
+        </p>
+      ) : null}
 
       {liveActions.length ? (
         <section className="edc-next-actions soft-panel" aria-label="Next actions">

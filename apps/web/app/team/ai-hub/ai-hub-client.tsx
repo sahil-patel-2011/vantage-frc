@@ -71,7 +71,7 @@ function cards(data: Data, orgId: string): Card[] {
     },
     {
       title: "AI API keys",
-      blurb: "Paste OpenAI, Anthropic, or Google keys for Free / your-keys routing—or keep using hosted AI on paid.",
+      blurb: "Paste OpenAI, Anthropic, Google, or OpenRouter keys — or keep using hosted AI (OpenRouter on Free, Anthropic on paid).",
       href: withOrgHref("/team/ai-keys", orgId),
       status: s.byokKeysConfigured === true ? "Configured" : s.byokKeysConfigured === false ? "Missing" : "—",
       adminOnly: true,

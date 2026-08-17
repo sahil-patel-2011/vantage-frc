@@ -282,6 +282,43 @@ describe("TBA-shaped signal builders", () => {
     expect(ranked.find((row) => row.teamKey === "frc99")?.suggestedTier).toBeNull();
   });
 
+  it("ranks pick candidates by org pEPA when present instead of public EPA", () => {
+    const ranked = rankPickCandidates([
+      {
+        teamKey: "frc10",
+        teamNumber: 10,
+        nickname: "Public high",
+        epa: 90,
+        autoEpa: 10,
+        endgameEpa: 10,
+        source: "statbotics",
+        record: "8-0-0",
+        rank: 1,
+        scoutSample: 0,
+        reliability: null,
+        foulRate: null,
+        pepa: null,
+      },
+      {
+        teamKey: "frc20",
+        teamNumber: 20,
+        nickname: "Private high",
+        epa: 40,
+        autoEpa: 6,
+        endgameEpa: 6,
+        source: "statbotics",
+        record: "5-3-0",
+        rank: 8,
+        scoutSample: 8,
+        reliability: 90,
+        foulRate: 0.1,
+        pepa: 95,
+      },
+    ]);
+    expect(ranked[0]?.teamKey).toBe("frc20");
+    expect(ranked[0]?.suggestedTier).toBe("first");
+  });
+
   it("detects low-data TBA mode and ranks EPA-first without reliability demotion", () => {
     const thin = Array.from({ length: 8 }, (_, index) => ({
       teamKey: `frc${index + 1}`,

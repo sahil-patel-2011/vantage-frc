@@ -114,9 +114,18 @@ export async function POST(request: Request) {
           const form = await client.query(`SELECT 1 FROM consent_forms WHERE id = $1 AND org_id = $2`, [action.formId, action.orgId]);
           if (!form.rowCount) throw new HttpError(404, "Form not found");
           const inserted = await client.query<{ id: string }>(
-            `INSERT INTO consent_records (org_id, form_id, person_name, guardian_name, status, signed_on, recorded_by)
-             VALUES ($1, $2, $3, $4, $5, $6::date, $7) RETURNING id`,
-            [action.orgId, action.formId, action.personName, action.guardianName, action.status, action.signedOn, userId],
+            `INSERT INTO consent_records (org_id, form_id, person_name, guardian_name, status, signed_on, recorded_by, user_id)
+             VALUES ($1, $2, $3, $4, $5, $6::date, $7, $8::uuid) RETURNING id`,
+            [
+              action.orgId,
+              action.formId,
+              action.personName,
+              action.guardianName,
+              action.status,
+              action.signedOn,
+              userId,
+              action.userId,
+            ],
           );
           return { id: inserted.rows[0]!.id };
         }

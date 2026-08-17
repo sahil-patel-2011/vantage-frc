@@ -22,6 +22,7 @@ export class StatboticsClient {
   private readonly now: () => number;
   private readonly random: () => number;
   private nextRequestAt = 0;
+  private readonly inFlight = new Map<string, Promise<unknown>>();
 
   constructor(private readonly options: StatboticsClientOptions = {}) {
     this.baseUrl = (options.baseUrl ?? "https://api.statbotics.io/v3").replace(
@@ -35,6 +36,19 @@ export class StatboticsClient {
   }
 
   async get<T>(resource: string): Promise<T> {
+    const key = resource.replace(/^\//, "");
+    const existing = this.inFlight.get(key);
+    if (existing) return existing as Promise<T>;
+    const promise = this.getWithRetry<T>(key);
+    this.inFlight.set(key, promise as Promise<unknown>);
+    try {
+      return await promise;
+    } finally {
+      this.inFlight.delete(key);
+    }
+  }
+
+  private async getWithRetry<T>(resource: string): Promise<T> {
     const attempts = Math.max(1, this.options.maximumAttempts ?? 4);
     for (let attempt = 0; attempt < attempts; attempt += 1) {
       await this.throttle();

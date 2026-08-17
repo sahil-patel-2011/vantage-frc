@@ -1,0 +1,89 @@
+import { preferredTierForFeature } from "./byok-model-routing";
+import { HttpChatAdapter, type HttpChatAdapterConfig } from "./http-chat-adapter";
+
+export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+/** Official free-model router — avoids pinning a rotating `:free` slug. */
+export const OPENROUTER_FREE_MODEL = "openrouter/free";
+export const HOSTED_ANTHROPIC_SONNET = "claude-sonnet-4-20250514";
+export const HOSTED_ANTHROPIC_OPUS = "claude-opus-4-20250514";
+
+const OPENROUTER_PRICES = { inputPerMillionUsd: 0, outputPerMillionUsd: 0 };
+const ANTHROPIC_SONNET_PRICES = { inputPerMillionUsd: 3, outputPerMillionUsd: 15 };
+const ANTHROPIC_OPUS_PRICES = { inputPerMillionUsd: 15, outputPerMillionUsd: 75 };
+
+export function readOpenRouterApiKey(env: NodeJS.ProcessEnv = process.env): string | null {
+  const key = env.OPENROUTER_API_KEY?.trim();
+  return key || null;
+}
+
+export function readAnthropicPlatformKey(env: NodeJS.ProcessEnv = process.env): string | null {
+  const key = env.ANTHROPIC_API_KEY?.trim();
+  return key || null;
+}
+
+export function openRouterFreeModel(env: NodeJS.ProcessEnv = process.env): string {
+  return env.OPENROUTER_FREE_MODEL?.trim() || OPENROUTER_FREE_MODEL;
+}
+
+export function hostedAnthropicModel(feature?: string | null): string {
+  return preferredTierForFeature(feature) === "high" ? HOSTED_ANTHROPIC_OPUS : HOSTED_ANTHROPIC_SONNET;
+}
+
+export function openRouterRequestHeaders(env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  const referer =
+    env.OPENROUTER_HTTP_REFERER?.trim() ||
+    env.NEXT_PUBLIC_APP_URL?.trim() ||
+    env.BETTER_AUTH_URL?.trim() ||
+    "http://localhost:3001";
+  return {
+    "HTTP-Referer": referer,
+    "X-Title": env.OPENROUTER_APP_TITLE?.trim() || "Vantage",
+  };
+}
+
+export function tryCreateOpenRouterFreeAdapter(input?: {
+  promptCachingEnabled?: boolean;
+  fetchImpl?: typeof fetch;
+  env?: NodeJS.ProcessEnv;
+  capability?: string;
+}): HttpChatAdapter | null {
+  const env = input?.env ?? process.env;
+  const apiKey = readOpenRouterApiKey(env);
+  if (!apiKey) return null;
+  return new HttpChatAdapter({
+    provider: "openai-compatible",
+    model: openRouterFreeModel(env),
+    apiKey,
+    baseUrl: OPENROUTER_BASE_URL,
+    promptCachingEnabled: input?.promptCachingEnabled ?? false,
+    prices: OPENROUTER_PRICES,
+    fetchImpl: input?.fetchImpl,
+    providerLabel: "openrouter",
+    capability: input?.capability ?? "chat",
+    extraHeaders: openRouterRequestHeaders(env),
+  });
+}
+
+export function tryCreateHostedAnthropicAdapter(input?: {
+  promptCachingEnabled?: boolean;
+  fetchImpl?: typeof fetch;
+  env?: NodeJS.ProcessEnv;
+  feature?: string | null;
+}): HttpChatAdapter | null {
+  const env = input?.env ?? process.env;
+  const apiKey = readAnthropicPlatformKey(env);
+  if (!apiKey) return null;
+  const model = hostedAnthropicModel(input?.feature);
+  const prices = model === HOSTED_ANTHROPIC_OPUS ? ANTHROPIC_OPUS_PRICES : ANTHROPIC_SONNET_PRICES;
+  const config: HttpChatAdapterConfig = {
+    provider: "anthropic",
+    model,
+    apiKey,
+    promptCachingEnabled: input?.promptCachingEnabled ?? false,
+    prices,
+    fetchImpl: input?.fetchImpl,
+    providerLabel: "anthropic-hosted",
+    capability: input?.feature ?? "chat",
+  };
+  return new HttpChatAdapter(config);
+}

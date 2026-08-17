@@ -50,6 +50,19 @@ describe("assignOnboardingTracks", () => {
     expect(keys.filter((k) => k === "mechanical")).toHaveLength(1);
   });
 
+  it("maps crew role and role description onto specialty tracks", () => {
+    const keys = assignOnboardingTracks({
+      teamRole: "student",
+      crewRole: "driver",
+      roleDescription: "I CAD the intake and scout quals",
+      primaryFocus: "competition",
+      subteamNames: [],
+    }).map((t) => t.trackKey);
+    expect(keys).toEqual(
+      expect.arrayContaining(["welcome", "role_student", "focus_competition", "drive_team", "cad", "scouting"]),
+    );
+  });
+
   it("maps scouting and business subteams", () => {
     const keys = assignOnboardingTracks({
       teamRole: "student",

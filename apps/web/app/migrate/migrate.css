@@ -1,0 +1,173 @@
+/* Switching kit — pick a source, preview, then import. */
+.migrate-page {
+  max-width: 920px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.migrate-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-critical, #b42318) 28%, var(--app-line));
+  background: color-mix(in srgb, var(--app-critical, #b42318) 8%, var(--app-bg));
+}
+
+.migrate-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.migrate-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  color: var(--app-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.migrate-steps li b {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--app-line);
+  background: var(--app-bg);
+  font-size: 11px;
+}
+
+.migrate-steps li.current {
+  color: var(--app-ink);
+  border-color: color-mix(in srgb, var(--app-accent) 35%, var(--app-line));
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-bg));
+}
+
+.migrate-steps li.done {
+  color: var(--app-ink);
+}
+
+.migrate-steps li.done b {
+  color: #fff;
+  border-color: #1c9367;
+  background: #1c9367;
+}
+
+.migrate-steps li.current b {
+  color: var(--app-accent-ink, #fff);
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+}
+
+.migrate-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.migrate-tile {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-height: 132px;
+  padding: 16px 18px;
+  text-align: left;
+  color: inherit;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.migrate-tile:hover {
+  border-color: color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 10%, transparent);
+}
+
+.migrate-tile strong {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.migrate-tile span,
+.migrate-tile small {
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.migrate-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.migrate-panel-head h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.migrate-panel-head p {
+  margin: 0;
+}
+
+.migrate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0 16px;
+}
+
+.migrate-actions .app-button {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.migrate-feeds {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+.migrate-preview {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--app-soft, #f4f7fb);
+  font-size: 13px;
+}
+
+.migrate-page textarea {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+}
+
+@media (max-width: 700px) {
+  .migrate-picker,
+  .migrate-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .migrate-panel-head {
+    flex-direction: column;
+  }
+
+  .migrate-actions .app-button {
+    flex: 1;
+  }
+}

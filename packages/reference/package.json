@@ -6,7 +6,8 @@
     ".": "./src/index.ts",
     "./worker": "./src/worker.ts",
     "./admin-store": "./src/admin-store.ts",
-    "./production-worker": "./src/production-worker.ts"
+    "./production-worker": "./src/production-worker.ts",
+    "./nexus-ingest": "./src/nexus-ingest.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

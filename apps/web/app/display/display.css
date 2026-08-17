@@ -670,3 +670,37 @@
   color: #fca5a5;
   opacity: 1;
 }
+
+/* Pit / Raspberry Pi TV — 16:9, large type, chrome hides until tap */
+.display-kiosk-pit {
+  min-height: 100dvh;
+  padding: clamp(1rem, 2.4vw, 2.5rem) clamp(1.25rem, 3vw, 3rem);
+  font-size: 1.15rem;
+}
+.display-kiosk-pit .kiosk-brand strong {
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+}
+.display-kiosk-pit .display-kiosk-title h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+}
+.display-kiosk-pit .display-kiosk-panel article strong {
+  font-size: clamp(2.2rem, 6vw, 5.2rem);
+}
+.display-kiosk-pit header,
+.display-kiosk-pit .kiosk-controls,
+.display-kiosk-pit footer {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.display-kiosk-pit.is-chrome header,
+.display-kiosk-pit.is-chrome .kiosk-controls,
+.display-kiosk-pit.is-chrome footer,
+.display-kiosk-pit.loading header,
+.display-kiosk-pit.error header {
+  opacity: 1;
+}
+@media (min-width: 1600px) {
+  .display-kiosk-pit .display-kiosk-panel {
+    gap: 1.5rem;
+  }
+}

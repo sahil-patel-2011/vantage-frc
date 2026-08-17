@@ -21,6 +21,7 @@ function baseSnap(overrides: Partial<CommandSnapshot> = {}): CommandSnapshot {
     briefs: [],
     pitFlags: [],
     myDay: null,
+    nexus: null,
     prediction: {
       status: "empty",
       matchKey: null,

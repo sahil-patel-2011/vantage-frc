@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 import { computeTeamDossier } from "../../../lib/dossier/compute-dossier";
 import type { DossierView } from "../../../lib/dossier/compute-dossier";
 import { dossierSetupSteps } from "../../../lib/dossier/dossier-related";
@@ -21,6 +22,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg });
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const dossier = await computeTeamDossier(client, {
         userId: session.user.id,

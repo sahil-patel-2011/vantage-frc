@@ -1,4 +1,5 @@
 import { StatboticsClient } from "./statbotics-client";
+import { isSyncedWithin, statboticsTtlMs } from "./cache-ttl";
 import { TbaClient, type TbaResponse } from "./tba-client";
 import type {
   AllianceRecord,
@@ -105,12 +106,16 @@ export async function syncGlobalReferenceSeason(
   }
 
   const yearResource = `team_years?year=${year}`;
-  const yearRows = requireArray(
-    await trackedStatbotics<JsonObject[]>(options, yearResource, now),
-    `Statbotics team years for ${year}`,
-  ).map((value) => mapStatboticsYearMetric(value, year, now()));
-  await options.store.upsertTeamYearMetrics(yearRows);
-  summary.teamYearMetrics = yearRows.length;
+  const yearPayload = await trackedStatbotics<JsonObject[]>(options, yearResource, now);
+  if (yearPayload === null) {
+    summary.notModified += 1;
+  } else {
+    const yearRows = requireArray(yearPayload, `Statbotics team years for ${year}`).map((value) =>
+      mapStatboticsYearMetric(value, year, now()),
+    );
+    await options.store.upsertTeamYearMetrics(yearRows);
+    summary.teamYearMetrics = yearRows.length;
+  }
   summary.eventKeys = eventKeys;
 
   // Clear progress token after a full successful season pass.
@@ -172,6 +177,7 @@ export async function syncActiveEventDay(
   for (const eventKey of eventKeys) {
     await syncEventBundle(options, eventKey, summary, now, {
       includeStatbotics: true,
+      includeEventRecord: Boolean(input.eventKeys?.length),
     });
   }
 
@@ -184,10 +190,21 @@ async function syncEventBundle(
   eventKey: string,
   summary: SyncSummary,
   now: () => Date,
-  opts: { includeStatbotics?: boolean } = {},
+  opts: { includeStatbotics?: boolean; includeEventRecord?: boolean } = {},
 ): Promise<void> {
   const includeStatbotics = opts.includeStatbotics !== false;
   const encodedKey = encodeURIComponent(eventKey);
+
+  if (opts.includeEventRecord) {
+    const eventInfo = await conditionalTba<JsonObject>(options, `event/${encodedKey}`, now);
+    if (eventInfo.data !== null) {
+      await options.store.upsertEvents([mapEvent(eventInfo.data, now())]);
+      summary.events += 1;
+    } else {
+      summary.notModified += 1;
+    }
+    await options.store.saveCursor(eventInfo.cursor);
+  }
   const [teams, matches, oprs, rankings] = await Promise.all([
     conditionalTba<JsonObject[]>(options, `event/${encodedKey}/teams`, now),
     conditionalTba<JsonObject[]>(options, `event/${encodedKey}/matches`, now),
@@ -231,10 +248,14 @@ async function syncEventBundle(
   if (!includeStatbotics) return;
 
   const statResource = `team_events?event=${encodeURIComponent(eventKey)}`;
-  const statEventRows = requireArray(
-    await trackedStatbotics<JsonObject[]>(options, statResource, now),
-    `Statbotics team events for ${eventKey}`,
-  ).map((value) => mapStatboticsEventMetric(value, eventKey, now()));
+  const statPayload = await trackedStatbotics<JsonObject[]>(options, statResource, now);
+  if (statPayload === null) {
+    summary.notModified += 1;
+    return;
+  }
+  const statEventRows = requireArray(statPayload, `Statbotics team events for ${eventKey}`).map(
+    (value) => mapStatboticsEventMetric(value, eventKey, now()),
+  );
   await options.store.upsertTeamEventMetrics(statEventRows);
   summary.teamEventMetrics += statEventRows.length;
 }
@@ -280,8 +301,12 @@ async function trackedStatbotics<T>(
   options: GlobalReferenceWorkerOptions,
   resource: string,
   now: () => Date,
-): Promise<T> {
+): Promise<T | null> {
   const existing = await options.store.getCursor("statbotics", resource);
+  const ttl = statboticsTtlMs(resource);
+  if (existing && !existing.lastError && isSyncedWithin(existing.syncedAt, ttl, now())) {
+    return null;
+  }
   try {
     const data = await options.statbotics.get<T>(resource);
     await options.store.saveCursor({

@@ -75,4 +75,37 @@ describe("StatboticsClient", () => {
     expect(sleeps).toEqual([2_000]);
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
+
+  it("deduplicates concurrent requests for the same resource", async () => {
+    let started = 0;
+    const fetcher = vi.fn(async () => {
+      started += 1;
+      await Promise.resolve();
+      return new Response(JSON.stringify([{ team: 2337 }]), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    const client = new StatboticsClient({ fetch: fetcher, minimumIntervalMs: 0 });
+    const [first, second] = await Promise.all([
+      client.get("team_events?event=2026miket"),
+      client.get("team_events?event=2026miket"),
+    ]);
+    expect(first).toEqual(second);
+    expect(started).toBe(1);
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+});
+
+describe("Nexus live parse", () => {
+  it("keeps missing queue fields null", async () => {
+    const { parseNexusLive } = await import("../src/nexus-client");
+    expect(parseNexusLive({}, "2026mi", "t")).toEqual({
+      eventKey: "2026mi",
+      queuedMatchKey: null,
+      nowQueuing: null,
+      fetchedAt: "t",
+    });
+    expect(parseNexusLive({ nowQueuing: "Quals 12" }, "2026mi", "t").nowQueuing).toBe("Quals 12");
+  });
 });

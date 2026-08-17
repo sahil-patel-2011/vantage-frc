@@ -19,8 +19,8 @@ const QUAL_MATCH_RE = /\b(?:qual(?:ification)?|qm)\s*#?\s*(\d{1,3})\b/gi;
 const PLAYOFF_MATCH_RE = /\b(?:qf|sf|f|quarter|semi|final)s?\s*#?\s*(\d{1,2})(?:\s*m(?:atch)?\s*(\d))?\b/gi;
 
 const SCOUT_RE = /\b(scout(?:ing)?|pit\s*scout|match\s*scout|observation|observed|defense|foul|climb|endgame|auto\s*cycle)\b/i;
-const STRATEGY_RE = /\b(strateg(?:y|ies|ic)|matchup|prediction|win\s*prob|playbook|game\s*plan|alliance\s*plan)\b/i;
-const METRIC_RE = /\b(epa|metric|stat(?:s|istics)?|rank(?:ing)?|opr|compare|capability|capabilities)\b/i;
+const METRIC_RE = /\b(epa|pepa|pEPA|metric|stat(?:s|istics)?|rank(?:ing)?|opr|compare|capability|capabilities)\b/i;
+const STRATEGY_RE = /\b(strateg(?:y|ies|ic)|matchup|prediction|win\s*prob|playbook|game\s*plan|alliance\s*plan|why we (?:win|lose)|counter[- ]pick|private\s*edge|opponent profile|digital twin)\b/i;
 const RESEARCH_RE = /\b(research|finding|article|source|cite|citation)\b/i;
 const TEAM_INTENT_RE = /\b(team|opponent|alliance|robot)\b/i;
 const MATCH_INTENT_RE = /\b(match|qual|qm|qf|sf|final)\b/i;
@@ -228,6 +228,23 @@ export function planChatToolCalls(message: string, options: ChatToolPlanOptions 
       add("knowledge.search", { query: text.slice(0, 200), limit: 6 });
     }
     add("fmea.open_risks", { seasonYear, limit: 8 });
+    add("strategy.private_edge", {
+      eventKey: options.activeEventKey ?? undefined,
+      matchKey: matchKeys[0] ?? options.selected?.matchKey,
+    });
+  }
+
+  if (
+    !isStrategySurface &&
+    (/\b(pepa|pEPA|private\s*epa|private\s*edge|why we (?:win|lose)|counter[- ]pick|opponent profile|digital twin|scout[- ]calibrat)\b/i.test(
+      text,
+    ) ||
+      wantsStrategy)
+  ) {
+    add("strategy.private_edge", {
+      eventKey: options.activeEventKey ?? undefined,
+      matchKey: matchKeys[0] ?? options.selected?.matchKey,
+    });
   }
 
   if (wantsCreateBrief && !isCadSurface) {
@@ -319,6 +336,7 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
           name === "web.fetch"
         ? ("researched_claim" as const)
         : name === "strategy.match" ||
+            name === "strategy.private_edge" ||
             name === "strategy.design" ||
             name === "cad.design_context" ||
             name === "cad.create_brief" ||
@@ -536,6 +554,39 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
       ]
         .filter(Boolean)
         .join("; "),
+      output,
+      input,
+    };
+  }
+
+  if (name === "strategy.private_edge") {
+    const row = output && typeof output === "object" ? (output as Record<string, unknown>) : {};
+    if (row.status === "setup_required") {
+      return {
+        name,
+        status: "setup_required",
+        classification,
+        summary: String(row.message ?? "Private Edge is not available yet."),
+        output,
+        input,
+      };
+    }
+    const teams = Array.isArray(row.teams) ? row.teams : [];
+    if (!teams.length) {
+      return {
+        name,
+        status: "empty",
+        classification,
+        summary: String(row.emptyReason ?? row.message ?? "No org pEPA yet — public EPA is not cloned."),
+        output,
+        input,
+      };
+    }
+    return {
+      name,
+      status: "ok",
+      classification,
+      summary: `${teams.length} org-private pEPA row(s) for ${String(row.eventKey ?? "event")}`,
       output,
       input,
     };

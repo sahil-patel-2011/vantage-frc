@@ -1,12 +1,12 @@
-import { Pool, type PoolClient } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import * as schema from "./schema";
+import type { PoolClient } from "@neondatabase/serverless";
+import { createDrizzle } from "./drizzle-client";
 
 const connectionString =
   process.env.DATABASE_URL ?? "postgresql://vantage:local@localhost:5432/vantage";
 
-export const requestPool = new Pool({ connectionString });
-export const db = drizzle(requestPool, { schema });
+const { pool, db: drizzleDb } = createDrizzle(connectionString);
+export const requestPool = pool;
+export const db = drizzleDb;
 
 export type RequestContext = {
   userId: string;
@@ -23,7 +23,7 @@ export class CommitAndThrowError extends Error {
 
 /**
  * The only request-path transaction entry point. SET LOCAL ensures pooled
- * connections cannot leak identity between requests.
+ * connections cannot leak identity between requests — including across teams.
  */
 export async function withRls<T>(
   context: RequestContext,
@@ -50,3 +50,4 @@ export async function withRls<T>(
 }
 
 export * from "./schema";
+export * from "./postgres-url";

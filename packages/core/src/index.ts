@@ -270,6 +270,7 @@ export async function writeAdminAction(
 export { emitNotification } from "./notifications-emit";
 export * from "./in-app-notifications";
 export * from "./membership";
+export * from "./claim-workspace";
 export * from "./capabilities";
 export * from "./admin-tenure";
 export * from "./hub-access";

@@ -1,6 +1,6 @@
-import { Pool } from "@neondatabase/serverless";
+import { createSqlPool } from "./pool";
 
-let pool: Pool | undefined;
+let pool: ReturnType<typeof createSqlPool> | undefined;
 
 export function getAllianceBoardPool() {
   if (!pool) {
@@ -9,11 +9,9 @@ export function getAllianceBoardPool() {
       if (process.env.NODE_ENV === "production") {
         throw new Error("DATABASE_ALLIANCE_BOARD_URL is required");
       }
-      return new Pool({
-        connectionString: process.env.DATABASE_URL ?? "postgresql://vantage:local@localhost:5432/vantage",
-      });
+      return createSqlPool(process.env.DATABASE_URL ?? "postgresql://vantage:local@localhost:5432/vantage");
     }
-    pool = new Pool({ connectionString });
+    pool = createSqlPool(connectionString);
   }
   return pool;
 }

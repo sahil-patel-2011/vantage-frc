@@ -17,6 +17,19 @@ export const TEAM_ROLE_OPTIONS = [
   "other",
 ] as const;
 
+export const CREW_ROLE_OPTIONS = [
+  "scout",
+  "driver",
+  "operator",
+  "mechanical",
+  "electrical",
+  "programming",
+  "cad",
+  "pit",
+  "business",
+  "other",
+] as const;
+
 export const PRIMARY_FOCUS_OPTIONS = ["competition", "build", "business", "leadership"] as const;
 
 export const TEAM_AFFILIATION_OPTIONS = [
@@ -27,6 +40,7 @@ export const TEAM_AFFILIATION_OPTIONS = [
 
 export type GenderOption = (typeof GENDER_OPTIONS)[number];
 export type TeamRoleOption = (typeof TEAM_ROLE_OPTIONS)[number];
+export type CrewRoleOption = (typeof CREW_ROLE_OPTIONS)[number];
 export type PrimaryFocusOption = (typeof PRIMARY_FOCUS_OPTIONS)[number];
 export type TeamAffiliationOption = (typeof TEAM_AFFILIATION_OPTIONS)[number];
 export type OnboardingStep = "profile" | "team" | "preferences" | "complete";
@@ -56,8 +70,10 @@ export type OnboardingPayload = {
   lastName: string;
   dateOfBirth: string;
   gender: GenderOption;
-  preferredTeamNumber: number;
+  preferredTeamNumber: number | null;
   teamRole?: TeamRoleOption | null;
+  crewRole?: CrewRoleOption | null;
+  roleDescription?: string | null;
   primaryFocus: PrimaryFocusOption;
   displayName?: string | null;
   themePreference?: "light" | "dark";
@@ -79,6 +95,8 @@ export type OnboardingState = {
   gender: string | null;
   preferredTeamNumber: number | null;
   teamRole: string | null;
+  crewRole: string | null;
+  roleDescription: string | null;
   primaryFocus: PrimaryFocusOption;
   displayName: string | null;
   themePreference: "light" | "dark";
@@ -109,7 +127,7 @@ export type OnboardingState = {
 
 export type OnboardingDraftInput =
   | Pick<OnboardingPayload, "firstName" | "lastName" | "dateOfBirth" | "gender"> & { step: "profile" }
-  | Pick<OnboardingPayload, "preferredTeamNumber" | "teamRole" | "primaryFocus"> & { step: "team" }
+  | Pick<OnboardingPayload, "preferredTeamNumber" | "teamRole" | "crewRole" | "roleDescription" | "primaryFocus"> & { step: "team" }
   | Pick<OnboardingPayload, "displayName" | "themePreference"> & { step: "preferences" };
 
 function trimOrNull(value: unknown, max: number): string | null {
@@ -117,6 +135,36 @@ function trimOrNull(value: unknown, max: number): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
   return trimmed.slice(0, max);
+}
+
+/** Blank / null is allowed. A number never auto-joins — it only routes an approval request. */
+export function parsePreferredTeamNumber(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const teamNumber = Number(value);
+  if (!Number.isInteger(teamNumber) || teamNumber < 1 || teamNumber > 99999) {
+    throw new Error("FRC team number must be between 1 and 99999, or left blank.");
+  }
+  return teamNumber;
+}
+
+export function parseCrewRole(value: unknown): CrewRoleOption | null {
+  if (value == null || value === "") return null;
+  if (typeof value !== "string" || !CREW_ROLE_OPTIONS.includes(value as CrewRoleOption)) {
+    throw new Error("Select a valid crew role.");
+  }
+  return value as CrewRoleOption;
+}
+
+export function parseRoleDescription(value: unknown): string | null {
+  const description = trimOrNull(value, 280);
+  if (typeof value === "string" && value.trim().length > 280) {
+    throw new Error("Role description must be 280 characters or fewer.");
+  }
+  return description;
+}
+
+export function isMissingWorkspaceError(error: unknown): boolean {
+  return error instanceof Error && /No Vantage workspace exists/i.test(error.message);
 }
 
 export function normalizeOrgLocationFields(
@@ -164,13 +212,12 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
   if (firstName.length < 1 || firstName.length > 60) throw new Error("First name is required (max 60 characters).");
   if (lastName.length < 1 || lastName.length > 60) throw new Error("Last name is required (max 60 characters).");
   if (!GENDER_OPTIONS.includes(input.gender)) throw new Error("Select a gender option.");
-  const teamNumber = Number(input.preferredTeamNumber);
-  if (!Number.isInteger(teamNumber) || teamNumber < 1 || teamNumber > 99999) {
-    throw new Error("FRC team number must be between 1 and 99999.");
-  }
+  const teamNumber = parsePreferredTeamNumber(input.preferredTeamNumber);
   if (input.teamRole != null && !TEAM_ROLE_OPTIONS.includes(input.teamRole)) {
     throw new Error("Select a valid team role.");
   }
+  const crewRole = parseCrewRole(input.crewRole);
+  const roleDescription = parseRoleDescription(input.roleDescription);
   if (!PRIMARY_FOCUS_OPTIONS.includes(input.primaryFocus)) {
     throw new Error("Select a valid primary focus.");
   }
@@ -193,6 +240,8 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
     gender: input.gender,
     preferredTeamNumber: teamNumber,
     teamRole: input.teamRole || null,
+    crewRole,
+    roleDescription,
     primaryFocus: input.primaryFocus,
     displayName,
     themePreference,
@@ -231,6 +280,8 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     gender: string | null;
     preferredTeamNumber: number | null;
     teamRole: string | null;
+    crewRole: string | null;
+    roleDescription: string | null;
     primaryFocus: PrimaryFocusOption | null;
     displayName: string | null;
     themePreference: string | null;
@@ -247,6 +298,8 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
             gender,
             preferred_team_number AS "preferredTeamNumber",
             team_role AS "teamRole",
+            crew_role AS "crewRole",
+            role_description AS "roleDescription",
             primary_focus AS "primaryFocus",
             display_name AS "displayName",
             theme_preference AS "themePreference",
@@ -306,6 +359,8 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     gender: row?.gender ?? null,
     preferredTeamNumber: row?.preferredTeamNumber ?? locked?.teamNumber ?? null,
     teamRole: row?.teamRole ?? null,
+    crewRole: row?.crewRole ?? null,
+    roleDescription: row?.roleDescription ?? null,
     primaryFocus: row?.primaryFocus ?? "competition",
     displayName: row?.displayName ?? null,
     themePreference: row?.themePreference === "dark" ? "dark" : "light",
@@ -341,7 +396,7 @@ export async function saveOnboardingProgress(
   input: OnboardingDraftInput,
 ): Promise<OnboardingState> {
   const state = await getOnboardingState(client, userId);
-  if (state.complete && !["declined", "withdrawn"].includes(state.accessStatus)) return state;
+  if (state.complete && !["declined", "withdrawn", "none"].includes(state.accessStatus)) return state;
 
   if (input.step === "profile") {
     const firstName = input.firstName.trim();
@@ -359,17 +414,20 @@ export async function saveOnboardingProgress(
       [userId, firstName, lastName, input.dateOfBirth.trim(), input.gender],
     );
   } else if (input.step === "team") {
-    const teamNumber = state.lockedTeamNumber ?? Number(input.preferredTeamNumber);
-    if (!Number.isInteger(teamNumber) || teamNumber < 1 || teamNumber > 99999) throw new Error("FRC team number must be between 1 and 99999.");
+    const teamNumber =
+      state.lockedTeamNumber ?? parsePreferredTeamNumber(input.preferredTeamNumber);
     if (input.teamRole != null && !TEAM_ROLE_OPTIONS.includes(input.teamRole)) throw new Error("Select a valid team role.");
     if (!PRIMARY_FOCUS_OPTIONS.includes(input.primaryFocus)) throw new Error("Select a valid primary focus.");
+    const crewRole = parseCrewRole(input.crewRole);
+    const roleDescription = parseRoleDescription(input.roleDescription);
     await client.query(
-      `INSERT INTO profiles(user_id,preferred_team_number,team_role,primary_focus,onboarding_current_step,onboarding_started_at,onboarding_saved_at)
-       VALUES($1,$2,$3,$4,'preferences',now(),now())
+      `INSERT INTO profiles(user_id,preferred_team_number,team_role,crew_role,role_description,primary_focus,onboarding_current_step,onboarding_started_at,onboarding_saved_at)
+       VALUES($1,$2,$3,$4,$5,$6,'preferences',now(),now())
        ON CONFLICT(user_id) DO UPDATE SET preferred_team_number=excluded.preferred_team_number,
-         team_role=excluded.team_role,primary_focus=excluded.primary_focus,onboarding_current_step='preferences',
+         team_role=excluded.team_role,crew_role=excluded.crew_role,role_description=excluded.role_description,
+         primary_focus=excluded.primary_focus,onboarding_current_step='preferences',
          onboarding_started_at=COALESCE(profiles.onboarding_started_at,now()),onboarding_saved_at=now()`,
-      [userId, teamNumber, input.teamRole ?? null, input.primaryFocus],
+      [userId, teamNumber, input.teamRole ?? null, crewRole, roleDescription, input.primaryFocus],
     );
   } else {
     const displayName = trimOrNull(input.displayName, 80);
@@ -399,11 +457,14 @@ export async function completeOnboarding(
   input: OnboardingPayload,
 ): Promise<OnboardingState> {
   const state = await getOnboardingState(client, userId);
-  if (state.complete && !["declined", "withdrawn"].includes(state.accessStatus)) return state;
+  if (state.complete && !["declined", "withdrawn", "none"].includes(state.accessStatus)) return state;
 
   const payload = validateOnboardingPayload(input);
   const teamNumber =
     state.lockedTeamNumber != null ? state.lockedTeamNumber : payload.preferredTeamNumber;
+  if (state.isTeamHead && teamNumber == null) {
+    throw new Error("Team heads must keep their workspace team number.");
+  }
 
   if (state.isTeamHead && state.lockedOrgId) {
     const location = normalizeOrgLocationFields(input, { requireLocation: true });
@@ -443,9 +504,9 @@ export async function completeOnboarding(
   await client.query(
     `INSERT INTO profiles(
        user_id, first_name, last_name, date_of_birth, gender,
-       preferred_team_number, team_role, primary_focus, display_name, theme_preference,
+       preferred_team_number, team_role, crew_role, role_description, primary_focus, display_name, theme_preference,
        onboarding_current_step, onboarding_started_at, onboarding_saved_at, onboarding_completed_at
-     ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,'complete',COALESCE($11::timestamptz,now()),now(),now())
+     ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,'complete',COALESCE($13::timestamptz,now()),now(),now())
      ON CONFLICT (user_id) DO UPDATE SET
        first_name = excluded.first_name,
        last_name = excluded.last_name,
@@ -453,6 +514,8 @@ export async function completeOnboarding(
        gender = excluded.gender,
        preferred_team_number = excluded.preferred_team_number,
        team_role = excluded.team_role,
+       crew_role = excluded.crew_role,
+       role_description = excluded.role_description,
        primary_focus = excluded.primary_focus,
        display_name = excluded.display_name,
        theme_preference = excluded.theme_preference,
@@ -468,6 +531,8 @@ export async function completeOnboarding(
       payload.gender,
       teamNumber,
       payload.teamRole,
+      payload.crewRole,
+      payload.roleDescription,
       payload.primaryFocus,
       payload.displayName,
       payload.themePreference,
@@ -482,12 +547,22 @@ export async function completeOnboarding(
     payload.displayName || `${payload.firstName} ${payload.lastName}`,
   ]);
 
-  if (!state.platformAdmin && ["none", "declined", "withdrawn"].includes(state.accessStatus)) {
-    await client.query(`SELECT request_workspace_access($1,$2,$3)`, [
-      teamNumber,
-      payload.teamRole,
-      payload.primaryFocus,
-    ]);
+  if (
+    teamNumber != null &&
+    !state.platformAdmin &&
+    ["none", "declined", "withdrawn"].includes(state.accessStatus)
+  ) {
+    try {
+      await client.query(`SELECT request_workspace_access($1,$2,$3,$4,$5)`, [
+        teamNumber,
+        payload.teamRole,
+        payload.primaryFocus,
+        payload.crewRole,
+        payload.roleDescription,
+      ]);
+    } catch (error) {
+      if (!isMissingWorkspaceError(error)) throw error;
+    }
   }
 
   return getOnboardingState(client, userId);
