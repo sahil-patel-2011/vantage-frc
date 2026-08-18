@@ -24,6 +24,8 @@ export const CHECKLIST_BUMPER_MIN_HEIGHT_IN = 2.75;
 export const CHECKLIST_BUMPER_MAX_HEIGHT_IN = 5.5;
 /** 2026 inspection checklist padding minimum (tolerance already applied). */
 export const CHECKLIST_BUMPER_MIN_THICKNESS_IN = 2;
+/** 2026 R105 in-match horizontal extension (in). Last year was 16. */
+export const R105_EXTENSION_LIMIT_IN = 12;
 
 export const STALE_120_PERIMETER_CUE =
   "Starting-config perimeter is still 120 in — 2026 R104 is 110 in around and 30 in tall.";
@@ -31,6 +33,8 @@ export const STALE_BUMPER_ZONE_CUE =
   "Bumper zone max is still 7.5 in — 2026 inspectors use 2.75–5.5 in from the floor (checklist, tolerance applied).";
 export const STALE_BUMPER_THICKNESS_CUE =
   "Bumper padding minimum is still 1 in — 2026 checklist is 2 in solid-core (2.25 in nominal in the manual).";
+export const STALE_16_EXTENSION_CUE =
+  "In-match extension is still 16 in — 2026 R105 is 12 in past the robot perimeter, one direction at a time.";
 
 export function stale120PerimeterCue(limitIn: number): string | null {
   if (limitIn !== 120) return null;
@@ -45,6 +49,11 @@ export function staleBumperZoneCue(maxHeightIn: number): string | null {
 export function staleBumperThicknessCue(minThicknessIn: number): string | null {
   if (minThicknessIn !== 1) return null;
   return STALE_BUMPER_THICKNESS_CUE;
+}
+
+export function stale16ExtensionCue(limitIn: number): string | null {
+  if (limitIn !== 16) return null;
+  return STALE_16_EXTENSION_CUE;
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
@@ -124,6 +133,17 @@ export function predictInspectionFailures(input: {
       type: "starting_height_exceeded",
       severity: "critical",
       message: `Measured starting height ${frameBumper.measuredStartingHeightIn} in exceeds the ${frameBumper.startingHeightLimitIn} in 2026 limit (R104 / R107).`,
+    });
+  }
+
+  if (
+    (frameBumper.extensionLimitIn ?? 0) > 0 &&
+    (frameBumper.measuredExtensionIn ?? 0) > (frameBumper.extensionLimitIn ?? 0)
+  ) {
+    flags.push({
+      type: "extension_exceeded",
+      severity: "critical",
+      message: `Measured in-match extension ${frameBumper.measuredExtensionIn} in exceeds the ${frameBumper.extensionLimitIn} in 2026 limit (R105 — 12 in, one direction).`,
     });
   }
 
@@ -419,6 +439,7 @@ export function predictInspectionFailures(input: {
     (weightBudget.limitLbs > 0 ? 1 : 0) +
     (frameBumper.perimeterLimitIn > 0 ? 1 : 0) +
     ((frameBumper.startingHeightLimitIn ?? 0) > 0 ? 1 : 0) +
+    ((frameBumper.extensionLimitIn ?? 0) > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
     (frameBumper.bumperEventRecorded ? 2 : 0) +

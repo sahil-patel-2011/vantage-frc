@@ -18,7 +18,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Robot fits within starting size configuration",
       "Starting volume: perimeter ≤ 110 in, height ≤ 30 in (R104)",
       "Starting configuration does not overhang the robot perimeter",
-      "In-match extension ≤ 12 in horizontally and ≤ 30 in tall; bumpers stay in the bumper zone",
+      "In-match extension ≤ 12 in horizontally (one direction at a time) and ≤ 30 in tall; bumpers stay in the bumper zone",
       "Frame perimeter is rigid and continuous",
       "Bumpers cover the required frame perimeter",
       "Bumper padding is solid-core foam (hollow pool noodles are not legal)",

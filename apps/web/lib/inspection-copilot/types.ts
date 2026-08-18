@@ -29,6 +29,9 @@ export type FrameBumperSpec = {
   /** 2026 R104 / R107 starting-config height. 0 skips the check (no measurement yet). */
   startingHeightLimitIn?: number;
   measuredStartingHeightIn?: number;
+  /** 2026 R105 in-match horizontal extension. 0 measured skips the check. */
+  extensionLimitIn?: number;
+  measuredExtensionIn?: number;
   /**
    * When false, 2026 bumper-construction flags are skipped (never invent hollow foam).
    * CD: hollow pool noodles are illegal; reversible sets keep failing at events.
@@ -112,6 +115,7 @@ export type InspectionFlagType =
   | "weight_near_limit"
   | "frame_perimeter_exceeded"
   | "starting_height_exceeded"
+  | "extension_exceeded"
   | "bumper_height_out_of_range"
   | "bumper_undersized_thickness"
   | "main_breaker_oversized"
