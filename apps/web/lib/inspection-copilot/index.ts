@@ -203,6 +203,15 @@ export function predictInspectionFailures(input: {
     }
   }
 
+  if (wiringPower.sparkMaxEventRecorded && !wiringPower.sparkMaxUsbAvoided) {
+    flags.push({
+      type: "spark_max_usb_risk",
+      severity: "critical",
+      message:
+        "Spark MAX USB-C is not marked avoided on a suspect controller — a shorted phase can back-feed through USB and fry the laptop motherboard. Diagnose via CAN, not USB.",
+    });
+  }
+
   const checkCount =
     (weightBudget.limitLbs > 0 ? 1 : 0) +
     (frameBumper.perimeterLimitIn > 0 ? 1 : 0) +
@@ -210,7 +219,8 @@ export function predictInspectionFailures(input: {
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
-    (wiringPower.radioEventRecorded ? 3 : 0);
+    (wiringPower.radioEventRecorded ? 3 : 0) +
+    (wiringPower.sparkMaxEventRecorded ? 1 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));
 

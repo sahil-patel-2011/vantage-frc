@@ -542,6 +542,8 @@ function NewCheckForm({
   const [radioOnMainPd, setRadioOnMainPd] = useState(false);
   const [rioOnMainPd10A, setRioOnMainPd10A] = useState(false);
   const [radioProgrammedForEvent, setRadioProgrammedForEvent] = useState(false);
+  const [sparkMaxEventRecorded, setSparkMaxEventRecorded] = useState(false);
+  const [sparkMaxUsbAvoided, setSparkMaxUsbAvoided] = useState(false);
 
   const setWeightField = (index: number, key: keyof WeightItemDraft) => (event: { target: { value: string } }) =>
     setWeightItems((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: event.target.value } : row)));
@@ -593,6 +595,8 @@ function NewCheckForm({
             radioOnMainPd,
             rioOnMainPd10A,
             radioProgrammedForEvent,
+            sparkMaxEventRecorded,
+            sparkMaxUsbAvoided,
           },
         });
         setRobotName("");
@@ -613,6 +617,8 @@ function NewCheckForm({
         setRadioOnMainPd(false);
         setRioOnMainPd10A(false);
         setRadioProgrammedForEvent(false);
+        setSparkMaxEventRecorded(false);
+        setSparkMaxUsbAvoided(false);
       }}
     >
       <h2 style={{ margin: 0 }}>Run an inspection-readiness check</h2>
@@ -789,6 +795,34 @@ function NewCheckForm({
                 Radio programmed for this event
               </label>
             </>
+          ) : null}
+        </fieldset>
+      </div>
+
+      <div>
+        <strong className="app-muted">Spark MAX USB-C</strong>
+        <p className="app-muted">
+          Chief Delphi 2026: a shorted Spark MAX phase can back-feed through USB-C and fry a laptop. Leave this off until
+          you actually log the check — never invent a fail.
+        </p>
+        <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={sparkMaxEventRecorded}
+              onChange={(e) => setSparkMaxEventRecorded(e.target.checked)}
+            />
+            We logged Spark MAX USB policy for this robot
+          </label>
+          {sparkMaxEventRecorded ? (
+            <label>
+              <input
+                type="checkbox"
+                checked={sparkMaxUsbAvoided}
+                onChange={(e) => setSparkMaxUsbAvoided(e.target.checked)}
+              />
+              Will not plug USB-C into a Spark MAX that is behaving unexpectedly (use CAN)
+            </label>
           ) : null}
         </fieldset>
       </div>

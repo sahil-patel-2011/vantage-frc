@@ -102,6 +102,8 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     radioOnMainPd: Boolean(row.radioOnMainPd),
     rioOnMainPd10A: Boolean(row.rioOnMainPd10A),
     radioProgrammedForEvent: Boolean(row.radioProgrammedForEvent),
+    sparkMaxEventRecorded: Boolean(row.sparkMaxEventRecorded),
+    sparkMaxUsbAvoided: Boolean(row.sparkMaxUsbAvoided),
   };
 }
 
