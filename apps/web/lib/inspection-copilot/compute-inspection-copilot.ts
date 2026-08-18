@@ -95,6 +95,8 @@ export function parseFrameBumper(value: unknown): FrameBumperSpec {
     bumperCornersFilled: Boolean(row.bumperCornersFilled),
     bumperHardPartsInset: Boolean(row.bumperHardPartsInset),
     bumperBackingTall: Boolean(row.bumperBackingTall),
+    bumperCoverOk: Boolean(row.bumperCoverOk),
+    bumperRemovableOk: Boolean(row.bumperRemovableOk),
   };
 }
 

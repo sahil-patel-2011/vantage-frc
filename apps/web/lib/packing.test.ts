@@ -69,6 +69,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /Relieving regulator/i.test(label) && /non-relieving/i.test(label))).toBe(true);
     expect(labels.some((label) => /PoE injector/i.test(label) && /v1\.0/i.test(label))).toBe(true);
     expect(labels.some((label) => /through-bolts/i.test(label))).toBe(true);
+    expect(labels.some((label) => /quick-release/i.test(label) && /removable/i.test(label))).toBe(true);
     expect(labels.some((label) => /not reversible/i.test(label))).toBe(true);
     expect(labels.some((label) => /3\.5 in/i.test(label) && /0\.25 in/i.test(label))).toBe(true);
     expect(labels.some((label) => /3\/4 in/i.test(label) && /staple/i.test(label))).toBe(true);

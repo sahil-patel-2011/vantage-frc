@@ -248,6 +248,22 @@ export function predictInspectionFailures(input: {
           "Bumper backing is not marked ≥ 4.25 in tall supporting all padding — 2026 R402 / checklist fails cantilevered foam and short plywood (4.5 in nominal in the manual).",
       });
     }
+    if (!frameBumper.bumperCoverOk) {
+      flags.push({
+        type: "bumper_cover",
+        severity: "critical",
+        message:
+          "Bumper cloth cover is not marked covering all padding — 2026 R402 fails exposed foam and cloth that is not backed by padding.",
+      });
+    }
+    if (!frameBumper.bumperRemovableOk) {
+      flags.push({
+        type: "bumper_not_removable",
+        severity: "critical",
+        message:
+          "Bumpers are not marked securely mounted and easily removable — inspectors fail a set that needs a pit teardown to come off.",
+      });
+    }
   }
 
   if (
@@ -589,7 +605,7 @@ export function predictInspectionFailures(input: {
     ((frameBumper.extensionLimitIn ?? 0) > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
-    (frameBumper.bumperEventRecorded ? 9 : 0) +
+    (frameBumper.bumperEventRecorded ? 11 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
     (wiringPower.radioEventRecorded ? 6 : 0) +
