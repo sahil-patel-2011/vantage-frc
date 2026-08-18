@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeInspectionCopilotView, logCheck } from "./compute-inspection-copilot";
-import { predictInspectionFailures, stale120PerimeterCue, staleBumperThicknessCue, staleBumperZoneCue, STALE_120_PERIMETER_CUE, STALE_BUMPER_ZONE_CUE, STALE_BUMPER_THICKNESS_CUE } from ".";
+import { predictInspectionFailures, stale120PerimeterCue, stale16ExtensionCue, staleBumperThicknessCue, staleBumperZoneCue, STALE_120_PERIMETER_CUE, STALE_16_EXTENSION_CUE, STALE_BUMPER_ZONE_CUE, STALE_BUMPER_THICKNESS_CUE } from ".";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -701,6 +701,7 @@ describe("2026 starting-config size", () => {
     expect(prediction.flags.some((flag) => flag.type === "bumper_height_out_of_range")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_undersized_thickness")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "starting_height_exceeded")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "extension_exceeded")).toBe(false);
   });
 
   it("flags a logged starting height over 30 in without DEMO wording", () => {
@@ -724,12 +725,37 @@ describe("2026 starting-config size", () => {
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 
-  it("cues leftover 120 in / 7.5 in / 1 in inspection defaults", () => {
+  it("flags a logged in-match extension over 12 in without DEMO wording", () => {
+    const prediction = predictInspectionFailures({
+      weightBudget: { limitLbs: 115, items: [{ name: "Chassis", weightLbs: 80 }] },
+      frameBumper: {
+        perimeterLimitIn: 110,
+        measuredPerimeterIn: 108,
+        bumperMinHeightIn: 2.75,
+        bumperMaxHeightIn: 5.5,
+        measuredBumperMinHeightIn: 3,
+        measuredBumperMaxHeightIn: 5,
+        bumperMinThicknessIn: 2,
+        measuredBumperThicknessIn: 2.25,
+        startingHeightLimitIn: 30,
+        measuredStartingHeightIn: 28,
+        extensionLimitIn: 12,
+        measuredExtensionIn: 16,
+      },
+      wiringPower: wiring,
+    });
+    expect(prediction.flags.some((flag) => flag.type === "extension_exceeded")).toBe(true);
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+
+  it("cues leftover 120 in / 7.5 in / 1 in / 16 in inspection defaults", () => {
     expect(stale120PerimeterCue(110)).toBeNull();
     expect(stale120PerimeterCue(120)).toBe(STALE_120_PERIMETER_CUE);
     expect(staleBumperZoneCue(5.5)).toBeNull();
     expect(staleBumperZoneCue(7.5)).toBe(STALE_BUMPER_ZONE_CUE);
     expect(staleBumperThicknessCue(2)).toBeNull();
     expect(staleBumperThicknessCue(1)).toBe(STALE_BUMPER_THICKNESS_CUE);
+    expect(stale16ExtensionCue(12)).toBeNull();
+    expect(stale16ExtensionCue(16)).toBe(STALE_16_EXTENSION_CUE);
   });
 });

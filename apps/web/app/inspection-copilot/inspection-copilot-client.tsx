@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { inspectionFlagSeverityLabel, stale120PerimeterCue, staleBumperThicknessCue, staleBumperZoneCue } from "../../lib/inspection-copilot";
+import { inspectionFlagSeverityLabel, stale120PerimeterCue, stale16ExtensionCue, staleBumperThicknessCue, staleBumperZoneCue } from "../../lib/inspection-copilot";
 import type { InspectionCopilotView } from "../../lib/inspection-copilot/compute-inspection-copilot";
 import {
   INSPECTION_COPILOT_RELATED_INCLUDE,
@@ -523,6 +523,8 @@ function NewCheckForm({
   const [measuredPerimeterIn, setMeasuredPerimeterIn] = useState("");
   const [startingHeightLimitIn, setStartingHeightLimitIn] = useState("30");
   const [measuredStartingHeightIn, setMeasuredStartingHeightIn] = useState("");
+  const [extensionLimitIn, setExtensionLimitIn] = useState("12");
+  const [measuredExtensionIn, setMeasuredExtensionIn] = useState("");
   const [bumperMinHeightIn, setBumperMinHeightIn] = useState("2.75");
   const [bumperMaxHeightIn, setBumperMaxHeightIn] = useState("5.5");
   const [measuredBumperMinHeightIn, setMeasuredBumperMinHeightIn] = useState("");
@@ -605,6 +607,8 @@ function NewCheckForm({
             measuredBumperThicknessIn: Number(measuredBumperThicknessIn) || 0,
             startingHeightLimitIn: Number(startingHeightLimitIn) || 0,
             measuredStartingHeightIn: Number(measuredStartingHeightIn) || 0,
+            extensionLimitIn: Number(extensionLimitIn) || 0,
+            measuredExtensionIn: Number(measuredExtensionIn) || 0,
             bumperEventRecorded,
             solidCoreFoam,
             separateColorSets,
@@ -651,6 +655,7 @@ function NewCheckForm({
         setWeightItems([emptyWeightRow()]);
         setMeasuredPerimeterIn("");
         setMeasuredStartingHeightIn("");
+        setMeasuredExtensionIn("");
         setMeasuredBumperMinHeightIn("");
         setMeasuredBumperMaxHeightIn("");
         setMeasuredBumperThicknessIn("");
@@ -754,6 +759,9 @@ function NewCheckForm({
         {staleBumperThicknessCue(Number(bumperMinThicknessIn)) ? (
           <p className="app-muted" role="status">{staleBumperThicknessCue(Number(bumperMinThicknessIn))}</p>
         ) : null}
+        {stale16ExtensionCue(Number(extensionLimitIn)) ? (
+          <p className="app-muted" role="status">{stale16ExtensionCue(Number(extensionLimitIn))}</p>
+        ) : null}
         <FormGrid min={180}>
           <FormRow label="Perimeter limit (in)">
             <input type="number" min={0} value={perimeterLimitIn} onChange={(e) => setPerimeterLimitIn(e.target.value)} />
@@ -775,6 +783,22 @@ function NewCheckForm({
               min={0}
               value={measuredStartingHeightIn}
               onChange={(e) => setMeasuredStartingHeightIn(e.target.value)}
+            />
+          </FormRow>
+          <FormRow label="In-match extension limit (in)">
+            <input
+              type="number"
+              min={0}
+              value={extensionLimitIn}
+              onChange={(e) => setExtensionLimitIn(e.target.value)}
+            />
+          </FormRow>
+          <FormRow label="Measured max extension (in)">
+            <input
+              type="number"
+              min={0}
+              value={measuredExtensionIn}
+              onChange={(e) => setMeasuredExtensionIn(e.target.value)}
             />
           </FormRow>
           <FormRow label="Bumper min height (in)">
