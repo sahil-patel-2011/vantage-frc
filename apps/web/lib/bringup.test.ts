@@ -7,9 +7,11 @@ describe("BRINGUP_TEMPLATE", () => {
     expect([...phases].sort()).toEqual(["electrical", "mechanical", "software", "validation"]);
   });
 
-  it("catches PWM+CAN double-control and missing current limits before first enable", () => {
+  it("catches coprocessor PWM, spoofed CAN heartbeat, PWM+CAN double-control, and missing current limits before first enable", () => {
     const labels = BRINGUP_TEMPLATE.map((item) => item.label);
     expect(new Set(labels).size).toBe(labels.length);
+    expect(labels.some((label) => /R712/i.test(label) && /coprocessor/i.test(label))).toBe(true);
+    expect(labels.some((label) => /R716/i.test(label) && /heartbeat/i.test(label))).toBe(true);
     expect(labels.some((label) => /R714/i.test(label) && /PWM/i.test(label) && /CAN/i.test(label))).toBe(true);
     expect(labels.some((label) => /R715/i.test(label) && /Servo Hub/i.test(label))).toBe(true);
     expect(labels.some((label) => /supply current limits/i.test(label))).toBe(true);
