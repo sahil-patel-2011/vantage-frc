@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSoftwareVersionAction, staleSeasonStackCue, summarizeVersions, validateComponent, versionStatus, vh109FirmwareCue, inspectionDsCue, inspectionRioImageCue, STALE_SEASON_STACK_CUE, VH109_FIRMWARE_CUE, INSPECTION_DS_CUE, INSPECTION_RIO_IMAGE_CUE } from "./software-versions";
+import { parseSoftwareVersionAction, staleSeasonStackCue, summarizeVersions, validateComponent, versionStatus, vh109DipSwitchCue, vh109FirmwareCue, inspectionDsCue, inspectionRioImageCue, STALE_SEASON_STACK_CUE, VH109_DIP_SWITCH_CUE, VH109_FIRMWARE_CUE, INSPECTION_DS_CUE, INSPECTION_RIO_IMAGE_CUE } from "./software-versions";
 
 describe("versionStatus", () => {
   it("is ok when installed matches target", () => {
@@ -53,6 +53,18 @@ describe("vh109FirmwareCue", () => {
     expect(vh109FirmwareCue([{ component: "Radio firmware", installedVersion: "2.00" }])).toBe(VH109_FIRMWARE_CUE);
     expect(vh109FirmwareCue([{ component: "VH-109 radio", installedVersion: "2.01" }])).toBeNull();
     expect(vh109FirmwareCue([{ component: "Radio firmware", installedVersion: "unparsed" }])).toBeNull();
+  });
+});
+
+describe("vh109DipSwitchCue", () => {
+  it("cues only a logged radio firmware row at 2.0+ — never invents a radio", () => {
+    expect(vh109DipSwitchCue([])).toBeNull();
+    expect(vh109DipSwitchCue([{ component: "WPILib", installedVersion: "2.01" }])).toBeNull();
+    expect(vh109DipSwitchCue([{ component: "Radio firmware", installedVersion: "1.3" }])).toBeNull();
+    expect(vh109DipSwitchCue([{ component: "Radio firmware", installedVersion: "2.00" }])).toBe(VH109_DIP_SWITCH_CUE);
+    expect(vh109DipSwitchCue([{ component: "VH-109 radio", installedVersion: "2.01" }])).toBe(VH109_DIP_SWITCH_CUE);
+    expect(vh109DipSwitchCue([{ component: "Radio firmware", installedVersion: "unparsed" }])).toBeNull();
+    expect(JSON.stringify(VH109_DIP_SWITCH_CUE).toLowerCase()).not.toContain("demo");
   });
 });
 

@@ -95,6 +95,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Cable strain-relief (tape / clips) for ethernet + USB", quantity: 1 },
       { label: "Tape / caps for accidental USB controller buttons", quantity: 1 },
       { label: "NI Game Tools 26.0+ installer USB (field laptop; DS 26.0 / RIO 2026_v1.2)", quantity: 1 },
+      { label: "Reconfigure radio for home after the kiosk (2.4 GHz is a web-UI checkbox, not DIP 3)", quantity: 1 },
       { label: "No spare radio on the DS cart (unauthorized wireless)", quantity: 1 },
     ],
   },
