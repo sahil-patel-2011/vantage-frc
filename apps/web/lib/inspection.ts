@@ -33,7 +33,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Power distribution wiring uses legal gauge and colors",
       "roboRIO powered directly from the PDP/PDH",
       "Radio powered by an approved regulated source",
-      "Frame electrically isolated (>120Ω) from PD battery posts",
+      "Frame electrically isolated (>120Ω) from PD Anderson posts (battery out, breaker on)",
       "All motors and actuators are legal and correctly breakered",
       "Battery terminals insulated; no exposed conductors",
       "Robot signal light installed and visible",
@@ -44,7 +44,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
     items: [
       "Only legal pneumatic components (or none on the robot)",
       "Stored pressure within limits; working pressure regulated to 60 psi",
-      "Pressure relief valve fitted and set correctly",
+      "Pressure relief valve on the compressor outlet, set to 125 psi",
       "Easily accessible vent plug vents all stored pressure (gauges read 0 psi)",
       "Only one onboard legal compressor (n/a if the robot has no pneumatics)",
     ],

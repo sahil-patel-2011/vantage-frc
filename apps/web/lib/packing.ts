@@ -71,6 +71,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Wire stripper — Wago 221 gauge (11 mm); NEO phase is too fat for 221s", quantity: 1 },
       { label: "NEO encoder/hall JST spares + strain-relief (hot-glue connectors)", quantity: 4 },
       { label: "ESD kit — copper tape / foil, chassis-bond jumper (not to power), grounding drag", quantity: 1 },
+      { label: "Tape unused PDH / RIO / VRM ports (conductive debris reboots radios)", quantity: 1 },
     ],
   },
   {

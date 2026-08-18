@@ -120,6 +120,10 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     pneumaticsEventRecorded: Boolean(row.pneumaticsEventRecorded),
     ventPlugAccessible: Boolean(row.ventPlugAccessible),
     singleOnboardCompressor: Boolean(row.singleOnboardCompressor),
+    reliefValveOnCompressor: Boolean(row.reliefValveOnCompressor),
+    isolationEventRecorded: Boolean(row.isolationEventRecorded),
+    frameIsolated120: Boolean(row.frameIsolated120),
+    unusedPdPortsTaped: Boolean(row.unusedPdPortsTaped),
   };
 }
 

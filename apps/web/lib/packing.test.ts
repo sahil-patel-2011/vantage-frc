@@ -69,6 +69,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /Non-WCP load-rated zip ties/i.test(label))).toBe(true);
     expect(labels.some((label) => /main breaker cover/i.test(label))).toBe(true);
     expect(labels.some((label) => /ESD kit/i.test(label))).toBe(true);
+    expect(labels.some((label) => /unused PDH/i.test(label) && /debris/i.test(label))).toBe(true);
     expect(labels.some((label) => /Kraken power-connector/i.test(label))).toBe(true);
     expect(labels.some((label) => /controller buttons/i.test(label))).toBe(true);
     expect(labels.some((label) => /high-contact shafts/i.test(label))).toBe(true);

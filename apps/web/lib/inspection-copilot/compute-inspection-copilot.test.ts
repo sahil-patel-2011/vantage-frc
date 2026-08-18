@@ -553,6 +553,7 @@ describe("predictInspectionFailures pneumatics", () => {
     const prediction = predictInspectionFailures({ ...limits, wiringPower: wiring });
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_vent_plug")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_multi_compressor")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_relief_valve")).toBe(false);
   });
 
   it("flags a hidden vent plug once pneumatics are logged", () => {
@@ -562,6 +563,68 @@ describe("predictInspectionFailures pneumatics", () => {
     });
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_vent_plug")).toBe(true);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_multi_compressor")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_relief_valve")).toBe(true);
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+});
+
+describe("predictInspectionFailures R611 isolation", () => {
+  const wiring = {
+    mainBreakerMaxAmps: 120,
+    installedMainBreakerAmps: 120,
+    batterySecured: true,
+    wiresLabeled: true,
+    radioPowerOk: true,
+    bypassSwitchAccessible: true,
+    binderRecorded: false,
+    bomPrinted: false,
+    inspectionChecklistPrinted: false,
+    studentCaptainPresent: false,
+    radioEventRecorded: false,
+    radioOnMainPd: false,
+    rioOnMainPd10A: false,
+    radioProgrammedForEvent: false,
+    radioWeidmullerQc: false,
+    sparkMaxEventRecorded: false,
+    sparkMaxUsbAvoided: false,
+    reliabilityEventRecorded: false,
+    strainReliefOk: false,
+    dynamicCableClear: false,
+    esdIntakeBonded: false,
+    esdShielded: false,
+    canivorePdhBackup: false,
+    batteryLeadsTorqued: false,
+    mainBreakerCovered: false,
+    rioUsbCameraClear: false,
+  };
+  const limits = {
+    weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
+    frameBumper: {
+      perimeterLimitIn: 120,
+      measuredPerimeterIn: 110,
+      bumperMinHeightIn: 2.5,
+      bumperMaxHeightIn: 7.5,
+      measuredBumperMinHeightIn: 3,
+      measuredBumperMaxHeightIn: 6,
+      bumperMinThicknessIn: 1,
+      measuredBumperThicknessIn: 1.5,
+    },
+  };
+
+  it("does not invent a chassis short until isolation is logged", () => {
+    const prediction = predictInspectionFailures({ ...limits, wiringPower: wiring });
+    expect(prediction.flags.some((flag) => flag.type === "frame_not_isolated")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pdh_ports_untaped")).toBe(false);
+  });
+
+  it("flags a logged R611 fail and untaped PDH ports without DEMO wording", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: { ...wiring, isolationEventRecorded: true },
+    });
+    expect(prediction.flags.map((flag) => flag.type)).toEqual(
+      expect.arrayContaining(["frame_not_isolated", "pdh_ports_untaped"]),
+    );
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });
