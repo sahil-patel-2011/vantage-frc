@@ -23,6 +23,42 @@ const round2 = (value: number) => Math.round(value * 100) / 100;
 export const PLAYOFF_REWEIGH_CUE =
   "Playoffs are on the schedule. Log an Event inspection weigh-in after alliance selection — weight stays blank until you step on the scale.";
 
+/** 2026 R103: robot excluding bumpers and battery. */
+export const R103_WEIGHT_LIMIT_LBS = 115;
+/** 2026 R408: robot + bumpers. */
+export const R408_BUMPER_ON_LIMIT_LBS = 135;
+/** 2026 I103: all swap mechanisms presented at inspection. */
+export const I103_INSPECTED_MECHANISMS_LIMIT_LBS = 150;
+
+export const WEIGH_IN_R103_CUE =
+  "This reading excludes bumpers and battery — 2026 R103 is 115 lb, not last year's 125 lb.";
+export const WEIGH_IN_R408_CUE =
+  "Bumpers are on this reading — 2026 R408 is 135 lb for robot + bumpers (I103 is 150 lb with all swap mechanisms).";
+
+export function suggestedWeightLimitLbs(input: { bumpersOn: boolean; batteryOn: boolean }): number {
+  if (input.bumpersOn) return R408_BUMPER_ON_LIMIT_LBS;
+  if (!input.batteryOn) return R103_WEIGHT_LIMIT_LBS;
+  return R103_WEIGHT_LIMIT_LBS;
+}
+
+/**
+ * Cue a 2026 inspection limit from the logged bumper/battery config vs the limit they typed.
+ * Never invents a scale reading.
+ */
+export function weighIn2026LimitCue(input: {
+  bumpersOn: boolean;
+  batteryOn: boolean;
+  weightLimitLbs: number;
+}): string | null {
+  if (!Number.isFinite(input.weightLimitLbs) || input.weightLimitLbs <= 0) return null;
+  if (input.bumpersOn) {
+    if (input.weightLimitLbs >= R408_BUMPER_ON_LIMIT_LBS) return null;
+    return WEIGH_IN_R408_CUE;
+  }
+  if (!input.batteryOn && input.weightLimitLbs !== R103_WEIGHT_LIMIT_LBS) return WEIGH_IN_R103_CUE;
+  return null;
+}
+
 function calendarDayUtc(value: string): string | null {
   const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
   return match?.[1] ?? null;

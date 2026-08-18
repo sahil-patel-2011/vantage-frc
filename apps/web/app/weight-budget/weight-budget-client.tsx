@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { stale125WeightLimitCue } from "../../lib/weight-budget";
 
 type Component = { id: string; name: string; subsystem: string; weightLbs: number; quantity: number; notes: string; byName: string | null };
 type Summary = { count: number; totalLbs: number; limitLbs: number; remainingLbs: number; overLimit: boolean; percentUsed: number; bySubsystem: { subsystem: string; lbs: number }[] };
@@ -56,6 +57,9 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
         <nav className="intel-actions"><a href={`/subsystems${orgId ? `?orgId=${orgId}` : ""}`}>Subsystems</a><a href={`/inspection${orgId ? `?orgId=${orgId}` : ""}`}>Inspection</a><a href="/workspace">Workspace →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
+      {stale125WeightLimitCue(s.limitLbs) ? (
+        <p className="telemetry-status" role="status">{stale125WeightLimitCue(s.limitLbs)}</p>
+      ) : null}
 
       <section className="metric-grid">
         <article><span>Total weight</span><strong>{s.totalLbs} lb</strong></article>
