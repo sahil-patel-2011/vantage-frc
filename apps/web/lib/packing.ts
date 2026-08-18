@@ -90,6 +90,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Do not run motors off a Mini Power Module (R621 custom-circuit split)", quantity: 1 },
       { label: "Don't bury the PDH — inspectors need to see breakers and wiring", quantity: 1 },
       { label: "Keep PCM/PH ≥ 6 in from the radio (RF compressor faults)", quantity: 1 },
+      { label: "PCM/PH CAN drop (inspectors fail a powered-only module)", quantity: 1 },
     ],
   },
   {

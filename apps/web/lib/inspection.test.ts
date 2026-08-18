@@ -81,6 +81,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /70 psi/i.test(item) && /125 psi/i.test(item) && /R801/i.test(item))).toBe(true);
     expect(all.some((item) => /stops automatically/i.test(item) && /120 psi/i.test(item))).toBe(true);
     expect(all.some((item) => /pressure switch/i.test(item) && /PCM\/PH/i.test(item))).toBe(true);
+    expect(all.some((item) => /PCM\/PH/i.test(item) && /CAN bus/i.test(item))).toBe(true);
     expect(all.some((item) => /one onboard legal compressor/i.test(item))).toBe(true);
     expect(all.some((item) => /PCM\/PH or relay/i.test(item))).toBe(true);
     expect(all.some((item) => /1\/4 in/i.test(item) && /tubing/i.test(item))).toBe(true);
