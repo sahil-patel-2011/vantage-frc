@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAIN_BREAKER_TRIP_CUE, mainBreakerTripCue, needsReinspectionBeforeQueue, reinspectionCue } from ".";
+import { CAN_BUS_DROPOUT_CUE, MAIN_BREAKER_TRIP_CUE, canBusDropoutCue, mainBreakerTripCue, needsReinspectionBeforeQueue, reinspectionCue } from ".";
 
 describe("I104 reinspection cue (CD pit changes)", () => {
   it("cues open and staged fix/swap — never monitor, never a resolved report", () => {
@@ -40,6 +40,27 @@ describe("main breaker trip cue", () => {
     expect(
       mainBreakerTripCue({
         title: "Main breaker tripped",
+        status: "resolved",
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("CAN bus dropout cue", () => {
+  it("cues open CAN-dropout reports to check 60Ω termination — never a resolved row", () => {
+    expect(canBusDropoutCue({ title: "Intake jam", symptomNote: "roller stall", status: "open" })).toBeNull();
+    expect(
+      canBusDropoutCue({
+        title: "CAN bus dropouts",
+        symptomNote: "devices blink then vanish",
+        status: "open",
+      }),
+    ).toBe(CAN_BUS_DROPOUT_CUE);
+    expect(CAN_BUS_DROPOUT_CUE.toLowerCase()).toMatch(/60/);
+    expect(CAN_BUS_DROPOUT_CUE.toLowerCase()).not.toContain("demo");
+    expect(
+      canBusDropoutCue({
+        title: "CAN timeout on swerve",
         status: "resolved",
       }),
     ).toBeNull();
