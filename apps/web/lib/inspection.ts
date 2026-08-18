@@ -21,6 +21,8 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "In-match extension ≤ 12 in horizontally (one direction at a time) and ≤ 30 in tall; bumpers stay in the bumper zone",
       "Frame perimeter is rigid and continuous",
       "Bumpers cover the required frame perimeter",
+      "Bumper gaps < 1.25 in, or one larger gap with ≥ 5 in coverage from each corner (R401)",
+      "Bumpers have no moving or electrical parts (R409)",
       "Bumper padding is solid-core foam (hollow pool noodles are not legal)",
       "Separate red and blue bumper sets (reversible fabric eats weight and fails often)",
       "Team number visible on all four bumper sides",

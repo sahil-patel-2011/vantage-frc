@@ -491,6 +491,8 @@ describe("predictInspectionFailures bumper construction", () => {
     const prediction = predictInspectionFailures({ weightBudget, frameBumper, wiringPower: wiring });
     expect(prediction.flags.some((flag) => flag.type === "bumper_hollow_foam")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_reversible")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_gaps")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_electronics")).toBe(false);
   });
 
   it("flags logged hollow foam and reversible sets without DEMO wording", () => {
@@ -500,8 +502,26 @@ describe("predictInspectionFailures bumper construction", () => {
       wiringPower: wiring,
     });
     expect(prediction.flags.map((flag) => flag.type)).toEqual(
-      expect.arrayContaining(["bumper_hollow_foam", "bumper_reversible"]),
+      expect.arrayContaining(["bumper_hollow_foam", "bumper_reversible", "bumper_gaps", "bumper_electronics"]),
     );
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+
+  it("does not flag R401 gaps or R409 electronics once they are logged", () => {
+    const prediction = predictInspectionFailures({
+      weightBudget,
+      frameBumper: {
+        ...frameBumper,
+        bumperEventRecorded: true,
+        solidCoreFoam: true,
+        separateColorSets: true,
+        bumperGapsOk: true,
+        bumperNoElectronics: true,
+      },
+      wiringPower: wiring,
+    });
+    expect(prediction.flags.some((flag) => flag.type === "bumper_gaps")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_electronics")).toBe(false);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });

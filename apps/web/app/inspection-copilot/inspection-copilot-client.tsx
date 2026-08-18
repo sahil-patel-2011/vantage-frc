@@ -534,6 +534,8 @@ function NewCheckForm({
   const [bumperEventRecorded, setBumperEventRecorded] = useState(false);
   const [solidCoreFoam, setSolidCoreFoam] = useState(false);
   const [separateColorSets, setSeparateColorSets] = useState(false);
+  const [bumperGapsOk, setBumperGapsOk] = useState(false);
+  const [bumperNoElectronics, setBumperNoElectronics] = useState(false);
 
   const [mainBreakerMaxAmps, setMainBreakerMaxAmps] = useState("120");
   const [installedMainBreakerAmps, setInstalledMainBreakerAmps] = useState("120");
@@ -612,6 +614,8 @@ function NewCheckForm({
             bumperEventRecorded,
             solidCoreFoam,
             separateColorSets,
+            bumperGapsOk,
+            bumperNoElectronics,
           },
           wiringPower: {
             mainBreakerMaxAmps: Number(mainBreakerMaxAmps) || 0,
@@ -662,6 +666,8 @@ function NewCheckForm({
         setBumperEventRecorded(false);
         setSolidCoreFoam(false);
         setSeparateColorSets(false);
+        setBumperGapsOk(false);
+        setBumperNoElectronics(false);
         setBatterySecured(false);
         setWiresLabeled(false);
         setRadioPowerOk(false);
@@ -866,6 +872,22 @@ function NewCheckForm({
                   onChange={(e) => setSeparateColorSets(e.target.checked)}
                 />
                 Separate red and blue sets (not reversible)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperGapsOk}
+                  onChange={(e) => setBumperGapsOk(e.target.checked)}
+                />
+                Gaps under 1.25 in, or one larger gap with ≥ 5 in from each corner (R401)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperNoElectronics}
+                  onChange={(e) => setBumperNoElectronics(e.target.checked)}
+                />
+                No moving or electrical parts in the bumpers (R409)
               </label>
             </>
           ) : null}
