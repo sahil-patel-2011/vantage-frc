@@ -76,6 +76,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /one onboard legal compressor/i.test(item))).toBe(true);
     expect(all.some((item) => /110 in/i.test(item) && /30 in/i.test(item))).toBe(true);
     expect(all.some((item) => /12 in/i.test(item) && /one direction/i.test(item))).toBe(true);
+    expect(all.some((item) => /2026_v1\.2/i.test(item) && /26\.0/i.test(item))).toBe(true);
     expect(JSON.stringify(all).toLowerCase()).not.toContain("demo");
   });
 });

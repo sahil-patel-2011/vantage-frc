@@ -132,6 +132,52 @@ export function staleSeasonStackCue(
   return stale ? STALE_SEASON_STACK_CUE : null;
 }
 
+/** 2026 inspection checklist: roboRIO image 2026_v1.2 or later. Cue only from a logged RIO row. */
+export const INSPECTION_RIO_IMAGE_MIN_2026 = [2026, 1, 2] as const;
+export const INSPECTION_RIO_IMAGE_CUE =
+  "Logged roboRIO image is below 2026_v1.2 — inspectors fail an older 2026 image even when the year is current.";
+
+/** 2026 inspection checklist: Driver Station / Game Tools 26.0 or later. Cue only from a logged DS row. */
+export const INSPECTION_DS_MIN_2026 = [2026, 0] as const;
+export const INSPECTION_DS_CUE =
+  "Logged Driver Station is below 26.0 — 2026 inspection wants Game Tools 26.0 or later on the field laptop.";
+
+/** Game Tools uses 26.0; roboRIO images use 2026_v1.2. Two-digit 20–99 years become 20xx. */
+function frcYearParts(raw: string): number[] | null {
+  const parts = dottedVersionParts(raw);
+  if (!parts?.length) return null;
+  const first = parts[0] ?? 0;
+  if (first >= 2000) return parts;
+  if (first >= 20 && first <= 99) return [2000 + first, ...parts.slice(1)];
+  return parts;
+}
+
+export function inspectionRioImageCue(
+  components: Array<{ component: string; installedVersion: string }>,
+  seasonYear: number,
+): string | null {
+  if (seasonYear !== 2026) return null;
+  const rio = components.find((row) => /roborio/i.test(row.component));
+  if (!rio) return null;
+  const parsed = frcYearParts(rio.installedVersion);
+  if (!parsed) return null;
+  if (versionAtLeast(parsed, INSPECTION_RIO_IMAGE_MIN_2026)) return null;
+  return INSPECTION_RIO_IMAGE_CUE;
+}
+
+export function inspectionDsCue(
+  components: Array<{ component: string; installedVersion: string }>,
+  seasonYear: number,
+): string | null {
+  if (seasonYear !== 2026) return null;
+  const ds = components.find((row) => /driver.?station|game tools/i.test(row.component));
+  if (!ds) return null;
+  const parsed = frcYearParts(ds.installedVersion);
+  if (!parsed) return null;
+  if (versionAtLeast(parsed, INSPECTION_DS_MIN_2026)) return null;
+  return INSPECTION_DS_CUE;
+}
+
 // ---- request validation --------------------------------------------------
 
 export type SoftwareVersionAction =
