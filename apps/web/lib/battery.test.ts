@@ -7,6 +7,8 @@ import {
   parseBatteryAction,
   rankForRotation,
   summarizeLogs,
+  BATTERY_BREAK_IN_CUE,
+  batteryBreakInCue,
   type BatteryHealth,
   type BatteryStatus,
 } from "./battery";
@@ -65,6 +67,15 @@ describe("summarizeLogs", () => {
     expect(summary.cycleCount).toBe(0);
     expect(summary.lastInternalResistanceMohm).toBeNull();
     expect(summary.lastUsedAt).toBeNull();
+  });
+});
+
+describe("batteryBreakInCue", () => {
+  it("cues packs with fewer than three logged match/practice cycles", () => {
+    expect(batteryBreakInCue(null)).toBeNull();
+    expect(batteryBreakInCue(0)).toBe(BATTERY_BREAK_IN_CUE);
+    expect(batteryBreakInCue(2)).toBe(BATTERY_BREAK_IN_CUE);
+    expect(batteryBreakInCue(3)).toBeNull();
   });
 });
 
