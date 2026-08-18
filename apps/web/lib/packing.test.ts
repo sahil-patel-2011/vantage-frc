@@ -57,6 +57,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /Twin ferrules/i.test(label) && /R618/i.test(label))).toBe(true);
     expect(labels.some((label) => /heat shrink/i.test(label))).toBe(true);
     expect(labels.some((label) => /CANivore/i.test(label))).toBe(true);
+    expect(labels.some((label) => /120Ω|120 ohm/i.test(label) && /terminator/i.test(label))).toBe(true);
     expect(labels.some((label) => /Shielded CANivore USB-C/i.test(label))).toBe(true);
     expect(labels.some((label) => /Endurance-class SD/i.test(label))).toBe(true);
     expect(labels.some((label) => /Wago 221/i.test(label) && /11 mm/i.test(label))).toBe(true);

@@ -57,6 +57,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "REV Servo Hub on its own PD branch with a breaker ≤ 20A (R621)",
       "Servo Hub on the roboRIO CAN bus (R715)",
       "Do not connect motor or relay outputs to the roboRIO (R711 except the 12V input)",
+      "CAN daisy-chain ~60Ω yellow-to-green with battery out (two 120Ω ends)",
       "Control system devices unmodified — no paint, drill, or rewire (R710)",
       "Servos connected only to RIO PWM, WCP-0045, Servo Power Module, or Servo Hub (R506)",
       "CAN motor controllers use PWM or CAN, not both at once (R714)",

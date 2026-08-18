@@ -13,7 +13,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { mainBreakerTripCue, needsReinspectionBeforeQueue, reinspectionCue, triageDecisionLabel } from "../../lib/pit-repair-triage";
+import { mainBreakerTripCue, canBusDropoutCue, needsReinspectionBeforeQueue, reinspectionCue, triageDecisionLabel } from "../../lib/pit-repair-triage";
 import {
   TRIAGE_STATUSES,
   type PitRepairTriageView,
@@ -389,6 +389,7 @@ function ReportsList({
         {view.reports.map((report) => {
           const inspectCue = reinspectionCue(report);
           const breakerCue = mainBreakerTripCue(report);
+          const canCue = canBusDropoutCue(report);
           return (
           <li key={report.id} className="app-card soft-panel prt-report-card">
             <header className="prt-report-header">
@@ -432,6 +433,11 @@ function ReportsList({
             {breakerCue ? (
               <p className="prt-reinspect" role="status">
                 {breakerCue}
+              </p>
+            ) : null}
+            {canCue ? (
+              <p className="prt-reinspect" role="status">
+                {canCue}
               </p>
             ) : null}
             {report.status !== "resolved" ? (

@@ -69,6 +69,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /Servo Hub/i.test(item) && /20A/i.test(item) && /R621/i.test(item))).toBe(true);
     expect(all.some((item) => /Servo Hub/i.test(item) && /R715/i.test(item))).toBe(true);
     expect(all.some((item) => /R711/i.test(item) && /roboRIO/i.test(item))).toBe(true);
+    expect(all.some((item) => /60Ω|60 ohm/i.test(item) && /120Ω|120 ohm/i.test(item) && /CAN/i.test(item))).toBe(true);
     expect(all.some((item) => /R710/i.test(item) && /paint/i.test(item))).toBe(true);
     expect(all.some((item) => /R506/i.test(item) && /Servo Hub/i.test(item))).toBe(true);
     expect(all.some((item) => /R714/i.test(item) && /PWM/i.test(item) && /CAN/i.test(item))).toBe(true);

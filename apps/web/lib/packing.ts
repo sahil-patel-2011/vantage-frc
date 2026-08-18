@@ -80,6 +80,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Twin ferrules rated for two wires (R618 — soldered splices fail)", quantity: 1 },
       { label: "Heat shrink for exposed battery terminals", quantity: 1 },
       { label: "Hot glue for CAN / USB / CANivore connectors", quantity: 1 },
+      { label: "120Ω CAN terminator spare (PDH jumper ON or resistor at the far end)", quantity: 1 },
       { label: "Shielded CANivore USB-C (stock cable; no unshielded log-drive dongle)", quantity: 1 },
       { label: "Endurance-class SD card for RIO logging (fresh per event)", quantity: 2 },
       { label: "Wire stripper — Wago 221 gauge (11 mm); NEO phase is too fat for 221s", quantity: 1 },
