@@ -106,6 +106,22 @@ export function vh109FirmwareCue(
   return VH109_FIRMWARE_CUE;
 }
 
+/** CD: firmware 2.0+ removed DIP switch 3. Cue only from a logged radio row at 2.0 or later. */
+export const VH109_DIP_SWITCH_MIN = [2, 0] as const;
+export const VH109_DIP_SWITCH_CUE =
+  "Logged VH-109 firmware is 2.0+ — DIP switch 3 no longer enables 2.4 GHz. Reconfigure home after the event kiosk and turn on Enable 2.4 GHz Wi-Fi in the radio web UI.";
+
+export function vh109DipSwitchCue(
+  components: Array<{ component: string; installedVersion: string }>,
+): string | null {
+  const radio = components.find((row) => /radio/i.test(row.component));
+  if (!radio) return null;
+  const parsed = dottedVersionParts(radio.installedVersion);
+  if (!parsed) return null;
+  if (!versionAtLeast(parsed, VH109_DIP_SWITCH_MIN)) return null;
+  return VH109_DIP_SWITCH_CUE;
+}
+
 const SEASON_STACK_NAME = /wpilib|roborio|driver.?station|game tools/i;
 
 /** CD: 2026 Tuner / Game Tools will not talk to a leftover 2025 RIO image. Cue only from a logged stack row. */
