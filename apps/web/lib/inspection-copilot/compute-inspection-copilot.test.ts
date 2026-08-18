@@ -136,6 +136,16 @@ describe("logCheck", () => {
         wiresLabeled: true,
         radioPowerOk: true,
         bypassSwitchAccessible: true,
+        binderRecorded: false,
+        bomPrinted: false,
+        inspectionChecklistPrinted: false,
+        studentCaptainPresent: false,
+        radioEventRecorded: false,
+        radioOnMainPd: false,
+        rioOnMainPd10A: false,
+        radioProgrammedForEvent: false,
+        sparkMaxEventRecorded: false,
+        sparkMaxUsbAvoided: false,
       },
     });
 
@@ -179,6 +189,8 @@ describe("predictInspectionFailures binder", () => {
       radioOnMainPd: false,
       rioOnMainPd10A: false,
       radioProgrammedForEvent: false,
+      sparkMaxEventRecorded: false,
+      sparkMaxUsbAvoided: false,
     },
   };
 
@@ -212,6 +224,8 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
     radioOnMainPd: false,
     rioOnMainPd10A: false,
     radioProgrammedForEvent: false,
+    sparkMaxEventRecorded: false,
+    sparkMaxUsbAvoided: false,
   };
   const limits = {
     weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
@@ -249,5 +263,54 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
     expect(prediction.flags.find((flag) => flag.type === "radio_not_on_main_pd")?.message.toLowerCase()).not.toContain(
       "demo",
     );
+  });
+});
+
+describe("predictInspectionFailures Spark MAX USB", () => {
+  const wiring = {
+    mainBreakerMaxAmps: 120,
+    installedMainBreakerAmps: 120,
+    batterySecured: true,
+    wiresLabeled: true,
+    radioPowerOk: true,
+    bypassSwitchAccessible: true,
+    binderRecorded: false,
+    bomPrinted: false,
+    inspectionChecklistPrinted: false,
+    studentCaptainPresent: false,
+    radioEventRecorded: false,
+    radioOnMainPd: false,
+    rioOnMainPd10A: false,
+    radioProgrammedForEvent: false,
+    sparkMaxEventRecorded: false,
+    sparkMaxUsbAvoided: false,
+  };
+  const limits = {
+    weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
+    frameBumper: {
+      perimeterLimitIn: 120,
+      measuredPerimeterIn: 110,
+      bumperMinHeightIn: 2.5,
+      bumperMaxHeightIn: 7.5,
+      measuredBumperMinHeightIn: 3,
+      measuredBumperMaxHeightIn: 6,
+      bumperMinThicknessIn: 1,
+      measuredBumperThicknessIn: 1.5,
+    },
+  };
+
+  it("does not invent a Spark MAX USB fail when the team has not logged it", () => {
+    const prediction = predictInspectionFailures({ ...limits, wiringPower: wiring });
+    expect(prediction.flags.some((flag) => flag.type === "spark_max_usb_risk")).toBe(false);
+  });
+
+  it("flags USB-C on a suspect Spark MAX once the team records that check", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: { ...wiring, sparkMaxEventRecorded: true, sparkMaxUsbAvoided: false },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "spark_max_usb_risk")).toBe(true);
+    expect(prediction.flags.find((flag) => flag.type === "spark_max_usb_risk")?.message.toLowerCase()).toMatch(/motherboard|usb/);
+    expect(prediction.flags.find((flag) => flag.type === "spark_max_usb_risk")?.message.toLowerCase()).not.toContain("demo");
   });
 });

@@ -52,6 +52,13 @@ export type WiringPowerSpec = {
   radioOnMainPd: boolean;
   rioOnMainPd10A: boolean;
   radioProgrammedForEvent: boolean;
+  /**
+   * When false, Spark MAX USB flags are skipped (never invent a fried laptop).
+   * CD 2026: USB-C into a shorted Spark MAX can back-feed and kill a motherboard.
+   */
+  sparkMaxEventRecorded: boolean;
+  /** True once the team confirms they will not USB a Spark MAX that is behaving unexpectedly. */
+  sparkMaxUsbAvoided: boolean;
 };
 
 export type InspectionFlagType =
@@ -70,7 +77,8 @@ export type InspectionFlagType =
   | "student_captain_absent"
   | "radio_not_on_main_pd"
   | "rio_not_on_main_pd"
-  | "radio_not_programmed_for_event";
+  | "radio_not_programmed_for_event"
+  | "spark_max_usb_risk";
 
 export type InspectionFlagSeverity = "info" | "warning" | "critical";
 
