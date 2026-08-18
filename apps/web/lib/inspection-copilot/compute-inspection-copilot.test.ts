@@ -554,6 +554,8 @@ describe("predictInspectionFailures pneumatics", () => {
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_vent_plug")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_multi_compressor")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_relief_valve")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_working_pressure")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_pressure_switch")).toBe(false);
   });
 
   it("flags a hidden vent plug once pneumatics are logged", () => {
@@ -564,6 +566,26 @@ describe("predictInspectionFailures pneumatics", () => {
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_vent_plug")).toBe(true);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_multi_compressor")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_relief_valve")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_working_pressure")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_pressure_switch")).toBe(true);
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+
+  it("does not flag working pressure or the pressure switch once they are logged", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: {
+        ...wiring,
+        pneumaticsEventRecorded: true,
+        ventPlugAccessible: true,
+        singleOnboardCompressor: true,
+        reliefValveOnCompressor: true,
+        workingPressure60Psi: true,
+        pressureSwitchOnPcmPh: true,
+      },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_working_pressure")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_pressure_switch")).toBe(false);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });
