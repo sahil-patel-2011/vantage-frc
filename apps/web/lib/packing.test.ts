@@ -47,6 +47,10 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /strain-relief/i.test(label))).toBe(true);
     expect(labels.some((label) => /main breaker/i.test(label))).toBe(true);
     expect(labels.some((label) => /microfiber/i.test(label))).toBe(true);
+    expect(labels.some((label) => /Loctite 425/i.test(label))).toBe(true);
+    expect(labels.some((label) => /ferrule/i.test(label))).toBe(true);
+    expect(labels.some((label) => /heat shrink/i.test(label))).toBe(true);
+    expect(labels.some((label) => /CANivore/i.test(label))).toBe(true);
   });
 });
 
