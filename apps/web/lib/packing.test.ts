@@ -66,6 +66,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /pressure switch/i.test(label) && /PCM\/PH/i.test(label))).toBe(true);
     expect(labels.some((label) => /70 psi/i.test(label) && /125 psi/i.test(label) && /R801/i.test(label))).toBe(true);
     expect(labels.some((label) => /1\/4 in OD/i.test(label) && /tubing/i.test(label))).toBe(true);
+    expect(labels.some((label) => /1\/8 in NPT/i.test(label) && /solenoid/i.test(label))).toBe(true);
     expect(labels.some((label) => /Relieving regulator/i.test(label) && /non-relieving/i.test(label))).toBe(true);
     expect(labels.some((label) => /PoE injector/i.test(label) && /v1\.0/i.test(label))).toBe(true);
     expect(labels.some((label) => /through-bolts/i.test(label))).toBe(true);
