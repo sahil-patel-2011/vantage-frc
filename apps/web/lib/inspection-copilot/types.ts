@@ -111,6 +111,8 @@ export type WiringPowerSpec = {
   mainBreakerCovered: boolean;
   /** True once USB cameras are off the RIO USB ports next to a CANivore. */
   rioUsbCameraClear: boolean;
+  /** True once the PCM/PH is kept away from the radio (RF compressor faults). */
+  pcmRadioSeparated?: boolean;
   /**
    * When false, pneumatics flags are skipped (robots without air never invent a vent-plug fail).
    * CD / inspection checklist: hidden vent plugs, extra compressors, 60 psi working pressure, and a missing pressure switch stop Thursday.
@@ -185,6 +187,7 @@ export type InspectionFlagType =
   | "battery_leads_loose"
   | "main_breaker_exposed"
   | "rio_usb_camera_canivore"
+  | "pcm_radio_rf"
   | "bumper_hollow_foam"
   | "bumper_reversible"
   | "bumper_gaps"

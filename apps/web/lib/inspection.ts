@@ -66,6 +66,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Pneumatic tubing equivalent to KOP, maximum OD 1/4 in",
       "Relieving pressure regulator ≤ 60 psi providing all working pressure",
       "Compressor starts when the robot is enabled with no stored pressure",
+      "PCM/PH mounted away from the radio (RF looks like a compressor fault)",
     ],
   },
   {

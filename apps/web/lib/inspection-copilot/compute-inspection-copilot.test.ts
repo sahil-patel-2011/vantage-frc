@@ -156,6 +156,7 @@ describe("logCheck", () => {
         batteryLeadsTorqued: false,
         mainBreakerCovered: false,
         rioUsbCameraClear: false,
+        pcmRadioSeparated: false,
       },
     });
 
@@ -445,6 +446,7 @@ describe("predictInspectionFailures 2026 pit reliability", () => {
     expect(prediction.flags.some((flag) => flag.type === "strain_relief_missing")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "esd_intake_unbonded")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "rio_usb_camera_canivore")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pcm_radio_rf")).toBe(false);
   });
 
   it("flags logged reliability gaps without DEMO wording", () => {
@@ -462,10 +464,19 @@ describe("predictInspectionFailures 2026 pit reliability", () => {
         "battery_leads_loose",
         "main_breaker_exposed",
         "rio_usb_camera_canivore",
+        "pcm_radio_rf",
       ]),
     );
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("cheesycare");
+  });
+
+  it("does not flag PCM/radio RF when the modules are marked separated", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: { ...wiring, reliabilityEventRecorded: true, pcmRadioSeparated: true },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "pcm_radio_rf")).toBe(false);
   });
 });
 
