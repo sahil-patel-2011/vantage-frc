@@ -147,6 +147,7 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     compressorStartsEnabled: Boolean(row.compressorStartsEnabled),
     pneumaticsUnmodified: Boolean(row.pneumaticsUnmodified),
     solenoidsLegal: Boolean(row.solenoidsLegal),
+    gaugesVisible: Boolean(row.gaugesVisible),
     isolationEventRecorded: Boolean(row.isolationEventRecorded),
     frameIsolated120: Boolean(row.frameIsolated120),
     unusedPdPortsTaped: Boolean(row.unusedPdPortsTaped),

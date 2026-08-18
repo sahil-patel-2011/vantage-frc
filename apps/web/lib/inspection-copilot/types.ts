@@ -142,6 +142,8 @@ export type WiringPowerSpec = {
   pneumaticsUnmodified?: boolean;
   /** True once solenoids are ≤ 1/8 in NPT, PCM/PH/relay controlled, and outputs are not teed. */
   solenoidsLegal?: boolean;
+  /** True once stored and working gauges are on both sides of the regulator and readily visible. */
+  gaugesVisible?: boolean;
   /**
    * When false, R611 isolation / PDH-debris flags are skipped (never invent a chassis short).
    * CD: inspectors probe Anderson-to-frame with battery out and breaker on; debris in unused PDH slots reboots radios.
@@ -216,6 +218,7 @@ export type InspectionFlagType =
   | "pneumatics_compressor_start"
   | "pneumatics_no_modifications"
   | "pneumatics_valve_control"
+  | "pneumatics_gauges"
   | "frame_not_isolated"
   | "pdh_ports_untaped"
   | "pdh_fuses"

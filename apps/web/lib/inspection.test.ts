@@ -84,6 +84,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /PCM\/PH mounted away from the radio/i.test(item))).toBe(true);
     expect(all.some((item) => /No painting or large labels/i.test(item))).toBe(true);
     expect(all.some((item) => /1\/8 in NPT/i.test(item) && /outputs not combined/i.test(item))).toBe(true);
+    expect(all.some((item) => /Gauges/i.test(item) && /stored and working/i.test(item))).toBe(true);
     expect(all.some((item) => /RIO-port/i.test(item) && /VRM\/RPM/i.test(item))).toBe(true);
     expect(all.some((item) => /v1\.5/i.test(item) && /v1\.0/i.test(item) && /PoE/i.test(item))).toBe(true);
     expect(all.some((item) => /110 in/i.test(item) && /30 in/i.test(item))).toBe(true);

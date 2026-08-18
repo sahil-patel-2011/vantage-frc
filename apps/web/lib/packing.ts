@@ -19,6 +19,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Pneumatic rating card (working ≥ 70 psi / stored ≥ 125 psi; R801/R802)", quantity: 1 },
       { label: "1/4 in OD pneumatic tubing spare (docs if not KOP)", quantity: 1 },
       { label: "1/8 in NPT solenoid spare (not 1/4 NPT; outputs not teed)", quantity: 1 },
+      { label: "Stored + working gauges visible both sides of the regulator (R810)", quantity: 1 },
       { label: "Relieving regulator spare (≤ 60 psi working; not a non-relieving valve)", quantity: 1 },
       { label: "Spare parts kit (printed + machined spares)", quantity: 1 },
       { label: "Spare wheels / tread", quantity: 4 },

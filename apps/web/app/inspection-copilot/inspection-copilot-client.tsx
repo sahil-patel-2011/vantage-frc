@@ -587,6 +587,7 @@ function NewCheckForm({
   const [compressorStartsEnabled, setCompressorStartsEnabled] = useState(false);
   const [pneumaticsUnmodified, setPneumaticsUnmodified] = useState(false);
   const [solenoidsLegal, setSolenoidsLegal] = useState(false);
+  const [gaugesVisible, setGaugesVisible] = useState(false);
   const [isolationEventRecorded, setIsolationEventRecorded] = useState(false);
   const [frameIsolated120, setFrameIsolated120] = useState(false);
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
@@ -690,6 +691,7 @@ function NewCheckForm({
             compressorStartsEnabled,
             pneumaticsUnmodified,
             solenoidsLegal,
+            gaugesVisible,
             isolationEventRecorded,
             frameIsolated120,
             unusedPdPortsTaped,
@@ -1214,8 +1216,8 @@ function NewCheckForm({
         <strong className="app-muted">Pneumatics (skip if the robot has no air)</strong>
         <p className="app-muted">
           Inspection checklist: hidden vent plugs, extra compressors, 60 psi working pressure, a missing pressure
-          switch, paint on tanks, and illegal solenoids fail Thursday. Leave this off until you actually walk stored
-          pressure — never invent a fail.
+          switch, paint on tanks, illegal solenoids, and buried gauges fail Thursday. Leave this off until you actually
+          walk stored pressure — never invent a fail.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1331,6 +1333,14 @@ function NewCheckForm({
                   onChange={(e) => setSolenoidsLegal(e.target.checked)}
                 />
                 Solenoids ≤ 1/8 in NPT (or 1/4 in QC), PCM/PH or relay, outputs not teed
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={gaugesVisible}
+                  onChange={(e) => setGaugesVisible(e.target.checked)}
+                />
+                Stored and working gauges on both sides of the regulator, readily visible
               </label>
             </>
           ) : null}
