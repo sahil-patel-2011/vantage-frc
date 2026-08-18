@@ -45,6 +45,23 @@ export function alliancePartners(alliances: MatchStrategyAlliance[], ownTeamNumb
   return own.teamNumbers.filter((n) => n !== ownTeamNumber);
 }
 
+/** CD 2026: a good auto is only half the problem — agree paths with TBA partners. */
+export const AUTO_COORDINATION_CUE =
+  "Agree auto paths with alliance partners before you queue — visualization tools do not replace a spoken plan.";
+
+/**
+ * Cue only when TBA lists real partners and Auto assignment is still blank.
+ * Never invents an alliance or pretends they already agreed.
+ */
+export function autoCoordinationCue(input: {
+  partnerNumbers: number[];
+  autoAssignment: string | null | undefined;
+}): string | null {
+  if (input.partnerNumbers.length === 0) return null;
+  if (input.autoAssignment?.trim()) return null;
+  return AUTO_COORDINATION_CUE;
+}
+
 export function opponentTeams(alliances: MatchStrategyAlliance[]): number[] {
   return alliances.filter((a) => !a.isOwnAlliance).flatMap((a) => a.teamNumbers);
 }

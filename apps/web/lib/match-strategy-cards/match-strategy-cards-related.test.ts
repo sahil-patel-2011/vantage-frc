@@ -50,6 +50,18 @@ describe("matchStrategyCardsNextActions", () => {
     expect(actions[0]?.id).toBe("edit");
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
   });
+
+  it("prioritizes auto coordination when TBA partners have no auto plan", () => {
+    const actions = matchStrategyCardsNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      cardCount: 4,
+      savedCount: 1,
+      needsAutoCoordination: true,
+    });
+    expect(actions[0]?.id).toBe("auto-coord");
+    expect(actions[0]?.primary).toBe(true);
+  });
 });
 
 describe("classifyMatchStrategyCardsShell", () => {
