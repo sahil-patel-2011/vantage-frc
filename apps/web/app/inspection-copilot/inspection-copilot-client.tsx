@@ -585,6 +585,7 @@ function NewCheckForm({
   const [isolationEventRecorded, setIsolationEventRecorded] = useState(false);
   const [frameIsolated120, setFrameIsolated120] = useState(false);
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
+  const [pdhFusesOk, setPdhFusesOk] = useState(false);
   const [rslEventRecorded, setRslEventRecorded] = useState(false);
   const [rslVisible36, setRslVisible36] = useState(false);
   const [rslOnRioPort, setRslOnRioPort] = useState(false);
@@ -682,6 +683,7 @@ function NewCheckForm({
             isolationEventRecorded,
             frameIsolated120,
             unusedPdPortsTaped,
+            pdhFusesOk,
             rslEventRecorded,
             rslVisible36,
             rslOnRioPort,
@@ -1316,6 +1318,14 @@ function NewCheckForm({
                   onChange={(e) => setUnusedPdPortsTaped(e.target.checked)}
                 />
                 Unused PDH / RIO / VRM ports taped against conductive debris
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={pdhFusesOk}
+                  onChange={(e) => setPdhFusesOk(e.target.checked)}
+                />
+                PDH ATM fuses ≤ 15A except one 20A for a PCM/PH (or a 20A breaker)
               </label>
             </>
           ) : null}
