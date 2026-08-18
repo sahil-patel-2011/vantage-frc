@@ -84,6 +84,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /ATC\/ATO/i.test(label) && /10A/i.test(label) && /R620-B/i.test(label))).toBe(true);
     expect(labels.some((label) => /ATO\/Maxi/i.test(label) && /40A/i.test(label))).toBe(true);
     expect(labels.some((label) => /Mini Power Module/i.test(label) && /R621/i.test(label))).toBe(true);
+    expect(labels.some((label) => /Servo Hub/i.test(label) && /20A/i.test(label) && /R621/i.test(label))).toBe(true);
     expect(labels.some((label) => /Don't bury the PDH/i.test(label))).toBe(true);
     expect(labels.some((label) => /PCM\/PH/i.test(label) && /6 in/i.test(label) && /radio/i.test(label))).toBe(true);
     expect(labels.some((label) => /PCM\/PH/i.test(label) && /CAN drop/i.test(label))).toBe(true);

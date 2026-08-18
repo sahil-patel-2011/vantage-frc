@@ -57,7 +57,15 @@ export async function GET(request: Request) {
       );
 
       const summary = summarizeWiring(
-        devices.rows.map((d) => ({ id: d.id, name: d.name, deviceType: d.deviceType, canId: d.canId, canBus: d.canBus as CanBus, pdhPort: d.pdhPort })),
+        devices.rows.map((d) => ({
+          id: d.id,
+          name: d.name,
+          deviceType: d.deviceType,
+          canId: d.canId,
+          canBus: d.canBus as CanBus,
+          pdhPort: d.pdhPort,
+          breakerAmp: d.breakerAmp,
+        })),
       );
 
       return {

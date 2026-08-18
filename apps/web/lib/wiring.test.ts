@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectConflicts, parseWiringAction, pcmPhCanCues, summarizeWiring, validateDevice, type Device } from "./wiring";
+import { detectConflicts, parseWiringAction, pcmPhCanCues, servoHubCues, summarizeWiring, validateDevice, type Device } from "./wiring";
 
 const dev = (over: Partial<Device> & { name: string }): Device => ({
   id: over.name, name: over.name, deviceType: "talonfx", canId: null, canBus: "rio", pdhPort: null, ...over,
@@ -72,6 +72,27 @@ describe("pcmPhCanCues", () => {
   });
 });
 
+describe("servoHubCues", () => {
+  it("cues a logged Servo Hub with a breaker over 20A or a shared PD port", () => {
+    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", breakerAmp: 40 })])).toHaveLength(1);
+    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", breakerAmp: 40 })])[0]).toMatch(/20A/i);
+    expect(
+      servoHubCues([
+        dev({ name: "REV Servo Hub", deviceType: "other", pdhPort: 3 }),
+        dev({ name: "Limelight", deviceType: "other", pdhPort: 3 }),
+      ]),
+    ).toHaveLength(1);
+    expect(JSON.stringify(servoHubCues([dev({ name: "Hub", deviceType: "servohub", breakerAmp: 40 })])).toLowerCase()).not.toContain(
+      "demo",
+    );
+  });
+
+  it("does not invent a Servo Hub or flag a dedicated ≤20A branch", () => {
+    expect(servoHubCues([dev({ name: "FL", deviceType: "talonfx", breakerAmp: 40 })])).toHaveLength(0);
+    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", pdhPort: 4, breakerAmp: 20 })])).toHaveLength(0);
+    expect(servoHubCues([])).toHaveLength(0);
+  });
+});
 describe("summarizeWiring", () => {
   it("counts CAN devices and surfaces conflicts", () => {
     const summary = summarizeWiring([
@@ -83,10 +104,17 @@ describe("summarizeWiring", () => {
     expect(summary.canDevices).toBe(2);
     expect(summary.conflictCount).toBe(1);
     expect(summary.pcmPhCanCues).toHaveLength(0);
+    expect(summary.servoHubCues).toHaveLength(0);
   });
 
   it("surfaces a logged PH with no CAN ID", () => {
     expect(summarizeWiring([dev({ name: "PH", deviceType: "ph", canId: null })]).pcmPhCanCues).toHaveLength(1);
+  });
+
+  it("surfaces a logged Servo Hub on a breaker over 20A", () => {
+    expect(
+      summarizeWiring([dev({ name: "Hub", deviceType: "servohub", canId: 1, breakerAmp: 40 })]).servoHubCues,
+    ).toHaveLength(1);
   });
 });
 

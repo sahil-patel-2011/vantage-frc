@@ -25,6 +25,7 @@ export const DEVICE_TYPES: DeviceTypeDef[] = [
   { value: "rps", label: "Radio Power Supply (Pi/POE)", usesCan: false },
   { value: "switch", label: "Network switch", usesCan: false },
   { value: "servo", label: "Servo", usesCan: false },
+  { value: "servohub", label: "REV Servo Hub", usesCan: true },
   { value: "other", label: "Other", usesCan: false },
 ];
 
@@ -95,7 +96,15 @@ export function validateDevice(raw: Record<string, unknown>): { ok: true; value:
   };
 }
 
-export type Device = { id: string; name: string; deviceType: string; canId: number | null; canBus: CanBus; pdhPort: number | null };
+export type Device = {
+  id: string;
+  name: string;
+  deviceType: string;
+  canId: number | null;
+  canBus: CanBus;
+  pdhPort: number | null;
+  breakerAmp?: number | null;
+};
 
 export type WiringConflict =
   | { kind: "can_id"; canBus: CanBus; deviceType: string; canId: number; deviceNames: string[] }
@@ -153,16 +162,44 @@ export function pcmPhCanCues(devices: Pick<Device, "name" | "deviceType" | "canI
     );
 }
 
+function isServoHub(device: Pick<Device, "name" | "deviceType">): boolean {
+  return device.deviceType === "servohub" || /servo\s*hub/i.test(device.name);
+}
+
+/**
+ * CD / R621: a Servo Hub needs its own PD branch with a breaker ≤ 20A.
+ * Cue only a logged hub — never invent one.
+ */
+export function servoHubCues(devices: Device[]): string[] {
+  const hubs = devices.filter(isServoHub);
+  if (!hubs.length) return [];
+  const portCounts = new Map<number, number>();
+  for (const device of devices) {
+    if (device.pdhPort == null) continue;
+    portCounts.set(device.pdhPort, (portCounts.get(device.pdhPort) ?? 0) + 1);
+  }
+  const cues: string[] = [];
+  for (const hub of hubs) {
+    if (hub.breakerAmp != null && hub.breakerAmp > 20) {
+      cues.push(`${hub.name}: Servo Hub must sit on its own PD branch with a breaker ≤ 20A (R621).`);
+    }
+    if (hub.pdhPort != null && (portCounts.get(hub.pdhPort) ?? 0) > 1) {
+      cues.push(`${hub.name}: Servo Hub cannot share a PD breaker with another load (R621).`);
+    }
+  }
+  return cues;
+}
+
 export function summarizeWiring(devices: Device[]) {
   const conflicts = detectConflicts(devices);
   const canCount = devices.filter((d) => d.canId != null && deviceUsesCan(d.deviceType)).length;
-  const pcmPhCanCuesList = pcmPhCanCues(devices);
   return {
     totalDevices: devices.length,
     canDevices: canCount,
     conflicts,
     conflictCount: conflicts.length,
-    pcmPhCanCues: pcmPhCanCuesList,
+    pcmPhCanCues: pcmPhCanCues(devices),
+    servoHubCues: servoHubCues(devices),
   };
 }
 
