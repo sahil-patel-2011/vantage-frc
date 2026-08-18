@@ -585,6 +585,8 @@ function NewCheckForm({
   const [tubingOdOk, setTubingOdOk] = useState(false);
   const [relievingRegulatorOk, setRelievingRegulatorOk] = useState(false);
   const [compressorStartsEnabled, setCompressorStartsEnabled] = useState(false);
+  const [pneumaticsUnmodified, setPneumaticsUnmodified] = useState(false);
+  const [solenoidsLegal, setSolenoidsLegal] = useState(false);
   const [isolationEventRecorded, setIsolationEventRecorded] = useState(false);
   const [frameIsolated120, setFrameIsolated120] = useState(false);
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
@@ -686,6 +688,8 @@ function NewCheckForm({
             tubingOdOk,
             relievingRegulatorOk,
             compressorStartsEnabled,
+            pneumaticsUnmodified,
+            solenoidsLegal,
             isolationEventRecorded,
             frameIsolated120,
             unusedPdPortsTaped,
@@ -1209,8 +1213,9 @@ function NewCheckForm({
       <div>
         <strong className="app-muted">Pneumatics (skip if the robot has no air)</strong>
         <p className="app-muted">
-          Inspection checklist: hidden vent plugs, extra compressors, 60 psi working pressure, and a missing pressure
-          switch fail Thursday. Leave this off until you actually walk stored pressure — never invent a fail.
+          Inspection checklist: hidden vent plugs, extra compressors, 60 psi working pressure, a missing pressure
+          switch, paint on tanks, and illegal solenoids fail Thursday. Leave this off until you actually walk stored
+          pressure — never invent a fail.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1310,6 +1315,22 @@ function NewCheckForm({
                   onChange={(e) => setCompressorStartsEnabled(e.target.checked)}
                 />
                 Compressor starts when enabled with no stored pressure
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={pneumaticsUnmodified}
+                  onChange={(e) => setPneumaticsUnmodified(e.target.checked)}
+                />
+                Tanks/cylinders unmodified — no paint or large labels (small labels ok)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={solenoidsLegal}
+                  onChange={(e) => setSolenoidsLegal(e.target.checked)}
+                />
+                Solenoids ≤ 1/8 in NPT (or 1/4 in QC), PCM/PH or relay, outputs not teed
               </label>
             </>
           ) : null}
