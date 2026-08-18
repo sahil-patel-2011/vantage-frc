@@ -120,6 +120,10 @@ export type WiringPowerSpec = {
   componentsRated?: boolean;
   /** True once the compressor stops at ≤ 120 psi under roboRIO control. */
   compressorStops120?: boolean;
+  /** True once the compressor is powered from a PCM/PH or relay, not a motor controller. */
+  compressorPowerOk?: boolean;
+  /** True once tubing is KOP-equivalent with ≤ 1/4 in OD. */
+  tubingOdOk?: boolean;
   /**
    * When false, R611 isolation / PDH-debris flags are skipped (never invent a chassis short).
    * CD: inspectors probe Anderson-to-frame with battery out and breaker on; debris in unused PDH slots reboots radios.
@@ -181,6 +185,8 @@ export type InspectionFlagType =
   | "pneumatics_pressure_switch"
   | "pneumatics_component_rating"
   | "pneumatics_compressor_stop"
+  | "pneumatics_compressor_power"
+  | "pneumatics_tubing_od"
   | "frame_not_isolated"
   | "pdh_ports_untaped"
   | "rsl_not_visible"

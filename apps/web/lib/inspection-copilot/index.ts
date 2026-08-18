@@ -486,6 +486,22 @@ export function predictInspectionFailures(input: {
           "Compressor is not marked stopping at ≤ 120 psi under roboRIO control — inspectors fail a system that keeps charging past stored pressure.",
       });
     }
+    if (!wiringPower.compressorPowerOk) {
+      flags.push({
+        type: "pneumatics_compressor_power",
+        severity: "critical",
+        message:
+          "Compressor is not marked powered from a PCM/PH or relay — inspectors fail a compressor on a motor controller or raw PDH branch.",
+      });
+    }
+    if (!wiringPower.tubingOdOk) {
+      flags.push({
+        type: "pneumatics_tubing_od",
+        severity: "critical",
+        message:
+          "Pneumatic tubing is not marked KOP-equivalent ≤ 1/4 in OD — inspectors fail oversized tube (bring documentation if it is not KOP stock).",
+      });
+    }
   }
 
   if (wiringPower.isolationEventRecorded) {
@@ -539,7 +555,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.radioEventRecorded ? 4 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 8 : 0) +
-    (wiringPower.pneumaticsEventRecorded ? 7 : 0) +
+    (wiringPower.pneumaticsEventRecorded ? 9 : 0) +
     (wiringPower.isolationEventRecorded ? 2 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);

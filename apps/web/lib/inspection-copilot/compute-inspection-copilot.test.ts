@@ -603,6 +603,8 @@ describe("predictInspectionFailures pneumatics", () => {
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_pressure_switch")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_component_rating")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_stop")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_power")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_tubing_od")).toBe(false);
   });
 
   it("flags a hidden vent plug once pneumatics are logged", () => {
@@ -617,6 +619,8 @@ describe("predictInspectionFailures pneumatics", () => {
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_pressure_switch")).toBe(true);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_component_rating")).toBe(true);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_stop")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_power")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_tubing_od")).toBe(true);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 
@@ -633,12 +637,16 @@ describe("predictInspectionFailures pneumatics", () => {
         pressureSwitchOnPcmPh: true,
         componentsRated: true,
         compressorStops120: true,
+        compressorPowerOk: true,
+        tubingOdOk: true,
       },
     });
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_working_pressure")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_pressure_switch")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_component_rating")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_stop")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_power")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_tubing_od")).toBe(false);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });
