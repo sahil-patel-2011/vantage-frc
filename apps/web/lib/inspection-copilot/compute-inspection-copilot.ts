@@ -90,6 +90,7 @@ export function parseFrameBumper(value: unknown): FrameBumperSpec {
     separateColorSets: Boolean(row.separateColorSets),
     bumperGapsOk: Boolean(row.bumperGapsOk),
     bumperNoElectronics: Boolean(row.bumperNoElectronics),
+    bumperNumbersLegal: Boolean(row.bumperNumbersLegal),
   };
 }
 
