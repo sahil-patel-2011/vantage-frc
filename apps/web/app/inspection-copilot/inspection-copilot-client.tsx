@@ -572,6 +572,8 @@ function NewCheckForm({
   const [reliefValveOnCompressor, setReliefValveOnCompressor] = useState(false);
   const [workingPressure60Psi, setWorkingPressure60Psi] = useState(false);
   const [pressureSwitchOnPcmPh, setPressureSwitchOnPcmPh] = useState(false);
+  const [componentsRated, setComponentsRated] = useState(false);
+  const [compressorStops120, setCompressorStops120] = useState(false);
   const [isolationEventRecorded, setIsolationEventRecorded] = useState(false);
   const [frameIsolated120, setFrameIsolated120] = useState(false);
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
@@ -659,6 +661,8 @@ function NewCheckForm({
             reliefValveOnCompressor,
             workingPressure60Psi,
             pressureSwitchOnPcmPh,
+            componentsRated,
+            compressorStops120,
             isolationEventRecorded,
             frameIsolated120,
             unusedPdPortsTaped,
@@ -1178,6 +1182,22 @@ function NewCheckForm({
                   onChange={(e) => setPressureSwitchOnPcmPh(e.target.checked)}
                 />
                 Pressure switch wired to the PCM/PH (compressor stops at stored-pressure setpoint)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={componentsRated}
+                  onChange={(e) => setComponentsRated(e.target.checked)}
+                />
+                Working parts rated ≥ 70 psi; stored parts rated ≥ 125 psi (R801/R802)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={compressorStops120}
+                  onChange={(e) => setCompressorStops120(e.target.checked)}
+                />
+                Compressor stops at ≤ 120 psi under roboRIO control
               </label>
             </>
           ) : null}

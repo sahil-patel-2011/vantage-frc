@@ -15,6 +15,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Spare bumper backer / brackets", quantity: 2 },
       { label: "Pneumatic vent plug labeled and reachable (inspectors fail a hidden plug)", quantity: 1 },
       { label: "Pressure switch spare (wired to PCM/PH; n/a if no pneumatics)", quantity: 1 },
+      { label: "Pneumatic rating card (working ≥ 70 psi / stored ≥ 125 psi; R801/R802)", quantity: 1 },
       { label: "Spare parts kit (printed + machined spares)", quantity: 1 },
       { label: "Spare wheels / tread", quantity: 4 },
       { label: "Spare belts, chain, and fasteners", quantity: 1 },

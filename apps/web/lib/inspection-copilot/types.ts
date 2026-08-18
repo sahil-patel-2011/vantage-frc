@@ -112,6 +112,10 @@ export type WiringPowerSpec = {
   workingPressure60Psi?: boolean;
   /** True once the pressure switch is wired to the PCM/PH. */
   pressureSwitchOnPcmPh?: boolean;
+  /** True once working parts are ≥ 70 psi and stored parts ≥ 125 psi (R801/R802). */
+  componentsRated?: boolean;
+  /** True once the compressor stops at ≤ 120 psi under roboRIO control. */
+  compressorStops120?: boolean;
   /**
    * When false, R611 isolation / PDH-debris flags are skipped (never invent a chassis short).
    * CD: inspectors probe Anderson-to-frame with battery out and breaker on; debris in unused PDH slots reboots radios.
@@ -169,6 +173,8 @@ export type InspectionFlagType =
   | "pneumatics_relief_valve"
   | "pneumatics_working_pressure"
   | "pneumatics_pressure_switch"
+  | "pneumatics_component_rating"
+  | "pneumatics_compressor_stop"
   | "frame_not_isolated"
   | "pdh_ports_untaped"
   | "rsl_not_visible"
