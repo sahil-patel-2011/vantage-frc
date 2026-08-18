@@ -40,6 +40,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Single legal battery, securely mounted and connected",
       "Main breaker (120A) accessible and labeled",
       "Power distribution wiring uses legal gauge and colors",
+      "PDH ATM fuses ≤ 15A except one 20A powering a PCM/PH (or a 20A breaker)",
       "roboRIO powered directly from the PDP/PDH",
       "Radio powered by RIO-port injection and/or 12V from a PD (not VRM/RPM); LEDs visible to field staff",
       "roboRIO ethernet on VH-109 v1.5 RIO port, or v1.0 via PoE injector / modified cable / AUX with DIP off",

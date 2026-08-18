@@ -81,6 +81,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "NEO encoder/hall JST spares + strain-relief (hot-glue connectors)", quantity: 4 },
       { label: "ESD kit — copper tape / foil, chassis-bond jumper (not to power), grounding drag", quantity: 1 },
       { label: "Tape unused PDH / RIO / VRM ports (conductive debris reboots radios)", quantity: 1 },
+      { label: "PDH ATM 15A fuses + one 20A for PCM/PH (or 20A breaker; not a yellow fuse farm)", quantity: 1 },
     ],
   },
   {

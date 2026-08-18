@@ -553,6 +553,14 @@ export function predictInspectionFailures(input: {
           "Unused PDH / RIO / VRM ports are not marked taped — conductive debris in those sockets reboots radios mid-match.",
       });
     }
+    if (!wiringPower.pdhFusesOk) {
+      flags.push({
+        type: "pdh_fuses",
+        severity: "critical",
+        message:
+          "PDH fuses are not marked legal — 2026 inspectors fail ATM fuses over 15A except one 20A feeding a PCM/PH (prefer a 20A breaker there so a compressor inrush does not leave you dead).",
+      });
+    }
   }
 
   if (wiringPower.rslEventRecorded) {
@@ -588,7 +596,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 8 : 0) +
     (wiringPower.pneumaticsEventRecorded ? 11 : 0) +
-    (wiringPower.isolationEventRecorded ? 2 : 0) +
+    (wiringPower.isolationEventRecorded ? 3 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));
