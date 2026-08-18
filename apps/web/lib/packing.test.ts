@@ -77,7 +77,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /controller buttons/i.test(label))).toBe(true);
     expect(labels.some((label) => /60/.test(label) && /16/.test(label) && /78/.test(label))).toBe(true);
     expect(labels.some((label) => /unauthorized wireless/i.test(label))).toBe(true);
-    expect(labels.some((label) => /110 in/i.test(label) && /30 in/i.test(label))).toBe(true);
+    expect(labels.some((label) => /110 in/i.test(label) && /30 in/i.test(label) && /12 in/i.test(label))).toBe(true);
     expect(labels.some((label) => /high-contact shafts/i.test(label))).toBe(true);
   });
 });
