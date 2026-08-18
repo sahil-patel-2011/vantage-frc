@@ -201,6 +201,14 @@ export function predictInspectionFailures(input: {
           "Radio is not marked programmed for this event — inspectors require event programming before inspection.",
       });
     }
+    if (!wiringPower.radioWeidmullerQc) {
+      flags.push({
+        type: "radio_weidmuller_strands",
+        severity: "warning",
+        message:
+          "VH-109 Weidmuller power leads are not marked second-person QC — stray strands or long strip length reboot the radio mid-match.",
+      });
+    }
   }
 
   if (wiringPower.sparkMaxEventRecorded && !wiringPower.sparkMaxUsbAvoided) {
@@ -269,6 +277,14 @@ export function predictInspectionFailures(input: {
           "Main breaker is not marked covered — exposed electronics take field hits; pack a printed cover.",
       });
     }
+    if (!wiringPower.rioUsbCameraClear) {
+      flags.push({
+        type: "rio_usb_camera_canivore",
+        severity: "warning",
+        message:
+          "RIO USB cameras are not marked off the ports next to a CANivore — ESD on one USB port kills 5 V on both and drops CAN.",
+      });
+    }
   }
 
   const checkCount =
@@ -278,9 +294,9 @@ export function predictInspectionFailures(input: {
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
-    (wiringPower.radioEventRecorded ? 3 : 0) +
+    (wiringPower.radioEventRecorded ? 4 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
-    (wiringPower.reliabilityEventRecorded ? 7 : 0);
+    (wiringPower.reliabilityEventRecorded ? 8 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));
 

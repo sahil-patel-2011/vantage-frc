@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSoftwareVersionAction, summarizeVersions, validateComponent, versionStatus } from "./software-versions";
+import { parseSoftwareVersionAction, summarizeVersions, validateComponent, versionStatus, vh109FirmwareCue, VH109_FIRMWARE_CUE } from "./software-versions";
 
 describe("versionStatus", () => {
   it("is ok when installed matches target", () => {
@@ -43,6 +43,16 @@ describe("summarizeVersions", () => {
     expect(summary.updateAvailable).toBe(1);
     expect(summary.unknown).toBe(1);
     expect(summary.total).toBe(3);
+  });
+});
+
+describe("vh109FirmwareCue", () => {
+  it("cues only a logged radio firmware row below 2.01 — never invents a radio", () => {
+    expect(vh109FirmwareCue([])).toBeNull();
+    expect(vh109FirmwareCue([{ component: "WPILib", installedVersion: "2026.1.1" }])).toBeNull();
+    expect(vh109FirmwareCue([{ component: "Radio firmware", installedVersion: "2.00" }])).toBe(VH109_FIRMWARE_CUE);
+    expect(vh109FirmwareCue([{ component: "VH-109 radio", installedVersion: "2.01" }])).toBeNull();
+    expect(vh109FirmwareCue([{ component: "Radio firmware", installedVersion: "unparsed" }])).toBeNull();
   });
 });
 
