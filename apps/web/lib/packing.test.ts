@@ -84,6 +84,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /60/.test(label) && /16/.test(label) && /78/.test(label))).toBe(true);
     expect(labels.some((label) => /unauthorized wireless/i.test(label))).toBe(true);
     expect(labels.some((label) => /Game Tools/i.test(label) && /26\.0/i.test(label))).toBe(true);
+    expect(labels.some((label) => /2\.4 GHz/i.test(label) && /DIP 3/i.test(label))).toBe(true);
     expect(labels.some((label) => /110 in/i.test(label) && /30 in/i.test(label) && /12 in/i.test(label))).toBe(true);
     expect(labels.some((label) => /1\.25/i.test(label) && /5 in/i.test(label))).toBe(true);
     expect(labels.some((label) => /4\.25 in/i.test(label) && /R403/i.test(label))).toBe(true);
