@@ -146,6 +146,14 @@ describe("logCheck", () => {
         radioProgrammedForEvent: false,
         sparkMaxEventRecorded: false,
         sparkMaxUsbAvoided: false,
+        reliabilityEventRecorded: false,
+        strainReliefOk: false,
+        dynamicCableClear: false,
+        esdIntakeBonded: false,
+        esdShielded: false,
+        canivorePdhBackup: false,
+        batteryLeadsTorqued: false,
+        mainBreakerCovered: false,
       },
     });
 
@@ -191,6 +199,14 @@ describe("predictInspectionFailures binder", () => {
       radioProgrammedForEvent: false,
       sparkMaxEventRecorded: false,
       sparkMaxUsbAvoided: false,
+      reliabilityEventRecorded: false,
+      strainReliefOk: false,
+      dynamicCableClear: false,
+      esdIntakeBonded: false,
+      esdShielded: false,
+      canivorePdhBackup: false,
+      batteryLeadsTorqued: false,
+      mainBreakerCovered: false,
     },
   };
 
@@ -226,6 +242,14 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
     radioProgrammedForEvent: false,
     sparkMaxEventRecorded: false,
     sparkMaxUsbAvoided: false,
+    reliabilityEventRecorded: false,
+    strainReliefOk: false,
+    dynamicCableClear: false,
+    esdIntakeBonded: false,
+    esdShielded: false,
+    canivorePdhBackup: false,
+    batteryLeadsTorqued: false,
+    mainBreakerCovered: false,
   };
   const limits = {
     weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
@@ -284,6 +308,14 @@ describe("predictInspectionFailures Spark MAX USB", () => {
     radioProgrammedForEvent: false,
     sparkMaxEventRecorded: false,
     sparkMaxUsbAvoided: false,
+    reliabilityEventRecorded: false,
+    strainReliefOk: false,
+    dynamicCableClear: false,
+    esdIntakeBonded: false,
+    esdShielded: false,
+    canivorePdhBackup: false,
+    batteryLeadsTorqued: false,
+    mainBreakerCovered: false,
   };
   const limits = {
     weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
@@ -312,5 +344,73 @@ describe("predictInspectionFailures Spark MAX USB", () => {
     expect(prediction.flags.some((flag) => flag.type === "spark_max_usb_risk")).toBe(true);
     expect(prediction.flags.find((flag) => flag.type === "spark_max_usb_risk")?.message.toLowerCase()).toMatch(/motherboard|usb/);
     expect(prediction.flags.find((flag) => flag.type === "spark_max_usb_risk")?.message.toLowerCase()).not.toContain("demo");
+  });
+});
+
+describe("predictInspectionFailures 2026 pit reliability", () => {
+  const wiring = {
+    mainBreakerMaxAmps: 120,
+    installedMainBreakerAmps: 120,
+    batterySecured: true,
+    wiresLabeled: true,
+    radioPowerOk: true,
+    bypassSwitchAccessible: true,
+    binderRecorded: false,
+    bomPrinted: false,
+    inspectionChecklistPrinted: false,
+    studentCaptainPresent: false,
+    radioEventRecorded: false,
+    radioOnMainPd: false,
+    rioOnMainPd10A: false,
+    radioProgrammedForEvent: false,
+    sparkMaxEventRecorded: false,
+    sparkMaxUsbAvoided: false,
+    reliabilityEventRecorded: false,
+    strainReliefOk: false,
+    dynamicCableClear: false,
+    esdIntakeBonded: false,
+    esdShielded: false,
+    canivorePdhBackup: false,
+    batteryLeadsTorqued: false,
+    mainBreakerCovered: false,
+  };
+  const limits = {
+    weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
+    frameBumper: {
+      perimeterLimitIn: 120,
+      measuredPerimeterIn: 110,
+      bumperMinHeightIn: 2.5,
+      bumperMaxHeightIn: 7.5,
+      measuredBumperMinHeightIn: 3,
+      measuredBumperMaxHeightIn: 6,
+      bumperMinThicknessIn: 1,
+      measuredBumperThicknessIn: 1.5,
+    },
+  };
+
+  it("does not invent strain-relief or ESD fails until the team logs the walk", () => {
+    const prediction = predictInspectionFailures({ ...limits, wiringPower: wiring });
+    expect(prediction.flags.some((flag) => flag.type === "strain_relief_missing")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "esd_intake_unbonded")).toBe(false);
+  });
+
+  it("flags logged reliability gaps without DEMO wording", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: { ...wiring, reliabilityEventRecorded: true },
+    });
+    expect(prediction.flags.map((flag) => flag.type)).toEqual(
+      expect.arrayContaining([
+        "strain_relief_missing",
+        "dynamic_cable_pinch",
+        "esd_intake_unbonded",
+        "esd_unshielded",
+        "canivore_no_pdh_backup",
+        "battery_leads_loose",
+        "main_breaker_exposed",
+      ]),
+    );
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("cheesycare");
   });
 });

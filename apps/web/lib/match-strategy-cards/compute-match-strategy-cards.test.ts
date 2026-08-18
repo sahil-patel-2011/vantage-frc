@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
-import { AUTO_COORDINATION_CUE, autoCoordinationCue, dutyPlanFromTemplate, matchLabel, teamNumbersFromAllianceJson } from ".";
+import { AUTO_COORDINATION_CUE, AUTO_FLEXIBILITY_CUE, DEPLOY_SAFETY_CUE, autoCoordinationCue, autoFlexibilityCue, deploySafetyCue, dutyPlanFromTemplate, matchLabel, teamNumbersFromAllianceJson } from ".";
 import { computeMatchStrategyCardsView } from "./compute-match-strategy-cards";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -54,6 +54,18 @@ describe("match-strategy-cards pure helpers", () => {
     expect(
       autoCoordinationCue({ partnerNumbers: [118, 1114], autoAssignment: "  " }),
     ).toBe(AUTO_COORDINATION_CUE);
+  });
+
+  it("cues a backup auto only when partners exist and Auto has no flex language", () => {
+    expect(autoFlexibilityCue({ partnerNumbers: [118], autoAssignment: null })).toBeNull();
+    expect(autoFlexibilityCue({ partnerNumbers: [118], autoAssignment: "3-piece left with backup center" })).toBeNull();
+    expect(autoFlexibilityCue({ partnerNumbers: [118], autoAssignment: "3-piece left" })).toBe(AUTO_FLEXIBILITY_CUE);
+  });
+
+  it("cues deploy safety from written hood/hopper notes only", () => {
+    expect(deploySafetyCue({ gamePlan: null, driverNotes: null })).toBeNull();
+    expect(deploySafetyCue({ gamePlan: "Deploy hood, stow for trench", driverNotes: "" })).toBeNull();
+    expect(deploySafetyCue({ gamePlan: "Keep hood deployed", driverNotes: "" })).toBe(DEPLOY_SAFETY_CUE);
   });
 });
 

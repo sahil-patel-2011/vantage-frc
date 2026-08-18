@@ -59,6 +59,18 @@ export type WiringPowerSpec = {
   sparkMaxEventRecorded: boolean;
   /** True once the team confirms they will not USB a Spark MAX that is behaving unexpectedly. */
   sparkMaxUsbAvoided: boolean;
+  /**
+   * When false, 2026 pit-reliability flags are skipped (never invent strain-relief / ESD fails).
+   * CD: strain relief, igus pinch, ESD vs wiring, CANivore PDH backup, torqued leads, breaker cover.
+   */
+  reliabilityEventRecorded: boolean;
+  strainReliefOk: boolean;
+  dynamicCableClear: boolean;
+  esdIntakeBonded: boolean;
+  esdShielded: boolean;
+  canivorePdhBackup: boolean;
+  batteryLeadsTorqued: boolean;
+  mainBreakerCovered: boolean;
 };
 
 export type InspectionFlagType =
@@ -78,7 +90,14 @@ export type InspectionFlagType =
   | "radio_not_on_main_pd"
   | "rio_not_on_main_pd"
   | "radio_not_programmed_for_event"
-  | "spark_max_usb_risk";
+  | "spark_max_usb_risk"
+  | "strain_relief_missing"
+  | "dynamic_cable_pinch"
+  | "esd_intake_unbonded"
+  | "esd_unshielded"
+  | "canivore_no_pdh_backup"
+  | "battery_leads_loose"
+  | "main_breaker_exposed";
 
 export type InspectionFlagSeverity = "info" | "warning" | "critical";
 

@@ -544,6 +544,14 @@ function NewCheckForm({
   const [radioProgrammedForEvent, setRadioProgrammedForEvent] = useState(false);
   const [sparkMaxEventRecorded, setSparkMaxEventRecorded] = useState(false);
   const [sparkMaxUsbAvoided, setSparkMaxUsbAvoided] = useState(false);
+  const [reliabilityEventRecorded, setReliabilityEventRecorded] = useState(false);
+  const [strainReliefOk, setStrainReliefOk] = useState(false);
+  const [dynamicCableClear, setDynamicCableClear] = useState(false);
+  const [esdIntakeBonded, setEsdIntakeBonded] = useState(false);
+  const [esdShielded, setEsdShielded] = useState(false);
+  const [canivorePdhBackup, setCanivorePdhBackup] = useState(false);
+  const [batteryLeadsTorqued, setBatteryLeadsTorqued] = useState(false);
+  const [mainBreakerCovered, setMainBreakerCovered] = useState(false);
 
   const setWeightField = (index: number, key: keyof WeightItemDraft) => (event: { target: { value: string } }) =>
     setWeightItems((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: event.target.value } : row)));
@@ -597,6 +605,14 @@ function NewCheckForm({
             radioProgrammedForEvent,
             sparkMaxEventRecorded,
             sparkMaxUsbAvoided,
+            reliabilityEventRecorded,
+            strainReliefOk,
+            dynamicCableClear,
+            esdIntakeBonded,
+            esdShielded,
+            canivorePdhBackup,
+            batteryLeadsTorqued,
+            mainBreakerCovered,
           },
         });
         setRobotName("");
@@ -619,6 +635,14 @@ function NewCheckForm({
         setRadioProgrammedForEvent(false);
         setSparkMaxEventRecorded(false);
         setSparkMaxUsbAvoided(false);
+        setReliabilityEventRecorded(false);
+        setStrainReliefOk(false);
+        setDynamicCableClear(false);
+        setEsdIntakeBonded(false);
+        setEsdShielded(false);
+        setCanivorePdhBackup(false);
+        setBatteryLeadsTorqued(false);
+        setMainBreakerCovered(false);
       }}
     >
       <h2 style={{ margin: 0 }}>Run an inspection-readiness check</h2>
@@ -823,6 +847,72 @@ function NewCheckForm({
               />
               Will not plug USB-C into a Spark MAX that is behaving unexpectedly (use CAN)
             </label>
+          ) : null}
+        </fieldset>
+      </div>
+
+      <div>
+        <strong className="app-muted">2026 pit reliability</strong>
+        <p className="app-muted">
+          FRC pit walk: strain relief, cable pinch, static vs loose wiring, CANivore backup power, torqued leads, breaker
+          cover. Leave this off until you actually walk the robot — never invent a fail.
+        </p>
+        <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={reliabilityEventRecorded}
+              onChange={(e) => setReliabilityEventRecorded(e.target.checked)}
+            />
+            We logged this robot’s pit-reliability walk
+          </label>
+          {reliabilityEventRecorded ? (
+            <>
+              <label>
+                <input type="checkbox" checked={strainReliefOk} onChange={(e) => setStrainReliefOk(e.target.checked)} />
+                Every connection has strain relief
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={dynamicCableClear}
+                  onChange={(e) => setDynamicCableClear(e.target.checked)}
+                />
+                CAN / signal / power clear of igus pinch and rotating mechanisms
+              </label>
+              <label>
+                <input type="checkbox" checked={esdIntakeBonded} onChange={(e) => setEsdIntakeBonded(e.target.checked)} />
+                Intake chassis-bonded (not to power) — check wiring before blaming static
+              </label>
+              <label>
+                <input type="checkbox" checked={esdShielded} onChange={(e) => setEsdShielded(e.target.checked)} />
+                Gyros / sensitive electronics foil or copper wrapped
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={canivorePdhBackup}
+                  onChange={(e) => setCanivorePdhBackup(e.target.checked)}
+                />
+                CANivore has a PDH power backup if USB drops
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={batteryLeadsTorqued}
+                  onChange={(e) => setBatteryLeadsTorqued(e.target.checked)}
+                />
+                Battery / main breaker / PD lead bolts torqued
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={mainBreakerCovered}
+                  onChange={(e) => setMainBreakerCovered(e.target.checked)}
+                />
+                Main breaker has a cover
+              </label>
+            </>
           ) : null}
         </fieldset>
       </div>

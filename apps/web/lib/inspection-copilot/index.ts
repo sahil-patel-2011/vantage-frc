@@ -212,6 +212,65 @@ export function predictInspectionFailures(input: {
     });
   }
 
+  if (wiringPower.reliabilityEventRecorded) {
+    if (!wiringPower.strainReliefOk) {
+      flags.push({
+        type: "strain_relief_missing",
+        severity: "warning",
+        message:
+          "Strain relief is not marked on every connection — if a wire can be tugged loose, it will come loose on the field.",
+      });
+    }
+    if (!wiringPower.dynamicCableClear) {
+      flags.push({
+        type: "dynamic_cable_pinch",
+        severity: "warning",
+        message:
+          "Dynamic cable runs are not marked clear of pinch — CAN/signal/power in igus or near rotating mechanisms dropped robots mid-match.",
+      });
+    }
+    if (!wiringPower.esdIntakeBonded) {
+      flags.push({
+        type: "esd_intake_unbonded",
+        severity: "warning",
+        message:
+          "Intake is not marked chassis-bonded (not to power) — static from game pieces is real, but wiring and loose connections are the usual cause.",
+      });
+    }
+    if (!wiringPower.esdShielded) {
+      flags.push({
+        type: "esd_unshielded",
+        severity: "info",
+        message:
+          "Sensitive electronics are not marked foil/copper wrapped — gyro resets show up next to foam game pieces.",
+      });
+    }
+    if (!wiringPower.canivorePdhBackup) {
+      flags.push({
+        type: "canivore_no_pdh_backup",
+        severity: "warning",
+        message:
+          "CANivore is not marked with a PDH power backup — a USB dropout kills all RIO USB ports and the rest of CAN with it.",
+      });
+    }
+    if (!wiringPower.batteryLeadsTorqued) {
+      flags.push({
+        type: "battery_leads_loose",
+        severity: "warning",
+        message:
+          "Battery / main breaker / PD lead bolts are not marked torqued — loose leads add resistance and look like a dying pack.",
+      });
+    }
+    if (!wiringPower.mainBreakerCovered) {
+      flags.push({
+        type: "main_breaker_exposed",
+        severity: "warning",
+        message:
+          "Main breaker is not marked covered — exposed electronics take field hits; pack a printed cover.",
+      });
+    }
+  }
+
   const checkCount =
     (weightBudget.limitLbs > 0 ? 1 : 0) +
     (frameBumper.perimeterLimitIn > 0 ? 1 : 0) +
@@ -220,7 +279,8 @@ export function predictInspectionFailures(input: {
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
     (wiringPower.radioEventRecorded ? 3 : 0) +
-    (wiringPower.sparkMaxEventRecorded ? 1 : 0);
+    (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
+    (wiringPower.reliabilityEventRecorded ? 7 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));
 
