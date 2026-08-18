@@ -542,6 +542,7 @@ function NewCheckForm({
   const [radioOnMainPd, setRadioOnMainPd] = useState(false);
   const [rioOnMainPd10A, setRioOnMainPd10A] = useState(false);
   const [radioProgrammedForEvent, setRadioProgrammedForEvent] = useState(false);
+  const [radioWeidmullerQc, setRadioWeidmullerQc] = useState(false);
   const [sparkMaxEventRecorded, setSparkMaxEventRecorded] = useState(false);
   const [sparkMaxUsbAvoided, setSparkMaxUsbAvoided] = useState(false);
   const [reliabilityEventRecorded, setReliabilityEventRecorded] = useState(false);
@@ -552,6 +553,7 @@ function NewCheckForm({
   const [canivorePdhBackup, setCanivorePdhBackup] = useState(false);
   const [batteryLeadsTorqued, setBatteryLeadsTorqued] = useState(false);
   const [mainBreakerCovered, setMainBreakerCovered] = useState(false);
+  const [rioUsbCameraClear, setRioUsbCameraClear] = useState(false);
 
   const setWeightField = (index: number, key: keyof WeightItemDraft) => (event: { target: { value: string } }) =>
     setWeightItems((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: event.target.value } : row)));
@@ -603,6 +605,7 @@ function NewCheckForm({
             radioOnMainPd,
             rioOnMainPd10A,
             radioProgrammedForEvent,
+            radioWeidmullerQc,
             sparkMaxEventRecorded,
             sparkMaxUsbAvoided,
             reliabilityEventRecorded,
@@ -613,6 +616,7 @@ function NewCheckForm({
             canivorePdhBackup,
             batteryLeadsTorqued,
             mainBreakerCovered,
+            rioUsbCameraClear,
           },
         });
         setRobotName("");
@@ -633,6 +637,7 @@ function NewCheckForm({
         setRadioOnMainPd(false);
         setRioOnMainPd10A(false);
         setRadioProgrammedForEvent(false);
+        setRadioWeidmullerQc(false);
         setSparkMaxEventRecorded(false);
         setSparkMaxUsbAvoided(false);
         setReliabilityEventRecorded(false);
@@ -643,6 +648,7 @@ function NewCheckForm({
         setCanivorePdhBackup(false);
         setBatteryLeadsTorqued(false);
         setMainBreakerCovered(false);
+        setRioUsbCameraClear(false);
       }}
     >
       <h2 style={{ margin: 0 }}>Run an inspection-readiness check</h2>
@@ -818,6 +824,14 @@ function NewCheckForm({
                 />
                 Radio programmed for this event
               </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={radioWeidmullerQc}
+                  onChange={(e) => setRadioWeidmullerQc(e.target.checked)}
+                />
+                Second person QC&apos;d VH-109 Weidmuller power leads (no stray strands / over-strip)
+              </label>
             </>
           ) : null}
         </fieldset>
@@ -855,7 +869,8 @@ function NewCheckForm({
         <strong className="app-muted">2026 pit reliability</strong>
         <p className="app-muted">
           FRC pit walk: strain relief, cable pinch, static vs loose wiring, CANivore backup power, torqued leads, breaker
-          cover. Leave this off until you actually walk the robot — never invent a fail.
+          cover, no RIO USB camera next to a CANivore. Leave this off until you actually walk the robot — never invent a
+          fail.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -911,6 +926,14 @@ function NewCheckForm({
                   onChange={(e) => setMainBreakerCovered(e.target.checked)}
                 />
                 Main breaker has a cover
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={rioUsbCameraClear}
+                  onChange={(e) => setRioUsbCameraClear(e.target.checked)}
+                />
+                No USB camera on the RIO ports next to a CANivore (ESD kills both 5 V rails)
               </label>
             </>
           ) : null}

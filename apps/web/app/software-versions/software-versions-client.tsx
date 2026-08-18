@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { COMMON_COMPONENTS, VERSION_CATEGORIES, VERSION_CATEGORY_LABEL, type VersionCategory, type VersionStatus } from "../../lib/software-versions";
+import { COMMON_COMPONENTS, VERSION_CATEGORIES, VERSION_CATEGORY_LABEL, vh109FirmwareCue, type VersionCategory, type VersionStatus } from "../../lib/software-versions";
 
 type Component = {
   id: string; component: string; category: VersionCategory; installedVersion: string;
@@ -50,6 +50,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
   }
 
   const existing = new Set(view.components.map((c) => c.component));
+  const radioFirmwareCue = vh109FirmwareCue(view.components);
 
   return (
     <main className="intel-app">
@@ -58,6 +59,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
         <nav className="intel-actions"><a href={`/wiring${orgId ? `?orgId=${orgId}` : ""}`}>Wiring</a><a href={`/code${orgId ? `?orgId=${orgId}` : ""}`}>Code</a><a href="/workspace">Workspace →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
+      {radioFirmwareCue ? <p className="telemetry-status" role="status">{radioFirmwareCue}</p> : null}
 
       <section className="metric-grid">
         <article><span>Components tracked</span><strong>{view.summary.total}</strong></article>

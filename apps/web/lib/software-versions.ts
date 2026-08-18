@@ -74,6 +74,38 @@ export function summarizeVersions(components: { installedVersion: string; target
   return { total: components.length, ok, updateAvailable, unknown };
 }
 
+/** FIRST released VH-109 firmware 2.01 before 2026 events. Cue only from a logged radio row. */
+export const VH109_MIN_FIRMWARE = [2, 1] as const;
+export const VH109_FIRMWARE_CUE =
+  "Logged radio firmware is below VH-109 2.01 — update on the official FRC radio page before you travel.";
+
+function dottedVersionParts(raw: string): number[] | null {
+  const nums = raw.trim().match(/\d+/g);
+  if (!nums?.length) return null;
+  return nums.map((n) => Number(n));
+}
+
+function versionAtLeast(installed: number[], min: readonly number[]): boolean {
+  for (let i = 0; i < min.length; i += 1) {
+    const a = installed[i] ?? 0;
+    const b = min[i] ?? 0;
+    if (a > b) return true;
+    if (a < b) return false;
+  }
+  return true;
+}
+
+export function vh109FirmwareCue(
+  components: Array<{ component: string; installedVersion: string }>,
+): string | null {
+  const radio = components.find((row) => /radio/i.test(row.component));
+  if (!radio) return null;
+  const parsed = dottedVersionParts(radio.installedVersion);
+  if (!parsed) return null;
+  if (versionAtLeast(parsed, VH109_MIN_FIRMWARE)) return null;
+  return VH109_FIRMWARE_CUE;
+}
+
 // ---- request validation --------------------------------------------------
 
 export type SoftwareVersionAction =

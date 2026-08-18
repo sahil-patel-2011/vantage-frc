@@ -52,6 +52,8 @@ export type WiringPowerSpec = {
   radioOnMainPd: boolean;
   rioOnMainPd10A: boolean;
   radioProgrammedForEvent: boolean;
+  /** True once a second person confirmed VH-109 Weidmuller leads have no stray strands. */
+  radioWeidmullerQc: boolean;
   /**
    * When false, Spark MAX USB flags are skipped (never invent a fried laptop).
    * CD 2026: USB-C into a shorted Spark MAX can back-feed and kill a motherboard.
@@ -71,6 +73,8 @@ export type WiringPowerSpec = {
   canivorePdhBackup: boolean;
   batteryLeadsTorqued: boolean;
   mainBreakerCovered: boolean;
+  /** True once USB cameras are off the RIO USB ports next to a CANivore. */
+  rioUsbCameraClear: boolean;
 };
 
 export type InspectionFlagType =
@@ -90,6 +94,7 @@ export type InspectionFlagType =
   | "radio_not_on_main_pd"
   | "rio_not_on_main_pd"
   | "radio_not_programmed_for_event"
+  | "radio_weidmuller_strands"
   | "spark_max_usb_risk"
   | "strain_relief_missing"
   | "dynamic_cable_pinch"
@@ -97,7 +102,8 @@ export type InspectionFlagType =
   | "esd_unshielded"
   | "canivore_no_pdh_backup"
   | "battery_leads_loose"
-  | "main_breaker_exposed";
+  | "main_breaker_exposed"
+  | "rio_usb_camera_canivore";
 
 export type InspectionFlagSeverity = "info" | "warning" | "critical";
 

@@ -144,6 +144,7 @@ describe("logCheck", () => {
         radioOnMainPd: false,
         rioOnMainPd10A: false,
         radioProgrammedForEvent: false,
+        radioWeidmullerQc: false,
         sparkMaxEventRecorded: false,
         sparkMaxUsbAvoided: false,
         reliabilityEventRecorded: false,
@@ -154,6 +155,7 @@ describe("logCheck", () => {
         canivorePdhBackup: false,
         batteryLeadsTorqued: false,
         mainBreakerCovered: false,
+        rioUsbCameraClear: false,
       },
     });
 
@@ -197,6 +199,7 @@ describe("predictInspectionFailures binder", () => {
       radioOnMainPd: false,
       rioOnMainPd10A: false,
       radioProgrammedForEvent: false,
+      radioWeidmullerQc: false,
       sparkMaxEventRecorded: false,
       sparkMaxUsbAvoided: false,
       reliabilityEventRecorded: false,
@@ -207,6 +210,7 @@ describe("predictInspectionFailures binder", () => {
       canivorePdhBackup: false,
       batteryLeadsTorqued: false,
       mainBreakerCovered: false,
+      rioUsbCameraClear: false,
     },
   };
 
@@ -240,6 +244,7 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
     radioOnMainPd: false,
     rioOnMainPd10A: false,
     radioProgrammedForEvent: false,
+    radioWeidmullerQc: false,
     sparkMaxEventRecorded: false,
     sparkMaxUsbAvoided: false,
     reliabilityEventRecorded: false,
@@ -250,6 +255,7 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
     canivorePdhBackup: false,
     batteryLeadsTorqued: false,
     mainBreakerCovered: false,
+    rioUsbCameraClear: false,
   };
   const limits = {
     weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
@@ -270,6 +276,7 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
     expect(prediction.flags.some((flag) => flag.type === "radio_not_on_main_pd")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "rio_not_on_main_pd")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "radio_not_programmed_for_event")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "radio_weidmuller_strands")).toBe(false);
   });
 
   it("flags radio off the main PD once the team records 2026 event wiring", () => {
@@ -281,12 +288,30 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
         radioOnMainPd: false,
         rioOnMainPd10A: true,
         radioProgrammedForEvent: true,
+        radioWeidmullerQc: true,
       },
     });
     expect(prediction.flags.some((flag) => flag.type === "radio_not_on_main_pd")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "radio_weidmuller_strands")).toBe(false);
     expect(prediction.flags.find((flag) => flag.type === "radio_not_on_main_pd")?.message.toLowerCase()).not.toContain(
       "demo",
     );
+  });
+
+  it("flags un-QC'd VH-109 Weidmuller leads once radio wiring is logged", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: {
+        ...wiring,
+        radioEventRecorded: true,
+        radioOnMainPd: true,
+        rioOnMainPd10A: true,
+        radioProgrammedForEvent: true,
+        radioWeidmullerQc: false,
+      },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "radio_weidmuller_strands")).toBe(true);
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });
 
@@ -306,6 +331,7 @@ describe("predictInspectionFailures Spark MAX USB", () => {
     radioOnMainPd: false,
     rioOnMainPd10A: false,
     radioProgrammedForEvent: false,
+    radioWeidmullerQc: false,
     sparkMaxEventRecorded: false,
     sparkMaxUsbAvoided: false,
     reliabilityEventRecorded: false,
@@ -316,6 +342,7 @@ describe("predictInspectionFailures Spark MAX USB", () => {
     canivorePdhBackup: false,
     batteryLeadsTorqued: false,
     mainBreakerCovered: false,
+    rioUsbCameraClear: false,
   };
   const limits = {
     weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
@@ -363,6 +390,7 @@ describe("predictInspectionFailures 2026 pit reliability", () => {
     radioOnMainPd: false,
     rioOnMainPd10A: false,
     radioProgrammedForEvent: false,
+    radioWeidmullerQc: false,
     sparkMaxEventRecorded: false,
     sparkMaxUsbAvoided: false,
     reliabilityEventRecorded: false,
@@ -373,6 +401,7 @@ describe("predictInspectionFailures 2026 pit reliability", () => {
     canivorePdhBackup: false,
     batteryLeadsTorqued: false,
     mainBreakerCovered: false,
+    rioUsbCameraClear: false,
   };
   const limits = {
     weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
@@ -392,6 +421,7 @@ describe("predictInspectionFailures 2026 pit reliability", () => {
     const prediction = predictInspectionFailures({ ...limits, wiringPower: wiring });
     expect(prediction.flags.some((flag) => flag.type === "strain_relief_missing")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "esd_intake_unbonded")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "rio_usb_camera_canivore")).toBe(false);
   });
 
   it("flags logged reliability gaps without DEMO wording", () => {
@@ -408,6 +438,7 @@ describe("predictInspectionFailures 2026 pit reliability", () => {
         "canivore_no_pdh_backup",
         "battery_leads_loose",
         "main_breaker_exposed",
+        "rio_usb_camera_canivore",
       ]),
     );
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
