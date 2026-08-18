@@ -70,7 +70,7 @@ export default function TeamHub() {
         if (tab === "fmea") return <FmeaClient embedded />;
         if (tab === "messages") {
           return (
-            <HubOrgGate orgId={orgId} label="Messages">
+            <HubOrgGate orgId={orgId} label="Team chat">
               {(id) => <MessagesTab orgId={id} />}
             </HubOrgGate>
           );

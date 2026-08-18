@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for the Team Knowledge wiki. */
 export const KNOWLEDGE_RELATED_LINKS = [
-  { id: "messages", label: "Messages", kind: "team" as const, tab: "messages" },
+  { id: "messages", label: "Team chat", kind: "team" as const, tab: "messages" },
   { id: "fmea", label: "FMEA", kind: "team" as const, tab: "fmea" },
   { id: "cad", label: "CAD", kind: "build" as const, tab: "cad" },
   { id: "decisions", label: "Decisions", kind: "path" as const, path: "/decisions" },

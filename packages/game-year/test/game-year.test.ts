@@ -14,6 +14,11 @@ describe("game-year packs", () => {
     expect(defaultMatchSchema(2026).fields.some((field) => field.key === "auto_fuel")).toBe(true);
     expect(defaultMatchSchema(2026).fields.some((field) => field.key === "alliance_station")).toBe(true);
     expect(isManualPublished(2026)).toBe(true);
+    const pitKeys = pack.pitSchema.fields.map((field) => field.key);
+    expect(pitKeys).toContain("programming_language");
+    expect(pitKeys).toContain("driver_seasons");
+    expect(pitKeys).not.toContain("fuel_capacity");
+    expect(pitKeys).not.toContain("tower_capability");
   });
 
   it("does not invent 2027 BIOCORE scoring keys before the manual", () => {

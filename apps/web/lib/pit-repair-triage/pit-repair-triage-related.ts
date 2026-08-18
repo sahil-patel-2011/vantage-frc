@@ -170,6 +170,7 @@ export function pitRepairTriageNextActions(input: {
   shell: PitRepairTriageShellKind;
   reportCount?: number;
   openCount?: number;
+  reinspectReports?: Array<{ subsystemName: string; decision: "fix" | "swap" | "monitor"; status: "open" | "staged" | "resolved" }>;
 }): PitRepairTriageNextAction[] {
   const orgId = input.orgId ?? null;
   const reportCount = input.reportCount ?? 0;
@@ -253,16 +254,29 @@ export function pitRepairTriageNextActions(input: {
   }
 
   return [
-    {
-      id: openCount > 0 ? "resolve-open" : "review-reports",
-      label: openCount > 0 ? "Resolve open triage" : "Review triage reports",
-      detail:
-        openCount > 0
-          ? `${openCount} open report${openCount === 1 ? "" : "s"} from logged failures — never DEMO calls.`
-          : `${reportCount} triage report${reportCount === 1 ? "" : "s"} from real pit failures — never DEMO counters.`,
-      href: "#pit-repair-triage-reports",
-      primary: true,
-    },
+    ...(input.reinspectReports && input.reinspectReports.length > 0
+      ? [
+          {
+            id: "reinspect",
+            label: `Get ${input.reinspectReports[0]!.subsystemName} reinspected before queue`,
+            detail:
+              "I104: a logged fix or swap is a robot change — inspectors treat it as a new configuration until they sign it.",
+            href: "#pit-repair-triage-reports",
+            primary: true,
+          } satisfies PitRepairTriageNextAction,
+        ]
+      : [
+          {
+            id: openCount > 0 ? "resolve-open" : "review-reports",
+            label: openCount > 0 ? "Resolve open triage" : "Review triage reports",
+            detail:
+              openCount > 0
+                ? `${openCount} open report${openCount === 1 ? "" : "s"} from logged failures — never DEMO calls.`
+                : `${reportCount} triage report${reportCount === 1 ? "" : "s"} from real pit failures — never DEMO counters.`,
+            href: "#pit-repair-triage-reports",
+            primary: true,
+          } satisfies PitRepairTriageNextAction,
+        ]),
     {
       id: "fmea",
       label: "Open FMEA",

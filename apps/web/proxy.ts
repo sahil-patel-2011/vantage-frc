@@ -39,6 +39,7 @@ const PUBLIC_PREFIXES = [
   "/api/cron",
   // Calendar ICS subscribe URLs are allow-listed in isPublicCalendarFeed (token path only).
   "/api/parts-relay",
+  "/api/integrations/slack",
   "/parts-relay",
   "/showcase/present",
   "/strategy/board",

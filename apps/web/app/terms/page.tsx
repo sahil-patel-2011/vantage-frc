@@ -47,12 +47,18 @@ export default function TermsPage() {
           operate and improve the service for your team. Vantage uses organization-scoped controls and row-level
           database policies to separate workspaces, but no system can guarantee perfect security.
         </p>
-        <h2>AI features, credits, and BYOK</h2>
+        <h2>AI features, credits, BYOK, and model training</h2>
         <p>
           AI features are metered against the organization&apos;s plan or credit limits. Generated output can be
           incomplete or incorrect and must be reviewed before use for scouting, strategy, engineering, fundraising, or
           safety decisions. A team supplying a bring-your-own key is responsible for its provider account, charges, and
           permitted use; Vantage uses that key only for the requested integration.
+        </p>
+        <p>
+          You grant Vantage a license to use prompts, completions, tool traces, and other AI usage generated in this
+          app to operate, secure, evaluate, and improve Vantage, including to train and evaluate models. Workspace
+          isolation still applies to live product access: another FRC team cannot open your org&apos;s chats or files
+          in the product. Model providers you select (including BYOK) have their own terms.
         </p>
         <h2>Availability and changes</h2>
         <p>

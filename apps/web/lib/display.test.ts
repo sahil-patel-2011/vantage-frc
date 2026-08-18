@@ -1,5 +1,6 @@
 ﻿import { describe, expect, it } from "vitest";
 import {
+  bumperBanner,
   countdownState,
   displayKioskHref,
   formatAlliance,
@@ -9,7 +10,9 @@ import {
   isDisplayPreset,
   isDisplayWidgetType,
   matchLabel,
+  ourBumperColor,
   pitChromiumKioskCommand,
+  queueCue,
   rankLabel,
   recordLabel,
   stripFrc,
@@ -48,14 +51,35 @@ describe("display helpers", () => {
     const soon = countdownState("2026-03-15T12:10:00.000Z", now);
     expect(soon.label).toBe("10:00");
     expect(soon.leavePit).toBe(true);
+    expect(soon.queueSoon).toBe(false);
     expect(soon.queueNow).toBe(false);
+    expect(queueCue(soon)).toBe("LEAVE PIT NOW");
 
     const later = countdownState("2026-03-15T12:30:00.000Z", now);
     expect(later.leavePit).toBe(false);
+    expect(later.queueSoon).toBe(false);
+
+    const five = countdownState("2026-03-15T12:04:00.000Z", now);
+    expect(five.queueSoon).toBe(true);
+    expect(five.queueNow).toBe(false);
+    expect(queueCue(five)).toBe("QUEUE SOON");
 
     const past = countdownState("2026-03-15T11:59:00.000Z", now);
     expect(past.label).toBe("QUEUE NOW");
     expect(past.queueNow).toBe(true);
+    expect(queueCue(past)).toBe("QUEUE NOW");
+  });
+
+  it("reads bumper color only from the real alliance lists", () => {
+    const match = {
+      redAlliance: { teamKeys: ["frc111", "frc1678"] },
+      blueAlliance: { teamKeys: ["frc254", "frc1323"] },
+    };
+    expect(ourBumperColor(match, 1678)).toBe("red");
+    expect(ourBumperColor(match, 254)).toBe("blue");
+    expect(ourBumperColor(match, 9999)).toBeNull();
+    expect(bumperBanner("red")).toBe("RED bumpers");
+    expect(bumperBanner(null)).toBe("Bumper color unknown");
   });
 
   it("formats rank/record only from real metrics", () => {

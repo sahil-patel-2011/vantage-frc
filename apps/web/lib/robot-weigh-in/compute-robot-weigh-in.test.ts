@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
 import { computeRobotWeighInView } from "./compute-robot-weigh-in";
-import { summarizeRobotWeighIn } from ".";
+import { PLAYOFF_REWEIGH_CUE, playoffReweighCue, summarizeRobotWeighIn } from ".";
 import type { RobotWeighInEntry } from "./types";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -81,6 +81,45 @@ describe("computeRobotWeighInView", () => {
     expect(view.summary.overLimitCount).toBe(1);
     expect(view.summary.trend).toHaveLength(2);
     expect(view.summary.trend[0].weighedOn).toBe("2026-01-10");
+    expect(view.playoffReweighCue).toBeNull();
+  });
+
+  it("cues a playoff re-weigh when TBA has unplayed elims and event inspection is older", async () => {
+    const client = makeClient((sql) => {
+      if (sql.includes("FROM memberships")) {
+        return { rows: [{ orgId: ORG, teamNumber: 254 }] };
+      }
+      if (sql.includes("FROM robot_weigh_in_entries") && sql.includes("SELECT id")) {
+        return {
+          rows: [
+            {
+              id: "e1",
+              weighedOn: "2026-03-19",
+              weightLbs: "124.00",
+              weightLimitLbs: "125.00",
+              station: "shop",
+              bumpersOn: true,
+              batteryOn: true,
+              seasonYear: 2026,
+              notes: null,
+            },
+          ],
+        };
+      }
+      if (sql.includes("DISTINCT season_year")) {
+        return { rows: [{ seasonYear: 2026 }] };
+      }
+      if (sql.includes("FROM matches_ref") || sql.includes("org_active_context")) {
+        return { rows: [{ playoffStartAt: "2026-03-21 16:00:00+00" }] };
+      }
+      return { rows: [] };
+    });
+
+    const view = await computeRobotWeighInView(client, { userId: USER, requestedOrg: ORG });
+
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.playoffReweighCue).toBe(PLAYOFF_REWEIGH_CUE);
   });
 });
 
@@ -123,5 +162,51 @@ describe("summarizeRobotWeighIn", () => {
     expect(s.trend[0].weighedOn).toBe("2026-01-05");
     expect(s.trend[1].weighedOn).toBe("2026-02-20");
     expect(s.trend[1].marginLbs).toBe(-5);
+  });
+});
+
+describe("playoffReweighCue", () => {
+  it("stays quiet without playoffs or weigh-ins", () => {
+    expect(
+      playoffReweighCue({
+        nextUnplayedPlayoffAt: null,
+        latestEventInspectionAt: "2026-03-19",
+        hasAnyEntry: true,
+      }),
+    ).toBeNull();
+    expect(
+      playoffReweighCue({
+        nextUnplayedPlayoffAt: "2026-03-21T16:00:00Z",
+        latestEventInspectionAt: null,
+        hasAnyEntry: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("cues when playoffs exist and the latest event inspection is before that day", () => {
+    expect(
+      playoffReweighCue({
+        nextUnplayedPlayoffAt: "2026-03-21 16:00:00+00",
+        latestEventInspectionAt: "2026-03-19",
+        hasAnyEntry: true,
+      }),
+    ).toBe(PLAYOFF_REWEIGH_CUE);
+    expect(
+      playoffReweighCue({
+        nextUnplayedPlayoffAt: "2026-03-21T16:00:00Z",
+        latestEventInspectionAt: null,
+        hasAnyEntry: true,
+      }),
+    ).toBe(PLAYOFF_REWEIGH_CUE);
+  });
+
+  it("clears once an Event inspection is logged on or after playoff day", () => {
+    expect(
+      playoffReweighCue({
+        nextUnplayedPlayoffAt: "2026-03-21T16:00:00Z",
+        latestEventInspectionAt: "2026-03-21",
+        hasAnyEntry: true,
+      }),
+    ).toBeNull();
   });
 });

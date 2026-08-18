@@ -10,7 +10,7 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
   { key: "start", href: "/start", label: "Your path", match: (p) => p === "/start" || p.startsWith("/start/") },
   { key: "practice", href: "/team?tab=practice", label: "Practice", match: (p) => p.startsWith("/practice") },
   { key: "todos", href: "/team?tab=todos", label: "Todos", match: (p) => p.startsWith("/todos") || p.startsWith("/tasks") },
-  { key: "messages", href: "/team?tab=messages", label: "Messages", match: (p) => p.startsWith("/messages") },
+  { key: "messages", href: "/team?tab=messages", label: "Team chat", match: (p) => p.startsWith("/messages") },
   { key: "calendar", href: "/team?tab=calendar", label: "Calendar", match: (p) => p.startsWith("/team/calendar") || p === "/calendar" },
   { key: "attendance", href: "/team?tab=attendance", label: "Attendance", match: (p) => p.startsWith("/attendance") },
   { key: "knowledge", href: "/team?tab=knowledge", label: "Knowledge", match: (p) => p.startsWith("/team/knowledge") || p.startsWith("/knowledge") },

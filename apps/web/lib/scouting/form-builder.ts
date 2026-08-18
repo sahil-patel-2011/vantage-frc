@@ -1,4 +1,4 @@
-import { lintSchemaBudget } from "@vantage/scouting/trust";
+import { lintPitClaimedScoring, lintSchemaBudget } from "@vantage/scouting/trust";
 import {
   assertSchemaIdentityLock,
   isScoutIdentityField,
@@ -693,9 +693,14 @@ export type FormBuilderValidation = {
   ok: boolean;
   errors: string[];
   budget: ReturnType<typeof lintSchemaBudget>;
+  pitClaim: ReturnType<typeof lintPitClaimedScoring>;
 };
 
-export function validateDraft(title: string, questions: DraftQuestion[]): FormBuilderValidation {
+export function validateDraft(
+  title: string,
+  questions: DraftQuestion[],
+  entryType: EntryType = "match",
+): FormBuilderValidation {
   const errors: string[] = [];
   if (!title.trim()) errors.push("Give the form a title.");
   if (!questions.length) errors.push("Add at least one question.");
@@ -724,5 +729,9 @@ export function validateDraft(title: string, questions: DraftQuestion[]): FormBu
   const identityError = assertSchemaIdentityLock(definition);
   if (identityError) errors.push(identityError);
   const budget = lintSchemaBudget(definition);
-  return { ok: errors.length === 0, errors, budget };
+  const pitClaim =
+    entryType === "pit"
+      ? lintPitClaimedScoring(definition)
+      : { status: "ok" as const, flagged: [], message: "" };
+  return { ok: errors.length === 0, errors, budget, pitClaim };
 }

@@ -16,6 +16,7 @@ describe("help articles", () => {
       "media-workspace",
       "hub-access",
       "funding-profile",
+      "season-finance",
     ]);
   });
 
@@ -61,6 +62,7 @@ describe("help search index", () => {
   it("finds hub access and funding profile docs", () => {
     expect(searchHelpArticles("hub access allowlist")[0]?.slug).toBe("hub-access");
     expect(searchHelpArticles("funding profile affiliation")[0]?.slug).toBe("funding-profile");
+    expect(searchHelpArticles("purchase log reimbursement")[0]?.slug).toBe("season-finance");
   });
 
   it("filters the hub list without inventing articles", () => {

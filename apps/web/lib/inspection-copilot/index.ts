@@ -151,12 +151,66 @@ export function predictInspectionFailures(input: {
     });
   }
 
+  if (wiringPower.binderRecorded) {
+    if (!wiringPower.bomPrinted) {
+      flags.push({
+        type: "bom_not_printed",
+        severity: "critical",
+        message:
+          "Printed Bill of Materials is not marked packed — inspectors require a real BOM (part, qty, price, supplier) at every event, not a napkin list.",
+      });
+    }
+    if (!wiringPower.inspectionChecklistPrinted) {
+      flags.push({
+        type: "inspection_checklist_not_printed",
+        severity: "warning",
+        message: "Printed robot inspection checklist is not marked packed — walk it with a student before Thursday.",
+      });
+    }
+    if (!wiringPower.studentCaptainPresent) {
+      flags.push({
+        type: "student_captain_absent",
+        severity: "warning",
+        message: "No student team captain is marked present to sign inspection — inspectors talk to students, not only mentors.",
+      });
+    }
+  }
+
+  if (wiringPower.radioEventRecorded) {
+    if (!wiringPower.radioOnMainPd) {
+      flags.push({
+        type: "radio_not_on_main_pd",
+        severity: "critical",
+        message:
+          "Radio is not marked powered from the main PD — 2026 inspectors fail VH-109 radios on a VRM/RPM or Mini PD; use 12V from the PD and/or a passive PoE injector.",
+      });
+    }
+    if (!wiringPower.rioOnMainPd10A) {
+      flags.push({
+        type: "rio_not_on_main_pd",
+        severity: "critical",
+        message:
+          "roboRIO is not marked on a non-switched 10A PD branch — do not power the RIO from a Mini PD or extra fuse block.",
+      });
+    }
+    if (!wiringPower.radioProgrammedForEvent) {
+      flags.push({
+        type: "radio_not_programmed_for_event",
+        severity: "warning",
+        message:
+          "Radio is not marked programmed for this event — inspectors require event programming before inspection.",
+      });
+    }
+  }
+
   const checkCount =
     (weightBudget.limitLbs > 0 ? 1 : 0) +
     (frameBumper.perimeterLimitIn > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
-    5; // wiring/power checks are always evaluated
+    5 + // wiring/power checks are always evaluated
+    (wiringPower.binderRecorded ? 3 : 0) +
+    (wiringPower.radioEventRecorded ? 3 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));
 

@@ -4,6 +4,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   batteryHealth,
+  cartSlot,
   competitionReadiness,
   monthsBetween,
   parseBatteryAction,
@@ -56,6 +57,7 @@ type PackRow = {
   lastMeasuredAt: string | null;
   lastUsedAt: string | null;
   lastChargedAt: string | null;
+  lastTestedAt: string | null;
 };
 
 export async function GET(request: Request) {
@@ -85,7 +87,8 @@ export async function GET(request: Request) {
                   agg.last_resistance::float8 AS "lastInternalResistanceMohm",
                   agg.last_voltage::float8 AS "lastRestingVoltage",
                   agg.last_measured_at::text AS "lastMeasuredAt",
-                  agg.last_used_at::text AS "lastUsedAt", agg.last_charged_at::text AS "lastChargedAt"
+                  agg.last_used_at::text AS "lastUsedAt", agg.last_charged_at::text AS "lastChargedAt",
+                  agg.last_tested_at::text AS "lastTestedAt"
            FROM battery_packs p
            LEFT JOIN LATERAL (
              SELECT
@@ -94,7 +97,11 @@ export async function GET(request: Request) {
                (SELECT resting_voltage FROM battery_logs l WHERE l.battery_id = p.id AND l.resting_voltage IS NOT NULL ORDER BY l.created_at DESC LIMIT 1) AS last_voltage,
                max(created_at) FILTER (WHERE resting_voltage IS NOT NULL OR internal_resistance_mohm IS NOT NULL) AS last_measured_at,
                max(created_at) FILTER (WHERE kind IN ('match', 'practice')) AS last_used_at,
-               max(created_at) FILTER (WHERE kind IN ('charge', 'storage_charge')) AS last_charged_at
+               max(created_at) FILTER (WHERE kind IN ('charge', 'storage_charge')) AS last_charged_at,
+               max(created_at) FILTER (
+                 WHERE kind NOT IN ('charge', 'storage_charge')
+                   AND (resting_voltage IS NOT NULL OR internal_resistance_mohm IS NOT NULL)
+               ) AS last_tested_at
              FROM battery_logs l WHERE l.battery_id = p.id
            ) agg ON true
            WHERE p.org_id = $1
@@ -130,7 +137,14 @@ export async function GET(request: Request) {
           lastInternalResistanceMohm: pack.lastInternalResistanceMohm,
           now,
         });
-        return { ...pack, ageMonths, health, readiness };
+        const slot = cartSlot({
+          status: pack.status,
+          lastChargedAt: pack.lastChargedAt,
+          lastUsedAt: pack.lastUsedAt,
+          lastTestedAt: pack.lastTestedAt,
+          nowIso: now.toISOString(),
+        });
+        return { ...pack, ageMonths, health, readiness, cartSlot: slot };
       });
       const rotation = rankForRotation(enriched).slice(0, 5).map((pack) => pack.id);
 
@@ -145,6 +159,8 @@ export async function GET(request: Request) {
           competitionReady: enriched.filter((p) => p.readiness.ready).length,
           needAttention: enriched.filter((p) => p.status === "active" && (!p.readiness.ready || p.health.status !== "good")).length,
           retired: enriched.filter((p) => p.status === "retired").length,
+          cartReady: enriched.filter((p) => p.cartSlot.kind === "ready").length,
+          cartCooling: enriched.filter((p) => p.cartSlot.kind === "cooling").length,
         },
       };
     });

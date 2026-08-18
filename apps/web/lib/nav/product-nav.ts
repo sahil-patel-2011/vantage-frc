@@ -165,7 +165,7 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   { href: "/competition?tab=scouting", label: "Scout", icon: "scout" },
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
-  { href: "/team?tab=messages", label: "Messages", icon: "chat" },
+  { href: "/team?tab=messages", label: "Team chat", icon: "chat" },
 ];
 
 /**
@@ -188,7 +188,7 @@ export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: Produc
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/competition?tab=forms", label: "Forms", icon: "clipboard" },
   { href: "/competition?tab=match-checklist", label: "Checklist", icon: "clipboard" },
-  { href: "/team?tab=messages", label: "Messages", icon: "chat" },
+  { href: "/team?tab=messages", label: "Team chat", icon: "chat" },
 ];
 
 /** @deprecated Prefer hub tabs + Cmd+K — kept for residual imports. */

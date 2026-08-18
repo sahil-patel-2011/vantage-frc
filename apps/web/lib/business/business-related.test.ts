@@ -60,7 +60,7 @@ describe("business-related Soft-UI helpers", () => {
       active: "fundraisers",
       include: FUNDRAISERS_RELATED_INCLUDE,
     });
-    expect(links.map((l) => l.id)).toEqual(["sponsors", "orders", "grants", "costs", "finance-ai", "budget"]);
+    expect(links.map((l) => l.id)).toEqual(["finance", "sponsors", "orders", "grants", "costs", "finance-ai", "budget"]);
     expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
     expect(links.find((l) => l.id === "grants")?.href).toBe("/business?tab=grants&orgId=org-1");
     expect(links.find((l) => l.id === "orders")?.href).toBe("/business?tab=orders&orgId=org-1");
@@ -72,7 +72,7 @@ describe("business-related Soft-UI helpers", () => {
       active: "orders",
       include: ORDERS_RELATED_INCLUDE,
     });
-    expect(links.map((l) => l.id)).toEqual(["sponsors", "grants", "fundraisers", "costs", "finance-ai", "budget"]);
+    expect(links.map((l) => l.id)).toEqual(["finance", "sponsors", "grants", "fundraisers", "costs", "finance-ai", "budget"]);
     expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
     expect(links.find((l) => l.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
     expect(links.find((l) => l.id === "costs")?.href).toBe("/costs?orgId=org-1");
@@ -84,7 +84,7 @@ describe("business-related Soft-UI helpers", () => {
       active: "costs",
       include: COSTS_RELATED_INCLUDE,
     });
-    expect(links.map((l) => l.id)).toEqual(["orders", "fundraisers", "finance-ai", "budget"]);
+    expect(links.map((l) => l.id)).toEqual(["finance", "orders", "fundraisers", "finance-ai", "budget"]);
     expect(links.find((l) => l.id === "orders")?.href).toBe("/business?tab=orders&orgId=org-1");
     expect(links.find((l) => l.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
     expect(links.find((l) => l.id === "budget")?.href).toBe("/business?tab=budget&orgId=org-1");

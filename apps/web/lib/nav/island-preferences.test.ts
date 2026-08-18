@@ -10,7 +10,7 @@ describe("island preferences", () => {
   it("preserves a valid custom order", () => {
     const selection = ["/competition?tab=scouting", "/build", "/team?tab=messages", "/ai"];
     expect(isValidIslandSelection(selection)).toBe(true);
-    expect(resolveIslandTabs(selection).map((item) => item.label)).toEqual(["Scout", "Build", "Messages", "AI"]);
+    expect(resolveIslandTabs(selection).map((item) => item.label)).toEqual(["Scout", "Build", "Team chat", "AI"]);
   });
 
   it("rejects duplicates, unknown routes, and the wrong slot count", () => {

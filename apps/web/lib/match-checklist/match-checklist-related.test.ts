@@ -23,6 +23,7 @@ function run(partial: Partial<MatchChecklistRun> & Pick<MatchChecklistRun, "id" 
     ],
     elapsedSeconds: 12,
     allDone: false,
+    bumperColor: null,
     ...partial,
   };
 }
@@ -30,6 +31,18 @@ function run(partial: Partial<MatchChecklistRun> & Pick<MatchChecklistRun, "id" 
 describe("match checklist Soft-UI helpers", () => {
   it("requires workspace before next actions", () => {
     expect(matchChecklistNextActions({ runs: [] }).map((a) => a.id)).toEqual(["workspace"]);
+  });
+
+  it("asks to hang TBA bumper color before the first checklist — never DEMO", () => {
+    const actions = matchChecklistNextActions({
+      orgId: "org-1",
+      runs: [],
+      upcomingMatches: [{ label: "Qual 12", bumperColor: "red" }],
+    });
+    expect(actions[0]?.id).toBe("hang-bumpers");
+    expect(actions[0]?.label).toContain("RED");
+    expect(actions[0]?.label).toContain("Qual 12");
+    expect(actions[0]?.detail.toLowerCase()).not.toContain("demo");
   });
 
   it("asks for first checklist when history is empty — never DEMO progress", () => {

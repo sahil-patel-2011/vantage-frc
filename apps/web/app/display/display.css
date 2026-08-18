@@ -572,6 +572,14 @@
   opacity: 1;
 }
 
+.display-kiosk-panel article em.queue-soon,
+.display-kiosk-panel article strong.queue-soon,
+.display-kiosk-panel article em.queue-now {
+  color: #f87171;
+  font-weight: 700;
+  opacity: 1;
+}
+
 .display-kiosk-panel .alliance-red {
   color: #f87171;
 }

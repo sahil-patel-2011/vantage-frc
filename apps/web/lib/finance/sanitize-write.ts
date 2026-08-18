@@ -37,6 +37,7 @@ const TEXT_FIELDS = [
   "label",
   "name",
   "description",
+  "item",
 ] as const;
 
 export function stripPaymentFields(body: Record<string, unknown>): Record<string, unknown> {

@@ -1,0 +1,48 @@
+.season-finance-next ul {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.season-finance-next li {
+  display: grid;
+  gap: 4px;
+  align-items: start;
+  grid-template-columns: minmax(12rem, auto) 1fr;
+}
+
+.season-finance-next li span {
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.season-finance-elsewhere {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.season-finance-elsewhere li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--app-line);
+  font-size: 13px;
+}
+
+.season-finance-elsewhere li:last-child {
+  border-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .season-finance-next li,
+  .season-finance-elsewhere li {
+    grid-template-columns: 1fr;
+  }
+}

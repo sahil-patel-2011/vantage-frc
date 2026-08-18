@@ -600,8 +600,8 @@ export default function MessagesClient({
       {!embedded ? (
         <>
           <PageHeader
-            breadcrumbs="Team / Messages"
-            title="Messages"
+            breadcrumbs="Team / Team chat"
+            title="Team chat"
             description="Org-scoped team channel and private chats — real members only, never demo threads."
           >
             <span className={`messages-live ${live ? "on" : "off"}`}>
@@ -609,6 +609,9 @@ export default function MessagesClient({
               {live ? "Live" : "Paused"}
               {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
             </span>
+            <a className="app-button secondary" href={withOrgHref("/team/slack", orgId)}>
+              Slack
+            </a>
           </PageHeader>
           <TeamOpsNav orgId={orgId} active="messages" />
           <TeamHubRelated

@@ -451,6 +451,47 @@ export const HELP_ARTICLES: HelpArticle[] = [
       },
     ],
   },
+  {
+    id: "season-finance",
+    slug: "season-finance",
+    title: "Season finance desk",
+    summary:
+      "Plan school funds, fees, grants, sponsors, and fundraisers, then log receipts — totals stay blank until real rows exist.",
+    category: "Business",
+    keywords: [
+      "season finance",
+      "purchase log",
+      "funding sources",
+      "reimbursement",
+      "school funds",
+      "student fees",
+      "ledger",
+    ],
+    relatedHref: "/business?tab=finance",
+    sections: [
+      {
+        heading: "One season money plan",
+        body: [
+          "Business → Finance rolls planned vs received income against planned vs actual spend for the selected season.",
+          "Add funding lines for school/district money, student fees, and deposits that are not already in Sponsors, Grants, or Fundraisers.",
+        ],
+      },
+      {
+        heading: "Purchase log vs Orders",
+        body: [
+          "Log receipts, cash buys, and reimbursements on the purchase log. Amazon / buy-link approvals stay under Orders.",
+          "Paid Season Costs and awarded grants still count in the rollup so you do not need a second invented ledger.",
+        ],
+      },
+      {
+        heading: "What stays empty",
+        body: [
+          "KPIs stay at $0 or — until someone records a real source or receipt. Vantage never fills DEMO dollars.",
+          "Card and bank numbers are stripped from finance writes. Link a receipt URL instead of pasting account details.",
+        ],
+      },
+    ],
+  },
 ];
 
 export function getHelpArticle(slug: string): HelpArticle | undefined {

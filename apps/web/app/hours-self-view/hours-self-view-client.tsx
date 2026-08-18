@@ -287,7 +287,7 @@ export default function HoursSelfViewClient() {
           </>
         }
         title="My Hours"
-        description="Your own logged shop, meeting, and outreach time — read-only, plus kiosk mode and the biometric consent gate. Never DEMO hour totals."
+        description="Your own logged shop, meeting, and outreach time — plus who’s in the shop right now from open clock-ins. Never DEMO hour totals or a public hours leaderboard."
       >
         <RelatedStrip orgId={orgId} />
       </PageHeader>
@@ -304,6 +304,9 @@ export default function HoursSelfViewClient() {
             <StatTile label="Total hours" value={formatHoursSelfViewHours(view.summary.totalHours, loaded)} />
             <StatTile label="Sessions" value={formatHoursSelfViewMetric(view.summary.totalEntries, loaded)} />
             <StatTile label="Status" value={view.summary.openEntry ? "Clocked in" : "Clocked out"} />
+            {view.presentNow.length > 0 ? (
+              <StatTile label="In the shop" value={formatHoursSelfViewMetric(view.presentNow.length, loaded)} />
+            ) : null}
           </div>
           {view.summary.byKind.length > 0 ? (
             <ul className="hsv-kind-list">
@@ -320,6 +323,7 @@ export default function HoursSelfViewClient() {
         </Panel>
       ) : null}
 
+      <PresencePanel view={view} />
       <BiometricGatePanel view={view} busy={busy} mutate={mutate} />
       <KioskPanel view={view} />
       <EntriesList view={view} />
@@ -374,6 +378,38 @@ function BiometricGatePanel({
           </Button>
         </div>
       ) : null}
+    </Panel>
+  );
+}
+
+function PresencePanel({ view }: { view: LiveView }) {
+  if (view.presentNow.length === 0) {
+    return (
+      <EmptyState
+        soft
+        badge="Shop floor"
+        badgeTone="setup"
+        title="Nobody clocked in"
+        description="Open hour_logs sessions appear here — never a DEMO occupancy list."
+      />
+    );
+  }
+  return (
+    <Panel id="hours-self-present" className="hsv-panel">
+      <SectionHeading title="In the shop now" />
+      <ul className="hsv-presence-list">
+        {view.presentNow.map((person) => (
+          <li key={person.userId} className="hsv-presence-row">
+            <div>
+              <strong>{person.displayName}</strong>
+              <small className="app-muted hsv-block">
+                {hourLogKindLabel(person.kind)} · since {fmtDateTime(person.clockIn)}
+              </small>
+            </div>
+            <small className="app-muted">{fmtHours(person.minutesOpen)}</small>
+          </li>
+        ))}
+      </ul>
     </Panel>
   );
 }

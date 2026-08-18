@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 
-export const LEGAL_DOC_VERSION = "2026-07-17";
-export const LEGAL_EFFECTIVE_DATE = "July 17, 2026";
+export const LEGAL_DOC_VERSION = "2026-08-17";
+export const LEGAL_EFFECTIVE_DATE = "August 17, 2026";
 
 export function assertTermsAccepted(accepted: unknown): void {
   if (accepted !== true) {
