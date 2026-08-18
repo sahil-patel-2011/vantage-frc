@@ -3,6 +3,7 @@ import {
   emailNotificationsSetupStatus,
   getUserEmailPreferences,
   mergeInAppNotificationPrefs,
+  parseDob,
   updateUserEmailPreferences,
   type InAppNotificationPrefs,
   type UserEmailPreferences,
@@ -16,6 +17,8 @@ import { canPostViaDiscord } from "../../../lib/discord-related";
 import { discordSetupStatus, isValidDiscordWebhook } from "../../../lib/discord";
 import { githubSetupStatus, loadGitHubConnection } from "../../../lib/github";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
+import { normalizePhoneE164, normalizeRecoveryEmail, phoneOtpSetupStatus } from "../../../lib/account/phone-otp";
+import { isValidSlackWebhook, slackSetupStatus } from "../../../lib/slack";
 
 const prefsSchema = z.object({
   matchAlerts: z.boolean().optional(),
@@ -27,6 +30,7 @@ const prefsSchema = z.object({
   dutyAssigned: z.boolean().optional(),
   calendarEvents: z.boolean().optional(),
   sponsorReminders: z.boolean().optional(),
+  teamChat: z.boolean().optional(),
 });
 
 const emailPrefsSchema = z.object({
@@ -39,6 +43,11 @@ const emailPrefsSchema = z.object({
 
 const putSchema = z.object({
   displayName: z.string().trim().min(1).max(80).optional(),
+  firstName: z.string().trim().min(1).max(60).optional(),
+  lastName: z.string().trim().min(1).max(60).optional(),
+  dateOfBirth: z.string().trim().min(8).max(10).optional(),
+  recoveryEmail: z.string().trim().max(254).optional().nullable(),
+  phoneE164: z.string().trim().max(20).optional().nullable(),
   notificationPrefs: prefsSchema.optional(),
   emailPrefs: emailPrefsSchema.optional(),
 });
@@ -60,6 +69,8 @@ type OrgConnectorSnapshot = {
   discordChannelId: string | null;
   discordChatBridgeEnabled: boolean;
   githubConnected: boolean;
+  slackHasWebhook: boolean;
+  slackChatBridgeEnabled: boolean;
 };
 
 async function resolveMembershipOrgId(
@@ -117,6 +128,23 @@ async function loadOrgConnectorSnapshot(
 
   const github = await loadGitHubConnection(client, orgId);
 
+  let slackHasWebhook = false;
+  let slackChatBridgeEnabled = false;
+  try {
+    const slack = await client.query<{ webhookUrl: string | null; chatBridgeEnabled: boolean }>(
+      `SELECT webhook_url AS "webhookUrl", chat_bridge_enabled AS "chatBridgeEnabled"
+       FROM team_slack WHERE org_id=$1::uuid LIMIT 1`,
+      [orgId],
+    );
+    const row = slack.rows[0];
+    if (row) {
+      slackHasWebhook = Boolean(row.webhookUrl && isValidSlackWebhook(row.webhookUrl));
+      slackChatBridgeEnabled = Boolean(row.chatBridgeEnabled);
+    }
+  } catch {
+    // team_slack may be mid-migration
+  }
+
   return {
     orgId,
     onshapeConnected: Boolean(onshape.rows[0]?.id),
@@ -124,6 +152,8 @@ async function loadOrgConnectorSnapshot(
     discordChannelId,
     discordChatBridgeEnabled,
     githubConnected: Boolean(github && github.status === "connected"),
+    slackHasWebhook,
+    slackChatBridgeEnabled,
   };
 }
 
@@ -258,6 +288,31 @@ function githubIntegration(
   };
 }
 
+function slackIntegration(
+  orgId: string | null,
+  snapshot: OrgConnectorSnapshot,
+): { status: ConnectionConnectorStatus; detail: string } {
+  const setup = slackSetupStatus();
+  if (snapshot.slackHasWebhook) {
+    return {
+      status: "connected",
+      detail: snapshot.slackChatBridgeEnabled
+        ? "Slack webhook is linked and the team-chat bridge is on."
+        : "Slack webhook is linked. Enable the chat bridge to sync Team chat.",
+    };
+  }
+  if (!orgId) {
+    return {
+      status: setup.configured ? "available" : "setup_required",
+      detail: "Select a workspace, then paste a Slack incoming webhook on Team → Slack.",
+    };
+  }
+  return {
+    status: "empty",
+    detail: "No Slack webhook yet. Team chat still works in Vantage without Slack.",
+  };
+}
+
 export async function GET() {
   const session = await currentSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -268,10 +323,22 @@ export async function GET() {
         displayName: string | null;
         notificationPrefs: unknown;
         themePreference: string;
+        firstName: string | null;
+        lastName: string | null;
+        dateOfBirth: string | null;
+        recoveryEmail: string | null;
+        phoneE164: string | null;
+        phoneVerifiedAt: string | null;
       }>(
         `SELECT display_name AS "displayName",
                 notification_prefs AS "notificationPrefs",
-                theme_preference AS "themePreference"
+                theme_preference AS "themePreference",
+                first_name AS "firstName",
+                last_name AS "lastName",
+                date_of_birth::text AS "dateOfBirth",
+                recovery_email AS "recoveryEmail",
+                phone_e164 AS "phoneE164",
+                phone_verified_at::text AS "phoneVerifiedAt"
          FROM profiles WHERE user_id=$1`,
         [session.user.id],
       );
@@ -299,6 +366,8 @@ export async function GET() {
       discordChannelId: null,
       discordChatBridgeEnabled: false,
       githubConnected: false,
+      slackHasWebhook: false,
+      slackChatBridgeEnabled: false,
     };
     const orgConnectors =
       profile.membershipOrgId != null
@@ -316,18 +385,25 @@ export async function GET() {
     const onshape = onshapeIntegration(orgId, orgConnectors.onshapeConnected);
     const discord = discordIntegration(orgId, orgConnectors);
     const github = githubIntegration(orgId, orgConnectors.githubConnected);
+    const slack = slackIntegration(orgId, orgConnectors);
 
     return Response.json({
       name: session.user.name,
       email: session.user.email,
       image: session.user.image,
       displayName: profile.row?.displayName ?? session.user.name ?? null,
+      firstName: profile.row?.firstName ?? null,
+      lastName: profile.row?.lastName ?? null,
+      dateOfBirth: profile.row?.dateOfBirth ?? null,
+      recoveryEmail: profile.row?.recoveryEmail ?? null,
+      phoneE164: profile.row?.phoneE164 ?? null,
+      phoneVerified: Boolean(profile.row?.phoneVerifiedAt),
+      phoneOtp: phoneOtpSetupStatus(),
       themePreference: profile.row?.themePreference === "dark" ? "dark" : "light",
       notificationPrefs: mergePrefs(profile.row?.notificationPrefs),
       emailPrefs: profile.emailPrefs,
       emailDelivery: emailNotificationsSetupStatus(),
       unreadNotificationCount: profile.unreadCount,
-      // Never invent DEMO Google Connected — deployment OAuth readiness only.
       googleConnected: false,
       tbaConfigured: profile.tba.tbaConfigured,
       integrations: {
@@ -348,6 +424,7 @@ export async function GET() {
         onshape,
         discord,
         github,
+        slack,
       },
     });
   } catch {
@@ -375,18 +452,46 @@ export async function PUT(request: Request) {
         ? { ...mergePrefs(existing.rows[0]?.notificationPrefs), ...body.data.notificationPrefs }
         : mergePrefs(existing.rows[0]?.notificationPrefs);
       const displayName = body.data.displayName ?? existing.rows[0]?.displayName ?? session.user.name ?? null;
+      if (body.data.dateOfBirth) parseDob(body.data.dateOfBirth);
+      const recoveryEmail =
+        body.data.recoveryEmail === undefined ? undefined : normalizeRecoveryEmail(body.data.recoveryEmail);
+      const phoneE164 = body.data.phoneE164 === undefined ? undefined : normalizePhoneE164(body.data.phoneE164);
 
       await client.query(
-        `INSERT INTO profiles(user_id, display_name, notification_prefs)
-         VALUES($1,$2,$3::jsonb)
+        `INSERT INTO profiles(user_id, display_name, notification_prefs, first_name, last_name, date_of_birth, recovery_email, phone_e164)
+         VALUES($1,$2,$3::jsonb,$4,$5,$6::date,$7,$8)
          ON CONFLICT(user_id) DO UPDATE SET
            display_name = COALESCE(excluded.display_name, profiles.display_name),
-           notification_prefs = excluded.notification_prefs`,
-        [session.user.id, displayName, JSON.stringify(nextPrefs)],
+           notification_prefs = excluded.notification_prefs,
+           first_name = COALESCE(excluded.first_name, profiles.first_name),
+           last_name = COALESCE(excluded.last_name, profiles.last_name),
+           date_of_birth = COALESCE(excluded.date_of_birth, profiles.date_of_birth),
+           recovery_email = CASE WHEN $9 THEN excluded.recovery_email ELSE profiles.recovery_email END,
+           phone_e164 = CASE WHEN $10 THEN excluded.phone_e164 ELSE profiles.phone_e164 END,
+           phone_verified_at = CASE
+             WHEN $10 AND excluded.phone_e164 IS DISTINCT FROM profiles.phone_e164 THEN NULL
+             ELSE profiles.phone_verified_at
+           END`,
+        [
+          session.user.id,
+          displayName,
+          JSON.stringify(nextPrefs),
+          body.data.firstName ?? null,
+          body.data.lastName ?? null,
+          body.data.dateOfBirth ?? null,
+          recoveryEmail === undefined ? null : recoveryEmail,
+          phoneE164 === undefined ? null : phoneE164,
+          recoveryEmail !== undefined,
+          phoneE164 !== undefined,
+        ],
       );
 
-      if (body.data.displayName) {
-        await client.query(`UPDATE users SET name=$2 WHERE id=$1`, [session.user.id, body.data.displayName]);
+      if (body.data.displayName || body.data.firstName || body.data.lastName) {
+        const name =
+          body.data.displayName ??
+          [body.data.firstName, body.data.lastName].filter(Boolean).join(" ") ??
+          displayName;
+        if (name) await client.query(`UPDATE users SET name=$2 WHERE id=$1`, [session.user.id, name]);
       }
 
       let emailPrefs: UserEmailPreferences | undefined;

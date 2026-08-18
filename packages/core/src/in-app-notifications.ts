@@ -16,6 +16,7 @@ export type InAppNotificationPrefs = {
   dutyAssigned: boolean;
   calendarEvents: boolean;
   sponsorReminders: boolean;
+  teamChat: boolean;
 };
 
 export const DEFAULT_IN_APP_NOTIFICATION_PREFS: InAppNotificationPrefs = {
@@ -28,6 +29,7 @@ export const DEFAULT_IN_APP_NOTIFICATION_PREFS: InAppNotificationPrefs = {
   dutyAssigned: true,
   calendarEvents: true,
   sponsorReminders: true,
+  teamChat: true,
 };
 
 /** Preference key that gates a notification `type` (null = always allow). */
@@ -47,6 +49,8 @@ const TYPE_PREF: Record<string, InAppPrefKey | null> = {
   sponsor_thank_you_due: "sponsorReminders",
   sponsor_renewal_due: "sponsorReminders",
   sponsor_followup_overdue: "sponsorReminders",
+  team_chat: "teamChat",
+  message_mention: "teamChat",
 };
 
 export function prefKeyForNotificationType(type: string): InAppPrefKey | null {

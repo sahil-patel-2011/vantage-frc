@@ -157,10 +157,12 @@ export function robotWeighInNextActions(input: {
   shell: RobotWeighInShellKind;
   entryCount?: number;
   overLimitCount?: number;
+  playoffReweighCue?: string | null;
 }): RobotWeighInNextAction[] {
   const orgId = input.orgId ?? null;
   const entryCount = input.entryCount ?? 0;
   const overLimitCount = input.overLimitCount ?? 0;
+  const playoffReweighCue = input.playoffReweighCue?.trim() || null;
 
   if (!orgId || input.shell === "setup") {
     if (!orgId) {
@@ -252,6 +254,33 @@ export function robotWeighInNextActions(input: {
         id: "inspection",
         label: "Open Inspection Copilot",
         detail: "Prep inspection checks beside future event weigh-ins.",
+        href: hubHref("/build", "inspection-copilot", orgId),
+      },
+    ];
+  }
+
+  if (playoffReweighCue) {
+    return [
+      {
+        id: "playoff-reweigh",
+        label: "Log playoff re-weigh",
+        detail: playoffReweighCue,
+        href: "#robot-weigh-in-form",
+        primary: true,
+      },
+      {
+        id: overLimitCount > 0 ? "over-limit" : "review-trend",
+        label: overLimitCount > 0 ? "Review over-limit readings" : "Review weight trend",
+        detail:
+          overLimitCount > 0
+            ? `${overLimitCount} reading${overLimitCount === 1 ? "" : "s"} over the limit from real scale logs — never DEMO weights.`
+            : `${entryCount} weigh-in${entryCount === 1 ? "" : "s"} logged — never DEMO counters.`,
+        href: "#robot-weigh-in-entries",
+      },
+      {
+        id: "inspection",
+        label: "Open Inspection Copilot",
+        detail: "Pair the playoff re-weigh with inspection readiness.",
         href: hubHref("/build", "inspection-copilot", orgId),
       },
     ];

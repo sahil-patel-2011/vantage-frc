@@ -40,6 +40,33 @@ export function lintSchemaBudget(
   };
 }
 
+/** CD pit practice: do not ask claimed scoring — teams overestimate in the pit. */
+const PIT_CLAIMED_SCORING = /\b(claimed|accuracy|capacity|max[_\s-]?fuel|min[_\s-]?fuel|how many (cycles|points)|points per|scoring)\b/i;
+
+export type PitClaimLint = {
+  status: "ok" | "claimed_scoring";
+  flagged: Array<{ key: string; label: string }>;
+  message: string;
+};
+
+export function lintPitClaimedScoring(definition: SchemaDefinition): PitClaimLint {
+  const flagged = definition.fields
+    .filter((field) => PIT_CLAIMED_SCORING.test(`${field.key} ${field.label} ${field.helpText ?? ""}`))
+    .map((field) => ({ key: field.key, label: field.label }));
+  if (flagged.length === 0) {
+    return {
+      status: "ok",
+      flagged: [],
+      message: "Pit form asks observable facts — not claimed scoring.",
+    };
+  }
+  return {
+    status: "claimed_scoring",
+    flagged,
+    message: `Pit forms should not ask claimed scoring (${flagged.map((field) => field.label).join(", ")}). Collect drivetrain, programming language, driver experience, and photos instead — match scouting owns scoring.`,
+  };
+}
+
 export type FieldTrustSummary = {
   fieldKey: string;
   checks: number;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { formatClock, matchNoteCategoryLabel, matchNotePhaseLabel } from "../../lib/match-notes-timeline";
+import { formatClock, matchNoteCategoryLabel, matchNotePhaseLabel, actionIntervalsFromNotes, actionTrackerStrip } from "../../lib/match-notes-timeline";
 import {
   MATCH_NOTE_CATEGORIES,
   MATCH_NOTE_PHASES,
@@ -422,6 +422,11 @@ function Timelines({
               {timeline.teamNumber ? ` · Team ${timeline.teamNumber}` : ""}
             </small>
           </header>
+          <p className="app-muted" style={{ margin: 0, fontFamily: "monospace", letterSpacing: 2 }} aria-label="QRScout-style action tracker">
+            {actionTrackerStrip(actionIntervalsFromNotes(timeline.entries))
+              .map((cell) => cell || "·")
+              .join("")}
+          </p>
           <ul className="match-notes-timeline-list">
             {timeline.entries.map((entry) => (
               <li key={entry.id} className="match-notes-timeline-card">
@@ -500,7 +505,8 @@ function LogNoteForm({
     >
       <h2 style={{ margin: 0 }}>Log a note</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Notes use only what you type against the match clock — never DEMO match metrics.
+        Notes use only what you type against the match clock. Paste QRScout hold ranges like{" "}
+        <code>12-18,22-30</code> to paint the action tracker — never DEMO match metrics.
       </p>
       <FormGrid min={160}>
         <FormRow label="Match label">

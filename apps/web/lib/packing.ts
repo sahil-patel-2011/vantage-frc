@@ -11,6 +11,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Spare parts kit (printed + machined spares)", quantity: 1 },
       { label: "Spare wheels / tread", quantity: 4 },
       { label: "Spare belts, chain, and fasteners", quantity: 1 },
+      { label: "Spare MAXSwerve Vortex shafts / MK4i belts", quantity: 4 },
     ],
   },
   {
@@ -20,6 +21,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Battery chargers", quantity: 2 },
       { label: "Battery cart / rack", quantity: 1 },
       { label: "Battery beak / voltmeter", quantity: 1 },
+      { label: "Spare battery strap with metal buckle (not zip ties)", quantity: 2 },
       { label: "Power strips and extension cords", quantity: 2 },
     ],
   },
@@ -41,8 +43,39 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Ethernet cables", quantity: 3 },
       { label: "Joysticks / controllers + spares", quantity: 3 },
       { label: "Spare radio and roboRIO", quantity: 1 },
+      { label: "Spare main breaker (replace after a trip)", quantity: 2 },
       { label: "Spare motor controllers", quantity: 2 },
       { label: "USB cables + programming kit", quantity: 1 },
+    ],
+  },
+  {
+    category: "Driver Station field kit",
+    items: [
+      { label: "Hook-and-loop for field DS shelf", quantity: 1 },
+      { label: "Ethernet pigtail / USB-Ethernet dongle", quantity: 1 },
+      { label: "Long ethernet tether (practice field / pit)", quantity: 1 },
+      { label: "Long USB extensions for gamepads", quantity: 2 },
+      { label: "Laptop charger for the player station", quantity: 1 },
+      { label: "Cable strain-relief (tape / clips) for ethernet + USB", quantity: 1 },
+    ],
+  },
+  {
+    category: "Eliminations cart",
+    items: [
+      { label: "Field-side tool pouch (hex, cutters, tape, zip ties)", quantity: 1 },
+      { label: "Eliminations spare battery pair", quantity: 2 },
+      { label: "Eliminations fastener / zip-tie bag", quantity: 1 },
+      { label: "Ethernet + radio spare in one pouch", quantity: 1 },
+      { label: "Alliance-partner help kit (metric hex, 1/4-20, zip ties)", quantity: 1 },
+    ],
+  },
+  {
+    category: "Inspection binder",
+    items: [
+      { label: "Printed Bill of Materials (part, qty, price, supplier)", quantity: 1 },
+      { label: "Printed robot inspection checklist", quantity: 1 },
+      { label: "Current game manual / team updates printout", quantity: 1 },
+      { label: "USB / printed CAD packet for inspector questions", quantity: 1 },
     ],
   },
   {
@@ -69,13 +102,32 @@ export type PackingItem = {
   sortOrder: number;
 };
 
+export type PackingRequestStatus = "pending" | "accepted" | "dismissed";
+
+/** CD packing-form row: name + what to pack. Lead accepts onto the master list. */
+export type PackingRequest = {
+  id: string;
+  listId: string;
+  category: string;
+  label: string;
+  quantity: number;
+  note: string;
+  requestedBy: string;
+  requestedName: string;
+  status: PackingRequestStatus;
+  createdAt: string;
+};
+
 export type PackingList = {
   id: string;
   title: string;
   eventKey: string | null;
+  createdBy: string;
   createdByName: string | null;
   updatedAt: string;
   items: PackingItem[];
+  requests: PackingRequest[];
+  canManageMaster: boolean;
 };
 
 export type PackingContext = {
@@ -124,6 +176,26 @@ export function groupPacking(items: PackingItem[]): Array<{ category: string; it
     .sort((a, b) => (order.get(a.category) ?? 99) - (order.get(b.category) ?? 99) || a.category.localeCompare(b.category));
 }
 
+/** Packing lead = list creator or owner/admin — they alone promote requests onto the master list. */
+export function canManagePackingMaster(role: string | null | undefined, listCreatedBy: string, userId: string): boolean {
+  return role === "owner" || role === "admin" || (Boolean(listCreatedBy) && listCreatedBy === userId);
+}
+
+export function canDismissPackingRequest(
+  role: string | null | undefined,
+  listCreatedBy: string,
+  userId: string,
+  requestedBy: string,
+): boolean {
+  return canManagePackingMaster(role, listCreatedBy, userId) || requestedBy === userId;
+}
+
+export function pendingPackingRequests(requests: PackingRequest[]): PackingRequest[] {
+  return requests
+    .filter((row) => row.status === "pending")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
 // ---------------------------------------------------------------------------
 // Action validation (mirrors the other module parse patterns).
 // ---------------------------------------------------------------------------
@@ -156,6 +228,9 @@ export type PackingAction =
   | { action: "delete_list"; orgId: string; id: string }
   | { action: "reset_list"; orgId: string; id: string }
   | { action: "add_item"; orgId: string; listId: string; category: string; label: string; quantity: number }
+  | { action: "request_item"; orgId: string; listId: string; category: string; label: string; quantity: number; note: string | null }
+  | { action: "accept_request"; orgId: string; id: string }
+  | { action: "dismiss_request"; orgId: string; id: string }
   | { action: "toggle_item"; orgId: string; id: string; packed: boolean }
   | { action: "delete_item"; orgId: string; id: string };
 
@@ -193,6 +268,26 @@ export function parsePackingAction(input: unknown): PackingAction {
         quantity,
       };
     }
+
+    case "request_item": {
+      const quantity = body.quantity == null || body.quantity === "" ? 1 : Number(body.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10_000) {
+        throw new Error("Quantity must be a whole number between 1 and 10000");
+      }
+      return {
+        action,
+        orgId,
+        listId: uuid(body.listId, "List"),
+        category: optionalText(body.category, 80) ?? "Other",
+        label: requiredText(body.label, "Item", 200),
+        quantity,
+        note: optionalText(body.note, 400),
+      };
+    }
+
+    case "accept_request":
+    case "dismiss_request":
+      return { action, orgId, id: uuid(body.id, "Request") };
 
     case "toggle_item":
       return { action, orgId, id: uuid(body.id, "Item"), packed: Boolean(body.packed) };

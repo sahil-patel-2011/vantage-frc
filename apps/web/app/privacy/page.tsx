@@ -23,8 +23,8 @@ export default function PrivacyPage() {
         <p>This Policy explains how Vantage handles information for FRC teams, their members, and site visitors.</p>
         <h2>Information we collect</h2>
         <ul>
-          <li>Account and onboarding details, including name, email, age-related onboarding information, role, and team number.</li>
-          <li>Organization content and operational data that authorized users add, such as scouting, schedules, documents, messages, and settings.</li>
+          <li>Account and onboarding details, including name, email, recovery email, phone number used for OTP, date of birth, role, and team number.</li>
+          <li>Organization content and operational data that authorized users add, such as scouting, schedules, documents, team chat (including optional Slack-bridged messages), and settings.</li>
           <li>Technical information needed to secure and operate sessions, including authentication/session data, IP-derived security signals, and service logs.</li>
           <li>Waitlist contact information and optional affirmative SMS consent.</li>
         </ul>
@@ -37,15 +37,21 @@ export default function PrivacyPage() {
         <h2>Workspace separation and providers</h2>
         <p>
           Vantage is multi-tenant: organization data is separated using application permissions and row-level
-          security controls. We use Neon-hosted Postgres and other service providers to deliver the product, and they
-          process data only as needed to provide their services. Security measures reduce risk but cannot guarantee
-          absolute security.
+          security controls. We use Postgres hosts (Neon today; Supabase Postgres is an optional host) and other
+          service providers to deliver the product, and they process data only as needed to provide their services.
+          Security measures reduce risk but cannot guarantee absolute security.
         </p>
-        <h2>AI and bring-your-own keys</h2>
+        <h2>AI usage and model training</h2>
         <p>
           When an authorized user requests AI, relevant prompts and necessary context may be sent to the selected
           model provider. AI use is metered for the organization. BYOK credentials are encrypted and used only for the
           configured integration; the provider&apos;s terms and privacy practices also apply.
+        </p>
+        <p>
+          We may use AI prompts, outputs, feature usage metadata, and related interaction data from this app to train,
+          evaluate, and improve Vantage models and AI features. Live product access stays organization-scoped: another
+          team cannot read your workspace in the app. You can export your team&apos;s AI artifacts from Exports; API
+          keys and encryption material are never included.
         </p>
         <h2>Scouting voice notes</h2>
         <p>

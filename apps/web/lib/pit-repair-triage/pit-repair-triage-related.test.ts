@@ -50,6 +50,20 @@ describe("pitRepairTriageNextActions", () => {
     expect(actions[0]?.id).toBe("resolve-open");
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
   });
+
+  it("prioritizes I104 reinspection when a fix/swap is still open", () => {
+    const actions = pitRepairTriageNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      reportCount: 2,
+      openCount: 1,
+      reinspectReports: [{ subsystemName: "Intake", decision: "fix", status: "open" }],
+    });
+    expect(actions[0]?.id).toBe("reinspect");
+    expect(actions[0]?.label).toContain("Intake");
+    expect(actions[0]?.detail).toMatch(/I104/);
+    expect(actions[0]?.detail.toLowerCase()).not.toContain("demo");
+  });
 });
 
 describe("classifyPitRepairTriageShell + helpers", () => {

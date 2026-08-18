@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeInspectionCopilotView, logCheck } from "./compute-inspection-copilot";
+import { predictInspectionFailures } from ".";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -147,5 +148,106 @@ describe("logCheck", () => {
 
     const usageInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO ai_usage_events"));
     expect(usageInsert).toBeDefined();
+  });
+});
+
+describe("predictInspectionFailures binder", () => {
+  const base = {
+    weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
+    frameBumper: {
+      perimeterLimitIn: 120,
+      measuredPerimeterIn: 110,
+      bumperMinHeightIn: 2.5,
+      bumperMaxHeightIn: 7.5,
+      measuredBumperMinHeightIn: 3,
+      measuredBumperMaxHeightIn: 6,
+      bumperMinThicknessIn: 1,
+      measuredBumperThicknessIn: 1.5,
+    },
+    wiringPower: {
+      mainBreakerMaxAmps: 120,
+      installedMainBreakerAmps: 120,
+      batterySecured: true,
+      wiresLabeled: true,
+      radioPowerOk: true,
+      bypassSwitchAccessible: true,
+      binderRecorded: false,
+      bomPrinted: false,
+      inspectionChecklistPrinted: false,
+      studentCaptainPresent: false,
+      radioEventRecorded: false,
+      radioOnMainPd: false,
+      rioOnMainPd10A: false,
+      radioProgrammedForEvent: false,
+    },
+  };
+
+  it("does not invent a missing BOM when binder status was not logged", () => {
+    const prediction = predictInspectionFailures(base);
+    expect(prediction.flags.some((flag) => flag.type === "bom_not_printed")).toBe(false);
+  });
+
+  it("flags a missing printed BOM once the team records binder status", () => {
+    const prediction = predictInspectionFailures({
+      ...base,
+      wiringPower: { ...base.wiringPower, binderRecorded: true, bomPrinted: false, inspectionChecklistPrinted: true, studentCaptainPresent: true },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "bom_not_printed")).toBe(true);
+  });
+});
+
+describe("predictInspectionFailures 2026 radio/RIO PD", () => {
+  const wiring = {
+    mainBreakerMaxAmps: 120,
+    installedMainBreakerAmps: 120,
+    batterySecured: true,
+    wiresLabeled: true,
+    radioPowerOk: true,
+    bypassSwitchAccessible: true,
+    binderRecorded: false,
+    bomPrinted: false,
+    inspectionChecklistPrinted: false,
+    studentCaptainPresent: false,
+    radioEventRecorded: false,
+    radioOnMainPd: false,
+    rioOnMainPd10A: false,
+    radioProgrammedForEvent: false,
+  };
+  const limits = {
+    weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
+    frameBumper: {
+      perimeterLimitIn: 120,
+      measuredPerimeterIn: 110,
+      bumperMinHeightIn: 2.5,
+      bumperMaxHeightIn: 7.5,
+      measuredBumperMinHeightIn: 3,
+      measuredBumperMaxHeightIn: 6,
+      bumperMinThicknessIn: 1,
+      measuredBumperThicknessIn: 1.5,
+    },
+  };
+
+  it("does not invent a Mini-PD radio fail when event wiring was not logged", () => {
+    const prediction = predictInspectionFailures({ ...limits, wiringPower: wiring });
+    expect(prediction.flags.some((flag) => flag.type === "radio_not_on_main_pd")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "rio_not_on_main_pd")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "radio_not_programmed_for_event")).toBe(false);
+  });
+
+  it("flags radio off the main PD once the team records 2026 event wiring", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: {
+        ...wiring,
+        radioEventRecorded: true,
+        radioOnMainPd: false,
+        rioOnMainPd10A: true,
+        radioProgrammedForEvent: true,
+      },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "radio_not_on_main_pd")).toBe(true);
+    expect(prediction.flags.find((flag) => flag.type === "radio_not_on_main_pd")?.message.toLowerCase()).not.toContain(
+      "demo",
+    );
   });
 });

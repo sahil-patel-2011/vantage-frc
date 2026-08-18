@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
-import { matchLabel, teamNumbersFromAllianceJson } from ".";
+import { dutyPlanFromTemplate, matchLabel, teamNumbersFromAllianceJson } from ".";
 import { computeMatchStrategyCardsView } from "./compute-match-strategy-cards";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -22,6 +22,26 @@ describe("match-strategy-cards pure helpers", () => {
   it("labels qualification vs playoff matches", () => {
     expect(matchLabel({ compLevel: "qm", matchNumber: 12, setNumber: 1 })).toBe("Qualification 12");
     expect(matchLabel({ compLevel: "sf", matchNumber: 2, setNumber: 1 })).toBe("Semifinal 1-2");
+  });
+
+  it("fills AllianceOps-style safe/balanced/aggressive duty roles from the real alliance roster", () => {
+    const safe = dutyPlanFromTemplate({
+      stance: "safe",
+      ownTeamNumber: 254,
+      partnerNumbers: [118, 1114],
+    });
+    expect(safe.roleAssignments).toEqual([
+      { role: "Primary scorer", assignee: "254" },
+      { role: "Feed / cover", assignee: "118" },
+      { role: "Defense", assignee: "1114" },
+    ]);
+    expect(safe.gamePlan).toMatch(/Protect ranking points/);
+    const aggressive = dutyPlanFromTemplate({
+      stance: "aggressive",
+      ownTeamNumber: 254,
+      partnerNumbers: [118],
+    });
+    expect(aggressive.roleAssignments[2]?.assignee).toBe("Partner B");
   });
 });
 

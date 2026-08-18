@@ -4,9 +4,13 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   PACKING_TEMPLATE,
+  canDismissPackingRequest,
+  canManagePackingMaster,
   parsePackingAction,
+  pendingPackingRequests,
   type PackingItem,
   type PackingList,
+  type PackingRequest,
   type PackingView,
 } from "../../../lib/packing";
 
@@ -26,8 +30,23 @@ async function requireSession() {
 }
 
 async function requireMembership(client: PoolClient, orgId: string, userId: string) {
-  const row = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`, [orgId, userId]);
+  const row = await client.query<{ role: string }>(
+    `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`,
+    [orgId, userId],
+  );
   if (!row.rowCount) throw new HttpError(403, "Organization membership required");
+  return row.rows[0]!.role;
+}
+
+function displayName(user: { name?: string | null }): string {
+  const name = typeof user.name === "string" ? user.name.trim() : "";
+  return name || "Member";
+}
+
+function isMissingRelation(error: unknown): boolean {
+  const code = error && typeof error === "object" && "code" in error ? String((error as { code: unknown }).code) : "";
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return code === "42P01" || /packing_requests|does not exist/i.test(message);
 }
 
 function fail(error: unknown) {
@@ -69,9 +88,10 @@ export async function GET(request: Request) {
         } satisfies PackingView;
       }
 
-      const [lists, items] = await Promise.all([
-        client.query<Omit<PackingList, "items">>(
-          `SELECT l.id, l.title, l.event_key AS "eventKey", u.name AS "createdByName", l.updated_at::text AS "updatedAt"
+      const [lists, items, requestResult] = await Promise.all([
+        client.query<Omit<PackingList, "items" | "requests" | "canManageMaster">>(
+          `SELECT l.id, l.title, l.event_key AS "eventKey", l.created_by AS "createdBy",
+                  u.name AS "createdByName", l.updated_at::text AS "updatedAt"
            FROM packing_lists l
            LEFT JOIN users u ON u.id = l.created_by
            WHERE l.org_id = $1
@@ -88,6 +108,20 @@ export async function GET(request: Request) {
            ORDER BY i.list_id, i.category, i.sort_order`,
           [row.orgId],
         ),
+        client
+          .query<PackingRequest>(
+            `SELECT r.id, r.list_id AS "listId", r.category, r.label, r.quantity,
+                    COALESCE(r.note, '') AS note, r.requested_by AS "requestedBy",
+                    r.requested_name AS "requestedName", r.status, r.created_at::text AS "createdAt"
+             FROM packing_requests r
+             WHERE r.org_id = $1 AND r.status = 'pending'
+             ORDER BY r.created_at`,
+            [row.orgId],
+          )
+          .catch((error) => {
+            if (isMissingRelation(error)) return { rows: [] as PackingRequest[] };
+            throw error;
+          }),
       ]);
 
       const byList = new Map<string, PackingItem[]>();
@@ -95,6 +129,13 @@ export async function GET(request: Request) {
         const list = byList.get(item.listId) ?? [];
         list.push(item);
         byList.set(item.listId, list);
+      }
+
+      const requestsByList = new Map<string, PackingRequest[]>();
+      for (const request of pendingPackingRequests(requestResult.rows)) {
+        const list = requestsByList.get(request.listId) ?? [];
+        list.push(request);
+        requestsByList.set(request.listId, list);
       }
 
       return {
@@ -106,7 +147,12 @@ export async function GET(request: Request) {
           role: row.role,
           eventKey: row.eventKey,
         },
-        lists: lists.rows.map((list) => ({ ...list, items: byList.get(list.id) ?? [] })),
+        lists: lists.rows.map((list) => ({
+          ...list,
+          items: byList.get(list.id) ?? [],
+          requests: requestsByList.get(list.id) ?? [],
+          canManageMaster: canManagePackingMaster(row.role, list.createdBy, session.user.id),
+        })),
       } satisfies PackingView;
     });
 
@@ -123,7 +169,7 @@ export async function POST(request: Request) {
     const userId = session.user.id;
 
     const result = await withRls({ userId, orgId: action.orgId }, async (client) => {
-      await requireMembership(client, action.orgId, userId);
+      const role = await requireMembership(client, action.orgId, userId);
 
       switch (action.action) {
         case "create_list": {
@@ -172,6 +218,14 @@ export async function POST(request: Request) {
         }
 
         case "add_item": {
+          const list = await client.query<{ createdBy: string }>(
+            `SELECT created_by AS "createdBy" FROM packing_lists WHERE id = $1 AND org_id = $2`,
+            [action.listId, action.orgId],
+          );
+          if (!list.rowCount) throw new HttpError(404, "List not found");
+          if (!canManagePackingMaster(role, list.rows[0]!.createdBy, userId)) {
+            throw new HttpError(403, "Only the packing lead can add items to the master list — submit a request instead.");
+          }
           const next = await client.query<{ next: number }>(
             `SELECT COALESCE(MAX(sort_order) + 1, 1000) AS next FROM packing_items
              WHERE list_id = $1 AND category = $2`,
@@ -184,6 +238,122 @@ export async function POST(request: Request) {
           );
           await client.query(`UPDATE packing_lists SET updated_at = now() WHERE id = $1 AND org_id = $2`, [
             action.listId,
+            action.orgId,
+          ]);
+          return { id: inserted.rows[0]!.id };
+        }
+
+        case "request_item": {
+          const list = await client.query(`SELECT 1 FROM packing_lists WHERE id = $1 AND org_id = $2`, [
+            action.listId,
+            action.orgId,
+          ]);
+          if (!list.rowCount) throw new HttpError(404, "List not found");
+          try {
+            const inserted = await client.query<{ id: string }>(
+              `INSERT INTO packing_requests (
+                 org_id, list_id, category, label, quantity, note, requested_by, requested_name
+               ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+              [
+                action.orgId,
+                action.listId,
+                action.category,
+                action.label,
+                action.quantity,
+                action.note,
+                userId,
+                displayName(session.user),
+              ],
+            );
+            return { id: inserted.rows[0]!.id };
+          } catch (error) {
+            if (isMissingRelation(error)) {
+              throw new HttpError(503, "Packing requests need database migration 0437.");
+            }
+            throw error;
+          }
+        }
+
+        case "accept_request":
+        case "dismiss_request": {
+          let requestRow: {
+            listId: string;
+            createdBy: string;
+            requestedBy: string;
+            category: string;
+            label: string;
+            quantity: number;
+            status: string;
+          };
+          try {
+            const found = await client.query<{
+              listId: string;
+              createdBy: string;
+              requestedBy: string;
+              category: string;
+              label: string;
+              quantity: number;
+              status: string;
+            }>(
+              `SELECT r.list_id AS "listId", l.created_by AS "createdBy", r.requested_by AS "requestedBy",
+                      r.category, r.label, r.quantity, r.status
+               FROM packing_requests r
+               JOIN packing_lists l ON l.id = r.list_id AND l.org_id = r.org_id
+               WHERE r.id = $1 AND r.org_id = $2`,
+              [action.id, action.orgId],
+            );
+            if (!found.rowCount) throw new HttpError(404, "Request not found");
+            requestRow = found.rows[0]!;
+          } catch (error) {
+            if (isMissingRelation(error)) {
+              throw new HttpError(503, "Packing requests need database migration 0437.");
+            }
+            throw error;
+          }
+          if (requestRow.status !== "pending") throw new HttpError(409, "Request already decided");
+
+          if (action.action === "dismiss_request") {
+            if (!canDismissPackingRequest(role, requestRow.createdBy, userId, requestRow.requestedBy)) {
+              throw new HttpError(403, "You cannot dismiss this packing request");
+            }
+            await client.query(
+              `UPDATE packing_requests
+               SET status = 'dismissed', decided_by = $3, decided_at = now()
+               WHERE id = $1 AND org_id = $2 AND status = 'pending'`,
+              [action.id, action.orgId, userId],
+            );
+            return { ok: true };
+          }
+
+          if (!canManagePackingMaster(role, requestRow.createdBy, userId)) {
+            throw new HttpError(403, "Only the packing lead can add this to the master list");
+          }
+          const next = await client.query<{ next: number }>(
+            `SELECT COALESCE(MAX(sort_order) + 1, 1000) AS next FROM packing_items
+             WHERE list_id = $1 AND category = $2`,
+            [requestRow.listId, requestRow.category],
+          );
+          const inserted = await client.query<{ id: string }>(
+            `INSERT INTO packing_items (org_id, list_id, category, label, quantity, sort_order, created_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+            [
+              action.orgId,
+              requestRow.listId,
+              requestRow.category,
+              requestRow.label,
+              requestRow.quantity,
+              next.rows[0]?.next ?? 1000,
+              userId,
+            ],
+          );
+          await client.query(
+            `UPDATE packing_requests
+             SET status = 'accepted', decided_by = $3, decided_at = now(), packing_item_id = $4
+             WHERE id = $1 AND org_id = $2 AND status = 'pending'`,
+            [action.id, action.orgId, userId, inserted.rows[0]!.id],
+          );
+          await client.query(`UPDATE packing_lists SET updated_at = now() WHERE id = $1 AND org_id = $2`, [
+            requestRow.listId,
             action.orgId,
           ]);
           return { id: inserted.rows[0]!.id };
@@ -207,6 +377,17 @@ export async function POST(request: Request) {
         }
 
         case "delete_item": {
+          const found = await client.query<{ createdBy: string }>(
+            `SELECT l.created_by AS "createdBy"
+             FROM packing_items i
+             JOIN packing_lists l ON l.id = i.list_id AND l.org_id = i.org_id
+             WHERE i.id = $1 AND i.org_id = $2`,
+            [action.id, action.orgId],
+          );
+          if (!found.rowCount) throw new HttpError(404, "Item not found");
+          if (!canManagePackingMaster(role, found.rows[0]!.createdBy, userId)) {
+            throw new HttpError(403, "Only the packing lead can remove master-list items");
+          }
           const deleted = await client.query(`DELETE FROM packing_items WHERE id = $1 AND org_id = $2`, [
             action.id,
             action.orgId,

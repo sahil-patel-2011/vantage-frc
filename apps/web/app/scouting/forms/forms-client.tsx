@@ -58,6 +58,14 @@ function defaultQuestions(type: EntryType): DraftQuestion[] {
         kind: "drivetrain",
         optionsText: DRIVETRAIN_OPTIONS_TEXT,
       }),
+      newDraftQuestion({
+        label: "Programming language",
+        kind: "dropdown",
+        optionsText: "java, c++, python, labview, other",
+      }),
+      newDraftQuestion({ label: "Drivetrain motors", kind: "short" }),
+      newDraftQuestion({ label: "Driver seasons of experience", kind: "number" }),
+      newDraftQuestion({ label: "Coach seasons of experience", kind: "number" }),
       newDraftQuestion({ label: "Robot images", kind: "robot_image" }),
       newDraftQuestion({ label: "Notes", kind: "free" }),
     ];
@@ -371,7 +379,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   const [acknowledgeBudget, setAcknowledgeBudget] = useState(false);
   const [published, setPublished] = useState<{ id: string; version: number } | null>(null);
 
-  const validation = useMemo(() => validateDraft(title, questions), [title, questions]);
+  const validation = useMemo(() => validateDraft(title, questions, type), [title, questions, type]);
 
   const loadSchemaIntoDraft = useCallback((schema: ScoutSchema | undefined, nextType: EntryType) => {
     if (schema?.definition) {
@@ -672,6 +680,12 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       {validation.budget.status !== "healthy" ? (
         <p className={`sfb-budget ${validation.budget.status}`} role="status">
           {validation.budget.message}
+        </p>
+      ) : null}
+
+      {validation.pitClaim.status === "claimed_scoring" ? (
+        <p className="sfb-budget caution" role="status">
+          {validation.pitClaim.message}
         </p>
       ) : null}
 

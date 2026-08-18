@@ -72,6 +72,8 @@ describe("computeMatchChecklistView", () => {
           },
         ],
       },
+      { rows: [{ activeEventKey: "2026miket" }] },
+      { rows: [] },
     ]);
 
     const view = await computeMatchChecklistView(client, { userId: "user-1", requestedOrg: "org-1" });
@@ -97,5 +99,56 @@ describe("computeMatchChecklistView", () => {
     expect(view.summary.openRuns).toBe(1);
     expect(view.summary.averageElapsedSeconds).toBe(60);
     expect(view.summary.fastestElapsedSeconds).toBe(60);
+    expect(open?.bumperColor).toBeNull();
+    expect(view.upcomingMatches).toEqual([]);
+  });
+
+  it("overlays TBA bumper color when the team is on a cached alliance list", async () => {
+    const started = "2026-03-21T15:00:00.000Z";
+    const { client } = makeClient([
+      { rows: [{ orgId: "org-1", teamNumber: 254 }] },
+      {
+        rows: [
+          {
+            id: "run-q12",
+            matchLabel: "Qualification 12",
+            eventKey: "2026miket",
+            teamNumber: 254,
+            startedAt: started,
+            completedAt: null,
+            items: [
+              { key: "bumper", label: "Bumpers secured", done: false, checkedAt: null },
+              { key: "battery", label: "Battery charged & seated", done: false, checkedAt: null },
+              { key: "tether", label: "Tether / e-stop clipped", done: false, checkedAt: null },
+              { key: "code", label: "Code deployed & radio linked", done: false, checkedAt: null },
+            ],
+          },
+        ],
+      },
+      { rows: [{ activeEventKey: "2026miket" }] },
+      {
+        rows: [
+          {
+            matchKey: "2026miket_qm12",
+            eventKey: "2026miket",
+            compLevel: "qm",
+            matchNumber: 12,
+            predictedTime: "2026-03-21T16:00:00.000Z",
+            actualTime: null,
+            redAlliance: { teamKeys: ["frc118", "frc254", "frc1114"] },
+            blueAlliance: { teamKeys: ["frc33", "frc67", "frc2056"] },
+          },
+        ],
+      },
+    ]);
+
+    const view = await computeMatchChecklistView(client, { userId: "user-1", requestedOrg: "org-1" });
+    expect(view.status).toBe("live");
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.runs[0]?.bumperColor).toBe("red");
+    expect(view.runs[0]?.items.find((item) => item.key === "bumper")?.label).toBe("RED bumpers secured");
+    expect(view.upcomingMatches).toEqual([
+      { matchKey: "2026miket_qm12", eventKey: "2026miket", label: "Qual 12", bumperColor: "red" },
+    ]);
   });
 });

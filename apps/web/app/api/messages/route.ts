@@ -1,9 +1,10 @@
-import { auth, emitNotification } from "@vantage/core";
+import { auth, emitNotification, emitPreferredNotification } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
 import { type MentionRef, resolveMentionedUserIds } from "../../../lib/messages/mentions";
 import { maybeBridgeObjectLinkedMessage } from "../../../lib/messages/discord-bridge";
+import { maybeBridgeTeamSlackMessage } from "../../../lib/messages/slack-bridge";
 import {
   COMPOSER_OBJECT_TYPES,
   normalizeObjectType,
@@ -843,7 +844,8 @@ async function sendMessage(
         },
       });
     }
-  } else if (kind === "team" && mentionsSupported) {
+  }
+  if (kind === "team") {
     const members = await client.query<{ id: string; name: string; email: string }>(
       `SELECT u.id, u.name, u.email
        FROM memberships m
@@ -851,7 +853,9 @@ async function sendMessage(
        WHERE m.org_id = $1`,
       [orgId],
     );
-    const mentionedIds = resolveMentionedUserIds(trimmed, members.rows, claimedMentionIds, userId);
+    const mentionedIds = mentionsSupported
+      ? resolveMentionedUserIds(trimmed, members.rows, claimedMentionIds, userId)
+      : [];
     if (mentionedIds.length) {
       for (const mentionedUserId of mentionedIds) {
         await client.query(
@@ -861,29 +865,56 @@ async function sendMessage(
           [messageId, orgId, mentionedUserId],
         );
       }
-
-      const author = await client.query<{ name: string }>(`SELECT name FROM users WHERE id = $1`, [userId]);
-      const fromName = author.rows[0]?.name ?? "Teammate";
-      const preview = trimmed.slice(0, 120);
-      const href = `/messages?orgId=${encodeURIComponent(orgId)}&conversationId=${encodeURIComponent(conversationId)}`;
-      for (const mentionedUserId of mentionedIds) {
-        await emitNotification(client, {
-          userId: mentionedUserId,
-          orgId,
-          type: "message_mention",
-          payload: {
-            conversationId,
-            messageId,
-            preview,
-            fromUserId: userId,
-            fromName,
-            title: "You were mentioned in Team",
-            body: `${fromName} mentioned you: ${preview}`,
-            href,
-          },
-        });
-      }
     }
+
+    const author = await client.query<{ name: string }>(`SELECT name FROM users WHERE id = $1`, [userId]);
+    const fromName = author.rows[0]?.name ?? "Teammate";
+    const preview = trimmed.slice(0, 120);
+    const href = `/team?tab=messages&orgId=${encodeURIComponent(orgId)}&conversationId=${encodeURIComponent(conversationId)}`;
+    const mentioned = new Set(mentionedIds);
+    for (const mentionedUserId of mentionedIds) {
+      await emitPreferredNotification(client, {
+        userId: mentionedUserId,
+        orgId,
+        type: "message_mention",
+        payload: {
+          conversationId,
+          messageId,
+          preview,
+          fromUserId: userId,
+          fromName,
+          title: "You were mentioned in Team chat",
+          body: `${fromName} mentioned you: ${preview}`,
+          href,
+        },
+      });
+    }
+    for (const member of members.rows) {
+      if (member.id === userId || mentioned.has(member.id)) continue;
+      await emitPreferredNotification(client, {
+        userId: member.id,
+        orgId,
+        type: "team_chat",
+        payload: {
+          conversationId,
+          messageId,
+          preview,
+          fromUserId: userId,
+          fromName,
+          title: "New team chat message",
+          body: `${fromName}: ${preview}`,
+          href,
+        },
+      });
+    }
+
+    await maybeBridgeTeamSlackMessage(client, {
+      orgId,
+      userId,
+      messageId,
+      conversationId,
+      body: trimmed,
+    });
   }
 
   if (kind === "team" && objectLink) {

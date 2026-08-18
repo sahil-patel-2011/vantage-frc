@@ -45,3 +45,12 @@ export type BiometricGate = {
   allowed: boolean;
   reason: string;
 };
+
+/** TimeKeeper-style live shop floor: members with an open hour_logs session. */
+export type ShopPresence = {
+  userId: string;
+  displayName: string;
+  kind: HourLogKind;
+  clockIn: string;
+  minutesOpen: number;
+};

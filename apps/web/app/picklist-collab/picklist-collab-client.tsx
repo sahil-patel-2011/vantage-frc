@@ -13,7 +13,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { PICKLIST_COLLAB_TIERS, picklistCollabTierLabel } from "../../lib/picklist-collab";
+import { PICKLIST_COLLAB_TIERS, epaRoleLabel, picklistCollabTierLabel, picklistToCsv } from "../../lib/picklist-collab";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
 import {
   PICKLIST_COLLAB_RELATED_INCLUDE,
@@ -297,7 +297,7 @@ export default function PicklistCollabClient() {
           </>
         }
         title="Collaborative Pick List"
-        description="Build the pick list together — rank teams into tiers and cast weighted votes that roll up into a consensus order. Never DEMO ranks. Cross-check Strategy, Pick-list Justifier, and Pick clock."
+        description="Build the pick list together — rank teams into tiers, see FAST-style EPA roles from the cached event field, and export CSV for the drive team. Never DEMO ranks."
       >
         <div className="picklist-collab-header-actions">
           {view?.status === "live" && view.lists.length > 0 ? (
@@ -318,6 +318,24 @@ export default function PicklistCollabClient() {
                 ))}
               </select>
             </label>
+          ) : null}
+          {view?.status === "live" && view.activeList && view.entries.length > 0 ? (
+            <button
+              type="button"
+              className="app-button secondary"
+              onClick={() => {
+                const csv = picklistToCsv({ listName: view.activeList!.name, entries: view.entries });
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `${view.activeList!.name.replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "") || "picklist"}.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Download CSV
+            </button>
           ) : null}
           {relatedLinks.map((link) => (
             <a key={link.id} className="app-button secondary" href={link.href}>
@@ -460,6 +478,7 @@ function EntryRow({
         <small className="app-muted picklist-collab-tip">
           Weighted score {entry.weightedScore} · {entry.votes.length} vote(s)
           {entry.averageRankSuggestion != null ? ` · avg rank ${entry.averageRankSuggestion}` : ""}
+          {entry.epaRole ? ` · ${epaRoleLabel(entry.epaRole)}` : ""}
         </small>
         {entry.note ? <small className="app-muted">{entry.note}</small> : null}
       </div>

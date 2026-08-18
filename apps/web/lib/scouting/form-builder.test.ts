@@ -106,6 +106,19 @@ describe("form-builder", () => {
     ]);
     expect(good.ok).toBe(true);
     expect(good.budget.status).toBe("healthy");
+    expect(good.pitClaim.status).toBe("ok");
+
+    const claimed = validateDraft(
+      "Pit",
+      [
+        newDraftQuestion({ label: "Fuel capacity (claimed)", kind: "number" }),
+        newDraftQuestion({ label: "Drivetrain", kind: "dropdown", optionsText: "swerve, tank" }),
+      ],
+      "pit",
+    );
+    expect(claimed.ok).toBe(true);
+    expect(claimed.pitClaim.status).toBe("claimed_scoring");
+    expect(claimed.pitClaim.flagged.some((field) => /claimed/i.test(field.label))).toBe(true);
   });
 
   it("strips legacy scout-name fields when loading a published schema into the builder", () => {

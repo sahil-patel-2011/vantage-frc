@@ -85,6 +85,7 @@ export default function MatchChecklistClient({ embedded = false }: { embedded?: 
   const nextActions = matchChecklistNextActions({
     orgId,
     runs: view?.status === "live" ? view.runs : [],
+    upcomingMatches: view?.status === "live" ? view.upcomingMatches : [],
   });
 
   return (
@@ -99,7 +100,7 @@ export default function MatchChecklistClient({ embedded = false }: { embedded?: 
           </>
         }
         title="Pre-Match Checklist"
-        description="One-tap timed checklist per match — bumpers, battery, tether, code — so pit crews know exactly when the robot is ready. Progress comes only from real checks."
+        description="One-tap timed checklist per match — bumpers, battery strap, SB50 lock, tether, code — so pit crews hang the correct set and don't lose power. Progress comes only from real checks."
       />
 
       {orgId ? (
@@ -151,7 +152,13 @@ export default function MatchChecklistClient({ embedded = false }: { embedded?: 
         <div className="mcl-stack">
           {shouldShowSummaryTiles(view.summary) ? <SummaryTiles view={view} /> : null}
           <NextActionsPanel actions={nextActions} />
-          <StartRunForm busy={busy} mutate={mutate} teamNumber={view.teamNumber} />
+          <StartRunForm
+            busy={busy}
+            mutate={mutate}
+            teamNumber={view.teamNumber}
+            upcomingMatches={view.upcomingMatches}
+            activeEventKey={view.activeEventKey}
+          />
           <RunList view={view} busy={busy} mutate={mutate} />
         </div>
       )}
@@ -222,15 +229,20 @@ function StartRunForm({
   busy,
   mutate,
   teamNumber,
+  upcomingMatches,
+  activeEventKey,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
   teamNumber: number | null;
+  upcomingMatches: LiveView["upcomingMatches"];
+  activeEventKey: string | null;
 }) {
   const empty = useMemo(() => ({ matchLabel: "", eventKey: "", teamNumber: "" }), []);
   const [form, setForm] = useState(empty);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const next = upcomingMatches[0] ?? null;
 
   return (
     <Panel
@@ -253,13 +265,59 @@ function StartRunForm({
         <p className="mcl-start-hint">
           Labels start empty — item progress and elapsed time appear only after you tap real pit checks.
         </p>
+        {next ? (
+          <p className={`mcl-bumper-cue ${next.bumperColor}`} role="status">
+            Next from TBA: hang <strong>{next.bumperColor.toUpperCase()} bumpers</strong> for {next.label}. Color stays
+            blank until the alliance lists are in cache.
+          </p>
+        ) : (
+          <p className="mcl-start-hint">
+            Bumper color stays unknown until the active event schedule is synced — never guessed.
+          </p>
+        )}
       </div>
+      {upcomingMatches.length > 0 ? (
+        <div className="mcl-upcoming" aria-label="Upcoming matches from TBA">
+          {upcomingMatches.map((match) => (
+            <button
+              key={match.matchKey}
+              type="button"
+              className={`mcl-upcoming-chip ${match.bumperColor}`}
+              disabled={busy}
+              onClick={() =>
+                setForm({
+                  matchLabel: match.label,
+                  eventKey: match.eventKey,
+                  teamNumber: teamNumber != null ? String(teamNumber) : "",
+                })
+              }
+            >
+              {match.label} · {match.bumperColor.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <FormGrid min={160}>
         <FormRow label="Match">
-          <input value={form.matchLabel} onChange={set("matchLabel")} placeholder="Qualification 12" required />
+          <input
+            value={form.matchLabel}
+            onChange={set("matchLabel")}
+            placeholder={next?.label ?? "Qualification 12"}
+            required
+            list="mcl-upcoming-labels"
+          />
+          <datalist id="mcl-upcoming-labels">
+            {upcomingMatches.map((match) => (
+              <option key={match.matchKey} value={match.label} />
+            ))}
+          </datalist>
         </FormRow>
         <FormRow label="Event (optional)">
-          <input value={form.eventKey} onChange={set("eventKey")} placeholder="2026miket" />
+          <input
+            value={form.eventKey}
+            onChange={set("eventKey")}
+            placeholder={activeEventKey ?? "2026miket"}
+          />
         </FormRow>
         <FormRow label="Team # (optional)">
           <input
@@ -297,7 +355,7 @@ function RunList({
           badge="No checklists yet"
           badgeTone="setup"
           title="Start your first pre-match checklist"
-          description="Tap through bumper, battery, tether, and code before every match. Timing and readiness stay blank until you check items — nothing is invented."
+          description="Tap through bumper color, battery strap, SB50 lock, tether, and code before every match. Timing and readiness stay blank until you check items — nothing is invented."
         />
       </div>
     );
@@ -359,6 +417,11 @@ function RunCard({
             <span className={`mcl-badge ${run.allDone ? "ready" : "open"}`}>
               {run.allDone ? "Ready" : "In progress"}
             </span>
+            {run.bumperColor ? (
+              <span className={`mcl-badge bumper ${run.bumperColor}`}>
+                {run.bumperColor.toUpperCase()} bumpers
+              </span>
+            ) : null}
             <span className="mcl-badge progress">{progress}</span>
             <span className="mcl-timer" aria-label="Elapsed time">
               {formatElapsed(elapsed)}
@@ -392,7 +455,14 @@ function RunCard({
       </header>
       <ul className="mcl-items">
         {run.items.map((item) => (
-          <ItemToggle key={item.key} item={item} busy={busy} runId={run.id} mutate={mutate} />
+          <ItemToggle
+            key={item.key}
+            item={item}
+            busy={busy}
+            runId={run.id}
+            mutate={mutate}
+            bumperColor={run.bumperColor}
+          />
         ))}
       </ul>
     </article>
@@ -404,18 +474,26 @@ function ItemToggle({
   busy,
   runId,
   mutate,
+  bumperColor,
 }: {
   item: ChecklistItem;
   busy: boolean;
   runId: string;
   mutate: (payload: Record<string, unknown>) => void;
+  bumperColor: MatchChecklistRun["bumperColor"];
 }) {
   const checkedLabel = formatCheckedAt(item.checkedAt);
   return (
     <li>
       <button
         type="button"
-        className={["mcl-item", item.done ? "is-done" : ""].filter(Boolean).join(" ")}
+        className={[
+          "mcl-item",
+          item.done ? "is-done" : "",
+          item.key === "bumper" && bumperColor ? `bumper-${bumperColor}` : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         disabled={busy}
         aria-pressed={item.done}
         onClick={() => mutate({ action: "toggle-item", runId, itemKey: item.key as ChecklistItemKey })}

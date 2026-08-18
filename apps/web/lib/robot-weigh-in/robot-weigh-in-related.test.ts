@@ -54,6 +54,20 @@ describe("robotWeighInNextActions", () => {
     expect(actions[0]?.id).toBe("over-limit");
     expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
   });
+
+  it("prioritizes playoff re-weigh when TBA elims are unplayed", () => {
+    const actions = robotWeighInNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      entryCount: 4,
+      overLimitCount: 1,
+      playoffReweighCue:
+        "Playoffs are on the schedule. Log an Event inspection weigh-in after alliance selection — weight stays blank until you step on the scale.",
+    });
+    expect(actions[0]?.id).toBe("playoff-reweigh");
+    expect(actions[0]?.primary).toBe(true);
+    expect(actions.every((a) => !a.href.toLowerCase().includes("demo"))).toBe(true);
+  });
 });
 
 describe("classifyRobotWeighInShell + helpers", () => {

@@ -30,7 +30,7 @@ const hubs = [
   },
   {
     name: "Business",
-    blurb: "Budget, sponsors, grants, award evidence.",
+    blurb: "Season finance, budget, sponsors, grants, award evidence.",
   },
   {
     name: "Build",

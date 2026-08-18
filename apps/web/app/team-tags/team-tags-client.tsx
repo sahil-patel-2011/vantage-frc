@@ -1,0 +1,228 @@
+"use client";
+
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import type { TeamTagsView } from "../../lib/team-tags/compute-team-tags";
+import { hubHref } from "../../lib/nav/hubs";
+import { withOrgHref } from "../../lib/nav/product-nav";
+import "./team-tags.css";
+
+type LiveView = Extract<TeamTagsView, { status: "live" }>;
+
+export default function TeamTagsClient() {
+  const [view, setView] = useState<TeamTagsView | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    const orgId = new URLSearchParams(window.location.search).get("orgId");
+    const query = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+    try {
+      const response = await fetch(`/api/team-tags${query}`);
+      const data = (await response.json()) as TeamTagsView | { error?: string };
+      if (!response.ok || !("status" in data)) {
+        setError("Could not load drive-team tags.");
+        return;
+      }
+      setView(data);
+    } catch {
+      setError("Network error — please try again.");
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const live = view?.status === "live" ? view : null;
+  const orgId = live?.orgId ?? (view && "orgId" in view ? view.orgId : null);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!live || busy) return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/team-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "tag",
+          orgId: live.orgId,
+          tagId: data.get("tagId"),
+          teamNumber: data.get("teamNumber"),
+          notes: data.get("notes"),
+        }),
+      });
+      const payload = (await response.json()) as TeamTagsView | { error?: string };
+      if (!response.ok || !("status" in payload)) {
+        throw new Error("error" in payload && payload.error ? payload.error : "Could not save tag");
+      }
+      setView(payload);
+      form.reset();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not save tag");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(assignmentId: string) {
+    if (!live || busy) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/team-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", orgId: live.orgId, assignmentId }),
+      });
+      const payload = (await response.json()) as TeamTagsView;
+      if (payload && "status" in payload) setView(payload);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="module-page team-tags-page">
+      <PageHeader
+        breadcrumbs={
+          <>
+            <a href={orgId ? hubHref("/competition", "scouting", orgId) : "/competition"}>Competition</a>
+            {" / Drive-team tags"}
+          </>
+        }
+        title="Drive-team tags"
+        description="Label robots as you watch them. The board stays empty until someone applies a real tag — not a 1–10 scale, not TBA."
+      />
+
+      <nav className="product-hub-related" aria-label="Related qualitative tools">
+        <a className="app-button secondary" href={orgId ? withOrgHref("/pairwise", orgId) : "/pairwise"}>
+          Pairwise ranking
+        </a>
+        <a className="app-button secondary" href={orgId ? hubHref("/competition", "scouting", orgId) : "/scouting"}>
+          Scouting
+        </a>
+        <a className="app-button secondary" href={orgId ? hubHref("/competition", "pick-clock", orgId) : "/pick-clock"}>
+          Pick clock
+        </a>
+      </nav>
+
+      {error ? <p className="app-muted" role="alert">{error}</p> : null}
+      {!view && !error ? <p className="app-muted">Loading tags…</p> : null}
+
+      {view?.status === "setup_required" ? (
+        <EmptyState badge="Setup required" badgeTone="setup" title={view.message}>
+          {view.steps.map((step) => (
+            <a key={step.id} className="app-button secondary" href={step.href}>
+              {step.label}
+            </a>
+          ))}
+        </EmptyState>
+      ) : null}
+
+      {live ? <LiveTags view={live} busy={busy} onSubmit={submit} onRemove={remove} /> : null}
+    </main>
+  );
+}
+
+function LiveTags({
+  view,
+  busy,
+  onSubmit,
+  onRemove,
+}: {
+  view: LiveView;
+  busy: boolean;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div className="team-tags-stack">
+      <section className="app-card soft-panel" aria-label="Next actions">
+        <h2>What to do next</h2>
+        <ul className="team-tags-actions">
+          {view.nextActions.map((action) => (
+            <li key={action.id}>
+              <a className={action.primary ? "app-button" : "app-button secondary"} href={action.href}>
+                {action.label}
+              </a>
+              <span>{action.detail}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <Panel>
+        <p className="app-muted">
+          Pairwise 2.0’s tag board, org-scoped. Event {view.eventKey ?? "not set"} — teams in the picker come from the TBA
+          cache only.
+        </p>
+        <form className="team-tags-form" onSubmit={onSubmit}>
+          <label>
+            Team
+            <input
+              name="teamNumber"
+              list="team-tags-teams"
+              inputMode="numeric"
+              required
+              placeholder="1678"
+            />
+          </label>
+          <label>
+            Tag
+            <select name="tagId" required defaultValue={view.defs[0]?.id ?? ""}>
+              {view.defs.map((def) => (
+                <option key={def.id} value={def.id}>
+                  {def.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Note
+            <input name="notes" placeholder="Optional — bumper lock, late auto…" />
+          </label>
+          <button className="app-button" disabled={busy || !view.defs.length}>
+            Tag robot
+          </button>
+        </form>
+        <datalist id="team-tags-teams">
+          {view.eventTeams.map((team) => (
+            <option key={team} value={team} />
+          ))}
+        </datalist>
+      </Panel>
+
+      <section className="team-tags-board" aria-label="Tag board">
+        {view.board.map((column) => (
+          <article key={column.tagId} className="app-card">
+            <header>
+              <h2>{column.name}</h2>
+              <span className="app-muted">{column.teams.length}</span>
+            </header>
+            <ul>
+              {column.teams.map((team) => (
+                <li key={team.assignmentId}>
+                  <strong>{team.teamNumber}</strong>
+                  <span>{team.notes ?? (team.matchKey ? team.matchKey : "")}</span>
+                  <button type="button" className="danger" disabled={busy} onClick={() => onRemove(team.assignmentId)}>
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
+        {!view.board.length ? (
+          <EmptyState
+            title="No robots tagged yet"
+            description="Watch a match, then tag defense, climb, or partner fit. Counts stay at zero until you do."
+          />
+        ) : null}
+      </section>
+    </div>
+  );
+}

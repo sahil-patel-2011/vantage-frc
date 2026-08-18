@@ -23,9 +23,9 @@ export default async function MessagesPage({
     return (
       <main className="module-page">
         <PageHeader
-          breadcrumbs="Team / Messages"
-          title="Messages"
-          description="Open Messages from your team workspace so org-scoped chat stays in the right tenancy."
+          breadcrumbs="Team / Team chat"
+          title="Team chat"
+          description="Open team chat from your workspace so org-scoped messages stay in the right tenancy."
         />
         <TeamOpsNav active="messages" />
         <EmptyState

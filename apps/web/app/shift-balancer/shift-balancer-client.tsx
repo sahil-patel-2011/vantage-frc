@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { DEFAULT_STATIONS } from "../../lib/shift-balancer";
+import { DEFAULT_STATIONS, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
 import type { ShiftBalancerView } from "../../lib/shift-balancer/compute-shift-balancer";
 
 type LiveView = Extract<ShiftBalancerView, { status: "live" }>;
@@ -74,7 +74,7 @@ export default function ShiftBalancerClient() {
           </>
         }
         title="Scout shift load balancer"
-        description="Auto-generate scouting shift rotations across the roster, capping consecutive matches per scout so fatigue doesn't wreck data quality."
+        description="Auto-generate scouting shift rotations across the roster, capping consecutive matches per scout. When an event schedule is cached, assign scouts to real qualification slots, flag lunch-sized gaps, and print a sheet per tablet."
       />
 
       {error ? (
@@ -111,7 +111,7 @@ export default function ShiftBalancerClient() {
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
           <RosterPanel view={view} busy={busy} mutate={mutate} />
-          <GeneratePlanForm busy={busy} mutate={mutate} />
+          <GeneratePlanForm view={view} busy={busy} mutate={mutate} />
           <PlansPanel view={view} busy={busy} mutate={mutate} />
         </div>
       )}
@@ -196,9 +196,11 @@ function RosterPanel({
 }
 
 function GeneratePlanForm({
+  view,
   busy,
   mutate,
 }: {
+  view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
@@ -215,29 +217,40 @@ function GeneratePlanForm({
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
+  const submit = (useEventSchedule: boolean) => {
+    const matchCount = Number(form.matchCount);
+    const maxConsecutiveMatches = Number(form.maxConsecutiveMatches);
+    if (!useEventSchedule && (!matchCount || matchCount <= 0)) return;
+    mutate({
+      action: "generate-plan",
+      label: form.label || (useEventSchedule ? "Event quals rotation" : "Shift plan"),
+      matchCount,
+      maxConsecutiveMatches: maxConsecutiveMatches > 0 ? maxConsecutiveMatches : 3,
+      stations: form.stations
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      useEventSchedule,
+    });
+    setForm(empty);
+  };
+
   return (
-    <Panel
-      as="form"
-      onSubmit={(event) => {
-        event.preventDefault();
-        const matchCount = Number(form.matchCount);
-        const maxConsecutiveMatches = Number(form.maxConsecutiveMatches);
-        if (!matchCount || matchCount <= 0) return;
-        mutate({
-          action: "generate-plan",
-          label: form.label || "Shift plan",
-          matchCount,
-          maxConsecutiveMatches: maxConsecutiveMatches > 0 ? maxConsecutiveMatches : 3,
-          stations: form.stations
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-        });
-        setForm(empty);
-      }}
-      style={{ display: "grid", gap: 10 }}
-    >
+    <Panel as="form" onSubmit={(event) => { event.preventDefault(); submit(false); }} style={{ display: "grid", gap: 10 }}>
       <h2 style={{ margin: 0 }}>Generate rotation</h2>
+      {view.eventKey && view.qualMatchCount > 0 ? (
+        <p className="app-muted" style={{ margin: 0 }}>
+          Active event {view.eventKey} has {view.qualMatchCount} cached qualification matches.
+        </p>
+      ) : view.eventKey ? (
+        <p className="app-muted" style={{ margin: 0 }}>
+          Active event {view.eventKey} has no qualification matches cached yet. Sync TBA or generate a numeric plan below.
+        </p>
+      ) : (
+        <p className="app-muted" style={{ margin: 0 }}>
+          Set an active event on Command to generate from the real TBA qualification schedule.
+        </p>
+      )}
       <FormGrid min={160}>
         <FormRow label="Plan label">
           <input value={form.label} onChange={set("label")} placeholder="Quals rotation" />
@@ -258,9 +271,17 @@ function GeneratePlanForm({
       <FormRow label="Stations (comma-separated)">
         <input value={form.stations} onChange={set("stations")} />
       </FormRow>
-      <div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button type="submit" className="app-button" disabled={busy || !Number(form.matchCount)}>
           Generate plan
+        </button>
+        <button
+          type="button"
+          className="app-button secondary"
+          disabled={busy || view.qualMatchCount <= 0}
+          onClick={() => submit(true)}
+        >
+          Use event schedule
         </button>
       </div>
     </Panel>
@@ -290,6 +311,7 @@ function PlansPanel({
   const latest = view.plans[0];
   const summary = view.latestSummary;
   if (!latest) return null;
+  const sheets = tabletSheetsByScout(latest.assignments);
 
   return (
     <Panel>
@@ -337,6 +359,72 @@ function PlansPanel({
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {latest.assignments.some((row) => row.teamNumber != null) ? (
+        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 6, marginTop: 12 }}>
+          {latest.assignments.slice(0, 18).map((row, index) => (
+            <li
+              key={`${row.matchKey ?? row.match}-${row.station}-${row.scoutId}-${index}`}
+              style={{ display: "flex", justifyContent: "space-between", gap: 8 }}
+            >
+              <span>
+                {row.matchLabel ?? `Match ${row.match}`} · {row.station}
+                {row.teamNumber != null ? ` · ${row.teamNumber}` : ""}
+                {row.breakAfterMinutes != null ? ` · ${row.breakAfterMinutes}m break` : ""}
+              </span>
+              <small className="app-muted">{row.scoutName}</small>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+        <button
+          type="button"
+          className="app-button secondary"
+          onClick={() => {
+            const csv = planToCsv({ label: latest.label, assignments: latest.assignments });
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${latest.label.replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "") || "scout-shifts"}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+          }}
+        >
+          Download CSV
+        </button>
+        <button type="button" className="app-button secondary" onClick={() => window.print()}>
+          Print tablet sheets
+        </button>
+      </div>
+
+      {sheets.length > 0 ? (
+        <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+          <h3 style={{ margin: 0 }}>Tablet sheets</h3>
+          <p className="app-muted" style={{ margin: 0 }}>
+            One card per scout — tape it to the tablet the way CD teams print ScoutingPASS / scoutsched sheets.
+          </p>
+          {sheets.map((sheet) => (
+            <article
+              key={sheet.scoutId}
+              style={{ border: "1px solid var(--app-border, #ccc)", borderRadius: 8, padding: 12 }}
+            >
+              <strong>{sheet.scoutName}</strong>
+              <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0", display: "grid", gap: 4 }}>
+                {sheet.rows.map((row, index) => (
+                  <li key={`${row.match}-${row.station}-${index}`}>
+                    {row.matchLabel ?? `Match ${row.match}`} · {row.station}
+                    {row.teamNumber != null ? ` · team ${row.teamNumber}` : ""}
+                    {row.breakAfterMinutes != null ? ` · then ${row.breakAfterMinutes}m break` : ""}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
       ) : null}
 
       <h3 style={{ marginTop: 16 }}>All plans</h3>
