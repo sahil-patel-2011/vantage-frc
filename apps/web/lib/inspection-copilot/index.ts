@@ -633,6 +633,14 @@ export function predictInspectionFailures(input: {
           "The PD is not marked visible — inspectors fail a buried hub; the single PD, breakers, and associated wiring have to be easy to see.",
       });
     }
+    if (!wiringPower.pdBreakersOk) {
+      flags.push({
+        type: "pd_breakers",
+        severity: "critical",
+        message:
+          "PD ATO/Maxi breakers are not marked legal — 2026 inspectors fail anything that is not VB3-A, AT2-A, MX5-A/L, REV ATO, or CTR ATO at 40A or lower.",
+      });
+    }
   }
 
   if (wiringPower.rslEventRecorded) {
@@ -668,7 +676,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 9 : 0) +
     (wiringPower.pneumaticsEventRecorded ? 14 : 0) +
-    (wiringPower.isolationEventRecorded ? 4 : 0) +
+    (wiringPower.isolationEventRecorded ? 5 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));

@@ -155,6 +155,7 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     unusedPdPortsTaped: Boolean(row.unusedPdPortsTaped),
     pdhFusesOk: Boolean(row.pdhFusesOk),
     pdVisible: Boolean(row.pdVisible),
+    pdBreakersOk: Boolean(row.pdBreakersOk),
     rslEventRecorded: Boolean(row.rslEventRecorded),
     rslVisible36: Boolean(row.rslVisible36),
     rslOnRioPort: Boolean(row.rslOnRioPort),

@@ -44,6 +44,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Main breaker (120A) accessible and labeled",
       "Power distribution wiring uses legal gauge and colors",
       "PDH ATM fuses ≤ 15A except one 20A powering a PCM/PH (or a 20A breaker)",
+      "PD ATO/Maxi breakers are VB3-A, AT2-A, MX5-A/L, REV ATO, or CTR ATO, all ≤ 40A",
       "Single PD, breakers, and associated wiring easily visible for inspection",
       "roboRIO powered directly from the PD on a dedicated 10A branch (no other load)",
       "Radio powered by RIO-port injection and/or 12V from a PD (not VRM/RPM); LEDs visible to field staff",

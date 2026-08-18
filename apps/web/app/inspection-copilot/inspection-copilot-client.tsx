@@ -595,6 +595,7 @@ function NewCheckForm({
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
   const [pdhFusesOk, setPdhFusesOk] = useState(false);
   const [pdVisible, setPdVisible] = useState(false);
+  const [pdBreakersOk, setPdBreakersOk] = useState(false);
   const [rslEventRecorded, setRslEventRecorded] = useState(false);
   const [rslVisible36, setRslVisible36] = useState(false);
   const [rslOnRioPort, setRslOnRioPort] = useState(false);
@@ -702,6 +703,7 @@ function NewCheckForm({
             unusedPdPortsTaped,
             pdhFusesOk,
             pdVisible,
+            pdBreakersOk,
             rslEventRecorded,
             rslVisible36,
             rslOnRioPort,
@@ -1418,6 +1420,14 @@ function NewCheckForm({
                   onChange={(e) => setPdVisible(e.target.checked)}
                 />
                 Single PD, breakers, and associated wiring easily visible
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={pdBreakersOk}
+                  onChange={(e) => setPdBreakersOk(e.target.checked)}
+                />
+                ATO/Maxi breakers are VB3-A, AT2-A, MX5-A/L, REV or CTR ATO, all ≤ 40A
               </label>
             </>
           ) : null}
