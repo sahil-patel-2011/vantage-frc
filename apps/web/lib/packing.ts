@@ -33,6 +33,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Hex key + socket sets", quantity: 2 },
       { label: "Zip ties, tape (electrical, gaffer)", quantity: 1 },
       { label: "Microfiber cloths for vision lenses", quantity: 4 },
+      { label: "Loctite 425 (plastic-safe near polycarb — not 242/243)", quantity: 1 },
       { label: "Pit banner / signage", quantity: 1 },
       { label: "Pit tables and stools", quantity: 2 },
     ],
@@ -47,6 +48,9 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Spare main breaker (replace after a trip)", quantity: 2 },
       { label: "Spare motor controllers", quantity: 2 },
       { label: "USB cables + programming kit", quantity: 1 },
+      { label: "Ferrules for Weidmuller / screw terminals", quantity: 1 },
+      { label: "Heat shrink for exposed battery terminals", quantity: 1 },
+      { label: "Hot glue for CAN / USB / CANivore connectors", quantity: 1 },
     ],
   },
   {
