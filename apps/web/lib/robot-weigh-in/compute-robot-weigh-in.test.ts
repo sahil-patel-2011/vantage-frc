@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
 import { computeRobotWeighInView } from "./compute-robot-weigh-in";
-import { PLAYOFF_REWEIGH_CUE, playoffReweighCue, summarizeRobotWeighIn } from ".";
+import { PLAYOFF_REWEIGH_CUE, playoffReweighCue, summarizeRobotWeighIn, weighIn2026LimitCue, WEIGH_IN_R103_CUE, WEIGH_IN_R408_CUE, suggestedWeightLimitLbs } from ".";
 import type { RobotWeighInEntry } from "./types";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -208,5 +208,16 @@ describe("playoffReweighCue", () => {
         hasAnyEntry: true,
       }),
     ).toBeNull();
+  });
+});
+
+describe("weighIn2026LimitCue", () => {
+  it("cues leftover 125 lb limits from bumper/battery config — never invents a scale reading", () => {
+    expect(weighIn2026LimitCue({ bumpersOn: false, batteryOn: false, weightLimitLbs: 115 })).toBeNull();
+    expect(weighIn2026LimitCue({ bumpersOn: false, batteryOn: false, weightLimitLbs: 125 })).toBe(WEIGH_IN_R103_CUE);
+    expect(weighIn2026LimitCue({ bumpersOn: true, batteryOn: false, weightLimitLbs: 125 })).toBe(WEIGH_IN_R408_CUE);
+    expect(weighIn2026LimitCue({ bumpersOn: true, batteryOn: false, weightLimitLbs: 135 })).toBeNull();
+    expect(suggestedWeightLimitLbs({ bumpersOn: false, batteryOn: false })).toBe(115);
+    expect(suggestedWeightLimitLbs({ bumpersOn: true, batteryOn: false })).toBe(135);
   });
 });

@@ -20,8 +20,8 @@ export const CODE_VERSION_STATUSES: CodeVersionStatus[] = [
   "deployed_tested",
 ];
 
-/** FRC 2026-season robot weight limit (frame perimeter + bumpers excluded per manual). */
-export const DEFAULT_WEIGHT_BUDGET_LBS = 125;
+/** FRC 2026 R103 robot weight (excluding bumpers and battery). */
+export const DEFAULT_WEIGHT_BUDGET_LBS = 115;
 /** FRC main breaker rating. */
 export const DEFAULT_POWER_BUDGET_AMPS = 120;
 

@@ -72,6 +72,8 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /unused PDH/i.test(label) && /debris/i.test(label))).toBe(true);
     expect(labels.some((label) => /Kraken power-connector/i.test(label))).toBe(true);
     expect(labels.some((label) => /controller buttons/i.test(label))).toBe(true);
+    expect(labels.some((label) => /60/.test(label) && /16/.test(label) && /78/.test(label))).toBe(true);
+    expect(labels.some((label) => /unauthorized wireless/i.test(label))).toBe(true);
     expect(labels.some((label) => /high-contact shafts/i.test(label))).toBe(true);
   });
 });

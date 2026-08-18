@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseWeightAction, summarizeWeight, validateComponent } from "./weight-budget";
+import { parseWeightAction, summarizeWeight, validateComponent, DEFAULT_WEIGHT_LIMIT_LBS, stale125WeightLimitCue, STALE_125_WEIGHT_LIMIT_CUE } from "./weight-budget";
 
 describe("validateComponent", () => {
   it("requires a name and non-negative weight", () => {
@@ -36,6 +36,13 @@ describe("summarizeWeight", () => {
     expect(summary.overLimit).toBe(true);
     expect(summary.remainingLbs).toBe(-5);
     expect(summary.bySubsystem[0]!.subsystem).toBe("Unassigned");
+  });
+
+  it("defaults to the 2026 R103 115 lb robot-only limit", () => {
+    expect(DEFAULT_WEIGHT_LIMIT_LBS).toBe(115);
+    expect(summarizeWeight([{ subsystem: "Drive", weightLbs: 15, quantity: 1 }]).remainingLbs).toBe(100);
+    expect(stale125WeightLimitCue(125)).toBe(STALE_125_WEIGHT_LIMIT_CUE);
+    expect(stale125WeightLimitCue(115)).toBeNull();
   });
 });
 

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import { DEFAULT_WEIGHT_LIMIT_LBS } from "../weight-budget";
 import { computeCurrentReading, computeMassReading, proposeTrimSubsystem, trimConfidence } from ".";
 import type { BudgetReconcilerReport, BudgetStatus, CurrentReading, MassReading, SubsystemContribution, TrimProposal } from "./types";
 
@@ -190,7 +191,7 @@ export async function computeBudgetReconcilerView(
   ]);
 
   const massTotal = subsystems.reduce((sum, s) => sum + s.massLbs, 0);
-  const massLimit = Number(limitResult.rows[0]?.limitLbs ?? 125) || 125;
+  const massLimit = Number(limitResult.rows[0]?.limitLbs ?? DEFAULT_WEIGHT_LIMIT_LBS) || DEFAULT_WEIGHT_LIMIT_LBS;
   const currentTotal = subsystems.reduce((sum, s) => sum + s.currentAmps, 0);
   const breakerTotal = Number(breakerResult.rows[0]?.breakerAmps ?? 0) || 0;
 
@@ -241,7 +242,7 @@ export async function runReconciliation(
   ]);
 
   const massTotal = subsystems.reduce((sum, s) => sum + s.massLbs, 0);
-  const massLimit = Number(limitResult.rows[0]?.limitLbs ?? 125) || 125;
+  const massLimit = Number(limitResult.rows[0]?.limitLbs ?? DEFAULT_WEIGHT_LIMIT_LBS) || DEFAULT_WEIGHT_LIMIT_LBS;
   const currentTotal = subsystems.reduce((sum, s) => sum + s.currentAmps, 0);
   const breakerTotal = Number(breakerResult.rows[0]?.breakerAmps ?? 0) || 0;
 

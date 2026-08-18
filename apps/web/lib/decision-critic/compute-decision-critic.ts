@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import { DEFAULT_WEIGHT_LIMIT_LBS } from "../weight-budget";
 import { DECISION_CRITIC_CATEGORIES, DECISION_CRITIC_OUTCOMES, DECISION_CRITIC_VERDICTS, critiqueDecision } from ".";
 import type {
   DecisionCriticCategory,
@@ -144,7 +145,7 @@ async function loadWeightHeadroom(
     ),
   ]);
   const totalLbs = Number(totalResult.rows[0]?.total ?? 0) || 0;
-  const limitLbs = Number(limitResult.rows[0]?.limitLbs ?? 125) || 125;
+  const limitLbs = Number(limitResult.rows[0]?.limitLbs ?? DEFAULT_WEIGHT_LIMIT_LBS) || DEFAULT_WEIGHT_LIMIT_LBS;
   return { totalLbs, limitLbs, marginLbs: Math.round((limitLbs - totalLbs) * 100) / 100 };
 }
 
