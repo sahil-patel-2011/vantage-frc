@@ -54,6 +54,7 @@ describe("match checklist bumper cue (CD pit color)", () => {
       "ds_power",
       "ds_ethernet",
       "ds_estop",
+      "ds_shelf",
       "lenses",
       "bolts",
       "kraken_screws",
@@ -62,6 +63,7 @@ describe("match checklist bumper cue (CD pit color)", () => {
     ]);
     expect(fresh.find((item) => item.key === "lenses")?.label).toMatch(/fuzz/i);
     expect(fresh.find((item) => item.key === "ds_estop")?.label).toMatch(/Game Bar/i);
+    expect(fresh.find((item) => item.key === "ds_shelf")?.label).toMatch(/hook-and-loop/i);
     expect(fresh.find((item) => item.key === "kraken_screws")?.label).toMatch(/1\.2/);
     expect(fresh.find((item) => item.key === "kraken_screws")?.label).toMatch(/0\.9/);
     expect(fresh.find((item) => item.key === "anderson_lock")?.label).toMatch(/Anderson/i);
@@ -78,6 +80,7 @@ describe("match checklist bumper cue (CD pit color)", () => {
       { key: "ds_estop", label: "Spacebar E-Stop works (Game Bar off)", done: true, checkedAt: "2026-03-21T15:01:00.000Z" },
     ]);
     expect(withDs.map((item) => item.key)).not.toContain("lenses");
+    expect(withDs.map((item) => item.key)).not.toContain("ds_shelf");
     expect(withDs.map((item) => item.key)).not.toContain("kraken_screws");
     expect(withDs.map((item) => item.key)).not.toContain("anderson_lock");
     expect(withDs.every((item) => item.done)).toBe(true);
