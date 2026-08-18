@@ -518,6 +518,22 @@ export function predictInspectionFailures(input: {
           "Pneumatic tubing is not marked KOP-equivalent ≤ 1/4 in OD — inspectors fail oversized tube (bring documentation if it is not KOP stock).",
       });
     }
+    if (!wiringPower.relievingRegulatorOk) {
+      flags.push({
+        type: "pneumatics_relieving_regulator",
+        severity: "critical",
+        message:
+          "Working pressure is not marked through a relieving regulator — inspectors fail a non-relieving regulator even if the gauge reads 60 psi.",
+      });
+    }
+    if (!wiringPower.compressorStartsEnabled) {
+      flags.push({
+        type: "pneumatics_compressor_start",
+        severity: "critical",
+        message:
+          "Compressor is not marked starting when the robot is enabled with no stored pressure — inspectors fail a compressor that stays off until a code workaround.",
+      });
+    }
   }
 
   if (wiringPower.isolationEventRecorded) {
@@ -571,7 +587,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.radioEventRecorded ? 6 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 8 : 0) +
-    (wiringPower.pneumaticsEventRecorded ? 9 : 0) +
+    (wiringPower.pneumaticsEventRecorded ? 11 : 0) +
     (wiringPower.isolationEventRecorded ? 2 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
