@@ -21,6 +21,7 @@ export const CHECKLIST_ITEM_KEYS: ChecklistItemKey[] = [
   "kraken_screws",
   "anderson_lock",
   "controller_lock",
+  "ds_usb",
 ];
 
 const ITEM_LABELS: Record<ChecklistItemKey, string> = {
@@ -38,6 +39,7 @@ const ITEM_LABELS: Record<ChecklistItemKey, string> = {
   kraken_screws: "Kraken power screws 1.2 N·m (spec 0.9) + check",
   anderson_lock: "Anderson fully seated + zip-tied / bolted",
   controller_lock: "Tape accidental USB controller buttons",
+  ds_usb: "USB joysticks strain-relieved (won't yank off the shelf)",
 };
 
 const LEVEL_LABELS: Record<string, string> = { qm: "Qual", qf: "QF", sf: "SF", f: "Final" };
@@ -125,6 +127,7 @@ export function applyBumperCue(items: ChecklistItem[], color: BumperColor | null
     if (item.key === "kraken_screws") return { ...item, label: ITEM_LABELS.kraken_screws };
     if (item.key === "anderson_lock") return { ...item, label: ITEM_LABELS.anderson_lock };
     if (item.key === "controller_lock") return { ...item, label: ITEM_LABELS.controller_lock };
+    if (item.key === "ds_usb") return { ...item, label: ITEM_LABELS.ds_usb };
     return item;
   });
 }

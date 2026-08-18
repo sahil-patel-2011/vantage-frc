@@ -16,7 +16,8 @@ export type ChecklistItemKey =
   | "bolts"
   | "kraken_screws"
   | "anderson_lock"
-  | "controller_lock";
+  | "controller_lock"
+  | "ds_usb";
 
 export type ChecklistItem = {
   key: ChecklistItemKey;
