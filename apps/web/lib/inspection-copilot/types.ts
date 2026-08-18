@@ -90,6 +90,8 @@ export type WiringPowerSpec = {
   radioLedsVisible?: boolean;
   /** True once RIO ethernet is on a v1.5 RIO port, or v1.0 via PoE / modified cable / AUX DIP off. */
   rioEthernetPathOk?: boolean;
+  /** True once RIO and radio are each the only load on their 10A PD branch (TU07). */
+  rioRadioDedicatedOk?: boolean;
   /**
    * When false, Spark MAX USB flags are skipped (never invent a fried laptop).
    * CD 2026: USB-C into a shorted Spark MAX can back-feed and kill a motherboard.
@@ -186,6 +188,7 @@ export type InspectionFlagType =
   | "radio_weidmuller_strands"
   | "radio_leds_hidden"
   | "rio_ethernet_path"
+  | "rio_radio_shared_branch"
   | "spark_max_usb_risk"
   | "strain_relief_missing"
   | "dynamic_cable_pinch"

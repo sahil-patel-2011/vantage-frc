@@ -561,6 +561,7 @@ function NewCheckForm({
   const [radioWeidmullerQc, setRadioWeidmullerQc] = useState(false);
   const [radioLedsVisible, setRadioLedsVisible] = useState(false);
   const [rioEthernetPathOk, setRioEthernetPathOk] = useState(false);
+  const [rioRadioDedicatedOk, setRioRadioDedicatedOk] = useState(false);
   const [sparkMaxEventRecorded, setSparkMaxEventRecorded] = useState(false);
   const [sparkMaxUsbAvoided, setSparkMaxUsbAvoided] = useState(false);
   const [reliabilityEventRecorded, setReliabilityEventRecorded] = useState(false);
@@ -666,6 +667,7 @@ function NewCheckForm({
             radioWeidmullerQc,
             radioLedsVisible,
             rioEthernetPathOk,
+            rioRadioDedicatedOk,
             sparkMaxEventRecorded,
             sparkMaxUsbAvoided,
             reliabilityEventRecorded,
@@ -1044,8 +1046,8 @@ function NewCheckForm({
       <div>
         <strong className="app-muted">2026 radio / roboRIO power</strong>
         <p className="app-muted">
-          Chief Delphi: rio and radio must come off the main PD — Mini PD / RPM / VRM stops inspection. Leave this off
-          until you actually walk the wiring — never invent a fail.
+          Chief Delphi: rio and radio must come off the main PD — Mini PD / RPM / VRM stops inspection. TU07: each is
+          the only load on its 10A branch. Leave this off until you actually walk the wiring — never invent a fail.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1097,6 +1099,14 @@ function NewCheckForm({
                   onChange={(e) => setRioEthernetPathOk(e.target.checked)}
                 />
                 roboRIO ethernet on v1.5 RIO port, or v1.0 via PoE injector / modified cable / AUX DIP off
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={rioRadioDedicatedOk}
+                  onChange={(e) => setRioRadioDedicatedOk(e.target.checked)}
+                />
+                RIO and radio each the only load on their 10A PD branch (TU07)
               </label>
             </>
           ) : null}

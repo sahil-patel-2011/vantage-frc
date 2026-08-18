@@ -280,6 +280,7 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
     expect(prediction.flags.some((flag) => flag.type === "radio_weidmuller_strands")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "radio_leds_hidden")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "rio_ethernet_path")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "rio_radio_shared_branch")).toBe(false);
   });
 
   it("flags radio off the main PD once the team records 2026 event wiring", () => {
@@ -336,6 +337,42 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
     expect(prediction.flags.some((flag) => flag.type === "radio_leds_hidden")).toBe(true);
     expect(prediction.flags.some((flag) => flag.type === "rio_ethernet_path")).toBe(true);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+
+  it("flags a shared 10A branch once radio wiring is logged", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: {
+        ...wiring,
+        radioEventRecorded: true,
+        radioOnMainPd: true,
+        rioOnMainPd10A: true,
+        radioProgrammedForEvent: true,
+        radioWeidmullerQc: true,
+        radioLedsVisible: true,
+        rioEthernetPathOk: true,
+      },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "rio_radio_shared_branch")).toBe(true);
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+
+  it("does not flag a dedicated 10A branch once it is marked", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: {
+        ...wiring,
+        radioEventRecorded: true,
+        radioOnMainPd: true,
+        rioOnMainPd10A: true,
+        radioProgrammedForEvent: true,
+        radioWeidmullerQc: true,
+        radioLedsVisible: true,
+        rioEthernetPathOk: true,
+        rioRadioDedicatedOk: true,
+      },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "rio_radio_shared_branch")).toBe(false);
   });
 });
 
