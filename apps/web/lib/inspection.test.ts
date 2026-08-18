@@ -64,6 +64,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /isolat/i.test(item) && /120/.test(item) && /breaker on/i.test(item))).toBe(true);
     expect(all.some((item) => /ATM/i.test(item) && /15A/i.test(item) && /20A/i.test(item))).toBe(true);
     expect(all.some((item) => /VB3-A/i.test(item) && /40A/i.test(item))).toBe(true);
+    expect(all.some((item) => /Mini Power Module/i.test(item) && /R621/i.test(item))).toBe(true);
     expect(all.some((item) => /easily visible/i.test(item) && /PD/i.test(item) && /breakers/i.test(item))).toBe(true);
     expect(all.some((item) => /R601-G/i.test(item) && /vent/i.test(item))).toBe(true);
     expect(all.some((item) => /relief valve/i.test(item) && /compressor outlet/i.test(item))).toBe(true);

@@ -66,6 +66,8 @@ export type PowerLoad = {
   typicalAmps: number | null;
   peakAmps: number | null;
   breakerAmps: number | null;
+  motorCount?: number | null;
+  notes?: string;
 };
 
 /**
@@ -91,6 +93,24 @@ export function breakerSizeCues(loads: PowerLoad[]): string[] {
   return cues;
 }
 
+/**
+ * CD / R621: Mini Power Modules are custom circuits — they cannot break out multiple motors.
+ * Cue only when the team logged an MPM-style load with motors.
+ */
+export function mpmMotorCues(loads: PowerLoad[]): string[] {
+  const cues: string[] = [];
+  for (const load of loads) {
+    const hay = `${load.name} ${load.subsystem ?? ""} ${load.notes ?? ""}`.toLowerCase();
+    if (!/\bmpm\b|mini power|mini[- ]pd/.test(hay)) continue;
+    const motors = load.motorCount ?? 0;
+    if (motors < 2 && !/\bmotor/.test(hay)) continue;
+    cues.push(
+      `${load.name}: Mini Power Module / custom circuit cannot feed multiple motors on one PD branch (R621).`,
+    );
+  }
+  return cues;
+}
+
 export function currentLimitCue(brownoutRisk: boolean, loadCount: number): string | null {
   if (!brownoutRisk || loadCount === 0) return null;
   return "Set supply current limits on every motor before blaming static — brownouts were usually missing limits.";
@@ -106,6 +126,7 @@ export function staggerCue(brownoutRisk: boolean): string | null {
  *  - trip risk: a load whose peak current exceeds its own branch breaker.
  *  - brownout risk: total typical draw over the sustained-draw ceiling.
  *  - breaker size cues: radio/swerve sizes only from logged ratings.
+ *  - MPM motor cues: Mini Power Module loads with motors only from logged rows.
  */
 export function summarizePower(loads: PowerLoad[], sustainedCeiling = SUSTAINED_DRAW_CEILING_AMPS) {
   const totalTypicalAmps = round1(loads.reduce((sum, l) => sum + (l.typicalAmps ?? 0), 0));
@@ -122,6 +143,7 @@ export function summarizePower(loads: PowerLoad[], sustainedCeiling = SUSTAINED_
     brownoutRisk,
     sustainedCeiling,
     breakerSizeCues: breakerSizeCues(loads),
+    mpmMotorCues: mpmMotorCues(loads),
     currentLimitCue: currentLimitCue(brownoutRisk, loads.length),
     staggerCue: staggerCue(brownoutRisk),
   };
