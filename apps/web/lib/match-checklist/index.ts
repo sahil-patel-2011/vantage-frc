@@ -15,6 +15,7 @@ export const CHECKLIST_ITEM_KEYS: ChecklistItemKey[] = [
   "ds_power",
   "ds_ethernet",
   "ds_estop",
+  "ds_shelf",
   "lenses",
   "bolts",
   "kraken_screws",
@@ -31,6 +32,7 @@ const ITEM_LABELS: Record<ChecklistItemKey, string> = {
   ds_power: "DS laptop charging (never sleep)",
   ds_ethernet: "Ethernet seated + strain-relieved",
   ds_estop: "Spacebar E-Stop works (Game Bar off)",
+  ds_shelf: "DS hook-and-loop on shelf (won't slide)",
   lenses: "Vision lenses wiped (ball fuzz)",
   bolts: "Bolt check (swerve / bumpers)",
   kraken_screws: "Kraken power screws 1.2 N·m (spec 0.9) + check",
@@ -117,6 +119,7 @@ export function applyBumperCue(items: ChecklistItem[], color: BumperColor | null
     if (item.key === "ds_power") return { ...item, label: ITEM_LABELS.ds_power };
     if (item.key === "ds_ethernet") return { ...item, label: ITEM_LABELS.ds_ethernet };
     if (item.key === "ds_estop") return { ...item, label: ITEM_LABELS.ds_estop };
+    if (item.key === "ds_shelf") return { ...item, label: ITEM_LABELS.ds_shelf };
     if (item.key === "lenses") return { ...item, label: ITEM_LABELS.lenses };
     if (item.key === "bolts") return { ...item, label: ITEM_LABELS.bolts };
     if (item.key === "kraken_screws") return { ...item, label: ITEM_LABELS.kraken_screws };
