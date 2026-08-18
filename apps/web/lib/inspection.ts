@@ -67,6 +67,8 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Relieving pressure regulator ≤ 60 psi providing all working pressure",
       "Compressor starts when the robot is enabled with no stored pressure",
       "PCM/PH mounted away from the radio (RF looks like a compressor fault)",
+      "No painting or large labels on tanks/cylinders (small labels and unused mount pins ok)",
+      "Solenoid valves ≤ 1/8 in NPT (or 1/4 in QC), PCM/PH or relay control, outputs not combined",
     ],
   },
   {

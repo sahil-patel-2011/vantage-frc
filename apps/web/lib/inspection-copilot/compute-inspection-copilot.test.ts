@@ -649,6 +649,8 @@ describe("predictInspectionFailures pneumatics", () => {
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_tubing_od")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_relieving_regulator")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_start")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_no_modifications")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_valve_control")).toBe(false);
   });
 
   it("flags a hidden vent plug once pneumatics are logged", () => {
@@ -667,6 +669,8 @@ describe("predictInspectionFailures pneumatics", () => {
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_tubing_od")).toBe(true);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_relieving_regulator")).toBe(true);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_start")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_no_modifications")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_valve_control")).toBe(true);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 
@@ -687,6 +691,8 @@ describe("predictInspectionFailures pneumatics", () => {
         tubingOdOk: true,
         relievingRegulatorOk: true,
         compressorStartsEnabled: true,
+        pneumaticsUnmodified: true,
+        solenoidsLegal: true,
       },
     });
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_working_pressure")).toBe(false);
@@ -697,6 +703,8 @@ describe("predictInspectionFailures pneumatics", () => {
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_tubing_od")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_relieving_regulator")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_start")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_no_modifications")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_valve_control")).toBe(false);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });

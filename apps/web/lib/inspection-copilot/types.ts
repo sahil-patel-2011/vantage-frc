@@ -138,6 +138,10 @@ export type WiringPowerSpec = {
   relievingRegulatorOk?: boolean;
   /** True once the compressor starts when the robot is enabled with no stored pressure. */
   compressorStartsEnabled?: boolean;
+  /** True once tanks/cylinders are unmarked (no paint or large labels). */
+  pneumaticsUnmodified?: boolean;
+  /** True once solenoids are ≤ 1/8 in NPT, PCM/PH/relay controlled, and outputs are not teed. */
+  solenoidsLegal?: boolean;
   /**
    * When false, R611 isolation / PDH-debris flags are skipped (never invent a chassis short).
    * CD: inspectors probe Anderson-to-frame with battery out and breaker on; debris in unused PDH slots reboots radios.
@@ -210,6 +214,8 @@ export type InspectionFlagType =
   | "pneumatics_tubing_od"
   | "pneumatics_relieving_regulator"
   | "pneumatics_compressor_start"
+  | "pneumatics_no_modifications"
+  | "pneumatics_valve_control"
   | "frame_not_isolated"
   | "pdh_ports_untaped"
   | "pdh_fuses"

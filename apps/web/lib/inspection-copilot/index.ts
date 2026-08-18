@@ -558,6 +558,22 @@ export function predictInspectionFailures(input: {
           "Compressor is not marked starting when the robot is enabled with no stored pressure — inspectors fail a compressor that stays off until a code workaround.",
       });
     }
+    if (!wiringPower.pneumaticsUnmodified) {
+      flags.push({
+        type: "pneumatics_no_modifications",
+        severity: "warning",
+        message:
+          "Tanks and cylinders are not marked unmodified — inspectors fail paint and large labels (small labels and unused mount pins are ok).",
+      });
+    }
+    if (!wiringPower.solenoidsLegal) {
+      flags.push({
+        type: "pneumatics_valve_control",
+        severity: "critical",
+        message:
+          "Solenoid valves are not marked legal — max 1/8 in NPT (or 1/4 in QC), PCM/PH or relay control, and outputs may not be teed together.",
+      });
+    }
   }
 
   if (wiringPower.isolationEventRecorded) {
@@ -619,7 +635,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.radioEventRecorded ? 6 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 9 : 0) +
-    (wiringPower.pneumaticsEventRecorded ? 11 : 0) +
+    (wiringPower.pneumaticsEventRecorded ? 13 : 0) +
     (wiringPower.isolationEventRecorded ? 3 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
