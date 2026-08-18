@@ -454,6 +454,22 @@ export function predictInspectionFailures(input: {
           "Pressure switch is not marked wired to the PCM/PH — the compressor has to stop at the stored-pressure setpoint, not run open-loop.",
       });
     }
+    if (!wiringPower.componentsRated) {
+      flags.push({
+        type: "pneumatics_component_rating",
+        severity: "critical",
+        message:
+          "Pneumatic parts are not marked pressure-rated — 2026 R801/R802 fail working components under 70 psi and stored components under 125 psi.",
+      });
+    }
+    if (!wiringPower.compressorStops120) {
+      flags.push({
+        type: "pneumatics_compressor_stop",
+        severity: "critical",
+        message:
+          "Compressor is not marked stopping at ≤ 120 psi under roboRIO control — inspectors fail a system that keeps charging past stored pressure.",
+      });
+    }
   }
 
   if (wiringPower.isolationEventRecorded) {
@@ -507,7 +523,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.radioEventRecorded ? 4 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 8 : 0) +
-    (wiringPower.pneumaticsEventRecorded ? 5 : 0) +
+    (wiringPower.pneumaticsEventRecorded ? 7 : 0) +
     (wiringPower.isolationEventRecorded ? 2 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
