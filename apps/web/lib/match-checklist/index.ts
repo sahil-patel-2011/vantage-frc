@@ -18,6 +18,7 @@ export const CHECKLIST_ITEM_KEYS: ChecklistItemKey[] = [
   "lenses",
   "bolts",
   "kraken_screws",
+  "anderson_lock",
   "controller_lock",
 ];
 
@@ -32,7 +33,8 @@ const ITEM_LABELS: Record<ChecklistItemKey, string> = {
   ds_estop: "Spacebar E-Stop works (Game Bar off)",
   lenses: "Vision lenses wiped (ball fuzz)",
   bolts: "Bolt check (swerve / bumpers)",
-  kraken_screws: "Kraken power screws (torque + check)",
+  kraken_screws: "Kraken power screws 1.2 N·m (spec 0.9) + check",
+  anderson_lock: "Anderson fully seated + zip-tied / bolted",
   controller_lock: "Tape accidental USB controller buttons",
 };
 
@@ -118,6 +120,7 @@ export function applyBumperCue(items: ChecklistItem[], color: BumperColor | null
     if (item.key === "lenses") return { ...item, label: ITEM_LABELS.lenses };
     if (item.key === "bolts") return { ...item, label: ITEM_LABELS.bolts };
     if (item.key === "kraken_screws") return { ...item, label: ITEM_LABELS.kraken_screws };
+    if (item.key === "anderson_lock") return { ...item, label: ITEM_LABELS.anderson_lock };
     if (item.key === "controller_lock") return { ...item, label: ITEM_LABELS.controller_lock };
     return item;
   });
