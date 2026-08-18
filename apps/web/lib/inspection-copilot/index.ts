@@ -256,6 +256,14 @@ export function predictInspectionFailures(input: {
           "Bumper cloth cover is not marked covering all padding — 2026 R402 fails exposed foam and cloth that is not backed by padding.",
       });
     }
+    if (!frameBumper.bumperCrossSectionOk) {
+      flags.push({
+        type: "bumper_cross_section",
+        severity: "critical",
+        message:
+          "Bumper vertical cross-section is not marked complete — R402 needs padding, backing, and cover in every slice except corner fill and cover wrapping at segment ends.",
+      });
+    }
     if (!frameBumper.bumperRemovableOk) {
       flags.push({
         type: "bumper_not_removable",
@@ -653,7 +661,7 @@ export function predictInspectionFailures(input: {
     ((frameBumper.extensionLimitIn ?? 0) > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
-    (frameBumper.bumperEventRecorded ? 11 : 0) +
+    (frameBumper.bumperEventRecorded ? 12 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
     (wiringPower.radioEventRecorded ? 7 : 0) +
