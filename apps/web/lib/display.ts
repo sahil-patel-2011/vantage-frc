@@ -141,28 +141,58 @@ export function pitChromiumKioskCommand(url: string): string {
 }
 
 export const LEAVE_PIT_MS = 15 * 60_000;
+/** PitFUSION-style: countdown goes red inside 5 minutes of TBA predicted/event time. */
+export const QUEUE_SOON_MS = 5 * 60_000;
 
 export type CountdownState = {
   label: string;
   remainingMs: number | null;
   leavePit: boolean;
+  queueSoon: boolean;
   queueNow: boolean;
 };
 
 export function countdownState(scheduledTime: string | null | undefined, nowMs: number): CountdownState {
-  if (!scheduledTime) return { label: "-", remainingMs: null, leavePit: false, queueNow: false };
+  if (!scheduledTime) return { label: "-", remainingMs: null, leavePit: false, queueSoon: false, queueNow: false };
   const target = new Date(scheduledTime).getTime();
-  if (Number.isNaN(target)) return { label: "-", remainingMs: null, leavePit: false, queueNow: false };
+  if (Number.isNaN(target)) return { label: "-", remainingMs: null, leavePit: false, queueSoon: false, queueNow: false };
   const remainingMs = target - nowMs;
-  if (remainingMs <= 0) return { label: "QUEUE NOW", remainingMs, leavePit: true, queueNow: true };
+  if (remainingMs <= 0) return { label: "QUEUE NOW", remainingMs, leavePit: true, queueSoon: true, queueNow: true };
   const minutes = Math.floor(remainingMs / 60_000);
   const seconds = Math.floor((remainingMs % 60_000) / 1000);
   return {
     label: `${minutes}:${String(seconds).padStart(2, "0")}`,
     remainingMs,
     leavePit: remainingMs <= LEAVE_PIT_MS,
+    queueSoon: remainingMs <= QUEUE_SOON_MS,
     queueNow: false,
   };
+}
+
+export function queueCue(clock: CountdownState): string {
+  if (clock.queueNow) return "QUEUE NOW";
+  if (clock.queueSoon) return "QUEUE SOON";
+  if (clock.leavePit) return "LEAVE PIT NOW";
+  return "STAY READY";
+}
+
+/** Our bumper color from the TBA alliance lists — never guessed. */
+export function ourBumperColor(
+  match: Pick<DisplayNextMatch, "redAlliance" | "blueAlliance"> | null | undefined,
+  teamNumber: number | null | undefined,
+): "red" | "blue" | null {
+  if (!match || teamNumber == null || !Number.isFinite(teamNumber)) return null;
+  const needle = String(teamNumber);
+  const on = (keys: string[] | undefined) => (keys ?? []).some((key) => stripFrc(key) === needle);
+  if (on(match.redAlliance?.teamKeys)) return "red";
+  if (on(match.blueAlliance?.teamKeys)) return "blue";
+  return null;
+}
+
+export function bumperBanner(color: "red" | "blue" | null): string {
+  if (color === "red") return "RED bumpers";
+  if (color === "blue") return "BLUE bumpers";
+  return "Bumper color unknown";
 }
 
 export function recordLabel(status: DisplayEventStatus | null): string {

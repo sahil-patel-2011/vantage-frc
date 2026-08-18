@@ -3,6 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related Business surfaces for sponsor CRM / placements / grant writing. */
 export const BUSINESS_RELATED_LINKS = [
+  { id: "finance", label: "Season finance", kind: "hub" as const, tab: "finance" },
   { id: "sponsors", label: "Sponsor CRM", kind: "hub" as const, tab: "sponsors" },
   { id: "placements", label: "Partner packages", kind: "hub" as const, tab: "placements" },
   { id: "sponsorship", label: "Sponsorship one-pager", kind: "hub" as const, tab: "sponsorship" },
@@ -65,6 +66,7 @@ export const BUSINESS_GRANTS_RELATED_INCLUDE: BusinessRelatedId[] = [
 
 /** Fundraisers Soft-UI strip (`/fundraisers`) — sponsors, grants, orders, season costs. */
 export const FUNDRAISERS_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "finance",
   "sponsors",
   "grants",
   "orders",
@@ -75,6 +77,7 @@ export const FUNDRAISERS_RELATED_INCLUDE: BusinessRelatedId[] = [
 
 /** Orders Soft-UI strip (`/orders` + Business Orders) — sponsors, fundraisers, budget, season costs. */
 export const ORDERS_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "finance",
   "sponsors",
   "fundraisers",
   "costs",
@@ -85,9 +88,21 @@ export const ORDERS_RELATED_INCLUDE: BusinessRelatedId[] = [
 
 /** Season Costs Soft-UI strip (`/costs`) — orders, fundraisers, Business budget. */
 export const COSTS_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "finance",
   "orders",
   "fundraisers",
   "budget",
+  "finance-ai",
+];
+
+/** Season finance desk Soft-UI strip (`/business?tab=finance`). */
+export const SEASON_FINANCE_RELATED_INCLUDE: BusinessRelatedId[] = [
+  "budget",
+  "orders",
+  "sponsors",
+  "grants",
+  "fundraisers",
+  "costs",
   "finance-ai",
 ];
 

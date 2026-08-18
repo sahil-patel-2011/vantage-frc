@@ -9,6 +9,7 @@ import {
   fatigueAwareAssignments,
   fieldConfidenceHint,
   lintSchemaBudget,
+  lintPitClaimedScoring,
   rankScoutsByAccuracy,
   observationsForStrategyTrust,
   officialValueForTeam,
@@ -23,6 +24,27 @@ describe("scouting trust", () => {
   it("warns when forms exceed the collection budget", () => {
     const fields = Array.from({ length: 26 }, (_, index) => ({ key: `f${index}`, label: `F${index}`, type: "number" as const }));
     expect(lintSchemaBudget({ title: "Heavy", fields }).status).toBe("over_budget");
+  });
+
+  it("flags pit questions that ask claimed scoring instead of observable facts", () => {
+    expect(
+      lintPitClaimedScoring({
+        title: "Pit",
+        fields: [
+          { key: "drivetrain_type", label: "Drivetrain", type: "drivetrain_type" },
+          { key: "fuel_capacity", label: "Fuel capacity (claimed)", type: "number" },
+        ],
+      }).status,
+    ).toBe("claimed_scoring");
+    expect(
+      lintPitClaimedScoring({
+        title: "Pit",
+        fields: [
+          { key: "drivetrain_type", label: "Drivetrain", type: "drivetrain_type" },
+          { key: "programming_language", label: "Programming language", type: "select" },
+        ],
+      }).status,
+    ).toBe("ok");
   });
 
 

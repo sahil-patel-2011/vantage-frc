@@ -3,7 +3,7 @@ import { withOrgHref } from "./nav/product-nav";
 
 /** Soft-UI related surfaces for Discord guild/bridge settings (never DEMO sync %). */
 export const DISCORD_RELATED_LINKS = [
-  { id: "messages", label: "Messages", kind: "team" as const, tab: "messages" },
+  { id: "messages", label: "Team chat", kind: "team" as const, tab: "messages" },
   { id: "team", label: "Team hub", kind: "path" as const, path: "/team" },
   { id: "alumni", label: "Alumni", kind: "path" as const, path: "/team/alumni" },
   { id: "notifications", label: "Notifications", kind: "path" as const, path: "/notifications" },

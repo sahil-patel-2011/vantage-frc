@@ -13,7 +13,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { triageDecisionLabel } from "../../lib/pit-repair-triage";
+import { needsReinspectionBeforeQueue, reinspectionCue, triageDecisionLabel } from "../../lib/pit-repair-triage";
 import {
   TRIAGE_STATUSES,
   type PitRepairTriageView,
@@ -236,11 +236,16 @@ export default function PitRepairTriageClient() {
     reportCount,
   });
   const shellCopy = pitRepairTriageShellCopy(shell);
+  const reinspectReports =
+    view?.status === "live"
+      ? view.reports.filter((report) => needsReinspectionBeforeQueue(report))
+      : [];
   const nextActions = pitRepairTriageNextActions({
     orgId,
     shell: shell === "empty" ? "ready" : shell,
     reportCount,
     openCount,
+    reinspectReports,
   });
   const competitionHref = hubHref("/competition", "pit-repair-triage", orgId);
   const showTiles = shouldShowPitRepairTriageSummaryTiles(reportCount, fmeaCount, spareCount);
@@ -381,7 +386,9 @@ function ReportsList({
     <Panel id="pit-repair-triage-reports" className="prt-panel">
       <h2>Triage reports</h2>
       <ul className="prt-report-list">
-        {view.reports.map((report) => (
+        {view.reports.map((report) => {
+          const inspectCue = reinspectionCue(report);
+          return (
           <li key={report.id} className="app-card soft-panel prt-report-card">
             <header className="prt-report-header">
               <div>
@@ -416,6 +423,11 @@ function ReportsList({
               {report.sparesAvailable} spare(s) matched
               {report.prestageRecommended ? " · pre-stage recommended" : ""}
             </small>
+            {inspectCue ? (
+              <p className="prt-reinspect" role="status">
+                {inspectCue}
+              </p>
+            ) : null}
             {report.status !== "resolved" ? (
               <div className="prt-status-actions">
                 {TRIAGE_STATUSES.filter((status) => status !== report.status).map((status) => (
@@ -432,7 +444,8 @@ function ReportsList({
               </div>
             ) : null}
           </li>
-        ))}
+          );
+        })}
       </ul>
     </Panel>
   );

@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { averageRankSuggestion, sortEntriesForDisplay, summarizePicklistCollab, weightedScore } from ".";
+import { averageRankSuggestion, classifyEpaRole, fieldEpaBenchmarks, sortEntriesForDisplay, summarizePicklistCollab, weightedScore } from ".";
 import type {
   PicklistCollabEntry,
   PicklistCollabList,
@@ -145,7 +145,7 @@ export async function computePicklistCollabView(
   const activeList: PicklistCollabList =
     (input.listId ? lists.find((l) => l.id === input.listId) : undefined) ?? lists[0]!;
 
-  const [entryResult, voteResult] = await Promise.all([
+  const [entryResult, voteResult, metricResult] = await Promise.all([
     client.query<EntryRow>(
       `SELECT id, team_number AS "teamNumber", team_name AS "teamName", tier, position, note,
               added_by AS "addedBy"
@@ -161,6 +161,24 @@ export async function computePicklistCollabView(
        JOIN picklist_collab_entries e ON e.id = v.entry_id
        WHERE v.org_id = $1 AND e.list_id = $2`,
       [org.orgId, activeList.id],
+    ),
+    client.query<{
+      teamKey: string;
+      epaTotal: number | null;
+      epaAuto: number | null;
+      epaTeleop: number | null;
+    }>(
+      `SELECT DISTINCT ON (m.team_key)
+          m.team_key AS "teamKey",
+          m.epa_total AS "epaTotal",
+          m.epa_auto AS "epaAuto",
+          m.epa_teleop AS "epaTeleop"
+       FROM team_event_metrics m
+       WHERE m.event_key = $1
+       ORDER BY m.team_key,
+         CASE m.source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+         m.synced_at DESC NULLS LAST`,
+      [activeList.eventKey],
     ),
   ]);
 
@@ -179,8 +197,24 @@ export async function computePicklistCollabView(
     votesByEntry.set(row.entryId, list);
   }
 
+  const metricsByTeam = new Map<number, { epaTotal: number | null; epaAuto: number | null; epaTeleop: number | null }>();
+  const fieldTotals: number[] = [];
+  for (const row of metricResult.rows) {
+    const match = /^frc(\d{1,5})$/i.exec(row.teamKey);
+    const teamNumber = match ? Number(match[1]) : null;
+    if (row.epaTotal != null && Number.isFinite(row.epaTotal)) fieldTotals.push(row.epaTotal);
+    if (teamNumber == null) continue;
+    metricsByTeam.set(teamNumber, {
+      epaTotal: row.epaTotal,
+      epaAuto: row.epaAuto,
+      epaTeleop: row.epaTeleop,
+    });
+  }
+  const bench = fieldEpaBenchmarks(fieldTotals);
+
   const entries: PicklistCollabEntry[] = entryResult.rows.map((row) => {
     const votes = votesByEntry.get(row.id) ?? [];
+    const metrics = metricsByTeam.get(row.teamNumber) ?? null;
     return {
       id: row.id,
       teamNumber: row.teamNumber,
@@ -192,6 +226,16 @@ export async function computePicklistCollabView(
       votes,
       weightedScore: weightedScore(votes),
       averageRankSuggestion: averageRankSuggestion(votes),
+      epaTotal: metrics?.epaTotal ?? null,
+      epaAuto: metrics?.epaAuto ?? null,
+      epaTeleop: metrics?.epaTeleop ?? null,
+      epaRole: classifyEpaRole({
+        epaTotal: metrics?.epaTotal ?? null,
+        epaAuto: metrics?.epaAuto ?? null,
+        epaTeleop: metrics?.epaTeleop ?? null,
+        fieldMedian: bench?.median ?? null,
+        fieldP75: bench?.p75 ?? null,
+      }),
     };
   });
 

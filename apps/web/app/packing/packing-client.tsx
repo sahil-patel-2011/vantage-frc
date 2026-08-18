@@ -26,8 +26,11 @@ function ListDetail({
   const [category, setCategory] = useState("Other");
   const [label, setLabel] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [requestLabel, setRequestLabel] = useState("");
+  const [requestNote, setRequestNote] = useState("");
   const progress = packProgress(list.items);
   const groups = groupPacking(list.items);
+  const pending = list.requests ?? [];
   const busy = busyKey != null;
 
   return (
@@ -43,6 +46,7 @@ function ListDetail({
         </div>
         <div className="pack-head-actions">
           {progress.done ? <span className="app-badge good">All packed</span> : null}
+          {list.canManageMaster ? (
           <button
             type="button"
             className="pack-link"
@@ -55,6 +59,7 @@ function ListDetail({
           >
             Reset
           </button>
+          ) : null}
           <button
             type="button"
             className="pack-link danger"
@@ -73,6 +78,96 @@ function ListDetail({
       <div className="pack-track" role="progressbar" aria-valuenow={progress.percent} aria-valuemin={0} aria-valuemax={100}>
         <i style={{ width: `${progress.percent}%` }} className={progress.done ? "done" : undefined} />
       </div>
+
+      <section className="pack-inbox" aria-label="Packing requests">
+        <h3>
+          Requested items
+          <span>{pending.length} pending</span>
+        </h3>
+        {pending.length === 0 ? (
+          <p className="app-muted pack-inbox-empty">
+            Teammates submit what they need packed here — the packing lead accepts onto the master list. Never a DEMO inbox.
+          </p>
+        ) : (
+          <ul>
+            {pending.map((request) => (
+              <li key={request.id}>
+                <div>
+                  <strong>{request.label}</strong>
+                  {request.quantity > 1 ? <b className="pack-qty">×{request.quantity}</b> : null}
+                  <small className="app-muted pack-inbox-meta">
+                    {request.requestedName}
+                    {request.category && request.category !== "Other" ? ` · ${request.category}` : ""}
+                    {request.note ? ` · ${request.note}` : ""}
+                  </small>
+                </div>
+                <div className="pack-inbox-actions">
+                  {list.canManageMaster ? (
+                    <>
+                      <button
+                        type="button"
+                        className="pack-link"
+                        disabled={busy}
+                        onClick={() => void run({ action: "accept_request", orgId, id: request.id }, `req:${request.id}`)}
+                      >
+                        Add to list
+                      </button>
+                      <button
+                        type="button"
+                        className="pack-link danger"
+                        disabled={busy}
+                        onClick={() => void run({ action: "dismiss_request", orgId, id: request.id }, `req:${request.id}`)}
+                      >
+                        Dismiss
+                      </button>
+                    </>
+                  ) : (
+                    <small className="app-muted">Waiting on packing lead</small>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form
+          className="pack-add"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!requestLabel.trim()) return;
+            void run(
+              {
+                action: "request_item",
+                orgId,
+                listId: list.id,
+                category: "Other",
+                label: requestLabel.trim(),
+                quantity: 1,
+                note: requestNote.trim() || null,
+              },
+              "request-item",
+            ).then(() => {
+              setRequestLabel("");
+              setRequestNote("");
+            });
+          }}
+        >
+          <input
+            value={requestLabel}
+            disabled={busy}
+            placeholder="What should we pack? (fast request)"
+            onChange={(event) => setRequestLabel(event.target.value)}
+          />
+          <input
+            value={requestNote}
+            disabled={busy}
+            placeholder="Optional note"
+            onChange={(event) => setRequestNote(event.target.value)}
+          />
+          <button type="submit" className="app-button secondary" disabled={busy || !requestLabel.trim()}>
+            Request pack
+          </button>
+        </form>
+      </section>
 
       {groups.map((group) => {
         const groupProgress = packProgress(group.items);
@@ -107,6 +202,7 @@ function ListDetail({
                       ) : null}
                     </span>
                   </label>
+                  {list.canManageMaster ? (
                   <button
                     type="button"
                     className="pack-link danger"
@@ -116,6 +212,7 @@ function ListDetail({
                   >
                     ✕
                   </button>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -123,6 +220,7 @@ function ListDetail({
         );
       })}
 
+      {list.canManageMaster ? (
       <form
         className="pack-add"
         onSubmit={(event) => {
@@ -157,9 +255,12 @@ function ListDetail({
           onChange={(e) => setQuantity(e.target.value)}
         />
         <button type="submit" className="app-button secondary" disabled={busy || !label.trim()}>
-          Add item
+          Add to master list
         </button>
       </form>
+      ) : (
+        <p className="app-muted">Need something packed? Submit a request above — only the packing lead edits the master list.</p>
+      )}
     </section>
   );
 }
@@ -290,7 +391,7 @@ export default function PackingClient() {
           <p>
             Load-out checklists for {view.context.orgName ?? "your team"}
             {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — seeded with the standard FRC
-            competition kit.
+            competition kit. Teammates request extras; the packing lead owns the master list.
           </p>
         </div>
         <div className="pack-header-actions">
@@ -338,6 +439,7 @@ export default function PackingClient() {
                   <strong>{list.title}</strong>
                   <span className="pack-nav-sub">
                     {progress.packed}/{progress.total} packed{progress.done ? " ✓" : ""}
+                    {(list.requests?.length ?? 0) > 0 ? ` · ${list.requests.length} requested` : ""}
                   </span>
                   <span className="pack-nav-track">
                     <i style={{ width: `${progress.percent}%` }} className={progress.done ? "done" : undefined} />

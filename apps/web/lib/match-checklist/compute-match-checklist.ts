@@ -1,7 +1,24 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { buildDefaultItems, computeElapsedSeconds, isRunComplete, summarizeRuns } from ".";
-import type { ChecklistItem, ChecklistItemKey, MatchChecklistRun, MatchChecklistSummary } from "./types";
-import { CHECKLIST_ITEM_KEYS } from ".";
+import {
+  allianceTeamKeys,
+  applyBumperCue,
+  bumperColorForTeam,
+  buildDefaultItems,
+  computeElapsedSeconds,
+  formatScheduleLabel,
+  isRunComplete,
+  parseMatchLabel,
+  sanitizeChecklistItems,
+  summarizeRuns,
+} from ".";
+import type {
+  BumperColor,
+  ChecklistItem,
+  ChecklistItemKey,
+  MatchChecklistRun,
+  MatchChecklistSummary,
+  UpcomingBumperMatch,
+} from "./types";
 
 export type MatchChecklistSetupStep = {
   id: string;
@@ -21,7 +38,9 @@ export type MatchChecklistView =
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      activeEventKey: string | null;
       runs: MatchChecklistRun[];
+      upcomingMatches: UpcomingBumperMatch[];
       summary: MatchChecklistSummary;
       computedAt: string;
     };
@@ -37,26 +56,22 @@ type RunRow = {
 };
 
 function sanitizeItems(raw: unknown): ChecklistItem[] {
-  if (!Array.isArray(raw)) return buildDefaultItems();
-  const byKey = new Map<string, ChecklistItem>();
-  for (const entry of raw) {
-    if (!entry || typeof entry !== "object") continue;
-    const record = entry as Record<string, unknown>;
-    const key = typeof record.key === "string" ? record.key : null;
-    if (!key || !(CHECKLIST_ITEM_KEYS as string[]).includes(key)) continue;
-    byKey.set(key, {
-      key: key as ChecklistItemKey,
-      label: typeof record.label === "string" ? record.label : key,
-      done: Boolean(record.done),
-      checkedAt: typeof record.checkedAt === "string" ? record.checkedAt : null,
-    });
-  }
-  // Always return items in canonical order, filling any missing keys as not-done.
-  return CHECKLIST_ITEM_KEYS.map((key) => byKey.get(key) ?? buildDefaultItems().find((item) => item.key === key)!);
+  return sanitizeChecklistItems(raw);
 }
 
-function mapRun(row: RunRow): MatchChecklistRun {
-  const items = sanitizeItems(row.items);
+type ScheduleRow = {
+  matchKey: string;
+  eventKey: string;
+  compLevel: string;
+  matchNumber: number;
+  predictedTime: string | null;
+  actualTime: string | null;
+  redAlliance: unknown;
+  blueAlliance: unknown;
+};
+
+function mapRun(row: RunRow, bumperColor: BumperColor | null): MatchChecklistRun {
+  const items = applyBumperCue(sanitizeItems(row.items), bumperColor);
   const allDone = isRunComplete(items);
   return {
     id: row.id,
@@ -68,7 +83,85 @@ function mapRun(row: RunRow): MatchChecklistRun {
     items,
     elapsedSeconds: computeElapsedSeconds(row.startedAt, row.completedAt),
     allDone,
+    bumperColor,
   };
+}
+
+function bumperColorFromSchedule(
+  teamNumber: number | null,
+  row: ScheduleRow | undefined,
+): BumperColor | null {
+  if (!row) return null;
+  return bumperColorForTeam(teamNumber, allianceTeamKeys(row.redAlliance), allianceTeamKeys(row.blueAlliance));
+}
+
+function findScheduleRow(
+  matches: ScheduleRow[],
+  input: { matchLabel: string; eventKey: string | null; fallbackEventKey: string | null },
+): ScheduleRow | undefined {
+  const parsed = parseMatchLabel(input.matchLabel);
+  if (!parsed) return undefined;
+  const eventKey = input.eventKey || input.fallbackEventKey;
+  return matches.find((row) => {
+    if (eventKey && row.eventKey !== eventKey) return false;
+    if (parsed.matchKey && row.matchKey.toLowerCase() === parsed.matchKey) return true;
+    return row.compLevel === parsed.compLevel && row.matchNumber === parsed.matchNumber;
+  });
+}
+
+async function loadActiveEventKey(client: PoolClient, orgId: string): Promise<string | null> {
+  try {
+    const result = await client.query<{ activeEventKey: string | null }>(
+      `SELECT active_event_key AS "activeEventKey"
+       FROM org_active_context WHERE org_id = $1::uuid LIMIT 1`,
+      [orgId],
+    );
+    return result.rows[0]?.activeEventKey ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function loadSchedule(client: PoolClient, eventKeys: string[]): Promise<ScheduleRow[]> {
+  const keys = [...new Set(eventKeys.filter(Boolean))];
+  if (keys.length === 0) return [];
+  try {
+    const result = await client.query<ScheduleRow>(
+      `SELECT match_key AS "matchKey", event_key AS "eventKey", comp_level AS "compLevel",
+              match_number AS "matchNumber",
+              predicted_time::text AS "predictedTime", actual_time::text AS "actualTime",
+              red_alliance AS "redAlliance", blue_alliance AS "blueAlliance"
+       FROM matches_ref
+       WHERE event_key = ANY($1::text[])
+       ORDER BY COALESCE(actual_time, predicted_time, event_time) NULLS LAST, match_number`,
+      [keys],
+    );
+    return result.rows;
+  } catch {
+    return [];
+  }
+}
+
+function upcomingBumperMatches(
+  matches: ScheduleRow[],
+  input: { teamNumber: number | null; eventKey: string | null },
+): UpcomingBumperMatch[] {
+  if (input.teamNumber == null || !input.eventKey) return [];
+  const upcoming: UpcomingBumperMatch[] = [];
+  for (const row of matches) {
+    if (row.eventKey !== input.eventKey) continue;
+    if (row.actualTime) continue;
+    const color = bumperColorFromSchedule(input.teamNumber, row);
+    if (!color) continue;
+    upcoming.push({
+      matchKey: row.matchKey,
+      eventKey: row.eventKey,
+      label: formatScheduleLabel(row.compLevel, row.matchNumber),
+      bumperColor: color,
+    });
+    if (upcoming.length >= 6) break;
+  }
+  return upcoming;
 }
 
 async function resolveOrg(
@@ -127,14 +220,38 @@ export async function computeMatchChecklistView(
     [org.orgId],
   );
 
-  const runs = runResult.rows.map(mapRun);
+  const activeEventKey = await loadActiveEventKey(client, org.orgId);
+  const eventKeys = [
+    activeEventKey,
+    ...runResult.rows.map((row) => row.eventKey),
+  ].filter((key): key is string => Boolean(key));
+  const schedule = await loadSchedule(client, eventKeys);
+
+  const runs = runResult.rows.map((row) => {
+    const teamNumber = row.teamNumber ?? org.teamNumber;
+    const color = bumperColorFromSchedule(
+      teamNumber,
+      findScheduleRow(schedule, {
+        matchLabel: row.matchLabel,
+        eventKey: row.eventKey,
+        fallbackEventKey: activeEventKey,
+      }),
+    );
+    return mapRun(row, color);
+  });
   const summary = summarizeRuns(runs);
+  const upcomingMatches = upcomingBumperMatches(schedule, {
+    teamNumber: org.teamNumber,
+    eventKey: activeEventKey,
+  });
 
   return {
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    activeEventKey,
     runs,
+    upcomingMatches,
     summary,
     computedAt: new Date().toISOString(),
   };

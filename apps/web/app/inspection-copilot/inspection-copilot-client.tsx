@@ -534,6 +534,14 @@ function NewCheckForm({
   const [wiresLabeled, setWiresLabeled] = useState(false);
   const [radioPowerOk, setRadioPowerOk] = useState(false);
   const [bypassSwitchAccessible, setBypassSwitchAccessible] = useState(false);
+  const [binderRecorded, setBinderRecorded] = useState(false);
+  const [bomPrinted, setBomPrinted] = useState(false);
+  const [inspectionChecklistPrinted, setInspectionChecklistPrinted] = useState(false);
+  const [studentCaptainPresent, setStudentCaptainPresent] = useState(false);
+  const [radioEventRecorded, setRadioEventRecorded] = useState(false);
+  const [radioOnMainPd, setRadioOnMainPd] = useState(false);
+  const [rioOnMainPd10A, setRioOnMainPd10A] = useState(false);
+  const [radioProgrammedForEvent, setRadioProgrammedForEvent] = useState(false);
 
   const setWeightField = (index: number, key: keyof WeightItemDraft) => (event: { target: { value: string } }) =>
     setWeightItems((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: event.target.value } : row)));
@@ -577,6 +585,14 @@ function NewCheckForm({
             wiresLabeled,
             radioPowerOk,
             bypassSwitchAccessible,
+            binderRecorded,
+            bomPrinted,
+            inspectionChecklistPrinted,
+            studentCaptainPresent,
+            radioEventRecorded,
+            radioOnMainPd,
+            rioOnMainPd10A,
+            radioProgrammedForEvent,
           },
         });
         setRobotName("");
@@ -589,6 +605,14 @@ function NewCheckForm({
         setWiresLabeled(false);
         setRadioPowerOk(false);
         setBypassSwitchAccessible(false);
+        setBinderRecorded(false);
+        setBomPrinted(false);
+        setInspectionChecklistPrinted(false);
+        setStudentCaptainPresent(false);
+        setRadioEventRecorded(false);
+        setRadioOnMainPd(false);
+        setRioOnMainPd10A(false);
+        setRadioProgrammedForEvent(false);
       }}
     >
       <h2 style={{ margin: 0 }}>Run an inspection-readiness check</h2>
@@ -718,7 +742,7 @@ function NewCheckForm({
           </label>
           <label>
             <input type="checkbox" checked={radioPowerOk} onChange={(e) => setRadioPowerOk(e.target.checked)} />
-            Radio power OK
+            Radio power path OK (generic)
           </label>
           <label>
             <input
@@ -728,6 +752,82 @@ function NewCheckForm({
             />
             Bypass switch accessible
           </label>
+        </fieldset>
+      </div>
+
+      <div>
+        <strong className="app-muted">2026 radio / roboRIO power</strong>
+        <p className="app-muted">
+          Chief Delphi: rio and radio must come off the main PD — Mini PD / RPM / VRM stops inspection. Leave this off
+          until you actually walk the wiring — never invent a fail.
+        </p>
+        <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={radioEventRecorded}
+              onChange={(e) => setRadioEventRecorded(e.target.checked)}
+            />
+            We logged radio / RIO power for this event
+          </label>
+          {radioEventRecorded ? (
+            <>
+              <label>
+                <input type="checkbox" checked={radioOnMainPd} onChange={(e) => setRadioOnMainPd(e.target.checked)} />
+                Radio on main PD 12V and/or passive PoE injector (not VRM/RPM/Mini)
+              </label>
+              <label>
+                <input type="checkbox" checked={rioOnMainPd10A} onChange={(e) => setRioOnMainPd10A(e.target.checked)} />
+                roboRIO on a non-switched 10A PD branch
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={radioProgrammedForEvent}
+                  onChange={(e) => setRadioProgrammedForEvent(e.target.checked)}
+                />
+                Radio programmed for this event
+              </label>
+            </>
+          ) : null}
+        </fieldset>
+      </div>
+
+      <div>
+        <strong className="app-muted">Thursday inspection binder</strong>
+        <p className="app-muted">
+          CD inspectors fail teams that forget a printed BOM. Leave this off until you actually pack the binder — never
+          invent a missing document.
+        </p>
+        <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
+          <label>
+            <input type="checkbox" checked={binderRecorded} onChange={(e) => setBinderRecorded(e.target.checked)} />
+            We logged binder status
+          </label>
+          {binderRecorded ? (
+            <>
+              <label>
+                <input type="checkbox" checked={bomPrinted} onChange={(e) => setBomPrinted(e.target.checked)} />
+                Printed BOM packed (part, qty, price, supplier)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={inspectionChecklistPrinted}
+                  onChange={(e) => setInspectionChecklistPrinted(e.target.checked)}
+                />
+                Printed inspection checklist packed
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={studentCaptainPresent}
+                  onChange={(e) => setStudentCaptainPresent(e.target.checked)}
+                />
+                Student team captain present to sign
+              </label>
+            </>
+          ) : null}
         </fieldset>
       </div>
 

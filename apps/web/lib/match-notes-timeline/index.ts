@@ -111,3 +111,77 @@ export function summarizeMatchNotes(entries: MatchNoteEntry[]): MatchNotesTimeli
     })),
   };
 }
+
+/** QRScout Action Tracker hold ranges: "12-18,22-30" (seconds). Empty/malformed stays empty. */
+export function parseActionRanges(raw: string): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
+  for (const token of raw.split(",")) {
+    const match = /^\s*(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*$/.exec(token);
+    if (!match) continue;
+    const start = Number(match[1]);
+    const end = Number(match[2]);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) continue;
+    ranges.push({ start, end });
+  }
+  return ranges;
+}
+
+export function categoryActionCode(category: MatchNoteCategory): string {
+  switch (category) {
+    case "highlight":
+      return "s";
+    case "issue":
+      return "d";
+    case "strategy":
+      return "p";
+    case "observation":
+      return "c";
+    default:
+      return "o";
+  }
+}
+
+export type ActionInterval = { start: number; end: number; code: string };
+
+export function actionIntervalsFromNotes(entries: MatchNoteEntry[]): ActionInterval[] {
+  const intervals: ActionInterval[] = [];
+  for (const entry of entries) {
+    const ranges = parseActionRanges(entry.note);
+    const code = categoryActionCode(entry.category);
+    if (ranges.length > 0) {
+      for (const range of ranges) intervals.push({ start: range.start, end: range.end, code });
+      continue;
+    }
+    intervals.push({ start: entry.clockSeconds, end: entry.clockSeconds + 2, code });
+  }
+  return intervals;
+}
+
+const CODE_RANK: Record<string, number> = { s: 4, d: 3, p: 2, c: 1, o: 0 };
+
+/** QRScout-style 1D strip: one cell per window, letter from overlapping actions. */
+export function actionTrackerStrip(
+  intervals: ActionInterval[],
+  matchSeconds = 150,
+  windowSeconds = 5,
+): string[] {
+  const cells: string[] = [];
+  const length = Math.max(0, Math.round(matchSeconds));
+  const window = Math.max(1, Math.round(windowSeconds));
+  for (let start = 0; start < length; start += window) {
+    const end = start + window;
+    let best = "";
+    let bestRank = -1;
+    for (const interval of intervals) {
+      if (interval.start < end && interval.end > start) {
+        const rank = CODE_RANK[interval.code] ?? 0;
+        if (rank > bestRank) {
+          best = interval.code;
+          bestRank = rank;
+        }
+      }
+    }
+    cells.push(best);
+  }
+  return cells;
+}

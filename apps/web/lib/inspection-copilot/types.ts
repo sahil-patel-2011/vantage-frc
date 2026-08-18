@@ -36,6 +36,22 @@ export type WiringPowerSpec = {
   wiresLabeled: boolean;
   radioPowerOk: boolean;
   bypassSwitchAccessible: boolean;
+  /**
+   * When false, binder flags are skipped (not logged yet — never invent a missing BOM).
+   * CD inspectors: bring a real printed BOM to every event.
+   */
+  binderRecorded: boolean;
+  bomPrinted: boolean;
+  inspectionChecklistPrinted: boolean;
+  studentCaptainPresent: boolean;
+  /**
+   * When false, 2026 radio/RIO PD flags are skipped (never invent a wiring fail).
+   * CD: rio/radio off Mini PD / RPM is a common inspection stop.
+   */
+  radioEventRecorded: boolean;
+  radioOnMainPd: boolean;
+  rioOnMainPd10A: boolean;
+  radioProgrammedForEvent: boolean;
 };
 
 export type InspectionFlagType =
@@ -48,7 +64,13 @@ export type InspectionFlagType =
   | "battery_not_secured"
   | "wires_unlabeled"
   | "radio_power_fault"
-  | "bypass_switch_inaccessible";
+  | "bypass_switch_inaccessible"
+  | "bom_not_printed"
+  | "inspection_checklist_not_printed"
+  | "student_captain_absent"
+  | "radio_not_on_main_pd"
+  | "rio_not_on_main_pd"
+  | "radio_not_programmed_for_event";
 
 export type InspectionFlagSeverity = "info" | "warning" | "critical";
 

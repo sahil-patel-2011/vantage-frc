@@ -520,6 +520,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           <strong>Discord</strong>
           <span>Guild, announcements, chat bridge</span>
         </a>
+        <a href={withOrgHref("/team/slack", orgId)}>
+          <strong>Slack</strong>
+          <span>Two-way team chat bridge</span>
+        </a>
         <a href="#github-connection">
           <strong>GitHub</strong>
           <span>Robot-code context for AI — never DEMO repos</span>
@@ -530,7 +534,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </a>
         <a href="/account?tab=integrations">
           <strong>Account Connections</strong>
-          <span>TBA, Onshape, Discord, GitHub</span>
+          <span>TBA, Onshape, Discord, Slack, GitHub</span>
         </a>
       </nav>
 

@@ -33,6 +33,7 @@ type NotificationPrefs = {
   dutyAssigned: boolean;
   calendarEvents: boolean;
   sponsorReminders: boolean;
+  teamChat: boolean;
 };
 
 type EmailPrefs = {
@@ -55,6 +56,13 @@ type AccountView = {
   email?: string | null;
   image?: string | null;
   displayName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  dateOfBirth?: string | null;
+  recoveryEmail?: string | null;
+  phoneE164?: string | null;
+  phoneVerified?: boolean;
+  phoneOtp?: { configured: boolean; message: string };
   themePreference?: "light" | "dark";
   notificationPrefs?: NotificationPrefs;
   emailPrefs?: EmailPrefs;
@@ -66,6 +74,7 @@ type AccountView = {
     onshape?: ConnectorIntegration;
     discord?: ConnectorIntegration;
     github?: ConnectorIntegration;
+    slack?: ConnectorIntegration;
   };
 };
 
@@ -109,6 +118,11 @@ const PREF_LABELS: { key: keyof NotificationPrefs; title: string; detail: string
     key: "sponsorReminders",
     title: "Sponsor CRM reminders",
     detail: "Thank-you, renewal, and overdue follow-up nudges for your team's sponsors.",
+  },
+  {
+    key: "teamChat",
+    title: "Team chat",
+    detail: "Inbox when someone posts in Team chat (including Slack-bridged messages) or mentions you.",
   },
 ];
 
@@ -173,6 +187,7 @@ function ConnectionsNextActions({
   onshapeStatus,
   discordStatus,
   githubStatus,
+  slackStatus,
 }: {
   orgId: string | null;
   googleReady: boolean;
@@ -180,6 +195,7 @@ function ConnectionsNextActions({
   onshapeStatus: ConnectionConnectorStatus;
   discordStatus: ConnectionConnectorStatus;
   githubStatus: ConnectionConnectorStatus;
+  slackStatus: ConnectionConnectorStatus;
 }) {
   const actions = connectionsNextActions({
     orgId,
@@ -188,6 +204,7 @@ function ConnectionsNextActions({
     onshapeStatus,
     discordStatus,
     githubStatus,
+    slackStatus,
   });
   return (
     <section className="account-next-actions app-card soft-panel" aria-label="Connection next actions">
@@ -330,6 +347,12 @@ export default function AccountClient() {
     workspaceCount: 0,
   });
   const [displayName, setDisplayName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [phoneE164, setPhoneE164] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [prefs, setPrefs] = useState<NotificationPrefs>({
     matchAlerts: true,
     scoutReminders: true,
@@ -340,6 +363,7 @@ export default function AccountClient() {
     dutyAssigned: true,
     calendarEvents: true,
     sponsorReminders: true,
+    teamChat: true,
   });
   const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>({
     productUpdates: true,
@@ -391,6 +415,11 @@ export default function AccountClient() {
       const data = (await response.json()) as AccountView;
       setAccount(data);
       setDisplayName(data.displayName ?? data.name ?? "");
+      setFirstName(data.firstName ?? "");
+      setLastName(data.lastName ?? "");
+      setDateOfBirth(data.dateOfBirth ?? "");
+      setRecoveryEmail(data.recoveryEmail ?? "");
+      setPhoneE164(data.phoneE164 ?? "");
       if (data.notificationPrefs) setPrefs(data.notificationPrefs);
       if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
       setMessage("");
@@ -446,7 +475,14 @@ export default function AccountClient() {
       const response = await fetch("/api/account", {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ displayName }),
+        body: JSON.stringify({
+          displayName,
+          firstName: firstName.trim() || undefined,
+          lastName: lastName.trim() || undefined,
+          dateOfBirth: dateOfBirth.trim() || undefined,
+          recoveryEmail: recoveryEmail.trim() || null,
+          phoneE164: phoneE164.trim() || null,
+        }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -483,6 +519,52 @@ export default function AccountClient() {
     }
   }
 
+  async function sendPhoneOtp() {
+    setBusy(true);
+    setMessage("");
+    setMessageOk(false);
+    try {
+      const response = await fetch("/api/account/phone-otp", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "send", phoneE164 }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not send phone code.");
+        return;
+      }
+      setMessage("Phone code sent.");
+      setMessageOk(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyPhoneOtp() {
+    setBusy(true);
+    setMessage("");
+    setMessageOk(false);
+    try {
+      const response = await fetch("/api/account/phone-otp", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "verify", code: otpCode }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not verify phone.");
+        return;
+      }
+      setMessage("Phone verified for OTP.");
+      setMessageOk(true);
+      setOtpCode("");
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function signOut() {
     setBusy(true);
     await signOutAndRedirect("/");
@@ -500,6 +582,8 @@ export default function AccountClient() {
     account?.integrations?.discord?.status ?? (orgId ? "empty" : "setup_required");
   const githubStatus: ConnectionConnectorStatus =
     account?.integrations?.github?.status ?? (orgId ? "empty" : "setup_required");
+  const slackStatus: ConnectionConnectorStatus =
+    account?.integrations?.slack?.status ?? (orgId ? "empty" : "setup_required");
   const connectionCards = buildConnectionConnectors({
     orgId,
     google: account?.integrations?.google,
@@ -507,6 +591,7 @@ export default function AccountClient() {
     onshape: account?.integrations?.onshape,
     discord: account?.integrations?.discord,
     github: account?.integrations?.github,
+    slack: account?.integrations?.slack,
   });
   const connectionsShell = classifyConnectionsShell({
     orgId,
@@ -529,6 +614,8 @@ export default function AccountClient() {
       onshapeStatus === "empty" ||
       discordStatus === "setup_required" ||
       discordStatus === "empty" ||
+      slackStatus === "setup_required" ||
+      slackStatus === "empty" ||
       githubStatus === "empty");
   const showNextActions =
     !loading &&
@@ -725,14 +812,84 @@ export default function AccountClient() {
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
                     maxLength={80}
-                    autoComplete="name"
+                    autoComplete="nickname"
                     required
                   />
                 </label>
                 <label>
-                  Email
+                  First name
+                  <input
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    maxLength={60}
+                    autoComplete="given-name"
+                  />
+                </label>
+                <label>
+                  Last name
+                  <input
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    maxLength={60}
+                    autoComplete="family-name"
+                  />
+                </label>
+                <label>
+                  Date of birth
+                  <input
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(event) => setDateOfBirth(event.target.value)}
+                    autoComplete="bday"
+                  />
+                </label>
+                <label>
+                  Sign-in email
                   <input value={account.email ?? ""} readOnly disabled />
                 </label>
+                <label>
+                  Recovery email
+                  <input
+                    type="email"
+                    value={recoveryEmail}
+                    onChange={(event) => setRecoveryEmail(event.target.value)}
+                    autoComplete="email"
+                    placeholder="A second inbox for account recovery"
+                  />
+                </label>
+                <label>
+                  Phone number for OTP
+                  <input
+                    type="tel"
+                    value={phoneE164}
+                    onChange={(event) => setPhoneE164(event.target.value)}
+                    autoComplete="tel"
+                    placeholder="+15551234567"
+                  />
+                </label>
+                <p className="app-muted">
+                  {account.phoneVerified
+                    ? "Phone is verified for OTP."
+                    : account.phoneOtp?.configured
+                      ? "Save the number, then send a code to verify it."
+                      : account.phoneOtp?.message ?? "SMS OTP is setup-required until Twilio env is set."}
+                </p>
+                <div className="account-actions">
+                  <button className="app-button secondary" type="button" disabled={busy} onClick={() => void sendPhoneOtp()}>
+                    Send phone code
+                  </button>
+                  <input
+                    value={otpCode}
+                    onChange={(event) => setOtpCode(event.target.value)}
+                    maxLength={6}
+                    inputMode="numeric"
+                    placeholder="6-digit code"
+                    aria-label="Phone OTP code"
+                  />
+                  <button className="app-button secondary" type="button" disabled={busy || otpCode.length !== 6} onClick={() => void verifyPhoneOtp()}>
+                    Verify phone
+                  </button>
+                </div>
                 <div className="account-actions">
                   <button className="primary-action" type="submit" disabled={busy}>
                     Save profile
@@ -856,6 +1013,11 @@ export default function AccountClient() {
                     >
                       {orgId ? "Open Discord" : "Help & Support"}
                     </a>
+                    {orgId ? (
+                      <a className="app-button secondary" href={withOrgHref("/team/slack", orgId)}>
+                        Open Slack
+                      </a>
+                    ) : null}
                   </div>
                 </EmptyState>
               ) : null}
@@ -868,6 +1030,7 @@ export default function AccountClient() {
                   onshapeStatus={onshapeStatus}
                   discordStatus={discordStatus}
                   githubStatus={githubStatus}
+                  slackStatus={slackStatus}
                 />
               ) : null}
 

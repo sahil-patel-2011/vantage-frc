@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { summarizeRobotWeighIn } from ".";
+import { playoffReweighCue, summarizeRobotWeighIn } from ".";
 import type { RobotWeighInEntry, RobotWeighInStation, RobotWeighInSummary } from "./types";
 
 export const ROBOT_WEIGH_IN_STATIONS: RobotWeighInStation[] = [
@@ -38,6 +38,8 @@ export type RobotWeighInView =
       configuredLimitLbs: number | null;
       /** BOM-estimated robot mass = Σ(weight_lbs × quantity) from the weight-budget components. */
       bomEstimatedLbs: number | null;
+      /** TBA unplayed qf/sf/f vs latest event_inspection day — null when schedule/cache is empty. */
+      playoffReweighCue: string | null;
       computedAt: string;
     };
 
@@ -107,6 +109,31 @@ async function resolveOrg(
   return membership.rows[0] ?? null;
 }
 
+/**
+ * Next unplayed TBA playoff (qf/sf/f) at the org's active event.
+ * Missing tables, no active event, or no elims yet → null — never invent playoffs.
+ */
+async function loadNextUnplayedPlayoffAt(client: PoolClient, orgId: string): Promise<string | null> {
+  try {
+    const result = await client.query<{ playoffStartAt: string | null }>(
+      `SELECT COALESCE(m.predicted_time, m.event_time)::text AS "playoffStartAt"
+       FROM org_active_context c
+       JOIN matches_ref m ON m.event_key = c.active_event_key
+       WHERE c.org_id = $1::uuid
+         AND c.active_event_key IS NOT NULL
+         AND m.comp_level = ANY($2::text[])
+         AND m.actual_time IS NULL
+         AND COALESCE(m.predicted_time, m.event_time) IS NOT NULL
+       ORDER BY COALESCE(m.predicted_time, m.event_time) NULLS LAST, m.match_number
+       LIMIT 1`,
+      [orgId, ["qf", "sf", "f"]],
+    );
+    return result.rows[0]?.playoffStartAt ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function computeRobotWeighInView(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null; seasonYear?: number | null },
@@ -162,6 +189,10 @@ export async function computeRobotWeighInView(
   const bomRaw = bomResult.rows[0] ? Number(bomResult.rows[0].bomLbs) : 0;
   const bomEstimatedLbs = Number.isFinite(bomRaw) && bomRaw > 0 ? Math.round(bomRaw * 100) / 100 : null;
 
+  const nextUnplayedPlayoffAt = await loadNextUnplayedPlayoffAt(client, org.orgId);
+  const latestEventInspectionAt =
+    entries.find((entry) => entry.station === "event_inspection")?.weighedOn ?? null;
+
   return {
     status: "live",
     orgId: org.orgId,
@@ -172,6 +203,11 @@ export async function computeRobotWeighInView(
     summary,
     configuredLimitLbs,
     bomEstimatedLbs,
+    playoffReweighCue: playoffReweighCue({
+      nextUnplayedPlayoffAt,
+      latestEventInspectionAt,
+      hasAnyEntry: entries.length > 0,
+    }),
     computedAt: new Date().toISOString(),
   };
 }

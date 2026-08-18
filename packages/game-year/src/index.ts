@@ -53,6 +53,13 @@ function fallbackPack(year: number): GameYearPack {
           type: "drivetrain_type",
           options: ["swerve", "west_coast", "tank", "mecanum", "other"],
         },
+        {
+          key: "programming_language",
+          label: "Programming language",
+          type: "select",
+          options: ["java", "c++", "python", "labview", "other"],
+        },
+        { key: "driver_seasons", label: "Driver seasons of experience", type: "number" },
         { key: "robot_images", label: "Robot images", type: "robot_image" },
         { key: "notes", label: "Notes", type: "text" },
       ],

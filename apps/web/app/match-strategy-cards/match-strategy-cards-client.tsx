@@ -12,7 +12,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { matchLabel, renderCardText } from "../../lib/match-strategy-cards";
+import { alliancePartners, dutyPlanFromTemplate, DUTY_STANCES, dutyStanceLabel, matchLabel, renderCardText } from "../../lib/match-strategy-cards";
 import type { MatchStrategyCardsView } from "../../lib/match-strategy-cards/compute-match-strategy-cards";
 import {
   MATCH_STRATEGY_CARDS_RELATED_INCLUDE,
@@ -341,6 +341,7 @@ export default function MatchStrategyCardsClient() {
             key={card.matchKey}
             card={card}
             eventKey={view.eventKey}
+            ownTeamNumber={view.teamNumber}
             busy={busy}
             mutate={mutate}
           />
@@ -353,11 +354,13 @@ export default function MatchStrategyCardsClient() {
 function StrategyCardPanel({
   card,
   eventKey,
+  ownTeamNumber,
   busy,
   mutate,
 }: {
   card: MatchStrategyCard;
   eventKey: string;
+  ownTeamNumber: number;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
@@ -370,11 +373,7 @@ function StrategyCardPanel({
     card.roleAssignments.length ? card.roleAssignments : [{ role: "Driver", assignee: "" }],
   );
 
-  const partners =
-    card.alliances
-      .find((a) => a.isOwnAlliance)
-      ?.teamNumbers.filter((n) => n !== card.alliances.find((x) => x.isOwnAlliance)?.teamNumbers[0]) ??
-    [];
+  const partners = alliancePartners(card.alliances, ownTeamNumber);
   const opponents = card.alliances.filter((a) => !a.isOwnAlliance).flatMap((a) => a.teamNumbers);
 
   return (
@@ -413,6 +412,27 @@ function StrategyCardPanel({
       <FormRow label="Game plan">
         <textarea value={gamePlan} onChange={(e) => setGamePlan(e.target.value)} rows={2} />
       </FormRow>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "0 0 12px" }}>
+        {DUTY_STANCES.map((stance) => (
+          <Button
+            key={stance}
+            variant="secondary"
+            size="sm"
+            disabled={busy}
+            onClick={() => {
+              const plan = dutyPlanFromTemplate({
+                stance,
+                ownTeamNumber,
+                partnerNumbers: partners,
+              });
+              setGamePlan(plan.gamePlan);
+              setRoles(plan.roleAssignments);
+            }}
+          >
+            {dutyStanceLabel(stance)} duty
+          </Button>
+        ))}
+      </div>
       <FormRow label="Auto assignment">
         <textarea value={autoAssignment} onChange={(e) => setAutoAssignment(e.target.value)} rows={2} />
       </FormRow>

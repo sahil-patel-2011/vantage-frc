@@ -106,11 +106,21 @@ export async function POST(request: Request) {
           break;
         }
         case "generate-plan": {
-          const label = trimmedOrNull(body.label, 200) ?? "Shift plan";
+          const useEventSchedule = body.useEventSchedule === true;
+          const label =
+            trimmedOrNull(body.label, 200) ?? (useEventSchedule ? "Event quals rotation" : "Shift plan");
           const matchCount = positiveInt(body.matchCount, 10);
           const maxConsecutiveMatches = positiveInt(body.maxConsecutiveMatches, 3);
           const stations = stationsFrom(body.stations);
-          await generatePlan(client, { orgId, userId, label, matchCount, stations, maxConsecutiveMatches });
+          await generatePlan(client, {
+            orgId,
+            userId,
+            label,
+            matchCount,
+            stations,
+            maxConsecutiveMatches,
+            useEventSchedule,
+          });
           break;
         }
         case "delete-plan": {

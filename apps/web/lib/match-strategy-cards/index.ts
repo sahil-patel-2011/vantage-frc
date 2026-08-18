@@ -1,6 +1,6 @@
 // Pure, unit-testable helpers for Match Strategy Cards. No I/O, no framework imports.
 
-import type { AllianceColor, MatchStrategyAlliance, MatchStrategyCard } from "./types";
+import type { AllianceColor, MatchStrategyAlliance, MatchStrategyCard, MatchStrategyRoleAssignment } from "./types";
 
 export const COMP_LEVEL_LABEL: Record<string, string> = {
   qm: "Qualification",
@@ -81,4 +81,66 @@ export function renderCardText(card: MatchStrategyCard): string {
     lines.push(`Roles: ${card.roleAssignments.map((r) => `${r.role} — ${r.assignee}`).join("; ")}`);
   }
   return lines.join("\n");
+}
+
+export const DUTY_STANCES = ["safe", "balanced", "aggressive"] as const;
+export type DutyStance = (typeof DUTY_STANCES)[number];
+
+export function dutyStanceLabel(stance: DutyStance): string {
+  switch (stance) {
+    case "safe":
+      return "Safe";
+    case "balanced":
+      return "Balanced";
+    case "aggressive":
+      return "Aggressive";
+    default:
+      return stance;
+  }
+}
+
+/**
+ * AllianceOps-style duty planner: fill alliance roles from a stance template.
+ * Uses only the real alliance roster — never invents EPA or win odds.
+ */
+export function dutyPlanFromTemplate(input: {
+  stance: DutyStance;
+  ownTeamNumber: number;
+  partnerNumbers: number[];
+}): { gamePlan: string; roleAssignments: MatchStrategyRoleAssignment[] } {
+  const partners = [...input.partnerNumbers]
+    .filter((n) => n !== input.ownTeamNumber)
+    .sort((a, b) => a - b);
+  const us = String(input.ownTeamNumber);
+  const a = partners[0] != null ? String(partners[0]) : "Partner A";
+  const b = partners[1] != null ? String(partners[1]) : "Partner B";
+
+  if (input.stance === "safe") {
+    return {
+      gamePlan: `Safe: ${us} cycles; ${a} feeds/covers; ${b} plays defense. Protect ranking points over max score.`,
+      roleAssignments: [
+        { role: "Primary scorer", assignee: us },
+        { role: "Feed / cover", assignee: a },
+        { role: "Defense", assignee: b },
+      ],
+    };
+  }
+  if (input.stance === "aggressive") {
+    return {
+      gamePlan: `Aggressive: ${us} and ${a} both score; ${b} disrupts opponents. Accept defense risk for points.`,
+      roleAssignments: [
+        { role: "Primary scorer", assignee: us },
+        { role: "Second scorer", assignee: a },
+        { role: "Disrupt / steal", assignee: b },
+      ],
+    };
+  }
+  return {
+    gamePlan: `Balanced: ${us} primary score; ${a} hybrid score/feed; ${b} flex defense if opponents pull ahead.`,
+    roleAssignments: [
+      { role: "Primary scorer", assignee: us },
+      { role: "Hybrid", assignee: a },
+      { role: "Flex / defense", assignee: b },
+    ],
+  };
 }

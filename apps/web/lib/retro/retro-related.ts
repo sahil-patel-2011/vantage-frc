@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Team Retrospective (never DEMO retro metrics). */
 export const RETRO_RELATED_LINKS = [
-  { id: "messages", label: "Messages", kind: "team" as const, tab: "messages" },
+  { id: "messages", label: "Team chat", kind: "team" as const, tab: "messages" },
   { id: "fmea", label: "FMEA", kind: "team" as const, tab: "fmea" },
   { id: "decisions", label: "Decisions", kind: "path" as const, path: "/decisions" },
   { id: "team", label: "Team hub", kind: "team" as const, tab: "retro" },

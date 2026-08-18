@@ -19,6 +19,7 @@ const inAppPrefsSchema = z.object({
   dutyAssigned: z.boolean().optional(),
   calendarEvents: z.boolean().optional(),
   sponsorReminders: z.boolean().optional(),
+  teamChat: z.boolean().optional(),
 });
 
 const emailPrefsSchema = z.object({

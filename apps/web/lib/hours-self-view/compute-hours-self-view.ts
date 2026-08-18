@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { evaluateBiometricGate, minutesBetween, summarizeHoursSelfEntries } from ".";
+import { evaluateBiometricGate, minutesBetween, summarizeHoursSelfEntries, summarizeWhoIsHere } from ".";
 import type {
   BiometricConsentRecord,
   BiometricConsentStatus,
@@ -8,6 +8,7 @@ import type {
   HoursSelfEntry,
   HoursSelfSummary,
   KioskSessionStatus,
+  ShopPresence,
 } from "./types";
 
 export type HoursSelfViewSetupStep = {
@@ -32,6 +33,7 @@ export type HoursSelfViewView =
       entries: HoursSelfEntry[];
       summary: HoursSelfSummary;
       kioskSessions: KioskSessionStatus[];
+      presentNow: ShopPresence[];
       biometricConsent: BiometricConsentRecord | null;
       biometricGate: BiometricGate;
       computedAt: string;
@@ -133,7 +135,7 @@ export async function computeHoursSelfViewView(
     };
   }
 
-  const [entryResult, kioskResult, consentResult] = await Promise.all([
+  const [entryResult, kioskResult, consentResult, presentResult] = await Promise.all([
     client.query<HourLogRow>(
       `SELECT id, kind, clock_in::text AS "clockIn", clock_out::text AS "clockOut", note
        FROM hour_logs
@@ -159,11 +161,31 @@ export async function computeHoursSelfViewView(
        LIMIT 1`,
       [org.orgId, input.userId],
     ),
+    client.query<{ userId: string; displayName: string; kind: string; clockIn: string }>(
+      `SELECT h.user_id AS "userId",
+              COALESCE(NULLIF(trim(u.name), ''), 'Member') AS "displayName",
+              h.kind,
+              h.clock_in::text AS "clockIn"
+       FROM hour_logs h
+       LEFT JOIN users u ON u.id = h.user_id
+       WHERE h.org_id = $1 AND h.clock_out IS NULL
+       ORDER BY h.clock_in`,
+      [org.orgId],
+    ),
   ]);
 
   const entries = entryResult.rows.map(mapEntry);
   const summary = summarizeHoursSelfEntries(entries);
   const kioskSessions = kioskResult.rows.map(mapKiosk);
+  const presentNow = summarizeWhoIsHere(
+    presentResult.rows.map((row) => ({
+      userId: row.userId,
+      displayName: row.displayName,
+      kind: isHourLogKind(row.kind) ? row.kind : "other",
+      clockIn: row.clockIn,
+    })),
+    new Date().toISOString(),
+  );
   const biometricConsent = consentResult.rows[0] ? mapConsent(consentResult.rows[0]) : null;
   const biometricGate = evaluateBiometricGate(biometricConsent);
 
@@ -175,6 +197,7 @@ export async function computeHoursSelfViewView(
     entries,
     summary,
     kioskSessions,
+    presentNow,
     biometricConsent,
     biometricGate,
     computedAt: new Date().toISOString(),

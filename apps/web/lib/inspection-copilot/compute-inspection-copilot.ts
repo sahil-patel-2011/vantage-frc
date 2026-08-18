@@ -94,6 +94,14 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     wiresLabeled: Boolean(row.wiresLabeled),
     radioPowerOk: Boolean(row.radioPowerOk),
     bypassSwitchAccessible: Boolean(row.bypassSwitchAccessible),
+    binderRecorded: Boolean(row.binderRecorded),
+    bomPrinted: Boolean(row.bomPrinted),
+    inspectionChecklistPrinted: Boolean(row.inspectionChecklistPrinted),
+    studentCaptainPresent: Boolean(row.studentCaptainPresent),
+    radioEventRecorded: Boolean(row.radioEventRecorded),
+    radioOnMainPd: Boolean(row.radioOnMainPd),
+    rioOnMainPd10A: Boolean(row.rioOnMainPd10A),
+    radioProgrammedForEvent: Boolean(row.radioProgrammedForEvent),
   };
 }
 

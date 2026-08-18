@@ -172,6 +172,95 @@ export function competitionReadiness(input: {
   return { ready: reasons.length === 0, reasons };
 }
 
+/** Killer Bees cart: 10–15 min cool-down after charger before a Beak test (hot reading is a false high). */
+export const CART_COOLDOWN_MINUTES = 15;
+
+export type CartSlotKind = "parked" | "needs_charge" | "cooling" | "ready_to_test" | "ready";
+
+export type CartSlot = {
+  kind: CartSlotKind;
+  label: string;
+  minutesRemaining: number | null;
+  detail: string;
+};
+
+function minutesSince(fromIso: string, nowIso: string): number | null {
+  const start = Date.parse(fromIso);
+  const now = Date.parse(nowIso);
+  if (!Number.isFinite(start) || !Number.isFinite(now)) return null;
+  return Math.round((now - start) / 60000);
+}
+
+/**
+ * Competition-cart slot from logged charge / match / Beak times — never invents Ready.
+ * Drive team can grab `ready`; Battery Czar watches `cooling` then tests.
+ */
+export function cartSlot(input: {
+  status: BatteryStatus;
+  lastChargedAt: string | null;
+  lastUsedAt: string | null;
+  lastTestedAt: string | null;
+  nowIso: string;
+}): CartSlot {
+  if (input.status !== "active") {
+    return {
+      kind: "parked",
+      label: input.status === "quarantine" ? "Quarantine" : "Retired",
+      minutesRemaining: null,
+      detail: "Not on the competition cart.",
+    };
+  }
+
+  const usedMs = input.lastUsedAt ? Date.parse(input.lastUsedAt) : NaN;
+  const chargedMs = input.lastChargedAt ? Date.parse(input.lastChargedAt) : NaN;
+  const testedMs = input.lastTestedAt ? Date.parse(input.lastTestedAt) : NaN;
+
+  if (Number.isFinite(usedMs) && (!Number.isFinite(chargedMs) || usedMs > chargedMs)) {
+    return {
+      kind: "needs_charge",
+      label: "Needs charge",
+      minutesRemaining: null,
+      detail: "Last log was a match or practice — plug it in before it can cool.",
+    };
+  }
+
+  if (!Number.isFinite(chargedMs) || !input.lastChargedAt) {
+    return {
+      kind: "needs_charge",
+      label: "No charge logged",
+      minutesRemaining: null,
+      detail: "Log a charge to start the 15-minute cool-down slot.",
+    };
+  }
+
+  const elapsed = minutesSince(input.lastChargedAt, input.nowIso);
+  if (elapsed == null || elapsed < CART_COOLDOWN_MINUTES) {
+    const remaining = elapsed == null ? CART_COOLDOWN_MINUTES : Math.max(0, CART_COOLDOWN_MINUTES - elapsed);
+    return {
+      kind: "cooling",
+      label: "Cooling",
+      minutesRemaining: remaining,
+      detail: `Off the charger — wait ${remaining} min before a Beak test (hot voltage is a false high).`,
+    };
+  }
+
+  if (!Number.isFinite(testedMs) || testedMs <= chargedMs) {
+    return {
+      kind: "ready_to_test",
+      label: "Cool — test now",
+      minutesRemaining: 0,
+      detail: "Cooldown done. Battery Czar: Beak test, then write Ready.",
+    };
+  }
+
+  return {
+    kind: "ready",
+    label: "Ready",
+    minutesRemaining: 0,
+    detail: "Tested after cooldown — drive team can take this pack.",
+  };
+}
+
 /**
  * Ranks active packs for the next match: healthiest first, and among equals the
  * one used longest ago, so the fleet wears evenly. Non-active packs drop out.

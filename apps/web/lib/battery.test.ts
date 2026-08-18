@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   batteryHealth,
+  cartSlot,
   competitionReadiness,
   monthsBetween,
   parseBatteryAction,
@@ -123,6 +124,55 @@ describe("competitionReadiness", () => {
         lastInternalResistanceMohm: 12,
       }).ready,
     ).toBe(false);
+  });
+});
+
+describe("cartSlot", () => {
+  const now = "2026-03-07T18:00:00.000Z";
+
+  it("keeps a pack in cool-down for 15 minutes after a real charge log", () => {
+    const slot = cartSlot({
+      status: "active",
+      lastChargedAt: "2026-03-07T17:50:00.000Z",
+      lastUsedAt: "2026-03-07T16:00:00.000Z",
+      lastTestedAt: null,
+      nowIso: now,
+    });
+    expect(slot.kind).toBe("cooling");
+    expect(slot.minutesRemaining).toBe(5);
+  });
+
+  it("asks for a Beak test after cooldown when no post-charge measurement exists", () => {
+    const slot = cartSlot({
+      status: "active",
+      lastChargedAt: "2026-03-07T17:40:00.000Z",
+      lastUsedAt: "2026-03-07T16:00:00.000Z",
+      lastTestedAt: "2026-03-07T17:40:00.000Z",
+      nowIso: now,
+    });
+    expect(slot.kind).toBe("ready_to_test");
+  });
+
+  it("marks Ready only after a test logged after the charge", () => {
+    const slot = cartSlot({
+      status: "active",
+      lastChargedAt: "2026-03-07T17:30:00.000Z",
+      lastUsedAt: "2026-03-07T16:00:00.000Z",
+      lastTestedAt: "2026-03-07T17:50:00.000Z",
+      nowIso: now,
+    });
+    expect(slot.kind).toBe("ready");
+  });
+
+  it("never invents Ready when the pack just came off the robot", () => {
+    const slot = cartSlot({
+      status: "active",
+      lastChargedAt: "2026-03-07T12:00:00.000Z",
+      lastUsedAt: "2026-03-07T17:00:00.000Z",
+      lastTestedAt: "2026-03-07T12:20:00.000Z",
+      nowIso: now,
+    });
+    expect(slot.kind).toBe("needs_charge");
   });
 });
 

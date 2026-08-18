@@ -228,6 +228,7 @@ export default function RobotWeighInClient() {
     shell: shell === "empty" ? "ready" : shell,
     entryCount,
     overLimitCount,
+    playoffReweighCue: view?.status === "live" ? view.playoffReweighCue : null,
   });
   const buildHref = hubHref("/build", "robot-weigh-in", orgId);
   const showTiles = shouldShowRobotWeighInSummaryTiles(entryCount);
@@ -323,6 +324,12 @@ export default function RobotWeighInClient() {
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
+        </p>
+      ) : null}
+
+      {view.playoffReweighCue ? (
+        <p className="rwi-playoff-cue" role="status">
+          {view.playoffReweighCue}
         </p>
       ) : null}
 

@@ -33,7 +33,7 @@ const pillars: {
   },
   {
     title: "Business",
-    copy: "Budget, sponsors, grants, partners, award evidence.",
+    copy: "Season finance, budget, sponsors, grants, partners, award evidence.",
     href: "/for-teams",
   },
   {

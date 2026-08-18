@@ -35,6 +35,8 @@ describe("in-app notification prefs", () => {
     expect(prefKeyForNotificationType("sponsor_thank_you_due")).toBe("sponsorReminders");
     expect(prefKeyForNotificationType("sponsor_renewal_due")).toBe("sponsorReminders");
     expect(prefKeyForNotificationType("sponsor_followup_overdue")).toBe("sponsorReminders");
-    expect(prefKeyForNotificationType("direct_message")).toBeNull();
+    expect(DEFAULT_IN_APP_NOTIFICATION_PREFS.teamChat).toBe(true);
+    expect(prefKeyForNotificationType("team_chat")).toBe("teamChat");
+    expect(prefKeyForNotificationType("message_mention")).toBe("teamChat");
   });
 });

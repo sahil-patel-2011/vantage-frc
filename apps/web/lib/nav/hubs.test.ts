@@ -26,6 +26,7 @@ describe("product hubs", () => {
     const more = hubMoreTabs(business).map((tab) => tab.id);
     expect(hubPrimaryTabs(business).map((tab) => tab.id)).toEqual([
       "overview",
+      "finance",
       "budget",
       "orders",
       "sponsors",
@@ -111,6 +112,8 @@ describe("product hubs", () => {
     expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toContain(
       "alliance-selection-desk",
     );
+    expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toContain("pairwise");
+    expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toContain("team-tags");
     expect(hubFeaturedMoreTabs(hubById("team")).map((tab) => tab.id)).toContain(
       "season-planning-workspace",
     );

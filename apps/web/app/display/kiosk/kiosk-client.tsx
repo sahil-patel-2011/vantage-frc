@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  bumperBanner,
   countdownState,
   formatAlliance,
   hasEventCommandSignal,
   hasReadinessSignal,
   hasScoutingCoverageSignal,
   matchLabel,
+  ourBumperColor,
+  queueCue,
   rankLabel,
   recordLabel,
   widgetValue,
@@ -90,6 +93,7 @@ export default function KioskClient({
   const match = data.nextMatch;
   const prediction = data.prediction;
   const clock = countdownState(match?.scheduledTime, now);
+  const bumper = ourBumperColor(match, data.organization.teamNumber);
   const eventName = data.activeEvent?.name ?? "NO ACTIVE EVENT";
   const readiness = data.readiness;
 
@@ -145,10 +149,17 @@ export default function KioskClient({
             </article>
             <article>
               <span>COUNTDOWN</span>
-              <strong>{clock.label}</strong>
-              <em className={clock.leavePit ? "leave" : undefined}>
-                {clock.queueNow ? "QUEUE NOW" : clock.leavePit ? "LEAVE PIT NOW" : "STAY READY"}
+              <strong className={clock.queueSoon ? "queue-soon" : undefined}>{clock.label}</strong>
+              <em className={clock.queueNow ? "queue-now" : clock.queueSoon ? "queue-soon" : clock.leavePit ? "leave" : undefined}>
+                {queueCue(clock)}
               </em>
+            </article>
+            <article>
+              <span>BUMPERS</span>
+              <strong className={bumper === "red" ? "alliance-red" : bumper === "blue" ? "alliance-blue" : undefined}>
+                {bumperBanner(bumper)}
+              </strong>
+              <small>{match.scheduledTime ? "From TBA alliance lists — not invented" : "No TBA time; bumper still from alliance lists"}</small>
             </article>
             <article>
               <span>ALLIANCES</span>

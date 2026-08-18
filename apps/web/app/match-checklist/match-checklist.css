@@ -40,7 +40,17 @@
 .mcl-badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border:1px solid var(--app-line);border-radius:999px;background:var(--app-soft);color:var(--app-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .mcl-badge.ready{color:#245f46;background:#eaf5ef;border-color:#93bda9}
 .mcl-badge.open{color:#805a17;background:#fff7e4;border-color:#e0c48a}
-.mcl-badge.progress{color:#3d4f66;background:#eef2f7;border-color:#b7c4d4}
+.mcl-badge.bumper.red{color:#7a1f1a;background:#fde8e6;border-color:#e3a39d}
+.mcl-badge.bumper.blue{color:#1d3f73;background:#e6eefb;border-color:#9bb3dc}
+.mcl-bumper-cue{margin:8px 0 0;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.4;border:1px solid var(--app-line);background:var(--app-soft)}
+.mcl-bumper-cue.red{color:#7a1f1a;background:#fde8e6;border-color:#e3a39d}
+.mcl-bumper-cue.blue{color:#1d3f73;background:#e6eefb;border-color:#9bb3dc}
+.mcl-upcoming{display:flex;flex-wrap:wrap;gap:8px}
+.mcl-upcoming-chip{min-height:32px;padding:4px 10px;border-radius:999px;border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-ink);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.mcl-upcoming-chip.red{color:#7a1f1a;background:#fde8e6;border-color:#e3a39d}
+.mcl-upcoming-chip.blue{color:#1d3f73;background:#e6eefb;border-color:#9bb3dc}
+.mcl-item.bumper-red{border-color:#e3a39d}
+.mcl-item.bumper-blue{border-color:#9bb3dc}
 .mcl-timer{font-variant-numeric:tabular-nums;font-weight:800;font-size:13px;color:var(--app-ink)}
 .mcl-items{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .mcl-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-ink);font:inherit;text-align:left;cursor:pointer}

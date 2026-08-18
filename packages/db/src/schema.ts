@@ -202,6 +202,9 @@ export const profiles = pgTable("profiles", {
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
   termsVersion: text("terms_version"),
+  recoveryEmail: text("recovery_email"),
+  phoneE164: text("phone_e164"),
+  phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
 });
 
 /** Opt-in email categories (all default false). Distinct from profiles.notification_prefs. */

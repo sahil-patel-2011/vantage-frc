@@ -111,3 +111,25 @@ export function triageRepair(input: TriageInput): TriageResult {
     prestageRecommended: true,
   };
 }
+
+/**
+ * CD inspectors (I104): a fix or swap changes the robot. Cue only while the report is still
+ * open/staged — never invent that a resolved repair skipped reinspection.
+ */
+export function needsReinspectionBeforeQueue(input: {
+  decision: TriageDecision;
+  status: TriageStatus;
+}): boolean {
+  if (input.decision === "monitor") return false;
+  return input.status === "open" || input.status === "staged";
+}
+
+export function reinspectionCue(input: {
+  decision: TriageDecision;
+  status: TriageStatus;
+  subsystemName?: string;
+}): string | null {
+  if (!needsReinspectionBeforeQueue(input)) return null;
+  const part = input.subsystemName?.trim() ? ` (${input.subsystemName.trim()})` : "";
+  return `I104: get this repair${part} reinspected before you queue — playing a changed robot that did not pass inspection can DQ the match.`;
+}

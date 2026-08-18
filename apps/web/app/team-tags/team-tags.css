@@ -1,0 +1,73 @@
+.team-tags-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.team-tags-actions {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-tags-actions li {
+  display: grid;
+  grid-template-columns: minmax(10rem, auto) 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.team-tags-actions li span {
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.team-tags-form {
+  display: grid;
+  grid-template-columns: 7rem 11rem 1fr auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 12px;
+}
+
+.team-tags-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.team-tags-form input,
+.team-tags-form select {
+  min-height: 44px;
+}
+
+.team-tags-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 12px;
+}
+
+.team-tags-board ul {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-tags-board li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .team-tags-form,
+  .team-tags-actions li,
+  .team-tags-board li {
+    grid-template-columns: 1fr;
+  }
+}

@@ -13,6 +13,15 @@ export type ShiftBalancerAssignment = {
   station: string;
   scoutId: string;
   scoutName: string;
+  /** TBA match key when this plan was built from the event schedule. */
+  matchKey?: string;
+  teamKey?: string;
+  teamNumber?: number;
+  matchLabel?: string;
+  /** TBA predicted/event time when the plan was overlaid on a real schedule. */
+  scheduledAt?: string;
+  /** Minutes until the next qual when that gap is a natural break (lunch / field downtime). */
+  breakAfterMinutes?: number;
 };
 
 export type ShiftBalancerPlan = {

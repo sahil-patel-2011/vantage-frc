@@ -5,7 +5,7 @@ import { EmptyState, PageHeader } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
-import { BATTERY_LOG_KINDS, type BatteryStatus, type HealthStatus } from "../../lib/battery";
+import { BATTERY_LOG_KINDS, type BatteryStatus, type CartSlot, type HealthStatus } from "../../lib/battery";
 import {
   BATTERIES_BUILD_RELATED_INCLUDE,
   BATTERIES_TEAM_RELATED_INCLUDE,
@@ -33,6 +33,7 @@ type Pack = {
   lastChargedAt: string | null;
   health: { status: HealthStatus; score: number; reasons: string[] };
   readiness: { ready: boolean; reasons: string[] };
+  cartSlot: CartSlot;
 };
 
 type Log = {
@@ -56,7 +57,7 @@ type View =
       packs: Pack[];
       logs: Log[];
       rotation: string[];
-      summary: { active: number; competitionReady: number; needAttention: number; retired: number };
+      summary: { active: number; competitionReady: number; needAttention: number; retired: number; cartReady: number; cartCooling: number };
     };
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
@@ -377,9 +378,13 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
           <strong>{view.summary.needAttention}</strong>
           <span>Need attention</span>
         </article>
-        <article className="batt-summary-tile">
-          <strong>{measuredCount}</strong>
-          <span>With real readings</span>
+        <article className="batt-summary-tile ready">
+          <strong>{view.summary.cartReady}</strong>
+          <span>Cart ready</span>
+        </article>
+        <article className={`batt-summary-tile${view.summary.cartCooling ? " warn" : ""}`}>
+          <strong>{view.summary.cartCooling}</strong>
+          <span>Cooling</span>
         </article>
       </section>
 
@@ -395,6 +400,31 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
 
       <div className="batt-layout">
         <div className="batt-panel">
+          {view.packs.some((pack) => pack.cartSlot.kind !== "parked") ? (
+            <section className="app-card soft-panel">
+              <h2>Competition cart</h2>
+              <p className="app-muted">
+                Killer Bees cool-down: 15 minutes off the charger before a Beak test, then Ready. Slots stay empty until
+                you log a real charge — never DEMO ready packs.
+              </p>
+              <ul className="batt-cart">
+                {view.packs
+                  .filter((pack) => pack.cartSlot.kind !== "parked")
+                  .map((pack) => (
+                    <li key={pack.id} className={`batt-cart-row ${pack.cartSlot.kind}`}>
+                      <div>
+                        <strong>{pack.label}</strong>
+                        <small className="app-muted">{pack.cartSlot.detail}</small>
+                      </div>
+                      <span className={`batt-badge ${pack.cartSlot.kind === "ready" ? "ready" : pack.cartSlot.kind === "cooling" ? "aging" : "unmeasured"}`}>
+                        {pack.cartSlot.label}
+                        {pack.cartSlot.minutesRemaining ? ` · ${pack.cartSlot.minutesRemaining}m` : ""}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </section>
+          ) : null}
           {view.packs.length > 0 && rotationPacks.length === 0 ? (
             <EmptyState
               soft
@@ -476,6 +506,13 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                           <span className={`batt-badge ${pack.readiness.ready ? "ready" : "block"}`}>
                             {pack.readiness.ready ? "Event ready" : "Not ready"}
                           </span>
+                          {pack.cartSlot.kind !== "parked" ? (
+                            <span
+                              className={`batt-badge ${pack.cartSlot.kind === "ready" ? "ready" : pack.cartSlot.kind === "cooling" ? "aging" : "unmeasured"}`}
+                            >
+                              {pack.cartSlot.label}
+                            </span>
+                          ) : null}
                           {pack.status !== "active" ? <span className="batt-badge">{pack.status}</span> : null}
                           {pack.assignment ? <span className="batt-badge">{pack.assignment}</span> : null}
                         </div>

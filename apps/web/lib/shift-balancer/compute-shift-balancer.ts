@@ -1,5 +1,11 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { DEFAULT_STATIONS, generateRotation, summarizePlan } from ".";
+import {
+  DEFAULT_STATIONS,
+  generateRotation,
+  overlayScheduleOnRotation,
+  scheduleSlotsFromQuals,
+  summarizePlan,
+} from ".";
 import type { ShiftBalancerPlan, ShiftBalancerScout, ShiftBalancerSummary } from "./types";
 
 export type ShiftBalancerSetupStep = {
@@ -20,6 +26,8 @@ export type ShiftBalancerView =
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      eventKey: string | null;
+      qualMatchCount: number;
       scouts: ShiftBalancerScout[];
       plans: ShiftBalancerPlan[];
       latestSummary: ShiftBalancerSummary | null;
@@ -96,7 +104,7 @@ export async function computeShiftBalancerView(
     };
   }
 
-  const [scoutResult, planResult] = await Promise.all([
+  const [scoutResult, planResult, eventResult, qualResult] = await Promise.all([
     client.query<ScoutRow>(
       `SELECT id, name, active
        FROM shift_balancer_scouts
@@ -112,6 +120,17 @@ export async function computeShiftBalancerView(
        WHERE org_id = $1
        ORDER BY created_at DESC
        LIMIT 20`,
+      [org.orgId],
+    ),
+    client.query<{ eventKey: string | null }>(
+      `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
+      [org.orgId],
+    ),
+    client.query<{ qualCount: number }>(
+      `SELECT count(*)::int AS "qualCount"
+       FROM matches_ref
+       WHERE event_key = (SELECT active_event_key FROM org_active_context WHERE org_id = $1)
+         AND comp_level = 'qm'`,
       [org.orgId],
     ),
   ]);
@@ -132,6 +151,8 @@ export async function computeShiftBalancerView(
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    eventKey: eventResult.rows[0]?.eventKey ?? null,
+    qualMatchCount: Number(qualResult.rows[0]?.qualCount) || 0,
     scouts,
     plans,
     latestSummary,
@@ -181,6 +202,7 @@ export async function generatePlan(
     matchCount: number;
     stations: string[];
     maxConsecutiveMatches: number;
+    useEventSchedule?: boolean;
   },
 ): Promise<void> {
   const scoutResult = await client.query<ScoutRow>(
@@ -189,12 +211,59 @@ export async function generatePlan(
   );
   const scouts = scoutResult.rows.map(mapScout);
   const stations = input.stations.length > 0 ? input.stations : DEFAULT_STATIONS;
-  const assignments = generateRotation({
-    scouts,
-    matchCount: input.matchCount,
-    stations,
-    maxConsecutiveMatches: input.maxConsecutiveMatches,
-  });
+
+  let matchCount = input.matchCount;
+  let assignments: ReturnType<typeof generateRotation>;
+
+  if (input.useEventSchedule) {
+    const eventRow = await client.query<{ eventKey: string }>(
+      `SELECT active_event_key AS "eventKey"
+       FROM org_active_context
+       WHERE org_id = $1 AND active_event_key IS NOT NULL`,
+      [input.orgId],
+    );
+    const eventKey = eventRow.rows[0]?.eventKey ?? null;
+    if (!eventKey) {
+      throw new Error("Set an active event on Command before generating from the event schedule.");
+    }
+    const matchRows = await client.query<{
+      matchKey: string;
+      matchNumber: number;
+      redAlliance: unknown;
+      blueAlliance: unknown;
+      scheduledAt: string | null;
+    }>(
+      `SELECT match_key AS "matchKey", match_number AS "matchNumber",
+              red_alliance AS "redAlliance", blue_alliance AS "blueAlliance",
+              COALESCE(predicted_time, event_time)::text AS "scheduledAt"
+       FROM matches_ref
+       WHERE event_key = $1 AND comp_level = 'qm'
+       ORDER BY match_number`,
+      [eventKey],
+    );
+    const slots = scheduleSlotsFromQuals(matchRows.rows);
+    const qualMatches = new Set(slots.map((slot) => slot.matchNumber)).size;
+    if (qualMatches === 0) {
+      throw new Error("No qualification schedule cached for the active event. Sync TBA or pick an event on Command.");
+    }
+    matchCount = qualMatches;
+    assignments = overlayScheduleOnRotation(
+      generateRotation({
+        scouts,
+        matchCount,
+        stations,
+        maxConsecutiveMatches: input.maxConsecutiveMatches,
+      }),
+      slots,
+    );
+  } else {
+    assignments = generateRotation({
+      scouts,
+      matchCount,
+      stations,
+      maxConsecutiveMatches: input.maxConsecutiveMatches,
+    });
+  }
 
   await client.query(
     `INSERT INTO shift_balancer_plans
@@ -203,7 +272,7 @@ export async function generatePlan(
     [
       input.orgId,
       input.label,
-      input.matchCount,
+      matchCount,
       stations,
       input.maxConsecutiveMatches,
       JSON.stringify(assignments),

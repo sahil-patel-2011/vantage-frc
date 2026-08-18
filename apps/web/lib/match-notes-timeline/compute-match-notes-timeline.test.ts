@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { computeMatchNotesTimelineView } from "./compute-match-notes-timeline";
+import { actionTrackerStrip, parseActionRanges } from ".";
 
 type QueryCall = { text: string; values: unknown[] };
 
@@ -99,5 +100,24 @@ describe("computeMatchNotesTimelineView", () => {
     expect(view.summary.totalMatches).toBe(2);
     expect(view.summary.byCategory.find((c) => c.category === "issue")?.count).toBe(1);
     expect(view.summary.byPhase.find((p) => p.phase === "endgame")?.count).toBe(1);
+  });
+});
+
+describe("QRScout action tracker", () => {
+  it("parses hold ranges and paints a 1D strip without inventing actions", () => {
+    expect(parseActionRanges("12-18,22-30")).toEqual([
+      { start: 12, end: 18 },
+      { start: 22, end: 30 },
+    ]);
+    expect(parseActionRanges("not a range")).toEqual([]);
+    const strip = actionTrackerStrip(
+      [
+        { start: 12, end: 18, code: "s" },
+        { start: 0, end: 4, code: "c" },
+      ],
+      20,
+      5,
+    );
+    expect(strip).toEqual(["c", "", "s", "s"]);
   });
 });

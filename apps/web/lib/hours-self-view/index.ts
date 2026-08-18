@@ -7,6 +7,7 @@ import type {
   HourLogKind,
   HoursSelfEntry,
   HoursSelfSummary,
+  ShopPresence,
 } from "./types";
 
 export const HOUR_LOG_KINDS: HourLogKind[] = ["build", "meeting", "outreach", "competition", "other"];
@@ -66,6 +67,22 @@ export function minutesBetween(clockIn: string, clockOut: string | null): number
   const end = Date.parse(clockOut);
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
   return Math.round((end - start) / 60000);
+}
+
+/** Open clock-ins on the shop floor right now — never invents names or hours. */
+export function summarizeWhoIsHere(
+  rows: Array<{ userId: string; displayName: string; kind: HourLogKind; clockIn: string }>,
+  nowIso: string,
+): ShopPresence[] {
+  return rows
+    .map((row) => ({
+      userId: row.userId,
+      displayName: row.displayName.trim() || "Member",
+      kind: row.kind,
+      clockIn: row.clockIn,
+      minutesOpen: minutesBetween(row.clockIn, nowIso),
+    }))
+    .sort((a, b) => a.clockIn.localeCompare(b.clockIn));
 }
 
 /**

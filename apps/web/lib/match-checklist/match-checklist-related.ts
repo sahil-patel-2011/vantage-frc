@@ -25,6 +25,7 @@ export type MatchChecklistNextAction = {
 export function matchChecklistNextActions(input: {
   orgId?: string | null;
   runs?: MatchChecklistRun[];
+  upcomingMatches?: Array<{ label: string; bumperColor: "red" | "blue" }>;
 }): MatchChecklistNextAction[] {
   const orgId = input.orgId ?? null;
   const runs = input.runs ?? [];
@@ -43,8 +44,20 @@ export function matchChecklistNextActions(input: {
 
   const actions: MatchChecklistNextAction[] = [];
   const open = runs.filter((run) => !run.allDone);
+  const upcoming = input.upcomingMatches ?? [];
+  const nextHang = upcoming.find(
+    (match) => !runs.some((run) => run.matchLabel === match.label && !run.allDone),
+  );
 
-  if (runs.length === 0) {
+  if (runs.length === 0 && nextHang) {
+    actions.push({
+      id: "hang-bumpers",
+      label: `Hang ${nextHang.bumperColor.toUpperCase()} bumpers for ${nextHang.label}`,
+      detail: "Color comes from TBA alliance lists — start the checklist once the correct set is on.",
+      href: hubHref("/competition", "match-checklist", orgId),
+      primary: true,
+    });
+  } else if (runs.length === 0) {
     actions.push({
       id: "start-run",
       label: "Start your first checklist",

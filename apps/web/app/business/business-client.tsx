@@ -36,6 +36,7 @@ import { PartnerPlacementsPanel } from "./partner-placements-panel";
 import { SponsorPipelinePanel } from "./sponsor-pipeline-panel";
 import "../product-hub.css";
 const OrdersClient = dynamic(() => import("../orders/orders-client"), { ssr: false });
+const SeasonFinanceClient = dynamic(() => import("./season-finance-client"), { ssr: false });
 const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-client"), { ssr: false });
 
 const BUSINESS_HUB = hubById("business");
@@ -44,6 +45,7 @@ const MORE_TABS = hubMoreTabs(BUSINESS_HUB);
 
 type Tab =
   | "overview"
+  | "finance"
   | "budget"
   | "orders"
   | "sponsors"
@@ -277,8 +279,8 @@ export default function BusinessClient() {
         title="Business"
         description={
           live
-            ? `Budget, purchases, sponsors, grants, and award evidence for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
-            : "Budget, purchases, sponsors, grants, and award evidence — one season source of truth."
+            ? `Season finance, budget, purchases, sponsors, grants, and award evidence for ${live.teamNumber ? `FRC ${live.teamNumber}` : live.orgName} · ${live.seasonYear}.`
+            : "Season finance, budget, purchases, sponsors, grants, and award evidence — one season source of truth."
         }
       >
         {live ? (
@@ -392,6 +394,11 @@ export default function BusinessClient() {
       {live ? (
         <>
           {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
+          {tab === "finance" ? (
+            <div className="product-hub-panel">
+              <SeasonFinanceClient embedded orgId={live.orgId} seasonYear={live.seasonYear} />
+            </div>
+          ) : null}
           {tab === "budget" ? <Budget view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
           {tab === "orders" ? (
             <div className="product-hub-panel">
@@ -498,6 +505,7 @@ function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: Tab) => 
             <div><span>Actually ordered</span><strong>{money(view.budget.spentCents)}</strong></div>
             <div><span>Fundraising actual</span><strong>{money(progress.actualCents)}</strong></div>
           </div>
+          <button className="app-button" type="button" onClick={() => setTab("finance")}>Open season finance</button>
           <button className="app-button secondary" type="button" onClick={() => setTab("budget")}>Open budget</button>
           <a className="app-button secondary" href={businessOrdersHref} style={{ marginLeft: 8 }}>Purchase orders</a>
         </article>
@@ -576,6 +584,7 @@ function Budget({ view, busy, submit, mutate }: { view: BusinessView; busy: bool
   return <div className="biz-stack">
     <div className="biz-detail-link">
       <span>Need help reading the season budget against open purchase requests?</span>
+      <a href={`/business?orgId=${encodeURIComponent(view.orgId)}&tab=finance`}>Season finance →</a>
       <a href={financeAiHref}>Finance AI →</a>
       <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season Costs →</a>
     </div>

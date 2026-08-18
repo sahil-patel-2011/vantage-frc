@@ -50,7 +50,7 @@ describe("product-nav", () => {
       "My Day",
       "Forms",
       "Checklist",
-      "Messages",
+      "Team chat",
     ]);
   });
 

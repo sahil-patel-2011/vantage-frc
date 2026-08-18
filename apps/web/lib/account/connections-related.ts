@@ -2,7 +2,7 @@ import { withOrgHref } from "../nav/product-nav";
 import { githubConnectionHref } from "../github/github-related";
 
 /** Soft-UI connector ids on Account → Connections (never DEMO connected). */
-export type ConnectionConnectorId = "google" | "tba" | "onshape" | "discord" | "github";
+export type ConnectionConnectorId = "google" | "tba" | "onshape" | "discord" | "github" | "slack";
 
 /** Honest Soft-UI status — `connected` only when a real row/env proof exists. */
 export type ConnectionConnectorStatus = "connected" | "available" | "empty" | "setup_required";
@@ -21,6 +21,7 @@ export const CONNECTIONS_RELATED_LINKS = [
   { id: "account", label: "Account", kind: "path" as const, path: "/account" },
   { id: "cad", label: "CAD Connections", kind: "path" as const, path: "/cad/connections" },
   { id: "discord", label: "Discord", kind: "path" as const, path: "/team/discord" },
+  { id: "slack", label: "Slack", kind: "path" as const, path: "/team/slack" },
   { id: "tba", label: "Team Data", kind: "path" as const, path: "/team/data" },
   { id: "github", label: "Team admin · GitHub", kind: "path" as const, path: "/team/admin", hash: "#github-connection" },
   { id: "workspace", label: "Workspace", kind: "path" as const, path: "/workspace" },
@@ -35,7 +36,7 @@ export type ConnectionsRelatedLink = {
 };
 
 /** Focused Soft-UI strip — Account · CAD · Discord. */
-export const CONNECTIONS_RELATED_INCLUDE: ConnectionsRelatedId[] = ["account", "cad", "discord"];
+export const CONNECTIONS_RELATED_INCLUDE: ConnectionsRelatedId[] = ["account", "cad", "discord", "slack"];
 
 /** Cross-links for Connections Soft-UI (never DEMO bridge/OAuth status). */
 export function connectionsRelatedLinks(
@@ -166,6 +167,7 @@ export function connectionsNextActions(input: {
   onshapeStatus?: ConnectionConnectorStatus;
   discordStatus?: ConnectionConnectorStatus;
   githubStatus?: ConnectionConnectorStatus;
+  slackStatus?: ConnectionConnectorStatus;
 }): ConnectionsNextAction[] {
   const orgId = input.orgId ?? null;
 
@@ -224,6 +226,16 @@ export function connectionsNextActions(input: {
       label: "Link Discord",
       detail: "Add a channel webhook (or bot + channel id) on the Discord settings page — never DEMO sync %.",
       href: withOrgHref("/team/discord", orgId),
+      primary: actions.length === 0,
+    });
+  }
+
+  if (input.slackStatus === "setup_required" || input.slackStatus === "empty") {
+    actions.push({
+      id: "slack",
+      label: "Link Slack",
+      detail: "Paste a channel webhook so Vantage team chat and Slack stay in sync — never DEMO history.",
+      href: withOrgHref("/team/slack", orgId),
       primary: actions.length === 0,
     });
   }
@@ -292,6 +304,10 @@ export function buildConnectionConnectors(input: {
     status: ConnectionConnectorStatus;
     detail: string;
   };
+  slack?: {
+    status: ConnectionConnectorStatus;
+    detail: string;
+  };
 }): ConnectionConnectorView[] {
   const orgId = input.orgId ?? null;
 
@@ -332,6 +348,14 @@ export function buildConnectionConnectors(input: {
       detail: input.discord?.detail ?? "Checking Discord bridge…",
       href: orgId ? withOrgHref("/team/discord", orgId) : "/workspace",
       cta: orgId ? "Open Discord" : "Select workspace",
+    },
+    {
+      id: "slack",
+      label: "Slack",
+      status: input.slack?.status ?? (orgId ? "empty" : "setup_required"),
+      detail: input.slack?.detail ?? "Checking Slack bridge…",
+      href: orgId ? withOrgHref("/team/slack", orgId) : "/workspace",
+      cta: orgId ? "Open Slack" : "Select workspace",
     },
     {
       id: "github",

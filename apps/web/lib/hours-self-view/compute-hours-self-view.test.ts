@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
 import { computeHoursSelfViewView } from "./compute-hours-self-view";
-import { evaluateBiometricGate, summarizeHoursSelfEntries } from ".";
+import { evaluateBiometricGate, summarizeHoursSelfEntries, summarizeWhoIsHere } from ".";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -32,6 +32,18 @@ describe("computeHoursSelfViewView", () => {
     const client = makeClient((sql) => {
       if (sql.includes("FROM memberships")) {
         return { rows: [{ orgId: ORG, teamNumber: 254 }] };
+      }
+      if (sql.includes("clock_out IS NULL")) {
+        return {
+          rows: [
+            {
+              userId: USER,
+              displayName: "Ada",
+              kind: "meeting",
+              clockIn: "2026-01-12T18:00:00.000Z",
+            },
+          ],
+        };
       }
       if (sql.includes("FROM hour_logs")) {
         return {
@@ -93,6 +105,9 @@ describe("computeHoursSelfViewView", () => {
     expect(view.summary.openEntry?.id).toBe("e2");
     expect(view.kioskSessions).toHaveLength(1);
     expect(view.kioskSessions[0]?.isLocked).toBe(true);
+    expect(view.presentNow).toHaveLength(1);
+    expect(view.presentNow[0]?.displayName).toBe("Ada");
+    expect(view.presentNow[0]?.kind).toBe("meeting");
     expect(view.biometricConsent?.status).toBe("granted");
     expect(view.biometricGate.allowed).toBe(true);
   });
@@ -110,6 +125,22 @@ describe("summarizeHoursSelfEntries", () => {
     expect(summary.totalHours).toBe(3);
     expect(summary.openEntry?.id).toBe("c");
     expect(summary.byKind.find((row) => row.kind === "build")?.hours).toBe(3);
+  });
+});
+
+describe("summarizeWhoIsHere", () => {
+  it("computes open minutes from real clock-ins and never invents names", () => {
+    const present = summarizeWhoIsHere(
+      [
+        { userId: "b", displayName: "  ", kind: "build", clockIn: "2026-01-12T19:00:00.000Z" },
+        { userId: "a", displayName: "Ada", kind: "meeting", clockIn: "2026-01-12T18:00:00.000Z" },
+      ],
+      "2026-01-12T20:00:00.000Z",
+    );
+
+    expect(present.map((row) => row.userId)).toEqual(["a", "b"]);
+    expect(present[0]).toMatchObject({ displayName: "Ada", minutesOpen: 120 });
+    expect(present[1]).toMatchObject({ displayName: "Member", minutesOpen: 60 });
   });
 });
 

@@ -19,6 +19,33 @@ export function robotWeighInStationLabel(station: RobotWeighInStation): string {
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
+/** CD 2026: traditional playoff re-weigh is now codified. Shown only when TBA has unplayed elims. */
+export const PLAYOFF_REWEIGH_CUE =
+  "Playoffs are on the schedule. Log an Event inspection weigh-in after alliance selection — weight stays blank until you step on the scale.";
+
+function calendarDayUtc(value: string): string | null {
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+  return match?.[1] ?? null;
+}
+
+/**
+ * Cue a playoff-day Event inspection weigh-in from TBA elims + real logs only.
+ * Never invents playoffs or a scale reading. Uses existing `event_inspection` station
+ * (no new CHECK value) so Thursday shop/inspection logs do not clear Saturday elims.
+ */
+export function playoffReweighCue(input: {
+  nextUnplayedPlayoffAt: string | null;
+  latestEventInspectionAt: string | null;
+  hasAnyEntry: boolean;
+}): string | null {
+  if (!input.hasAnyEntry || !input.nextUnplayedPlayoffAt) return null;
+  const playoffDay = calendarDayUtc(input.nextUnplayedPlayoffAt);
+  if (!playoffDay) return null;
+  const inspectDay = input.latestEventInspectionAt ? calendarDayUtc(input.latestEventInspectionAt) : null;
+  if (inspectDay && inspectDay >= playoffDay) return null;
+  return PLAYOFF_REWEIGH_CUE;
+}
+
 /**
  * Summarize weigh-in entries into a trend vs. the weight limit. Entries must already be
  * sorted newest-first (as returned by the compute layer's query). Returns zeroed fields
