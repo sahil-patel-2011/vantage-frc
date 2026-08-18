@@ -40,6 +40,7 @@ type ObservedDraft = {
   deviceName: string;
   wireGauge: WireGauge;
   breakerAmps: string;
+  multiWireTerminal: boolean;
 };
 
 const emptyExpectedRow = (): ExpectedDraft => ({
@@ -55,6 +56,7 @@ const emptyObservedRow = (): ObservedDraft => ({
   deviceName: "",
   wireGauge: "18",
   breakerAmps: String(STANDARD_BREAKER_AMPS[3] ?? 15),
+  multiWireTerminal: false,
 });
 
 export default function WiringDiagnoserClient() {
@@ -330,6 +332,7 @@ function NewCheckForm({
               deviceName: row.deviceName,
               wireGauge: row.wireGauge,
               breakerAmps: Number(row.breakerAmps) || 0,
+              multiWireTerminal: Boolean(row.multiWireTerminal),
             })),
         });
         setBoardName("");
@@ -425,13 +428,16 @@ function NewCheckForm({
 
       <div>
         <strong className="app-muted">Observed circuits (from the board photo)</strong>
+        <p className="app-muted" style={{ margin: "4px 0 0" }}>
+          Tick two wires in a PD terminal only after you see it — R618 / Q58. Never invent a stuffed ferrule.
+        </p>
         <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
           {observed.map((row, index) => (
             <div
               key={index}
               style={{
                 display: "grid",
-                gridTemplateColumns: "80px 1fr 90px 110px auto",
+                gridTemplateColumns: "80px 1fr 90px 110px auto auto",
                 gap: 8,
                 alignItems: "center",
               }}
@@ -462,6 +468,18 @@ function NewCheckForm({
                   </option>
                 ))}
               </select>
+              <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center", whiteSpace: "nowrap" }}>
+                <input
+                  type="checkbox"
+                  checked={row.multiWireTerminal}
+                  onChange={(e) =>
+                    setObserved((prev) =>
+                      prev.map((item, i) => (i === index ? { ...item, multiWireTerminal: e.target.checked } : item)),
+                    )
+                  }
+                />
+                2 wires in PD terminal
+              </label>
               <button
                 type="button"
                 className="text-button"
