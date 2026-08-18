@@ -46,6 +46,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /player station/i.test(label))).toBe(true);
     expect(labels.some((label) => /strain-relief/i.test(label))).toBe(true);
     expect(labels.some((label) => /main breaker/i.test(label))).toBe(true);
+    expect(labels.some((label) => /microfiber/i.test(label))).toBe(true);
   });
 });
 

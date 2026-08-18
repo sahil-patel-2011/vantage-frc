@@ -54,8 +54,24 @@ describe("match checklist bumper cue (CD pit color)", () => {
       "ds_power",
       "ds_ethernet",
       "ds_estop",
+      "lenses",
+      "bolts",
     ]);
+    expect(fresh.find((item) => item.key === "lenses")?.label).toMatch(/fuzz/i);
     expect(fresh.find((item) => item.key === "ds_estop")?.label).toMatch(/Game Bar/i);
+
+    const withDs = sanitizeChecklistItems([
+      { key: "bumper", label: "Bumpers secured", done: true, checkedAt: "2026-03-21T15:00:00.000Z" },
+      { key: "battery", label: "Battery seated & strap (not zip ties)", done: true, checkedAt: "2026-03-21T15:00:00.000Z" },
+      { key: "tether", label: "Tether / e-stop clipped", done: true, checkedAt: "2026-03-21T15:00:00.000Z" },
+      { key: "code", label: "Code deployed & radio linked", done: true, checkedAt: "2026-03-21T15:00:00.000Z" },
+      { key: "sb50", label: "SB50 locked (zip tie / clip)", done: true, checkedAt: "2026-03-21T15:01:00.000Z" },
+      { key: "ds_power", label: "DS laptop charging (never sleep)", done: true, checkedAt: "2026-03-21T15:01:00.000Z" },
+      { key: "ds_ethernet", label: "Ethernet seated + strain-relieved", done: true, checkedAt: "2026-03-21T15:01:00.000Z" },
+      { key: "ds_estop", label: "Spacebar E-Stop works (Game Bar off)", done: true, checkedAt: "2026-03-21T15:01:00.000Z" },
+    ]);
+    expect(withDs.map((item) => item.key)).not.toContain("lenses");
+    expect(withDs.every((item) => item.done)).toBe(true);
 
     const legacy = sanitizeChecklistItems([
       { key: "bumper", label: "Bumpers secured", done: true, checkedAt: "2026-03-21T15:00:00.000Z" },

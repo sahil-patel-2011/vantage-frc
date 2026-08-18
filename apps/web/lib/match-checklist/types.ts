@@ -10,7 +10,9 @@ export type ChecklistItemKey =
   | "sb50"
   | "ds_power"
   | "ds_ethernet"
-  | "ds_estop";
+  | "ds_estop"
+  | "lenses"
+  | "bolts";
 
 export type ChecklistItem = {
   key: ChecklistItemKey;

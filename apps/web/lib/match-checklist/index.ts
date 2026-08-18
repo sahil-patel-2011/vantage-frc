@@ -15,6 +15,8 @@ export const CHECKLIST_ITEM_KEYS: ChecklistItemKey[] = [
   "ds_power",
   "ds_ethernet",
   "ds_estop",
+  "lenses",
+  "bolts",
 ];
 
 const ITEM_LABELS: Record<ChecklistItemKey, string> = {
@@ -26,6 +28,8 @@ const ITEM_LABELS: Record<ChecklistItemKey, string> = {
   ds_power: "DS laptop charging (never sleep)",
   ds_ethernet: "Ethernet seated + strain-relieved",
   ds_estop: "Spacebar E-Stop works (Game Bar off)",
+  lenses: "Vision lenses wiped (ball fuzz)",
+  bolts: "Bolt check (swerve / bumpers)",
 };
 
 const LEVEL_LABELS: Record<string, string> = { qm: "Qual", qf: "QF", sf: "SF", f: "Final" };
@@ -107,12 +111,14 @@ export function applyBumperCue(items: ChecklistItem[], color: BumperColor | null
     if (item.key === "ds_power") return { ...item, label: ITEM_LABELS.ds_power };
     if (item.key === "ds_ethernet") return { ...item, label: ITEM_LABELS.ds_ethernet };
     if (item.key === "ds_estop") return { ...item, label: ITEM_LABELS.ds_estop };
+    if (item.key === "lenses") return { ...item, label: ITEM_LABELS.lenses };
+    if (item.key === "bolts") return { ...item, label: ITEM_LABELS.bolts };
     return item;
   });
 }
 
 /**
- * Keep whatever keys were stored. Never append newer items (SB50 / DS laptop) as
+ * Keep whatever keys were stored. Never append newer items (SB50 / DS / lenses) as
  * unchecked holes on a completed older run.
  */
 export function keysForStoredChecklist(raw: unknown): ChecklistItemKey[] {
