@@ -51,6 +51,8 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /ferrule/i.test(label))).toBe(true);
     expect(labels.some((label) => /heat shrink/i.test(label))).toBe(true);
     expect(labels.some((label) => /CANivore/i.test(label))).toBe(true);
+    expect(labels.some((label) => /Wago 221/i.test(label) && /11 mm/i.test(label))).toBe(true);
+    expect(labels.some((label) => /NEO encoder\/hall/i.test(label))).toBe(true);
     expect(labels.some((label) => /solid-core/i.test(label))).toBe(true);
     expect(labels.some((label) => /through-bolts/i.test(label))).toBe(true);
   });
