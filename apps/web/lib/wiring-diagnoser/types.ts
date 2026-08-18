@@ -5,7 +5,7 @@
 // miswires, undersized breakers, and over-spec (near-trip) channels. Everything is grounded only
 // in the circuits the team supplies — nothing is inferred from the photo pixels themselves.
 
-export type WireGauge = "22" | "20" | "18" | "16" | "14" | "12" | "10";
+export type WireGauge = "22" | "20" | "18" | "16" | "14" | "12" | "10" | "6" | "4";
 
 export type DiagnosticFlagType =
   | "miswire"
@@ -13,7 +13,8 @@ export type DiagnosticFlagType =
   | "unexpected_circuit"
   | "undersized_breaker"
   | "wire_undersized_for_breaker"
-  | "oversized_channel";
+  | "oversized_channel"
+  | "pdh_4awg_feed";
 
 export type DiagnosticSeverity = "info" | "warning" | "critical";
 
