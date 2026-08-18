@@ -572,6 +572,9 @@ function NewCheckForm({
   const [isolationEventRecorded, setIsolationEventRecorded] = useState(false);
   const [frameIsolated120, setFrameIsolated120] = useState(false);
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
+  const [rslEventRecorded, setRslEventRecorded] = useState(false);
+  const [rslVisible36, setRslVisible36] = useState(false);
+  const [rslOnRioPort, setRslOnRioPort] = useState(false);
 
   const setWeightField = (index: number, key: keyof WeightItemDraft) => (event: { target: { value: string } }) =>
     setWeightItems((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: event.target.value } : row)));
@@ -653,6 +656,9 @@ function NewCheckForm({
             isolationEventRecorded,
             frameIsolated120,
             unusedPdPortsTaped,
+            rslEventRecorded,
+            rslVisible36,
+            rslOnRioPort,
           },
         });
         setRobotName("");
@@ -701,6 +707,9 @@ function NewCheckForm({
         setIsolationEventRecorded(false);
         setFrameIsolated120(false);
         setUnusedPdPortsTaped(false);
+        setRslEventRecorded(false);
+        setRslVisible36(false);
+        setRslOnRioPort(false);
       }}
     >
       <h2 style={{ margin: 0 }}>Run an inspection-readiness check</h2>
@@ -1176,6 +1185,44 @@ function NewCheckForm({
                   onChange={(e) => setUnusedPdPortsTaped(e.target.checked)}
                 />
                 Unused PDH / RIO / VRM ports taped against conductive debris
+              </label>
+            </>
+          ) : null}
+        </fieldset>
+      </div>
+
+      <div>
+        <strong className="app-muted">Robot signal light (RSL)</strong>
+        <p className="app-muted">
+          2026 checklist: visible from 36 in on at least one side, plugged into the roboRIO RSL port, flashing in sync.
+          Leave this off until you actually walk the light — never invent a fail.
+        </p>
+        <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={rslEventRecorded}
+              onChange={(e) => setRslEventRecorded(e.target.checked)}
+            />
+            We logged the robot signal light for this robot
+          </label>
+          {rslEventRecorded ? (
+            <>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={rslVisible36}
+                  onChange={(e) => setRslVisible36(e.target.checked)}
+                />
+                Visible from 36 in on at least one side
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={rslOnRioPort}
+                  onChange={(e) => setRslOnRioPort(e.target.checked)}
+                />
+                Plugged into the roboRIO RSL port and flashing in sync
               </label>
             </>
           ) : null}

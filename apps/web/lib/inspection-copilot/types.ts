@@ -113,6 +113,13 @@ export type WiringPowerSpec = {
   isolationEventRecorded?: boolean;
   frameIsolated120?: boolean;
   unusedPdPortsTaped?: boolean;
+  /**
+   * When false, RSL flags are skipped (never invent a missing signal light).
+   * 2026 checklist: visible from 36 in on one side, plugged into the roboRIO RSL port, flashes in sync.
+   */
+  rslEventRecorded?: boolean;
+  rslVisible36?: boolean;
+  rslOnRioPort?: boolean;
 };
 
 export type InspectionFlagType =
@@ -154,7 +161,9 @@ export type InspectionFlagType =
   | "pneumatics_working_pressure"
   | "pneumatics_pressure_switch"
   | "frame_not_isolated"
-  | "pdh_ports_untaped";
+  | "pdh_ports_untaped"
+  | "rsl_not_visible"
+  | "rsl_not_on_rio_port";
 
 export type InspectionFlagSeverity = "info" | "warning" | "critical";
 

@@ -58,6 +58,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Ethernet cables", quantity: 3 },
       { label: "Joysticks / controllers + spares", quantity: 3 },
       { label: "Spare radio and roboRIO", quantity: 1 },
+      { label: "Spare robot signal light (RSL port; visible from 36 in)", quantity: 1 },
       { label: "Spare PDH (high-strand 4 AWG melted hubs)", quantity: 1 },
       { label: "Spare main breaker (replace after a trip)", quantity: 2 },
       { label: "3D-printed main breaker cover", quantity: 1 },

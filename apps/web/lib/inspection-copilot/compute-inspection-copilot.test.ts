@@ -779,3 +779,73 @@ describe("2026 starting-config size", () => {
     expect(stale16ExtensionCue(16)).toBe(STALE_16_EXTENSION_CUE);
   });
 });
+
+describe("predictInspectionFailures RSL", () => {
+  const wiring = {
+    mainBreakerMaxAmps: 120,
+    installedMainBreakerAmps: 120,
+    batterySecured: true,
+    wiresLabeled: true,
+    radioPowerOk: true,
+    bypassSwitchAccessible: true,
+    binderRecorded: false,
+    bomPrinted: false,
+    inspectionChecklistPrinted: false,
+    studentCaptainPresent: false,
+    radioEventRecorded: false,
+    radioOnMainPd: false,
+    rioOnMainPd10A: false,
+    radioProgrammedForEvent: false,
+    radioWeidmullerQc: false,
+    sparkMaxEventRecorded: false,
+    sparkMaxUsbAvoided: false,
+    reliabilityEventRecorded: false,
+    strainReliefOk: false,
+    dynamicCableClear: false,
+    esdIntakeBonded: false,
+    esdShielded: false,
+    canivorePdhBackup: false,
+    batteryLeadsTorqued: false,
+    mainBreakerCovered: false,
+    rioUsbCameraClear: false,
+  };
+  const limits = {
+    weightBudget: { limitLbs: 115, items: [{ name: "Chassis", weightLbs: 80 }] },
+    frameBumper: {
+      perimeterLimitIn: 110,
+      measuredPerimeterIn: 108,
+      bumperMinHeightIn: 2.75,
+      bumperMaxHeightIn: 5.5,
+      measuredBumperMinHeightIn: 3,
+      measuredBumperMaxHeightIn: 5,
+      bumperMinThicknessIn: 2,
+      measuredBumperThicknessIn: 2.25,
+    },
+  };
+
+  it("does not invent an RSL fail until the light is logged", () => {
+    const prediction = predictInspectionFailures({ ...limits, wiringPower: wiring });
+    expect(prediction.flags.some((flag) => flag.type === "rsl_not_visible")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "rsl_not_on_rio_port")).toBe(false);
+  });
+
+  it("flags a hidden or PWM-wired RSL once the walk is logged", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: { ...wiring, rslEventRecorded: true },
+    });
+    expect(prediction.flags.map((flag) => flag.type)).toEqual(
+      expect.arrayContaining(["rsl_not_visible", "rsl_not_on_rio_port"]),
+    );
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+
+  it("does not flag the RSL once visibility and the RIO port are logged", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: { ...wiring, rslEventRecorded: true, rslVisible36: true, rslOnRioPort: true },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "rsl_not_visible")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "rsl_not_on_rio_port")).toBe(false);
+  });
+});
