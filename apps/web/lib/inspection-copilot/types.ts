@@ -44,6 +44,8 @@ export type FrameBumperSpec = {
   bumperGapsOk?: boolean;
   /** True once bumpers have no moving or electrical parts (R409). */
   bumperNoElectronics?: boolean;
+  /** True once R412 numbers are 3.5 in white Arabic on ≥3 sides ~90° apart. */
+  bumperNumbersLegal?: boolean;
 };
 
 /** Team-declared wiring/power-distribution limits vs what was actually installed. */
@@ -155,6 +157,7 @@ export type InspectionFlagType =
   | "bumper_reversible"
   | "bumper_gaps"
   | "bumper_electronics"
+  | "bumper_numbers"
   | "pneumatics_vent_plug"
   | "pneumatics_multi_compressor"
   | "pneumatics_relief_valve"
