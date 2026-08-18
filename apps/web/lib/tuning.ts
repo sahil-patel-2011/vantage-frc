@@ -50,6 +50,25 @@ export function summarizeTuning(constants: { subsystem: string; category: Tuning
   return { total: constants.length, subsystems: subsystems.size, byCategory };
 }
 
+/** FRC: log supply current limits with PID/encoder values so a reflash does not brown out. */
+export const CURRENT_LIMIT_TUNING_CUE =
+  "Log supply current limits (Soft limit category) next to PID/encoder values — a reflash without them browns out.";
+
+export function currentLimitTuningCue(
+  constants: Array<{ category: TuningCategory; name: string; notes?: string }>,
+): string | null {
+  if (constants.length === 0) return null;
+  const mentionsLimit = constants.some((row) =>
+    /current\s*limit|supply\s*limit|smart\s*current/i.test(`${row.name} ${row.notes ?? ""}`),
+  );
+  if (mentionsLimit) return null;
+  const driveish = constants.some(
+    (row) => row.category === "pid" || row.category === "encoder_offset" || row.category === "feedforward",
+  );
+  if (!driveish) return null;
+  return CURRENT_LIMIT_TUNING_CUE;
+}
+
 // ---- request validation --------------------------------------------------
 
 export type TuningAction =

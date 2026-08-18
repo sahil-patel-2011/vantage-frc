@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { TUNING_CATEGORIES, TUNING_CATEGORY_LABEL, type TuningCategory } from "../../lib/tuning";
+import { TUNING_CATEGORIES, TUNING_CATEGORY_LABEL, currentLimitTuningCue, type TuningCategory } from "../../lib/tuning";
 
 type Constant = { id: string; subsystem: string; name: string; value: string; unit: string; category: TuningCategory; notes: string; byName: string | null; updatedAt: string };
 type View =
@@ -46,6 +46,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
   }
 
   const subsystems = [...new Set(view.constants.map((c) => c.subsystem || "General"))].sort();
+  const currentLimitCue = currentLimitTuningCue(view.constants);
 
   return (
     <main className="intel-app">
@@ -54,6 +55,7 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
         <nav className="intel-actions"><a href={`/subsystems${orgId ? `?orgId=${orgId}` : ""}`}>Subsystems</a><a href={`/code${orgId ? `?orgId=${orgId}` : ""}`}>Code</a><a href="/workspace">Workspace →</a></nav>
       </header>
       {message && <p className="telemetry-status">{message}</p>}
+      {currentLimitCue ? <p className="telemetry-status" role="status">{currentLimitCue}</p> : null}
       <p className="telemetry-status">Record the values that hurt to lose — swerve offsets, PID gains, sensor zeros. A reflash or a lost laptop shouldn&apos;t cost you a day of re-tuning.</p>
 
       <section className="metric-grid">

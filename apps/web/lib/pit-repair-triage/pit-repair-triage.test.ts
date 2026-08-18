@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { needsReinspectionBeforeQueue, reinspectionCue } from ".";
+import { MAIN_BREAKER_TRIP_CUE, mainBreakerTripCue, needsReinspectionBeforeQueue, reinspectionCue } from ".";
 
 describe("I104 reinspection cue (CD pit changes)", () => {
   it("cues open and staged fix/swap — never monitor, never a resolved report", () => {
@@ -15,5 +15,33 @@ describe("I104 reinspection cue (CD pit changes)", () => {
     expect(cue).toMatch(/I104/);
     expect(cue).toContain("Elevator");
     expect(cue?.toLowerCase()).not.toContain("demo");
+  });
+});
+
+describe("main breaker trip cue", () => {
+  it("cues open/staged reports that mention a tripped main breaker — never a resolved row", () => {
+    expect(
+      mainBreakerTripCue({ title: "Intake jam", symptomNote: "roller stall", status: "open" }),
+    ).toBeNull();
+    expect(
+      mainBreakerTripCue({
+        title: "Main breaker tripped",
+        symptomNote: "Brownout then dead",
+        status: "open",
+      }),
+    ).toBe(MAIN_BREAKER_TRIP_CUE);
+    expect(
+      mainBreakerTripCue({
+        title: "Power",
+        symptomNote: "breaker trip during climb",
+        status: "staged",
+      }),
+    ).toBe(MAIN_BREAKER_TRIP_CUE);
+    expect(
+      mainBreakerTripCue({
+        title: "Main breaker tripped",
+        status: "resolved",
+      }),
+    ).toBeNull();
   });
 });
