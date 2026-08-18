@@ -50,6 +50,12 @@ describe("INSPECTION_TEMPLATE", () => {
     const all = INSPECTION_TEMPLATE.flatMap((entry) => entry.items);
     expect(all.length).toBeGreaterThanOrEqual(20);
     expect(new Set(all).size).toBe(all.length);
+    expect(all.some((item) => /solid-core foam/i.test(item) && /hollow/i.test(item))).toBe(true);
+    expect(all.some((item) => /reversible/i.test(item))).toBe(true);
+    expect(all.some((item) => /isolat/i.test(item) && /120/.test(item))).toBe(true);
+    expect(all.some((item) => /vent plug/i.test(item) && /0 psi/i.test(item))).toBe(true);
+    expect(all.some((item) => /one onboard legal compressor/i.test(item))).toBe(true);
+    expect(JSON.stringify(all).toLowerCase()).not.toContain("demo");
   });
 });
 

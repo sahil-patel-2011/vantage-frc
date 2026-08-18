@@ -51,6 +51,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /Loctite 242/i.test(label))).toBe(true);
     expect(labels.some((label) => /Battery-box foam/i.test(label))).toBe(true);
     expect(labels.some((label) => /R601/i.test(label) && /vent/i.test(label))).toBe(true);
+    expect(labels.some((label) => /Pneumatic vent plug/i.test(label))).toBe(true);
     expect(labels.some((label) => /Spare PDH/i.test(label))).toBe(true);
     expect(labels.some((label) => /ferrule/i.test(label))).toBe(true);
     expect(labels.some((label) => /heat shrink/i.test(label))).toBe(true);

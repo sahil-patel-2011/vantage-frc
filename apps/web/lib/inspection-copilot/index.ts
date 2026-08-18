@@ -108,6 +108,25 @@ export function predictInspectionFailures(input: {
     });
   }
 
+  if (frameBumper.bumperEventRecorded) {
+    if (!frameBumper.solidCoreFoam) {
+      flags.push({
+        type: "bumper_hollow_foam",
+        severity: "critical",
+        message:
+          "Bumper padding is not marked solid-core — hollow pool noodles are illegal and are the usual last-minute inspection fail.",
+      });
+    }
+    if (!frameBumper.separateColorSets) {
+      flags.push({
+        type: "bumper_reversible",
+        severity: "warning",
+        message:
+          "Bumpers are not marked as separate red and blue sets — reversible fabric keeps failing and eats the weight you wanted for armor.",
+      });
+    }
+  }
+
   if (
     wiringPower.mainBreakerMaxAmps > 0 &&
     wiringPower.installedMainBreakerAmps > wiringPower.mainBreakerMaxAmps
@@ -287,16 +306,37 @@ export function predictInspectionFailures(input: {
     }
   }
 
+  if (wiringPower.pneumaticsEventRecorded) {
+    if (!wiringPower.ventPlugAccessible) {
+      flags.push({
+        type: "pneumatics_vent_plug",
+        severity: "critical",
+        message:
+          "Pneumatic vent plug is not marked easily accessible — inspectors fail a hidden plug and require gauges at 0 psi at power-off.",
+      });
+    }
+    if (!wiringPower.singleOnboardCompressor) {
+      flags.push({
+        type: "pneumatics_multi_compressor",
+        severity: "critical",
+        message:
+          "Onboard compressor is not marked as a single legal unit — extra compressors fail pneumatics inspection.",
+      });
+    }
+  }
+
   const checkCount =
     (weightBudget.limitLbs > 0 ? 1 : 0) +
     (frameBumper.perimeterLimitIn > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
+    (frameBumper.bumperEventRecorded ? 2 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
     (wiringPower.radioEventRecorded ? 4 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
-    (wiringPower.reliabilityEventRecorded ? 8 : 0);
+    (wiringPower.reliabilityEventRecorded ? 8 : 0) +
+    (wiringPower.pneumaticsEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));
 
