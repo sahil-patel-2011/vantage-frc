@@ -116,6 +116,21 @@ export function summarizeLogs(logs: BatteryLogInput[]) {
   return { cycleCount, lastInternalResistanceMohm, lastRestingVoltage, lastUsedAt, lastChargedAt };
 }
 
+/** CD 2026: new packs need a few match-load cycles at home before the first event. */
+export const BREAK_IN_CYCLES = 3;
+
+export const BATTERY_BREAK_IN_CUE =
+  "Break this pack in at home (a few match-load cycles) before the first event — new SLAs are not at full capacity yet.";
+
+/**
+ * Cue only from logged cycle counts. Never invents cycles or marks the pack retired.
+ */
+export function batteryBreakInCue(cycleCount: number | null | undefined): string | null {
+  if (cycleCount == null || cycleCount < 0) return null;
+  if (cycleCount >= BREAK_IN_CYCLES) return null;
+  return BATTERY_BREAK_IN_CUE;
+}
+
 export function monthsBetween(fromIso: string | null, now: Date): number | null {
   if (!fromIso) return null;
   const from = new Date(fromIso);
