@@ -55,6 +55,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "All motors and actuators are legal and correctly breakered",
       "Do not feed multiple motors from a Mini Power Module / custom circuit (R621)",
       "REV Servo Hub on its own PD branch with a breaker ≤ 20A (R621)",
+      "Servos connected only to RIO PWM, WCP-0045, Servo Power Module, or Servo Hub (R506)",
       "Custom circuits, sensors, and extra electronics ≤ 24V except COTS PoE (R614)",
       "One wire per PD terminal (R618; soldered splices are not one wire; twin ferrules only if rated)",
       "Battery terminals insulated; no exposed conductors",
