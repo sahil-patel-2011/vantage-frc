@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeInspectionCopilotView, logCheck } from "./compute-inspection-copilot";
-import { predictInspectionFailures } from ".";
+import { predictInspectionFailures, stale120PerimeterCue, staleBumperThicknessCue, staleBumperZoneCue, STALE_120_PERIMETER_CUE, STALE_BUMPER_ZONE_CUE, STALE_BUMPER_THICKNESS_CUE } from ".";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -626,5 +626,88 @@ describe("predictInspectionFailures R611 isolation", () => {
       expect.arrayContaining(["frame_not_isolated", "pdh_ports_untaped"]),
     );
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+});
+
+describe("2026 starting-config size", () => {
+  const wiring = {
+    mainBreakerMaxAmps: 120,
+    installedMainBreakerAmps: 120,
+    batterySecured: true,
+    wiresLabeled: true,
+    radioPowerOk: true,
+    bypassSwitchAccessible: true,
+    binderRecorded: false,
+    bomPrinted: false,
+    inspectionChecklistPrinted: false,
+    studentCaptainPresent: false,
+    radioEventRecorded: false,
+    radioOnMainPd: false,
+    rioOnMainPd10A: false,
+    radioProgrammedForEvent: false,
+    radioWeidmullerQc: false,
+    sparkMaxEventRecorded: false,
+    sparkMaxUsbAvoided: false,
+    reliabilityEventRecorded: false,
+    strainReliefOk: false,
+    dynamicCableClear: false,
+    esdIntakeBonded: false,
+    esdShielded: false,
+    canivorePdhBackup: false,
+    batteryLeadsTorqued: false,
+    mainBreakerCovered: false,
+    rioUsbCameraClear: false,
+  };
+
+  it("does not invent a bumper-zone fail when height was not measured", () => {
+    const prediction = predictInspectionFailures({
+      weightBudget: { limitLbs: 115, items: [{ name: "Chassis", weightLbs: 80 }] },
+      frameBumper: {
+        perimeterLimitIn: 110,
+        measuredPerimeterIn: 0,
+        bumperMinHeightIn: 2.75,
+        bumperMaxHeightIn: 5.5,
+        measuredBumperMinHeightIn: 0,
+        measuredBumperMaxHeightIn: 0,
+        bumperMinThicknessIn: 2,
+        measuredBumperThicknessIn: 0,
+        startingHeightLimitIn: 30,
+        measuredStartingHeightIn: 0,
+      },
+      wiringPower: wiring,
+    });
+    expect(prediction.flags.some((flag) => flag.type === "bumper_height_out_of_range")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_undersized_thickness")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "starting_height_exceeded")).toBe(false);
+  });
+
+  it("flags a logged starting height over 30 in without DEMO wording", () => {
+    const prediction = predictInspectionFailures({
+      weightBudget: { limitLbs: 115, items: [{ name: "Chassis", weightLbs: 80 }] },
+      frameBumper: {
+        perimeterLimitIn: 110,
+        measuredPerimeterIn: 108,
+        bumperMinHeightIn: 2.75,
+        bumperMaxHeightIn: 5.5,
+        measuredBumperMinHeightIn: 3,
+        measuredBumperMaxHeightIn: 5,
+        bumperMinThicknessIn: 2,
+        measuredBumperThicknessIn: 2.25,
+        startingHeightLimitIn: 30,
+        measuredStartingHeightIn: 32,
+      },
+      wiringPower: wiring,
+    });
+    expect(prediction.flags.some((flag) => flag.type === "starting_height_exceeded")).toBe(true);
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+
+  it("cues leftover 120 in / 7.5 in / 1 in inspection defaults", () => {
+    expect(stale120PerimeterCue(110)).toBeNull();
+    expect(stale120PerimeterCue(120)).toBe(STALE_120_PERIMETER_CUE);
+    expect(staleBumperZoneCue(5.5)).toBeNull();
+    expect(staleBumperZoneCue(7.5)).toBe(STALE_BUMPER_ZONE_CUE);
+    expect(staleBumperThicknessCue(2)).toBeNull();
+    expect(staleBumperThicknessCue(1)).toBe(STALE_BUMPER_THICKNESS_CUE);
   });
 });

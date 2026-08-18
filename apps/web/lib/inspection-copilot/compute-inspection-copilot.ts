@@ -81,6 +81,8 @@ export function parseFrameBumper(value: unknown): FrameBumperSpec {
     measuredBumperMaxHeightIn: nonNegativeNumber(row.measuredBumperMaxHeightIn),
     bumperMinThicknessIn: nonNegativeNumber(row.bumperMinThicknessIn),
     measuredBumperThicknessIn: nonNegativeNumber(row.measuredBumperThicknessIn),
+    startingHeightLimitIn: nonNegativeNumber(row.startingHeightLimitIn),
+    measuredStartingHeightIn: nonNegativeNumber(row.measuredStartingHeightIn),
     bumperEventRecorded: Boolean(row.bumperEventRecorded),
     solidCoreFoam: Boolean(row.solidCoreFoam),
     separateColorSets: Boolean(row.separateColorSets),

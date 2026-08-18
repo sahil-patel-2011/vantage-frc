@@ -103,6 +103,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Printed Bill of Materials (part, qty, price, supplier)", quantity: 1 },
       { label: "Printed robot inspection checklist", quantity: 1 },
       { label: "Operator console size card (under 60×16×78 in)", quantity: 1 },
+      { label: "Tape measure for starting volume (110 in perimeter / 30 in tall)", quantity: 1 },
       { label: "Current game manual / team updates printout", quantity: 1 },
       { label: "USB / printed CAD packet for inspector questions", quantity: 1 },
     ],

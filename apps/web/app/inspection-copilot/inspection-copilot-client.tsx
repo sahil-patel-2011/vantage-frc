@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { inspectionFlagSeverityLabel } from "../../lib/inspection-copilot";
+import { inspectionFlagSeverityLabel, stale120PerimeterCue, staleBumperThicknessCue, staleBumperZoneCue } from "../../lib/inspection-copilot";
 import type { InspectionCopilotView } from "../../lib/inspection-copilot/compute-inspection-copilot";
 import {
   INSPECTION_COPILOT_RELATED_INCLUDE,
@@ -519,13 +519,15 @@ function NewCheckForm({
   const [weightLimitLbs, setWeightLimitLbs] = useState("115");
   const [weightItems, setWeightItems] = useState<WeightItemDraft[]>([emptyWeightRow()]);
 
-  const [perimeterLimitIn, setPerimeterLimitIn] = useState("120");
+  const [perimeterLimitIn, setPerimeterLimitIn] = useState("110");
   const [measuredPerimeterIn, setMeasuredPerimeterIn] = useState("");
-  const [bumperMinHeightIn, setBumperMinHeightIn] = useState("2.5");
-  const [bumperMaxHeightIn, setBumperMaxHeightIn] = useState("7.5");
+  const [startingHeightLimitIn, setStartingHeightLimitIn] = useState("30");
+  const [measuredStartingHeightIn, setMeasuredStartingHeightIn] = useState("");
+  const [bumperMinHeightIn, setBumperMinHeightIn] = useState("2.75");
+  const [bumperMaxHeightIn, setBumperMaxHeightIn] = useState("5.5");
   const [measuredBumperMinHeightIn, setMeasuredBumperMinHeightIn] = useState("");
   const [measuredBumperMaxHeightIn, setMeasuredBumperMaxHeightIn] = useState("");
-  const [bumperMinThicknessIn, setBumperMinThicknessIn] = useState("1");
+  const [bumperMinThicknessIn, setBumperMinThicknessIn] = useState("2");
   const [measuredBumperThicknessIn, setMeasuredBumperThicknessIn] = useState("");
   const [bumperEventRecorded, setBumperEventRecorded] = useState(false);
   const [solidCoreFoam, setSolidCoreFoam] = useState(false);
@@ -599,6 +601,8 @@ function NewCheckForm({
             measuredBumperMaxHeightIn: Number(measuredBumperMaxHeightIn) || 0,
             bumperMinThicknessIn: Number(bumperMinThicknessIn) || 0,
             measuredBumperThicknessIn: Number(measuredBumperThicknessIn) || 0,
+            startingHeightLimitIn: Number(startingHeightLimitIn) || 0,
+            measuredStartingHeightIn: Number(measuredStartingHeightIn) || 0,
             bumperEventRecorded,
             solidCoreFoam,
             separateColorSets,
@@ -642,6 +646,7 @@ function NewCheckForm({
         setRobotName("");
         setWeightItems([emptyWeightRow()]);
         setMeasuredPerimeterIn("");
+        setMeasuredStartingHeightIn("");
         setMeasuredBumperMinHeightIn("");
         setMeasuredBumperMaxHeightIn("");
         setMeasuredBumperThicknessIn("");
@@ -734,12 +739,37 @@ function NewCheckForm({
 
       <div>
         <strong className="app-muted">Frame / bumper limits vs measured</strong>
+        {stale120PerimeterCue(Number(perimeterLimitIn)) ? (
+          <p className="app-muted" role="status">{stale120PerimeterCue(Number(perimeterLimitIn))}</p>
+        ) : null}
+        {staleBumperZoneCue(Number(bumperMaxHeightIn)) ? (
+          <p className="app-muted" role="status">{staleBumperZoneCue(Number(bumperMaxHeightIn))}</p>
+        ) : null}
+        {staleBumperThicknessCue(Number(bumperMinThicknessIn)) ? (
+          <p className="app-muted" role="status">{staleBumperThicknessCue(Number(bumperMinThicknessIn))}</p>
+        ) : null}
         <FormGrid min={180}>
           <FormRow label="Perimeter limit (in)">
             <input type="number" min={0} value={perimeterLimitIn} onChange={(e) => setPerimeterLimitIn(e.target.value)} />
           </FormRow>
           <FormRow label="Measured perimeter (in)">
             <input type="number" min={0} value={measuredPerimeterIn} onChange={(e) => setMeasuredPerimeterIn(e.target.value)} />
+          </FormRow>
+          <FormRow label="Starting height limit (in)">
+            <input
+              type="number"
+              min={0}
+              value={startingHeightLimitIn}
+              onChange={(e) => setStartingHeightLimitIn(e.target.value)}
+            />
+          </FormRow>
+          <FormRow label="Measured starting height (in)">
+            <input
+              type="number"
+              min={0}
+              value={measuredStartingHeightIn}
+              onChange={(e) => setMeasuredStartingHeightIn(e.target.value)}
+            />
           </FormRow>
           <FormRow label="Bumper min height (in)">
             <input type="number" min={0} value={bumperMinHeightIn} onChange={(e) => setBumperMinHeightIn(e.target.value)} />

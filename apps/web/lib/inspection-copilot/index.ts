@@ -15,6 +15,38 @@ import type {
 /** A weight within this fraction of the limit is flagged as a near-miss risk. */
 export const WEIGHT_NEAR_LIMIT_MARGIN = 0.95;
 
+/** 2026 R104 starting-config perimeter (in). */
+export const R104_PERIMETER_LIMIT_IN = 110;
+/** 2026 R104 / R107 starting and match height (in). */
+export const R104_HEIGHT_LIMIT_IN = 30;
+/** 2026 inspection checklist bumper zone (tolerance already applied). */
+export const CHECKLIST_BUMPER_MIN_HEIGHT_IN = 2.75;
+export const CHECKLIST_BUMPER_MAX_HEIGHT_IN = 5.5;
+/** 2026 inspection checklist padding minimum (tolerance already applied). */
+export const CHECKLIST_BUMPER_MIN_THICKNESS_IN = 2;
+
+export const STALE_120_PERIMETER_CUE =
+  "Starting-config perimeter is still 120 in — 2026 R104 is 110 in around and 30 in tall.";
+export const STALE_BUMPER_ZONE_CUE =
+  "Bumper zone max is still 7.5 in — 2026 inspectors use 2.75–5.5 in from the floor (checklist, tolerance applied).";
+export const STALE_BUMPER_THICKNESS_CUE =
+  "Bumper padding minimum is still 1 in — 2026 checklist is 2 in solid-core (2.25 in nominal in the manual).";
+
+export function stale120PerimeterCue(limitIn: number): string | null {
+  if (limitIn !== 120) return null;
+  return STALE_120_PERIMETER_CUE;
+}
+
+export function staleBumperZoneCue(maxHeightIn: number): string | null {
+  if (maxHeightIn < 7) return null;
+  return STALE_BUMPER_ZONE_CUE;
+}
+
+export function staleBumperThicknessCue(minThicknessIn: number): string | null {
+  if (minThicknessIn !== 1) return null;
+  return STALE_BUMPER_THICKNESS_CUE;
+}
+
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const round = (value: number, places = 3) => {
   const factor = 10 ** places;
@@ -84,10 +116,24 @@ export function predictInspectionFailures(input: {
     });
   }
 
+  if (
+    (frameBumper.startingHeightLimitIn ?? 0) > 0 &&
+    (frameBumper.measuredStartingHeightIn ?? 0) > (frameBumper.startingHeightLimitIn ?? 0)
+  ) {
+    flags.push({
+      type: "starting_height_exceeded",
+      severity: "critical",
+      message: `Measured starting height ${frameBumper.measuredStartingHeightIn} in exceeds the ${frameBumper.startingHeightLimitIn} in 2026 limit (R104 / R107).`,
+    });
+  }
+
   if (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0) {
+    const measured =
+      frameBumper.measuredBumperMinHeightIn > 0 || frameBumper.measuredBumperMaxHeightIn > 0;
     if (
-      frameBumper.measuredBumperMinHeightIn < frameBumper.bumperMinHeightIn ||
-      frameBumper.measuredBumperMaxHeightIn > frameBumper.bumperMaxHeightIn
+      measured &&
+      (frameBumper.measuredBumperMinHeightIn < frameBumper.bumperMinHeightIn ||
+        frameBumper.measuredBumperMaxHeightIn > frameBumper.bumperMaxHeightIn)
     ) {
       flags.push({
         type: "bumper_height_out_of_range",
@@ -99,6 +145,7 @@ export function predictInspectionFailures(input: {
 
   if (
     frameBumper.bumperMinThicknessIn > 0 &&
+    frameBumper.measuredBumperThicknessIn > 0 &&
     frameBumper.measuredBumperThicknessIn < frameBumper.bumperMinThicknessIn
   ) {
     flags.push({
@@ -355,6 +402,7 @@ export function predictInspectionFailures(input: {
   const checkCount =
     (weightBudget.limitLbs > 0 ? 1 : 0) +
     (frameBumper.perimeterLimitIn > 0 ? 1 : 0) +
+    ((frameBumper.startingHeightLimitIn ?? 0) > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
     (frameBumper.bumperEventRecorded ? 2 : 0) +
