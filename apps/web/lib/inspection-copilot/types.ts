@@ -139,6 +139,8 @@ export type WiringPowerSpec = {
   isolationEventRecorded?: boolean;
   frameIsolated120?: boolean;
   unusedPdPortsTaped?: boolean;
+  /** True once PDH ATM fuses are ≤ 15A except one 20A for a PCM/PH. */
+  pdhFusesOk?: boolean;
   /**
    * When false, RSL flags are skipped (never invent a missing signal light).
    * 2026 checklist: visible from 36 in on one side, plugged into the roboRIO RSL port, flashes in sync.
@@ -201,6 +203,7 @@ export type InspectionFlagType =
   | "pneumatics_compressor_start"
   | "frame_not_isolated"
   | "pdh_ports_untaped"
+  | "pdh_fuses"
   | "rsl_not_visible"
   | "rsl_not_on_rio_port";
 

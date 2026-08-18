@@ -62,6 +62,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /60/.test(item) && /16/.test(item) && /78/.test(item))).toBe(true);
     expect(all.some((item) => /unauthorized wireless/i.test(item))).toBe(true);
     expect(all.some((item) => /isolat/i.test(item) && /120/.test(item) && /breaker on/i.test(item))).toBe(true);
+    expect(all.some((item) => /ATM/i.test(item) && /15A/i.test(item) && /20A/i.test(item))).toBe(true);
     expect(all.some((item) => /relief valve/i.test(item) && /compressor outlet/i.test(item))).toBe(true);
     expect(all.some((item) => /vent plug/i.test(item) && /0 psi/i.test(item))).toBe(true);
     expect(all.some((item) => /3\.5 in/i.test(item) && /R412/i.test(item))).toBe(true);
