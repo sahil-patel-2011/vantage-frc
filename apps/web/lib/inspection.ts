@@ -65,6 +65,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Working-pressure parts rated ≥ 70 psi; stored-pressure parts rated ≥ 125 psi (R801/R802)",
       "Compressor stops automatically at ≤ 120 psi under roboRIO control",
       "Pressure switch wired to the PCM/PH so the compressor stops at the stored-pressure setpoint",
+      "PCM/PH connected to the roboRIO via CAN bus (inspectors fail a powered-only module)",
       "Pressure relief valve on the compressor outlet, set to 125 psi",
       "Easily accessible vent plug vents all stored pressure (gauges read 0 psi)",
       "Only one onboard legal compressor (n/a if the robot has no pneumatics)",
