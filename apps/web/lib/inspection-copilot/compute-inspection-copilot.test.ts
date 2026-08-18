@@ -496,6 +496,8 @@ describe("predictInspectionFailures bumper construction", () => {
     expect(prediction.flags.some((flag) => flag.type === "bumper_numbers")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_hard_parts")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_corners")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_hard_inset")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_backing")).toBe(false);
   });
 
   it("flags logged hollow foam and reversible sets without DEMO wording", () => {
@@ -513,6 +515,8 @@ describe("predictInspectionFailures bumper construction", () => {
         "bumper_numbers",
         "bumper_hard_parts",
         "bumper_corners",
+        "bumper_hard_inset",
+        "bumper_backing",
       ]),
     );
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
@@ -531,6 +535,8 @@ describe("predictInspectionFailures bumper construction", () => {
         bumperNumbersLegal: true,
         bumperHardPartsOk: true,
         bumperCornersFilled: true,
+        bumperHardPartsInset: true,
+        bumperBackingTall: true,
       },
       wiringPower: wiring,
     });
@@ -539,6 +545,8 @@ describe("predictInspectionFailures bumper construction", () => {
     expect(prediction.flags.some((flag) => flag.type === "bumper_numbers")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_hard_parts")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_corners")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_hard_inset")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_backing")).toBe(false);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });

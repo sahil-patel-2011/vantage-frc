@@ -221,7 +221,7 @@ export function predictInspectionFailures(input: {
         type: "bumper_hard_parts",
         severity: "critical",
         message:
-          "Bumper hard parts are not marked within 4 in of the robot perimeter — 2026 R403 fails a bumper that sticks out farther than that.",
+          "Bumper stack is not marked within 4.25 in of the robot perimeter — 2026 R403 / checklist fails a bumper that sticks out farther than that (4 in nominal in the manual).",
       });
     }
     if (!frameBumper.bumperCornersFilled) {
@@ -230,6 +230,22 @@ export function predictInspectionFailures(input: {
         severity: "critical",
         message:
           "Bumper corners are not marked filled — 2026 R406 / checklist wants ≥ 2 in uncompressed padding measured diagonally (2.25 in nominal in the manual).",
+      });
+    }
+    if (!frameBumper.bumperHardPartsInset) {
+      flags.push({
+        type: "bumper_hard_inset",
+        severity: "critical",
+        message:
+          "Hard bumper parts are not marked within 1.5 in of the robot perimeter — 2026 R404 / checklist also wants padding ≥ 2 in past any hard parts (1.25 in nominal in the manual).",
+      });
+    }
+    if (!frameBumper.bumperBackingTall) {
+      flags.push({
+        type: "bumper_backing",
+        severity: "critical",
+        message:
+          "Bumper backing is not marked ≥ 4.25 in tall supporting all padding — 2026 R402 / checklist fails cantilevered foam and short plywood (4.5 in nominal in the manual).",
       });
     }
   }
@@ -517,7 +533,7 @@ export function predictInspectionFailures(input: {
     ((frameBumper.extensionLimitIn ?? 0) > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
-    (frameBumper.bumperEventRecorded ? 7 : 0) +
+    (frameBumper.bumperEventRecorded ? 9 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
     (wiringPower.radioEventRecorded ? 4 : 0) +
