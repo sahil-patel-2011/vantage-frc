@@ -459,6 +459,14 @@ export function predictInspectionFailures(input: {
           "RIO USB cameras are not marked off the ports next to a CANivore — ESD on one USB port kills 5 V on both and drops CAN.",
       });
     }
+    if (!wiringPower.pcmRadioSeparated) {
+      flags.push({
+        type: "pcm_radio_rf",
+        severity: "warning",
+        message:
+          "PCM/PH is not marked away from the radio — RF from a VH-109 next to the pneumatics module looks like a compressor fault.",
+      });
+    }
   }
 
   if (wiringPower.pneumaticsEventRecorded) {
@@ -610,7 +618,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.binderRecorded ? 3 : 0) +
     (wiringPower.radioEventRecorded ? 6 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
-    (wiringPower.reliabilityEventRecorded ? 8 : 0) +
+    (wiringPower.reliabilityEventRecorded ? 9 : 0) +
     (wiringPower.pneumaticsEventRecorded ? 11 : 0) +
     (wiringPower.isolationEventRecorded ? 3 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
