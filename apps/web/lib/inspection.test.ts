@@ -52,7 +52,8 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(new Set(all).size).toBe(all.length);
     expect(all.some((item) => /solid-core foam/i.test(item) && /hollow/i.test(item))).toBe(true);
     expect(all.some((item) => /reversible/i.test(item))).toBe(true);
-    expect(all.some((item) => /isolat/i.test(item) && /120/.test(item))).toBe(true);
+    expect(all.some((item) => /isolat/i.test(item) && /120/.test(item) && /breaker on/i.test(item))).toBe(true);
+    expect(all.some((item) => /relief valve/i.test(item) && /compressor outlet/i.test(item))).toBe(true);
     expect(all.some((item) => /vent plug/i.test(item) && /0 psi/i.test(item))).toBe(true);
     expect(all.some((item) => /one onboard legal compressor/i.test(item))).toBe(true);
     expect(JSON.stringify(all).toLowerCase()).not.toContain("demo");

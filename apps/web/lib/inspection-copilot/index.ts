@@ -323,6 +323,33 @@ export function predictInspectionFailures(input: {
           "Onboard compressor is not marked as a single legal unit — extra compressors fail pneumatics inspection.",
       });
     }
+    if (!wiringPower.reliefValveOnCompressor) {
+      flags.push({
+        type: "pneumatics_relief_valve",
+        severity: "critical",
+        message:
+          "Compressor relief valve is not marked on the compressor outlet at 125 psi — inspectors fail a valve on the tank instead of the compressor.",
+      });
+    }
+  }
+
+  if (wiringPower.isolationEventRecorded) {
+    if (!wiringPower.frameIsolated120) {
+      flags.push({
+        type: "frame_not_isolated",
+        severity: "critical",
+        message:
+          "Frame is not marked isolated >120Ω from PD Anderson posts (battery out, breaker on) — R611 fails chassis used as a wire.",
+      });
+    }
+    if (!wiringPower.unusedPdPortsTaped) {
+      flags.push({
+        type: "pdh_ports_untaped",
+        severity: "warning",
+        message:
+          "Unused PDH / RIO / VRM ports are not marked taped — conductive debris in those sockets reboots radios mid-match.",
+      });
+    }
   }
 
   const checkCount =
@@ -336,7 +363,8 @@ export function predictInspectionFailures(input: {
     (wiringPower.radioEventRecorded ? 4 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 8 : 0) +
-    (wiringPower.pneumaticsEventRecorded ? 2 : 0);
+    (wiringPower.pneumaticsEventRecorded ? 3 : 0) +
+    (wiringPower.isolationEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));
 

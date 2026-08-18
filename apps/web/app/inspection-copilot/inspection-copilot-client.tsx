@@ -560,6 +560,10 @@ function NewCheckForm({
   const [pneumaticsEventRecorded, setPneumaticsEventRecorded] = useState(false);
   const [ventPlugAccessible, setVentPlugAccessible] = useState(false);
   const [singleOnboardCompressor, setSingleOnboardCompressor] = useState(false);
+  const [reliefValveOnCompressor, setReliefValveOnCompressor] = useState(false);
+  const [isolationEventRecorded, setIsolationEventRecorded] = useState(false);
+  const [frameIsolated120, setFrameIsolated120] = useState(false);
+  const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
 
   const setWeightField = (index: number, key: keyof WeightItemDraft) => (event: { target: { value: string } }) =>
     setWeightItems((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: event.target.value } : row)));
@@ -629,6 +633,10 @@ function NewCheckForm({
             pneumaticsEventRecorded,
             ventPlugAccessible,
             singleOnboardCompressor,
+            reliefValveOnCompressor,
+            isolationEventRecorded,
+            frameIsolated120,
+            unusedPdPortsTaped,
           },
         });
         setRobotName("");
@@ -667,6 +675,10 @@ function NewCheckForm({
         setPneumaticsEventRecorded(false);
         setVentPlugAccessible(false);
         setSingleOnboardCompressor(false);
+        setReliefValveOnCompressor(false);
+        setIsolationEventRecorded(false);
+        setFrameIsolated120(false);
+        setUnusedPdPortsTaped(false);
       }}
     >
       <h2 style={{ margin: 0 }}>Run an inspection-readiness check</h2>
@@ -1020,6 +1032,52 @@ function NewCheckForm({
                   onChange={(e) => setSingleOnboardCompressor(e.target.checked)}
                 />
                 Only one onboard legal compressor
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={reliefValveOnCompressor}
+                  onChange={(e) => setReliefValveOnCompressor(e.target.checked)}
+                />
+                125 psi relief valve on the compressor outlet (not only on the tank)
+              </label>
+            </>
+          ) : null}
+        </fieldset>
+      </div>
+
+      <div>
+        <strong className="app-muted">R611 frame isolation / PDH debris</strong>
+        <p className="app-muted">
+          Inspectors probe Anderson-to-frame with the battery out and breaker on. Conductive chips in unused PDH sockets
+          reboot radios. Leave this off until you actually meter the chassis — never invent a fail.
+        </p>
+        <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={isolationEventRecorded}
+              onChange={(e) => setIsolationEventRecorded(e.target.checked)}
+            />
+            We logged isolation and unused-port tape for this robot
+          </label>
+          {isolationEventRecorded ? (
+            <>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={frameIsolated120}
+                  onChange={(e) => setFrameIsolated120(e.target.checked)}
+                />
+                Frame &gt;120Ω from both Anderson posts (battery out, breaker on)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={unusedPdPortsTaped}
+                  onChange={(e) => setUnusedPdPortsTaped(e.target.checked)}
+                />
+                Unused PDH / RIO / VRM ports taped against conductive debris
               </label>
             </>
           ) : null}
