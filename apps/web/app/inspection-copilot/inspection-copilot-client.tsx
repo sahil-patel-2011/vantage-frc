@@ -592,6 +592,7 @@ function NewCheckForm({
   const [frameIsolated120, setFrameIsolated120] = useState(false);
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
   const [pdhFusesOk, setPdhFusesOk] = useState(false);
+  const [pdVisible, setPdVisible] = useState(false);
   const [rslEventRecorded, setRslEventRecorded] = useState(false);
   const [rslVisible36, setRslVisible36] = useState(false);
   const [rslOnRioPort, setRslOnRioPort] = useState(false);
@@ -696,6 +697,7 @@ function NewCheckForm({
             frameIsolated120,
             unusedPdPortsTaped,
             pdhFusesOk,
+            pdVisible,
             rslEventRecorded,
             rslVisible36,
             rslOnRioPort,
@@ -1351,7 +1353,8 @@ function NewCheckForm({
         <strong className="app-muted">R611 frame isolation / PDH debris</strong>
         <p className="app-muted">
           Inspectors probe Anderson-to-frame with the battery out and breaker on. Conductive chips in unused PDH sockets
-          reboot radios. Leave this off until you actually meter the chassis — never invent a fail.
+          reboot radios. The PD, breakers, and wiring have to stay visible. Leave this off until you actually meter the
+          chassis — never invent a fail.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1387,6 +1390,14 @@ function NewCheckForm({
                   onChange={(e) => setPdhFusesOk(e.target.checked)}
                 />
                 PDH ATM fuses ≤ 15A except one 20A for a PCM/PH (or a 20A breaker)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={pdVisible}
+                  onChange={(e) => setPdVisible(e.target.checked)}
+                />
+                Single PD, breakers, and associated wiring easily visible
               </label>
             </>
           ) : null}
