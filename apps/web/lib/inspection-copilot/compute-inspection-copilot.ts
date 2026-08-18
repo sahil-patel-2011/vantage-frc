@@ -91,6 +91,8 @@ export function parseFrameBumper(value: unknown): FrameBumperSpec {
     bumperGapsOk: Boolean(row.bumperGapsOk),
     bumperNoElectronics: Boolean(row.bumperNoElectronics),
     bumperNumbersLegal: Boolean(row.bumperNumbersLegal),
+    bumperHardPartsOk: Boolean(row.bumperHardPartsOk),
+    bumperCornersFilled: Boolean(row.bumperCornersFilled),
   };
 }
 

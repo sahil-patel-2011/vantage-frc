@@ -110,6 +110,8 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Operator console size card (under 60×16×78 in)", quantity: 1 },
       { label: "Tape measure for starting volume (110 in perimeter / 30 in tall) and 12 in extension", quantity: 1 },
       { label: "Bumper-gap card (1.25 in small gaps / 5 in from corners on one large gap)", quantity: 1 },
+      { label: "Bumper-extension gauge (hard parts ≤ 4 in from perimeter; R403)", quantity: 1 },
+      { label: "Corner-fill foam (2 in diagonal uncompressed; R406)", quantity: 1 },
       { label: "Current game manual / team updates printout", quantity: 1 },
       { label: "USB / printed CAD packet for inspector questions", quantity: 1 },
     ],

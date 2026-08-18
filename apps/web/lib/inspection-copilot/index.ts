@@ -216,6 +216,22 @@ export function predictInspectionFailures(input: {
           "Bumper numbers are not marked 2026-legal — R412 is white Arabic numerals ≥ 3.5 in tall × 0.25 in stroke on at least 3 sides about 90° apart, not last year's four-side default.",
       });
     }
+    if (!frameBumper.bumperHardPartsOk) {
+      flags.push({
+        type: "bumper_hard_parts",
+        severity: "critical",
+        message:
+          "Bumper hard parts are not marked within 4 in of the robot perimeter — 2026 R403 fails a bumper that sticks out farther than that.",
+      });
+    }
+    if (!frameBumper.bumperCornersFilled) {
+      flags.push({
+        type: "bumper_corners",
+        severity: "critical",
+        message:
+          "Bumper corners are not marked filled — 2026 R406 / checklist wants ≥ 2 in uncompressed padding measured diagonally (2.25 in nominal in the manual).",
+      });
+    }
   }
 
   if (
@@ -485,7 +501,7 @@ export function predictInspectionFailures(input: {
     ((frameBumper.extensionLimitIn ?? 0) > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
-    (frameBumper.bumperEventRecorded ? 5 : 0) +
+    (frameBumper.bumperEventRecorded ? 7 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
     (wiringPower.radioEventRecorded ? 4 : 0) +
