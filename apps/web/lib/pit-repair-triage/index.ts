@@ -149,3 +149,19 @@ export function mainBreakerTripCue(input: {
   if (!/main breaker|breaker trip/.test(hay)) return null;
   return MAIN_BREAKER_TRIP_CUE;
 }
+
+/** CD CAN thread: missing far-end 120Ω looks like random dropouts. Cue only a logged CAN symptom. */
+export const CAN_BUS_DROPOUT_CUE =
+  "CAN dropouts often mean missing far-end termination — meter yellow-to-green ~60Ω with the battery out (roboRIO 120Ω + PDH jumper or a 120Ω resistor).";
+
+export function canBusDropoutCue(input: {
+  title?: string;
+  symptomNote?: string;
+  subsystemName?: string;
+  status: TriageStatus;
+}): string | null {
+  if (input.status === "resolved") return null;
+  const hay = `${input.title ?? ""} ${input.symptomNote ?? ""} ${input.subsystemName ?? ""}`.toLowerCase();
+  if (!/can bus|can drop|can timeout|can fault|unterminat|120\s*ohm|terminator/.test(hay)) return null;
+  return CAN_BUS_DROPOUT_CUE;
+}
