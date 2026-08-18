@@ -131,6 +131,20 @@ export function batteryBreakInCue(cycleCount: number | null | undefined): string
   return BATTERY_BREAK_IN_CUE;
 }
 
+/** FRC: repeated over-discharge degrades SLA capacity. Only from a logged rest voltage after cycles. */
+export const BATTERY_OVER_DISCHARGE_CUE =
+  "Last logged rest voltage is below 12.0 V after match/practice cycles — over-discharge ages packs. Raise supply current limits.";
+
+export function batteryOverDischargeCue(input: {
+  cycleCount: number | null | undefined;
+  lastRestingVoltage: number | null | undefined;
+}): string | null {
+  if (input.cycleCount == null || input.cycleCount < 1) return null;
+  if (input.lastRestingVoltage == null) return null;
+  if (input.lastRestingVoltage >= VOLTAGE_LOW) return null;
+  return BATTERY_OVER_DISCHARGE_CUE;
+}
+
 export function monthsBetween(fromIso: string | null, now: Date): number | null {
   if (!fromIso) return null;
   const from = new Date(fromIso);

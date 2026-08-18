@@ -5,7 +5,7 @@ import { EmptyState, PageHeader } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
-import { BATTERY_LOG_KINDS, batteryBreakInCue, type BatteryStatus, type CartSlot, type HealthStatus } from "../../lib/battery";
+import { BATTERY_LOG_KINDS, batteryBreakInCue, batteryOverDischargeCue, type BatteryStatus, type CartSlot, type HealthStatus } from "../../lib/battery";
 import {
   BATTERIES_BUILD_RELATED_INCLUDE,
   BATTERIES_TEAM_RELATED_INCLUDE,
@@ -473,6 +473,10 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                 {view.packs.map((pack) => {
                   const measured = packHasMeasurement(pack);
                   const breakInCue = batteryBreakInCue(pack.cycleCount);
+                  const overDischargeCue = batteryOverDischargeCue({
+                    cycleCount: pack.cycleCount,
+                    lastRestingVoltage: pack.lastRestingVoltage,
+                  });
                   return (
                     <li
                       key={pack.id}
@@ -519,6 +523,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                           {breakInCue ? (
                             <span className="batt-badge aging">Break in</span>
                           ) : null}
+                          {overDischargeCue ? (
+                            <span className="batt-badge aging">Over-discharge</span>
+                          ) : null}
                         </div>
                       </div>
                       {!measured ? (
@@ -534,6 +541,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                         </small>
                       ) : null}
                       {breakInCue ? <small className="app-muted">{breakInCue}</small> : null}
+                      {overDischargeCue ? <small className="app-muted">{overDischargeCue}</small> : null}
                       <AssignRow pack={pack} orgId={orgId} busy={busy} run={run} />
                       <div className="batt-actions">
                         {pack.status === "active" ? (
