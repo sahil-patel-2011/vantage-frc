@@ -609,6 +609,14 @@ export function predictInspectionFailures(input: {
           "PDH fuses are not marked legal — 2026 inspectors fail ATM fuses over 15A except one 20A feeding a PCM/PH (prefer a 20A breaker there so a compressor inrush does not leave you dead).",
       });
     }
+    if (!wiringPower.pdVisible) {
+      flags.push({
+        type: "pd_not_visible",
+        severity: "critical",
+        message:
+          "The PD is not marked visible — inspectors fail a buried hub; the single PD, breakers, and associated wiring have to be easy to see.",
+      });
+    }
   }
 
   if (wiringPower.rslEventRecorded) {
@@ -644,7 +652,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 9 : 0) +
     (wiringPower.pneumaticsEventRecorded ? 14 : 0) +
-    (wiringPower.isolationEventRecorded ? 3 : 0) +
+    (wiringPower.isolationEventRecorded ? 4 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));
