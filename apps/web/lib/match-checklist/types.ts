@@ -14,6 +14,7 @@ export type ChecklistItemKey =
   | "lenses"
   | "bolts"
   | "kraken_screws"
+  | "anderson_lock"
   | "controller_lock";
 
 export type ChecklistItem = {
