@@ -96,6 +96,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /4\.25 in/i.test(label) && /R403/i.test(label))).toBe(true);
     expect(labels.some((label) => /1\.5 in/i.test(label) && /R404/i.test(label))).toBe(true);
     expect(labels.some((label) => /4\.25 in/i.test(label) && /R402/i.test(label))).toBe(true);
+    expect(labels.some((label) => /cross-section/i.test(label) && /R402/i.test(label))).toBe(true);
     expect(labels.some((label) => /R406/i.test(label) && /2 in/i.test(label))).toBe(true);
     expect(labels.some((label) => /RSL/i.test(label) && /36 in/i.test(label))).toBe(true);
     expect(labels.some((label) => /high-contact shafts/i.test(label))).toBe(true);

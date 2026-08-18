@@ -56,6 +56,8 @@ export type FrameBumperSpec = {
   bumperBackingTall?: boolean;
   /** True once a cloth cover covers all padding (R402-C). */
   bumperCoverOk?: boolean;
+  /** True once every vertical cross-section includes padding, backing, and cover (R402 TU11). */
+  bumperCrossSectionOk?: boolean;
   /** True once bumpers are securely mounted and easily removable for inspection. */
   bumperRemovableOk?: boolean;
 };
@@ -209,6 +211,7 @@ export type InspectionFlagType =
   | "bumper_hard_inset"
   | "bumper_backing"
   | "bumper_cover"
+  | "bumper_cross_section"
   | "bumper_not_removable"
   | "pneumatics_vent_plug"
   | "pneumatics_multi_compressor"

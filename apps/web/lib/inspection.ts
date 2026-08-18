@@ -32,6 +32,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Team number: white Arabic numerals ≥ 3.5 in tall × 0.25 in stroke on at least 3 sides ~90° apart (R412)",
       "Bumpers mount securely, sit in the legal height zone, and are easily removable for inspection",
       "Bumper cloth cover covers all padding (R402)",
+      "Any vertical bumper cross-section includes padding, backing, and cover (wrap only at segment ends; R402)",
       "No sharp edges, pinch points, or protrusions",
     ],
   },

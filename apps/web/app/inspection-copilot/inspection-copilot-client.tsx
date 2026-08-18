@@ -542,6 +542,7 @@ function NewCheckForm({
   const [bumperHardPartsInset, setBumperHardPartsInset] = useState(false);
   const [bumperBackingTall, setBumperBackingTall] = useState(false);
   const [bumperCoverOk, setBumperCoverOk] = useState(false);
+  const [bumperCrossSectionOk, setBumperCrossSectionOk] = useState(false);
   const [bumperRemovableOk, setBumperRemovableOk] = useState(false);
 
   const [mainBreakerMaxAmps, setMainBreakerMaxAmps] = useState("120");
@@ -647,6 +648,7 @@ function NewCheckForm({
             bumperHardPartsInset,
             bumperBackingTall,
             bumperCoverOk,
+            bumperCrossSectionOk,
             bumperRemovableOk,
           },
           wiringPower: {
@@ -990,6 +992,14 @@ function NewCheckForm({
                   onChange={(e) => setBumperCoverOk(e.target.checked)}
                 />
                 Cloth cover covers all padding (R402)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperCrossSectionOk}
+                  onChange={(e) => setBumperCrossSectionOk(e.target.checked)}
+                />
+                Every vertical cross-section has padding, backing, and cover (wrap only at ends)
               </label>
               <label>
                 <input
