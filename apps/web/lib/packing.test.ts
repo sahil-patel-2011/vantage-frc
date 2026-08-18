@@ -64,6 +64,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /beater bar/i.test(label))).toBe(true);
     expect(labels.some((label) => /solid-core/i.test(label))).toBe(true);
     expect(labels.some((label) => /pressure switch/i.test(label) && /PCM\/PH/i.test(label))).toBe(true);
+    expect(labels.some((label) => /70 psi/i.test(label) && /125 psi/i.test(label) && /R801/i.test(label))).toBe(true);
     expect(labels.some((label) => /through-bolts/i.test(label))).toBe(true);
     expect(labels.some((label) => /not reversible/i.test(label))).toBe(true);
     expect(labels.some((label) => /3\.5 in/i.test(label) && /0\.25 in/i.test(label))).toBe(true);

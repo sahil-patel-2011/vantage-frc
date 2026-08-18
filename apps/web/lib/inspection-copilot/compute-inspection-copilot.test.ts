@@ -593,6 +593,8 @@ describe("predictInspectionFailures pneumatics", () => {
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_relief_valve")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_working_pressure")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_pressure_switch")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_component_rating")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_stop")).toBe(false);
   });
 
   it("flags a hidden vent plug once pneumatics are logged", () => {
@@ -605,6 +607,8 @@ describe("predictInspectionFailures pneumatics", () => {
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_relief_valve")).toBe(true);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_working_pressure")).toBe(true);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_pressure_switch")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_component_rating")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_stop")).toBe(true);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 
@@ -619,10 +623,14 @@ describe("predictInspectionFailures pneumatics", () => {
         reliefValveOnCompressor: true,
         workingPressure60Psi: true,
         pressureSwitchOnPcmPh: true,
+        componentsRated: true,
+        compressorStops120: true,
       },
     });
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_working_pressure")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pneumatics_pressure_switch")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_component_rating")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_compressor_stop")).toBe(false);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });

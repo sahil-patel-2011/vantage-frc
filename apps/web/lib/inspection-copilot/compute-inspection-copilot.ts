@@ -132,6 +132,8 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     reliefValveOnCompressor: Boolean(row.reliefValveOnCompressor),
     workingPressure60Psi: Boolean(row.workingPressure60Psi),
     pressureSwitchOnPcmPh: Boolean(row.pressureSwitchOnPcmPh),
+    componentsRated: Boolean(row.componentsRated),
+    compressorStops120: Boolean(row.compressorStops120),
     isolationEventRecorded: Boolean(row.isolationEventRecorded),
     frameIsolated120: Boolean(row.frameIsolated120),
     unusedPdPortsTaped: Boolean(row.unusedPdPortsTaped),
