@@ -180,6 +180,11 @@ export function servoHubCues(devices: Device[]): string[] {
   }
   const cues: string[] = [];
   for (const hub of hubs) {
+    if (hub.canId == null) {
+      cues.push(
+        `${hub.name}: Servo Hub must be on the roboRIO CAN bus (R715) — inspectors fail a hub that is only powered.`,
+      );
+    }
     if (hub.breakerAmp != null && hub.breakerAmp > 20) {
       cues.push(`${hub.name}: Servo Hub must sit on its own PD branch with a breaker ≤ 20A (R621).`);
     }

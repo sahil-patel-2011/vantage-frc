@@ -74,22 +74,27 @@ describe("pcmPhCanCues", () => {
 
 describe("servoHubCues", () => {
   it("cues a logged Servo Hub with a breaker over 20A or a shared PD port", () => {
-    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", breakerAmp: 40 })])).toHaveLength(1);
-    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", breakerAmp: 40 })])[0]).toMatch(/20A/i);
+    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", canId: 1, breakerAmp: 40 })])).toHaveLength(1);
+    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", canId: 1, breakerAmp: 40 })])[0]).toMatch(/20A/i);
     expect(
       servoHubCues([
-        dev({ name: "REV Servo Hub", deviceType: "other", pdhPort: 3 }),
+        dev({ name: "REV Servo Hub", deviceType: "other", canId: 2, pdhPort: 3 }),
         dev({ name: "Limelight", deviceType: "other", pdhPort: 3 }),
       ]),
     ).toHaveLength(1);
-    expect(JSON.stringify(servoHubCues([dev({ name: "Hub", deviceType: "servohub", breakerAmp: 40 })])).toLowerCase()).not.toContain(
+    expect(JSON.stringify(servoHubCues([dev({ name: "Hub", deviceType: "servohub", canId: 1, breakerAmp: 40 })])).toLowerCase()).not.toContain(
       "demo",
     );
   });
 
-  it("does not invent a Servo Hub or flag a dedicated ≤20A branch", () => {
+  it("cues a logged Servo Hub with no CAN ID", () => {
+    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", canId: null })])).toHaveLength(1);
+    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", canId: null })])[0]).toMatch(/R715/);
+  });
+
+  it("does not invent a Servo Hub or flag a dedicated ≤20A CAN branch", () => {
     expect(servoHubCues([dev({ name: "FL", deviceType: "talonfx", breakerAmp: 40 })])).toHaveLength(0);
-    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", pdhPort: 4, breakerAmp: 20 })])).toHaveLength(0);
+    expect(servoHubCues([dev({ name: "Hub", deviceType: "servohub", canId: 1, pdhPort: 4, breakerAmp: 20 })])).toHaveLength(0);
     expect(servoHubCues([])).toHaveLength(0);
   });
 });

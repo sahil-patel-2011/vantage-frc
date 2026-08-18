@@ -91,6 +91,8 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Legal PD ATO/Maxi breakers (VB3/AT2/MX5/REV/CTR, ≤40A)", quantity: 1 },
       { label: "Do not run motors off a Mini Power Module (R621 custom-circuit split)", quantity: 1 },
       { label: "Servo Hub on its own ≤20A PD branch (R621)", quantity: 1 },
+      { label: "Servo Hub CAN drop (R715 — inspectors fail a powered-only hub)", quantity: 1 },
+      { label: "Don't paint or drill motor controllers / PD (R710)", quantity: 1 },
       { label: "Do not power servos from a random 6V brick (R506 — RIO PWM / SPM / Servo Hub only)", quantity: 1 },
       { label: "Do not leave PWM and CAN both plugged on a motor controller (R714)", quantity: 1 },
       { label: "Don't bury the PDH — inspectors need to see breakers and wiring", quantity: 1 },
