@@ -5,7 +5,7 @@ import { EmptyState, PageHeader } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
-import { BATTERY_LOG_KINDS, type BatteryStatus, type CartSlot, type HealthStatus } from "../../lib/battery";
+import { BATTERY_LOG_KINDS, batteryBreakInCue, type BatteryStatus, type CartSlot, type HealthStatus } from "../../lib/battery";
 import {
   BATTERIES_BUILD_RELATED_INCLUDE,
   BATTERIES_TEAM_RELATED_INCLUDE,
@@ -472,6 +472,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
               <ul className="batt-fleet">
                 {view.packs.map((pack) => {
                   const measured = packHasMeasurement(pack);
+                  const breakInCue = batteryBreakInCue(pack.cycleCount);
                   return (
                     <li
                       key={pack.id}
@@ -515,6 +516,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                           ) : null}
                           {pack.status !== "active" ? <span className="batt-badge">{pack.status}</span> : null}
                           {pack.assignment ? <span className="batt-badge">{pack.assignment}</span> : null}
+                          {breakInCue ? (
+                            <span className="batt-badge aging">Break in</span>
+                          ) : null}
                         </div>
                       </div>
                       {!measured ? (
@@ -529,6 +533,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                           ].join("; ")}
                         </small>
                       ) : null}
+                      {breakInCue ? <small className="app-muted">{breakInCue}</small> : null}
                       <AssignRow pack={pack} orgId={orgId} busy={busy} run={run} />
                       <div className="batt-actions">
                         {pack.status === "active" ? (
