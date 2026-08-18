@@ -54,6 +54,10 @@ export type FrameBumperSpec = {
   bumperHardPartsInset?: boolean;
   /** True once backing is ≥ 4.25 in tall and supports all padding (R402, checklist). */
   bumperBackingTall?: boolean;
+  /** True once a cloth cover covers all padding (R402-C). */
+  bumperCoverOk?: boolean;
+  /** True once bumpers are securely mounted and easily removable for inspection. */
+  bumperRemovableOk?: boolean;
 };
 
 /** Team-declared wiring/power-distribution limits vs what was actually installed. */
@@ -190,6 +194,8 @@ export type InspectionFlagType =
   | "bumper_corners"
   | "bumper_hard_inset"
   | "bumper_backing"
+  | "bumper_cover"
+  | "bumper_not_removable"
   | "pneumatics_vent_plug"
   | "pneumatics_multi_compressor"
   | "pneumatics_relief_valve"

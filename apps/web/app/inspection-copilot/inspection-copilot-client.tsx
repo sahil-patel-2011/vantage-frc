@@ -541,6 +541,8 @@ function NewCheckForm({
   const [bumperCornersFilled, setBumperCornersFilled] = useState(false);
   const [bumperHardPartsInset, setBumperHardPartsInset] = useState(false);
   const [bumperBackingTall, setBumperBackingTall] = useState(false);
+  const [bumperCoverOk, setBumperCoverOk] = useState(false);
+  const [bumperRemovableOk, setBumperRemovableOk] = useState(false);
 
   const [mainBreakerMaxAmps, setMainBreakerMaxAmps] = useState("120");
   const [installedMainBreakerAmps, setInstalledMainBreakerAmps] = useState("120");
@@ -638,6 +640,8 @@ function NewCheckForm({
             bumperCornersFilled,
             bumperHardPartsInset,
             bumperBackingTall,
+            bumperCoverOk,
+            bumperRemovableOk,
           },
           wiringPower: {
             mainBreakerMaxAmps: Number(mainBreakerMaxAmps) || 0,
@@ -966,6 +970,22 @@ function NewCheckForm({
                   onChange={(e) => setBumperCornersFilled(e.target.checked)}
                 />
                 Corners filled with ≥ 2 in uncompressed padding, measured diagonally (R406)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperCoverOk}
+                  onChange={(e) => setBumperCoverOk(e.target.checked)}
+                />
+                Cloth cover covers all padding (R402)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperRemovableOk}
+                  onChange={(e) => setBumperRemovableOk(e.target.checked)}
+                />
+                Securely mounted and easily removable for inspection
               </label>
             </>
           ) : null}
