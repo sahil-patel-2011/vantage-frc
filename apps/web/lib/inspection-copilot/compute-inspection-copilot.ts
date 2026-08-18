@@ -102,6 +102,7 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     radioOnMainPd: Boolean(row.radioOnMainPd),
     rioOnMainPd10A: Boolean(row.rioOnMainPd10A),
     radioProgrammedForEvent: Boolean(row.radioProgrammedForEvent),
+    radioWeidmullerQc: Boolean(row.radioWeidmullerQc),
     sparkMaxEventRecorded: Boolean(row.sparkMaxEventRecorded),
     sparkMaxUsbAvoided: Boolean(row.sparkMaxUsbAvoided),
     reliabilityEventRecorded: Boolean(row.reliabilityEventRecorded),
@@ -112,6 +113,7 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     canivorePdhBackup: Boolean(row.canivorePdhBackup),
     batteryLeadsTorqued: Boolean(row.batteryLeadsTorqued),
     mainBreakerCovered: Boolean(row.mainBreakerCovered),
+    rioUsbCameraClear: Boolean(row.rioUsbCameraClear),
   };
 }
 

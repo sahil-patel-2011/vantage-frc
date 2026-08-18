@@ -31,6 +31,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Battery beak / voltmeter", quantity: 1 },
       { label: "Spare battery strap with metal buckle (not zip ties)", quantity: 2 },
       { label: "Battery-box foam so the pack cannot rattle (wears through heat shrink)", quantity: 1 },
+      { label: "Keep battery vents clear while charging (R601 — no strap/crate over the vent)", quantity: 1 },
       { label: "Power strips and extension cords", quantity: 2 },
     ],
   },
