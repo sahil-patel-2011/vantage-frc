@@ -570,6 +570,7 @@ describe("predictInspectionFailures bumper construction", () => {
     expect(prediction.flags.some((flag) => flag.type === "bumper_hard_inset")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_backing")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_cover")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_cross_section")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_not_removable")).toBe(false);
   });
 
@@ -591,6 +592,7 @@ describe("predictInspectionFailures bumper construction", () => {
         "bumper_hard_inset",
         "bumper_backing",
         "bumper_cover",
+        "bumper_cross_section",
         "bumper_not_removable",
       ]),
     );
@@ -613,6 +615,7 @@ describe("predictInspectionFailures bumper construction", () => {
         bumperHardPartsInset: true,
         bumperBackingTall: true,
         bumperCoverOk: true,
+        bumperCrossSectionOk: true,
         bumperRemovableOk: true,
       },
       wiringPower: wiring,
@@ -625,6 +628,7 @@ describe("predictInspectionFailures bumper construction", () => {
     expect(prediction.flags.some((flag) => flag.type === "bumper_hard_inset")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_backing")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_cover")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_cross_section")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_not_removable")).toBe(false);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });

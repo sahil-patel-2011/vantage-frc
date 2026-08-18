@@ -126,6 +126,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Bumper-extension gauge (stack ≤ 4.25 in from perimeter; R403)", quantity: 1 },
       { label: "Hard-parts gauge (≤ 1.5 in from perimeter, padding ≥ 2 in past wood; R404)", quantity: 1 },
       { label: "Backing height card (≥ 4.25 in tall supporting all padding; R402)", quantity: 1 },
+      { label: "R402 cross-section card (padding+backing+cover; wrap only at ends)", quantity: 1 },
       { label: "Corner-fill foam (2 in diagonal uncompressed; R406)", quantity: 1 },
       { label: "Current game manual / team updates printout", quantity: 1 },
       { label: "USB / printed CAD packet for inspector questions", quantity: 1 },

@@ -72,6 +72,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /1\.5 in/i.test(item) && /R404/i.test(item))).toBe(true);
     expect(all.some((item) => /4\.25 in/i.test(item) && /R402/i.test(item))).toBe(true);
     expect(all.some((item) => /cloth cover/i.test(item) && /R402/i.test(item))).toBe(true);
+    expect(all.some((item) => /vertical bumper cross-section/i.test(item) && /R402/i.test(item))).toBe(true);
     expect(all.some((item) => /easily removable/i.test(item))).toBe(true);
     expect(all.some((item) => /2 in/i.test(item) && /R406/i.test(item))).toBe(true);
     expect(all.some((item) => /120 psi/i.test(item) && /60 psi/i.test(item))).toBe(true);
