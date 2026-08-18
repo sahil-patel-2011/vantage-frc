@@ -451,6 +451,25 @@ export function predictInspectionFailures(input: {
     }
   }
 
+  if (wiringPower.rslEventRecorded) {
+    if (!wiringPower.rslVisible36) {
+      flags.push({
+        type: "rsl_not_visible",
+        severity: "critical",
+        message:
+          "Robot signal light is not marked visible from 36 in on at least one side — inspectors fail an RSL they cannot see from the side of the robot.",
+      });
+    }
+    if (!wiringPower.rslOnRioPort) {
+      flags.push({
+        type: "rsl_not_on_rio_port",
+        severity: "critical",
+        message:
+          "Robot signal light is not marked plugged into the roboRIO RSL port and flashing in sync — PWM or extra LEDs do not count.",
+      });
+    }
+  }
+
   const checkCount =
     (weightBudget.limitLbs > 0 ? 1 : 0) +
     (frameBumper.perimeterLimitIn > 0 ? 1 : 0) +
@@ -465,7 +484,8 @@ export function predictInspectionFailures(input: {
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 8 : 0) +
     (wiringPower.pneumaticsEventRecorded ? 5 : 0) +
-    (wiringPower.isolationEventRecorded ? 2 : 0);
+    (wiringPower.isolationEventRecorded ? 2 : 0) +
+    (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));
 

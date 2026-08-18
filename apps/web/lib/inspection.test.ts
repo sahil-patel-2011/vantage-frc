@@ -52,6 +52,8 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(new Set(all).size).toBe(all.length);
     expect(all.some((item) => /1\.25/i.test(item) && /5 in/i.test(item))).toBe(true);
     expect(all.some((item) => /R409/i.test(item) && /electrical/i.test(item))).toBe(true);
+    expect(all.some((item) => /0\.25 in/i.test(item) && /R101/i.test(item))).toBe(true);
+    expect(all.some((item) => /36 in/i.test(item) && /RSL/i.test(item))).toBe(true);
     expect(all.some((item) => /solid-core foam/i.test(item) && /hollow/i.test(item))).toBe(true);
     expect(all.some((item) => /reversible/i.test(item))).toBe(true);
     expect(all.some((item) => /115 lb/i.test(item) && /R103/i.test(item))).toBe(true);

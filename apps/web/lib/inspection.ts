@@ -19,7 +19,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Starting volume: perimeter ≤ 110 in, height ≤ 30 in (R104)",
       "Starting configuration does not overhang the robot perimeter",
       "In-match extension ≤ 12 in horizontally (one direction at a time) and ≤ 30 in tall; bumpers stay in the bumper zone",
-      "Frame perimeter is rigid and continuous",
+      "Frame perimeter is rigid, continuous, and non-articulated; minor protrusions ≤ 0.25 in (R101)",
       "Bumpers cover the required frame perimeter",
       "Bumper gaps < 1.25 in, or one larger gap with ≥ 5 in coverage from each corner (R401)",
       "Bumpers have no moving or electrical parts (R409)",
@@ -41,7 +41,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Frame electrically isolated (>120Ω) from PD Anderson posts (battery out, breaker on)",
       "All motors and actuators are legal and correctly breakered",
       "Battery terminals insulated; no exposed conductors",
-      "Robot signal light installed and visible",
+      "Robot signal light visible from 36 in on at least one side, on the roboRIO RSL port, flashing in sync",
     ],
   },
   {
