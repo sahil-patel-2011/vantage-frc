@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePowerAction, summarizePower, validateLoad } from "./power-budget";
+import { breakerSizeCues, currentLimitCue, parsePowerAction, summarizePower, validateLoad } from "./power-budget";
 
 describe("validateLoad", () => {
   it("requires a name", () => {
@@ -37,6 +37,19 @@ describe("summarizePower", () => {
   it("has no trip risk when peaks stay within breakers", () => {
     const summary = summarizePower([{ name: "Drive", typicalAmps: 30, peakAmps: 38, breakerAmps: 40 }]);
     expect(summary.tripRisks).toEqual([]);
+  });
+
+  it("cues logged radio/swerve breaker sizes without inventing a rating", () => {
+    expect(breakerSizeCues([{ name: "Radio", typicalAmps: 2, peakAmps: 2, breakerAmps: null }])).toEqual([]);
+    expect(
+      breakerSizeCues([{ name: "VH-109 radio", subsystem: "comms", typicalAmps: 2, peakAmps: 2, breakerAmps: 40 }]),
+    ).toHaveLength(1);
+    expect(
+      breakerSizeCues([{ name: "MAXSwerve", subsystem: "drive", typicalAmps: 20, peakAmps: 40, breakerAmps: 10 }]),
+    ).toHaveLength(1);
+    expect(currentLimitCue(true, 0)).toBeNull();
+    expect(currentLimitCue(true, 3)).toMatch(/current limits/i);
+    expect(currentLimitCue(false, 3)).toBeNull();
   });
 });
 

@@ -60,12 +60,47 @@ export function validateLoad(raw: Record<string, unknown>): { ok: true; value: L
   };
 }
 
-export type PowerLoad = { name: string; typicalAmps: number | null; peakAmps: number | null; breakerAmps: number | null };
+export type PowerLoad = {
+  name: string;
+  subsystem?: string;
+  typicalAmps: number | null;
+  peakAmps: number | null;
+  breakerAmps: number | null;
+};
+
+/**
+ * CD 2026: 40A radios and 10A swerve modules showed up in the pit.
+ * Only flags when the team logged a breaker rating — never invents a size.
+ */
+export function breakerSizeCues(loads: PowerLoad[]): string[] {
+  const cues: string[] = [];
+  for (const load of loads) {
+    if (load.breakerAmps == null) continue;
+    const hay = `${load.name} ${load.subsystem ?? ""}`.toLowerCase();
+    if (/\bradio\b|vh-?109/.test(hay) && load.breakerAmps >= 20) {
+      cues.push(
+        `${load.name}: ${load.breakerAmps}A breaker on a radio — use the documented PD branch, not a 40A slot.`,
+      );
+    }
+    if (/\bswerve\b|\bdrive(train)?\b/.test(hay) && load.breakerAmps > 0 && load.breakerAmps <= 10) {
+      cues.push(
+        `${load.name}: ${load.breakerAmps}A breaker on drivetrain/swerve — 10A modules nuisance-trip under load.`,
+      );
+    }
+  }
+  return cues;
+}
+
+export function currentLimitCue(brownoutRisk: boolean, loadCount: number): string | null {
+  if (!brownoutRisk || loadCount === 0) return null;
+  return "Set supply current limits on every motor before blaming ESD — brownouts this year were usually missing limits.";
+}
 
 /**
  * Totals the draw and flags failure modes:
  *  - trip risk: a load whose peak current exceeds its own branch breaker.
  *  - brownout risk: total typical draw over the sustained-draw ceiling.
+ *  - breaker size cues: radio/swerve sizes only from logged ratings.
  */
 export function summarizePower(loads: PowerLoad[], sustainedCeiling = SUSTAINED_DRAW_CEILING_AMPS) {
   const totalTypicalAmps = round1(loads.reduce((sum, l) => sum + (l.typicalAmps ?? 0), 0));
@@ -73,13 +108,16 @@ export function summarizePower(loads: PowerLoad[], sustainedCeiling = SUSTAINED_
   const tripRisks = loads
     .filter((l) => l.peakAmps != null && l.breakerAmps != null && l.peakAmps > l.breakerAmps)
     .map((l) => l.name);
+  const brownoutRisk = totalTypicalAmps > sustainedCeiling;
   return {
     count: loads.length,
     totalTypicalAmps,
     totalPeakAmps,
     tripRisks,
-    brownoutRisk: totalTypicalAmps > sustainedCeiling,
+    brownoutRisk,
     sustainedCeiling,
+    breakerSizeCues: breakerSizeCues(loads),
+    currentLimitCue: currentLimitCue(brownoutRisk, loads.length),
   };
 }
 
