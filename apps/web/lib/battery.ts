@@ -145,6 +145,24 @@ export function batteryOverDischargeCue(input: {
   return BATTERY_OVER_DISCHARGE_CUE;
 }
 
+/** 2026 R601-G: cue only while the latest log is a charge, never invent a blocked vent. */
+export const BATTERY_VENT_CHARGE_CUE =
+  "Last log is a charge — keep the inset vent rectangle clear (R601-G). Tie-down straps over the short edges are ok; a sealed crate or cover is not.";
+
+export function batteryVentChargeCue(input: {
+  lastChargedAt: string | null | undefined;
+  lastUsedAt: string | null | undefined;
+}): string | null {
+  if (!input.lastChargedAt) return null;
+  const chargedMs = Date.parse(input.lastChargedAt);
+  if (!Number.isFinite(chargedMs)) return null;
+  if (input.lastUsedAt) {
+    const usedMs = Date.parse(input.lastUsedAt);
+    if (Number.isFinite(usedMs) && usedMs >= chargedMs) return null;
+  }
+  return BATTERY_VENT_CHARGE_CUE;
+}
+
 export function monthsBetween(fromIso: string | null, now: Date): number | null {
   if (!fromIso) return null;
   const from = new Date(fromIso);

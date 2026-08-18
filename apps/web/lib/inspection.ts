@@ -39,6 +39,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
     category: "Electrical",
     items: [
       "Single legal battery, securely mounted and connected",
+      "Battery vents unobstructed while charging (R601-G; straps on short edges ok)",
       "Main breaker (120A) accessible and labeled",
       "Power distribution wiring uses legal gauge and colors",
       "PDH ATM fuses ≤ 15A except one 20A powering a PCM/PH (or a 20A breaker)",

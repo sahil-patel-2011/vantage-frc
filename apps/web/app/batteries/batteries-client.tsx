@@ -5,7 +5,7 @@ import { EmptyState, PageHeader } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
-import { BATTERY_LOG_KINDS, batteryBreakInCue, batteryOverDischargeCue, type BatteryStatus, type CartSlot, type HealthStatus } from "../../lib/battery";
+import { BATTERY_LOG_KINDS, batteryBreakInCue, batteryOverDischargeCue, batteryVentChargeCue, type BatteryStatus, type CartSlot, type HealthStatus } from "../../lib/battery";
 import {
   BATTERIES_BUILD_RELATED_INCLUDE,
   BATTERIES_TEAM_RELATED_INCLUDE,
@@ -477,6 +477,10 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                     cycleCount: pack.cycleCount,
                     lastRestingVoltage: pack.lastRestingVoltage,
                   });
+                  const ventChargeCue = batteryVentChargeCue({
+                    lastChargedAt: pack.lastChargedAt,
+                    lastUsedAt: pack.lastUsedAt,
+                  });
                   return (
                     <li
                       key={pack.id}
@@ -526,6 +530,9 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                           {overDischargeCue ? (
                             <span className="batt-badge aging">Over-discharge</span>
                           ) : null}
+                          {ventChargeCue ? (
+                            <span className="batt-badge aging">Charge vents</span>
+                          ) : null}
                         </div>
                       </div>
                       {!measured ? (
@@ -542,6 +549,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
                       ) : null}
                       {breakInCue ? <small className="app-muted">{breakInCue}</small> : null}
                       {overDischargeCue ? <small className="app-muted">{overDischargeCue}</small> : null}
+                      {ventChargeCue ? <small className="app-muted">{ventChargeCue}</small> : null}
                       <AssignRow pack={pack} orgId={orgId} busy={busy} run={run} />
                       <div className="batt-actions">
                         {pack.status === "active" ? (
