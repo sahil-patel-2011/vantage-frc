@@ -494,6 +494,8 @@ describe("predictInspectionFailures bumper construction", () => {
     expect(prediction.flags.some((flag) => flag.type === "bumper_gaps")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_electronics")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_numbers")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_hard_parts")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_corners")).toBe(false);
   });
 
   it("flags logged hollow foam and reversible sets without DEMO wording", () => {
@@ -503,7 +505,15 @@ describe("predictInspectionFailures bumper construction", () => {
       wiringPower: wiring,
     });
     expect(prediction.flags.map((flag) => flag.type)).toEqual(
-      expect.arrayContaining(["bumper_hollow_foam", "bumper_reversible", "bumper_gaps", "bumper_electronics", "bumper_numbers"]),
+      expect.arrayContaining([
+        "bumper_hollow_foam",
+        "bumper_reversible",
+        "bumper_gaps",
+        "bumper_electronics",
+        "bumper_numbers",
+        "bumper_hard_parts",
+        "bumper_corners",
+      ]),
     );
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
@@ -519,12 +529,16 @@ describe("predictInspectionFailures bumper construction", () => {
         bumperGapsOk: true,
         bumperNoElectronics: true,
         bumperNumbersLegal: true,
+        bumperHardPartsOk: true,
+        bumperCornersFilled: true,
       },
       wiringPower: wiring,
     });
     expect(prediction.flags.some((flag) => flag.type === "bumper_gaps")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_electronics")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_numbers")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_hard_parts")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_corners")).toBe(false);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });
