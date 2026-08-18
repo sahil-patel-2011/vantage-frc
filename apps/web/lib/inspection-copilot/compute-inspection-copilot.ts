@@ -132,6 +132,7 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     batteryLeadsTorqued: Boolean(row.batteryLeadsTorqued),
     mainBreakerCovered: Boolean(row.mainBreakerCovered),
     rioUsbCameraClear: Boolean(row.rioUsbCameraClear),
+    pcmRadioSeparated: Boolean(row.pcmRadioSeparated),
     pneumaticsEventRecorded: Boolean(row.pneumaticsEventRecorded),
     ventPlugAccessible: Boolean(row.ventPlugAccessible),
     singleOnboardCompressor: Boolean(row.singleOnboardCompressor),

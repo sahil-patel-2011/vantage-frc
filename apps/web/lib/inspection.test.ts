@@ -81,6 +81,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /1\/4 in/i.test(item) && /tubing/i.test(item))).toBe(true);
     expect(all.some((item) => /Relieving pressure regulator/i.test(item))).toBe(true);
     expect(all.some((item) => /starts when the robot is enabled/i.test(item))).toBe(true);
+    expect(all.some((item) => /PCM\/PH mounted away from the radio/i.test(item))).toBe(true);
     expect(all.some((item) => /RIO-port/i.test(item) && /VRM\/RPM/i.test(item))).toBe(true);
     expect(all.some((item) => /v1\.5/i.test(item) && /v1\.0/i.test(item) && /PoE/i.test(item))).toBe(true);
     expect(all.some((item) => /110 in/i.test(item) && /30 in/i.test(item))).toBe(true);

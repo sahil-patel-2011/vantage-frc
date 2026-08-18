@@ -572,6 +572,7 @@ function NewCheckForm({
   const [batteryLeadsTorqued, setBatteryLeadsTorqued] = useState(false);
   const [mainBreakerCovered, setMainBreakerCovered] = useState(false);
   const [rioUsbCameraClear, setRioUsbCameraClear] = useState(false);
+  const [pcmRadioSeparated, setPcmRadioSeparated] = useState(false);
   const [pneumaticsEventRecorded, setPneumaticsEventRecorded] = useState(false);
   const [ventPlugAccessible, setVentPlugAccessible] = useState(false);
   const [singleOnboardCompressor, setSingleOnboardCompressor] = useState(false);
@@ -672,6 +673,7 @@ function NewCheckForm({
             batteryLeadsTorqued,
             mainBreakerCovered,
             rioUsbCameraClear,
+            pcmRadioSeparated,
             pneumaticsEventRecorded,
             ventPlugAccessible,
             singleOnboardCompressor,
@@ -1125,8 +1127,8 @@ function NewCheckForm({
         <strong className="app-muted">2026 pit reliability</strong>
         <p className="app-muted">
           FRC pit walk: strain relief, cable pinch, static vs loose wiring, CANivore backup power, torqued leads, breaker
-          cover, no RIO USB camera next to a CANivore. Leave this off until you actually walk the robot — never invent a
-          fail.
+          cover, no RIO USB camera next to a CANivore, PCM/PH away from the radio. Leave this off until you actually walk
+          the robot — never invent a fail.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1190,6 +1192,14 @@ function NewCheckForm({
                   onChange={(e) => setRioUsbCameraClear(e.target.checked)}
                 />
                 No USB camera on the RIO ports next to a CANivore (ESD kills both 5 V rails)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={pcmRadioSeparated}
+                  onChange={(e) => setPcmRadioSeparated(e.target.checked)}
+                />
+                PCM/PH kept away from the radio (RF looks like a compressor fault)
               </label>
             </>
           ) : null}
