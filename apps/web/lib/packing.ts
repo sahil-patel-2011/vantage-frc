@@ -87,6 +87,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Tape unused PDH / RIO / VRM ports (conductive debris reboots radios)", quantity: 1 },
       { label: "PDH ATM 15A fuses + one 20A for PCM/PH (or 20A breaker; not a yellow fuse farm)", quantity: 1 },
       { label: "Legal PD ATO/Maxi breakers (VB3/AT2/MX5/REV/CTR, ≤40A)", quantity: 1 },
+      { label: "Do not run motors off a Mini Power Module (R621 custom-circuit split)", quantity: 1 },
       { label: "Don't bury the PDH — inspectors need to see breakers and wiring", quantity: 1 },
       { label: "Keep PCM/PH ≥ 6 in from the radio (RF compressor faults)", quantity: 1 },
     ],

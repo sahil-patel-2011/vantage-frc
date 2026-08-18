@@ -70,6 +70,8 @@ export async function GET(request: Request) {
             typicalAmps: l.typicalAmps,
             peakAmps: l.peakAmps,
             breakerAmps: l.breakerAmps,
+            motorCount: l.motorCount,
+            notes: l.notes,
           })),
         ),
       };

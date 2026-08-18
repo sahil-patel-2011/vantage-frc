@@ -7,7 +7,7 @@ type Load = {
 };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; loads: Load[]; summary: { count: number; totalTypicalAmps: number; totalPeakAmps: number; tripRisks: string[]; brownoutRisk: boolean; sustainedCeiling: number; breakerSizeCues: string[]; currentLimitCue: string | null; staggerCue: string | null } };
+  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; loads: Load[]; summary: { count: number; totalTypicalAmps: number; totalPeakAmps: number; tripRisks: string[]; brownoutRisk: boolean; sustainedCeiling: number; breakerSizeCues: string[]; mpmMotorCues: string[]; currentLimitCue: string | null; staggerCue: string | null } };
 
 const EMPTY = { name: "", subsystem: "", motorCount: "", typicalAmps: "", peakAmps: "", breakerAmps: "", notes: "" };
 
@@ -49,6 +49,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
 
   const s = view.summary;
   const breakerCues = s.breakerSizeCues ?? [];
+  const mpmCues = s.mpmMotorCues ?? [];
   const trip = new Set(s.tripRisks);
 
   return (
@@ -66,7 +67,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
         <article><span>Brownout risk</span><strong>{s.brownoutRisk ? "YES" : "no"}</strong></article>
       </section>
 
-      {(s.brownoutRisk || s.tripRisks.length > 0 || breakerCues.length > 0 || Boolean(s.currentLimitCue) || Boolean(s.staggerCue)) && (
+      {(s.brownoutRisk || s.tripRisks.length > 0 || breakerCues.length > 0 || mpmCues.length > 0 || Boolean(s.currentLimitCue) || Boolean(s.staggerCue)) && (
         <section className="intel-panel" style={{ borderColor: "#b91c1c" }}>
           <span className="eyebrow">⚠ POWER WARNINGS</span>
           {s.brownoutRisk && <article><div><strong>Brownout risk: {s.totalTypicalAmps} A typical draw exceeds the {s.sustainedCeiling} A sustained ceiling. Expect voltage sag under load.</strong></div></article>}
@@ -74,6 +75,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
           {s.staggerCue ? <article><div><strong>{s.staggerCue}</strong></div></article> : null}
           {s.tripRisks.map((name) => <article key={name}><div><strong>{name}: peak current exceeds its branch breaker — it will trip.</strong></div></article>)}
           {breakerCues.map((cue) => <article key={cue}><div><strong>{cue}</strong></div></article>)}
+          {mpmCues.map((cue) => <article key={cue}><div><strong>{cue}</strong></div></article>)}
         </section>
       )}
 

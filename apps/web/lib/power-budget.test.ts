@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakerSizeCues, currentLimitCue, parsePowerAction, staggerCue, summarizePower, validateLoad } from "./power-budget";
+import { breakerSizeCues, currentLimitCue, mpmMotorCues, parsePowerAction, staggerCue, summarizePower, validateLoad } from "./power-budget";
 
 describe("validateLoad", () => {
   it("requires a name", () => {
@@ -54,6 +54,26 @@ describe("summarizePower", () => {
     expect(staggerCue(true)).toMatch(/stagger/i);
     expect(summarizePower([{ name: "All motors", typicalAmps: 130, peakAmps: null, breakerAmps: null }], 100).staggerCue).toMatch(
       /binding/i,
+    );
+  });
+
+  it("cues a logged Mini Power Module feeding motors without inventing an MPM", () => {
+    expect(
+      mpmMotorCues([{ name: "Sensors", typicalAmps: 1, peakAmps: 1, breakerAmps: 10, motorCount: 0 }]),
+    ).toEqual([]);
+    expect(
+      mpmMotorCues([{ name: "Intake MPM", typicalAmps: 20, peakAmps: 40, breakerAmps: 40, motorCount: 2 }]),
+    ).toHaveLength(1);
+    expect(
+      mpmMotorCues([
+        { name: "Mini PD fans", notes: "custom circuit", typicalAmps: 2, peakAmps: 2, breakerAmps: 10, motorCount: 0 },
+      ]),
+    ).toEqual([]);
+    expect(JSON.stringify(mpmMotorCues([{ name: "MPM motors", typicalAmps: 10, peakAmps: 20, breakerAmps: 40, motorCount: 1 }])).toLowerCase()).not.toContain(
+      "demo",
+    );
+    expect(summarizePower([{ name: "Intake MPM", typicalAmps: 20, peakAmps: 40, breakerAmps: 40, motorCount: 3 }]).mpmMotorCues).toHaveLength(
+      1,
     );
   });
 });
