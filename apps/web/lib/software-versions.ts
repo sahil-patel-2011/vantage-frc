@@ -106,6 +106,32 @@ export function vh109FirmwareCue(
   return VH109_FIRMWARE_CUE;
 }
 
+const SEASON_STACK_NAME = /wpilib|roborio|driver.?station|game tools/i;
+
+/** CD: 2026 Tuner / Game Tools will not talk to a leftover 2025 RIO image. Cue only from a logged stack row. */
+export const STALE_SEASON_STACK_CUE =
+  "Logged WPILib, roboRIO image, or Driver Station is still last season's year — install this season's Game Tools and matching RIO image before Phoenix Tuner and the field will talk.";
+
+function installedCalendarYear(raw: string): number | null {
+  const match = raw.trim().match(/20\d{2}/);
+  if (!match) return null;
+  const year = Number(match[0]);
+  return Number.isInteger(year) ? year : null;
+}
+
+export function staleSeasonStackCue(
+  components: Array<{ component: string; installedVersion: string }>,
+  seasonYear: number,
+): string | null {
+  if (!Number.isInteger(seasonYear) || seasonYear < 2000) return null;
+  const stale = components.some((row) => {
+    if (!SEASON_STACK_NAME.test(row.component)) return false;
+    const year = installedCalendarYear(row.installedVersion);
+    return year != null && year < seasonYear;
+  });
+  return stale ? STALE_SEASON_STACK_CUE : null;
+}
+
 // ---- request validation --------------------------------------------------
 
 export type SoftwareVersionAction =

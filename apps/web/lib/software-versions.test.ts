@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSoftwareVersionAction, summarizeVersions, validateComponent, versionStatus, vh109FirmwareCue, VH109_FIRMWARE_CUE } from "./software-versions";
+import { parseSoftwareVersionAction, staleSeasonStackCue, summarizeVersions, validateComponent, versionStatus, vh109FirmwareCue, STALE_SEASON_STACK_CUE, VH109_FIRMWARE_CUE } from "./software-versions";
 
 describe("versionStatus", () => {
   it("is ok when installed matches target", () => {
@@ -53,6 +53,23 @@ describe("vh109FirmwareCue", () => {
     expect(vh109FirmwareCue([{ component: "Radio firmware", installedVersion: "2.00" }])).toBe(VH109_FIRMWARE_CUE);
     expect(vh109FirmwareCue([{ component: "VH-109 radio", installedVersion: "2.01" }])).toBeNull();
     expect(vh109FirmwareCue([{ component: "Radio firmware", installedVersion: "unparsed" }])).toBeNull();
+  });
+});
+
+describe("staleSeasonStackCue", () => {
+  it("cues only a logged WPILib / RIO / DS year behind the season — never invents a stack", () => {
+    expect(staleSeasonStackCue([], 2026)).toBeNull();
+    expect(staleSeasonStackCue([{ component: "Radio firmware", installedVersion: "2.00" }], 2026)).toBeNull();
+    expect(staleSeasonStackCue([{ component: "WPILib", installedVersion: "2026.1.1" }], 2026)).toBeNull();
+    expect(staleSeasonStackCue([{ component: "WPILib", installedVersion: "2025.3.2" }], 2026)).toBe(STALE_SEASON_STACK_CUE);
+    expect(staleSeasonStackCue([{ component: "roboRIO image", installedVersion: "FRC_roboRIO_2025_v2.0" }], 2026)).toBe(
+      STALE_SEASON_STACK_CUE,
+    );
+    expect(staleSeasonStackCue([{ component: "Driver Station / NI Game Tools", installedVersion: "2025.0.0" }], 2026)).toBe(
+      STALE_SEASON_STACK_CUE,
+    );
+    expect(staleSeasonStackCue([{ component: "roboRIO image", installedVersion: "unparsed" }], 2026)).toBeNull();
+    expect(JSON.stringify(STALE_SEASON_STACK_CUE).toLowerCase()).not.toContain("demo");
   });
 });
 
