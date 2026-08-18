@@ -445,3 +445,123 @@ describe("predictInspectionFailures 2026 pit reliability", () => {
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("cheesycare");
   });
 });
+
+describe("predictInspectionFailures bumper construction", () => {
+  const wiring = {
+    mainBreakerMaxAmps: 120,
+    installedMainBreakerAmps: 120,
+    batterySecured: true,
+    wiresLabeled: true,
+    radioPowerOk: true,
+    bypassSwitchAccessible: true,
+    binderRecorded: false,
+    bomPrinted: false,
+    inspectionChecklistPrinted: false,
+    studentCaptainPresent: false,
+    radioEventRecorded: false,
+    radioOnMainPd: false,
+    rioOnMainPd10A: false,
+    radioProgrammedForEvent: false,
+    radioWeidmullerQc: false,
+    sparkMaxEventRecorded: false,
+    sparkMaxUsbAvoided: false,
+    reliabilityEventRecorded: false,
+    strainReliefOk: false,
+    dynamicCableClear: false,
+    esdIntakeBonded: false,
+    esdShielded: false,
+    canivorePdhBackup: false,
+    batteryLeadsTorqued: false,
+    mainBreakerCovered: false,
+    rioUsbCameraClear: false,
+  };
+  const frameBumper = {
+    perimeterLimitIn: 120,
+    measuredPerimeterIn: 110,
+    bumperMinHeightIn: 2.5,
+    bumperMaxHeightIn: 7.5,
+    measuredBumperMinHeightIn: 3,
+    measuredBumperMaxHeightIn: 6,
+    bumperMinThicknessIn: 1,
+    measuredBumperThicknessIn: 1.5,
+  };
+  const weightBudget = { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] };
+
+  it("does not invent hollow foam or reversible bumpers until construction is logged", () => {
+    const prediction = predictInspectionFailures({ weightBudget, frameBumper, wiringPower: wiring });
+    expect(prediction.flags.some((flag) => flag.type === "bumper_hollow_foam")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_reversible")).toBe(false);
+  });
+
+  it("flags logged hollow foam and reversible sets without DEMO wording", () => {
+    const prediction = predictInspectionFailures({
+      weightBudget,
+      frameBumper: { ...frameBumper, bumperEventRecorded: true },
+      wiringPower: wiring,
+    });
+    expect(prediction.flags.map((flag) => flag.type)).toEqual(
+      expect.arrayContaining(["bumper_hollow_foam", "bumper_reversible"]),
+    );
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+});
+
+describe("predictInspectionFailures pneumatics", () => {
+  const wiring = {
+    mainBreakerMaxAmps: 120,
+    installedMainBreakerAmps: 120,
+    batterySecured: true,
+    wiresLabeled: true,
+    radioPowerOk: true,
+    bypassSwitchAccessible: true,
+    binderRecorded: false,
+    bomPrinted: false,
+    inspectionChecklistPrinted: false,
+    studentCaptainPresent: false,
+    radioEventRecorded: false,
+    radioOnMainPd: false,
+    rioOnMainPd10A: false,
+    radioProgrammedForEvent: false,
+    radioWeidmullerQc: false,
+    sparkMaxEventRecorded: false,
+    sparkMaxUsbAvoided: false,
+    reliabilityEventRecorded: false,
+    strainReliefOk: false,
+    dynamicCableClear: false,
+    esdIntakeBonded: false,
+    esdShielded: false,
+    canivorePdhBackup: false,
+    batteryLeadsTorqued: false,
+    mainBreakerCovered: false,
+    rioUsbCameraClear: false,
+  };
+  const limits = {
+    weightBudget: { limitLbs: 125, items: [{ name: "Chassis", weightLbs: 80 }] },
+    frameBumper: {
+      perimeterLimitIn: 120,
+      measuredPerimeterIn: 110,
+      bumperMinHeightIn: 2.5,
+      bumperMaxHeightIn: 7.5,
+      measuredBumperMinHeightIn: 3,
+      measuredBumperMaxHeightIn: 6,
+      bumperMinThicknessIn: 1,
+      measuredBumperThicknessIn: 1.5,
+    },
+  };
+
+  it("does not invent a vent-plug fail when the robot has no pneumatics walk", () => {
+    const prediction = predictInspectionFailures({ ...limits, wiringPower: wiring });
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_vent_plug")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_multi_compressor")).toBe(false);
+  });
+
+  it("flags a hidden vent plug once pneumatics are logged", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: { ...wiring, pneumaticsEventRecorded: true, singleOnboardCompressor: true },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_vent_plug")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "pneumatics_multi_compressor")).toBe(false);
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+});

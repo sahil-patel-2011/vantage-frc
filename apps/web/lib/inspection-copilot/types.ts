@@ -26,6 +26,13 @@ export type FrameBumperSpec = {
   measuredBumperMaxHeightIn: number;
   bumperMinThicknessIn: number;
   measuredBumperThicknessIn: number;
+  /**
+   * When false, 2026 bumper-construction flags are skipped (never invent hollow foam).
+   * CD: hollow pool noodles are illegal; reversible sets keep failing at events.
+   */
+  bumperEventRecorded?: boolean;
+  solidCoreFoam?: boolean;
+  separateColorSets?: boolean;
 };
 
 /** Team-declared wiring/power-distribution limits vs what was actually installed. */
@@ -75,6 +82,13 @@ export type WiringPowerSpec = {
   mainBreakerCovered: boolean;
   /** True once USB cameras are off the RIO USB ports next to a CANivore. */
   rioUsbCameraClear: boolean;
+  /**
+   * When false, pneumatics flags are skipped (robots without air never invent a vent-plug fail).
+   * CD / inspection checklist: hidden vent plugs and extra compressors stop Thursday.
+   */
+  pneumaticsEventRecorded?: boolean;
+  ventPlugAccessible?: boolean;
+  singleOnboardCompressor?: boolean;
 };
 
 export type InspectionFlagType =
@@ -103,7 +117,11 @@ export type InspectionFlagType =
   | "canivore_no_pdh_backup"
   | "battery_leads_loose"
   | "main_breaker_exposed"
-  | "rio_usb_camera_canivore";
+  | "rio_usb_camera_canivore"
+  | "bumper_hollow_foam"
+  | "bumper_reversible"
+  | "pneumatics_vent_plug"
+  | "pneumatics_multi_compressor";
 
 export type InspectionFlagSeverity = "info" | "warning" | "critical";
 

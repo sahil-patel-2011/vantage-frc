@@ -81,6 +81,9 @@ export function parseFrameBumper(value: unknown): FrameBumperSpec {
     measuredBumperMaxHeightIn: nonNegativeNumber(row.measuredBumperMaxHeightIn),
     bumperMinThicknessIn: nonNegativeNumber(row.bumperMinThicknessIn),
     measuredBumperThicknessIn: nonNegativeNumber(row.measuredBumperThicknessIn),
+    bumperEventRecorded: Boolean(row.bumperEventRecorded),
+    solidCoreFoam: Boolean(row.solidCoreFoam),
+    separateColorSets: Boolean(row.separateColorSets),
   };
 }
 
@@ -114,6 +117,9 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     batteryLeadsTorqued: Boolean(row.batteryLeadsTorqued),
     mainBreakerCovered: Boolean(row.mainBreakerCovered),
     rioUsbCameraClear: Boolean(row.rioUsbCameraClear),
+    pneumaticsEventRecorded: Boolean(row.pneumaticsEventRecorded),
+    ventPlugAccessible: Boolean(row.ventPlugAccessible),
+    singleOnboardCompressor: Boolean(row.singleOnboardCompressor),
   };
 }
 
