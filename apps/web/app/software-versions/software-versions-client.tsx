@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { COMMON_COMPONENTS, VERSION_CATEGORIES, VERSION_CATEGORY_LABEL, staleSeasonStackCue, vh109FirmwareCue, type VersionCategory, type VersionStatus } from "../../lib/software-versions";
+import { COMMON_COMPONENTS, VERSION_CATEGORIES, VERSION_CATEGORY_LABEL, inspectionDsCue, inspectionRioImageCue, staleSeasonStackCue, vh109FirmwareCue, type VersionCategory, type VersionStatus } from "../../lib/software-versions";
 
 type Component = {
   id: string; component: string; category: VersionCategory; installedVersion: string;
@@ -52,6 +52,8 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
   const existing = new Set(view.components.map((c) => c.component));
   const radioFirmwareCue = vh109FirmwareCue(view.components);
   const seasonStackCue = staleSeasonStackCue(view.components, view.seasonYear);
+  const rioImageCue = inspectionRioImageCue(view.components, view.seasonYear);
+  const dsCue = inspectionDsCue(view.components, view.seasonYear);
 
   return (
     <main className="intel-app">
@@ -62,6 +64,8 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
       {message && <p className="telemetry-status">{message}</p>}
       {radioFirmwareCue ? <p className="telemetry-status" role="status">{radioFirmwareCue}</p> : null}
       {seasonStackCue ? <p className="telemetry-status" role="status">{seasonStackCue}</p> : null}
+      {rioImageCue ? <p className="telemetry-status" role="status">{rioImageCue}</p> : null}
+      {dsCue ? <p className="telemetry-status" role="status">{dsCue}</p> : null}
 
       <section className="metric-grid">
         <article><span>Components tracked</span><strong>{view.summary.total}</strong></article>
