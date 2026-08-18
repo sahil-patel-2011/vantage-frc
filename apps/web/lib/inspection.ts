@@ -41,7 +41,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Main breaker (120A) accessible and labeled",
       "Power distribution wiring uses legal gauge and colors",
       "roboRIO powered directly from the PDP/PDH",
-      "Radio powered by an approved regulated source",
+      "Radio powered by RIO-port injection and/or 12V from a PD (not VRM/RPM); LEDs visible to field staff",
       "Frame electrically isolated (>120Ω) from PD Anderson posts (battery out, breaker on)",
       "All motors and actuators are legal and correctly breakered",
       "Battery terminals insulated; no exposed conductors",
@@ -59,6 +59,8 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Pressure relief valve on the compressor outlet, set to 125 psi",
       "Easily accessible vent plug vents all stored pressure (gauges read 0 psi)",
       "Only one onboard legal compressor (n/a if the robot has no pneumatics)",
+      "Compressor powered from a PCM/PH or relay module (not a motor controller)",
+      "Pneumatic tubing equivalent to KOP, maximum OD 1/4 in",
     ],
   },
   {

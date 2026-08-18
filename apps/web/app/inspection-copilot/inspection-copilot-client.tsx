@@ -576,6 +576,8 @@ function NewCheckForm({
   const [pressureSwitchOnPcmPh, setPressureSwitchOnPcmPh] = useState(false);
   const [componentsRated, setComponentsRated] = useState(false);
   const [compressorStops120, setCompressorStops120] = useState(false);
+  const [compressorPowerOk, setCompressorPowerOk] = useState(false);
+  const [tubingOdOk, setTubingOdOk] = useState(false);
   const [isolationEventRecorded, setIsolationEventRecorded] = useState(false);
   const [frameIsolated120, setFrameIsolated120] = useState(false);
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
@@ -667,6 +669,8 @@ function NewCheckForm({
             pressureSwitchOnPcmPh,
             componentsRated,
             compressorStops120,
+            compressorPowerOk,
+            tubingOdOk,
             isolationEventRecorded,
             frameIsolated120,
             unusedPdPortsTaped,
@@ -1218,6 +1222,22 @@ function NewCheckForm({
                   onChange={(e) => setCompressorStops120(e.target.checked)}
                 />
                 Compressor stops at ≤ 120 psi under roboRIO control
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={compressorPowerOk}
+                  onChange={(e) => setCompressorPowerOk(e.target.checked)}
+                />
+                Compressor powered from a PCM/PH or relay (not a motor controller)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={tubingOdOk}
+                  onChange={(e) => setTubingOdOk(e.target.checked)}
+                />
+                Tubing is KOP-equivalent, maximum OD 1/4 in
               </label>
             </>
           ) : null}
