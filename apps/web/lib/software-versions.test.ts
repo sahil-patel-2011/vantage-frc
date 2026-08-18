@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSoftwareVersionAction, staleSeasonStackCue, summarizeVersions, validateComponent, versionStatus, vh109FirmwareCue, STALE_SEASON_STACK_CUE, VH109_FIRMWARE_CUE } from "./software-versions";
+import { parseSoftwareVersionAction, staleSeasonStackCue, summarizeVersions, validateComponent, versionStatus, vh109FirmwareCue, inspectionDsCue, inspectionRioImageCue, STALE_SEASON_STACK_CUE, VH109_FIRMWARE_CUE, INSPECTION_DS_CUE, INSPECTION_RIO_IMAGE_CUE } from "./software-versions";
 
 describe("versionStatus", () => {
   it("is ok when installed matches target", () => {
@@ -70,6 +70,34 @@ describe("staleSeasonStackCue", () => {
     );
     expect(staleSeasonStackCue([{ component: "roboRIO image", installedVersion: "unparsed" }], 2026)).toBeNull();
     expect(JSON.stringify(STALE_SEASON_STACK_CUE).toLowerCase()).not.toContain("demo");
+  });
+});
+
+describe("inspectionRioImageCue", () => {
+  it("cues only a logged 2026 roboRIO image below v1.2 — never invents a RIO", () => {
+    expect(inspectionRioImageCue([], 2026)).toBeNull();
+    expect(inspectionRioImageCue([{ component: "WPILib", installedVersion: "2026.1.1" }], 2026)).toBeNull();
+    expect(inspectionRioImageCue([{ component: "roboRIO image", installedVersion: "FRC_roboRIO_2026_v1.0" }], 2026)).toBe(
+      INSPECTION_RIO_IMAGE_CUE,
+    );
+    expect(inspectionRioImageCue([{ component: "roboRIO image", installedVersion: "FRC_roboRIO_2026_v1.2" }], 2026)).toBeNull();
+    expect(inspectionRioImageCue([{ component: "roboRIO image", installedVersion: "FRC_roboRIO_2026_v1.0" }], 2027)).toBeNull();
+    expect(inspectionRioImageCue([{ component: "roboRIO image", installedVersion: "unparsed" }], 2026)).toBeNull();
+    expect(JSON.stringify(INSPECTION_RIO_IMAGE_CUE).toLowerCase()).not.toContain("demo");
+  });
+});
+
+describe("inspectionDsCue", () => {
+  it("cues only a logged 2026 Driver Station below 26.0 — never invents a DS", () => {
+    expect(inspectionDsCue([], 2026)).toBeNull();
+    expect(inspectionDsCue([{ component: "WPILib", installedVersion: "25.0" }], 2026)).toBeNull();
+    expect(inspectionDsCue([{ component: "Driver Station / NI Game Tools", installedVersion: "25.0" }], 2026)).toBe(
+      INSPECTION_DS_CUE,
+    );
+    expect(inspectionDsCue([{ component: "Driver Station / NI Game Tools", installedVersion: "26.0" }], 2026)).toBeNull();
+    expect(inspectionDsCue([{ component: "Driver Station / NI Game Tools", installedVersion: "2026.0.0" }], 2026)).toBeNull();
+    expect(inspectionDsCue([{ component: "Driver Station / NI Game Tools", installedVersion: "25.0" }], 2027)).toBeNull();
+    expect(JSON.stringify(INSPECTION_DS_CUE).toLowerCase()).not.toContain("demo");
   });
 });
 

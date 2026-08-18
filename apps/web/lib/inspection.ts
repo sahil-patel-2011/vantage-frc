@@ -72,6 +72,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "No prohibited materials (liquids, hazardous chemicals)",
       "Energy sources are legal (battery, pneumatics, springs)",
       "All software/firmware is competition-legal versions",
+      "roboRIO image 2026_v1.2 or later; Driver Station / Game Tools 26.0 or later",
       "Robot can be safely transported, lifted, and disabled",
     ],
   },
