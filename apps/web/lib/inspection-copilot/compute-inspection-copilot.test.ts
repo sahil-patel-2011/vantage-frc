@@ -761,6 +761,7 @@ describe("predictInspectionFailures R611 isolation", () => {
     expect(prediction.flags.some((flag) => flag.type === "frame_not_isolated")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pdh_ports_untaped")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pdh_fuses")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "pd_not_visible")).toBe(false);
   });
 
   it("flags a logged R611 fail and untaped PDH ports without DEMO wording", () => {
@@ -769,7 +770,7 @@ describe("predictInspectionFailures R611 isolation", () => {
       wiringPower: { ...wiring, isolationEventRecorded: true },
     });
     expect(prediction.flags.map((flag) => flag.type)).toEqual(
-      expect.arrayContaining(["frame_not_isolated", "pdh_ports_untaped", "pdh_fuses"]),
+      expect.arrayContaining(["frame_not_isolated", "pdh_ports_untaped", "pdh_fuses", "pd_not_visible"]),
     );
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
