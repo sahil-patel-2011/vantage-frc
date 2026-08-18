@@ -12,12 +12,13 @@ import type {
   WiringDiagnosis,
 } from "./types";
 
-export const WIRE_GAUGES: WireGauge[] = ["22", "20", "18", "16", "14", "12", "10"];
+export const WIRE_GAUGES: WireGauge[] = ["22", "20", "18", "16", "14", "12", "10", "6", "4"];
 
 /** Standard FRC control-system breaker sizes (PDP/PDH), amps. */
 export const STANDARD_BREAKER_AMPS: number[] = [5, 7.5, 10, 15, 20, 30, 40, 60];
 
-/** Conservative continuous-duty ampacity for short chassis-wire runs, by AWG gauge. */
+/** Conservative continuous-duty ampacity for short chassis-wire runs, by AWG gauge.
+ *  6 / 4 AWG are battery-cable sizes for the PDH main feed (not chassis branches). */
 export const WIRE_GAUGE_MAX_AMPS: Record<WireGauge, number> = {
   "22": 7,
   "20": 9,
@@ -26,6 +27,8 @@ export const WIRE_GAUGE_MAX_AMPS: Record<WireGauge, number> = {
   "14": 25,
   "12": 30,
   "10": 40,
+  "6": 120,
+  "4": 150,
 };
 
 /** A channel running at/above this fraction of its breaker rating is at risk of nuisance trips. */
@@ -56,6 +59,19 @@ const SEVERITY_WEIGHT: Record<DiagnosticSeverity, number> = {
 
 function normalizeName(value: string): string {
   return value.trim().toLowerCase();
+}
+
+/** CD 2026: high-strand 4 AWG melted PDH battery inputs; REV ferrules stop at 6 AWG. */
+export function looksLikePdhMainFeed(deviceName: string): boolean {
+  const hay = deviceName.toLowerCase();
+  if (/\b(pdh|pdp)\b/.test(hay) && /\b(main|battery|input)\b/.test(hay)) return true;
+  return /main battery|battery input|battery main/.test(hay);
+}
+
+/** Only when the team logged 4 AWG on a PDH/PDP main — never invent a gauge. */
+export function pdhMainFeedCue(deviceName: string, wireGauge: WireGauge): string | null {
+  if (wireGauge !== "4" || !looksLikePdhMainFeed(deviceName)) return null;
+  return `${deviceName}: 4 AWG PDH mains melted hubs this year (high-strand + trapped air). REV ferrules stop at 6 AWG — use lower-strand 6 AWG, not a 4 AWG ferrule.`;
 }
 
 /**
@@ -127,6 +143,16 @@ export function diagnoseWiring(
         type: "undersized_breaker",
         severity: "info",
         message: `Channel ${exp.channel}: installed breaker is ${obs.breakerAmps}A, diagram calls for ${exp.breakerAmps}A.`,
+      });
+    }
+
+    const pdhCue = pdhMainFeedCue(obs.deviceName, obs.wireGauge);
+    if (pdhCue) {
+      flags.push({
+        channel: exp.channel,
+        type: "pdh_4awg_feed",
+        severity: "warning",
+        message: pdhCue,
       });
     }
   }

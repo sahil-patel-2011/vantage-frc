@@ -50,6 +50,7 @@
 | Build | `/build` | Kickoff · CAD · Code · FMEA · Prototypes · Batteries (+ More tools) |
 | Readiness Score Soft-UI | `/readiness-score` (Build More tools) | Ship-readiness index from subsystems / checklist / FMEA / weight·power; empty/setup + next actions; UsageCutoffBanner on metered subsystem writes; FMEA / Inspection / Code via hubHref — never DEMO ship scores |
 | Power budget | `/power-budget` | Logged branch loads vs 120A main / ~100A sustained; CD **wrong breaker size** (40A radio / 10A swerve) and **set supply current limits** cues from real ratings only — never DEMO amps |
+| Wiring diagnoser Soft-UI | `/wiring-diagnoser` | Expected vs observed PDH/PDP circuits; CD **4 AWG PDH mains melted hubs** (high-strand; ferrules stop at 6 AWG) only when 4 AWG is logged on a main feed — never DEMO gauges |
 | Control Map Soft-UI | `/control-map` | Driver/operator button bindings; empty/setup + next actions; counts from saved rows only; cross-links to Subsystems / FMEA / Practice — never DEMO bindings |
 | Spare Forecast Soft-UI | `/spare-forecast` | Exhaustion forecast from real spare-category inventory × FMEA cadence; empty/setup + next actions; cross-links to Batteries / Orders / Subsystems — never DEMO spare counts |
 | Inspection Copilot Soft-UI | `/inspection-copilot` | Weight / frame-bumper / wiring plus CD **printed BOM / binder**, **2026 radio/RIO on main PD** (not Mini/RPM), and **Spark MAX USB-C back-feed** flags only when those statuses are logged; empty/setup + next actions — never DEMO risk scores |
