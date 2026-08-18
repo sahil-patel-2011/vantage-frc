@@ -63,7 +63,15 @@ export async function GET(request: Request) {
         context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
         seasonYear,
         loads: loads.rows,
-        summary: summarizePower(loads.rows.map((l) => ({ name: l.name, typicalAmps: l.typicalAmps, peakAmps: l.peakAmps, breakerAmps: l.breakerAmps }))),
+        summary: summarizePower(
+          loads.rows.map((l) => ({
+            name: l.name,
+            subsystem: l.subsystem,
+            typicalAmps: l.typicalAmps,
+            peakAmps: l.peakAmps,
+            breakerAmps: l.breakerAmps,
+          })),
+        ),
       };
     });
 
