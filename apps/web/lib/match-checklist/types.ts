@@ -11,6 +11,7 @@ export type ChecklistItemKey =
   | "ds_power"
   | "ds_ethernet"
   | "ds_estop"
+  | "ds_shelf"
   | "lenses"
   | "bolts"
   | "kraken_screws"
