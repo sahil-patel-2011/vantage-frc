@@ -8,7 +8,7 @@ Never DEMO metrics. Prefer extending existing org-scoped pages. No new routes. N
 
 ## Shipped on existing pages
 
-Packing load-out (bumpers, electrical, CANivore, ESD, Kraken screws, intake spares), match checklist (TBA bumper color, SB50, DS laptop, lens wipe, bolt check, Kraken screws, controller-button tape), inspection copilot (BOM, radio/RIO PD, Spark MAX USB, gated 2026 pit reliability walk), power budget breaker/current-limit/stagger cues, wiring diagnoser 4 AWG PDH mains, strategy auto-coordination + backup auto + deploy-vs-stow, battery break-in, I104 reinspect, playoff re-weigh.
+Packing load-out (bumpers, electrical, CANivore, ESD, Kraken screws, intake spares, battery-box foam, Loctite 242/243), match checklist (TBA bumper color, SB50, DS laptop, lens wipe, bolt check, Kraken screws, controller-button tape), inspection copilot (BOM, radio/RIO PD, Spark MAX USB, gated 2026 pit reliability walk), power budget breaker/current-limit/stagger cues, wiring diagnoser 4 AWG PDH mains, strategy auto-coordination + backup auto + deploy-vs-stow, battery break-in + over-discharge, Code Coach supply-current-limit lint, I104 reinspect, playoff re-weigh.
 
 ## Non-goals
 

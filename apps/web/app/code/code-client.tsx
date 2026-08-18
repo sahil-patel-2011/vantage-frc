@@ -43,6 +43,11 @@ const COACH_LESSONS: Record<string, { flag: string; explain: string; habit: stri
     explain: "Output during disabledInit/Periodic can move mechanisms when the robot should be safe.",
     habit: "Keep disabled paths read-only unless a mentor-reviewed safety procedure explicitly allows a hold/brake.",
   },
+  "missing-supply-current-limit": {
+    flag: "Motor constructed without a supply current limit",
+    explain: "Uncapped swerve and mechanisms brown out the RIO and trip the main breaker. Supply limits protect the battery; stator limits protect the motor.",
+    habit: "Set supply current limits on every motor in the same file that constructs the controller — never deploy without them.",
+  },
 };
 
 type Review = ReturnType<typeof reviewFrcCode>;
