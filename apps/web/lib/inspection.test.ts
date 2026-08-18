@@ -68,6 +68,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /Mini Power Module/i.test(item) && /R621/i.test(item))).toBe(true);
     expect(all.some((item) => /Servo Hub/i.test(item) && /20A/i.test(item) && /R621/i.test(item))).toBe(true);
     expect(all.some((item) => /R506/i.test(item) && /Servo Hub/i.test(item))).toBe(true);
+    expect(all.some((item) => /R714/i.test(item) && /PWM/i.test(item) && /CAN/i.test(item))).toBe(true);
     expect(all.some((item) => /24V/i.test(item) && /R614/i.test(item))).toBe(true);
     expect(all.some((item) => /R618/i.test(item) && /twin ferrule/i.test(item))).toBe(true);
     expect(all.some((item) => /easily visible/i.test(item) && /PD/i.test(item) && /breakers/i.test(item))).toBe(true);
