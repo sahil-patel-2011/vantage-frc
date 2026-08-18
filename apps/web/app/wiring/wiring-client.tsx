@@ -8,7 +8,7 @@ type Device = {
 };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; devices: Device[]; summary: { totalDevices: number; canDevices: number; conflicts: WiringConflict[]; conflictCount: number } };
+  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; devices: Device[]; summary: { totalDevices: number; canDevices: number; conflicts: WiringConflict[]; conflictCount: number; pcmPhCanCues?: string[] } };
 
 const EMPTY = { name: "", deviceType: "talonfx", canId: "", canBus: "rio", pdhPort: "", breakerAmp: "", subsystem: "", notes: "" };
 
@@ -74,6 +74,15 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
           <span className="eyebrow">⚠ WIRING CONFLICTS — FIX BEFORE POWERING ON</span>
           {view.summary.conflicts.map((c, i) => (
             <article key={i}><div><strong>{conflictText(c)}</strong></div></article>
+          ))}
+        </section>
+      )}
+
+      {(view.summary.pcmPhCanCues ?? []).length > 0 && (
+        <section className="intel-panel" style={{ borderColor: "#b45309" }}>
+          <span className="eyebrow">PCM / PH CAN</span>
+          {(view.summary.pcmPhCanCues ?? []).map((cue) => (
+            <article key={cue}><div><strong>{cue}</strong></div></article>
           ))}
         </section>
       )}

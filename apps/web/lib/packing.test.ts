@@ -85,6 +85,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /Mini Power Module/i.test(label) && /R621/i.test(label))).toBe(true);
     expect(labels.some((label) => /Don't bury the PDH/i.test(label))).toBe(true);
     expect(labels.some((label) => /PCM\/PH/i.test(label) && /6 in/i.test(label) && /radio/i.test(label))).toBe(true);
+    expect(labels.some((label) => /PCM\/PH/i.test(label) && /CAN drop/i.test(label))).toBe(true);
     expect(labels.some((label) => /Kraken power-connector/i.test(label))).toBe(true);
     expect(labels.some((label) => /1\.2/u.test(label) && /0\.9/u.test(label) && /torque/i.test(label))).toBe(true);
     expect(labels.some((label) => /Anderson/i.test(label) && /seated/i.test(label))).toBe(true);

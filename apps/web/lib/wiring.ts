@@ -138,10 +138,32 @@ export function detectConflicts(devices: Device[]): WiringConflict[] {
   return conflicts;
 }
 
+const PCM_PH_TYPES = new Set(["pcm", "ph"]);
+
+/**
+ * Inspection checklist: PCM/PH must sit on the roboRIO CAN bus.
+ * Cue only a logged pneumatics module with no CAN ID — never invent a PCM.
+ */
+export function pcmPhCanCues(devices: Pick<Device, "name" | "deviceType" | "canId">[]): string[] {
+  return devices
+    .filter((device) => PCM_PH_TYPES.has(device.deviceType) && device.canId == null)
+    .map(
+      (device) =>
+        `${device.name}: PCM/PH must be on the roboRIO CAN bus — inspectors fail a module that is only powered.`,
+    );
+}
+
 export function summarizeWiring(devices: Device[]) {
   const conflicts = detectConflicts(devices);
   const canCount = devices.filter((d) => d.canId != null && deviceUsesCan(d.deviceType)).length;
-  return { totalDevices: devices.length, canDevices: canCount, conflicts, conflictCount: conflicts.length };
+  const pcmPhCanCuesList = pcmPhCanCues(devices);
+  return {
+    totalDevices: devices.length,
+    canDevices: canCount,
+    conflicts,
+    conflictCount: conflicts.length,
+    pcmPhCanCues: pcmPhCanCuesList,
+  };
 }
 
 // ---- request validation --------------------------------------------------

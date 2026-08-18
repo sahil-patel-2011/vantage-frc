@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectConflicts, parseWiringAction, summarizeWiring, validateDevice, type Device } from "./wiring";
+import { detectConflicts, parseWiringAction, pcmPhCanCues, summarizeWiring, validateDevice, type Device } from "./wiring";
 
 const dev = (over: Partial<Device> & { name: string }): Device => ({
   id: over.name, name: over.name, deviceType: "talonfx", canId: null, canBus: "rio", pdhPort: null, ...over,
@@ -56,6 +56,22 @@ describe("detectConflicts", () => {
   });
 });
 
+describe("pcmPhCanCues", () => {
+  it("cues a logged PCM/PH with no CAN ID", () => {
+    expect(pcmPhCanCues([dev({ name: "PH", deviceType: "ph", canId: null })])).toHaveLength(1);
+    expect(pcmPhCanCues([dev({ name: "PCM", deviceType: "pcm", canId: null })])[0]).toMatch(/CAN bus/i);
+    expect(JSON.stringify(pcmPhCanCues([dev({ name: "PH", deviceType: "ph", canId: null })])).toLowerCase()).not.toContain(
+      "demo",
+    );
+  });
+
+  it("does not invent a PCM or flag a module that already has a CAN ID", () => {
+    expect(pcmPhCanCues([dev({ name: "FL", deviceType: "talonfx", canId: null })])).toHaveLength(0);
+    expect(pcmPhCanCues([dev({ name: "PH", deviceType: "ph", canId: 1 })])).toHaveLength(0);
+    expect(pcmPhCanCues([])).toHaveLength(0);
+  });
+});
+
 describe("summarizeWiring", () => {
   it("counts CAN devices and surfaces conflicts", () => {
     const summary = summarizeWiring([
@@ -66,6 +82,11 @@ describe("summarizeWiring", () => {
     expect(summary.totalDevices).toBe(3);
     expect(summary.canDevices).toBe(2);
     expect(summary.conflictCount).toBe(1);
+    expect(summary.pcmPhCanCues).toHaveLength(0);
+  });
+
+  it("surfaces a logged PH with no CAN ID", () => {
+    expect(summarizeWiring([dev({ name: "PH", deviceType: "ph", canId: null })]).pcmPhCanCues).toHaveLength(1);
   });
 });
 
