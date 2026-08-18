@@ -89,6 +89,15 @@ export type WiringPowerSpec = {
   pneumaticsEventRecorded?: boolean;
   ventPlugAccessible?: boolean;
   singleOnboardCompressor?: boolean;
+  /** True once the 125 psi relief valve is on the compressor outlet. */
+  reliefValveOnCompressor?: boolean;
+  /**
+   * When false, R611 isolation / PDH-debris flags are skipped (never invent a chassis short).
+   * CD: inspectors probe Anderson-to-frame with battery out and breaker on; debris in unused PDH slots reboots radios.
+   */
+  isolationEventRecorded?: boolean;
+  frameIsolated120?: boolean;
+  unusedPdPortsTaped?: boolean;
 };
 
 export type InspectionFlagType =
@@ -121,7 +130,10 @@ export type InspectionFlagType =
   | "bumper_hollow_foam"
   | "bumper_reversible"
   | "pneumatics_vent_plug"
-  | "pneumatics_multi_compressor";
+  | "pneumatics_multi_compressor"
+  | "pneumatics_relief_valve"
+  | "frame_not_isolated"
+  | "pdh_ports_untaped";
 
 export type InspectionFlagSeverity = "info" | "warning" | "critical";
 
