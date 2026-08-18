@@ -82,6 +82,10 @@ export type WiringPowerSpec = {
   radioProgrammedForEvent: boolean;
   /** True once a second person confirmed VH-109 Weidmuller leads have no stray strands. */
   radioWeidmullerQc: boolean;
+  /** True once radio LEDs are visible to field staff, not only inspectors. */
+  radioLedsVisible?: boolean;
+  /** True once RIO ethernet is on a v1.5 RIO port, or v1.0 via PoE / modified cable / AUX DIP off. */
+  rioEthernetPathOk?: boolean;
   /**
    * When false, Spark MAX USB flags are skipped (never invent a fried laptop).
    * CD 2026: USB-C into a shorted Spark MAX can back-feed and kill a motherboard.
@@ -160,6 +164,8 @@ export type InspectionFlagType =
   | "rio_not_on_main_pd"
   | "radio_not_programmed_for_event"
   | "radio_weidmuller_strands"
+  | "radio_leds_hidden"
+  | "rio_ethernet_path"
   | "spark_max_usb_risk"
   | "strain_relief_missing"
   | "dynamic_cable_pinch"
