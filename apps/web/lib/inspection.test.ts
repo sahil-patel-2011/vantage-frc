@@ -61,6 +61,8 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /relief valve/i.test(item) && /compressor outlet/i.test(item))).toBe(true);
     expect(all.some((item) => /vent plug/i.test(item) && /0 psi/i.test(item))).toBe(true);
     expect(all.some((item) => /one onboard legal compressor/i.test(item))).toBe(true);
+    expect(all.some((item) => /110 in/i.test(item) && /30 in/i.test(item))).toBe(true);
+    expect(all.some((item) => /12 in/i.test(item) && /bumper zone/i.test(item))).toBe(true);
     expect(JSON.stringify(all).toLowerCase()).not.toContain("demo");
   });
 });
