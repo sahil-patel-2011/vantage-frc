@@ -55,6 +55,8 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Ferrules for Weidmuller / screw terminals", quantity: 1 },
       { label: "Heat shrink for exposed battery terminals", quantity: 1 },
       { label: "Hot glue for CAN / USB / CANivore connectors", quantity: 1 },
+      { label: "Shielded CANivore USB-C (stock cable; no unshielded log-drive dongle)", quantity: 1 },
+      { label: "Endurance-class SD card for RIO logging (fresh per event)", quantity: 2 },
       { label: "Wire stripper — Wago 221 gauge (11 mm); NEO phase is too fat for 221s", quantity: 1 },
       { label: "NEO encoder/hall JST spares + strain-relief (hot-glue connectors)", quantity: 4 },
     ],
