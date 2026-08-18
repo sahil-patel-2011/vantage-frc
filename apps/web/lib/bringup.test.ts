@@ -6,6 +6,15 @@ describe("BRINGUP_TEMPLATE", () => {
     const phases = new Set(BRINGUP_TEMPLATE.map((i) => i.phase));
     expect([...phases].sort()).toEqual(["electrical", "mechanical", "software", "validation"]);
   });
+
+  it("catches PWM+CAN double-control and missing current limits before first enable", () => {
+    const labels = BRINGUP_TEMPLATE.map((item) => item.label);
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(labels.some((label) => /R714/i.test(label) && /PWM/i.test(label) && /CAN/i.test(label))).toBe(true);
+    expect(labels.some((label) => /R715/i.test(label) && /Servo Hub/i.test(label))).toBe(true);
+    expect(labels.some((label) => /supply current limits/i.test(label))).toBe(true);
+    expect(JSON.stringify(labels).toLowerCase()).not.toContain("demo");
+  });
 });
 
 describe("computeProgress", () => {
