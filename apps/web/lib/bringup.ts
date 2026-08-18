@@ -24,6 +24,8 @@ export const BRINGUP_TEMPLATE: { phase: BringupPhase; label: string }[] = [
   { phase: "electrical", label: "Battery secured; main breaker functional" },
   { phase: "electrical", label: "Branch breakers correctly sized for each motor" },
   { phase: "electrical", label: "CAN chain continuous and terminated" },
+  { phase: "electrical", label: "PWM / servo signals come from the roboRIO, not a coprocessor (R712)" },
+  { phase: "electrical", label: "Custom CAN devices do not spoof the roboRIO enable heartbeat (R716)" },
   { phase: "electrical", label: "CAN motor controllers use PWM or CAN, not both (R714)" },
   { phase: "electrical", label: "Servo Hub / PCM / PH on the roboRIO CAN bus (R715)" },
   { phase: "electrical", label: "Robot Signal Light (RSL) blinks on enable" },

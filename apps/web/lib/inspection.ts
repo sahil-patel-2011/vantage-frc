@@ -60,6 +60,8 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "CAN daisy-chain ~60Ω yellow-to-green with battery out (two 120Ω ends)",
       "Control system devices unmodified — no paint, drill, or rewire (R710)",
       "Servos connected only to RIO PWM, WCP-0045, Servo Power Module, or Servo Hub (R506)",
+      "PWM motor controllers and servos connect only to roboRIO PWM ports, not a coprocessor (R712)",
+      "Custom CAN devices must not alter or spoof the roboRIO enable heartbeat (R716)",
       "CAN motor controllers use PWM or CAN, not both at once (R714)",
       "Custom circuits, sensors, and extra electronics ≤ 24V except COTS PoE (R614)",
       "One wire per PD terminal (R618; soldered splices are not one wire; twin ferrules only if rated)",
