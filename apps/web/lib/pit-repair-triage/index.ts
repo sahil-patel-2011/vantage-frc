@@ -133,3 +133,19 @@ export function reinspectionCue(input: {
   const part = input.subsystemName?.trim() ? ` (${input.subsystemName.trim()})` : "";
   return `I104: get this repair${part} reinspected before you queue — playing a changed robot that did not pass inspection can DQ the match.`;
 }
+
+/** FRC: a tripped main breaker becomes more sensitive — replace it, do not keep resetting. */
+export const MAIN_BREAKER_TRIP_CUE =
+  "A tripped main breaker is more sensitive afterward — swap the packed spare before you queue.";
+
+export function mainBreakerTripCue(input: {
+  title?: string;
+  symptomNote?: string;
+  subsystemName?: string;
+  status: TriageStatus;
+}): string | null {
+  if (input.status === "resolved") return null;
+  const hay = `${input.title ?? ""} ${input.symptomNote ?? ""} ${input.subsystemName ?? ""}`.toLowerCase();
+  if (!/main breaker|breaker trip/.test(hay)) return null;
+  return MAIN_BREAKER_TRIP_CUE;
+}

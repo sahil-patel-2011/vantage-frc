@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseTuningAction, summarizeTuning, validateConstant } from "./tuning";
+import { parseTuningAction, summarizeTuning, validateConstant, currentLimitTuningCue, CURRENT_LIMIT_TUNING_CUE } from "./tuning";
 
 describe("validateConstant", () => {
   it("requires a name and a value", () => {
@@ -28,6 +28,20 @@ describe("summarizeTuning", () => {
     expect(summary.byCategory.encoder_offset).toBe(2);
     expect(summary.byCategory.pid).toBe(1);
     expect(summary.subsystems).toBe(3); // Swerve, Arm, General
+  });
+
+  it("cues missing current-limit constants only when PID/encoder rows exist", () => {
+    expect(currentLimitTuningCue([])).toBeNull();
+    expect(currentLimitTuningCue([{ category: "vision", name: "LL yaw", notes: "" }])).toBeNull();
+    expect(
+      currentLimitTuningCue([{ category: "pid", name: "Drive kP", notes: "" }]),
+    ).toBe(CURRENT_LIMIT_TUNING_CUE);
+    expect(
+      currentLimitTuningCue([
+        { category: "pid", name: "Drive kP", notes: "" },
+        { category: "limit", name: "Drive supply current limit", notes: "40 A" },
+      ]),
+    ).toBeNull();
   });
 });
 
