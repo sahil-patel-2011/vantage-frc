@@ -383,6 +383,14 @@ export function predictInspectionFailures(input: {
           "roboRIO ethernet is not marked on a legal VH-109 path — v1.5 uses the RIO port; v1.0 needs a PoE injector, modified cable, or AUX with DIP off.",
       });
     }
+    if (!wiringPower.rioRadioDedicatedOk) {
+      flags.push({
+        type: "rio_radio_shared_branch",
+        severity: "critical",
+        message:
+          "RIO or radio is not marked as the only load on its 10A PD branch — TU07 / R615 / R617 fail a shared breaker (PDP 1.0 VRM/PCM pair is the exception).",
+      });
+    }
   }
 
   if (wiringPower.sparkMaxEventRecorded && !wiringPower.sparkMaxUsbAvoided) {
@@ -648,7 +656,7 @@ export function predictInspectionFailures(input: {
     (frameBumper.bumperEventRecorded ? 11 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
-    (wiringPower.radioEventRecorded ? 6 : 0) +
+    (wiringPower.radioEventRecorded ? 7 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 9 : 0) +
     (wiringPower.pneumaticsEventRecorded ? 14 : 0) +

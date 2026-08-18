@@ -121,6 +121,7 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     radioWeidmullerQc: Boolean(row.radioWeidmullerQc),
     radioLedsVisible: Boolean(row.radioLedsVisible),
     rioEthernetPathOk: Boolean(row.rioEthernetPathOk),
+    rioRadioDedicatedOk: Boolean(row.rioRadioDedicatedOk),
     sparkMaxEventRecorded: Boolean(row.sparkMaxEventRecorded),
     sparkMaxUsbAvoided: Boolean(row.sparkMaxUsbAvoided),
     reliabilityEventRecorded: Boolean(row.reliabilityEventRecorded),

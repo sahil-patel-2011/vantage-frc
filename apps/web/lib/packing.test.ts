@@ -70,6 +70,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /working gauges/i.test(label) && /regulator/i.test(label))).toBe(true);
     expect(labels.some((label) => /Relieving regulator/i.test(label) && /non-relieving/i.test(label))).toBe(true);
     expect(labels.some((label) => /PoE injector/i.test(label) && /v1\.0/i.test(label))).toBe(true);
+    expect(labels.some((label) => /TU07/i.test(label) && /10A PD branch/i.test(label))).toBe(true);
     expect(labels.some((label) => /through-bolts/i.test(label))).toBe(true);
     expect(labels.some((label) => /quick-release/i.test(label) && /removable/i.test(label))).toBe(true);
     expect(labels.some((label) => /not reversible/i.test(label))).toBe(true);

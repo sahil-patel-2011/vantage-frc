@@ -66,6 +66,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Joysticks / controllers + spares", quantity: 3 },
       { label: "Spare radio and roboRIO", quantity: 1 },
       { label: "Passive PoE injector / modified ethernet for VH-109 v1.0 RIO port (not VRM/RPM)", quantity: 1 },
+      { label: "RIO and radio each the only load on their 10A PD branch (TU07)", quantity: 1 },
       { label: "Spare robot signal light (RSL port; visible from 36 in)", quantity: 1 },
       { label: "Spare PDH (high-strand 4 AWG melted hubs)", quantity: 1 },
       { label: "Spare main breaker (replace after a trip)", quantity: 2 },
