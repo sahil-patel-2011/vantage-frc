@@ -69,6 +69,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "PCM/PH mounted away from the radio (RF looks like a compressor fault)",
       "No painting or large labels on tanks/cylinders (small labels and unused mount pins ok)",
       "Solenoid valves ≤ 1/8 in NPT (or 1/4 in QC), PCM/PH or relay control, outputs not combined",
+      "Gauges on stored and working sides of the regulator, readily visible (R805-E / R810)",
     ],
   },
   {

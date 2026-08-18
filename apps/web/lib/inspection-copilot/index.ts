@@ -574,6 +574,14 @@ export function predictInspectionFailures(input: {
           "Solenoid valves are not marked legal — max 1/8 in NPT (or 1/4 in QC), PCM/PH or relay control, and outputs may not be teed together.",
       });
     }
+    if (!wiringPower.gaugesVisible) {
+      flags.push({
+        type: "pneumatics_gauges",
+        severity: "critical",
+        message:
+          "Stored and working gauges are not marked visible on both sides of the regulator — inspectors fail a bellypan gauge they cannot read (R805-E / R810).",
+      });
+    }
   }
 
   if (wiringPower.isolationEventRecorded) {
@@ -635,7 +643,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.radioEventRecorded ? 6 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 9 : 0) +
-    (wiringPower.pneumaticsEventRecorded ? 13 : 0) +
+    (wiringPower.pneumaticsEventRecorded ? 14 : 0) +
     (wiringPower.isolationEventRecorded ? 3 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
