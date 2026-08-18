@@ -378,6 +378,22 @@ export function predictInspectionFailures(input: {
           "Compressor relief valve is not marked on the compressor outlet at 125 psi — inspectors fail a valve on the tank instead of the compressor.",
       });
     }
+    if (!wiringPower.workingPressure60Psi) {
+      flags.push({
+        type: "pneumatics_working_pressure",
+        severity: "critical",
+        message:
+          "Working pressure is not marked regulated to 60 psi — inspectors fail stored-pressure systems that feed actuators above the legal working limit.",
+      });
+    }
+    if (!wiringPower.pressureSwitchOnPcmPh) {
+      flags.push({
+        type: "pneumatics_pressure_switch",
+        severity: "critical",
+        message:
+          "Pressure switch is not marked wired to the PCM/PH — the compressor has to stop at the stored-pressure setpoint, not run open-loop.",
+      });
+    }
   }
 
   if (wiringPower.isolationEventRecorded) {
@@ -411,7 +427,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.radioEventRecorded ? 4 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 8 : 0) +
-    (wiringPower.pneumaticsEventRecorded ? 3 : 0) +
+    (wiringPower.pneumaticsEventRecorded ? 5 : 0) +
     (wiringPower.isolationEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));

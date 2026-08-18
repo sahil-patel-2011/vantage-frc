@@ -563,6 +563,8 @@ function NewCheckForm({
   const [ventPlugAccessible, setVentPlugAccessible] = useState(false);
   const [singleOnboardCompressor, setSingleOnboardCompressor] = useState(false);
   const [reliefValveOnCompressor, setReliefValveOnCompressor] = useState(false);
+  const [workingPressure60Psi, setWorkingPressure60Psi] = useState(false);
+  const [pressureSwitchOnPcmPh, setPressureSwitchOnPcmPh] = useState(false);
   const [isolationEventRecorded, setIsolationEventRecorded] = useState(false);
   const [frameIsolated120, setFrameIsolated120] = useState(false);
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
@@ -638,6 +640,8 @@ function NewCheckForm({
             ventPlugAccessible,
             singleOnboardCompressor,
             reliefValveOnCompressor,
+            workingPressure60Psi,
+            pressureSwitchOnPcmPh,
             isolationEventRecorded,
             frameIsolated120,
             unusedPdPortsTaped,
@@ -681,6 +685,8 @@ function NewCheckForm({
         setVentPlugAccessible(false);
         setSingleOnboardCompressor(false);
         setReliefValveOnCompressor(false);
+        setWorkingPressure60Psi(false);
+        setPressureSwitchOnPcmPh(false);
         setIsolationEventRecorded(false);
         setFrameIsolated120(false);
         setUnusedPdPortsTaped(false);
@@ -1033,8 +1039,8 @@ function NewCheckForm({
       <div>
         <strong className="app-muted">Pneumatics (skip if the robot has no air)</strong>
         <p className="app-muted">
-          Inspection checklist: hidden vent plugs and extra compressors fail Thursday. Leave this off until you actually
-          walk stored pressure — never invent a fail.
+          Inspection checklist: hidden vent plugs, extra compressors, 60 psi working pressure, and a missing pressure
+          switch fail Thursday. Leave this off until you actually walk stored pressure — never invent a fail.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1070,6 +1076,22 @@ function NewCheckForm({
                   onChange={(e) => setReliefValveOnCompressor(e.target.checked)}
                 />
                 125 psi relief valve on the compressor outlet (not only on the tank)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={workingPressure60Psi}
+                  onChange={(e) => setWorkingPressure60Psi(e.target.checked)}
+                />
+                Working pressure regulated to ≤ 60 psi
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={pressureSwitchOnPcmPh}
+                  onChange={(e) => setPressureSwitchOnPcmPh(e.target.checked)}
+                />
+                Pressure switch wired to the PCM/PH (compressor stops at stored-pressure setpoint)
               </label>
             </>
           ) : null}

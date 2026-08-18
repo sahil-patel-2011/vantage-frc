@@ -63,6 +63,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /intake timing belts/i.test(label))).toBe(true);
     expect(labels.some((label) => /beater bar/i.test(label))).toBe(true);
     expect(labels.some((label) => /solid-core/i.test(label))).toBe(true);
+    expect(labels.some((label) => /pressure switch/i.test(label) && /PCM\/PH/i.test(label))).toBe(true);
     expect(labels.some((label) => /through-bolts/i.test(label))).toBe(true);
     expect(labels.some((label) => /not reversible/i.test(label))).toBe(true);
     expect(labels.some((label) => /3\/4 in/i.test(label) && /staple/i.test(label))).toBe(true);

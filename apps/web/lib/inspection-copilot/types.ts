@@ -87,13 +87,17 @@ export type WiringPowerSpec = {
   rioUsbCameraClear: boolean;
   /**
    * When false, pneumatics flags are skipped (robots without air never invent a vent-plug fail).
-   * CD / inspection checklist: hidden vent plugs and extra compressors stop Thursday.
+   * CD / inspection checklist: hidden vent plugs, extra compressors, 60 psi working pressure, and a missing pressure switch stop Thursday.
    */
   pneumaticsEventRecorded?: boolean;
   ventPlugAccessible?: boolean;
   singleOnboardCompressor?: boolean;
   /** True once the 125 psi relief valve is on the compressor outlet. */
   reliefValveOnCompressor?: boolean;
+  /** True once working pressure is regulated to ≤ 60 psi. */
+  workingPressure60Psi?: boolean;
+  /** True once the pressure switch is wired to the PCM/PH. */
+  pressureSwitchOnPcmPh?: boolean;
   /**
    * When false, R611 isolation / PDH-debris flags are skipped (never invent a chassis short).
    * CD: inspectors probe Anderson-to-frame with battery out and breaker on; debris in unused PDH slots reboots radios.
@@ -136,6 +140,8 @@ export type InspectionFlagType =
   | "pneumatics_vent_plug"
   | "pneumatics_multi_compressor"
   | "pneumatics_relief_valve"
+  | "pneumatics_working_pressure"
+  | "pneumatics_pressure_switch"
   | "frame_not_isolated"
   | "pdh_ports_untaped";
 
