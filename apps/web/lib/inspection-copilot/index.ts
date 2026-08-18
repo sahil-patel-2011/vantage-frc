@@ -351,6 +351,22 @@ export function predictInspectionFailures(input: {
           "VH-109 Weidmuller power leads are not marked second-person QC — stray strands or long strip length reboot the radio mid-match.",
       });
     }
+    if (!wiringPower.radioLedsVisible) {
+      flags.push({
+        type: "radio_leds_hidden",
+        severity: "critical",
+        message:
+          "Radio LEDs are not marked visible to field staff — 2026 inspectors fail a buried VH-109 even if it passed a pit look.",
+      });
+    }
+    if (!wiringPower.rioEthernetPathOk) {
+      flags.push({
+        type: "rio_ethernet_path",
+        severity: "critical",
+        message:
+          "roboRIO ethernet is not marked on a legal VH-109 path — v1.5 uses the RIO port; v1.0 needs a PoE injector, modified cable, or AUX with DIP off.",
+      });
+    }
   }
 
   if (wiringPower.sparkMaxEventRecorded && !wiringPower.sparkMaxUsbAvoided) {
@@ -552,7 +568,7 @@ export function predictInspectionFailures(input: {
     (frameBumper.bumperEventRecorded ? 9 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
-    (wiringPower.radioEventRecorded ? 4 : 0) +
+    (wiringPower.radioEventRecorded ? 6 : 0) +
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 8 : 0) +
     (wiringPower.pneumaticsEventRecorded ? 9 : 0) +

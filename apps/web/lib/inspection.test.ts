@@ -77,6 +77,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /PCM\/PH or relay/i.test(item))).toBe(true);
     expect(all.some((item) => /1\/4 in/i.test(item) && /tubing/i.test(item))).toBe(true);
     expect(all.some((item) => /RIO-port/i.test(item) && /VRM\/RPM/i.test(item))).toBe(true);
+    expect(all.some((item) => /v1\.5/i.test(item) && /v1\.0/i.test(item) && /PoE/i.test(item))).toBe(true);
     expect(all.some((item) => /110 in/i.test(item) && /30 in/i.test(item))).toBe(true);
     expect(all.some((item) => /12 in/i.test(item) && /one direction/i.test(item))).toBe(true);
     expect(all.some((item) => /2026_v1\.2/i.test(item) && /26\.0/i.test(item))).toBe(true);

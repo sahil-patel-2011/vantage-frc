@@ -277,6 +277,8 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
     expect(prediction.flags.some((flag) => flag.type === "rio_not_on_main_pd")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "radio_not_programmed_for_event")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "radio_weidmuller_strands")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "radio_leds_hidden")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "rio_ethernet_path")).toBe(false);
   });
 
   it("flags radio off the main PD once the team records 2026 event wiring", () => {
@@ -289,6 +291,8 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
         rioOnMainPd10A: true,
         radioProgrammedForEvent: true,
         radioWeidmullerQc: true,
+        radioLedsVisible: true,
+        rioEthernetPathOk: true,
       },
     });
     expect(prediction.flags.some((flag) => flag.type === "radio_not_on_main_pd")).toBe(true);
@@ -308,9 +312,28 @@ describe("predictInspectionFailures 2026 radio/RIO PD", () => {
         rioOnMainPd10A: true,
         radioProgrammedForEvent: true,
         radioWeidmullerQc: false,
+        radioLedsVisible: true,
+        rioEthernetPathOk: true,
       },
     });
     expect(prediction.flags.some((flag) => flag.type === "radio_weidmuller_strands")).toBe(true);
+    expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+
+  it("flags hidden radio LEDs and a v1.0 RIO ethernet path once radio wiring is logged", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: {
+        ...wiring,
+        radioEventRecorded: true,
+        radioOnMainPd: true,
+        rioOnMainPd10A: true,
+        radioProgrammedForEvent: true,
+        radioWeidmullerQc: true,
+      },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "radio_leds_hidden")).toBe(true);
+    expect(prediction.flags.some((flag) => flag.type === "rio_ethernet_path")).toBe(true);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });

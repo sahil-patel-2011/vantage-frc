@@ -557,6 +557,8 @@ function NewCheckForm({
   const [rioOnMainPd10A, setRioOnMainPd10A] = useState(false);
   const [radioProgrammedForEvent, setRadioProgrammedForEvent] = useState(false);
   const [radioWeidmullerQc, setRadioWeidmullerQc] = useState(false);
+  const [radioLedsVisible, setRadioLedsVisible] = useState(false);
+  const [rioEthernetPathOk, setRioEthernetPathOk] = useState(false);
   const [sparkMaxEventRecorded, setSparkMaxEventRecorded] = useState(false);
   const [sparkMaxUsbAvoided, setSparkMaxUsbAvoided] = useState(false);
   const [reliabilityEventRecorded, setReliabilityEventRecorded] = useState(false);
@@ -650,6 +652,8 @@ function NewCheckForm({
             rioOnMainPd10A,
             radioProgrammedForEvent,
             radioWeidmullerQc,
+            radioLedsVisible,
+            rioEthernetPathOk,
             sparkMaxEventRecorded,
             sparkMaxUsbAvoided,
             reliabilityEventRecorded,
@@ -1041,6 +1045,22 @@ function NewCheckForm({
                   onChange={(e) => setRadioWeidmullerQc(e.target.checked)}
                 />
                 Second person QC&apos;d VH-109 Weidmuller power leads (no stray strands / over-strip)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={radioLedsVisible}
+                  onChange={(e) => setRadioLedsVisible(e.target.checked)}
+                />
+                Radio LEDs visible to field staff (not buried in the bellypan)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={rioEthernetPathOk}
+                  onChange={(e) => setRioEthernetPathOk(e.target.checked)}
+                />
+                roboRIO ethernet on v1.5 RIO port, or v1.0 via PoE injector / modified cable / AUX DIP off
               </label>
             </>
           ) : null}

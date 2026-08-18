@@ -42,6 +42,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Power distribution wiring uses legal gauge and colors",
       "roboRIO powered directly from the PDP/PDH",
       "Radio powered by RIO-port injection and/or 12V from a PD (not VRM/RPM); LEDs visible to field staff",
+      "roboRIO ethernet on VH-109 v1.5 RIO port, or v1.0 via PoE injector / modified cable / AUX with DIP off",
       "Frame electrically isolated (>120Ω) from PD Anderson posts (battery out, breaker on)",
       "All motors and actuators are legal and correctly breakered",
       "Battery terminals insulated; no exposed conductors",
