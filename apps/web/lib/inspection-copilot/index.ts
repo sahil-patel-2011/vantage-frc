@@ -192,6 +192,22 @@ export function predictInspectionFailures(input: {
           "Bumpers are not marked as separate red and blue sets — reversible fabric keeps failing and eats the weight you wanted for armor.",
       });
     }
+    if (!frameBumper.bumperGapsOk) {
+      flags.push({
+        type: "bumper_gaps",
+        severity: "critical",
+        message:
+          "Bumper gaps are not marked legal — 2026 R401 allows gaps under 1.25 in, or one larger gap with at least 5 in of bumper from each corner.",
+      });
+    }
+    if (!frameBumper.bumperNoElectronics) {
+      flags.push({
+        type: "bumper_electronics",
+        severity: "critical",
+        message:
+          "Bumpers are not marked free of moving or electrical parts — 2026 R409 fails lights, actuators, and moving bumper hardware.",
+      });
+    }
   }
 
   if (
@@ -442,7 +458,7 @@ export function predictInspectionFailures(input: {
     ((frameBumper.extensionLimitIn ?? 0) > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
-    (frameBumper.bumperEventRecorded ? 2 : 0) +
+    (frameBumper.bumperEventRecorded ? 4 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
     (wiringPower.radioEventRecorded ? 4 : 0) +

@@ -35,10 +35,15 @@ export type FrameBumperSpec = {
   /**
    * When false, 2026 bumper-construction flags are skipped (never invent hollow foam).
    * CD: hollow pool noodles are illegal; reversible sets keep failing at events.
+   * R401 gaps and R409 no electronics/moving parts fail Thursday.
    */
   bumperEventRecorded?: boolean;
   solidCoreFoam?: boolean;
   separateColorSets?: boolean;
+  /** True once gaps are < 1.25 in, or the one larger gap leaves ≥ 5 in from each corner. */
+  bumperGapsOk?: boolean;
+  /** True once bumpers have no moving or electrical parts (R409). */
+  bumperNoElectronics?: boolean;
 };
 
 /** Team-declared wiring/power-distribution limits vs what was actually installed. */
@@ -141,6 +146,8 @@ export type InspectionFlagType =
   | "rio_usb_camera_canivore"
   | "bumper_hollow_foam"
   | "bumper_reversible"
+  | "bumper_gaps"
+  | "bumper_electronics"
   | "pneumatics_vent_plug"
   | "pneumatics_multi_compressor"
   | "pneumatics_relief_valve"

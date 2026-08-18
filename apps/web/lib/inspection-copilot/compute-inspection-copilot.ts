@@ -88,6 +88,8 @@ export function parseFrameBumper(value: unknown): FrameBumperSpec {
     bumperEventRecorded: Boolean(row.bumperEventRecorded),
     solidCoreFoam: Boolean(row.solidCoreFoam),
     separateColorSets: Boolean(row.separateColorSets),
+    bumperGapsOk: Boolean(row.bumperGapsOk),
+    bumperNoElectronics: Boolean(row.bumperNoElectronics),
   };
 }
 
