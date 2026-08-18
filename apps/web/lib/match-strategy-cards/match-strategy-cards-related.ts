@@ -187,10 +187,12 @@ export function matchStrategyCardsNextActions(input: {
   shell: MatchStrategyCardsShellKind;
   cardCount?: number;
   savedCount?: number;
+  needsAutoCoordination?: boolean;
 }): MatchStrategyCardsNextAction[] {
   const orgId = input.orgId ?? null;
   const cardCount = input.cardCount ?? 0;
   const savedCount = input.savedCount ?? 0;
+  const needsAutoCoordination = Boolean(input.needsAutoCoordination);
 
   if (!orgId || input.shell === "setup") {
     if (!orgId) {
@@ -282,6 +284,34 @@ export function matchStrategyCardsNextActions(input: {
         id: "match-checklist",
         label: "Open Match checklist",
         detail: "Prep checklists while waiting on schedule sync.",
+        href: hubHref("/competition", "match-checklist", orgId),
+      },
+    ];
+  }
+
+  if (needsAutoCoordination) {
+    return [
+      {
+        id: "auto-coord",
+        label: "Agree autos with partners",
+        detail:
+          "TBA listed alliance partners and Auto assignment is still blank — fill the spoken path plan before you queue.",
+        href: "#match-strategy-cards-list",
+        primary: true,
+      },
+      {
+        id: "edit",
+        label: savedCount > 0 ? "Update a strategy card" : "Draft the first card",
+        detail:
+          savedCount > 0
+            ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "" : "s"} saved — print Soft-UI packs for drive team.`
+            : `${cardCount} scheduled match${cardCount === 1 ? "" : "es"} — plans stay blank until you write them.`,
+        href: "#match-strategy-cards-list",
+      },
+      {
+        id: "match-checklist",
+        label: "Open Match checklist",
+        detail: "Pair printable cards with pre-match checklists.",
         href: hubHref("/competition", "match-checklist", orgId),
       },
     ];

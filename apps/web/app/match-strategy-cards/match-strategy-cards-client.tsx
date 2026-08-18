@@ -12,7 +12,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { alliancePartners, dutyPlanFromTemplate, DUTY_STANCES, dutyStanceLabel, matchLabel, renderCardText } from "../../lib/match-strategy-cards";
+import { alliancePartners, autoCoordinationCue, dutyPlanFromTemplate, DUTY_STANCES, dutyStanceLabel, matchLabel, renderCardText } from "../../lib/match-strategy-cards";
 import type { MatchStrategyCardsView } from "../../lib/match-strategy-cards/compute-match-strategy-cards";
 import {
   MATCH_STRATEGY_CARDS_RELATED_INCLUDE,
@@ -198,6 +198,17 @@ export default function MatchStrategyCardsClient() {
   const orgId = view && "orgId" in view ? view.orgId : null;
   const cardCount = view?.status === "live" ? view.cards.length : 0;
   const savedCount = view?.status === "live" ? view.cards.filter((c) => c.hasCard).length : 0;
+  const ownTeamNumber = view?.status === "live" ? view.teamNumber : null;
+  const needsAutoCoordination =
+    view?.status === "live" &&
+    ownTeamNumber != null &&
+    view.cards.some(
+      (card) =>
+        autoCoordinationCue({
+          partnerNumbers: alliancePartners(card.alliances, ownTeamNumber),
+          autoAssignment: card.autoAssignment,
+        }) != null,
+    );
 
   const shell = classifyMatchStrategyCardsShell({
     loading: view == null && !fetchFailed,
@@ -212,6 +223,7 @@ export default function MatchStrategyCardsClient() {
     shell,
     cardCount,
     savedCount,
+    needsAutoCoordination,
   });
   const relatedLinks = matchStrategyCardsRelatedLinks(orgId, {
     include: [...MATCH_STRATEGY_CARDS_RELATED_INCLUDE],
@@ -375,6 +387,7 @@ function StrategyCardPanel({
 
   const partners = alliancePartners(card.alliances, ownTeamNumber);
   const opponents = card.alliances.filter((a) => !a.isOwnAlliance).flatMap((a) => a.teamNumbers);
+  const autoCue = autoCoordinationCue({ partnerNumbers: partners, autoAssignment });
 
   return (
     <Panel className="print-strategy-card msc-panel msc-card">
@@ -436,6 +449,11 @@ function StrategyCardPanel({
       <FormRow label="Auto assignment">
         <textarea value={autoAssignment} onChange={(e) => setAutoAssignment(e.target.value)} rows={2} />
       </FormRow>
+      {autoCue ? (
+        <p className="msc-auto-cue" role="status">
+          {autoCue}
+        </p>
+      ) : null}
       <FormRow label="Defense focus">
         <textarea value={defenseFocus} onChange={(e) => setDefenseFocus(e.target.value)} rows={2} />
       </FormRow>

@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
-import { dutyPlanFromTemplate, matchLabel, teamNumbersFromAllianceJson } from ".";
+import { AUTO_COORDINATION_CUE, autoCoordinationCue, dutyPlanFromTemplate, matchLabel, teamNumbersFromAllianceJson } from ".";
 import { computeMatchStrategyCardsView } from "./compute-match-strategy-cards";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -42,6 +42,18 @@ describe("match-strategy-cards pure helpers", () => {
       partnerNumbers: [118],
     });
     expect(aggressive.roleAssignments[2]?.assignee).toBe("Partner B");
+  });
+
+  it("cues auto coordination only when TBA partners exist and Auto assignment is blank", () => {
+    expect(
+      autoCoordinationCue({ partnerNumbers: [], autoAssignment: null }),
+    ).toBeNull();
+    expect(
+      autoCoordinationCue({ partnerNumbers: [118, 1114], autoAssignment: "3-piece left" }),
+    ).toBeNull();
+    expect(
+      autoCoordinationCue({ partnerNumbers: [118, 1114], autoAssignment: "  " }),
+    ).toBe(AUTO_COORDINATION_CUE);
   });
 });
 
