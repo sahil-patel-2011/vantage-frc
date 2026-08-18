@@ -580,6 +580,8 @@ function NewCheckForm({
   const [compressorStops120, setCompressorStops120] = useState(false);
   const [compressorPowerOk, setCompressorPowerOk] = useState(false);
   const [tubingOdOk, setTubingOdOk] = useState(false);
+  const [relievingRegulatorOk, setRelievingRegulatorOk] = useState(false);
+  const [compressorStartsEnabled, setCompressorStartsEnabled] = useState(false);
   const [isolationEventRecorded, setIsolationEventRecorded] = useState(false);
   const [frameIsolated120, setFrameIsolated120] = useState(false);
   const [unusedPdPortsTaped, setUnusedPdPortsTaped] = useState(false);
@@ -675,6 +677,8 @@ function NewCheckForm({
             compressorStops120,
             compressorPowerOk,
             tubingOdOk,
+            relievingRegulatorOk,
+            compressorStartsEnabled,
             isolationEventRecorded,
             frameIsolated120,
             unusedPdPortsTaped,
@@ -1258,6 +1262,22 @@ function NewCheckForm({
                   onChange={(e) => setTubingOdOk(e.target.checked)}
                 />
                 Tubing is KOP-equivalent, maximum OD 1/4 in
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={relievingRegulatorOk}
+                  onChange={(e) => setRelievingRegulatorOk(e.target.checked)}
+                />
+                Relieving regulator ≤ 60 psi providing all working pressure
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={compressorStartsEnabled}
+                  onChange={(e) => setCompressorStartsEnabled(e.target.checked)}
+                />
+                Compressor starts when enabled with no stored pressure
               </label>
             </>
           ) : null}
