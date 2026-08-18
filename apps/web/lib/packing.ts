@@ -11,6 +11,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "White 3.5 in bumper numerals (0.25 in stroke; ≥3 sides ~90° apart)", quantity: 1 },
       { label: "Solid-core bumper foam spare (not hollow pool noodles)", quantity: 1 },
       { label: "Bumper backer through-bolts (not wood screws)", quantity: 1 },
+      { label: "Bumper quick-release pins / RivNuts (easily removable for inspection)", quantity: 1 },
       { label: "Bumper staples 1/2 in or 3/4 in + shears to trim excess fabric", quantity: 1 },
       { label: "Spare bumper backer / brackets", quantity: 2 },
       { label: "Pneumatic vent plug labeled and reachable (inspectors fail a hidden plug)", quantity: 1 },
