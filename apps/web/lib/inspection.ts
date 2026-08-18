@@ -23,6 +23,8 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Bumpers cover the required frame perimeter",
       "Bumper gaps < 1.25 in, or one larger gap with ≥ 5 in coverage from each corner (R401)",
       "Bumpers have no moving or electrical parts (R409)",
+      "Bumper hard parts ≤ 4 in from the robot perimeter (R403)",
+      "Bumper corners filled with ≥ 2 in uncompressed padding, measured diagonally (R406)",
       "Bumper padding is solid-core foam (hollow pool noodles are not legal)",
       "Separate red and blue bumper sets (reversible fabric eats weight and fails often)",
       "Team number: white Arabic numerals ≥ 3.5 in tall × 0.25 in stroke on at least 3 sides ~90° apart (R412)",

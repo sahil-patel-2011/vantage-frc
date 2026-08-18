@@ -537,6 +537,8 @@ function NewCheckForm({
   const [bumperGapsOk, setBumperGapsOk] = useState(false);
   const [bumperNoElectronics, setBumperNoElectronics] = useState(false);
   const [bumperNumbersLegal, setBumperNumbersLegal] = useState(false);
+  const [bumperHardPartsOk, setBumperHardPartsOk] = useState(false);
+  const [bumperCornersFilled, setBumperCornersFilled] = useState(false);
 
   const [mainBreakerMaxAmps, setMainBreakerMaxAmps] = useState("120");
   const [installedMainBreakerAmps, setInstalledMainBreakerAmps] = useState("120");
@@ -621,6 +623,8 @@ function NewCheckForm({
             bumperGapsOk,
             bumperNoElectronics,
             bumperNumbersLegal,
+            bumperHardPartsOk,
+            bumperCornersFilled,
           },
           wiringPower: {
             mainBreakerMaxAmps: Number(mainBreakerMaxAmps) || 0,
@@ -908,6 +912,22 @@ function NewCheckForm({
                   onChange={(e) => setBumperNumbersLegal(e.target.checked)}
                 />
                 White Arabic numerals ≥ 3.5 in × 0.25 in stroke on at least 3 sides ~90° apart (R412)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperHardPartsOk}
+                  onChange={(e) => setBumperHardPartsOk(e.target.checked)}
+                />
+                Hard bumper parts ≤ 4 in from the robot perimeter (R403)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperCornersFilled}
+                  onChange={(e) => setBumperCornersFilled(e.target.checked)}
+                />
+                Corners filled with ≥ 2 in uncompressed padding, measured diagonally (R406)
               </label>
             </>
           ) : null}
