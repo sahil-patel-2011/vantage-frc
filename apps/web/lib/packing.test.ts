@@ -54,6 +54,7 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /Pneumatic vent plug/i.test(label))).toBe(true);
     expect(labels.some((label) => /Spare PDH/i.test(label))).toBe(true);
     expect(labels.some((label) => /ferrule/i.test(label))).toBe(true);
+    expect(labels.some((label) => /Twin ferrules/i.test(label) && /R618/i.test(label))).toBe(true);
     expect(labels.some((label) => /heat shrink/i.test(label))).toBe(true);
     expect(labels.some((label) => /CANivore/i.test(label))).toBe(true);
     expect(labels.some((label) => /Shielded CANivore USB-C/i.test(label))).toBe(true);
