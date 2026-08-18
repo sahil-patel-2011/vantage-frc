@@ -527,6 +527,9 @@ function NewCheckForm({
   const [measuredBumperMaxHeightIn, setMeasuredBumperMaxHeightIn] = useState("");
   const [bumperMinThicknessIn, setBumperMinThicknessIn] = useState("1");
   const [measuredBumperThicknessIn, setMeasuredBumperThicknessIn] = useState("");
+  const [bumperEventRecorded, setBumperEventRecorded] = useState(false);
+  const [solidCoreFoam, setSolidCoreFoam] = useState(false);
+  const [separateColorSets, setSeparateColorSets] = useState(false);
 
   const [mainBreakerMaxAmps, setMainBreakerMaxAmps] = useState("120");
   const [installedMainBreakerAmps, setInstalledMainBreakerAmps] = useState("120");
@@ -554,6 +557,9 @@ function NewCheckForm({
   const [batteryLeadsTorqued, setBatteryLeadsTorqued] = useState(false);
   const [mainBreakerCovered, setMainBreakerCovered] = useState(false);
   const [rioUsbCameraClear, setRioUsbCameraClear] = useState(false);
+  const [pneumaticsEventRecorded, setPneumaticsEventRecorded] = useState(false);
+  const [ventPlugAccessible, setVentPlugAccessible] = useState(false);
+  const [singleOnboardCompressor, setSingleOnboardCompressor] = useState(false);
 
   const setWeightField = (index: number, key: keyof WeightItemDraft) => (event: { target: { value: string } }) =>
     setWeightItems((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: event.target.value } : row)));
@@ -589,6 +595,9 @@ function NewCheckForm({
             measuredBumperMaxHeightIn: Number(measuredBumperMaxHeightIn) || 0,
             bumperMinThicknessIn: Number(bumperMinThicknessIn) || 0,
             measuredBumperThicknessIn: Number(measuredBumperThicknessIn) || 0,
+            bumperEventRecorded,
+            solidCoreFoam,
+            separateColorSets,
           },
           wiringPower: {
             mainBreakerMaxAmps: Number(mainBreakerMaxAmps) || 0,
@@ -617,6 +626,9 @@ function NewCheckForm({
             batteryLeadsTorqued,
             mainBreakerCovered,
             rioUsbCameraClear,
+            pneumaticsEventRecorded,
+            ventPlugAccessible,
+            singleOnboardCompressor,
           },
         });
         setRobotName("");
@@ -625,6 +637,9 @@ function NewCheckForm({
         setMeasuredBumperMinHeightIn("");
         setMeasuredBumperMaxHeightIn("");
         setMeasuredBumperThicknessIn("");
+        setBumperEventRecorded(false);
+        setSolidCoreFoam(false);
+        setSeparateColorSets(false);
         setBatterySecured(false);
         setWiresLabeled(false);
         setRadioPowerOk(false);
@@ -649,6 +664,9 @@ function NewCheckForm({
         setBatteryLeadsTorqued(false);
         setMainBreakerCovered(false);
         setRioUsbCameraClear(false);
+        setPneumaticsEventRecorded(false);
+        setVentPlugAccessible(false);
+        setSingleOnboardCompressor(false);
       }}
     >
       <h2 style={{ margin: 0 }}>Run an inspection-readiness check</h2>
@@ -750,6 +768,36 @@ function NewCheckForm({
             />
           </FormRow>
         </FormGrid>
+        <p className="app-muted">
+          Chief Delphi: hollow pool noodles and reversible bumpers fail Thursday. Leave this off until you actually walk
+          the bumpers — never invent a fail.
+        </p>
+        <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={bumperEventRecorded}
+              onChange={(e) => setBumperEventRecorded(e.target.checked)}
+            />
+            We logged bumper construction for this robot
+          </label>
+          {bumperEventRecorded ? (
+            <>
+              <label>
+                <input type="checkbox" checked={solidCoreFoam} onChange={(e) => setSolidCoreFoam(e.target.checked)} />
+                Padding is solid-core foam (not hollow pool noodles)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={separateColorSets}
+                  onChange={(e) => setSeparateColorSets(e.target.checked)}
+                />
+                Separate red and blue sets (not reversible)
+              </label>
+            </>
+          ) : null}
+        </fieldset>
       </div>
 
       <div>
@@ -934,6 +982,44 @@ function NewCheckForm({
                   onChange={(e) => setRioUsbCameraClear(e.target.checked)}
                 />
                 No USB camera on the RIO ports next to a CANivore (ESD kills both 5 V rails)
+              </label>
+            </>
+          ) : null}
+        </fieldset>
+      </div>
+
+      <div>
+        <strong className="app-muted">Pneumatics (skip if the robot has no air)</strong>
+        <p className="app-muted">
+          Inspection checklist: hidden vent plugs and extra compressors fail Thursday. Leave this off until you actually
+          walk stored pressure — never invent a fail.
+        </p>
+        <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={pneumaticsEventRecorded}
+              onChange={(e) => setPneumaticsEventRecorded(e.target.checked)}
+            />
+            We logged pneumatics for this robot
+          </label>
+          {pneumaticsEventRecorded ? (
+            <>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={ventPlugAccessible}
+                  onChange={(e) => setVentPlugAccessible(e.target.checked)}
+                />
+                Vent plug is easily accessible and vents stored pressure to 0 psi
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={singleOnboardCompressor}
+                  onChange={(e) => setSingleOnboardCompressor(e.target.checked)}
+                />
+                Only one onboard legal compressor
               </label>
             </>
           ) : null}
