@@ -93,7 +93,12 @@ export function breakerSizeCues(loads: PowerLoad[]): string[] {
 
 export function currentLimitCue(brownoutRisk: boolean, loadCount: number): string | null {
   if (!brownoutRisk || loadCount === 0) return null;
-  return "Set supply current limits on every motor before blaming ESD — brownouts this year were usually missing limits.";
+  return "Set supply current limits on every motor before blaming static — brownouts were usually missing limits.";
+}
+
+export function staggerCue(brownoutRisk: boolean): string | null {
+  if (!brownoutRisk) return null;
+  return "Stagger high-current mechanisms and check swerve binding before blaming static.";
 }
 
 /**
@@ -118,6 +123,7 @@ export function summarizePower(loads: PowerLoad[], sustainedCeiling = SUSTAINED_
     sustainedCeiling,
     breakerSizeCues: breakerSizeCues(loads),
     currentLimitCue: currentLimitCue(brownoutRisk, loads.length),
+    staggerCue: staggerCue(brownoutRisk),
   };
 }
 

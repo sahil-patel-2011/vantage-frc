@@ -56,9 +56,13 @@ describe("match checklist bumper cue (CD pit color)", () => {
       "ds_estop",
       "lenses",
       "bolts",
+      "kraken_screws",
+      "controller_lock",
     ]);
     expect(fresh.find((item) => item.key === "lenses")?.label).toMatch(/fuzz/i);
     expect(fresh.find((item) => item.key === "ds_estop")?.label).toMatch(/Game Bar/i);
+    expect(fresh.find((item) => item.key === "kraken_screws")?.label).toMatch(/Kraken/i);
+    expect(fresh.find((item) => item.key === "controller_lock")?.label).toMatch(/controller/i);
 
     const withDs = sanitizeChecklistItems([
       { key: "bumper", label: "Bumpers secured", done: true, checkedAt: "2026-03-21T15:00:00.000Z" },
@@ -71,6 +75,7 @@ describe("match checklist bumper cue (CD pit color)", () => {
       { key: "ds_estop", label: "Spacebar E-Stop works (Game Bar off)", done: true, checkedAt: "2026-03-21T15:01:00.000Z" },
     ]);
     expect(withDs.map((item) => item.key)).not.toContain("lenses");
+    expect(withDs.map((item) => item.key)).not.toContain("kraken_screws");
     expect(withDs.every((item) => item.done)).toBe(true);
 
     const legacy = sanitizeChecklistItems([

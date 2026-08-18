@@ -104,6 +104,14 @@ export function parseWiringPower(value: unknown): WiringPowerSpec {
     radioProgrammedForEvent: Boolean(row.radioProgrammedForEvent),
     sparkMaxEventRecorded: Boolean(row.sparkMaxEventRecorded),
     sparkMaxUsbAvoided: Boolean(row.sparkMaxUsbAvoided),
+    reliabilityEventRecorded: Boolean(row.reliabilityEventRecorded),
+    strainReliefOk: Boolean(row.strainReliefOk),
+    dynamicCableClear: Boolean(row.dynamicCableClear),
+    esdIntakeBonded: Boolean(row.esdIntakeBonded),
+    esdShielded: Boolean(row.esdShielded),
+    canivorePdhBackup: Boolean(row.canivorePdhBackup),
+    batteryLeadsTorqued: Boolean(row.batteryLeadsTorqued),
+    mainBreakerCovered: Boolean(row.mainBreakerCovered),
   };
 }
 

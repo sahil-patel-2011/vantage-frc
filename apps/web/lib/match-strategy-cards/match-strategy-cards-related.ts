@@ -188,11 +188,15 @@ export function matchStrategyCardsNextActions(input: {
   cardCount?: number;
   savedCount?: number;
   needsAutoCoordination?: boolean;
+  needsAutoFlexibility?: boolean;
+  needsDeploySafety?: boolean;
 }): MatchStrategyCardsNextAction[] {
   const orgId = input.orgId ?? null;
   const cardCount = input.cardCount ?? 0;
   const savedCount = input.savedCount ?? 0;
   const needsAutoCoordination = Boolean(input.needsAutoCoordination);
+  const needsAutoFlexibility = Boolean(input.needsAutoFlexibility);
+  const needsDeploySafety = Boolean(input.needsDeploySafety);
 
   if (!orgId || input.shell === "setup") {
     if (!orgId) {
@@ -306,6 +310,56 @@ export function matchStrategyCardsNextActions(input: {
           savedCount > 0
             ? `${savedCount} of ${cardCount} card${cardCount === 1 ? "" : "s"} saved — print Soft-UI packs for drive team.`
             : `${cardCount} scheduled match${cardCount === 1 ? "" : "es"} — plans stay blank until you write them.`,
+        href: "#match-strategy-cards-list",
+      },
+      {
+        id: "match-checklist",
+        label: "Open Match checklist",
+        detail: "Pair printable cards with pre-match checklists.",
+        href: hubHref("/competition", "match-checklist", orgId),
+      },
+    ];
+  }
+
+  if (needsAutoFlexibility) {
+    return [
+      {
+        id: "auto-flex",
+        label: "Add a backup auto",
+        detail:
+          "Partners are listed and Auto is a single path — write a backup for common alliance layouts before you queue.",
+        href: "#match-strategy-cards-list",
+        primary: true,
+      },
+      {
+        id: "edit",
+        label: savedCount > 0 ? "Update a strategy card" : "Draft the first card",
+        detail: "Keep the spoken plan flexible — never DEMO paths.",
+        href: "#match-strategy-cards-list",
+      },
+      {
+        id: "match-checklist",
+        label: "Open Match checklist",
+        detail: "Pair printable cards with pre-match checklists.",
+        href: hubHref("/competition", "match-checklist", orgId),
+      },
+    ];
+  }
+
+  if (needsDeploySafety) {
+    return [
+      {
+        id: "deploy-safe",
+        label: "Write deploy vs stow",
+        detail:
+          "A card mentions a hood, hopper, or deploy without when to stow — raised mechanisms get crushed under contact.",
+        href: "#match-strategy-cards-list",
+        primary: true,
+      },
+      {
+        id: "edit",
+        label: savedCount > 0 ? "Update a strategy card" : "Draft the first card",
+        detail: "Driver notes stay blank until you write them — never DEMO callouts.",
         href: "#match-strategy-cards-list",
       },
       {

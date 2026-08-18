@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breakerSizeCues, currentLimitCue, parsePowerAction, summarizePower, validateLoad } from "./power-budget";
+import { breakerSizeCues, currentLimitCue, parsePowerAction, staggerCue, summarizePower, validateLoad } from "./power-budget";
 
 describe("validateLoad", () => {
   it("requires a name", () => {
@@ -50,6 +50,11 @@ describe("summarizePower", () => {
     expect(currentLimitCue(true, 0)).toBeNull();
     expect(currentLimitCue(true, 3)).toMatch(/current limits/i);
     expect(currentLimitCue(false, 3)).toBeNull();
+    expect(staggerCue(false)).toBeNull();
+    expect(staggerCue(true)).toMatch(/stagger/i);
+    expect(summarizePower([{ name: "All motors", typicalAmps: 130, peakAmps: null, breakerAmps: null }], 100).staggerCue).toMatch(
+      /binding/i,
+    );
   });
 });
 

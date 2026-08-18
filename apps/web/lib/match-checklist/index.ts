@@ -17,6 +17,8 @@ export const CHECKLIST_ITEM_KEYS: ChecklistItemKey[] = [
   "ds_estop",
   "lenses",
   "bolts",
+  "kraken_screws",
+  "controller_lock",
 ];
 
 const ITEM_LABELS: Record<ChecklistItemKey, string> = {
@@ -30,6 +32,8 @@ const ITEM_LABELS: Record<ChecklistItemKey, string> = {
   ds_estop: "Spacebar E-Stop works (Game Bar off)",
   lenses: "Vision lenses wiped (ball fuzz)",
   bolts: "Bolt check (swerve / bumpers)",
+  kraken_screws: "Kraken power screws (torque + check)",
+  controller_lock: "Tape accidental USB controller buttons",
 };
 
 const LEVEL_LABELS: Record<string, string> = { qm: "Qual", qf: "QF", sf: "SF", f: "Final" };
@@ -113,6 +117,8 @@ export function applyBumperCue(items: ChecklistItem[], color: BumperColor | null
     if (item.key === "ds_estop") return { ...item, label: ITEM_LABELS.ds_estop };
     if (item.key === "lenses") return { ...item, label: ITEM_LABELS.lenses };
     if (item.key === "bolts") return { ...item, label: ITEM_LABELS.bolts };
+    if (item.key === "kraken_screws") return { ...item, label: ITEM_LABELS.kraken_screws };
+    if (item.key === "controller_lock") return { ...item, label: ITEM_LABELS.controller_lock };
     return item;
   });
 }

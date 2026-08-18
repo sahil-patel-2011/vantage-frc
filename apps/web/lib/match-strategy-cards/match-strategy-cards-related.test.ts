@@ -62,6 +62,17 @@ describe("matchStrategyCardsNextActions", () => {
     expect(actions[0]?.id).toBe("auto-coord");
     expect(actions[0]?.primary).toBe(true);
   });
+
+  it("prioritizes a backup auto when Auto is filled without flex language", () => {
+    const actions = matchStrategyCardsNextActions({
+      orgId: "org-1",
+      shell: "ready",
+      cardCount: 4,
+      savedCount: 1,
+      needsAutoFlexibility: true,
+    });
+    expect(actions[0]?.id).toBe("auto-flex");
+  });
 });
 
 describe("classifyMatchStrategyCardsShell", () => {

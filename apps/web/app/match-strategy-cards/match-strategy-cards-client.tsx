@@ -12,7 +12,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { alliancePartners, autoCoordinationCue, dutyPlanFromTemplate, DUTY_STANCES, dutyStanceLabel, matchLabel, renderCardText } from "../../lib/match-strategy-cards";
+import { alliancePartners, autoCoordinationCue, autoFlexibilityCue, deploySafetyCue, dutyPlanFromTemplate, DUTY_STANCES, dutyStanceLabel, matchLabel, renderCardText } from "../../lib/match-strategy-cards";
 import type { MatchStrategyCardsView } from "../../lib/match-strategy-cards/compute-match-strategy-cards";
 import {
   MATCH_STRATEGY_CARDS_RELATED_INCLUDE,
@@ -209,6 +209,21 @@ export default function MatchStrategyCardsClient() {
           autoAssignment: card.autoAssignment,
         }) != null,
     );
+  const needsAutoFlexibility =
+    view?.status === "live" &&
+    ownTeamNumber != null &&
+    view.cards.some(
+      (card) =>
+        autoFlexibilityCue({
+          partnerNumbers: alliancePartners(card.alliances, ownTeamNumber),
+          autoAssignment: card.autoAssignment,
+        }) != null,
+    );
+  const needsDeploySafety =
+    view?.status === "live" &&
+    view.cards.some(
+      (card) => deploySafetyCue({ gamePlan: card.gamePlan, driverNotes: card.driverNotes }) != null,
+    );
 
   const shell = classifyMatchStrategyCardsShell({
     loading: view == null && !fetchFailed,
@@ -224,6 +239,8 @@ export default function MatchStrategyCardsClient() {
     cardCount,
     savedCount,
     needsAutoCoordination,
+    needsAutoFlexibility,
+    needsDeploySafety,
   });
   const relatedLinks = matchStrategyCardsRelatedLinks(orgId, {
     include: [...MATCH_STRATEGY_CARDS_RELATED_INCLUDE],
@@ -388,6 +405,8 @@ function StrategyCardPanel({
   const partners = alliancePartners(card.alliances, ownTeamNumber);
   const opponents = card.alliances.filter((a) => !a.isOwnAlliance).flatMap((a) => a.teamNumbers);
   const autoCue = autoCoordinationCue({ partnerNumbers: partners, autoAssignment });
+  const flexCue = autoFlexibilityCue({ partnerNumbers: partners, autoAssignment });
+  const deployCue = deploySafetyCue({ gamePlan, driverNotes });
 
   return (
     <Panel className="print-strategy-card msc-panel msc-card">
@@ -454,6 +473,11 @@ function StrategyCardPanel({
           {autoCue}
         </p>
       ) : null}
+      {flexCue ? (
+        <p className="msc-auto-cue" role="status">
+          {flexCue}
+        </p>
+      ) : null}
       <FormRow label="Defense focus">
         <textarea value={defenseFocus} onChange={(e) => setDefenseFocus(e.target.value)} rows={2} />
       </FormRow>
@@ -463,6 +487,11 @@ function StrategyCardPanel({
       <FormRow label={`Driver notes${partners.length ? ` (partner: ${partners.join(", ")})` : ""}`}>
         <textarea value={driverNotes} onChange={(e) => setDriverNotes(e.target.value)} rows={2} />
       </FormRow>
+      {deployCue ? (
+        <p className="msc-auto-cue" role="status">
+          {deployCue}
+        </p>
+      ) : null}
 
       <div className="msc-roles">
         <span className="app-muted">Role assignments</span>

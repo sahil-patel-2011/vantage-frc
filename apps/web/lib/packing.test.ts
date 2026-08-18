@@ -59,6 +59,14 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /beater bar/i.test(label))).toBe(true);
     expect(labels.some((label) => /solid-core/i.test(label))).toBe(true);
     expect(labels.some((label) => /through-bolts/i.test(label))).toBe(true);
+    expect(labels.some((label) => /not reversible/i.test(label))).toBe(true);
+    expect(labels.some((label) => /3\/4 in/i.test(label) && /staple/i.test(label))).toBe(true);
+    expect(labels.some((label) => /Non-WCP load-rated zip ties/i.test(label))).toBe(true);
+    expect(labels.some((label) => /main breaker cover/i.test(label))).toBe(true);
+    expect(labels.some((label) => /ESD kit/i.test(label))).toBe(true);
+    expect(labels.some((label) => /Kraken power-connector/i.test(label))).toBe(true);
+    expect(labels.some((label) => /controller buttons/i.test(label))).toBe(true);
+    expect(labels.some((label) => /high-contact shafts/i.test(label))).toBe(true);
   });
 });
 

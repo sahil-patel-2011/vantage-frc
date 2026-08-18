@@ -62,6 +62,35 @@ export function autoCoordinationCue(input: {
   return AUTO_COORDINATION_CUE;
 }
 
+/** FRC: a single rigid auto collides with common alliance configs. */
+export const AUTO_FLEXIBILITY_CUE =
+  "Write a backup auto for common alliance layouts — one rigid path is how partners collide.";
+
+export function autoFlexibilityCue(input: {
+  partnerNumbers: number[];
+  autoAssignment: string | null | undefined;
+}): string | null {
+  if (input.partnerNumbers.length === 0) return null;
+  const auto = input.autoAssignment?.trim() ?? "";
+  if (!auto) return null;
+  if (/\b(backup|flex|alternate|alt(?:ernate)?\s+path|second auto|two autos?)\b/i.test(auto)) return null;
+  return AUTO_FLEXIBILITY_CUE;
+}
+
+/** FRC: hoods/hoppers that raise profile get crushed when another robot drives underneath. */
+export const DEPLOY_SAFETY_CUE =
+  "Write when it is safe to deploy — raised hoods and hoppers get crushed under trench/bump contact.";
+
+export function deploySafetyCue(input: {
+  gamePlan: string | null | undefined;
+  driverNotes: string | null | undefined;
+}): string | null {
+  const hay = `${input.gamePlan ?? ""} ${input.driverNotes ?? ""}`.toLowerCase();
+  if (!/\b(hood|hopper|deploy|intake out|extend)\b/.test(hay)) return null;
+  if (/\b(stow|trench|retract|down when)\b/.test(hay)) return null;
+  return DEPLOY_SAFETY_CUE;
+}
+
 export function opponentTeams(alliances: MatchStrategyAlliance[]): number[] {
   return alliances.filter((a) => !a.isOwnAlliance).flatMap((a) => a.teamNumbers);
 }

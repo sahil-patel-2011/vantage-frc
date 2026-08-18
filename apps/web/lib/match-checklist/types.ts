@@ -12,7 +12,9 @@ export type ChecklistItemKey =
   | "ds_ethernet"
   | "ds_estop"
   | "lenses"
-  | "bolts";
+  | "bolts"
+  | "kraken_screws"
+  | "controller_lock";
 
 export type ChecklistItem = {
   key: ChecklistItemKey;
