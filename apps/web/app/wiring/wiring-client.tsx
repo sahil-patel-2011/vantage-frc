@@ -8,7 +8,7 @@ type Device = {
 };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; devices: Device[]; summary: { totalDevices: number; canDevices: number; conflicts: WiringConflict[]; conflictCount: number; pcmPhCanCues?: string[] } };
+  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; devices: Device[]; summary: { totalDevices: number; canDevices: number; conflicts: WiringConflict[]; conflictCount: number; pcmPhCanCues?: string[]; servoHubCues?: string[] } };
 
 const EMPTY = { name: "", deviceType: "talonfx", canId: "", canBus: "rio", pdhPort: "", breakerAmp: "", subsystem: "", notes: "" };
 
@@ -82,6 +82,15 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
         <section className="intel-panel" style={{ borderColor: "#b45309" }}>
           <span className="eyebrow">PCM / PH CAN</span>
           {(view.summary.pcmPhCanCues ?? []).map((cue) => (
+            <article key={cue}><div><strong>{cue}</strong></div></article>
+          ))}
+        </section>
+      )}
+
+      {(view.summary.servoHubCues ?? []).length > 0 && (
+        <section className="intel-panel" style={{ borderColor: "#b45309" }}>
+          <span className="eyebrow">SERVO HUB</span>
+          {(view.summary.servoHubCues ?? []).map((cue) => (
             <article key={cue}><div><strong>{cue}</strong></div></article>
           ))}
         </section>
