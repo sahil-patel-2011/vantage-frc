@@ -539,6 +539,8 @@ function NewCheckForm({
   const [bumperNumbersLegal, setBumperNumbersLegal] = useState(false);
   const [bumperHardPartsOk, setBumperHardPartsOk] = useState(false);
   const [bumperCornersFilled, setBumperCornersFilled] = useState(false);
+  const [bumperHardPartsInset, setBumperHardPartsInset] = useState(false);
+  const [bumperBackingTall, setBumperBackingTall] = useState(false);
 
   const [mainBreakerMaxAmps, setMainBreakerMaxAmps] = useState("120");
   const [installedMainBreakerAmps, setInstalledMainBreakerAmps] = useState("120");
@@ -627,6 +629,8 @@ function NewCheckForm({
             bumperNumbersLegal,
             bumperHardPartsOk,
             bumperCornersFilled,
+            bumperHardPartsInset,
+            bumperBackingTall,
           },
           wiringPower: {
             mainBreakerMaxAmps: Number(mainBreakerMaxAmps) || 0,
@@ -923,7 +927,23 @@ function NewCheckForm({
                   checked={bumperHardPartsOk}
                   onChange={(e) => setBumperHardPartsOk(e.target.checked)}
                 />
-                Hard bumper parts ≤ 4 in from the robot perimeter (R403)
+                Bumpers do not extend &gt; 4.25 in from the robot perimeter (R403)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperHardPartsInset}
+                  onChange={(e) => setBumperHardPartsInset(e.target.checked)}
+                />
+                Hard parts ≤ 1.5 in from the perimeter; padding ≥ 2 in past hard parts (R404)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperBackingTall}
+                  onChange={(e) => setBumperBackingTall(e.target.checked)}
+                />
+                Backing ≥ 4.25 in tall and supports all padding (R402)
               </label>
               <label>
                 <input
