@@ -8,6 +8,8 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
     items: [
       { label: "Robot (in cart or crate)", quantity: 1 },
       { label: "Bumpers — red and blue sets", quantity: 2 },
+      { label: "Solid-core bumper foam spare (not hollow pool noodles)", quantity: 1 },
+      { label: "Bumper backer through-bolts (not wood screws)", quantity: 1 },
       { label: "Spare parts kit (printed + machined spares)", quantity: 1 },
       { label: "Spare wheels / tread", quantity: 4 },
       { label: "Spare belts, chain, and fasteners", quantity: 1 },
