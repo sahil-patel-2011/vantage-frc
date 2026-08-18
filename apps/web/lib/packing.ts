@@ -8,6 +8,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
     items: [
       { label: "Robot (in cart or crate)", quantity: 1 },
       { label: "Bumpers — separate red and blue sets (not reversible)", quantity: 2 },
+      { label: "White 3.5 in bumper numerals (0.25 in stroke; ≥3 sides ~90° apart)", quantity: 1 },
       { label: "Solid-core bumper foam spare (not hollow pool noodles)", quantity: 1 },
       { label: "Bumper backer through-bolts (not wood screws)", quantity: 1 },
       { label: "Bumper staples 1/2 in or 3/4 in + shears to trim excess fabric", quantity: 1 },

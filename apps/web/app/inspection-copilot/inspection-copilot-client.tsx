@@ -536,6 +536,7 @@ function NewCheckForm({
   const [separateColorSets, setSeparateColorSets] = useState(false);
   const [bumperGapsOk, setBumperGapsOk] = useState(false);
   const [bumperNoElectronics, setBumperNoElectronics] = useState(false);
+  const [bumperNumbersLegal, setBumperNumbersLegal] = useState(false);
 
   const [mainBreakerMaxAmps, setMainBreakerMaxAmps] = useState("120");
   const [installedMainBreakerAmps, setInstalledMainBreakerAmps] = useState("120");
@@ -619,6 +620,7 @@ function NewCheckForm({
             separateColorSets,
             bumperGapsOk,
             bumperNoElectronics,
+            bumperNumbersLegal,
           },
           wiringPower: {
             mainBreakerMaxAmps: Number(mainBreakerMaxAmps) || 0,
@@ -674,6 +676,7 @@ function NewCheckForm({
         setSeparateColorSets(false);
         setBumperGapsOk(false);
         setBumperNoElectronics(false);
+        setBumperNumbersLegal(false);
         setBatterySecured(false);
         setWiresLabeled(false);
         setRadioPowerOk(false);
@@ -897,6 +900,14 @@ function NewCheckForm({
                   onChange={(e) => setBumperNoElectronics(e.target.checked)}
                 />
                 No moving or electrical parts in the bumpers (R409)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={bumperNumbersLegal}
+                  onChange={(e) => setBumperNumbersLegal(e.target.checked)}
+                />
+                White Arabic numerals ≥ 3.5 in × 0.25 in stroke on at least 3 sides ~90° apart (R412)
               </label>
             </>
           ) : null}

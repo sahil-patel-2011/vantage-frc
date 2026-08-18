@@ -208,6 +208,14 @@ export function predictInspectionFailures(input: {
           "Bumpers are not marked free of moving or electrical parts — 2026 R409 fails lights, actuators, and moving bumper hardware.",
       });
     }
+    if (!frameBumper.bumperNumbersLegal) {
+      flags.push({
+        type: "bumper_numbers",
+        severity: "critical",
+        message:
+          "Bumper numbers are not marked 2026-legal — R412 is white Arabic numerals ≥ 3.5 in tall × 0.25 in stroke on at least 3 sides about 90° apart, not last year's four-side default.",
+      });
+    }
   }
 
   if (
@@ -477,7 +485,7 @@ export function predictInspectionFailures(input: {
     ((frameBumper.extensionLimitIn ?? 0) > 0 ? 1 : 0) +
     (frameBumper.bumperMaxHeightIn > 0 || frameBumper.bumperMinHeightIn > 0 ? 1 : 0) +
     (frameBumper.bumperMinThicknessIn > 0 ? 1 : 0) +
-    (frameBumper.bumperEventRecorded ? 4 : 0) +
+    (frameBumper.bumperEventRecorded ? 5 : 0) +
     5 + // wiring/power checks are always evaluated
     (wiringPower.binderRecorded ? 3 : 0) +
     (wiringPower.radioEventRecorded ? 4 : 0) +

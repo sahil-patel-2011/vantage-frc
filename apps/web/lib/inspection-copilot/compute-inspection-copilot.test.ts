@@ -493,6 +493,7 @@ describe("predictInspectionFailures bumper construction", () => {
     expect(prediction.flags.some((flag) => flag.type === "bumper_reversible")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_gaps")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_electronics")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_numbers")).toBe(false);
   });
 
   it("flags logged hollow foam and reversible sets without DEMO wording", () => {
@@ -502,7 +503,7 @@ describe("predictInspectionFailures bumper construction", () => {
       wiringPower: wiring,
     });
     expect(prediction.flags.map((flag) => flag.type)).toEqual(
-      expect.arrayContaining(["bumper_hollow_foam", "bumper_reversible", "bumper_gaps", "bumper_electronics"]),
+      expect.arrayContaining(["bumper_hollow_foam", "bumper_reversible", "bumper_gaps", "bumper_electronics", "bumper_numbers"]),
     );
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
@@ -517,11 +518,13 @@ describe("predictInspectionFailures bumper construction", () => {
         separateColorSets: true,
         bumperGapsOk: true,
         bumperNoElectronics: true,
+        bumperNumbersLegal: true,
       },
       wiringPower: wiring,
     });
     expect(prediction.flags.some((flag) => flag.type === "bumper_gaps")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "bumper_electronics")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "bumper_numbers")).toBe(false);
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
   });
 });

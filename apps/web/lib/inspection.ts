@@ -25,7 +25,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "Bumpers have no moving or electrical parts (R409)",
       "Bumper padding is solid-core foam (hollow pool noodles are not legal)",
       "Separate red and blue bumper sets (reversible fabric eats weight and fails often)",
-      "Team number visible on all four bumper sides",
+      "Team number: white Arabic numerals ≥ 3.5 in tall × 0.25 in stroke on at least 3 sides ~90° apart (R412)",
       "Bumpers mount securely and sit in the legal height zone",
       "No sharp edges, pinch points, or protrusions",
     ],
@@ -48,7 +48,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
     category: "Pneumatics",
     items: [
       "Only legal pneumatic components (or none on the robot)",
-      "Stored pressure within limits; working pressure regulated to 60 psi",
+      "Stored pressure ≤ 120 psi (compressor stops automatically under roboRIO control); working pressure regulated to 60 psi",
       "Pressure switch wired to the PCM/PH so the compressor stops at the stored-pressure setpoint",
       "Pressure relief valve on the compressor outlet, set to 125 psi",
       "Easily accessible vent plug vents all stored pressure (gauges read 0 psi)",
