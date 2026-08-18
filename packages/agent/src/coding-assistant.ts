@@ -43,6 +43,18 @@ const RULES: Array<{
   },
 ];
 
+const MOTOR_CTOR = /\b(?:TalonFX|SparkMax|SparkFlex|TalonSRX|VictorSPX|CANSparkMax)\s*\(/;
+const CURRENT_LIMIT_API =
+  /\b(?:setSupplyCurrentLimit|ConfigSupplyCurrentLimit|withSupplyCurrentLimit|setSmartCurrentLimit|SupplyCurrentLimit|StatorCurrentLimit|CurrentLimitsConfigs)\b/;
+
+/** Flag motor construction only when the pasted source has no current-limit API — never invent a motor. */
+export function missingSupplyCurrentLimit(text: string): { evidence: string; index: number } | null {
+  const motor = MOTOR_CTOR.exec(text);
+  if (!motor || motor.index == null) return null;
+  if (CURRENT_LIMIT_API.test(text)) return null;
+  return { evidence: motor[0], index: motor.index };
+}
+
 export function reviewFrcCode(input: { path: string; content: string; diff?: string }) {
   const text = input.diff ?? input.content;
   const risks: CodeRisk[] = [];
@@ -55,6 +67,17 @@ export function reviewFrcCode(input: { path: string; content: string; diff?: str
       pattern: rule.pattern,
       message: rule.message,
       evidence: `${input.path}:${line}: ${match[0].replace(/\s+/g, " ").slice(0, 100)}`,
+    });
+  }
+  const missingLimit = missingSupplyCurrentLimit(text);
+  if (missingLimit) {
+    const line = text.slice(0, missingLimit.index).split(/\r?\n/).length;
+    risks.push({
+      severity: "high",
+      pattern: "missing-supply-current-limit",
+      message:
+        "Motor controllers are constructed without a supply current limit in this source — brownouts and main-breaker trips follow.",
+      evidence: `${input.path}:${line}: ${missingLimit.evidence.replace(/\s+/g, " ").slice(0, 100)}`,
     });
   }
   return {

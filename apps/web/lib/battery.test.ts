@@ -8,7 +8,9 @@ import {
   rankForRotation,
   summarizeLogs,
   BATTERY_BREAK_IN_CUE,
+  BATTERY_OVER_DISCHARGE_CUE,
   batteryBreakInCue,
+  batteryOverDischargeCue,
   type BatteryHealth,
   type BatteryStatus,
 } from "./battery";
@@ -76,6 +78,15 @@ describe("batteryBreakInCue", () => {
     expect(batteryBreakInCue(0)).toBe(BATTERY_BREAK_IN_CUE);
     expect(batteryBreakInCue(2)).toBe(BATTERY_BREAK_IN_CUE);
     expect(batteryBreakInCue(3)).toBeNull();
+  });
+});
+
+describe("batteryOverDischargeCue", () => {
+  it("cues only after logged cycles with a rest voltage under 12.0 V", () => {
+    expect(batteryOverDischargeCue({ cycleCount: 0, lastRestingVoltage: 11.5 })).toBeNull();
+    expect(batteryOverDischargeCue({ cycleCount: 4, lastRestingVoltage: null })).toBeNull();
+    expect(batteryOverDischargeCue({ cycleCount: 4, lastRestingVoltage: 12.6 })).toBeNull();
+    expect(batteryOverDischargeCue({ cycleCount: 4, lastRestingVoltage: 11.5 })).toBe(BATTERY_OVER_DISCHARGE_CUE);
   });
 });
 
