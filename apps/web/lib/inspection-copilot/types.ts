@@ -46,10 +46,14 @@ export type FrameBumperSpec = {
   bumperNoElectronics?: boolean;
   /** True once R412 numbers are 3.5 in white Arabic on ≥3 sides ~90° apart. */
   bumperNumbersLegal?: boolean;
-  /** True once hard bumper parts stay ≤ 4 in from the robot perimeter (R403). */
+  /** True once the bumper stack stays ≤ 4.25 in from the perimeter (R403, checklist). */
   bumperHardPartsOk?: boolean;
   /** True once corners have ≥ 2 in uncompressed fill (R406, checklist tolerance). */
   bumperCornersFilled?: boolean;
+  /** True once hard parts stay ≤ 1.5 in from the perimeter (R404, checklist). */
+  bumperHardPartsInset?: boolean;
+  /** True once backing is ≥ 4.25 in tall and supports all padding (R402, checklist). */
+  bumperBackingTall?: boolean;
 };
 
 /** Team-declared wiring/power-distribution limits vs what was actually installed. */
@@ -168,6 +172,8 @@ export type InspectionFlagType =
   | "bumper_numbers"
   | "bumper_hard_parts"
   | "bumper_corners"
+  | "bumper_hard_inset"
+  | "bumper_backing"
   | "pneumatics_vent_plug"
   | "pneumatics_multi_compressor"
   | "pneumatics_relief_valve"
