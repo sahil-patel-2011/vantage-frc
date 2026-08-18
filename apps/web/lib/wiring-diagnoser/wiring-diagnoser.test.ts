@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diagnoseWiring, looksLikePdhMainFeed, pdhMainFeedCue, WIRE_GAUGES } from ".";
+import { diagnoseWiring, looksLikePdhMainFeed, pdhMainFeedCue, r618MultiWireCue, WIRE_GAUGES } from ".";
 
 describe("PDH main-feed 4 AWG cue (CD 2026 melted hubs)", () => {
   it("only flags a logged 4 AWG PDH/PDP main — never invents a gauge", () => {
@@ -26,5 +26,25 @@ describe("PDH main-feed 4 AWG cue (CD 2026 melted hubs)", () => {
       [{ channel: 0, deviceName: "PDH main +", wireGauge: "6", breakerAmps: 120 }],
     );
     expect(six.flags.some((flag) => flag.type === "pdh_4awg_feed")).toBe(false);
+  });
+});
+
+describe("R618 one wire per PD terminal", () => {
+  it("cues only a logged multi-wire terminal — never invents stuffed leads", () => {
+    expect(r618MultiWireCue("Intake MPM").toLowerCase()).toMatch(/r618/);
+    expect(r618MultiWireCue("Intake MPM").toLowerCase()).not.toContain("demo");
+
+    const clean = diagnoseWiring(
+      [{ channel: 2, deviceName: "Intake MPM", wireGauge: "12", breakerAmps: 20, expectedCurrentDrawAmps: 5 }],
+      [{ channel: 2, deviceName: "Intake MPM", wireGauge: "12", breakerAmps: 20 }],
+    );
+    expect(clean.flags.some((flag) => flag.type === "r618_multi_wire")).toBe(false);
+
+    const stuffed = diagnoseWiring(
+      [{ channel: 2, deviceName: "Intake MPM", wireGauge: "12", breakerAmps: 20, expectedCurrentDrawAmps: 5 }],
+      [{ channel: 2, deviceName: "Intake MPM", wireGauge: "12", breakerAmps: 20, multiWireTerminal: true }],
+    );
+    expect(stuffed.flags.some((flag) => flag.type === "r618_multi_wire")).toBe(true);
+    expect(stuffed.flags.find((flag) => flag.type === "r618_multi_wire")?.message).toMatch(/Q58|twin ferrule/i);
   });
 });

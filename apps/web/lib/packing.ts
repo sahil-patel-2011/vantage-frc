@@ -77,6 +77,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Zip ties to lock seated Anderson halves (half-seated drops under impact)", quantity: 1 },
       { label: "USB cables + programming kit", quantity: 1 },
       { label: "Ferrules for Weidmuller / screw terminals", quantity: 1 },
+      { label: "Twin ferrules rated for two wires (R618 — soldered splices fail)", quantity: 1 },
       { label: "Heat shrink for exposed battery terminals", quantity: 1 },
       { label: "Hot glue for CAN / USB / CANivore connectors", quantity: 1 },
       { label: "Shielded CANivore USB-C (stock cable; no unshielded log-drive dongle)", quantity: 1 },

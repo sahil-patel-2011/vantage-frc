@@ -94,6 +94,7 @@ export function parseObservedCircuits(value: unknown): ObservedCircuit[] {
       deviceName,
       wireGauge,
       breakerAmps: Math.round(breakerAmps * 100) / 100,
+      multiWireTerminal: Boolean(row.multiWireTerminal),
     });
   }
   return out;

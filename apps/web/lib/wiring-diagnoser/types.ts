@@ -14,7 +14,8 @@ export type DiagnosticFlagType =
   | "undersized_breaker"
   | "wire_undersized_for_breaker"
   | "oversized_channel"
-  | "pdh_4awg_feed";
+  | "pdh_4awg_feed"
+  | "r618_multi_wire";
 
 export type DiagnosticSeverity = "info" | "warning" | "critical";
 
@@ -34,6 +35,8 @@ export type ObservedCircuit = {
   deviceName: string;
   wireGauge: WireGauge;
   breakerAmps: number;
+  /** True once the pit walk saw more than one conductor in this PD terminal (R618). */
+  multiWireTerminal?: boolean;
 };
 
 /**

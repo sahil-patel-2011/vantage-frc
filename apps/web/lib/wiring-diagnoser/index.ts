@@ -68,6 +68,11 @@ export function looksLikePdhMainFeed(deviceName: string): boolean {
   return /main battery|battery input|battery main/.test(hay);
 }
 
+/** CD / R618 / Q58: one wire per PD terminal. Cue only when the pit walk logged extra conductors. */
+export function r618MultiWireCue(deviceName: string): string {
+  return `${deviceName}: more than one wire in the PD terminal — R618 fails a stuffed ferrule or soldered splice (Q58); twin ferrules only if the ferrule is rated for two wires.`;
+}
+
 /** Only when the team logged 4 AWG on a PDH/PDP main — never invent a gauge. */
 export function pdhMainFeedCue(deviceName: string, wireGauge: WireGauge): string | null {
   if (wireGauge !== "4" || !looksLikePdhMainFeed(deviceName)) return null;
@@ -155,6 +160,15 @@ export function diagnoseWiring(
         message: pdhCue,
       });
     }
+
+    if (obs.multiWireTerminal) {
+      flags.push({
+        channel: exp.channel,
+        type: "r618_multi_wire",
+        severity: "critical",
+        message: r618MultiWireCue(obs.deviceName),
+      });
+    }
   }
 
   for (const obs of observed) {
@@ -165,6 +179,14 @@ export function diagnoseWiring(
         severity: "warning",
         message: `Channel ${obs.channel} (${obs.deviceName}) is wired on the board but is not in the wiring diagram.`,
       });
+      if (obs.multiWireTerminal) {
+        flags.push({
+          channel: obs.channel,
+          type: "r618_multi_wire",
+          severity: "critical",
+          message: r618MultiWireCue(obs.deviceName),
+        });
+      }
     }
   }
 
