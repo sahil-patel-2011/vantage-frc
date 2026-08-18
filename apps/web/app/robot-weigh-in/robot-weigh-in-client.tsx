@@ -11,7 +11,7 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { robotWeighInStationLabel } from "../../lib/robot-weigh-in";
+import { robotWeighInStationLabel, suggestedWeightLimitLbs, weighIn2026LimitCue } from "../../lib/robot-weigh-in";
 import {
   ROBOT_WEIGH_IN_STATIONS,
   type RobotWeighInView,
@@ -427,7 +427,9 @@ function RecentEntries({
     <Panel id="robot-weigh-in-entries" className="rwi-panel">
       <h2>Recent weigh-ins</h2>
       <ul className="rwi-list">
-        {view.entries.slice(0, 20).map((item) => (
+        {view.entries.slice(0, 20).map((item) => {
+          const limitCue = weighIn2026LimitCue(item);
+          return (
           <li key={item.id} className="rwi-row">
             <div>
               <strong>{item.weightLbs.toFixed(1)} lbs</strong>
@@ -439,6 +441,11 @@ function RecentEntries({
                 {item.bumpersOn ? "Bumpers on" : "No bumpers"} · {item.batteryOn ? "Battery on" : "No battery"}
                 {item.notes ? ` · ${item.notes}` : ""}
               </small>
+              {limitCue ? (
+                <small className="app-muted" role="status">
+                  {limitCue}
+                </small>
+              ) : null}
             </div>
             <button
               type="button"
@@ -453,7 +460,8 @@ function RecentEntries({
               Delete
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </Panel>
   );
@@ -470,10 +478,10 @@ function LogWeighInForm({
     () => ({
       weighedOn: "",
       weightLbs: "",
-      weightLimitLbs: "125",
+      weightLimitLbs: String(suggestedWeightLimitLbs({ bumpersOn: false, batteryOn: false })),
       station: "shop" as RobotWeighInStation,
-      bumpersOn: true,
-      batteryOn: true,
+      bumpersOn: false,
+      batteryOn: false,
       notes: "",
     }),
     [],
@@ -494,7 +502,7 @@ function LogWeighInForm({
           action: "log-weigh-in",
           weighedOn: form.weighedOn,
           weightLbs: Number(form.weightLbs) || 0,
-          weightLimitLbs: Number(form.weightLimitLbs) || 125,
+          weightLimitLbs: Number(form.weightLimitLbs) || suggestedWeightLimitLbs(form),
           station: form.station,
           bumpersOn: form.bumpersOn,
           batteryOn: form.batteryOn,
@@ -530,7 +538,12 @@ function LogWeighInForm({
           <input
             type="checkbox"
             checked={form.bumpersOn}
-            onChange={(event) => setForm((prev) => ({ ...prev, bumpersOn: event.target.checked }))}
+            onChange={(event) =>
+              setForm((prev) => {
+                const bumpersOn = event.target.checked;
+                return { ...prev, bumpersOn, weightLimitLbs: String(suggestedWeightLimitLbs({ bumpersOn, batteryOn: prev.batteryOn })) };
+              })
+            }
           />
           Bumpers on
         </label>
@@ -538,7 +551,12 @@ function LogWeighInForm({
           <input
             type="checkbox"
             checked={form.batteryOn}
-            onChange={(event) => setForm((prev) => ({ ...prev, batteryOn: event.target.checked }))}
+            onChange={(event) =>
+              setForm((prev) => {
+                const batteryOn = event.target.checked;
+                return { ...prev, batteryOn, weightLimitLbs: String(suggestedWeightLimitLbs({ bumpersOn: prev.bumpersOn, batteryOn })) };
+              })
+            }
           />
           Battery on
         </label>

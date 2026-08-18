@@ -52,6 +52,11 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(new Set(all).size).toBe(all.length);
     expect(all.some((item) => /solid-core foam/i.test(item) && /hollow/i.test(item))).toBe(true);
     expect(all.some((item) => /reversible/i.test(item))).toBe(true);
+    expect(all.some((item) => /115 lb/i.test(item) && /R103/i.test(item))).toBe(true);
+    expect(all.some((item) => /135 lb/i.test(item) && /R408/i.test(item))).toBe(true);
+    expect(all.some((item) => /150 lb/i.test(item) && /I103/i.test(item))).toBe(true);
+    expect(all.some((item) => /60/.test(item) && /16/.test(item) && /78/.test(item))).toBe(true);
+    expect(all.some((item) => /unauthorized wireless/i.test(item))).toBe(true);
     expect(all.some((item) => /isolat/i.test(item) && /120/.test(item) && /breaker on/i.test(item))).toBe(true);
     expect(all.some((item) => /relief valve/i.test(item) && /compressor outlet/i.test(item))).toBe(true);
     expect(all.some((item) => /vent plug/i.test(item) && /0 psi/i.test(item))).toBe(true);

@@ -516,7 +516,7 @@ function NewCheckForm({
   mutate: (payload: Record<string, unknown>) => void;
 }) {
   const [robotName, setRobotName] = useState("");
-  const [weightLimitLbs, setWeightLimitLbs] = useState("125");
+  const [weightLimitLbs, setWeightLimitLbs] = useState("115");
   const [weightItems, setWeightItems] = useState<WeightItemDraft[]>([emptyWeightRow()]);
 
   const [perimeterLimitIn, setPerimeterLimitIn] = useState("120");

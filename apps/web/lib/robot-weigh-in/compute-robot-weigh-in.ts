@@ -9,7 +9,7 @@ export const ROBOT_WEIGH_IN_STATIONS: RobotWeighInStation[] = [
   "other",
 ];
 
-export const DEFAULT_WEIGHT_LIMIT_LBS = 125;
+export const DEFAULT_WEIGHT_LIMIT_LBS = 115;
 
 export type RobotWeighInSetupStep = {
   id: string;

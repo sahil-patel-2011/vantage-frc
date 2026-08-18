@@ -4,7 +4,7 @@
 export const INSPECTION_STATUSES = ["pending", "pass", "fail", "na"] as const;
 export type InspectionStatus = (typeof INSPECTION_STATUSES)[number];
 
-export const DEFAULT_WEIGHT_LIMIT_LBS = 125;
+export const DEFAULT_WEIGHT_LIMIT_LBS = 115;
 
 /**
  * Year-agnostic FRC inspection template based on the perennial R-rules areas.
@@ -52,7 +52,11 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
   {
     category: "General & Safety",
     items: [
-      "Robot weight within the limit (verify at weigh-in)",
+      "Robot ≤ 115 lb excluding bumpers and battery (R103)",
+      "Robot + bumpers ≤ 135 lb (R408)",
+      "All swap mechanisms together ≤ 150 lb at inspection (I103)",
+      "Operator console smaller than 60×16×78 in",
+      "No unauthorized wireless on the DS or in the pit",
       "No prohibited materials (liquids, hazardous chemicals)",
       "Energy sources are legal (battery, pneumatics, springs)",
       "All software/firmware is competition-legal versions",

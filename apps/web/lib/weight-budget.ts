@@ -1,9 +1,18 @@
-// Robot weight budget. FRC robots have a hard weight limit (125 lb without
-// battery and bumpers). Going over means failing inspection; getting close
+// Robot weight budget. FRC robots have a hard R103 weight limit (115 lb without
+// battery and bumpers in 2026). Going over means failing inspection; getting close
 // means no margin for mid-season additions. This sums logged component weights
 // against a configurable limit and tracks the remaining margin per subsystem.
 
-export const DEFAULT_WEIGHT_LIMIT_LBS = 125;
+export const DEFAULT_WEIGHT_LIMIT_LBS = 115;
+
+/** Last year's robot-only number — cue teams still carrying 125 on a 2026 budget. */
+export const STALE_125_WEIGHT_LIMIT_CUE =
+  "This budget is still 125 lb — 2026 R103 is 115 lb excluding bumpers and battery. Robot + bumpers is 135 lb; all swap mechanisms at inspection are 150 lb.";
+
+export function stale125WeightLimitCue(limitLbs: number | null | undefined): string | null {
+  if (limitLbs !== 125) return null;
+  return STALE_125_WEIGHT_LIMIT_CUE;
+}
 
 export type ComponentInput = { name: string; subsystem: string; weightLbs: number; quantity: number; notes: string };
 
