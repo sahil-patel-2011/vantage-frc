@@ -9,8 +9,10 @@ import {
   summarizeLogs,
   BATTERY_BREAK_IN_CUE,
   BATTERY_OVER_DISCHARGE_CUE,
+  BATTERY_VENT_CHARGE_CUE,
   batteryBreakInCue,
   batteryOverDischargeCue,
+  batteryVentChargeCue,
   type BatteryHealth,
   type BatteryStatus,
 } from "./battery";
@@ -87,6 +89,22 @@ describe("batteryOverDischargeCue", () => {
     expect(batteryOverDischargeCue({ cycleCount: 4, lastRestingVoltage: null })).toBeNull();
     expect(batteryOverDischargeCue({ cycleCount: 4, lastRestingVoltage: 12.6 })).toBeNull();
     expect(batteryOverDischargeCue({ cycleCount: 4, lastRestingVoltage: 11.5 })).toBe(BATTERY_OVER_DISCHARGE_CUE);
+  });
+});
+
+describe("batteryVentChargeCue", () => {
+  it("cues only when a charge is the latest log", () => {
+    expect(batteryVentChargeCue({ lastChargedAt: null, lastUsedAt: null })).toBeNull();
+    expect(
+      batteryVentChargeCue({ lastChargedAt: "2026-03-01T10:00:00Z", lastUsedAt: "2026-03-01T12:00:00Z" }),
+    ).toBeNull();
+    expect(batteryVentChargeCue({ lastChargedAt: "2026-03-01T10:00:00Z", lastUsedAt: null })).toBe(
+      BATTERY_VENT_CHARGE_CUE,
+    );
+    expect(
+      batteryVentChargeCue({ lastChargedAt: "2026-03-01T14:00:00Z", lastUsedAt: "2026-03-01T12:00:00Z" }),
+    ).toBe(BATTERY_VENT_CHARGE_CUE);
+    expect(JSON.stringify(BATTERY_VENT_CHARGE_CUE).toLowerCase()).not.toContain("demo");
   });
 });
 
