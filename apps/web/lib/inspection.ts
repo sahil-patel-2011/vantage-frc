@@ -52,6 +52,7 @@ export const INSPECTION_TEMPLATE: Array<{ category: string; items: string[] }> =
       "roboRIO ethernet on VH-109 v1.5 RIO port, or v1.0 via PoE injector / modified cable / AUX with DIP off",
       "Frame electrically isolated (>120Ω) from PD Anderson posts (battery out, breaker on)",
       "All motors and actuators are legal and correctly breakered",
+      "Do not feed multiple motors from a Mini Power Module / custom circuit (R621)",
       "Battery terminals insulated; no exposed conductors",
       "Robot signal light visible from 36 in on at least one side, on the roboRIO RSL port, flashing in sync",
     ],
