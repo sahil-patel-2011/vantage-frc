@@ -161,6 +161,8 @@ export type WiringPowerSpec = {
   pdVisible?: boolean;
   /** True once ATO/Maxi slots use legal snap-action / REV / CTR breakers ≤ 40A. */
   pdBreakersOk?: boolean;
+  /** True once PD ATC/ATO blade fuses are ≤ 10A (R620-B). */
+  atcAtoFusesOk?: boolean;
   /**
    * When false, RSL flags are skipped (never invent a missing signal light).
    * 2026 checklist: visible from 36 in on one side, plugged into the roboRIO RSL port, flashes in sync.
@@ -234,6 +236,7 @@ export type InspectionFlagType =
   | "pdh_fuses"
   | "pd_not_visible"
   | "pd_breakers"
+  | "atc_ato_fuses"
   | "rsl_not_visible"
   | "rsl_not_on_rio_port";
 

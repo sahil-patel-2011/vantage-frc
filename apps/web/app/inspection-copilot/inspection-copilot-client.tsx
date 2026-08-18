@@ -596,6 +596,7 @@ function NewCheckForm({
   const [pdhFusesOk, setPdhFusesOk] = useState(false);
   const [pdVisible, setPdVisible] = useState(false);
   const [pdBreakersOk, setPdBreakersOk] = useState(false);
+  const [atcAtoFusesOk, setAtcAtoFusesOk] = useState(false);
   const [rslEventRecorded, setRslEventRecorded] = useState(false);
   const [rslVisible36, setRslVisible36] = useState(false);
   const [rslOnRioPort, setRslOnRioPort] = useState(false);
@@ -704,6 +705,7 @@ function NewCheckForm({
             pdhFusesOk,
             pdVisible,
             pdBreakersOk,
+            atcAtoFusesOk,
             rslEventRecorded,
             rslVisible36,
             rslOnRioPort,
@@ -756,6 +758,10 @@ function NewCheckForm({
         setIsolationEventRecorded(false);
         setFrameIsolated120(false);
         setUnusedPdPortsTaped(false);
+        setPdhFusesOk(false);
+        setPdVisible(false);
+        setPdBreakersOk(false);
+        setAtcAtoFusesOk(false);
         setRslEventRecorded(false);
         setRslVisible36(false);
         setRslOnRioPort(false);
@@ -1375,8 +1381,8 @@ function NewCheckForm({
         <strong className="app-muted">R611 frame isolation / PDH debris</strong>
         <p className="app-muted">
           Inspectors probe Anderson-to-frame with the battery out and breaker on. Conductive chips in unused PDH sockets
-          reboot radios. The PD, breakers, and wiring have to stay visible. Leave this off until you actually meter the
-          chassis — never invent a fail.
+          reboot radios. The PD, breakers, and wiring have to stay visible. ATC/ATO blades in the PD are ≤ 10A. Leave this
+          off until you actually meter the chassis — never invent a fail.
         </p>
         <fieldset className="inspection-copilot-checks" style={{ border: "none", padding: 0 }}>
           <label>
@@ -1412,6 +1418,14 @@ function NewCheckForm({
                   onChange={(e) => setPdhFusesOk(e.target.checked)}
                 />
                 PDH ATM fuses ≤ 15A except one 20A for a PCM/PH (or a 20A breaker)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={atcAtoFusesOk}
+                  onChange={(e) => setAtcAtoFusesOk(e.target.checked)}
+                />
+                PD ATC/ATO blade fuses ≤ 10A (R620-B)
               </label>
               <label>
                 <input
