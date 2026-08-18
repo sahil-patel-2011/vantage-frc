@@ -53,6 +53,8 @@ describe("PACKING_TEMPLATE", () => {
     expect(labels.some((label) => /CANivore/i.test(label))).toBe(true);
     expect(labels.some((label) => /Wago 221/i.test(label) && /11 mm/i.test(label))).toBe(true);
     expect(labels.some((label) => /NEO encoder\/hall/i.test(label))).toBe(true);
+    expect(labels.some((label) => /intake timing belts/i.test(label))).toBe(true);
+    expect(labels.some((label) => /beater bar/i.test(label))).toBe(true);
     expect(labels.some((label) => /solid-core/i.test(label))).toBe(true);
     expect(labels.some((label) => /through-bolts/i.test(label))).toBe(true);
   });

@@ -13,6 +13,8 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Spare parts kit (printed + machined spares)", quantity: 1 },
       { label: "Spare wheels / tread", quantity: 4 },
       { label: "Spare belts, chain, and fasteners", quantity: 1 },
+      { label: "Spare intake timing belts (shock-load / sheared teeth)", quantity: 4 },
+      { label: "Spare intake rollers / beater bar (outside-frame hits)", quantity: 2 },
       { label: "Spare MAXSwerve Vortex shafts / MK4i belts", quantity: 4 },
     ],
   },
