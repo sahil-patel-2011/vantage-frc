@@ -32,6 +32,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "Cordless drill / driver set", quantity: 2 },
       { label: "Hex key + socket sets", quantity: 2 },
       { label: "Zip ties, tape (electrical, gaffer)", quantity: 1 },
+      { label: "Microfiber cloths for vision lenses", quantity: 4 },
       { label: "Pit banner / signage", quantity: 1 },
       { label: "Pit tables and stools", quantity: 2 },
     ],
