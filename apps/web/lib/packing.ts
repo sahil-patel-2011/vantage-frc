@@ -86,6 +86,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "ESD kit — copper tape / foil, chassis-bond jumper (not to power), grounding drag", quantity: 1 },
       { label: "Tape unused PDH / RIO / VRM ports (conductive debris reboots radios)", quantity: 1 },
       { label: "PDH ATM 15A fuses + one 20A for PCM/PH (or 20A breaker; not a yellow fuse farm)", quantity: 1 },
+      { label: "PD ATC/ATO fuses ≤ 10A (R620-B; not 15A/20A blades in those slots)", quantity: 1 },
       { label: "Legal PD ATO/Maxi breakers (VB3/AT2/MX5/REV/CTR, ≤40A)", quantity: 1 },
       { label: "Do not run motors off a Mini Power Module (R621 custom-circuit split)", quantity: 1 },
       { label: "Don't bury the PDH — inspectors need to see breakers and wiring", quantity: 1 },
@@ -123,6 +124,7 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
     items: [
       { label: "Printed Bill of Materials (part, qty, price, supplier)", quantity: 1 },
       { label: "Printed robot inspection checklist", quantity: 1 },
+      { label: "Power-off card (disable, open main breaker, LEDs off, vent 0 psi)", quantity: 1 },
       { label: "Operator console size card (under 60×16×78 in)", quantity: 1 },
       { label: "Tape measure for starting volume (110 in perimeter / 30 in tall) and 12 in extension", quantity: 1 },
       { label: "Bumper-gap card (1.25 in small gaps / 5 in from corners on one large gap)", quantity: 1 },

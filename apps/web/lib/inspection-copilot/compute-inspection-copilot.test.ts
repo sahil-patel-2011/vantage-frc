@@ -804,6 +804,7 @@ describe("predictInspectionFailures R611 isolation", () => {
     expect(prediction.flags.some((flag) => flag.type === "pdh_fuses")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pd_not_visible")).toBe(false);
     expect(prediction.flags.some((flag) => flag.type === "pd_breakers")).toBe(false);
+    expect(prediction.flags.some((flag) => flag.type === "atc_ato_fuses")).toBe(false);
   });
 
   it("flags a logged R611 fail and untaped PDH ports without DEMO wording", () => {
@@ -812,9 +813,18 @@ describe("predictInspectionFailures R611 isolation", () => {
       wiringPower: { ...wiring, isolationEventRecorded: true },
     });
     expect(prediction.flags.map((flag) => flag.type)).toEqual(
-      expect.arrayContaining(["frame_not_isolated", "pdh_ports_untaped", "pdh_fuses", "pd_not_visible", "pd_breakers"]),
+      expect.arrayContaining(["frame_not_isolated", "pdh_ports_untaped", "pdh_fuses", "pd_not_visible", "pd_breakers", "atc_ato_fuses"]),
     );
     expect(JSON.stringify(prediction.flags).toLowerCase()).not.toContain("demo");
+  });
+
+  it("clears the ATC/ATO fuse flag once R620-B is marked", () => {
+    const prediction = predictInspectionFailures({
+      ...limits,
+      wiringPower: { ...wiring, isolationEventRecorded: true, atcAtoFusesOk: true },
+    });
+    expect(prediction.flags.some((flag) => flag.type === "atc_ato_fuses")).toBe(false);
+    expect(prediction.flags.find((flag) => flag.type === "pdh_fuses")?.message).toMatch(/ATM/i);
   });
 });
 

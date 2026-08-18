@@ -641,6 +641,14 @@ export function predictInspectionFailures(input: {
           "PD ATO/Maxi breakers are not marked legal — 2026 inspectors fail anything that is not VB3-A, AT2-A, MX5-A/L, REV ATO, or CTR ATO at 40A or lower.",
       });
     }
+    if (!wiringPower.atcAtoFusesOk) {
+      flags.push({
+        type: "atc_ato_fuses",
+        severity: "critical",
+        message:
+          "PD ATC/ATO fuses are not marked ≤ 10A — 2026 R620-B fails a 15A/20A blade in those slots (ATM 15A / one 20A PCM-PH still applies on PDH).",
+      });
+    }
   }
 
   if (wiringPower.rslEventRecorded) {
@@ -676,7 +684,7 @@ export function predictInspectionFailures(input: {
     (wiringPower.sparkMaxEventRecorded ? 1 : 0) +
     (wiringPower.reliabilityEventRecorded ? 9 : 0) +
     (wiringPower.pneumaticsEventRecorded ? 14 : 0) +
-    (wiringPower.isolationEventRecorded ? 5 : 0) +
+    (wiringPower.isolationEventRecorded ? 6 : 0) +
     (wiringPower.rslEventRecorded ? 2 : 0);
   const weighted = flags.reduce((sum, flag) => sum + SEVERITY_WEIGHT[flag.severity], 0);
   const riskScore = round(clamp01(weighted / Math.max(1, checkCount)));

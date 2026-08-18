@@ -63,6 +63,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /unauthorized wireless/i.test(item))).toBe(true);
     expect(all.some((item) => /isolat/i.test(item) && /120/.test(item) && /breaker on/i.test(item))).toBe(true);
     expect(all.some((item) => /ATM/i.test(item) && /15A/i.test(item) && /20A/i.test(item))).toBe(true);
+    expect(all.some((item) => /ATC\/ATO/i.test(item) && /10A/i.test(item) && /R620-B/i.test(item))).toBe(true);
     expect(all.some((item) => /VB3-A/i.test(item) && /40A/i.test(item))).toBe(true);
     expect(all.some((item) => /Mini Power Module/i.test(item) && /R621/i.test(item))).toBe(true);
     expect(all.some((item) => /easily visible/i.test(item) && /PD/i.test(item) && /breakers/i.test(item))).toBe(true);
@@ -98,6 +99,7 @@ describe("INSPECTION_TEMPLATE", () => {
     expect(all.some((item) => /110 in/i.test(item) && /30 in/i.test(item))).toBe(true);
     expect(all.some((item) => /12 in/i.test(item) && /one direction/i.test(item))).toBe(true);
     expect(all.some((item) => /2026_v1\.2/i.test(item) && /26\.0/i.test(item))).toBe(true);
+    expect(all.some((item) => /Power Off/i.test(item) && /0 psi/i.test(item) && /LEDs/i.test(item))).toBe(true);
     expect(JSON.stringify(all).toLowerCase()).not.toContain("demo");
   });
 });
