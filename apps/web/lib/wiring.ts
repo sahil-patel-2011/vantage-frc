@@ -190,6 +190,19 @@ export function servoHubCues(devices: Device[]): string[] {
   return cues;
 }
 
+/**
+ * CD / R506: servos may only connect to RIO PWM, WCP-0045, SPM, or a Servo Hub.
+ * Cue a logged servo on a PD port — never invent one, and never flag a Servo Hub.
+ */
+export function servoPowerCues(devices: Device[]): string[] {
+  return devices
+    .filter((device) => device.deviceType === "servo" && device.pdhPort != null)
+    .map(
+      (device) =>
+        `${device.name}: servos may only connect to RIO PWM, WCP-0045, a Servo Power Module, or a Servo Hub (R506) — not a raw PD 6V brick.`,
+    );
+}
+
 export function summarizeWiring(devices: Device[]) {
   const conflicts = detectConflicts(devices);
   const canCount = devices.filter((d) => d.canId != null && deviceUsesCan(d.deviceType)).length;
@@ -200,6 +213,7 @@ export function summarizeWiring(devices: Device[]) {
     conflictCount: conflicts.length,
     pcmPhCanCues: pcmPhCanCues(devices),
     servoHubCues: servoHubCues(devices),
+    servoPowerCues: servoPowerCues(devices),
   };
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectConflicts, parseWiringAction, pcmPhCanCues, servoHubCues, summarizeWiring, validateDevice, type Device } from "./wiring";
+import { detectConflicts, parseWiringAction, pcmPhCanCues, servoHubCues, servoPowerCues, summarizeWiring, validateDevice, type Device } from "./wiring";
 
 const dev = (over: Partial<Device> & { name: string }): Device => ({
   id: over.name, name: over.name, deviceType: "talonfx", canId: null, canBus: "rio", pdhPort: null, ...over,
@@ -93,6 +93,23 @@ describe("servoHubCues", () => {
     expect(servoHubCues([])).toHaveLength(0);
   });
 });
+
+describe("servoPowerCues", () => {
+  it("cues a logged servo on a PD port", () => {
+    expect(servoPowerCues([dev({ name: "Latch", deviceType: "servo", pdhPort: 8 })])).toHaveLength(1);
+    expect(servoPowerCues([dev({ name: "Latch", deviceType: "servo", pdhPort: 8 })])[0]).toMatch(/R506/);
+    expect(JSON.stringify(servoPowerCues([dev({ name: "Latch", deviceType: "servo", pdhPort: 8 })])).toLowerCase()).not.toContain(
+      "demo",
+    );
+  });
+
+  it("does not invent a servo or flag RIO-PWM / Servo Hub power", () => {
+    expect(servoPowerCues([dev({ name: "Latch", deviceType: "servo", pdhPort: null })])).toHaveLength(0);
+    expect(servoPowerCues([dev({ name: "Hub", deviceType: "servohub", pdhPort: 4 })])).toHaveLength(0);
+    expect(servoPowerCues([dev({ name: "FL", deviceType: "talonfx", pdhPort: 0 })])).toHaveLength(0);
+    expect(servoPowerCues([])).toHaveLength(0);
+  });
+});
 describe("summarizeWiring", () => {
   it("counts CAN devices and surfaces conflicts", () => {
     const summary = summarizeWiring([
@@ -105,6 +122,7 @@ describe("summarizeWiring", () => {
     expect(summary.conflictCount).toBe(1);
     expect(summary.pcmPhCanCues).toHaveLength(0);
     expect(summary.servoHubCues).toHaveLength(0);
+    expect(summary.servoPowerCues).toHaveLength(0);
   });
 
   it("surfaces a logged PH with no CAN ID", () => {
