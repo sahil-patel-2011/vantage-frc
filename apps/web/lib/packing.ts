@@ -63,6 +63,8 @@ export const PACKING_TEMPLATE: Array<{ category: string; items: Array<{ label: s
       { label: "3D-printed main breaker cover", quantity: 1 },
       { label: "Spare motor controllers", quantity: 2 },
       { label: "Spare Kraken power-connector screws", quantity: 8 },
+      { label: "Kraken torque driver (0.9 N·m power spec; 1.2 N·m holds better — 0.6 N·m CAN)", quantity: 1 },
+      { label: "Zip ties to lock seated Anderson halves (half-seated drops under impact)", quantity: 1 },
       { label: "USB cables + programming kit", quantity: 1 },
       { label: "Ferrules for Weidmuller / screw terminals", quantity: 1 },
       { label: "Heat shrink for exposed battery terminals", quantity: 1 },
