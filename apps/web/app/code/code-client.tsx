@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { buildDiffProposal, reviewFrcCode } from "@vantage/agent/coding-assistant";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { EmptyState } from "../../components/ui";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
+import {
+  resolveCutoffErrorCode,
+  UsageCutoffBanner,
+} from "../../components/usage-cutoff-banner";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
@@ -53,6 +57,37 @@ const COACH_LESSONS: Record<string, { flag: string; explain: string; habit: stri
 type Review = ReturnType<typeof reviewFrcCode>;
 type Proposal = ReturnType<typeof buildDiffProposal>;
 
+type BugbotFinding = {
+  severity: "high" | "medium" | "low";
+  location: string;
+  line: number;
+  finding: string;
+  evidence: string;
+  source: "local_rule" | "model";
+  pattern?: string;
+};
+
+type BugbotReview = {
+  path: string;
+  riskLevel: "high" | "medium" | "low";
+  findings: BugbotFinding[];
+  localRiskCount: number;
+  modelFindingCount: number;
+  droppedUngrounded: number;
+};
+
+type BugbotHistoryRow = {
+  id: string;
+  path: string;
+  riskLevel: string;
+  localRiskCount: number;
+  modelFindingCount: number;
+  droppedUngrounded: number;
+  provider: string | null;
+  model: string | null;
+  createdAt: string;
+};
+
 export function CodeClient({
   orgId = "",
   related = "build",
@@ -67,6 +102,10 @@ export function CodeClient({
   const [content, setContent] = useState(CODE_COACH_SAMPLE);
   const [review, setReview] = useState<Review | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [bugbot, setBugbot] = useState<BugbotReview | null>(null);
+  const [bugbotMeta, setBugbotMeta] = useState<{ provider?: string; model?: string } | null>(null);
+  const [history, setHistory] = useState<BugbotHistoryRow[]>([]);
+  const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -81,6 +120,86 @@ export function CodeClient({
   const chatHref = orgId ? hubHref("/ai", "chat", orgId) : "/ai?tab=chat";
   const cadHref = orgId ? hubHref("/build", "cad", orgId) : "/build?tab=cad";
   const budgetsHref = orgId ? hubHref("/ai", "budgets", orgId) : "/ai?tab=budgets";
+  const keysHref = orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys";
+
+  useEffect(() => {
+    if (!orgId) return;
+    void fetch(`/api/code?orgId=${encodeURIComponent(orgId)}`)
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = (await response.json()) as { reviews?: BugbotHistoryRow[] };
+        setHistory(data.reviews ?? []);
+      })
+      .catch(() => undefined);
+  }, [orgId]);
+
+  async function runBugbot() {
+    if (!content.trim()) {
+      setMessage("Paste robot source before running AI Bugbot.");
+      return;
+    }
+    if (!orgId) {
+      setMessage("Choose a workspace before the metered Bugbot pass.");
+      return;
+    }
+    setBusy(true);
+    setCutoffCode(null);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/code", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "bugbot", path, content, orgId }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        code?: string;
+        reason?: string;
+        hardCutoff?: boolean;
+        review?: BugbotReview;
+        provider?: string;
+        model?: string;
+      };
+      if (!response.ok) {
+        const cutoff = resolveCutoffErrorCode(response.status, {
+          code: data.code,
+          reason: data.reason,
+          error: data.error,
+          hardCutoff: data.hardCutoff,
+        });
+        if (cutoff) setCutoffCode(cutoff);
+        setMessage(typeof data.error === "string" ? data.error : "AI Bugbot failed.");
+        return;
+      }
+      if (data.review) {
+        setBugbot(data.review);
+        setBugbotMeta({ provider: data.provider, model: data.model });
+        setMessage(
+          data.review.findings.length
+            ? `Bugbot: ${data.review.findings.length} grounded finding${data.review.findings.length === 1 ? "" : "s"} (${data.review.localRiskCount} local · ${data.review.modelFindingCount} model). Ungrounded model claims dropped: ${data.review.droppedUngrounded}. Never deploys.`
+            : "Bugbot complete — no grounded findings in this source.",
+        );
+        setHistory((prev) => [
+          {
+            id: "latest",
+            path: data.review!.path,
+            riskLevel: data.review!.riskLevel,
+            localRiskCount: data.review!.localRiskCount,
+            modelFindingCount: data.review!.modelFindingCount,
+            droppedUngrounded: data.review!.droppedUngrounded,
+            provider: data.provider ?? null,
+            model: data.model ?? null,
+            createdAt: new Date().toISOString(),
+          },
+          ...prev.filter((row) => row.id !== "latest"),
+        ].slice(0, 12));
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "AI Bugbot failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function runReview() {
     if (!content.trim()) {
@@ -227,23 +346,24 @@ export function CodeClient({
         </article>
         <article className="cdc-billing-metered">
           <span className="app-badge">Metered AI</span>
-          <h2>AI chat &amp; CAD briefs</h2>
+          <h2>AI Bugbot</h2>
           <p>
-            Team Assistant and CAD planning use your plan allowance / credits. Open them from the links below when you
-            need generative help — they are separate from this local coach pass.
+            A second pass uses your plan allowance / credits. Findings must quote a substring from this file — invented
+            issues are dropped. Distinct from CAD briefs and chat.
           </p>
           <div className="cdc-billing-actions">
+            <a className="app-button secondary" href="#bugbot">
+              AI Bugbot
+            </a>
             <a className="app-button secondary" href={chatHref}>
               AI chat
             </a>
             <a className="app-button secondary" href={cadHref}>
               Build · CAD
             </a>
-            {orgId ? (
-              <a className="app-button secondary" href={withOrgHref("/team/admin", orgId) + "#github-connection"}>
-                GitHub context
-              </a>
-            ) : null}
+            <a className="app-button secondary" href={keysHref}>
+              AI API keys
+            </a>
           </div>
         </article>
       </section>
@@ -251,6 +371,7 @@ export function CodeClient({
       {showMeteredBanner ? (
         <MeteredAiCutoffBanner orgId={orgId} className="cdc-cutoff" />
       ) : null}
+      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} className="cdc-cutoff" /> : null}
 
       <section className="cdc-next-actions app-card soft-panel" aria-label="Next actions">
         <header>
@@ -355,6 +476,14 @@ export function CodeClient({
                 onClick={runPropose}
               >
                 Build proposal (diff)
+              </button>
+              <button
+                type="button"
+                className="app-button secondary"
+                disabled={busy || !hasSource || !orgId}
+                onClick={() => void runBugbot()}
+              >
+                Run AI Bugbot
               </button>
               <button
                 type="button"
@@ -466,6 +595,108 @@ export function CodeClient({
             </div>
           </article>
         </div>
+      </section>
+
+      <section className="cdc-workbench" id="bugbot" aria-label="AI Bugbot">
+        <article className="cdc-panel">
+          <header>
+            <div>
+              <span className="app-badge">Metered AI</span>
+              <h2>AI Bugbot</h2>
+              <p className="app-muted" style={{ margin: "4px 0 0" }}>
+                Quotes evidence from this file only. Local rules stay even if the model is quiet. Never deploys.
+                {bugbotMeta?.model ? ` · ${bugbotMeta.provider}/${bugbotMeta.model}` : ""}
+              </p>
+            </div>
+            <button type="button" className="primary-action" disabled={busy || !hasSource || !orgId} onClick={() => void runBugbot()}>
+              Run AI Bugbot
+            </button>
+          </header>
+          {!orgId ? (
+            <EmptyState
+              soft
+              badge="Setup required"
+              badgeTone="setup"
+              title="Choose a workspace for Bugbot"
+              description="Local pattern review is free. The metered Bugbot pass needs a team and an AI provider key."
+            >
+              <a className="app-button" href="/workspace">
+                Choose workspace
+              </a>
+            </EmptyState>
+          ) : bugbot ? (
+            bugbot.findings.length === 0 ? (
+              <EmptyState
+                soft
+                badge="Clear"
+                badgeTone="good"
+                title="No grounded Bugbot findings"
+                description="Nothing quoted from this source survived. Empty is not certification — still simulate before enable."
+              />
+            ) : (
+              <div className="cdc-bugbot-table-wrap">
+                <table className="cdc-bugbot-table">
+                  <caption className="visually-hidden">AI Bugbot findings</caption>
+                  <thead>
+                    <tr>
+                      <th>Severity</th>
+                      <th>Location</th>
+                      <th>Finding</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bugbot.findings.map((item, index) => (
+                      <tr key={`${item.location}-${index}`}>
+                        <td>
+                          <span className={`cdc-severity ${item.severity}`}>{item.severity}</span>
+                          <small className="app-muted">{item.source === "model" ? "model" : "local"}</small>
+                        </td>
+                        <td>
+                          <code>{item.location}</code>
+                        </td>
+                        <td>
+                          <p style={{ margin: 0 }}>{item.finding}</p>
+                          <code>{item.evidence}</code>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {bugbot.droppedUngrounded > 0 ? (
+                  <p className="app-muted">
+                    Dropped {bugbot.droppedUngrounded} ungrounded model claim{bugbot.droppedUngrounded === 1 ? "" : "s"} that
+                    did not quote this file.
+                  </p>
+                ) : null}
+              </div>
+            )
+          ) : (
+            <EmptyState
+              soft
+              badge="Idle"
+              badgeTone="setup"
+              title="No Bugbot pass yet"
+              description="Paste source, then run AI Bugbot. Needs an AI provider key under Team → AI API keys. Findings stay empty until evidence is in the file."
+            >
+              <a className="app-button secondary" href={keysHref}>
+                AI API keys
+              </a>
+            </EmptyState>
+          )}
+          {history.length ? (
+            <ol className="cdc-bugbot-history" aria-label="Recent Bugbot runs">
+              {history.slice(0, 6).map((row) => (
+                <li key={row.id}>
+                  <strong>{row.path}</strong>
+                  <span>
+                    {row.riskLevel} · {row.localRiskCount} local · {row.modelFindingCount} model
+                    {row.model ? ` · ${row.model}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+        </article>
       </section>
     </main>
   );

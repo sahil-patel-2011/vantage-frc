@@ -38,7 +38,8 @@ export default function CadFeaturePage() {
         <header className="lux-route-hero">
           <h1>CAD starts with a brief.</h1>
           <p>
-            Build hub CAD agent: Onshape hosted jobs or a Fusion desktop relay—credentials required. No unreviewed
+            Build hub CAD agent: confirm a brief, then **AI plan from brief** (metered, allowlisted ops) or a no-model starter
+            plan. Onshape hosted jobs or a Fusion desktop relay execute approved steps—credentials required. No unreviewed
             mutations.
           </p>
           <div className="actions">

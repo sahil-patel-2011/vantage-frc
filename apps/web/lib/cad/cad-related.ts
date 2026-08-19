@@ -96,6 +96,13 @@ export function cadNextActions(input: {
     });
   }
 
+  actions.push({
+    id: "ai-keys",
+    label: "Connect an AI provider for CAD plans",
+    detail: "AI plan from brief is metered. Without a key, use the starter plan (no model) or add keys under Team → AI API keys.",
+    href: withOrgHref("/team/ai-keys", orgId),
+  });
+
   if (!input.onshapeConfigured) {
     actions.push({
       id: "onshape-oauth",
@@ -146,5 +153,5 @@ export function cadNextActions(input: {
     href: hubHref("/competition", "strategy", orgId),
   });
 
-  return actions.slice(0, 5);
+  return actions.slice(0, 6);
 }

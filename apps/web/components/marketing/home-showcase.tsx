@@ -29,8 +29,8 @@ const PIPELINE = [
 const DEPTH = [
   {
     title: "Build the robot",
-    copy: "Kickoff analysis, Onshape and Fusion CAD agent, Code Coach, FMEA, batteries, inspection.",
-    modules: ["Kickoff", "CAD agent", "Code Coach", "FMEA", "Batteries", "Inspection"],
+    copy: "Kickoff analysis, Onshape and Fusion CAD agent, Code Coach, AI Bugbot, FMEA, batteries, inspection.",
+    modules: ["Kickoff", "CAD agent", "Code Coach", "Bugbot", "FMEA", "Inspection"],
     href: "/features/cad",
   },
   {

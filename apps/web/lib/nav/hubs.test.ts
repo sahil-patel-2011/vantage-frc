@@ -83,6 +83,7 @@ describe("product hubs", () => {
     expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("batteries");
     expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("cad-change-radar");
     expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("bin-shelf-locator");
+    expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("bugbot");
   });
 
   it("keeps AI primary tabs to chat, writer, budgets, agent, and finance", () => {
@@ -95,7 +96,7 @@ describe("product hubs", () => {
       "finance",
     ]);
     expect(hubMoreTabs(ai).map((tab) => tab.id)).toEqual(
-      expect.arrayContaining(["code", "memory", "governance"]),
+      expect.arrayContaining(["code", "bugbot", "memory", "governance"]),
     );
     expect(hubMoreTabs(ai).map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["ai-keys", "usage", "decisions", "decision-search", "season-report"]),

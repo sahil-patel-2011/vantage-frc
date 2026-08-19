@@ -22,9 +22,9 @@ export default function BuildHub() {
         if (tab === "fmea") return <FmeaClient embedded />;
         if (tab === "prototype") return <PrototypeTrackerClient embedded />;
         if (tab === "batteries") return <BatteriesClient embedded />;
-        if (tab === "code") {
+        if (tab === "code" || tab === "bugbot") {
           return (
-            <HubOrgGate orgId={orgId} label="Code">
+            <HubOrgGate orgId={orgId} label={tab === "bugbot" ? "AI Bugbot" : "Code"}>
               {(id) => <CodeClient orgId={id} embedded />}
             </HubOrgGate>
           );
