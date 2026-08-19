@@ -41,7 +41,7 @@ function MyDayNextActionsPanel({ actions }: { actions: MyDayNextAction[] }) {
     <Panel className="myday-next-actions">
       <header>
         <h2>Next actions</h2>
-        <p>Event Day, Schedule, and Strategy — never DEMO matches.</p>
+        <p>Event Day, Schedule, and Strategy stay empty until a match is synced.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -143,6 +143,7 @@ function MyDayShell({
   hasActiveEvent,
   error,
   onRetry,
+  embedded = false,
   children,
 }: {
   orgId?: string | null;
@@ -151,6 +152,7 @@ function MyDayShell({
   hasActiveEvent?: boolean;
   error?: string;
   onRetry?: () => void;
+  embedded?: boolean;
   children?: ReactNode;
 }) {
   const actions = myDayNextActions({
@@ -168,14 +170,16 @@ function MyDayShell({
   const strategyHref = hubHref("/competition", "strategy", orgId);
 
   return (
-    <main className="module-page myday-page soft-gate">
+    <main className={`module-page myday-page soft-gate${embedded ? " is-embedded" : ""}`}>
+      {embedded ? null : (
       <PageHeader
         breadcrumbs="Competition / Live ops"
         title="My Day"
-        description="Your next match, bumper color, partners, and opponents from real TBA rows — never DEMO matches."
+        description="Your next match, bumper color, partners, and opponents from The Blue Alliance."
       >
         <MyDayRelatedStrip orgId={orgId} />
       </PageHeader>
+      )}
       {children}
       <EmptyState
         soft
@@ -223,7 +227,7 @@ function MyDayShell({
             </a>
           </>
         ) : null}
-        {shell === "setup" && steps.length > 0 ? (
+        {!embedded && shell === "setup" && steps.length > 0 ? (
           <ol className="strategy-setup-steps">
             {steps.map((step) => (
               <li key={step.id}>
@@ -237,7 +241,7 @@ function MyDayShell({
           </ol>
         ) : null}
       </EmptyState>
-      {shell !== "loading" ? <MyDayNextActionsPanel actions={actions} /> : null}
+      {embedded || shell === "loading" ? null : <MyDayNextActionsPanel actions={actions} />}
     </main>
   );
 }
@@ -282,6 +286,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       <MyDayShell
         shell={classifyMyDayShell({ loading: true })}
         error={undefined}
+        embedded={embedded}
       />
     );
   }
@@ -291,6 +296,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       <MyDayShell
         shell="error"
         error={error || undefined}
+        embedded={embedded}
         onRetry={() => {
           setLoading(true);
           setFetchFailed(false);
@@ -308,6 +314,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         shell="setup"
         hasActiveEvent={Boolean(view?.context.eventKey)}
         error={view?.status === "setup_required" ? view.message : undefined}
+        embedded={embedded}
       />
     );
   }
@@ -326,6 +333,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         shell="empty"
         emptyReason={view.emptyReason}
         hasActiveEvent={Boolean(view.context.eventKey)}
+        embedded={embedded}
       >
         <p className="myday-freshness" role="status">
           {view.freshness.label}
@@ -342,18 +350,20 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
   const nextActions = myDayNextActions({ orgId, shell: "ready" });
 
   return (
-    <main className="module-page myday-page">
+    <main className={`module-page myday-page${embedded ? " is-embedded" : ""}`}>
+      {embedded ? null : (
       <PageHeader
         breadcrumbs="Competition / Live ops"
         title="My Day"
         description={
           view.context.eventName
             ? `${view.context.eventName}${view.context.teamNumber != null ? ` · Team ${view.context.teamNumber}` : ""}`
-            : "Your matches at the active event — never DEMO times."
+            : "Your matches at the active event."
         }
       >
         <MyDayRelatedStrip orgId={orgId} />
       </PageHeader>
+      )}
 
       <p className="myday-freshness" role="status">
         {view.freshness.label}
@@ -364,7 +374,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
 
       {error ? (
         <p className="myday-warn" role="status">
-          {error} Showing last good load — never DEMO matches.
+          {error} Showing the last good load.
         </p>
       ) : null}
 
@@ -395,7 +405,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         </nav>
       ) : null}
 
-      <MyDayNextActionsPanel actions={nextActions} />
+      {embedded ? null : <MyDayNextActionsPanel actions={nextActions} />}
     </main>
   );
 }

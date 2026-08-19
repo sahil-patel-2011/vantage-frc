@@ -1,7 +1,6 @@
 "use client";
 
 import { type FormEvent, useId, useState } from "react";
-import { raisedPricingSummaryLine } from "@vantage/billing/catalog";
 import { LegalAgreementCheckbox } from "../legal-agreement-checkbox";
 import { track } from "../../lib/marketing/analytics";
 
@@ -64,11 +63,8 @@ export function WaitlistForm({
   if (state === "success") {
     return (
       <div className="confirmation waitlist-confirmation" role="status" aria-live="polite">
-        <h3>You&apos;re on the list.</h3>
-        <p>We&apos;ll email when access opens. Teams are still invite-only.</p>
-        <p className="confirmation-next">
-          Plans: {raisedPricingSummaryLine()} on <a href="/pricing">pricing</a>.
-        </p>
+        <h3>You’re on the list.</h3>
+        <p>We&apos;ll email when access opens. Joining the waitlist does not create a Vantage account.</p>
       </div>
     );
   }
@@ -152,7 +148,7 @@ export function WaitlistForm({
         </p>
       ) : null}
 
-      <button className="button primary" type="submit" disabled={state === "sending" || !termsAccepted}>
+      <button className="button primary" type="submit" disabled={state === "sending"}>
         {state === "sending" ? "Joining…" : "Join the waitlist"}
       </button>
     </form>

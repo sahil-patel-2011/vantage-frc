@@ -45,3 +45,112 @@ export function sslOptionForUrl(connectionString: string): boolean | { rejectUna
   if (/(^|[?&])sslmode=disable\b/i.test(connectionString)) return false;
   return { rejectUnauthorized: true };
 }
+
+export function firstConfiguredEnv(...names: string[]): string {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+/** Vercel/Supabase integration injects POSTGRES_URL; Vantage prefers DATABASE_*. */
+const APP_DATABASE_ENVS = ["DATABASE_URL", "POSTGRES_URL"] as const;
+const AUTH_DATABASE_ENVS = ["DATABASE_AUTH_URL", "DATABASE_URL", "POSTGRES_URL"] as const;
+const ADMIN_DATABASE_ENVS = [
+  "DATABASE_ADMIN_URL",
+  "DATABASE_URL_UNPOOLED",
+  "POSTGRES_URL_NON_POOLING",
+  "DATABASE_URL",
+  "POSTGRES_URL",
+] as const;
+
+export function resolveAppDatabaseUrl(): string {
+  return firstConfiguredEnv(...APP_DATABASE_ENVS) || "postgresql://vantage:local@localhost:5432/vantage";
+}
+
+export function resolveAuthDatabaseUrl(): string {
+  return firstConfiguredEnv(...AUTH_DATABASE_ENVS) || "postgresql://vantage_auth:local@localhost:5432/vantage";
+}
+
+export function resolveAdminDatabaseUrl(): string {
+  return firstConfiguredEnv(...ADMIN_DATABASE_ENVS) || "postgresql://vantage_admin:local@localhost:5432/vantage";
+}
+
+export function resolveBillingDatabaseUrl(): string {
+  return (
+    firstConfiguredEnv("DATABASE_BILLING_URL", "DATABASE_URL", "POSTGRES_URL") ||
+    "postgresql://vantage_billing:local@localhost:5432/vantage"
+  );
+}
+
+export function resolveDisplayDatabaseUrl(): string {
+  return (
+    firstConfiguredEnv("DATABASE_DISPLAY_URL", "DATABASE_URL", "POSTGRES_URL") ||
+    "postgresql://vantage_display:local@localhost:5432/vantage"
+  );
+}
+
+export function resolveMarketingDatabaseUrl(): string {
+  return firstConfiguredEnv("MARKETING_DATABASE_URL", "DATABASE_URL", "POSTGRES_URL");
+}
+
+export function isConfiguredPostgresUrl(): boolean {
+  return Boolean(firstConfiguredEnv("DATABASE_AUTH_URL", "DATABASE_URL", "DATABASE_ADMIN_URL", "POSTGRES_URL"));
+}
+
+export function postgresUsername(connectionString: string): string {
+  try {
+    const normalized = connectionString.replace(/^postgres(ql)?:/i, "http:");
+    return decodeURIComponent(new URL(normalized).username);
+  } catch {
+    return "";
+  }
+}
+
+/** Default Supabase URIs use `postgres` / `postgres.PROJECTREF` until 00_roles.sql is applied. */
+export function postgresUsernameLooksLikeSuperuser(connectionString: string): boolean {
+  const user = postgresUsername(connectionString);
+  return user === "postgres" || user.startsWith("postgres.");
+}
+
+export class UnsafePostgresUrlError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnsafePostgresUrlError";
+  }
+}
+
+/**
+ * Reject Data API keys / REST URLs pasted into DATABASE_*. Do not reject the
+ * `postgres` username — that is the pooler default until vantage_app exists.
+ */
+export function assertSafePostgresUrl(connectionString: string): void {
+  const value = connectionString.trim();
+  if (!value) {
+    throw new UnsafePostgresUrlError("Postgres URL is empty.");
+  }
+  if (/^eyJ[A-Za-z0-9_-]+\./.test(value)) {
+    throw new UnsafePostgresUrlError(
+      "Value looks like a JWT (anon/service_role). Use the Postgres connection string, not a Data API key.",
+    );
+  }
+  if (!/^postgres(ql)?:\/\//i.test(value)) {
+    throw new UnsafePostgresUrlError(
+      "Postgres URL must start with postgres:// or postgresql://. Do not use the Supabase REST URL or API keys.",
+    );
+  }
+  if (
+    /[?&]apikey=/i.test(value) ||
+    (/service_role/i.test(value) && /supabase/i.test(value) && !/@/.test(value))
+  ) {
+    throw new UnsafePostgresUrlError("Value looks like a Supabase API key, not a Postgres URI.");
+  }
+}
+
+export function poolLimitsForUrl(connectionString: string): { max: number; idleTimeoutMillis: number } {
+  if (postgresHostKind(connectionString) === "supabase") {
+    return { max: 3, idleTimeoutMillis: 10_000 };
+  }
+  return { max: 8, idleTimeoutMillis: 30_000 };
+}

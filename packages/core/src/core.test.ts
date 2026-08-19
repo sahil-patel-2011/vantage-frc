@@ -107,11 +107,13 @@ describe("waitlist-only auth access policy", () => {
       db: process.env.DATABASE_URL,
       auth: process.env.DATABASE_AUTH_URL,
       admin: process.env.DATABASE_ADMIN_URL,
+      postgres: process.env.POSTGRES_URL,
     };
     process.env.PLATFORM_OWNER_EMAIL = "sahiljpatel2011@gmail.com";
     delete process.env.DATABASE_URL;
     delete process.env.DATABASE_AUTH_URL;
     delete process.env.DATABASE_ADMIN_URL;
+    delete process.env.POSTGRES_URL;
     const { isPlatformOwnerEmail, resolveAuthEmailAccess } = await import("./auth-access");
     expect(isPlatformOwnerEmail("sahiljpatel2011@gmail.com")).toBe(true);
     expect(isPlatformOwnerEmail("SahilJPatel2011@gmail.com")).toBe(true);
@@ -129,6 +131,8 @@ describe("waitlist-only auth access policy", () => {
     process.env.DATABASE_URL = previous.db;
     process.env.DATABASE_AUTH_URL = previous.auth;
     process.env.DATABASE_ADMIN_URL = previous.admin;
+    if (previous.postgres == null) delete process.env.POSTGRES_URL;
+    else process.env.POSTGRES_URL = previous.postgres;
   });
 
   it("treats blank auth env values as unset", async () => {
@@ -138,6 +142,28 @@ describe("waitlist-only auth access policy", () => {
     expect(envOrFallback("https://vantage-frc-web.vercel.app", "fallback")).toBe(
       "https://vantage-frc-web.vercel.app",
     );
+  });
+
+  it("treats POSTGRES_URL as a configured database for Vercel/Supabase hosts", async () => {
+    const previous = {
+      auth: process.env.DATABASE_AUTH_URL,
+      db: process.env.DATABASE_URL,
+      admin: process.env.DATABASE_ADMIN_URL,
+      postgres: process.env.POSTGRES_URL,
+    };
+    delete process.env.DATABASE_AUTH_URL;
+    delete process.env.DATABASE_URL;
+    delete process.env.DATABASE_ADMIN_URL;
+    process.env.POSTGRES_URL = "postgresql://postgres.abc:p@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
+    const { isDatabaseConfigured } = await import("./access-policy");
+    expect(isDatabaseConfigured()).toBe(true);
+    delete process.env.POSTGRES_URL;
+    expect(isDatabaseConfigured()).toBe(false);
+    process.env.DATABASE_AUTH_URL = previous.auth;
+    process.env.DATABASE_URL = previous.db;
+    process.env.DATABASE_ADMIN_URL = previous.admin;
+    if (previous.postgres == null) delete process.env.POSTGRES_URL;
+    else process.env.POSTGRES_URL = previous.postgres;
   });
 
   it("resolves auth base URL and always trusts the production origin", async () => {

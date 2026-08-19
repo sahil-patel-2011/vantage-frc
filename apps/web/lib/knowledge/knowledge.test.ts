@@ -43,6 +43,8 @@ describe("knowledge wiki helpers", () => {
 
   it("builds snippets and hrefs", () => {
     expect(snippetFrom("We chose swerve over tank for coverage.", "swerve")).toContain("swerve");
+    expect(knowledgeHitHref("wiki", ID, ORG, "swerve")).toContain("/team?tab=knowledge");
+    expect(knowledgeHitHref("wiki", ID, ORG, "swerve")).toContain(`orgId=${ORG}`);
     expect(knowledgeHitHref("wiki", ID, ORG, "swerve")).toContain("page=swerve");
     expect(knowledgeHitHref("decision", ID, ORG)).toContain("/decisions");
     expect(knowledgeHitHref("design_review", ID, ORG)).toMatch(/review/);

@@ -1,5 +1,6 @@
-import { Pool } from "@neondatabase/serverless";
 import { hashPassword } from "better-auth/crypto";
+import { createSqlPool } from "@vantage/db/pool";
+import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 import {
   configuredPlatformOwnerEmail,
   isDatabaseConfigured,
@@ -16,10 +17,7 @@ export type BootstrapResult = {
 
 function adminConnectionString() {
   return (
-    process.env.DATABASE_ADMIN_URL ||
-    process.env.DATABASE_URL ||
-    process.env.DATABASE_AUTH_URL ||
-    null
+    firstConfiguredEnv("DATABASE_ADMIN_URL", "DATABASE_URL", "POSTGRES_URL", "DATABASE_AUTH_URL") || null
   );
 }
 
@@ -46,7 +44,7 @@ export async function bootstrapPlatformOwner(input?: {
 
   const name = (input?.name ?? process.env.PLATFORM_OWNER_NAME ?? "Platform Owner").trim() || "Platform Owner";
   const passwordHash = await hashPassword(password);
-  const pool = new Pool({ connectionString });
+  const pool = createSqlPool(connectionString, { max: 1 });
 
   try {
     const existing = await pool.query<{ id: string }>(`SELECT id FROM users WHERE lower(email)=lower($1) LIMIT 1`, [

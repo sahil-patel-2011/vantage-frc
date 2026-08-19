@@ -164,7 +164,7 @@ export async function loadEventDayCommand(
       id: "event",
       label: "Select active event",
       detail: canSetEvent
-        ? "Choose the competition you are at today — never DEMO events."
+        ? "Choose the competition you are at today."
         : "Ask an owner/admin to set the active event.",
       href: canSetEvent ? withOrgHref("/command", input.orgId) : withOrgHref("/workspace", input.orgId),
       done: Boolean(row.eventKey),
@@ -174,7 +174,7 @@ export async function loadEventDayCommand(
       label: "Sync TBA schedule",
       detail: tbaAccess.tbaConfigured
         ? "TBA is configured — confirm sync freshness under Team → Data if matches are missing."
-        : "Set TBA_AUTH_KEY or save a TBA credential under Team → Data. Never invent DEMO match times.",
+        : "Add a The Blue Alliance key under Team → Data. Match times stay empty until then.",
       href: links.teamData,
       done: tbaAccess.tbaConfigured,
     },

@@ -1,5 +1,6 @@
 import { createHash, createHmac } from "node:crypto";
-import { Pool } from "@neondatabase/serverless";
+import { createSqlPool } from "@vantage/db/pool";
+import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 import { runtimeEnv } from "./access-policy";
 
 export type OtpEmail = {
@@ -145,12 +146,12 @@ export async function auditAuthEvent(input: {
   success: boolean;
   metadata?: Record<string, unknown>;
 }) {
-  const connectionString = process.env.DATABASE_AUTH_URL;
+  const connectionString = firstConfiguredEnv("DATABASE_AUTH_URL", "DATABASE_URL", "POSTGRES_URL");
   if (!connectionString) {
     if (process.env.NODE_ENV === "production") throw new Error("DATABASE_AUTH_URL is required");
     return;
   }
-  const pool = new Pool({ connectionString });
+  const pool = createSqlPool(connectionString, { max: 1 });
   try {
     await pool.query(
       `INSERT INTO auth_audit_events(action,email_hash,user_id,success,metadata)

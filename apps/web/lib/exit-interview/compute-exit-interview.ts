@@ -1,5 +1,10 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { summarizeExitInterviews } from ".";
+import {
+  buildExitInterviewWikiBody,
+  exitInterviewWikiSlug,
+  exitInterviewWikiTitle,
+} from "./wiki";
 import type { ExitInterviewRecord, ExitInterviewRole, ExitInterviewStatus, ExitInterviewSummary } from "./types";
 
 export const EXIT_INTERVIEW_ROLES: ExitInterviewRole[] = [
@@ -58,6 +63,7 @@ type RecordRow = {
   willingToMentor: boolean;
   contactEmail: string | null;
   status: ExitInterviewStatus;
+  knowledgePageId: string | null;
 };
 
 function mapRecord(row: RecordRow): ExitInterviewRecord {
@@ -75,6 +81,7 @@ function mapRecord(row: RecordRow): ExitInterviewRecord {
     willingToMentor: Boolean(row.willingToMentor),
     contactEmail: row.contactEmail,
     status: row.status,
+    knowledgePageId: row.knowledgePageId,
   };
 }
 
@@ -121,7 +128,7 @@ export async function computeExitInterviewView(
               years_on_team AS "yearsOnTeam", graduation_year AS "graduationYear",
               season_year AS "seasonYear", highlights, advice_for_future AS "adviceForFuture",
               skills_to_document AS "skillsToDocument", willing_to_mentor AS "willingToMentor",
-              contact_email AS "contactEmail", status
+              contact_email AS "contactEmail", status, knowledge_page_id AS "knowledgePageId"
        FROM exit_interview_responses
        WHERE org_id = $1 AND season_year = $2
        ORDER BY created_at DESC`,
@@ -169,13 +176,14 @@ export async function logExitInterview(
     contactEmail: string | null;
     status: ExitInterviewStatus;
   },
-): Promise<void> {
-  await client.query(
+): Promise<{ id: string; knowledgePageId: string | null }> {
+  const inserted = await client.query<{ id: string }>(
     `INSERT INTO exit_interview_responses (
        org_id, member_name, role, years_on_team, graduation_year, season_year,
        highlights, advice_for_future, skills_to_document, willing_to_mentor,
        contact_email, status, submitted_by
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+     RETURNING id`,
     [
       input.orgId,
       input.memberName,
@@ -192,6 +200,74 @@ export async function logExitInterview(
       input.userId,
     ],
   );
+  const id = inserted.rows[0]?.id;
+  if (!id) throw new Error("exit interview insert failed");
+
+  if (input.status !== "submitted") {
+    return { id, knowledgePageId: null };
+  }
+
+  const knowledgePageId = await insertExitInterviewWikiPage(client, { ...input, id });
+  await client.query(
+    `UPDATE exit_interview_responses
+     SET knowledge_page_id = $1
+     WHERE id = $2 AND org_id = $3`,
+    [knowledgePageId, id, input.orgId],
+  );
+  return { id, knowledgePageId };
+}
+
+async function insertExitInterviewWikiPage(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    id: string;
+    memberName: string;
+    role: ExitInterviewRole;
+    yearsOnTeam: number;
+    graduationYear: number;
+    seasonYear: number;
+    highlights: string | null;
+    adviceForFuture: string | null;
+    skillsToDocument: string | null;
+    willingToMentor: boolean;
+    contactEmail: string | null;
+  },
+): Promise<string> {
+  const title = exitInterviewWikiTitle({
+    memberName: input.memberName,
+    graduationYear: input.graduationYear,
+  });
+  const body = buildExitInterviewWikiBody(input);
+  let slug = exitInterviewWikiSlug({
+    memberName: input.memberName,
+    seasonYear: input.seasonYear,
+    suffix: input.id.slice(0, 8),
+  });
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const existing = await client.query(`SELECT 1 FROM knowledge_pages WHERE org_id = $1::uuid AND slug = $2`, [
+      input.orgId,
+      slug,
+    ]);
+    if (!existing.rowCount) break;
+    slug = exitInterviewWikiSlug({
+      memberName: input.memberName,
+      seasonYear: input.seasonYear,
+      suffix: `${input.id.slice(0, 8)}${attempt}`,
+    });
+  }
+
+  const page = await client.query<{ id: string }>(
+    `INSERT INTO knowledge_pages
+       (org_id, slug, title, body, template_kind, season_year, tags, pinned, created_by, updated_by)
+     VALUES ($1::uuid, $2, $3, $4, 'season_handoff', $5, $6::text[], false, $7::uuid, $7::uuid)
+     RETURNING id`,
+    [input.orgId, slug, title, body, input.seasonYear, ["handoff", "season", "exit-interview"], input.userId],
+  );
+  const pageId = page.rows[0]?.id;
+  if (!pageId) throw new Error("wiki page insert failed");
+  return pageId;
 }
 
 export async function deleteExitInterview(

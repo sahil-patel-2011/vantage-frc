@@ -140,7 +140,7 @@ describe("eventDayNextActions", () => {
     expect(
       actions.every((a) => {
         const blob = `${a.label} ${a.detail}`;
-        return !/\b(fabricat|illustrative)\b/i.test(blob) && !/\bDEMO\b(?!\s+lodging)/i.test(blob);
+        return !/\b(fabricat|illustrative|DEMO)\b/i.test(blob);
       }),
     ).toBe(true);
     expect(actions.every((a) => !a.href.toLowerCase().includes("/demo"))).toBe(true);

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { exitInterviewRoleLabel, exitInterviewStatusLabel } from "../../lib/exit-interview";
+import { exitInterviewRoleLabel, exitInterviewStatusLabel, exitInterviewWikiHref } from "../../lib/exit-interview";
 import {
   EXIT_INTERVIEW_ROLES,
   EXIT_INTERVIEW_STATUSES,
@@ -84,7 +84,7 @@ export default function ExitInterviewClient() {
           </>
         }
         title="Graduation Exit Interviews"
-        description="Capture structured off-boarding prompts from outgoing members — highlights, advice, and skills worth documenting for the alumni/knowledge base."
+        description="Capture structured off-boarding prompts. Submitted interviews write a season-handoff wiki page."
       >
         {view?.status === "live" && view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -157,6 +157,7 @@ function SummaryTiles({ view }: { view: LiveView }) {
     { label: "Submitted", value: String(summary.submittedCount) },
     { label: "Drafts", value: String(summary.draftCount) },
     { label: "Willing to mentor", value: String(summary.mentorshipWillingCount) },
+    { label: "Wiki pages", value: String(summary.wikiPageCount) },
   ];
   return (
     <Panel>
@@ -250,6 +251,9 @@ function RecentResponses({
                 <small className="app-muted" style={{ display: "block" }}>
                   Skills to document: {item.skillsToDocument}
                 </small>
+              ) : null}
+              {item.knowledgePageId ? (
+                <a href={exitInterviewWikiHref(view.orgId, item.knowledgePageId)}>Open wiki handoff</a>
               ) : null}
             </div>
             <button

@@ -32,6 +32,7 @@ export function summarizeExitInterviews(records: ExitInterviewRecord[]): ExitInt
   const submittedCount = records.filter((r) => r.status === "submitted").length;
   const draftCount = records.filter((r) => r.status === "draft").length;
   const mentorshipWillingCount = records.filter((r) => r.willingToMentor).length;
+  const wikiPageCount = records.filter((r) => r.knowledgePageId).length;
 
   const roleCounts = new Map<ExitInterviewRole, number>();
   for (const record of records) {
@@ -54,7 +55,15 @@ export function summarizeExitInterviews(records: ExitInterviewRecord[]): ExitInt
     submittedCount,
     draftCount,
     mentorshipWillingCount,
+    wikiPageCount,
     byRole,
     byGradYear,
   };
 }
+
+export {
+  buildExitInterviewWikiBody,
+  exitInterviewWikiHref,
+  exitInterviewWikiSlug,
+  exitInterviewWikiTitle,
+} from "./wiki";

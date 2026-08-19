@@ -66,15 +66,11 @@ test("account route renders settings tabs and notification badge stays empty at 
 
 test("strategy defaults to empty setup and hides fabricated probabilities", async ({ page }) => {
   await page.goto("/strategy");
-  await expect(page.getByRole("heading", { name: "Win / Loss + Strategy" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Strategy" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try demo scenario" })).toHaveCount(0);
   await expect(page.getByText("Deterministic demo")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Try demo scenario" })).toBeVisible();
   await expect(page.getByText("65%")).toHaveCount(0);
-  await page.getByRole("button", { name: "Try demo scenario" }).click();
-  await expect(page.getByText("Illustrative only · not live data")).toBeVisible();
-  await expect(page.getByText("weighted-current-v1")).toBeVisible();
-  await page.getByRole("button", { name: "Exit demo" }).click();
-  await expect(page.getByRole("button", { name: "Try demo scenario" })).toBeVisible();
+  await expect(page.getByText("weighted-current-v1")).toHaveCount(0);
 });
 
 test("code route reviews fixtures via interactive workbench", async ({ page }) => {

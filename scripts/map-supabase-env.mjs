@@ -41,6 +41,38 @@ if (!pooled) {
   process.exit(1);
 }
 
+function looksLikeDataApiKey(value) {
+  const v = String(value ?? "").trim();
+  if (!v) return false;
+  if (/^eyJ/.test(v)) return true;
+  if (/^https?:\/\//i.test(v)) return true;
+  if (!/^postgres(ql)?:\/\//i.test(v)) return true;
+  return false;
+}
+
+if (looksLikeDataApiKey(pooled) || looksLikeDataApiKey(unpooled)) {
+  console.error("REFUSING_DATA_API_KEY");
+  console.error("Use the Postgres connection string (postgres://…), not anon/service_role JWTs or the REST URL.");
+  process.exit(1);
+}
+
+function postgresUsername(connectionString) {
+  try {
+    return decodeURIComponent(new URL(connectionString.replace(/^postgres(ql)?:/i, "http:")).username);
+  } catch {
+    return "";
+  }
+}
+
+const pooledUser = postgresUsername(pooled);
+if (pooledUser === "postgres" || pooledUser.startsWith("postgres.")) {
+  console.warn(
+    "WARN: connection user is still",
+    pooledUser,
+    "— run packages/db/supabase/00_roles.sql and switch to vantage_app before production.",
+  );
+}
+
 function add(key, value) {
   const result = spawnSync("vercel", ["env", "add", key, "production", "--yes"], {
     input: `${value}\n`,
@@ -63,6 +95,12 @@ const aliases = [
 ];
 
 if (process.argv.includes("--vercel")) {
+  if (process.env.SUPABASE_CUTOVER_CONFIRM !== "I_UNDERSTAND") {
+    console.error(
+      "Refusing vercel env add. When you are ready to cut over, set SUPABASE_CUTOVER_CONFIRM=I_UNDERSTAND and rerun with --vercel.",
+    );
+    process.exit(1);
+  }
   for (const [key, value] of aliases) add(key, value);
 }
 

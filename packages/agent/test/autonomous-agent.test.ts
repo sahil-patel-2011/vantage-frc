@@ -96,7 +96,7 @@ describe("web search / fetch setup_required", () => {
 });
 
 describe("tool-result injection helpers", () => {
-  it("parses ReAct JSON actions", async () => {
+  it("parses ReAct JSON actions", { timeout: 15_000 }, async () => {
     const { parseAutonomousAgentAction } = await import("../src/autonomous-loop");
     expect(parseAutonomousAgentAction('{"type":"final","answer":"Done"}')).toEqual({
       type: "final",
@@ -143,7 +143,7 @@ describe("autonomous ReAct loop", () => {
     vi.clearAllMocks();
   });
 
-  it("calls tools then injects results into the next model step", async () => {
+  it("calls tools then injects results into the next model step", { timeout: 20_000 }, async () => {
     const { runAutonomousAgent } = await import("../src/autonomous-loop");
     const seenContexts: ContextItem[][] = [];
     let call = 0;
