@@ -12,7 +12,7 @@ const body = `# Vantage
 
 ## Entity
 - Name: Vantage (also "Vantage FRC")
-- Type: Web application (installable as an iOS PWA)
+- Type: Web application (installable as an iOS PWA) plus a Windows desktop shell (\`/desktop\`)
 - Audience: FRC coaches, mentors, drive teams, strategy staff, and students
 - Access: Closed / invite-only; platform admin provisions each team and owner; owners invite exact emails
 - Contact: hello@vantagefrc.com
@@ -48,6 +48,7 @@ const body = `# Vantage
 - CAD agent: ${CANONICAL}/features/cad
 - Code Coach: ${CANONICAL}/features/code
 - How it works: ${CANONICAL}/workflow
+- Desktop: ${CANONICAL}/desktop
 - For teams: ${CANONICAL}/for-teams
 - Pricing: ${CANONICAL}/pricing
 - Privacy: ${CANONICAL}/privacy

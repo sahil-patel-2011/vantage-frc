@@ -50,6 +50,7 @@ describe("cad Soft-UI helpers", () => {
     });
     expect(actions[0]?.id).toBe("first-brief");
     expect(actions[0]?.primary).toBe(true);
+    expect(actions.some((a) => a.id === "ai-keys")).toBe(true);
     expect(actions.some((a) => a.id === "kickoff")).toBe(true);
     expect(actions.some((a) => a.id === "fmea")).toBe(true);
     expect(actions.some((a) => a.id === "strategy")).toBe(true);

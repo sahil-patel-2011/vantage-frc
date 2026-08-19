@@ -63,6 +63,7 @@ ${CANONICAL}/features/strategy
 ${CANONICAL}/features/cad
 ${CANONICAL}/features/code
 ${CANONICAL}/workflow
+${CANONICAL}/desktop
 ${CANONICAL}/for-teams
 ${CANONICAL}/pricing
 ${CANONICAL}/privacy

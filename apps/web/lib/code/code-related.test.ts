@@ -36,6 +36,7 @@ describe("codeCoachNextActions", () => {
     expect(empty[0]?.id).toBe("paste");
     expect(empty.some((a) => a.id === "cad")).toBe(true);
     expect(empty.some((a) => a.id === "chat")).toBe(true);
+    expect(empty.some((a) => a.id === "bugbot")).toBe(true);
 
     const ready = codeCoachNextActions({ orgId: "org-1", hasSource: true, hasReview: false });
     expect(ready[0]?.id).toBe("review");

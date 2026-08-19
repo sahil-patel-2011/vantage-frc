@@ -14,6 +14,7 @@ const capabilities = [
   { id: "02", title: "Explain why", body: "Teaching notes tied to match-pressure failure modes." },
   { id: "03", title: "Safer habits", body: "WPILib-aligned alternatives—not opaque rewrites." },
   { id: "04", title: "Approve diffs", body: "Human-gated proposals; sim stays with the team." },
+  { id: "05", title: "AI Bugbot", body: "Metered pass quotes your file. Ungrounded claims are dropped." },
 ] as const;
 
 export default function CodeFeaturePage() {
@@ -23,7 +24,10 @@ export default function CodeFeaturePage() {
       <main className="route-page">
         <header className="lux-route-hero">
           <h1>Flag risk. Teach the fix.</h1>
-          <p>Build hub Code Coach—human-approved diffs only. Never auto-deploys to a robot.</p>
+          <p>
+            Build hub Code Coach—local pattern review plus metered AI Bugbot. Human-approved diffs only. Never
+            auto-deploys to a robot.
+          </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
               Join the waitlist

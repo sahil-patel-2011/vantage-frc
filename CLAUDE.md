@@ -21,6 +21,8 @@ npm run build        # build all workspaces
 npm run test:browser # playwright (run `npx playwright install chromium` first)
 npm run db:generate  # drizzle-kit generate
 npm run db:migrate   # drizzle-kit migrate
+npm run desktop:dev  # Electron shell around production (or VANTAGE_URL)
+npm run desktop:dist # unsigned Windows NSIS + portable under apps/desktop/release/
 ```
 
 Run a single package's checks from its dir (e.g. `npm run typecheck --workspace=@vantage/web`). Unit tests
@@ -28,8 +30,9 @@ and build are intentionally credential-free; RLS integration tests need a real P
 
 ## Layout
 
-- `apps/web` — the only shipping deployment: marketing, legal/pricing/waitlist, Better Auth, and every
-  session-protected product route (`app/<feature>/…` pages + `app/api/<feature>/route.ts`).
+- `apps/web` — the only shipping web deployment: marketing, legal/pricing/waitlist, Better Auth, and every
+ session-protected product route (`app/<feature>/…` pages + `app/api/<feature>/route.ts`).
+- `apps/desktop` — Windows Electron shell that loads the hosted web app (`docs/DESKTOP.md`).
 - `apps/marketing` — retirement shim; permanently redirects to `apps/web`. Don't add features here.
 - `packages/db` — Drizzle schema, `withRls()` request client, worker-only `dbAdmin`, SQL migrations.
 - `packages/core` — auth, tenancy, active-context, invite, notification, admin-audit helpers.

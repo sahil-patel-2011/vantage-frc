@@ -147,7 +147,7 @@ function isOnline(device: Device | undefined) {
   return Date.now() - new Date(device.lastSeenAt).getTime() < 90_000;
 }
 
-export default function CadWorkspace({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
+export default function CadWorkspace({ orgId, embedded: _embedded = false }: { orgId: string; embedded?: boolean }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selected, setSelected] = useState("");
   const [detail, setDetail] = useState<{
@@ -264,6 +264,10 @@ export default function CadWorkspace({ orgId, embedded = false }: { orgId: strin
       setMessage(
         action === "brief"
           ? "Engineering brief created. Confirm assumptions before geometry."
+          : action === "plan-ai"
+            ? "AI action plan saved. Approve each geometry step before execute — this is not certified engineering."
+            : action === "plan-default"
+              ? "Starter plan saved (no model). Approve each geometry step before execute."
           : action === "cancel"
             ? "Job cancelled. Pending steps will not run."
             : action === "retry"
@@ -671,8 +675,8 @@ export default function CadWorkspace({ orgId, embedded = false }: { orgId: strin
                     <option value="terminal_cli">Terminal CLI subscription path (no Vantage model charge)</option>
                   </select>
                   <small>
-                    ChatGPT Plus / Claude Pro are not API keys. Terminal path uses your official CLI login via
-                    vantage-cad.
+                    ChatGPT Plus / Claude Pro are not API keys. Managed API meters the <strong>AI plan from brief</strong>.
+                    Mock execute still uses the deterministic adapter. Onshape/Fusion run live geometry after approval.
                   </small>
                 </label>
                 <label className="check-field">
@@ -726,8 +730,10 @@ export default function CadWorkspace({ orgId, embedded = false }: { orgId: strin
               </section>
               <BriefEditor
                 job={job}
+                busy={busy}
                 onConfirm={(brief) => act("confirm", { jobId: job.id, brief })}
                 onPlan={() => act("plan-default", { jobId: job.id, includeExport: job.platform === "onshape" ? "step" : false })}
+                onAiPlan={() => act("plan-ai", { jobId: job.id, includeExport: job.platform === "onshape" ? "step" : false })}
               />
               <CadOperationComposer
                 key={`${job.id}-${job.platform}`}
@@ -880,18 +886,9 @@ export default function CadWorkspace({ orgId, embedded = false }: { orgId: strin
                       )}
                       {step.approvalStatus === "approved" &&
                         step.status === "planned" &&
-                        job?.platform === "mock" &&
-                        brainMode === "mock" && (
+                        job?.platform === "mock" && (
                           <button type="button" disabled={busy} onClick={() => void act("execute-mock", { jobId: job!.id, stepId: step.id })}>
-                            {autoRunVerify && isVerify(step.operation) ? "Auto-run verify" : "Run mock"}
-                          </button>
-                        )}
-                      {step.approvalStatus === "approved" &&
-                        step.status === "planned" &&
-                        job?.platform === "mock" &&
-                        brainMode !== "mock" && (
-                          <button type="button" disabled={busy} onClick={() => void act("execute-api-stub", { jobId: job!.id, stepId: step.id })}>
-                            Run API stub ({brainMode === "terminal_cli" ? "local_cli $0" : "metered"})
+                            {autoRunVerify && isVerify(step.operation) ? "Auto-run verify" : "Run mock execute"}
                           </button>
                         )}
                       {step.approvalStatus === "approved" &&
@@ -1034,12 +1031,16 @@ export default function CadWorkspace({ orgId, embedded = false }: { orgId: strin
 
 function BriefEditor({
   job,
+  busy,
   onConfirm,
   onPlan,
+  onAiPlan,
 }: {
   job: Job;
+  busy?: boolean;
   onConfirm: (brief: Record<string, unknown>) => unknown;
   onPlan: () => unknown;
+  onAiPlan: () => unknown;
 }) {
   const [brief, setBrief] = useState(job.brief);
   useEffect(() => setBrief(job.brief), [job.id, job.brief]);
@@ -1089,14 +1090,20 @@ function BriefEditor({
         </pre>
       </details>
       {!job.briefConfirmedAt ? (
-        <button type="button" className="primary-action" onClick={() => onConfirm(brief)}>
+        <button type="button" className="primary-action" disabled={busy} onClick={() => onConfirm(brief)}>
           Confirm engineering brief
         </button>
       ) : (
-        <button type="button" className="primary-action" onClick={onPlan}>
-          Preview safe action plan
-        </button>
+        <div className="intel-actions" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <button type="button" className="primary-action" disabled={busy} onClick={onAiPlan}>
+            AI plan from brief
+          </button>
+          <button type="button" className="app-button secondary" disabled={busy} onClick={onPlan}>
+            Starter plan (no model)
+          </button>
+        </div>
       )}
     </section>
   );
 }
+

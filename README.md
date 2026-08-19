@@ -8,6 +8,7 @@ pricing controls, and durable private/team agent context.
 
 - `apps/web` — the single public deployment: marketing, legal/pricing/waitlist, Better Auth, and every
   session-protected product route.
+- `apps/desktop` — Windows Electron shell around the hosted web app (`docs/DESKTOP.md`).
 - `apps/marketing` — retirement shim only. Its Vercel project permanently redirects every path to `apps/web`.
 - `packages/db` — typed Drizzle schema, request-scoped RLS client, worker-only admin client, and SQL migrations.
 - `packages/core` — auth, tenancy, active-context, invite, notification, and admin-audit helpers.
@@ -37,7 +38,7 @@ second app. See `archive/business-portal-legacy/README.md`.
    numeric order as the schema owner. Set `DATABASE_URL` to an RLS-enforced app-role URL,
    `DATABASE_ADMIN_URL` to the worker role, `DATABASE_AUTH_URL` to the identity-only role, and
    `MARKETING_DATABASE_URL` to the least-privilege marketing role.
-5. Public routes are `/`, `/pricing`, `/privacy`, and `/terms`. Product routes redirect to
+5. Public routes include `/`, `/desktop`, `/pricing`, `/privacy`, and `/terms`. Product routes redirect to
    `/signin?next=...` and successful authentication continues to the requested route or `/dashboard`.
 
 Product sign-in uses Google when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are configured. Numeric email

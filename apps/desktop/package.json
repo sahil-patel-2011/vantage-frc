@@ -1,0 +1,60 @@
+{
+  "name": "@vantage/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Vantage desktop shell for FRC teams — signed-in product in a native window.",
+  "author": "Vantage",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "dist": "tsc && electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "latest",
+    "electron-builder": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  },
+  "build": {
+    "appId": "app.vantage.frc",
+    "productName": "Vantage",
+    "copyright": "Copyright © Vantage",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "offline.html",
+      "package.json"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Vantage",
+      "artifactName": "Vantage-${version}-win-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "Vantage-${version}-win-${arch}-portable.${ext}"
+    }
+  }
+}

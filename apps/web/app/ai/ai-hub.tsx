@@ -29,7 +29,7 @@ export default function AiHub() {
             if (tab === "agent") return <AutonomousAgentPanel orgId={id} />;
             if (tab === "budgets") return <BudgetClient orgId={id} />;
             if (tab === "writer") return <WriterClient orgId={id} />;
-            if (tab === "code") return <CodeClient orgId={id} related="ai" />;
+            if (tab === "code" || tab === "bugbot") return <CodeClient orgId={id} related="ai" />;
             if (tab === "memory") return <AiMemoryClient orgId={id} />;
             if (tab === "governance") return <AiPolicyClient orgId={id} />;
             if (tab === "finance") return <FinanceInAiPanel orgId={id} />;

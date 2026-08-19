@@ -123,6 +123,12 @@ export function codeCoachNextActions(input: {
       detail: "Team-aware assistant uses plan credits. Distinct from Code Coach’s free local pattern pass.",
       href: hubHref("/ai", "chat", orgId),
     },
+    {
+      id: "bugbot",
+      label: "Run AI Bugbot",
+      detail: "Metered review quotes this file only. Empty until you paste source and a provider key exists.",
+      href: withOrgHref("/bugbot", orgId),
+    },
   );
 
   return actions;
