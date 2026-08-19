@@ -18,6 +18,7 @@ import {
   type ProductHubDef,
 } from "../lib/nav/hubs";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { fetchActiveOrgId, persistOrgIdInUrl, readOrgIdFromSearch } from "../lib/nav/resolve-org";
 import { useClientAccessProfile } from "../lib/nav/use-client-access";
 
 type ProductHubShellProps = {
@@ -29,7 +30,7 @@ type ProductHubShellProps = {
 
 function readOrgId(): string | null {
   if (typeof window === "undefined") return null;
-  return new URLSearchParams(window.location.search).get("orgId");
+  return readOrgIdFromSearch(window.location.search);
 }
 
 function readTab(hub: ProductHubDef): string {
@@ -123,13 +124,33 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
     () => filterTabsByHubAccess(hubFeaturedMoreTabs(hub), access.hubAccess, accessHubId),
     [access.hubAccess, accessHubId, hub],
   );
+  const extraMore = useMemo(() => moreTabs.filter((entry) => !entry.featured), [moreTabs]);
   const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, accessHubId);
   const [tab, setTab] = useState(hub.defaultTab);
   const [orgId, setOrgId] = useState<string | null>(null);
+  const [orgReady, setOrgReady] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     setTab(readTab(hub));
-    setOrgId(readOrgId());
+    const fromUrl = readOrgId();
+    if (fromUrl) {
+      setOrgId(fromUrl);
+      setOrgReady(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+    setOrgReady(false);
+    void fetchActiveOrgId().then((fromMe) => {
+      if (cancelled) return;
+      setOrgId(fromMe);
+      if (fromMe) persistOrgIdInUrl(fromMe);
+      setOrgReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [hub]);
 
   useEffect(() => {
@@ -162,7 +183,7 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
     return (
       <main className={`module-page product-hub product-hub--${hub.id} soft-gate`}>
         <PageHeader
-          breadcrumbs={breadcrumbs ?? `${hub.label} hub`}
+          breadcrumbs={breadcrumbs}
           title={hub.title}
           description={hub.description}
         >
@@ -193,7 +214,7 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
   return (
     <main className={`module-page product-hub product-hub--${hub.id}`}>
       <PageHeader
-        breadcrumbs={breadcrumbs ?? `${hub.label} hub`}
+        breadcrumbs={breadcrumbs}
         title={hub.title}
         description={hub.description}
       >
@@ -215,16 +236,12 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
           ))}
         </nav>
       ) : null}
-      {moreTabs.length ? (
+      {extraMore.length ? (
         <details className="product-hub-more">
-          <summary>More tools ({moreTabs.length})</summary>
+          <summary>All tools</summary>
           <div className="product-hub-more-links">
-            {moreTabs.map((entry) => (
-              <a
-                key={entry.id}
-                href={hubLegacyHref(entry, orgId)}
-                data-featured={entry.featured ? "yes" : undefined}
-              >
+            {extraMore.map((entry) => (
+              <a key={entry.id} href={hubLegacyHref(entry, orgId)}>
                 {entry.label}
               </a>
             ))}
@@ -233,6 +250,17 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
       ) : null}
       <div className="product-hub-panel" data-hub-tab={tab}>
         {(() => {
+          if (!orgReady) {
+            return (
+              <EmptyState
+                soft
+                aria-busy
+                badge="Loading"
+                title="Opening workspace"
+                description={`Loading ${hub.label} for your team.`}
+              />
+            );
+          }
           if (access.ready && !tabAllowed) {
             const active = hub.tabs.find((entry) => entry.id === tab);
             return <HubTabForbidden hubLabel={hub.label} tabLabel={active?.label} />;
@@ -260,15 +288,17 @@ export function HubOrgGate({
   if (!orgId) {
     return (
       <section className="app-card soft-panel product-hub-setup">
-        <span className="app-badge setup">Workspace</span>
-        <h2>Select a workspace</h2>
+        <span className="app-badge setup">Team needed</span>
+        <h2>Choose a team</h2>
         <p className="app-muted">
-          Open {label} from a team workspace so data stays org-scoped — empty shells stay empty; nothing is seeded with
-          DEMO metrics.
+          {label} loads after you pick a team. This screen stays empty until then.
         </p>
         <div className="product-hub-setup-actions">
           <a className="app-button" href="/workspace">
             Choose workspace
+          </a>
+          <a className="app-button secondary" href="/dashboard">
+            Back to Home
           </a>
           {label === "AI" ? (
             <>

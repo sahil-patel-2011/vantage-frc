@@ -37,7 +37,7 @@ export function knowledgeHitHref(
   const q = `orgId=${encodeURIComponent(orgId)}`;
   if (source === "wiki") {
     const page = slug ? `&page=${encodeURIComponent(slug)}` : `&pageId=${encodeURIComponent(id)}`;
-    return `/team/knowledge?${q}${page}`;
+    return `/team?tab=knowledge&${q}${page}`;
   }
   if (source === "decision") return `/decisions?${q}&id=${encodeURIComponent(id)}`;
   return `/reviews?${q}&id=${encodeURIComponent(id)}`;

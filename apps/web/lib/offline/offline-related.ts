@@ -146,7 +146,7 @@ export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
         badge: "Setup",
         title: "Select a team workspace",
         description:
-          "Offline-shell readiness is org-scoped. Pick a workspace first — never DEMO device or sync totals.",
+          "Readiness is per team. Pick a workspace first. Device counts stay at zero until then.",
       };
     case "empty":
       return {
@@ -154,7 +154,7 @@ export function offlineShellCopy(kind: OfflineShellKind): OfflineShellCopy {
         badge: "Not ready",
         title: "No precache syncs logged yet",
         description:
-          "Open Scouting once online, verify a cold launch offline, then log the device here. Empty stays empty — never DEMO sync counts.",
+          "Open Scouting once online, try a cold launch offline, then log the device here. Empty stays empty.",
       };
     case "partial":
       return {
@@ -330,7 +330,7 @@ export function offlineBootNextActions(input: {
       ? queued > 0 && input.loaded
         ? `${formatOfflineCount(queued, true)} item(s) waiting in this device's outbox — sync when Wi-Fi returns.`
         : "Match and pit forms + IndexedDB outbox on this device."
-      : "Open once online from a workspace so the event cache is ready — never DEMO scout totals.",
+      : "Open once online from a workspace so the event cache is ready.",
     href: scoutHref,
     primary: true,
   });

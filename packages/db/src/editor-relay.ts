@@ -1,4 +1,5 @@
 import { createSqlPool } from "./pool";
+import { firstConfiguredEnv } from "./postgres-url";
 
 /**
  * Pairing/device-token pool for the VS Code editor connector.
@@ -9,9 +10,7 @@ let pool: ReturnType<typeof createSqlPool> | undefined;
 export function getEditorRelayPool() {
   if (!pool) {
     const connectionString =
-      process.env.DATABASE_EDITOR_RELAY_URL ??
-      process.env.DATABASE_CAD_RELAY_URL ??
-      process.env.DATABASE_URL;
+      firstConfiguredEnv("DATABASE_EDITOR_RELAY_URL", "DATABASE_CAD_RELAY_URL", "DATABASE_URL", "POSTGRES_URL");
     if (!connectionString) {
       if (process.env.NODE_ENV === "production") {
         throw new Error("DATABASE_EDITOR_RELAY_URL or DATABASE_CAD_RELAY_URL is required");

@@ -59,61 +59,53 @@ describe("product hubs", () => {
     expect(media.tabs.find((tab) => tab.id === "kit")?.legacyHref).toBe("/media-kit");
   });
 
-  it("surfaces Team ops tabs including batteries and FMEA", () => {
+  it("keeps Team primary tabs to calendar, chat, todos, practice, and attendance", () => {
     const team = hubById("team");
     expect(hubPrimaryTabs(team).map((tab) => tab.id)).toEqual([
       "calendar",
-      "todos",
       "messages",
+      "todos",
       "practice",
-      "knowledge",
       "attendance",
-      "batteries",
-      "fmea",
     ]);
+    expect(hubMoreTabs(team).map((tab) => tab.id)).toEqual(
+      expect.arrayContaining(["knowledge", "batteries", "fmea"]),
+    );
     expect(hubMoreTabs(team).map((tab) => tab.id)).toContain("task-board");
     expect(team.tabs.find((tab) => tab.id === "todos")?.legacyHref).toBe("/todos");
   });
 
-  it("surfaces Build shop tabs including prototypes", () => {
+  it("keeps Build primary tabs to kickoff, CAD, and code", () => {
     const build = hubById("build");
-    expect(hubPrimaryTabs(build).map((tab) => tab.id)).toEqual([
-      "kickoff",
-      "cad",
-      "code",
-      "fmea",
-      "prototype",
-      "batteries",
-    ]);
-    expect(hubMoreTabs(build).map((tab) => tab.id)).not.toContain("prototype");
-    expect(hubMoreTabs(build).map((tab) => tab.id)).not.toContain("prototype-tracker");
+    expect(hubPrimaryTabs(build).map((tab) => tab.id)).toEqual(["kickoff", "cad", "code"]);
+    expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("prototype");
+    expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("fmea");
+    expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("batteries");
     expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("cad-change-radar");
     expect(hubMoreTabs(build).map((tab) => tab.id)).toContain("bin-shelf-locator");
   });
 
-  it("surfaces AI hub tabs for chat, agent, budgets, writer, code, and memory", () => {
+  it("keeps AI primary tabs to chat, writer, budgets, agent, and finance", () => {
     const ai = hubById("ai");
     expect(hubPrimaryTabs(ai).map((tab) => tab.id)).toEqual([
       "chat",
-      "agent",
-      "budgets",
       "writer",
-      "code",
-      "memory",
-      "governance",
+      "budgets",
+      "agent",
       "finance",
     ]);
+    expect(hubMoreTabs(ai).map((tab) => tab.id)).toEqual(
+      expect.arrayContaining(["code", "memory", "governance"]),
+    );
     expect(hubMoreTabs(ai).map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["ai-keys", "usage", "decisions", "decision-search", "season-report"]),
     );
   });
 
   it("pins Alliance desk, Season planning, and AI keys as featured More tools", () => {
-    expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toContain(
+    expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toEqual([
       "alliance-selection-desk",
-    );
-    expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toContain("pairwise");
-    expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toContain("team-tags");
+    ]);
     expect(hubFeaturedMoreTabs(hubById("team")).map((tab) => tab.id)).toContain(
       "season-planning-workspace",
     );

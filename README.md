@@ -134,9 +134,12 @@ Jobs (queue-provider neutral via `createProductionReferenceJobs()`):
 
 HTTP entry points (require `CRON_SECRET` Bearer / `x-cron-secret`):
 
-- `GET|POST /api/cron/tba-sync?mode=event-day` — webhook-style / Vercel cron (every minute)
-- `GET|POST /api/cron/tba-sync?mode=season` — full season (every 6 hours)
+- `GET|POST /api/cron/tba-sync?mode=event-day` — Vercel Hobby cron once daily at 14:00 UTC (`0 14 * * *` in `vercel.json`). Call this more often from Pro or an external ticker during event weekends.
+- `GET|POST /api/cron/tba-sync?mode=season` — Vercel Hobby cron once daily at 06:00 UTC. Piggybacks sponsor reminders, scheduled product releases, and `runScheduledResearchSweep()`.
+- `GET|POST /api/cron/research-sweep` — same research sweep, for Pro/extra crons (not in the Hobby two-cron `vercel.json`).
 - `POST /api/cron/tba-sync` with `{ "eventKey": "2026miket" }` — force one event
+
+Hobby is capped at two daily crons. Do not add a third path to `vercel.json` until the Vercel plan allows it. Team admins can still press **Sync now** on Admin → Live Data / Team live data for the active event.
 
 Platform admins can also press **Sync now** on Admin → Live Data (`/api/admin/data-connectors` action `sync`).
 
@@ -146,7 +149,7 @@ Production ingest requires a TBA key (env or encrypted) and `DATABASE_ADMIN_URL`
 
 ## Intel, research, models, and memory
 
-`runScheduledResearchSweep()` is worker-only. It creates shared jobs only while the current
+`runScheduledResearchSweep()` is worker-only. Season TBA cron piggybacks it daily; Pro can also hit `/api/cron/research-sweep`. It creates shared jobs only while the current
 `season_windows` row is active and only for teams found at organizations’ active events. Crawl budgets bound
 teams, queries, and results. On-demand research bypasses the season gate but runs through `meteredAI` with
 `feature=research`. Search adapters preserve source URL/date/confidence and deduplicate canonical URL +

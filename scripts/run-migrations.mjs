@@ -1,4 +1,4 @@
-import { Pool } from "@neondatabase/serverless";
+import pg from "pg";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -24,7 +24,7 @@ const env = {
   ...loadEnv(".env.production.local"),
   ...loadEnv(".env.migrate.local"),
 };
-const url = env.DATABASE_ADMIN_URL || env.DATABASE_URL_UNPOOLED || env.DATABASE_URL;
+const url = env.DATABASE_ADMIN_URL || env.DATABASE_URL_UNPOOLED || env.POSTGRES_URL_NON_POOLING || env.DATABASE_URL || env.POSTGRES_URL;
 if (!url) {
   console.error("NO_DB_URL");
   process.exit(1);
@@ -35,7 +35,11 @@ const files = readdirSync(dir)
   .filter((name) => name.endsWith(".sql"))
   .sort();
 
-const pool = new Pool({ connectionString: url });
+const pool = new pg.Pool({
+  connectionString: url,
+  max: 1,
+  ssl: /localhost|127\.0\.0\.1/.test(url) ? false : { rejectUnauthorized: true },
+});
 await pool.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
   id text PRIMARY KEY,
   applied_at timestamptz NOT NULL DEFAULT now()

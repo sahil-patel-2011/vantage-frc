@@ -72,7 +72,7 @@ export default function OfflineClient() {
       <section className="offline-shell-next" aria-label="Next actions">
         <header>
           <h2>Next actions</h2>
-          <p>Real IndexedDB outbox only — never DEMO sync counts.</p>
+          <p>Entries queued on this device. Counts stay at zero until you scout.</p>
         </header>
         <ol>
           {actions.map((action) => (

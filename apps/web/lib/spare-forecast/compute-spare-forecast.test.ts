@@ -5,6 +5,8 @@ import { computeSpareForecastView, draftPurchaseRequest } from "./compute-spare-
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
 const ITEM_ID = "33333333-3333-4333-8333-333333333333";
+/** Mid-build so daysRemaining > 0 (the 200-day window ends in mid-summer). */
+const MID_SEASON = new Date("2026-03-15T12:00:00.000Z");
 
 function makeClient(handler: (sql: string, params: unknown[]) => { rows: unknown[]; rowCount?: number }): PoolClient {
   return {
@@ -60,7 +62,12 @@ describe("computeSpareForecastView", () => {
       return { rows: [] };
     });
 
-    const view = await computeSpareForecastView(client, { userId: USER, requestedOrg: ORG, seasonYear: 2026 });
+    const view = await computeSpareForecastView(client, {
+      userId: USER,
+      requestedOrg: ORG,
+      seasonYear: 2026,
+      asOf: MID_SEASON,
+    });
 
     expect(view.status).toBe("live");
     if (view.status !== "live") throw new Error("expected live view");
@@ -142,6 +149,7 @@ describe("draftPurchaseRequest", () => {
       userId: USER,
       seasonYear: 2026,
       title: "Week 3 spares restock",
+      asOf: MID_SEASON,
     });
 
     const requestInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO spare_forecast_purchase_requests"));

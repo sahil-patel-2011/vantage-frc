@@ -11,7 +11,13 @@
 .shx-stack-after{color:var(--m-ink);font:600 14px/1.3 var(--m-sans);letter-spacing:-.01em}
 .shx-consolidate-note{max-width:640px;margin:clamp(22px,3vw,32px) auto 0;text-align:center;color:var(--m-muted);font-size:14px;line-height:1.6}
 
-.shx-pipeline{padding:clamp(64px,9vw,120px) clamp(20px,5vw,76px);background:var(--m-paper)}
+.shx-pipeline-copy .shx-stage{
+  padding:clamp(18px,2.4vw,26px);
+  border:1px solid var(--m-line);
+  border-radius:var(--m-radius);
+  background:var(--m-white);
+  box-shadow:var(--m-shadow);
+}
 .shx-pipeline-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2vw,24px);margin:0;padding:0;list-style:none;counter-reset:none}
 .shx-stage{display:flex;flex-direction:column;gap:10px;min-width:0}
 .shx-stage-label{display:flex;align-items:baseline;gap:8px}

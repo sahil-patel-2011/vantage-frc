@@ -85,12 +85,12 @@ describe("myDayShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(myDayShellCopy("empty").badge).toBe("No matches yet");
-    expect(myDayShellCopy("empty").description).toMatch(/never DEMO/i);
+    expect(myDayShellCopy("empty").description).not.toMatch(/DEMO/i);
     expect(myDayShellCopy("empty", { emptyReason: "no_upcoming" }).badge).toBe(
       "No upcoming matches",
     );
     expect(myDayShellCopy("setup").badge).toBe("Setup required");
-    expect(myDayShellCopy("ready").description).toMatch(/never DEMO/i);
+    expect(myDayShellCopy("ready").description).not.toMatch(/DEMO/i);
   });
 });
 
@@ -115,7 +115,7 @@ describe("myDayNextActions", () => {
     );
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
-    expect(actions.some((a) => /never DEMO/i.test(a.detail))).toBe(true);
+    expect(actions.every((a) => !/DEMO/i.test(a.detail))).toBe(true);
     expect(actions.find((a) => a.id === "command")?.href).toBe(
       "/competition?tab=command&orgId=org-1",
     );

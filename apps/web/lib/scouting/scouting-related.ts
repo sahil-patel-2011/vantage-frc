@@ -95,13 +95,13 @@ export function scoutingSetupSteps(orgId?: string | null): ScoutingSetupStep[] {
     {
       id: "forms",
       label: "Open Form builder",
-      detail: "Publish a real match or pit schema — never DEMO fields.",
+      detail: "Publish a match or pit form.",
       href: hubHref("/competition", "forms", orgId),
     },
     {
       id: "coverage",
       label: "Open Coverage",
-      detail: "Lineup gaps stay blank until real scout rows exist — never DEMO %.",
+      detail: "Coverage stays empty until scouts enter rows.",
       href: withOrgHref("/scouting/lineup", orgId),
     },
     {
@@ -176,24 +176,22 @@ export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
       return {
         kind,
         title: "Loading scouting…",
-        description:
-          "Checking workspace, active event, and published forms — never DEMO entries.",
+        description: "Checking your team, event, and published forms.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
         title: "Could not load scouting",
-        description:
-          "A network or server issue blocked bootstrap. Retry, or open Forms / Coverage / Strategy / Offline while it reloads — never invent DEMO entries.",
+        description: "Could not load scouting. Retry, or open forms while it reloads.",
       };
     case "setup":
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace and event",
+        title: "Choose a team and event",
         description:
-          "Scouting is org- and event-scoped. Pick a workspace and active TBA event before match and pit forms load — nothing is pre-seeded.",
+          "Pick a workspace and the event you are at before match and pit forms load.",
       };
     case "empty":
       return {
@@ -201,14 +199,13 @@ export function scoutingShellCopy(kind: ScoutingShellKind): ScoutingEmptyCopy {
         badge: "Forms required",
         title: "No scouting form yet",
         description:
-          "Publish a match or pit schema before scouts enter rows. Coverage and Strategy stay blank until real entries sync — never DEMO entries.",
+          "Publish a match or pit form before scouts enter rows. Coverage and strategy stay blank until then.",
       };
     default:
       return {
         kind: "ready",
-        title: "Scouting Hub",
-        description:
-          "Match and pit forms cache on this device. Coverage stays empty until real scout rows exist — never DEMO entries.",
+        title: "Scouting",
+        description: "Match and pit forms stay on this device until you sync.",
       };
   }
 }
@@ -241,19 +238,19 @@ export function scoutingNextActions(input: {
         {
           id: "forms",
           label: "Open Form builder",
-          detail: "Schemas stay blank until you publish a real form — never DEMO fields.",
+          detail: "Forms stay empty until you publish one.",
           href: hubHref("/competition", "forms", null),
         },
         {
           id: "coverage",
           label: "Open Coverage",
-          detail: "Lineup gaps stay blank until real scout rows exist — never DEMO %.",
+          detail: "Coverage stays empty until scouts enter rows.",
           href: withOrgHref("/scouting/lineup", null),
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Pick lists stay empty until real metrics exist — never DEMO rankings.",
+          detail: "Pick lists stay empty until this event has synced stats.",
           href: hubHref("/competition", "strategy", null),
         },
         {
@@ -282,13 +279,13 @@ export function scoutingNextActions(input: {
         {
           id: "coverage",
           label: "Open Coverage",
-          detail: "Coverage stays honest when the event is unset — never DEMO %.",
+          detail: "Coverage waits until an event is set.",
           href: withOrgHref("/scouting/lineup", orgId),
         },
         {
           id: "strategy",
           label: "Open Strategy",
-          detail: "Strategy waits on the same real event context — never DEMO win rates.",
+          detail: "Strategy waits until the same event is set.",
           href: hubHref("/competition", "strategy", orgId),
         },
         {
@@ -343,21 +340,21 @@ export function scoutingNextActions(input: {
         id: "forms",
         label: input.canManageSchemas ? "Open Form builder" : "Ask for Form builder",
         detail: input.canManageSchemas
-          ? `Publish a ${typeLabel} schema, or create starter forms — never DEMO fields.`
-          : `Ask an owner or admin to publish a ${typeLabel} form — never DEMO fields.`,
+          ? `Publish a ${typeLabel} form, or create starter forms.`
+          : `Ask an owner or admin to publish a ${typeLabel} form.`,
         href: hubHref("/competition", "forms", orgId),
         primary: true,
       },
       {
         id: "coverage",
         label: "Open Coverage",
-        detail: "Gaps stay blank until scouts enter real rows — never DEMO %.",
+        detail: "Gaps stay blank until scouts enter rows.",
         href: withOrgHref("/scouting/lineup", orgId),
       },
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Pick desk waits on synced scout notes — never DEMO entries.",
+        detail: "Pick lists wait on synced scout notes.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {
@@ -380,7 +377,7 @@ export function scoutingNextActions(input: {
     {
       id: "coverage",
       label: "Open Coverage",
-      detail: "See which matches and teams still need scouts — never DEMO %.",
+      detail: "See which matches and teams still need scouts.",
       href: withOrgHref("/scouting/lineup", orgId),
     },
     {
@@ -392,7 +389,7 @@ export function scoutingNextActions(input: {
     {
       id: "offline",
       label: "Open Offline",
-      detail: "Cold-boot readiness when venue Wi-Fi drops — never DEMO sync counts.",
+      detail: "Cold-boot readiness when venue Wi-Fi drops.",
       href: withOrgHref("/offline", orgId),
     },
   ];

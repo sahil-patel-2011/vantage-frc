@@ -1,5 +1,6 @@
 /** Waitlist-only access helpers for Vantage auth. */
-import { Pool } from "@neondatabase/serverless";
+import { createSqlPool } from "@vantage/db/pool";
+import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 import {
   PLATFORM_OWNER_EMAIL_DEFAULT,
   configuredPlatformOwnerEmail,
@@ -23,12 +24,7 @@ export type AuthEmailAccess = {
 };
 
 function authConnectionString() {
-  return (
-    process.env.DATABASE_AUTH_URL ||
-    process.env.DATABASE_URL ||
-    process.env.DATABASE_ADMIN_URL ||
-    null
-  );
+  return firstConfiguredEnv("DATABASE_AUTH_URL", "DATABASE_URL", "POSTGRES_URL", "DATABASE_ADMIN_URL") || null;
 }
 
 /** Synchronous allowlist for the configured platform owner email. */
@@ -56,7 +52,7 @@ export async function resolveAuthEmailAccess(email: string): Promise<AuthEmailAc
     return { allowed: false, reason: "denied", email: normalized };
   }
 
-  const pool = new Pool({ connectionString });
+  const pool = createSqlPool(connectionString, { max: 1 });
   try {
     const existing = await pool.query<{ id: string }>(
       `SELECT id FROM users WHERE lower(email)=lower($1) LIMIT 1`,

@@ -42,17 +42,17 @@ export function rootMarketingMetadata(): Metadata {
   return {
     metadataBase: new URL(SITE_URL),
     title: {
-      default: "Vantage — Competition ops for FRC teams",
+      default: "Vantage — FRC scouting, event day, and team ops",
       template: "%s — Vantage",
     },
     description:
-      "Vantage is competition operations software for FIRST Robotics Competition teams: Soft-UI hubs for scouting, Event Day Command, strategy, alliance selection, season planning, CAD, and team ops—with sourced facts and human-gated AI.",
+      "Vantage is operations software for FIRST Robotics Competition teams: scouting, event day, strategy, alliance selection, season planning, CAD, and team ops — with sourced facts and human-gated AI.",
     manifest: "/manifest.webmanifest",
     alternates: { canonical: "/" },
     openGraph: {
-      title: "Vantage — Competition ops for FRC teams",
+      title: "Vantage — FRC scouting, event day, and team ops",
       description:
-        "Scouting, Strategy, Event Day Command, Alliance Selection Desk, Season Planning, CAD, and team ops in one invite-only Soft-UI workspace.",
+        "Scouting, strategy, event day, alliance selection, season planning, CAD, and team ops in one invite-only workspace.",
       url: SITE_URL,
       type: "website",
       siteName: "Vantage",
@@ -60,9 +60,9 @@ export function rootMarketingMetadata(): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: "Vantage — Competition ops for FRC teams",
+      title: "Vantage — FRC scouting, event day, and team ops",
       description:
-        "Competition operations for FRC teams: Soft-UI hubs, offline scouting, sourced strategy, human-gated AI.",
+        "Operations software for FRC teams: offline scouting, event day, sourced strategy, human-gated AI.",
       images: [OG_IMAGE.url],
     },
     robots: { index: true, follow: true },
@@ -95,7 +95,7 @@ export function organizationSoftwareJsonLd() {
         operatingSystem: "Web",
         url: SITE_URL,
         description:
-          "Invite-only Soft-UI competition ops for FRC: Scouting, Competition Command / My Day, Strategy, Alliance Selection Desk, Season Planning, CAD agent, Code Coach, Business hub, and metered FRC Assistant. Surfaces stay empty until real TBA, scout, or connector data exists.",
+          "Invite-only FRC workspace: scouting, event day, strategy, alliance selection, season planning, CAD agent, Code Coach, and metered assistant. Screens stay empty until real TBA, scout, or connector data exists.",
         offers: {
           "@type": "Offer",
           price: "0",

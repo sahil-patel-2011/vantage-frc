@@ -96,6 +96,7 @@ function EventDayShell({
   onRetry,
   onSelectEvent,
   canSetEvent,
+  embedded = false,
   children,
 }: {
   orgId?: string | null;
@@ -105,6 +106,7 @@ function EventDayShell({
   onRetry?: () => void;
   onSelectEvent?: () => void;
   canSetEvent?: boolean;
+  embedded?: boolean;
   children?: ReactNode;
 }) {
   const copy = eventDayShellCopy(shell);
@@ -113,12 +115,14 @@ function EventDayShell({
 
   if (shell === "loading") {
     return (
-      <main className="edc-page soft-gate">
-        <PageHeader
-          breadcrumbs="Competition / Event Day"
-          title="Command"
-          description="Next match and pit cues."
-        />
+      <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
+        {embedded ? null : (
+          <PageHeader
+            breadcrumbs="Competition / Event Day"
+            title="Command"
+            description="Next match and pit cues."
+          />
+        )}
         {children}
         <div style={{ display: "grid", gap: 16 }} aria-busy="true" aria-label="Loading Event Day Command">
           <StatRowSkeleton count={3} />
@@ -130,12 +134,14 @@ function EventDayShell({
 
   if (shell === "error") {
     return (
-      <main className="edc-page soft-gate">
-        <PageHeader
-          breadcrumbs="Competition / Event Day"
-          title="Command"
-          description="Next match and pit cues."
-        />
+      <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
+        {embedded ? null : (
+          <PageHeader
+            breadcrumbs="Competition / Event Day"
+            title="Command"
+            description="Next match and pit cues."
+          />
+        )}
         {children}
         <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
       </main>
@@ -154,12 +160,14 @@ function EventDayShell({
     );
 
   return (
-    <main className="edc-page soft-gate">
-      <PageHeader
-        breadcrumbs="Competition / Event Day"
-        title="Command"
-        description="Connect TBA and set an active event."
-      />
+    <main className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
+      {embedded ? null : (
+        <PageHeader
+          breadcrumbs="Competition / Event Day"
+          title="Command"
+          description="Connect TBA and set an active event."
+        />
+      )}
       {children}
       <EmptyState
         soft
@@ -369,13 +377,13 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   ) : null;
 
   if (loading && !snap && orgId) {
-    return <EventDayShell orgId={orgId || null} shell={classifyEventDayShell({ loading: true })} />;
+    return <EventDayShell embedded={embedded} orgId={orgId || null} shell={classifyEventDayShell({ loading: true })} />;
   }
 
   if (!orgId && !loading) {
     return (
       <>
-        <EventDayShell orgId={null} shell="setup" hasActiveEvent={false} />
+        <EventDayShell embedded={embedded} orgId={null} shell="setup" hasActiveEvent={false} />
         {eventPicker}
       </>
     );
@@ -384,7 +392,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   if ((fetchFailed || error) && !snap) {
     return (
       <>
-        <EventDayShell
+        <EventDayShell embedded={embedded}
           orgId={orgId || null}
           shell="error"
           error={error || undefined}
@@ -409,7 +417,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   if (shell === "setup") {
     return (
       <>
-        <EventDayShell
+        <EventDayShell embedded={embedded}
           orgId={orgId || null}
           shell="setup"
           hasActiveEvent={Boolean(snap?.eventKey)}
@@ -425,7 +433,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   if (shell === "empty") {
     return (
       <>
-        <EventDayShell orgId={orgId || null} shell="empty" hasActiveEvent={Boolean(snap?.eventKey)}>
+        <EventDayShell embedded={embedded} orgId={orgId || null} shell="empty" hasActiveEvent={Boolean(snap?.eventKey)}>
           <p className="edc-freshness" role="status">
             {snap?.eventName ?? snap?.eventKey ?? "Active event"}
             {" · "}

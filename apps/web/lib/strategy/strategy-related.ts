@@ -89,7 +89,7 @@ export function strategyShellSetupSteps(orgId?: string | null): StrategyShellSet
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA/Statbotics rows into Neon — never invent DEMO win rates.",
+      detail: "Load The Blue Alliance and Statbotics rows for the event.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -142,24 +142,22 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
       return {
         kind,
         title: "Loading strategy…",
-        description:
-          "Checking workspace, active event, and TBA/Statbotics metrics — never DEMO win rates.",
+        description: "Checking your team, event, and synced match data.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
         title: "Could not load strategy",
-        description:
-          "A network or server issue blocked strategy context. Retry, or open Pick desk / Scouting / Event Day while it reloads — never invent DEMO win rates.",
+        description: "Could not load strategy. Retry, or open Scouting while it reloads.",
       };
     case "setup":
       return {
         kind,
         badge: "Setup required",
-        title: "Select a team workspace and event",
+        title: "Choose a team and event",
         description:
-          "Strategy is org- and event-scoped. Pick a workspace, set an active TBA event, and sync metrics before win probability appears — nothing is pre-seeded.",
+          "Pick a workspace, set the event you are at, then sync match data. This screen stays empty until then.",
       };
     case "empty":
       return {
@@ -167,14 +165,13 @@ export function strategyShellCopy(kind: StrategyShellKind): StrategyEmptyCopy {
         badge: "No prediction yet",
         title: "Waiting on a real matchup",
         description:
-          "Win probability stays blank until TBA/Statbotics (and optional scout) inputs exist for a scheduled match — never DEMO win rates. Cross-check Pick desk, Scouting, and Event Day.",
+          "Win chance stays blank until this event has a scheduled match and synced stats.",
       };
     default:
       return {
         kind: "ready",
-        title: "Strategy & AI",
-        description:
-          "Live win/loss and playbooks use synced TBA/Statbotics metrics and your scout notes — never DEMO win rates.",
+        title: "Strategy",
+        description: "Win/loss and pick lists use The Blue Alliance, Statbotics, and your scout notes.",
       };
   }
 }
@@ -206,19 +203,19 @@ export function strategyNextActions(input: {
         {
           id: "pick-desk",
           label: "Open Pick desk",
-          detail: "Pick tiers stay blank until real metrics exist — never DEMO win rates.",
+          detail: "Pick lists stay empty until this event has synced team stats.",
           href: withOrgHref("/strategy?tab=picks", null),
         },
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout rows stay blank until your team enters them — never DEMO scores.",
+          detail: "Scout notes stay empty until someone on your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
         {
           id: "command",
           label: "Open Event Day",
-          detail: "Active event context lives on Event Day Command — never DEMO schedule.",
+          detail: "Set the event you are at from Command.",
           href: hubHref("/competition", "command", null),
         },
       ];
@@ -241,13 +238,13 @@ export function strategyNextActions(input: {
         {
           id: "scouting",
           label: "Open Scouting",
-          detail: "Scout depth stays honest when the event is unset — never DEMO scores.",
+          detail: "Scout notes wait until an event is set.",
           href: hubHref("/competition", "scouting", orgId),
         },
         {
           id: "team-data",
           label: "Sync Team Data",
-          detail: "Pull TBA/Statbotics once an event is selected — never invent DEMO win rates.",
+          detail: "Load The Blue Alliance and Statbotics once an event is selected.",
           href: withOrgHref("/team/data", orgId),
         },
       ];
@@ -320,8 +317,8 @@ export function strategyNextActions(input: {
         label: needsTba || needsMetrics ? "Sync event metrics" : "Check Event Day schedule",
         detail:
           needsTba || needsMetrics
-            ? "Pull TBA/Statbotics team_event_metrics — win probability stays blank until then, never DEMO win rates."
-            : "Confirm a scheduled match for your team — Strategy never invents DEMO win rates.",
+            ? "Load The Blue Alliance and Statbotics for this event. Win chance stays blank until then."
+            : "Confirm a scheduled match for your team.",
         href:
           needsTba || needsMetrics
             ? withOrgHref("/team/data", orgId)
@@ -372,7 +369,7 @@ export function strategyNextActions(input: {
     {
       id: "draft",
       label: "Open Draft board",
-      detail: "Run draft day on the same real event pool — never DEMO alliance slots.",
+      detail: "Run draft day from the same event team pool.",
       href: withOrgHref("/strategy/draft", orgId),
     },
   ];
