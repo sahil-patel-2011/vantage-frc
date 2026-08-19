@@ -218,6 +218,7 @@ export * from "./resolve-chat-adapter";
 export * from "./sponsored-provider-pool";
 export * from "./byok-model-routing";
 export * from "./coding-assistant";
+export * from "./bugbot";
 export * from "./brief-from-tools";
 export * from "./cad-brief";
 export * from "./rule-compliance";

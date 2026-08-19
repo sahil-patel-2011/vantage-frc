@@ -6,6 +6,7 @@ import Image from "next/image";
 const links = [
   ["/features", "Product"],
   ["/workflow", "How it works"],
+  ["/desktop", "Desktop"],
   ["/pricing", "Pricing"],
 ] as const;
 
@@ -81,6 +82,7 @@ export function SiteFooter() {
       <nav aria-label="Footer">
         <a href="/features">Product</a>
         <a href="/workflow">How it works</a>
+        <a href="/desktop">Desktop</a>
         <a href="/pricing">Pricing</a>
         <a href="/for-teams">For teams</a>
         <a href="/signin">Sign in</a>

@@ -14,6 +14,8 @@
     "test": "vitest run",
     "test:browser": "playwright test",
     "test:cad": "npm test --workspace=@vantage/cad && npm test --workspace=@vantage/cad-cli",
+    "desktop:dev": "npm run dev --workspace=@vantage/desktop",
+    "desktop:dist": "npm run dist --workspace=@vantage/desktop",
     "db:generate": "drizzle-kit generate --config packages/db/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config packages/db/drizzle.config.ts",
     "cad:package": "node scripts/cad/package-relay.mjs",

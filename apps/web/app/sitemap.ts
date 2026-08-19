@@ -9,6 +9,7 @@ const PUBLIC_PATHS: Array<{ path: string; changeFrequency: MetadataRoute.Sitemap
   { path: "/features/cad", changeFrequency: "monthly", priority: 0.7 },
   { path: "/features/code", changeFrequency: "monthly", priority: 0.7 },
   { path: "/workflow", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/desktop", changeFrequency: "monthly", priority: 0.6 },
   { path: "/for-teams", changeFrequency: "monthly", priority: 0.8 },
   { path: "/pricing", changeFrequency: "weekly", priority: 0.9 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },

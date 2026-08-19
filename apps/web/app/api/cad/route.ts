@@ -3,11 +3,13 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import {
   buildDefaultCadPlan,
+  cadAiPlanUserMessage,
   CAD_OPERATIONS,
   canAutoRunWithinAllowlist,
   CadRepository,
   DeterministicMockCadAdapter,
   OnshapeHostedCadAdapter,
+  parseCadActionPlan,
   createOnshapeApiTransport,
   createOnshapeHttp,
   getOnshapeOAuthConfig,
@@ -15,7 +17,6 @@ import {
   onshapeSetupStatus,
   cadOsSupportMatrix,
   refreshOnshapeToken,
-  resolveCadMetering,
   listOnshapeDocuments,
   listOnshapeElements,
   listOnshapeFeatures,
@@ -26,7 +27,11 @@ import {
   type OnshapeDocumentRef,
   type OnshapeTokenSet,
 } from "@vantage/cad";
-import type { ContextSource } from "@vantage/agent";
+import {
+  getOrgPromptCachingEnabled,
+  resolveOrgChatAdapter,
+  type ContextSource,
+} from "@vantage/agent";
 import { createKms, decryptSecret, encryptSecret, meteredAI, type EncryptedSecret } from "@vantage/billing";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
@@ -338,7 +343,84 @@ export async function POST(request: Request) {
           userPreferences: adaptive.userPreferences,
         });
         await repository.savePlan(orgId, String(body.jobId), session.user.id, plan);
-        return { actions: plan };
+        return { actions: plan, planner: "starter" as const };
+      }
+      if (action === "plan-ai") {
+        const brainMode = String(body.brainMode ?? "managed_api") as CadBrainMode;
+        if (brainMode === "mock") {
+          throw new Error("Mock brain uses the starter plan. Switch AI brain to Vantage managed API for a metered CAD plan.");
+        }
+        const adaptive = await loadCadAdaptiveContext(client, orgId, session.user.id);
+        const job = (
+          await client.query<{ brief: EngineeringBrief; platform: string }>(
+            `SELECT brief,platform FROM cad_jobs WHERE id=$1 AND org_id=$2 AND brief_confirmed_at IS NOT NULL`,
+            [body.jobId, orgId],
+          )
+        ).rows[0];
+        if (!job) throw new Error("Confirm the engineering brief before planning");
+        const includeExportRaw = String(body.includeExport ?? "");
+        const includeExport =
+          includeExportRaw === "step" || includeExportRaw === "stl" || includeExportRaw === "gltf"
+            ? includeExportRaw
+            : job.platform === "onshape" && body.includeExport !== false
+              ? ("step" as const)
+              : false;
+        const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
+        const adapter = await resolveOrgChatAdapter(client, {
+          orgId,
+          promptCachingEnabled,
+          feature: "cad",
+        });
+        const requestId = randomUUID();
+        const message = cadAiPlanUserMessage(job.brief, {
+          autoRunVerify: Boolean(body.autoRunVerify),
+          includeExport,
+          teamProfile: adaptive.teamProfile,
+          userPreferences: adaptive.userPreferences,
+        });
+        const text = await meteredAI({
+          client,
+          orgId,
+          userId: session.user.id,
+          feature: "cad",
+          requestId,
+          estimatedCostUsd: 0.02,
+          estimatedPromptTokens: Math.ceil(message.length / 4),
+          estimatedCompletionTokens: 800,
+          provider: adapter.provider,
+          model: adapter.model,
+          metadata: {
+            jobId: body.jobId,
+            action: "plan-ai",
+            ledgerTag: `cad:plan-ai:${String(body.jobId).slice(0, 8)}`,
+          },
+          invoke: async () => {
+            const result = await adapter.complete({
+              message,
+              context: [],
+              promptCachingEnabled,
+            });
+            return {
+              value: result.text,
+              promptTokens: result.promptTokens,
+              completionTokens: result.completionTokens,
+              costUsd: result.costUsd,
+              model: adapter.model,
+              provider: adapter.provider,
+              cacheReadInputTokens: result.cacheReadInputTokens,
+              cacheWriteInputTokens: result.cacheWriteInputTokens,
+              uncachedInputTokens: result.uncachedInputTokens,
+            };
+          },
+        });
+        const plan = parseCadActionPlan(text, {
+          autoRunVerify: Boolean(body.autoRunVerify),
+          includeExport,
+          teamProfile: adaptive.teamProfile,
+          userPreferences: adaptive.userPreferences,
+        });
+        await repository.savePlan(orgId, String(body.jobId), session.user.id, plan);
+        return { actions: plan, planner: "ai" as const, provider: adapter.provider, model: adapter.model };
       }
       if (action === "append-step") {
         const operation = String(body.operation ?? "");
@@ -409,61 +491,12 @@ export async function POST(request: Request) {
           session.user.id,
           new DeterministicMockCadAdapter(),
         );
-        const brainMode = String(body.brainMode ?? "managed_api") as CadBrainMode;
-        const metering = resolveCadMetering(
-          brainMode === "terminal_cli" || brainMode === "team_byok" || brainMode === "mock" || brainMode === "managed_api"
-            ? brainMode
-            : "managed_api",
-        );
-        if (metering.keySource === "local_cli") {
-          await meteredAI({
-            client,
-            orgId,
-            userId: session.user.id,
-            feature: "cad",
-            requestId: randomUUID(),
-            estimatedCostUsd: 0,
-            keySource: "local_cli",
-            metadata: {
-              brainMode,
-              ledgerTag: `cad:terminal_cli:${String(body.jobId ?? "job").slice(0, 8)}`,
-              jobId: body.jobId,
-              stepId: body.stepId,
-              note: "Terminal CLI path — no Vantage model charge",
-              stub: true,
-            },
-            invoke: async () => ({
-              value: executed,
-              promptTokens: 0,
-              completionTokens: 0,
-              costUsd: 0,
-              model: "cad-api-stub-v1",
-              provider: "vantage-cad",
-            }),
-          });
-          return { ...executed, keySource: "local_cli" as const, costUsd: 0 };
-        }
-        await client.query(
-          `INSERT INTO ai_usage_events
-            (org_id, user_id, feature, model, provider, key_source, prompt_tokens, completion_tokens, total_tokens, cost_usd, request_id, metadata)
-           VALUES ($1,$2,'cad',$3,$4,$5,0,0,0,0,$6,$7::jsonb)`,
-          [
-            orgId,
-            session.user.id,
-            "cad-api-stub-v1",
-            "vantage-cad",
-            metering.keySource === "byo" ? "byo" : metering.keySource === "local" ? "local" : "platform",
-            randomUUID(),
-            JSON.stringify({
-              brainMode,
-              ledgerTag: `cad:${brainMode}:${String(body.jobId ?? "job").slice(0, 8)}`,
-              jobId: body.jobId,
-              stepId: body.stepId,
-              note: "API path stub until live CAD model routing is enabled",
-            }),
-          ],
-        );
-        return { ...executed, keySource: metering.keySource, costUsd: 0 };
+        return {
+          ...executed,
+          keySource: "local" as const,
+          costUsd: 0,
+          note: "Mock adapter execute — AI planning is plan-ai. Live geometry is Onshape/Fusion, not this path.",
+        };
       }
       if (action === "set-document") {
         const documentRef = body.documentRef as OnshapeDocumentRef;
