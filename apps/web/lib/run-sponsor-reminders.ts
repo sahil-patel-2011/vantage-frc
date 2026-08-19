@@ -1,4 +1,6 @@
-import { Pool, type PoolClient } from "@neondatabase/serverless";
+import { createSqlPool } from "@vantage/db/pool";
+import { firstConfiguredEnv } from "@vantage/db/postgres-url";
+import type { Pool, PoolClient } from "@neondatabase/serverless";
 import {
   emitPreferredNotification,
   resolveAuthBaseURL,
@@ -30,14 +32,17 @@ const NOTIFICATION_TYPE: Record<SponsorReminderKind, string> = {
 };
 
 function workerPool(): Pool {
-  const connectionString =
-    process.env.DATABASE_ADMIN_URL?.trim() ||
-    process.env.DATABASE_URL_UNPOOLED?.trim() ||
-    process.env.DATABASE_URL?.trim();
+  const connectionString = firstConfiguredEnv(
+    "DATABASE_ADMIN_URL",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL_NON_POOLING",
+    "DATABASE_URL",
+    "POSTGRES_URL",
+  );
   if (!connectionString) {
     throw new Error("DATABASE_ADMIN_URL or DATABASE_URL is required for sponsor reminder cron");
   }
-  return new Pool({ connectionString });
+  return createSqlPool(connectionString);
 }
 
 function isoToday(now = new Date()): string {

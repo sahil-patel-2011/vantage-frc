@@ -149,7 +149,7 @@ function ScoutingNextActionsPanel({ actions }: { actions: ScoutingNextAction[] }
     >
       <header>
         <h2>Next actions</h2>
-        <p className="app-muted">Forms, Coverage, Strategy, and Offline — never DEMO entries.</p>
+        <p className="app-muted">Forms, coverage, and strategy stay empty until you scout.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -173,12 +173,14 @@ function ScoutingShell({
   shell,
   error,
   onRetry,
+  embedded = false,
   children,
 }: {
   orgId?: string | null;
   shell: ScoutingShellKind;
   error?: string;
   onRetry?: () => void;
+  embedded?: boolean;
   children?: ReactNode;
 }) {
   const actions = scoutingNextActions({ orgId, shell });
@@ -192,14 +194,16 @@ function ScoutingShell({
   const offlineHref = withOrgHref("/offline", orgId);
 
   return (
-    <main className="module-page scout-page soft-gate">
+    <main className={`module-page scout-page soft-gate${embedded ? " is-embedded" : ""}`}>
+      {embedded ? null : (
       <PageHeader
         breadcrumbs="Competition / Scouting"
-        title="Scouting Hub"
-        description="Match and pit forms cache on this device. Coverage stays empty until real scout rows exist — never DEMO entries."
+        title="Scouting"
+        description="Match and pit forms stay on this device until you sync."
       >
         <ScoutingRelatedStrip orgId={orgId} />
       </PageHeader>
+      )}
       {children}
       <EmptyState
         soft
@@ -244,7 +248,7 @@ function ScoutingShell({
             </a>
           </>
         ) : null}
-        {shell === "setup" && steps.length > 0 ? (
+        {!embedded && shell === "setup" && steps.length > 0 ? (
           <ol className="scout-setup-steps">
             {steps.map((step) => (
               <li key={step.id}>
@@ -258,7 +262,7 @@ function ScoutingShell({
           </ol>
         ) : null}
       </EmptyState>
-      {shell !== "loading" ? <ScoutingNextActionsPanel actions={actions} /> : null}
+      {embedded || shell === "loading" ? null : <ScoutingNextActionsPanel actions={actions} />}
     </main>
   );
 }
@@ -745,6 +749,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         shell={shell}
         error={message || undefined}
         onRetry={reloadBootstrap}
+        embedded={embedded}
       >
         <OfflineBanner
           feature="Scouting"
@@ -758,11 +763,21 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   }
 
   return (
-    <main className="module-page scout-page">
+    <main className={`module-page scout-page${embedded ? " is-embedded" : ""}`}>
+      {embedded ? (
+        <div className="scout-header-meta scout-header-meta-embedded">
+          <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
+            {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} queued
+          </span>
+          <button type="button" className="app-button secondary" onClick={() => void sync()}>
+            Sync now
+          </button>
+        </div>
+      ) : (
       <PageHeader
         breadcrumbs="Competition / Scouting"
-        title="Scouting Hub"
-        description="Match and pit forms cache on this device. Coverage stays empty until real scout rows exist — never DEMO entries."
+        title="Scouting"
+        description="Match and pit forms stay on this device until you sync."
       >
         <div className="scout-header-meta">
           <ScoutingRelatedStrip orgId={orgId} />
@@ -779,6 +794,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           </button>
         </div>
       </PageHeader>
+      )}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       <OfflineBanner
@@ -799,8 +815,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
             title={`No ${type} scouting form yet`}
             description={
               data?.canManageSchemas
-                ? "Create starter match and pit forms for this season, or build a custom form and publish it — never DEMO entries."
-                : "Ask an owner or admin to publish scouting forms for this event — never DEMO entries."
+                ? "Create starter match and pit forms for this season, or build a custom form and publish it."
+                : "Ask an owner or admin to publish scouting forms for this event."
             }
           >
             {data?.canManageSchemas ? (
@@ -834,7 +850,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       {data?.eventKey ? (
         <Panel className="scout-event-strip" style={{ minHeight: "auto", marginBottom: 14 }}>
           <strong>{data.eventKey}</strong>
-          <span className="app-muted">Forms and assignments are cached on this device — never DEMO entries.</span>
+          <span className="app-muted">Forms and assignments are cached on this device.</span>
         </Panel>
       ) : null}
 

@@ -28,6 +28,7 @@ export type ExitInterviewRecord = {
   willingToMentor: boolean;
   contactEmail: string | null;
   status: ExitInterviewStatus;
+  knowledgePageId: string | null;
 };
 
 export type ExitInterviewSummary = {
@@ -35,6 +36,7 @@ export type ExitInterviewSummary = {
   submittedCount: number;
   draftCount: number;
   mentorshipWillingCount: number;
+  wikiPageCount: number;
   byRole: Array<{ role: ExitInterviewRole; count: number }>;
   byGradYear: Array<{ graduationYear: number; count: number }>;
 };

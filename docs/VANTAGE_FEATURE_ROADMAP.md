@@ -24,11 +24,11 @@ The best-evidenced pain in all of FRC: teams believe their scouting data is good
 
 CD, June 2026: "Why is not having wi-fi the worst thing to ever exist (probably)?" Every existing workaround (QR, hardware routers, upload-later) has a named failure mode in that thread. Your own codebase audit found the service worker deliberately refuses to cache page navigations — a cold offline load currently just fails.
 
-9. **[GAP] QR code generation + camera scan for scout handoff** — Vantage's `importScoutData({format:"qr"})` only base64-decodes a string typed by hand; there's no QR generation or camera scanning anywhere in the repo. This is the most requested and most broken piece of scouting infra industry-wide. Build it on top of the existing device-pairing short-code pattern (`cad_pairing_codes`) you already solved for CAD.
-10. **True offline app shell** [FIX] — extend the offline-first IndexedDB outbox (already built for scouting) to cache the navigation shell too, so a scout's phone works from a cold, no-signal load, not just after first load.
-11. **Local peer-to-peer sync (no event WiFi, no server)** — device-to-device Bluetooth/local-network sync between scout tablets so data merges before anyone gets signal. Directly answers "we want data instantly" from the CD thread.
-12. **Graceful TBA/API-outage mode, built-in not bolted-on** [EXTEND] — CD: "the API went down multiple weekends and threw a huge monkey wrench." Vantage's reference cache already has ETag/health tracking — surface an explicit "data source degraded" banner and let strategy tools keep working off last-good cache instead of failing silently.
-13. **Cross-device format tolerance** — one CD quote: scouts use Chromebooks, Macs, Windows, and phones interchangeably. Any transfer mechanism (QR, sync, offline shell) must be tested across all four, not just the primary dev target.
+9. ~~**[GAP] QR code generation + camera scan for scout handoff**~~ — **shipped:** `packages/scouting/src/qr-handoff.ts` plus camera scan (`qr-camera.ts`) and `/scouting` handoff panel.
+10. ~~**True offline app shell** [FIX]~~ — **shipped:** service worker precaches `/offline` and allowlisted shell routes; IndexedDB outbox stays separate.
+11. ~~**Local peer-to-peer sync (no event WiFi, no server)**~~ — **shipped:** `/scout-p2p-relay` BroadcastChannel pit mesh plus paste envelopes merging the IndexedDB outbox (last write wins). Cross-device without a shared origin still uses QR handoff. No Bluetooth.
+12. ~~**Graceful TBA/API-outage mode, built-in not bolted-on** [EXTEND]~~ — **shipped:** `/degraded-mode` plus reference-health banners.
+13. ~~**Cross-device format tolerance**~~ — **shipped as QA:** Playwright `tests/browser/event-day-shells.spec.ts` covers phone / tablet / desktop shells for scouting, offline, strategy, P2P, and exit interviews. Chromebook/Safari still need a manual pass.
 
 ## C. Scout engagement & motivation
 
@@ -60,7 +60,7 @@ The Purple Standard project spent significant effort trying to get teams to conv
 CD, verbatim: "we only retain students for 2 years, so institutional knowledge walks out the door constantly" — and overwork is explicitly described as a *symptom* of that loss, not its own root cause.
 
 26. ~~**[GAP] Team knowledge base / wiki with structured handoff templates**~~ — **shipped:** multi-page wiki at `/team/knowledge` (`knowledge_pages` + handoff templates) with FRC Assistant / CAD `knowledge.*` retrieval tools.
-27. **Graduation exit-interview capture flow** — structured prompts for outgoing seniors/mentors ("what do you know that nobody else does?") feeding directly into #26, targeting the "Coach Steve is the catalog, and if he wins the lottery we're done" failure mode.
+27. ~~**Graduation exit-interview capture flow**~~ — **shipped:** `/exit-interview` writes a `season_handoff` `knowledge_pages` row on submit (`0438_exit_interview_wiki.sql`). Drafts stay capture-only.
 28. **Role-based onboarding checklists, auto-assigned by subteam** — ✅ `/start` Soft-UI path; tracks from team role + primary focus + calendar subteam name match; progress in `0163_role_onboarding`. CD: a new mentor with a 9-page onboarding doc still didn't know "whether to start on software, hardware, scouting, strategy, driving."
 29. **Season postmortem generator** — auto-compile the season's decisions (`decision_records`), risks (`risk_register`), and incidents into a single "what we learned" doc at season end, so it survives graduation without anyone hand-writing it.
 30. ~~**Cross-season searchable decision/design history** [EXTEND]~~ — **shipped:** wiki search spans `decision_records` + `design_reviews`; pages link to both; agents retrieve via `knowledge.search` / `knowledge.get_page`.

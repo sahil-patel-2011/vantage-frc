@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import {
   catalogDefaultsFootnote,
   hostedApiSavingsCopy,
-  raisedPricingSummaryLine,
 } from "@vantage/billing/catalog";
 import { WaitlistForm } from "../../components/marketing/waitlist-form";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
@@ -27,8 +26,8 @@ export default function PricingPage() {
         <section className="lux-route-hero pricing-hero">
           <h1>Start free. Buy AI credits when you need them.</h1>
           <p>
-            Free is the clear starting plan—competition core with your own keys, or top up with AI credits. Upgrade to
-            Individual or Team for hosted AI in the product. {creditsLine} Hard cutoffs; no surprise overage.
+            Free includes scouting and event day with your own keys. Individual and Team add hosted AI. Hard cutoffs —
+            no surprise overage.
           </p>
           <div className="actions">
             <a className="button primary" href="#credits">
@@ -57,8 +56,8 @@ export default function PricingPage() {
             </p>
             <p className="pricing-note">{catalogNote}</p>
             <p className="pricing-footnote">
-              Free includes offline scouting, reference data, manual strategy, and pick lists. Managed Assistant still
-              needs real event context—no DEMO win rates.
+              Free includes offline scouting, reference data, manual strategy, and pick lists. Assistant still needs a
+              real event connected.
             </p>
           </div>
         </section>
@@ -66,9 +65,7 @@ export default function PricingPage() {
         <section className="lux-waitlist pricing-waitlist" id="waitlist">
           <div>
             <h2>Join the waitlist.</h2>
-            <p>
-              Free $0 · Individual and Team plans · AI credits anytime. {raisedPricingSummaryLine()}. Terms required.
-            </p>
+            <p>Invite-only. We email when your team is provisioned.</p>
           </div>
           <WaitlistForm idPrefix="pricing" />
         </section>

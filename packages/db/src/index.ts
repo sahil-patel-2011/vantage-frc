@@ -1,8 +1,8 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { createDrizzle } from "./drizzle-client";
+import { resolveAppDatabaseUrl } from "./postgres-url";
 
-const connectionString =
-  process.env.DATABASE_URL ?? "postgresql://vantage:local@localhost:5432/vantage";
+const connectionString = resolveAppDatabaseUrl();
 
 const { pool, db: drizzleDb } = createDrizzle(connectionString);
 export const requestPool = pool;

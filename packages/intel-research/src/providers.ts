@@ -66,9 +66,13 @@ export class LocalSummaryProvider implements SummaryProvider {
   }
 }
 
+export function isLiveResearchSearchConfigured() {
+  return Boolean(process.env.RESEARCH_SEARCH_ENDPOINT?.trim() && process.env.RESEARCH_SEARCH_API_KEY?.trim());
+}
+
 export function createSearchProvider(): WebSearchProvider {
-  const endpoint = process.env.RESEARCH_SEARCH_ENDPOINT;
-  const apiKey = process.env.RESEARCH_SEARCH_API_KEY;
+  const endpoint = process.env.RESEARCH_SEARCH_ENDPOINT?.trim();
+  const apiKey = process.env.RESEARCH_SEARCH_API_KEY?.trim();
   if (endpoint && apiKey) return new HttpJsonSearchProvider(endpoint, apiKey);
   return new FixtureSearchProvider();
 }

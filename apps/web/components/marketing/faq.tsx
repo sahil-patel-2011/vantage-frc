@@ -1,29 +1,25 @@
 /** Landing-page FAQ — short answers + FAQPage JSON-LD. */
 
-import { PRICING_CATALOG, TEAM_TRIAL_DAYS } from "@vantage/billing/catalog";
-
-const c = PRICING_CATALOG;
-
 const faqs = [
   {
     q: "What is Vantage?",
-    a: "Invite-only competition ops for FRC teams. Soft-UI hubs cover Competition (scouting, Event Day Command, Alliance Selection Desk), Team (Season Planning), Logistics, Business, Build (CAD agent, Code Coach), and AI (BYOK or credits).",
+    a: "An invite-only workspace for FRC teams. Scouting, event day, and season ops in one login.",
   },
   {
-    q: "What do teams open first?",
-    a: "Competition for scouting and Event Day; Alliance Selection Desk for picks; Season Planning on Team; Logistics, Business, and Build as the season needs them.",
+    q: "What do we open first?",
+    a: "Competition: Command, Scouting, and Strategy. Team for calendar and chat. Everything else stays in All tools until you need it.",
   },
   {
     q: "Does it work offline?",
-    a: "Yes. Match and pit forms keep working when venue Wi-Fi drops; sync resumes when you reconnect.",
+    a: "Yes. Match and pit forms keep working when venue Wi-Fi drops. They sync when you reconnect.",
   },
   {
     q: "How much does it cost?",
-    a: `Free ($0) with your own keys, or buy AI credits anytime. Individual $${c.individual_pro.monthlyUsd}/$${c.individual_max.monthlyUsd}/mo; Team $${c.team_pro.monthlyUsd}/$${c.team_max.monthlyUsd}/mo. Hosted plans include a week team trial (${TEAM_TRIAL_DAYS} days).`,
+    a: "Free with your own AI keys, or buy credits. Individual and Team plans add hosted AI. Full prices are on the pricing page.",
   },
   {
     q: "Is team data private?",
-    a: "Invite-only orgs with row-level isolation. AI stays behind human approval; Vantage never deploys code to a robot.",
+    a: "Yes. Access is invite-only. Each team only sees its own workspace.",
   },
 ];
 

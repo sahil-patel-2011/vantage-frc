@@ -11,7 +11,6 @@ import {
   passwordSetupRequired,
   publicEmailUnavailableCopy,
   publicPasswordUnavailableCopy,
-  raisedPricingStrip,
   signInAccessNote,
   signInNextActions,
   signInProgressLabel,
@@ -80,10 +79,9 @@ function SetupShell({
 
 function AccessFooter() {
   const actions = signInNextActions();
-  const prices = raisedPricingStrip();
   return (
     <div className="signin-cta-block">
-      <p>Need access? Join the waitlist or review raised plans — sign-in never invents membership.</p>
+      <p>Need access? Join the waitlist. Sign-in is for provisioned teams only.</p>
       <div className="signin-cta-row">
         {actions.map((action) => (
           <a key={action.id} className={action.primary ? "primary" : undefined} href={action.href}>
@@ -91,14 +89,6 @@ function AccessFooter() {
           </a>
         ))}
       </div>
-      <ul className="signin-price-strip" aria-label="Raised monthly plan prices">
-        {prices.map((item) => (
-          <li key={item.id}>
-            <span>{item.label}</span>
-            <strong>{item.price}</strong>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

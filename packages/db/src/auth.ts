@@ -1,10 +1,7 @@
 import { createDrizzle } from "./drizzle-client";
+import { resolveAuthDatabaseUrl } from "./postgres-url";
 
-const { db } = createDrizzle(
-  process.env.DATABASE_AUTH_URL ??
-    process.env.DATABASE_URL ??
-    "postgresql://vantage_auth:local@localhost:5432/vantage",
-);
+const { db } = createDrizzle(resolveAuthDatabaseUrl());
 
 /** Least-privilege identity store; it cannot access organizations or billing. */
 export const authDb = db;

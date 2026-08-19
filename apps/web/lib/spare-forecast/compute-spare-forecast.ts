@@ -111,8 +111,9 @@ async function loadForecastLines(
   client: PoolClient,
   orgId: string,
   seasonYear: number,
+  asOf: Date = new Date(),
 ): Promise<{ spareBinCount: number; forecastLines: SpareForecastLine[] }> {
-  const { daysElapsed, daysRemaining } = seasonWindow(seasonYear);
+  const { daysElapsed, daysRemaining } = seasonWindow(seasonYear, asOf);
 
   const [inventoryResult, fmeaResult] = await Promise.all([
     client.query<InventoryRow>(
@@ -171,7 +172,7 @@ async function loadForecastLines(
 
 export async function computeSpareForecastView(
   client: PoolClient,
-  input: { userId: string; requestedOrg: string | null; seasonYear?: number | null },
+  input: { userId: string; requestedOrg: string | null; seasonYear?: number | null; asOf?: Date },
 ): Promise<SpareForecastView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   const seasonYear = input.seasonYear && input.seasonYear > 2000 ? input.seasonYear : currentSeasonYear();
@@ -201,7 +202,7 @@ export async function computeSpareForecastView(
   }
 
   const [forecastBundle, purchaseRequestResult, seasonResult] = await Promise.all([
-    loadForecastLines(client, org.orgId, seasonYear),
+    loadForecastLines(client, org.orgId, seasonYear, input.asOf),
     client.query<PurchaseRequestRow>(
       `SELECT id, season_year AS "seasonYear", title, status, line_items AS "lineItems",
               total_estimated_cost AS "totalEstimatedCost", rationale,
@@ -237,9 +238,9 @@ export async function computeSpareForecastView(
 
 export async function draftPurchaseRequest(
   client: PoolClient,
-  input: { orgId: string; userId: string; seasonYear: number; title: string },
+  input: { orgId: string; userId: string; seasonYear: number; title: string; asOf?: Date },
 ): Promise<void> {
-  const { forecastLines } = await loadForecastLines(client, input.orgId, input.seasonYear);
+  const { forecastLines } = await loadForecastLines(client, input.orgId, input.seasonYear, input.asOf);
 
   const drafted = await meteredAI({
     client,

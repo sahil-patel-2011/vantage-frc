@@ -1,15 +1,27 @@
-import { Pool } from "@neondatabase/serverless";
-import { createSearchProvider } from "./providers";
+import { createSqlPool } from "@vantage/db/pool";
+import { firstConfiguredEnv } from "@vantage/db/postgres-url";
+import { createSearchProvider, isLiveResearchSearchConfigured } from "./providers";
 import { runResearchJob, scheduleActiveEventSweep } from "./worker";
 
-function pool() {
-  const connectionString = process.env.DATABASE_ADMIN_URL;
+function workerPool() {
+  const connectionString = firstConfiguredEnv(
+    "DATABASE_ADMIN_URL",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL_NON_POOLING",
+    "DATABASE_URL",
+    "POSTGRES_URL",
+  );
   if (!connectionString) throw new Error("DATABASE_ADMIN_URL is required");
-  return new Pool({ connectionString });
+  return createSqlPool(connectionString);
 }
 
 export async function runScheduledResearchSweep() {
-  const client = await pool().connect();
+  if (!isLiveResearchSearchConfigured()) {
+    return { skipped: true as const, reason: "search_provider_unset" as const, processed: 0 };
+  }
+
+  const sqlPool = workerPool();
+  const client = await sqlPool.connect();
   try {
     await client.query("BEGIN");
     const scheduled = await scheduleActiveEventSweep(client);
@@ -26,5 +38,6 @@ export async function runScheduledResearchSweep() {
     throw error;
   } finally {
     client.release();
+    await sqlPool.end().catch(() => undefined);
   }
 }

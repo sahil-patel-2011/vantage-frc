@@ -49,6 +49,7 @@ describe("strategyShellSetupSteps", () => {
       "/strategy?tab=picks&orgId=org-1",
     );
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
+    expect(steps.every((s) => !/DEMO/i.test(s.detail))).toBe(true);
     expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
   });
 });
@@ -82,9 +83,10 @@ describe("strategyShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(strategyShellCopy("empty").badge).toBe("No prediction yet");
-    expect(strategyShellCopy("empty").description).toMatch(/never DEMO/i);
+    expect(strategyShellCopy("empty").description).not.toMatch(/DEMO/i);
+    expect(strategyShellCopy("empty").description).not.toMatch(/\d+%/);
     expect(strategyShellCopy("setup").badge).toBe("Setup required");
-    expect(strategyShellCopy("ready").description).toMatch(/never DEMO/i);
+    expect(strategyShellCopy("ready").description).not.toMatch(/DEMO/i);
   });
 });
 
@@ -112,7 +114,7 @@ describe("strategyNextActions", () => {
     expect(actions[0]?.id).toBe("team-data");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
-    expect(actions.some((a) => /never DEMO/i.test(a.detail))).toBe(true);
+    expect(actions.every((a) => !/DEMO/i.test(a.detail))).toBe(true);
     expect(actions.find((a) => a.id === "pick-desk")?.href).toBe(
       "/strategy?tab=picks&orgId=org-1",
     );

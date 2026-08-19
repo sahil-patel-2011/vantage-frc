@@ -135,7 +135,7 @@ export function eventDayNextActions(
     actions.push({
       id: "logistics",
       label: "Open Logistics",
-      detail: "Hotels and leave times stay blank until mentors publish a real trip — never DEMO lodging.",
+      detail: "Hotels and leave times stay blank until mentors publish a trip.",
       href: snap?.links.logistics ?? withOrgHref("/logistics", orgId),
     });
   }

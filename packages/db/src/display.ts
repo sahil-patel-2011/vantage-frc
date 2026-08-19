@@ -1,15 +1,12 @@
 import { createSqlPool } from "./pool";
+import { firstConfiguredEnv, resolveDisplayDatabaseUrl } from "./postgres-url";
 
 let pool: ReturnType<typeof createSqlPool> | undefined;
 export function getDisplayPool() {
-  const connectionString =
-    process.env.DATABASE_DISPLAY_URL ??
-    process.env.DATABASE_URL ??
-    "postgresql://vantage_display:local@localhost:5432/vantage";
+  const connectionString = resolveDisplayDatabaseUrl();
   if (
     process.env.NODE_ENV === "production" &&
-    !process.env.DATABASE_DISPLAY_URL &&
-    !process.env.DATABASE_URL
+    !firstConfiguredEnv("DATABASE_DISPLAY_URL", "DATABASE_URL", "POSTGRES_URL")
   ) {
     throw new Error("DATABASE_DISPLAY_URL or DATABASE_URL is required for read-only display tokens");
   }

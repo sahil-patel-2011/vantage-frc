@@ -4,17 +4,15 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 
 export const metadata: Metadata = marketingPageMetadata({
   title: "How it works — Vantage",
-  description:
-    "How TBA reference data, offline scouting, Competition Strategy, Alliance Selection Desk, Command / My Day, and CAD share one org event context in Vantage.",
+  description: "Scout at the venue, sync when you have signal, then pick alliances from your own notes.",
   path: "/workflow",
 });
 
 const stages = [
-  ["1", "Reference", "TBA / Statbotics caches with freshness."],
-  ["2", "Observe", "Offline forms + voice notes → attributed facts."],
-  ["3", "Reconcile", "Conflicts stay visible before models run."],
-  ["4", "Decide", "Strategy, Alliance Selection Desk, FRC Assistant—sourced."],
-  ["5", "Execute", "Competition Command / My Day, CAD briefs, exports."],
+  ["1", "Scout", "Match and pit forms stay on the tablet when venue Wi-Fi drops."],
+  ["2", "Sync", "Entries join your team workspace when the network comes back."],
+  ["3", "Decide", "Strategy and picks use The Blue Alliance plus your scout notes — not sample odds."],
+  ["4", "Run the day", "Next match and pit cues sit in the same Competition workspace."],
 ] as const;
 
 export default function WorkflowPage() {
@@ -24,10 +22,7 @@ export default function WorkflowPage() {
       <main className="route-page">
         <header className="lux-route-hero">
           <h1>How it works.</h1>
-          <p>
-            One event context. Scout facts feed Competition Strategy, Alliance Selection Desk, Command / My Day, and
-            Assistant—never replace their sources.
-          </p>
+          <p>One team. One event. Scouting feeds the rest of the day.</p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">
               Join the waitlist
@@ -38,7 +33,7 @@ export default function WorkflowPage() {
           </div>
         </header>
 
-        <section className="flow-map lux-content" aria-label="Vantage context flow">
+        <section className="flow-map lux-content" aria-label="How Vantage works">
           {stages.map(([id, title, detail], index) => (
             <article key={id}>
               <div>
@@ -51,74 +46,6 @@ export default function WorkflowPage() {
               </section>
             </article>
           ))}
-        </section>
-
-        <section className="scout-integration workflow-integration" aria-labelledby="workflow-scout-title">
-          <div className="lux-content">
-            <header>
-              <span className="section-id">SCOUTING LOOP</span>
-              <h2 id="workflow-scout-title">Capture → sync → decide → present.</h2>
-              <p>Same feed across Competition, Team, Build, and AI hubs.</p>
-            </header>
-            <ol className="integration-steps">
-              <li>
-                <b>01</b>
-                <strong>Capture</strong>
-                <span>Match/pit scouting offline.</span>
-              </li>
-              <li>
-                <b>02</b>
-                <strong>Sync</strong>
-                <span>Attributed facts + conflict review.</span>
-              </li>
-              <li>
-                <b>03</b>
-                <strong>Decide</strong>
-                <span>Strategy, Assistant, Alliance Selection Desk.</span>
-              </li>
-              <li>
-                <b>04</b>
-                <strong>Present</strong>
-                <span>Command boards and exports.</span>
-              </li>
-            </ol>
-          </div>
-        </section>
-
-        <section className="workflow-principles lux-content">
-          <article>
-            <span className="section-id">PROVENANCE</span>
-            <h2>Evidence types stay labeled.</h2>
-            <p>Official, scout, prediction, and approval never blur together.</p>
-          </article>
-          <article>
-            <span className="section-id">TENANCY</span>
-            <h2>Org-scoped by design.</h2>
-            <p>Invite-only membership; RLS on every request.</p>
-          </article>
-          <article>
-            <span className="section-id">HANDOFFS</span>
-            <h2>Humans approve risk.</h2>
-            <p>CAD briefs and metered AI check budgets first.</p>
-          </article>
-        </section>
-
-        <section className="lux-pricing">
-          <div>
-            <h2>Ready when you are.</h2>
-            <p>
-              Explore the <a href="/features">product map</a>, or read how mentors run a season on{" "}
-              <a href="/for-teams">For teams</a>.
-            </p>
-          </div>
-          <div className="pricing-preview-actions">
-            <a className="button primary" href="/#waitlist">
-              Join waitlist
-            </a>
-            <a className="button secondary" href="/pricing">
-              Pricing
-            </a>
-          </div>
         </section>
       </main>
       <SiteFooter />

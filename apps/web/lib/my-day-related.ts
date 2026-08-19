@@ -79,7 +79,7 @@ export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
     {
       id: "team-data",
       label: "Sync Team Data",
-      detail: "Pull TBA schedule rows into Neon — never invent DEMO matches.",
+      detail: "Load The Blue Alliance schedule for this event.",
       href: withOrgHref("/team/data", orgId),
     },
     {
@@ -97,7 +97,7 @@ export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
     {
       id: "strategy",
       label: "Open Strategy",
-      detail: "Alliance prep uses the same event context — never DEMO callouts.",
+      detail: "Alliance prep uses the same event.",
       href: hubHref("/competition", "strategy", orgId),
     },
   ];
@@ -146,16 +146,14 @@ export function myDayShellCopy(
       return {
         kind,
         title: "Loading My Day…",
-        description:
-          "Checking workspace membership and your next match — never DEMO match times.",
+        description: "Checking your team and next match.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
         title: "Could not load My Day",
-        description:
-          "A network or server issue blocked next-match timing. Retry, or open Event Day / Schedule / Strategy while it reloads — never invent DEMO matches.",
+        description: "Could not load My Day. Retry, or open Event Day while it reloads.",
       };
     case "setup":
       return {
@@ -163,7 +161,7 @@ export function myDayShellCopy(
         badge: "Setup required",
         title: "Select a team workspace",
         description:
-          "My Day is org-scoped. Pick a workspace, set an active event, and sync TBA before a next match appears — nothing is pre-seeded.",
+          "Pick a workspace, set the event, and sync the schedule before a next match appears.",
       };
     case "empty":
       if (options?.emptyReason === "no_upcoming") {
@@ -172,22 +170,21 @@ export function myDayShellCopy(
           badge: "No upcoming matches",
           title: "Schedule is in — you are not on deck yet",
           description:
-            "Your team is not assigned to remaining matches. Check back after alliances post — never DEMO placeholders. Cross-check Event Day, Schedule, and Strategy.",
+            "Your team is not on remaining matches. Check back after alliances post.",
         };
       }
       return {
         kind,
         badge: "No matches yet",
         title: "Waiting on the event schedule",
-        description:
-          "Matches appear after TBA reference sync for the active event — never DEMO times. Open Event Day, Schedule, or Strategy while sync catches up.",
+        description: "Matches appear after The Blue Alliance schedule syncs for this event.",
       };
     default:
       return {
         kind,
         title: "My Day",
         description:
-          "Next match, bumper color, partners, and opponents from real TBA rows — never DEMO matches.",
+          "Next match, bumper color, partners, and opponents from The Blue Alliance.",
       };
   }
 }
@@ -218,7 +215,7 @@ export function myDayNextActions(input: {
         {
           id: "schedule",
           label: "Open Schedule",
-          detail: "Full event boards stay blank until a workspace and TBA sync exist — never DEMO matches.",
+          detail: "Event boards stay empty until a workspace and schedule sync exist.",
           href: withOrgHref("/schedule", null),
         },
         {
@@ -275,7 +272,7 @@ export function myDayNextActions(input: {
       {
         id: "schedule",
         label: "Open Schedule",
-        detail: "Full board and My Day share TBA match rows — never DEMO placeholders.",
+        detail: "Command and My Day share the same match list.",
         href: withOrgHref("/schedule", orgId),
       },
       {
@@ -324,8 +321,8 @@ export function myDayNextActions(input: {
         id: noUpcoming ? "schedule" : "command",
         label: noUpcoming ? "Open Schedule" : "Check Event Day sync",
         detail: noUpcoming
-          ? "Confirm posted alliances on the full board — never DEMO match assignments."
-          : "Matches appear after TBA reference sync for the active event — never DEMO placeholders.",
+          ? "Confirm posted alliances on Event Day."
+          : "Matches appear after The Blue Alliance schedule syncs for this event.",
         href: noUpcoming
           ? withOrgHref("/schedule", orgId)
           : hubHref("/competition", "command", orgId),
@@ -344,7 +341,7 @@ export function myDayNextActions(input: {
       {
         id: "strategy",
         label: "Open Strategy",
-        detail: "Prep while waiting — Strategy never invents DEMO EPA or win rates.",
+        detail: "Prep alliance notes while you wait.",
         href: hubHref("/competition", "strategy", orgId),
       },
       {

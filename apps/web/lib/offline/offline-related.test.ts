@@ -86,10 +86,11 @@ describe("classifyOfflineShell + copy", () => {
     for (const kind of ["empty", "setup", "partial", "ready", "error"] as const) {
       const copy = offlineShellCopy(kind);
       expect(copy.title).not.toMatch(/\bDEMO\b/);
-      expect(copy.description).toMatch(/never|empty|real|Retry|Scouting/i);
+      expect(copy.description).not.toMatch(/DEMO/i);
     }
-    expect(offlineShellCopy("empty").description).toMatch(/never DEMO sync counts/i);
-    expect(offlineShellCopy("setup").description).toMatch(/never DEMO/i);
+    expect(offlineShellCopy("empty").description).toMatch(/Empty stays empty/i);
+    expect(offlineShellCopy("empty").description).not.toMatch(/DEMO/i);
+    expect(offlineShellCopy("setup").description).not.toMatch(/DEMO/i);
   });
 
   it("maps readiness tones without inventing ready when empty", () => {

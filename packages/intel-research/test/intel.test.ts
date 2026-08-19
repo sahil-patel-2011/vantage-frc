@@ -8,7 +8,7 @@ import {
   robotArchetypes,
   scoreAllianceChemistry,
 } from "../src/analytics";
-import { FixtureSearchProvider, LocalSummaryProvider } from "../src/providers";
+import { FixtureSearchProvider, LocalSummaryProvider, isLiveResearchSearchConfigured } from "../src/providers";
 import { canonicalizeUrl } from "../src/worker";
 
 describe("Intel analytics", () => {
@@ -99,5 +99,46 @@ describe("deterministic providers and provenance", () => {
     });
     expect(summary.text).toContain("verify at the linked sources");
     expect(summary.model).toBe("vantage-local-summary-v1");
+  });
+
+  it("treats missing search credentials as fixture-only, not a live provider", () => {
+    const previous = {
+      endpoint: process.env.RESEARCH_SEARCH_ENDPOINT,
+      key: process.env.RESEARCH_SEARCH_API_KEY,
+    };
+    delete process.env.RESEARCH_SEARCH_ENDPOINT;
+    delete process.env.RESEARCH_SEARCH_API_KEY;
+    try {
+      expect(isLiveResearchSearchConfigured()).toBe(false);
+    } finally {
+      if (previous.endpoint == null) delete process.env.RESEARCH_SEARCH_ENDPOINT;
+      else process.env.RESEARCH_SEARCH_ENDPOINT = previous.endpoint;
+      if (previous.key == null) delete process.env.RESEARCH_SEARCH_API_KEY;
+      else process.env.RESEARCH_SEARCH_API_KEY = previous.key;
+    }
+  });
+});
+
+describe("scheduled research sweep", () => {
+  it("does not open a database or enqueue fixture jobs when no search provider is configured", async () => {
+    const previous = {
+      endpoint: process.env.RESEARCH_SEARCH_ENDPOINT,
+      key: process.env.RESEARCH_SEARCH_API_KEY,
+    };
+    delete process.env.RESEARCH_SEARCH_ENDPOINT;
+    delete process.env.RESEARCH_SEARCH_API_KEY;
+    try {
+      const { runScheduledResearchSweep } = await import("../src/production-worker");
+      await expect(runScheduledResearchSweep()).resolves.toEqual({
+        skipped: true,
+        reason: "search_provider_unset",
+        processed: 0,
+      });
+    } finally {
+      if (previous.endpoint == null) delete process.env.RESEARCH_SEARCH_ENDPOINT;
+      else process.env.RESEARCH_SEARCH_ENDPOINT = previous.endpoint;
+      if (previous.key == null) delete process.env.RESEARCH_SEARCH_API_KEY;
+      else process.env.RESEARCH_SEARCH_API_KEY = previous.key;
+    }
   });
 });

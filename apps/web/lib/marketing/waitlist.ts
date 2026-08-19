@@ -1,6 +1,7 @@
-import { neon } from "@neondatabase/serverless";
 import { z } from "zod";
 import { LEGAL_DOC_VERSION } from "@vantage/core";
+import { createSqlPool } from "@vantage/db/pool";
+import { resolveMarketingDatabaseUrl } from "@vantage/db/postgres-url";
 
 export const DISCLOSURE_VERSION = `waitlist-${LEGAL_DOC_VERSION}`;
 
@@ -134,32 +135,55 @@ export class MemoryWaitlistStore implements WaitlistStore {
   }
 }
 
-type NeonWaitlistRow = {
+type WaitlistRow = {
   email: string;
   teamNumber: number;
   phoneE164: string | null;
-  launchInvitedAt: string | null;
-  convertedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+  launchInvitedAt: Date | string | null;
+  convertedAt: Date | string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
-export class NeonWaitlistStore implements WaitlistStore {
-  private readonly sql;
+const WAITLIST_RETURNING = `email_normalized AS email,
+                team_number AS "teamNumber",
+                phone_e164 AS "phoneE164",
+                launch_invited_at AS "launchInvitedAt",
+                converted_at AS "convertedAt",
+                created_at AS "createdAt",
+                updated_at AS "updatedAt"`;
 
-  constructor(url: string) {
-    this.sql = neon(url);
+function mapWaitlistRow(row: WaitlistRow): WaitlistEntry {
+  return {
+    email: row.email,
+    teamNumber: Number(row.teamNumber),
+    phoneE164: row.phoneE164,
+    launchInvitedAt: row.launchInvitedAt ? new Date(row.launchInvitedAt).toISOString() : null,
+    convertedAt: row.convertedAt ? new Date(row.convertedAt).toISOString() : null,
+    createdAt: new Date(row.createdAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
+  };
+}
+
+let waitlistPool: ReturnType<typeof createSqlPool> | undefined;
+
+/** Postgres-backed waitlist (Neon today; node-postgres on a Supabase host). */
+export class NeonWaitlistStore implements WaitlistStore {
+  constructor(private readonly url: string) {}
+
+  private pool() {
+    waitlistPool ??= createSqlPool(this.url);
+    return waitlistPool;
   }
 
   async upsert(input: WaitlistInput) {
     const now = new Date();
-    await this.sql`
-      INSERT INTO waitlist_signups
+    await this.pool().query(
+      `INSERT INTO waitlist_signups
         (email_normalized, team_number, phone_e164, email_consent_at,
          sms_consent_at, consent_disclosure_version, source)
       VALUES
-        (${input.email}, ${input.teamNumber}, ${input.phone || null}, ${now},
-         ${input.smsConsent ? now : null}, ${DISCLOSURE_VERSION}, ${"unified-site"})
+        ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (email_normalized) DO UPDATE SET
         team_number = EXCLUDED.team_number,
         phone_e164 = EXCLUDED.phone_e164,
@@ -167,106 +191,74 @@ export class NeonWaitlistStore implements WaitlistStore {
         sms_consent_at = EXCLUDED.sms_consent_at,
         consent_disclosure_version = EXCLUDED.consent_disclosure_version,
         source = EXCLUDED.source,
-        updated_at = now()`;
+        updated_at = now()`,
+      [
+        input.email,
+        input.teamNumber,
+        input.phone || null,
+        now,
+        input.smsConsent ? now : null,
+        DISCLOSURE_VERSION,
+        "unified-site",
+      ],
+    );
   }
 
   async list(options?: { q?: string; limit?: number }) {
     const limit = Math.min(Math.max(options?.limit ?? 200, 1), 500);
     const q = options?.q?.trim() ?? "";
     const pattern = q ? `%${q.toLowerCase()}%` : null;
-    const rows = pattern
-      ? await this.sql`
-          SELECT email_normalized AS email,
-                 team_number AS "teamNumber",
-                 phone_e164 AS "phoneE164",
-                 launch_invited_at AS "launchInvitedAt",
-                 converted_at AS "convertedAt",
-                 created_at AS "createdAt",
-                 updated_at AS "updatedAt"
+    const result = pattern
+      ? await this.pool().query<WaitlistRow>(
+          `SELECT ${WAITLIST_RETURNING}
           FROM waitlist_signups
-          WHERE lower(email_normalized) LIKE ${pattern}
-             OR team_number::text LIKE ${pattern}
+          WHERE lower(email_normalized) LIKE $1
+             OR team_number::text LIKE $1
           ORDER BY updated_at DESC
-          LIMIT ${limit}`
-      : await this.sql`
-          SELECT email_normalized AS email,
-                 team_number AS "teamNumber",
-                 phone_e164 AS "phoneE164",
-                 launch_invited_at AS "launchInvitedAt",
-                 converted_at AS "convertedAt",
-                 created_at AS "createdAt",
-                 updated_at AS "updatedAt"
+          LIMIT $2`,
+          [pattern, limit],
+        )
+      : await this.pool().query<WaitlistRow>(
+          `SELECT ${WAITLIST_RETURNING}
           FROM waitlist_signups
           ORDER BY updated_at DESC
-          LIMIT ${limit}`;
-    return rows.map((row) => ({
-      email: row.email,
-      teamNumber: row.teamNumber,
-      phoneE164: row.phoneE164,
-      launchInvitedAt: row.launchInvitedAt ? new Date(row.launchInvitedAt).toISOString() : null,
-      convertedAt: row.convertedAt ? new Date(row.convertedAt).toISOString() : null,
-      createdAt: new Date(row.createdAt).toISOString(),
-      updatedAt: new Date(row.updatedAt).toISOString(),
-    }));
+          LIMIT $1`,
+          [limit],
+        );
+    return result.rows.map(mapWaitlistRow);
   }
 
   async markLaunchInvited(emailAddress: string) {
     const email = emailAddress.trim().toLowerCase();
-    const rows = await this.sql`
-      UPDATE waitlist_signups
-      SET launch_invited_at = COALESCE(launch_invited_at, now()), updated_at = now()
-      WHERE email_normalized = ${email}
-      RETURNING email_normalized AS email,
-                team_number AS "teamNumber",
-                phone_e164 AS "phoneE164",
-                launch_invited_at AS "launchInvitedAt",
-                converted_at AS "convertedAt",
-                created_at AS "createdAt",
-                updated_at AS "updatedAt"`;
-    const row = rows[0];
-    if (!row) return null;
-    return {
-      email: row.email,
-      teamNumber: row.teamNumber,
-      phoneE164: row.phoneE164,
-      launchInvitedAt: row.launchInvitedAt ? new Date(row.launchInvitedAt).toISOString() : null,
-      convertedAt: row.convertedAt ? new Date(row.convertedAt).toISOString() : null,
-      createdAt: new Date(row.createdAt).toISOString(),
-      updatedAt: new Date(row.updatedAt).toISOString(),
-    };
+    const result = await this.pool().query<WaitlistRow>(
+      `UPDATE waitlist_signups
+       SET launch_invited_at = COALESCE(launch_invited_at, now()), updated_at = now()
+       WHERE email_normalized = $1
+       RETURNING ${WAITLIST_RETURNING}`,
+      [email],
+    );
+    const row = result.rows[0];
+    return row ? mapWaitlistRow(row) : null;
   }
 
   async markConverted(emailAddress: string) {
     const email = emailAddress.trim().toLowerCase();
-    const rows = await this.sql`
-      UPDATE waitlist_signups
-      SET converted_at = COALESCE(converted_at, now()), updated_at = now()
-      WHERE email_normalized = ${email}
-      RETURNING email_normalized AS email,
-                team_number AS "teamNumber",
-                phone_e164 AS "phoneE164",
-                launch_invited_at AS "launchInvitedAt",
-                converted_at AS "convertedAt",
-                created_at AS "createdAt",
-                updated_at AS "updatedAt"`;
-    const row = rows[0];
-    if (!row) return null;
-    return {
-      email: row.email,
-      teamNumber: row.teamNumber,
-      phoneE164: row.phoneE164,
-      launchInvitedAt: row.launchInvitedAt ? new Date(row.launchInvitedAt).toISOString() : null,
-      convertedAt: row.convertedAt ? new Date(row.convertedAt).toISOString() : null,
-      createdAt: new Date(row.createdAt).toISOString(),
-      updatedAt: new Date(row.updatedAt).toISOString(),
-    };
+    const result = await this.pool().query<WaitlistRow>(
+      `UPDATE waitlist_signups
+       SET converted_at = COALESCE(converted_at, now()), updated_at = now()
+       WHERE email_normalized = $1
+       RETURNING ${WAITLIST_RETURNING}`,
+      [email],
+    );
+    const row = result.rows[0];
+    return row ? mapWaitlistRow(row) : null;
   }
 }
 
 const globalStore = globalThis as typeof globalThis & { vantageWaitlist?: MemoryWaitlistStore };
 
 export function createWaitlistStore(): WaitlistStore {
-  const url = process.env.MARKETING_DATABASE_URL ?? process.env.DATABASE_URL;
+  const url = resolveMarketingDatabaseUrl();
   if (url) {
     return new NeonWaitlistStore(url);
   }

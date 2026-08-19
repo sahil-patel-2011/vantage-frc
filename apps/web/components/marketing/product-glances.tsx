@@ -8,46 +8,37 @@ const hubs = [
     id: "competition",
     title: "Competition",
     href: "/features",
-    modules: [
-      "Command",
-      "My Day",
-      "Scouting",
-      "Strategy",
-      "Form builder",
-      "Match checklist",
-      "Pick clock",
-      "Alliance Selection Desk",
-    ],
+    modules: ["Command", "Scouting", "Strategy"],
   },
   {
     id: "team",
     title: "Team",
     href: "/for-teams",
-    modules: ["Calendar", "Todos", "Practice", "Attendance", "Knowledge", "Season Planning Workspace"],
-  },
-  {
-    id: "logistics",
-    title: "Logistics",
-    href: "/for-teams",
-    modules: ["Event Logistics", "Packing List", "Duty Roster", "Visit Invites"],
+    modules: ["Calendar", "Team chat", "Todos"],
   },
   {
     id: "business",
     title: "Business",
-    href: "/for-teams",
-    modules: ["Budget", "Orders", "Sponsors", "Grants", "Partners", "Award evidence"],
+    href: "/pricing",
+    modules: ["Budget", "Sponsors", "Orders"],
   },
   {
     id: "build",
     title: "Build",
     href: "/features/cad",
-    modules: ["Kickoff", "CAD agent", "Code Coach", "FMEA", "Prototypes", "Batteries"],
+    modules: ["Kickoff", "CAD", "Code"],
   },
   {
     id: "ai",
     title: "AI",
     href: "/pricing",
-    modules: ["Assistant chat", "Writer", "Budgets", "Code assist", "AI API keys"],
+    modules: ["Chat", "Writer", "API keys"],
+  },
+  {
+    id: "media",
+    title: "Media",
+    href: "/for-teams",
+    modules: ["Calendar", "Drafts", "Media kit"],
   },
 ] as const;
 
@@ -73,9 +64,9 @@ export function ProductGlances() {
 
 const islandApps = ["Home", "Compete", "Team", "Business"] as const;
 const drawerPillars = ["Competition", "Team", "Logistics", "Business", "Build", "AI"] as const;
-const competitionTabs = ["Command", "My Day", "Strategy", "Scouting", "Form builder"] as const;
+const competitionTabs = ["Command", "Scouting", "Strategy"] as const;
 
-/** Hero Soft-UI shell — drawer + Competition hub + island, honest empty state. */
+/** Hero chrome — labeled product areas, no invented match or scores. */
 export function HeroProductVisual() {
   return (
     <div className="hero-soft-shell" aria-hidden="true">
@@ -88,9 +79,9 @@ export function HeroProductVisual() {
           </span>
           <div className="hero-soft-topbar-title">
             <strong>Competition</strong>
-            <small>Command</small>
+            <small>Your team</small>
           </div>
-          <span className="hero-soft-avatar">S</span>
+          <span className="hero-soft-avatar">V</span>
         </header>
 
         <div className="hero-soft-body">
@@ -99,7 +90,7 @@ export function HeroProductVisual() {
               <span className="hero-soft-mark">v</span>
               <div>
                 <strong>Vantage</strong>
-                <small>Navigation</small>
+                <small>Workspace</small>
               </div>
             </div>
             <nav>
@@ -119,16 +110,21 @@ export function HeroProductVisual() {
                 </span>
               ))}
             </div>
-            <div className="hero-soft-panel">
-              <header>
-                <strong>Command</strong>
-                <span>Event day</span>
-              </header>
-              <div className="hero-soft-empty">
-                <b>No event linked</b>
-                <p>Connect TBA for this org to populate next match, pit tasks, and My Day.</p>
-                <span className="hero-soft-cta">Connect TBA</span>
-              </div>
+            <div className="hero-soft-panel hero-soft-board">
+              <ul className="hero-soft-cues">
+                <li>
+                  <b>Scout</b>
+                  <span>Match and pit forms · offline</span>
+                </li>
+                <li>
+                  <b>Event day</b>
+                  <span>Next match and pit cues</span>
+                </li>
+                <li>
+                  <b>Strategy</b>
+                  <span>Picks from your scout data</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>

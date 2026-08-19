@@ -67,3 +67,15 @@ export function summarizeRelay(sessions: RelaySession[]): RelaySummary {
     uplinkRate: totalEntriesMerged > 0 ? uplinkedEntries / totalEntriesMerged : 0,
   };
 }
+
+export {
+  envelopeBelongsToSession,
+  isP2pEnvelope,
+  mergeP2pRecords,
+  parseP2pEnvelope,
+  p2pChannelName,
+  p2pMergeLedgerCounts,
+  P2P_ENVELOPE_VERSION,
+  type ScoutP2pEnvelope,
+} from "./pit-mesh";
+

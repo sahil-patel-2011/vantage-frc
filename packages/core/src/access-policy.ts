@@ -10,7 +10,9 @@ export function configuredPlatformOwnerEmail() {
 }
 
 export function isDatabaseConfigured() {
-  return Boolean(process.env.DATABASE_AUTH_URL || process.env.DATABASE_URL || process.env.DATABASE_ADMIN_URL);
+  return ["DATABASE_AUTH_URL", "DATABASE_URL", "DATABASE_ADMIN_URL", "POSTGRES_URL"].some((name) =>
+    Boolean(process.env[name]?.trim()),
+  );
 }
 
 /** Avoid Next.js build-time inlining of `process.env.NAME` so Sensitive Vercel secrets remain runtime-readable. */
@@ -147,7 +149,7 @@ export function getAuthCapabilities(): AuthCapabilityReport {
     passwordSignInAvailable,
     googleSignInAvailable: isGoogleAuthConfigured(),
     emailOtpReason: !databaseConfigured
-      ? "Email verification is unavailable until DATABASE_AUTH_URL (or DATABASE_URL) is configured."
+      ? "Email verification is unavailable until DATABASE_AUTH_URL, DATABASE_URL, or POSTGRES_URL is configured."
       : !emailProvider
         ? "Email 2FA / OTP is unavailable until RESEND_API_KEY and AUTH_EMAIL_FROM are configured."
         : null,

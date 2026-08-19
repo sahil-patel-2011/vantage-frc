@@ -5,6 +5,7 @@ import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../componen
 import { relayDeviceRoleLabel, relaySessionStatusLabel } from "../../lib/scout-p2p-relay";
 import type { ScoutP2pRelayView } from "../../lib/scout-p2p-relay/compute-scout-p2p-relay";
 import type { RelayDeviceRole, RelaySessionStatus } from "../../lib/scout-p2p-relay/types";
+import { PitMeshPanel } from "./pit-mesh-panel";
 
 const DEVICE_ROLES: RelayDeviceRole[] = ["scout", "captain"];
 const SESSION_STATUSES: RelaySessionStatus[] = ["open", "synced", "closed"];
@@ -87,7 +88,7 @@ export default function ScoutP2pRelayClient() {
           </>
         }
         title="Scout P2P Relay"
-        description="Local device-to-device scout sync — tablets merge entries over BroadcastChannel/WebRTC in the pit; the captain tablet aggregates before uplinking to Vantage."
+        description="Local device-to-device scout sync — BroadcastChannel on this origin, paste envelopes between tablets; the captain uplinks the merged outbox to Vantage."
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
           {view?.status === "live" && view.seasons.length > 0 ? (
@@ -247,6 +248,9 @@ function Sessions({
                 </div>
               </div>
               <LogEntryForm sessionId={sess.id} busy={busy} mutate={mutate} />
+              {view.orgId ? (
+                <PitMeshPanel orgId={view.orgId} session={sess} busy={busy} mutate={mutate} />
+              ) : null}
               {entries.length > 0 ? (
                 <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 4 }}>
                   {entries.map((entry) => (

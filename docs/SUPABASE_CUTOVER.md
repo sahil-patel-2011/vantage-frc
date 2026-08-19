@@ -27,11 +27,17 @@ Excluded: API keys, BYO envelopes, sessions, invite tokens, other orgs.
 2. **Project Settings → Data API**: disable or leave unused. Migration `0432` revokes `anon` / `authenticated` on `public` if those roles exist.
 3. `DATABASE_ADMIN_URL` = direct session URI as `vantage_worker` (port **5432**). Run `npm run db:migrate`.
 4. `DATABASE_URL` / `DATABASE_AUTH_URL` = pooler URI as `vantage_app` (port **6543** is OK because `withRls` holds one client for `BEGIN`…`COMMIT`).
-5. `node scripts/map-supabase-env.mjs` then set the same aliases on Vercel.
-6. Optional: `DATABASE_DRIVER=pg` (auto-detected for `*.supabase.co` hosts).
+5. `node scripts/map-supabase-env.mjs` writes `.env.migrate.local`. Do **not** pass `--vercel` until you are ready to cut over production (`SUPABASE_CUTOVER_CONFIRM=I_UNDERSTAND`). Map the same aliases in the Vercel dashboard yourself if you prefer.
+6. If the Vercel Supabase integration injects `POSTGRES_URL` / `POSTGRES_URL_NON_POOLING`, the app already falls back to those. Still set `DATABASE_*` aliases so workers, auth, and billing keep least-privilege roles.
+7. Optional: `DATABASE_DRIVER=pg` (auto-detected for `*.supabase.co` hosts).
+
+## Vercel integration keys to ignore
+
+The Supabase Vercel integration often adds `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. **Leave them unused.** Product code must not import `@supabase/supabase-js` for tenancy. Better Auth + `withRls` stay the identity and isolation model.
 
 ## Do not
 
-- Connect the app as the `postgres` superuser (bypasses RLS).
+- Connect the app as the `postgres` superuser (bypasses RLS). Run `00_roles.sql` and switch to `vantage_app` / `vantage_worker` before going live.
 - Use Supabase Storage/Auth as a second tenant model.
 - Share one “AI project” across FRC teams — memory and threads are org-scoped on purpose.
+- Cut over production from Neon in a drive-by change. This doc is the host-switch runbook; stay on the current Neon URLs until you deliberately migrate.

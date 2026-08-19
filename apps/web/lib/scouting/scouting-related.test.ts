@@ -121,9 +121,9 @@ describe("scoutingShellCopy", () => {
       expect(copy.title).not.toMatch(/\bDEMO\b/);
     }
     expect(scoutingShellCopy("empty").badge).toBe("Forms required");
-    expect(scoutingShellCopy("empty").description).toMatch(/never DEMO/i);
+    expect(scoutingShellCopy("empty").description).not.toMatch(/DEMO/i);
     expect(scoutingShellCopy("setup").badge).toBe("Setup required");
-    expect(scoutingShellCopy("ready").description).toMatch(/never DEMO/i);
+    expect(scoutingShellCopy("ready").description).not.toMatch(/DEMO/i);
   });
 });
 
@@ -151,7 +151,7 @@ describe("scoutingNextActions", () => {
     expect(actions[0]?.id).toBe("forms");
     expect(actions.every((a) => !/\bDEMO\b/.test(a.label))).toBe(true);
     expect(actions.every((a) => !/demo/i.test(a.href))).toBe(true);
-    expect(actions.some((a) => /never DEMO/i.test(a.detail))).toBe(true);
+    expect(actions.every((a) => !/DEMO/i.test(a.detail))).toBe(true);
     expect(actions.find((a) => a.id === "forms")?.href).toBe(
       "/competition?tab=forms&orgId=org-1",
     );

@@ -6,7 +6,6 @@ import { DataSourceDegradedBanner } from "../../components/data-source-degraded-
 import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
-import { strategyFixture } from "../../lib/marketing/strategy-demo";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { strategyCoverageLinks } from "../../lib/strategy/competition-related";
@@ -46,7 +45,7 @@ function StrategyNextActionsPanel({ actions }: { actions: StrategyShellNextActio
     <Panel className="strategy-next-actions-panel">
       <header>
         <h2>Next actions</h2>
-        <p>Pick desk, Scouting, and Event Day — never DEMO win rates.</p>
+        <p>Connect The Blue Alliance, then scout. This list stays empty until then.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -62,107 +61,6 @@ function StrategyNextActionsPanel({ actions }: { actions: StrategyShellNextActio
         ))}
       </ol>
     </Panel>
-  );
-}
-
-function DemoPanel({ onHide }: { onHide: () => void }) {
-  const { prediction, scenario, playbook } = strategyFixture;
-  return (
-    <section className="strategy-workbench" aria-label="Illustrative demo scenario">
-      <div className="strategy-demo-banner">
-        <span className="app-badge demo">Illustrative only · not live data</span>
-        <p>
-          This is an explicit opt-in demo. Numbers here are non-factual fixtures for exploring the model UI — not TBA,
-          Statbotics, or your team’s event.
-        </p>
-        <button type="button" className="app-button secondary" onClick={onHide}>
-          Exit demo
-        </button>
-      </div>
-      <article className="app-card strategy-primary">
-        <header>
-          <div>
-            <span className="app-badge demo">Demo</span>
-            <h2>Qualification 42</h2>
-          </div>
-          <small>{prediction.modelVersion}</small>
-        </header>
-        <p className="app-muted strategy-provenance">
-          <span className="app-badge demo">DEMO</span> Engine {prediction.modelVersion} · illustrative fixture only
-        </p>
-        <div className="strategy-probability">
-          <strong>{Math.round(prediction.pRed * 100)}%</strong>
-          <span>Red alliance</span>
-          <small>
-            {Math.round(prediction.confidenceLow * 100)}–{Math.round(prediction.confidenceHigh * 100)}% confidence ·
-            effective sample {prediction.effectiveSampleSize}
-          </small>
-        </div>
-        <div className="mini-probability">
-          <i style={{ width: `${prediction.pRed * 100}%` }} />
-        </div>
-        <h3>Key factors</h3>
-        <ul className="factor-table">
-          {prediction.keyFactors.map((factor) => (
-            <li key={factor.name}>
-              <b>{factor.impact}</b>
-              <span>{factor.name}</span>
-              <small>{factor.evidence}</small>
-            </li>
-          ))}
-        </ul>
-        {prediction.caveats.map((item) => (
-          <p className="app-muted" key={item}>
-            {item}
-          </p>
-        ))}
-      </article>
-      <article className="app-card what-if-card">
-        <header>
-          <h2>What-if scenario</h2>
-          <span className="app-badge demo">Demo</span>
-        </header>
-        <div>
-          <strong>{Math.round(scenario.pRed * 100)}%</strong>
-          <span>
-            {scenario.delta >= 0 ? "+" : ""}
-            {Math.round(scenario.delta * 100)} pts
-          </span>
-        </div>
-        <ul>
-          {scenario.assumptions.map((item) => (
-            <li key={item.label}>
-              <span>{item.label}</span>
-              <b>
-                {item.pointDelta > 0 ? "+" : ""}
-                {item.pointDelta} points
-              </b>
-            </li>
-          ))}
-        </ul>
-        <p className="app-muted">Assumptions only — not observations.</p>
-      </article>
-      <article className="app-card playbook-card">
-        <header>
-          <h2>Alliance playbook</h2>
-          <span className="app-badge demo">Demo</span>
-        </header>
-        <ol>
-          {playbook.priorities.map((item, index) => (
-            <li key={item}>
-              <b>{index + 1}</b>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ol>
-        <h3>Role checkpoints</h3>
-        <div className="checkpoint-row">
-          {playbook.checkpoints.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-      </article>
-    </section>
   );
 }
 
@@ -801,12 +699,14 @@ function StrategyShell({
   shell,
   error,
   onRetry,
+  embedded = false,
   children,
 }: {
   orgId?: string | null;
   shell: StrategyShellKind;
   error?: string;
   onRetry?: () => void;
+  embedded?: boolean;
   children?: ReactNode;
 }) {
   const actions = strategyNextActions({ orgId, shell });
@@ -818,17 +718,21 @@ function StrategyShell({
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
 
+  const Root = embedded ? "div" : "main";
+
   return (
-    <main className="module-page strategy-page soft-gate">
+    <Root className={`module-page strategy-page soft-gate${embedded ? " is-embedded" : ""}`}>
+      {embedded ? null : (
       <PageHeader
         breadcrumbs="Competition / Strategy"
-        title="Strategy & AI"
-        description="Win/loss and pick desks run only on synced TBA/Statbotics metrics and your scout notes — never DEMO win rates."
+        title="Strategy"
+        description="Win/loss and pick lists use The Blue Alliance, Statbotics, and your scout notes."
       >
         <div className="strategy-header-actions">
           <StrategyRelatedStrip orgId={orgId} />
         </div>
       </PageHeader>
+      )}
       {children}
       <EmptyState
         soft
@@ -873,7 +777,7 @@ function StrategyShell({
             </a>
           </>
         ) : null}
-        {shell === "setup" && steps.length > 0 ? (
+        {!embedded && shell === "setup" && steps.length > 0 ? (
           <ol className="strategy-setup-steps">
             {steps.map((step) => (
               <li key={step.id}>
@@ -887,14 +791,13 @@ function StrategyShell({
           </ol>
         ) : null}
       </EmptyState>
-      {shell !== "loading" ? <StrategyNextActionsPanel actions={actions} /> : null}
-    </main>
+      {embedded || shell === "loading" ? null : <StrategyNextActionsPanel actions={actions} />}
+    </Root>
   );
 }
 
 export default function StrategyClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<StrategyView | null>(null);
-  const [demo, setDemo] = useState(false);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -966,25 +869,13 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
     orgId,
   });
 
-  if (tab !== "picks" && !demo && shell !== "ready") {
+  if (tab !== "picks" && shell !== "ready") {
     return (
-      <StrategyShell orgId={orgId} shell={shell} error={error || undefined} onRetry={loadStrategy}>
+      <StrategyShell orgId={orgId} shell={shell} error={error || undefined} onRetry={loadStrategy} embedded={embedded}>
         {error && shell !== "error" ? (
           <p className="telemetry-status" role="alert">
             {error}
           </p>
-        ) : null}
-        {shell === "empty" || shell === "setup" ? (
-          <Panel className="strategy-demo-optin" style={{ minHeight: "auto" }}>
-            <h2 style={{ marginTop: 0 }}>Try demo scenario</h2>
-            <p className="app-muted">
-              Optional illustrative fixture only. Labeled non-factual — never your default Strategy view
-              and never DEMO win rates on the live desk.
-            </p>
-            <button type="button" className="app-button secondary" onClick={() => setDemo(true)}>
-              Try demo scenario
-            </button>
-          </Panel>
         ) : null}
       </StrategyShell>
     );
@@ -1008,11 +899,12 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         });
 
   return (
-    <main className="module-page strategy-page">
+    <main className={`module-page strategy-page${embedded ? " is-embedded" : ""}`}>
+      {embedded ? null : (
       <PageHeader
         breadcrumbs="Competition / Strategy"
-        title="Strategy & AI"
-        description="Win/loss and pick desks run only on synced TBA/Statbotics metrics and your scout notes — never DEMO win rates."
+        title="Strategy"
+        description="Win/loss and pick lists use The Blue Alliance, Statbotics, and your scout notes."
       >
         <div className="strategy-header-actions">
           <StrategyRelatedStrip orgId={orgId} />
@@ -1032,19 +924,18 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
                 Export
               </a>
               <a className="app-button secondary" href={withOrgHref("/team/data", orgId)}>
-                Data provenance
+                Team data
               </a>
             </>
           ) : null}
-          {demo ? (
-            <span className="app-badge demo">Demo mode</span>
-          ) : view?.status === "live" ? (
+          {view?.status === "live" ? (
             <span className={`app-badge ${view.dataSourceHealth?.degraded ? "setup" : "good"}`}>
               {view.dataSourceHealth?.usingLastGoodCache ? "Last-good cache" : "Live inputs"}
             </span>
           ) : null}
         </div>
       </PageHeader>
+      )}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       <TabBar
@@ -1069,15 +960,10 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
 
       {tab === "picks" ? (
         <PickListWorkbench orgId={orgId} embedded />
-      ) : demo ? (
-        <>
-          <DemoPanel onHide={() => setDemo(false)} />
-          <StrategyNextActionsPanel actions={nextActions} />
-        </>
       ) : view?.status === "live" ? (
         <>
           <LivePanel view={view} />
-          <StrategyNextActionsPanel actions={nextActions} />
+          {embedded ? null : <StrategyNextActionsPanel actions={nextActions} />}
         </>
       ) : null}
     </main>

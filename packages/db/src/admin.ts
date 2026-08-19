@@ -1,16 +1,17 @@
 import { createDrizzle } from "./drizzle-client";
+import { firstConfiguredEnv, resolveAdminDatabaseUrl } from "./postgres-url";
 
-const adminConnection =
-  process.env.DATABASE_ADMIN_URL ??
-  process.env.DATABASE_URL_UNPOOLED ??
-  process.env.DATABASE_URL ??
-  "postgresql://vantage_admin:local@localhost:5432/vantage";
+const adminConnection = resolveAdminDatabaseUrl();
 
 if (
   process.env.NODE_ENV === "production" &&
-  !process.env.DATABASE_ADMIN_URL &&
-  !process.env.DATABASE_URL_UNPOOLED &&
-  !process.env.DATABASE_URL
+  !firstConfiguredEnv(
+    "DATABASE_ADMIN_URL",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL_NON_POOLING",
+    "DATABASE_URL",
+    "POSTGRES_URL",
+  )
 ) {
   throw new Error("DATABASE_ADMIN_URL or DATABASE_URL is required for workers in production");
 }

@@ -16,6 +16,7 @@ type Row = {
   willingToMentor: boolean;
   contactEmail: string | null;
   status: ExitInterviewStatus;
+  knowledgePageId: string | null;
 };
 
 function makeClient(opts: { membership: { orgId: string; teamNumber: number | null } | null; rows: Row[]; seasons: number[] }) {
@@ -25,6 +26,9 @@ function makeClient(opts: { membership: { orgId: string; teamNumber: number | nu
     }
     if (sql.includes("SELECT DISTINCT season_year")) {
       return { rows: opts.seasons.map((seasonYear) => ({ seasonYear })) };
+    }
+    if (sql.includes("FROM knowledge_pages")) {
+      return { rows: [] };
     }
     if (sql.includes("FROM exit_interview_responses")) {
       return { rows: opts.rows };
@@ -62,6 +66,7 @@ describe("computeExitInterviewView", () => {
         willingToMentor: true,
         contactEmail: "ada@example.com",
         status: "submitted",
+        knowledgePageId: "wiki-1",
       },
       {
         id: "rec-2",
@@ -77,6 +82,7 @@ describe("computeExitInterviewView", () => {
         willingToMentor: false,
         contactEmail: null,
         status: "draft",
+        knowledgePageId: null,
       },
     ];
     const client = makeClient({
@@ -95,6 +101,7 @@ describe("computeExitInterviewView", () => {
     expect(view.summary.submittedCount).toBe(1);
     expect(view.summary.draftCount).toBe(1);
     expect(view.summary.mentorshipWillingCount).toBe(1);
+    expect(view.summary.wikiPageCount).toBe(1);
     expect(view.summary.byRole.find((r) => r.role === "programming")?.count).toBe(1);
     expect(view.summary.byGradYear).toEqual([{ graduationYear: 2026, count: 2 }]);
   });

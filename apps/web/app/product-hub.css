@@ -11,18 +11,17 @@
   font-size: 12px;
 }
 .product-hub-more {
-  margin: 0 0 16px;
-  padding: 10px 14px;
-  border: 1px solid var(--soft-line);
-  border-radius: var(--soft-radius-sm, 12px);
-  background: var(--soft-card, var(--soft-bg));
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 .product-hub-more > summary {
   cursor: pointer;
-  font: 650 13px/1.35 var(--font-source-sans), ui-sans-serif;
-  color: var(--soft-ink);
+  font: 600 12px/1.35 var(--font-source-sans), ui-sans-serif;
+  color: var(--soft-muted);
   list-style-position: outside;
-  min-height: 44px;
+  min-height: 36px;
   display: flex;
   align-items: center;
 }
@@ -49,18 +48,39 @@
 .product-hub-panel > main.intel-app,
 .product-hub-panel > main.workspace-page,
 .product-hub-panel > main { display: contents; }
-.product-hub-panel > main .app-page-header,
-.product-hub-panel > main .intel-header,
-.product-hub-panel .app-page-header { display: none; }
 .product-hub-panel .team-ops-nav { display: none; }
-/* Kill triple chrome: hub TabBar already covers sibling Team surfaces */
+/* Hub already has the title — keep the feature's action row (Change event, Refresh). */
+.product-hub-panel .app-page-header .breadcrumbs,
+.product-hub-panel .app-page-header h1,
+.product-hub-panel .app-page-header > div > p,
+.product-hub-panel .intel-header {
+  display: none;
+}
+.product-hub-panel .app-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+/* Duplicate sibling strips inside Team/Build surfaces — hub tabs already cover these. */
 .product-hub-panel .team-hub-related,
-.product-hub-panel .product-hub-related,
 .product-hub-panel .tc-ops-related,
 .product-hub-panel .fmea-related,
 .product-hub-panel .batt-related,
 .product-hub-panel .practice-hero-links,
-.product-hub-panel .kb-hero-actions {
+.product-hub-panel .kb-hero-actions,
+.product-hub-panel .product-hub-related,
+.product-hub-panel .strategy-related,
+.product-hub-panel .myday-related,
+.product-hub-panel .strategy-next-actions-panel,
+.product-hub-panel .edc-next-actions,
+.product-hub-panel .myday-next-actions,
+.product-hub-panel .strategy-setup-steps,
+.product-hub-panel .scout-setup-steps {
   display: none !important;
 }
 .product-hub-setup { display: grid; gap: 12px; justify-items: start; padding: 20px; }

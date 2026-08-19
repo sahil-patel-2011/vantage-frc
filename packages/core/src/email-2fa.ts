@@ -1,5 +1,6 @@
 import { createHash, randomInt } from "node:crypto";
-import { Pool } from "@neondatabase/serverless";
+import { createSqlPool } from "@vantage/db/pool";
+import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 import { authDb } from "@vantage/db/auth";
 import { sessions, verifications } from "@vantage/db/schema";
 import { and, eq, gt, lt } from "drizzle-orm";
@@ -47,9 +48,9 @@ function generateOtp(email: string) {
 }
 
 async function countRecentSends(userId: string) {
-  const connectionString = process.env.DATABASE_AUTH_URL ?? process.env.DATABASE_URL;
+  const connectionString = firstConfiguredEnv("DATABASE_AUTH_URL", "DATABASE_URL", "POSTGRES_URL");
   if (!connectionString) return 0;
-  const pool = new Pool({ connectionString });
+  const pool = createSqlPool(connectionString, { max: 1 });
   try {
     const result = await pool.query<{ count: string }>(
       `SELECT count(*)::text AS count FROM auth_audit_events

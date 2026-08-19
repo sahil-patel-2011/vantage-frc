@@ -1,23 +1,20 @@
+import { runSeasonCronPiggybacks } from "../../../../lib/reference/season-cron-piggybacks";
+import { notifyMatchScheduleAfterSync } from "../../../../lib/reference/notify-schedule";
 import {
   assertCronAuthorized,
   runNexusEventSync,
   runTbaEventDaySync,
   runTbaSeasonSync,
 } from "../../../../lib/reference/run-ingest";
-import { notifyMatchScheduleAfterSync } from "../../../../lib/reference/notify-schedule";
-import { runSponsorReminders } from "../../../../lib/run-sponsor-reminders";
-import { runProductReleasePublish } from "../../../../lib/run-product-release-publish";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 /**
  * Vercel cron / webhook-style TBA refresh.
- * - Default: incremental event-day sync (active ±1 day + subscribed events)
- * - ?mode=season&year=2026: full season ingest
- * - body/query eventKey: force refresh one event
- * After a successful sync, emit_match_schedule_alerts fans out match_alert rows
- * when our team's schedule fingerprint changes (My Day).
+ * Hobby plan: two daily crons in vercel.json (event-day 14:00 UTC, season 06:00 UTC).
+ * Season mode piggybacks sponsor reminders, product releases, and research sweep.
+ * Pro / external tickers may call ?mode=event-day more often, or /api/cron/research-sweep.
  */
 export async function GET(request: Request) {
   const denied = assertCronAuthorized(request);
@@ -53,10 +50,8 @@ async function run(request: Request) {
         if (effectiveMode === "season") {
           const summary = await runTbaSeasonSync(body.year ?? year);
           const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
-          // Hobby allows 2 crons — piggyback daily sponsor reminders + scheduled releases on season sync.
-          const sponsorReminders = await runSponsorReminders();
-          const productReleases = await runProductReleasePublish();
-          return Response.json({ ok: true, summary, matchAlerts, sponsorReminders, productReleases });
+          const piggybacks = await runSeasonCronPiggybacks();
+          return Response.json({ ok: true, summary, matchAlerts, ...piggybacks });
         }
         const summary = await runTbaEventDaySync({
           year: body.year ?? year,
@@ -77,10 +72,8 @@ async function run(request: Request) {
     if (mode === "season") {
       const summary = await runTbaSeasonSync(year);
       const matchAlerts = await notifyMatchScheduleAfterSync(summary.eventKeys ?? []);
-      // Hobby allows 2 crons — piggyback daily sponsor reminders + scheduled releases on season sync.
-      const sponsorReminders = await runSponsorReminders();
-      const productReleases = await runProductReleasePublish();
-      return Response.json({ ok: true, summary, matchAlerts, sponsorReminders, productReleases });
+      const piggybacks = await runSeasonCronPiggybacks();
+      return Response.json({ ok: true, summary, matchAlerts, ...piggybacks });
     }
 
     const eventKey = url.searchParams.get("eventKey");
