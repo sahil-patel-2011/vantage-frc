@@ -34,6 +34,10 @@ export const WIRE_GAUGE_MAX_AMPS: Record<WireGauge, number> = {
 /** A channel running at/above this fraction of its breaker rating is at risk of nuisance trips. */
 export const OVERSPEC_MARGIN = 0.8;
 
+export function currentSeasonYear(now: Date = new Date()): number {
+  return now.getUTCFullYear();
+}
+
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const round = (value: number, places = 3) => {
   const factor = 10 ** places;

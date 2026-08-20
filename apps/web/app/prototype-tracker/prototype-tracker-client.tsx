@@ -3,11 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
-import { decisionRecommendationLabel, testOutcomeLabel } from "../../lib/prototype-tracker";
-import {
-  TEST_OUTCOMES,
-  type PrototypeTrackerView,
-} from "../../lib/prototype-tracker/compute-prototype-tracker";
+import { TEST_OUTCOMES, decisionRecommendationLabel, testOutcomeLabel } from "../../lib/prototype-tracker";
+import type { PrototypeTrackerView } from "../../lib/prototype-tracker/compute-prototype-tracker";
 import {
   PROTOTYPE_BUILD_RELATED_INCLUDE,
   decisionStatusLabel,

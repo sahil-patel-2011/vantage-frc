@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
-import { evaluateReview, stageBlueprint, summarizeReviews } from ".";
+import { evaluateReview, ITEM_VERDICTS, REVIEW_STAGES, REVIEW_STATUSES, stageBlueprint, summarizeReviews } from ".";
 import type {
   DesignReview,
   ItemVerdict,
@@ -11,9 +11,7 @@ import type {
   ReviewsSummary,
 } from "./types";
 
-export const REVIEW_STAGES: ReviewStage[] = ["concept", "preliminary", "critical", "final"];
-export const REVIEW_STATUSES: ReviewStatus[] = ["scheduled", "in_review", "complete", "cancelled"];
-export const ITEM_VERDICTS: ItemVerdict[] = ["pending", "pass", "fail", "na"];
+export { ITEM_VERDICTS, REVIEW_STAGES, REVIEW_STATUSES };
 
 export type ReviewsSetupStep = { id: string; label: string; detail: string; href: string };
 

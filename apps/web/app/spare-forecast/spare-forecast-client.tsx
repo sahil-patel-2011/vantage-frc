@@ -2,11 +2,8 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
-import { forecastUrgencyLabel } from "../../lib/spare-forecast";
-import {
-  PURCHASE_REQUEST_STATUSES,
-  type SpareForecastView,
-} from "../../lib/spare-forecast/compute-spare-forecast";
+import { PURCHASE_REQUEST_STATUSES, forecastUrgencyLabel } from "../../lib/spare-forecast";
+import type { SpareForecastView } from "../../lib/spare-forecast/compute-spare-forecast";
 import {
   SPARE_FORECAST_RELATED_INCLUDE,
   classifySpareForecastShell,

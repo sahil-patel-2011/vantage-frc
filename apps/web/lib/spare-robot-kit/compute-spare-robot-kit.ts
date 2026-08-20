@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
-import { buildKitItems, checklistRationale, summarizeChecklistItems } from ".";
+import { buildKitItems, CHECKLIST_STATUSES, checklistRationale, summarizeChecklistItems } from ".";
 import type { ChecklistStatus, KitChecklistItem, SpareRobotKitChecklist } from "./types";
 
-export const CHECKLIST_STATUSES: ChecklistStatus[] = ["draft", "finalized"];
+export { CHECKLIST_STATUSES };
 
 export type SpareRobotKitSetupStep = {
   id: string;
