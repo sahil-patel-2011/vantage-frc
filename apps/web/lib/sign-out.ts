@@ -1,6 +1,7 @@
-/** Better Auth client sign-out — clears session cookies then hard-navigates away. */
+import { safeAppPath } from "./security/safe-navigation";
 
-export async function signOutAndRedirect(redirectTo: "/" | "/signin" = "/") {
+/** Better Auth client sign-out — clears session cookies then hard-navigates away. */
+export async function signOutAndRedirect(redirectTo = "/") {
   try {
     await fetch("/api/auth/sign-out", {
       method: "POST",
@@ -11,5 +12,5 @@ export async function signOutAndRedirect(redirectTo: "/" | "/signin" = "/") {
   } catch {
     // Still leave the product shell; cookies may already be expired.
   }
-  window.location.assign(redirectTo);
+  window.location.assign(safeAppPath(redirectTo, "/"));
 }

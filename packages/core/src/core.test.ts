@@ -3,6 +3,8 @@ import {
   createInviteToken,
   deterministicLocalOtp,
   hashInviteToken,
+  inviteAcceptUrl,
+  isInviteTokenShape,
   LocalMailboxProvider,
   localMailbox,
   OTP_POLICY,
@@ -31,6 +33,11 @@ describe("core tenancy helpers", () => {
     expect(invite.token).not.toBe(invite.tokenHash);
     expect(hashInviteToken(invite.token)).toBe(invite.tokenHash);
     expect(invite.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(invite.token).toMatch(/^[A-Za-z0-9_-]{32,128}$/);
+    expect(isInviteTokenShape(invite.token)).toBe(true);
+    expect(isInviteTokenShape("short")).toBe(false);
+    expect(isInviteTokenShape("not valid token!!")).toBe(false);
+    expect(inviteAcceptUrl(invite.token)).toContain(`/invite?token=${encodeURIComponent(invite.token)}`);
   });
 });
 

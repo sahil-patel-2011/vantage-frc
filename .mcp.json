@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vantage-cad": {
+      "command": "node",
+      "args": ["packages/vantage-cad-cli/bin/vantage-cad.mjs", "mcp"]
+    }
+  }
+}

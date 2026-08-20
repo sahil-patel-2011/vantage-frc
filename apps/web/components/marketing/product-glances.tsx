@@ -131,11 +131,10 @@ export function HeroProductVisual() {
 
         <nav className="hero-soft-island">
           {islandApps.map((app) => (
-            <span key={app} className={app === "Compete" ? "is-active" : undefined}>
+            <span key={app} className={app === "Home" ? "is-active" : undefined}>
               {app}
             </span>
           ))}
-          <span className="hero-soft-island-more">More</span>
         </nav>
       </div>
     </div>

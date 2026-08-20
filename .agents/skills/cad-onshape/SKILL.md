@@ -108,7 +108,17 @@ For interactive Part Studio builds in Cursor, load the **Jarvis Onshape MCP skil
 - Variable Studios are separate elements
 - Prefer MCP `export_part_studio` for local agent exports; prefer Vantage export ops when writing team artifacts with provenance
 
-Batch-load common tools via ToolSearch when starting a long CAD session.
+## Claude Code in the terminal (Vantage connector)
+
+Simple path: API keys + `vantage-cad` MCP. Instructions: `docs/CLAUDE_CODE_CAD.md`.
+
+```text
+$env:ONSHAPE_ACCESS_KEY="..."
+$env:ONSHAPE_SECRET_KEY="..."
+npx vantage-cad claude
+```
+
+Repo `.mcp.json` starts `vantage-cad mcp`. Tools: `onshape_list_documents`, `onshape_bind`, `onshape_sketch_rectangle`, `onshape_extrude`. Use a disposable Part Studio.
 
 ## Safety
 

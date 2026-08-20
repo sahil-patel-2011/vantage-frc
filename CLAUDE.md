@@ -23,6 +23,7 @@ npm run db:generate  # drizzle-kit generate
 npm run db:migrate   # drizzle-kit migrate
 npm run desktop:dev  # Electron shell around production (or VANTAGE_URL)
 npm run desktop:dist # unsigned Windows NSIS + portable under apps/desktop/release/
+npx vantage-cad claude # Onshape/Fusion connectors for Claude Code (docs/CLAUDE_CODE_CAD.md)
 ```
 
 Run a single package's checks from its dir (e.g. `npm run typecheck --workspace=@vantage/web`). Unit tests
@@ -38,8 +39,7 @@ and build are intentionally credential-free; RLS integration tests need a real P
 - `packages/core` — auth, tenancy, active-context, invite, notification, admin-audit helpers.
 - `packages/billing` — credit enforcement, usage ledger, BYO-key envelope encryption, Stripe contract.
 - `packages/reference` — TBA/Statbotics clients + worker-only idempotent writers + authenticated read repos.
-- `packages/intel-research`, `packages/agent`, `packages/prediction-strategy`, `packages/scouting`,
-  `packages/export-center`, `packages/cad` (+ `vantage-cad-cli`, `fusion360-official-connector`).
+- `packages/cad` (+ `vantage-cad-cli`, `fusion360-official-connector`). Claude Code CAD: `docs/CLAUDE_CODE_CAD.md`.
 
 ## Non-negotiable conventions
 

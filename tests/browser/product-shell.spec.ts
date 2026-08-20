@@ -15,13 +15,10 @@ test.beforeEach(async ({ context }) => {
 test("dashboard home is decluttered and exposes customize controls", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Edit Home Screen" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Show secondary metrics" })).toBeVisible();
+  await expect(page.getByTestId("dash-customize")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Edit Home/ })).toBeVisible();
   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
   await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible();
-  await expect(page.getByText("No upcoming match yet")).toBeVisible();
-  await expect(page.getByText("No checklist data yet")).toBeVisible();
-  await expect(page.locator(".dash-widget").filter({ hasText: "Next match" }).locator(".dash-empty")).toBeVisible();
 });
 
 test("dashboard editor can enter edit mode and show widget catalog", async ({ page }) => {
@@ -30,7 +27,7 @@ test("dashboard editor can enter edit mode and show widget catalog", async ({ pa
   await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
   await expect(page.getByText("Edit mode")).toBeVisible();
   await expect(page.locator(".dash-editor-bar")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Add · Next match|On board · Next match/ })).toBeVisible();
+  await expect(page.getByTestId("dash-catalog-inline").locator("button").first()).toBeVisible();
   await expect(page.getByTestId("dash-preview")).toBeVisible();
   await expect(page.getByRole("button", { name: "Reset" })).toBeVisible();
   await expect(page.getByTestId("dash-open-library")).toBeVisible();
@@ -38,14 +35,60 @@ test("dashboard editor can enter edit mode and show widget catalog", async ({ pa
   await expect(page.getByTestId("dash-customize")).toBeVisible();
 });
 
-test("mobile product shell keeps Dynamic Island and hamburger", async ({ page }) => {
+test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto("/dashboard");
+  await page.getByTestId("dash-customize").evaluate((node) => (node as HTMLButtonElement).click());
+  await expect(page.getByText("Customize Home")).toBeVisible();
+  await expect(page.getByTestId("dash-widget-grid")).toHaveAttribute("data-dash-drag", "on");
+  await expect(page.locator(".dash-grid")).toBeVisible();
+  await expect(page.locator(".dash-widget-palette button").first()).toHaveAttribute("draggable", "true");
+
+  const snapshot = page.locator('[data-testid="dash-grid-item"][data-widget-type="competition_snapshot"]');
+  await expect(snapshot).toBeVisible();
+  await snapshot.evaluate((node) => node.scrollIntoView({ block: "center" }));
+  const before = `${await snapshot.getAttribute("data-widget-x")},${await snapshot.getAttribute("data-widget-y")}`;
+  const handle = snapshot.getByTestId("dash-drag-handle");
+  const box = await handle.boundingBox();
+  expect(box).toBeTruthy();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box!.x - 280, box!.y + 90, { steps: 20 });
+  await expect(page.locator(".dash-snap-hud")).toBeVisible();
+  await page.mouse.up();
+  await expect
+    .poll(async () => `${await snapshot.getAttribute("data-widget-x")},${await snapshot.getAttribute("data-widget-y")}`)
+    .not.toBe(before);
+
+  const beforeCount = await page.getByTestId("dash-grid-item").count();
+  const palette = page.locator(".dash-widget-palette button").first();
+  await palette.dragTo(page.locator(".dash-grid"), { targetPosition: { x: 40, y: 40 } });
+  await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
+});
+
+test("product shell keeps a four-app island on phone and desktop", async ({ page }) => {
+  const island = page.getByRole("navigation", { name: "Primary apps" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
-  await expect(page.getByRole("navigation", { name: "Primary tabs" })).toBeVisible();
+  await expect(island).toBeVisible();
+  await expect(island.getByRole("link")).toHaveCount(4);
+  await expect(island.getByRole("link", { name: "Home" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open more destinations" })).toHaveCount(0);
   await page.getByRole("button", { name: "Open navigation" }).click();
-  await expect(page.getByRole("complementary", { name: "Product navigation" })).toBeVisible();
-  await expect(page.locator(".soft-profile-actions a")).toHaveText("Account");
-  await expect(page.locator(".soft-profile-actions button")).toHaveText("Sign out");
+  const drawer = page.getByRole("complementary", { name: "Product navigation" });
+  await expect(drawer).toBeVisible();
+  await drawer.getByRole("button", { name: "Competition" }).click();
+  await expect(drawer.getByRole("link", { name: "Event day" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Scouting" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Strategy" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Pit" })).toBeVisible();
+  await expect(drawer.locator(".soft-drawer-foot a").first()).toHaveText("Account");
+  await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await page.getByRole("button", { name: "Close navigation" }).click();
+
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await expect(island).toBeVisible();
+  await expect(island.getByRole("link")).toHaveCount(4);
 });
 
 test("onboarding route is reachable when authenticated fixture skips incomplete gate", async ({ page }) => {

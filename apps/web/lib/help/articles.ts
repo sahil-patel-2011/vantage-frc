@@ -29,32 +29,31 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "bottom-island",
     slug: "bottom-island",
     title: "Customize the bottom island",
-    summary: "Pick four apps for the Soft-UI island — Home, Compete, Team, and Business by default.",
+    summary: "Four apps sit in a floating island at the bottom — Home, Compete, Team, and Business by default.",
     category: "Navigation",
     keywords: [
       "island",
       "bottom nav",
       "tabs",
-      "more sheet",
       "personal navigation",
       "customize island",
       "soft-ui",
-      "media island",
+      "dynamic island",
     ],
     relatedHref: "/dashboard",
     sections: [
       {
-        heading: "Open the editor",
+        heading: "Four apps, always on",
         body: [
-          "Tap More on the Soft-UI island, then Island (gear).",
-          "Or use the drawer / More sheet — the editor is labeled “Choose your four island apps.”",
+          "The bottom island stays on phone and desktop. It has exactly four apps — not a fifth More dump.",
+          "Everything else is in the menu (hamburger) or Search (⌘K).",
         ],
       },
       {
-        heading: "Pick four apps",
+        heading: "Change the four",
         body: [
-          "Tap apps in the order you want them. A selected app shows its slot number.",
-          "Tap a selected app again to remove it. You need exactly four before Save is enabled.",
+          "Long-press or right-click the island, or open the menu and tap Customize island.",
+          "Tap apps in the order you want them. A selected app shows its slot number. You need exactly four before Save is enabled.",
           "Allowlisted destinations include Home, Compete, Team, Business, Media, Build, AI, Scout, My Day, Logistics, and Messages.",
         ],
       },
@@ -62,8 +61,41 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Save or reset",
         body: [
           "Save 4/4 writes your preference for this account.",
-          "Reset default restores Home, Compete, Team, and Business.",
-          "Footer links jump to Customize dashboard and Build scouting forms when you need those instead.",
+          "Reset restores Home, Compete, Team, and Business.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "team-invites",
+    slug: "team-invites",
+    title: "Invite teammates by email",
+    summary: "Owners and admins send an exact-email invite, copy the link if needed, and the recipient signs in with that address to join.",
+    category: "Team",
+    keywords: [
+      "invite",
+      "invitation",
+      "members",
+      "team admin",
+      "add teammate",
+      "resend invite",
+      "copy invite link",
+    ],
+    relatedHref: "/team/admin",
+    sections: [
+      {
+        heading: "Send an invite",
+        body: [
+          "Open Team admin and use Add a teammate. Enter the person's email and role (Scout, Admin, or Viewer).",
+          "Send invite creates the row first. If email is configured, they also get a message. You always get a copyable link for that send.",
+          "Local development does not send email — copy the link and share it. Re-inviting the same pending email rotates the link instead of stacking duplicates.",
+        ],
+      },
+      {
+        heading: "Accepting",
+        body: [
+          "The recipient opens /invite?token=…, signs in with the invited email, and taps Accept invitation.",
+          "Wrong account? Sign out and switch to the invited address. Team numbers never join a workspace by themselves.",
         ],
       },
     ],
@@ -72,7 +104,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "edit-home",
     slug: "edit-home",
     title: "Edit Home — drag, remove, add widgets",
-    summary: "Rearrange the dashboard like a Home Screen. Empty widgets stay empty until real data exists.",
+    summary: "Your Home layout is personal. Drag widgets like a Home Screen. Empty widgets stay empty until real data exists.",
     category: "Home",
     keywords: [
       "dashboard",
@@ -82,6 +114,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "drag",
       "remove widget",
       "home screen",
+      "personal dashboard",
+      "team board",
       "customize=1",
     ],
     relatedHref: "/dashboard?customize=1",
@@ -103,8 +137,16 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Add widgets",
         body: [
-          "Use the Add widgets palette above the board. Already-placed widgets stay off the palette.",
-          "Tap Done when finished. Reset (under More / board tools) restores default home widgets for the active board.",
+          "Use the Add widgets palette above the board. Drag a tile onto the grid or tap Add. Already-placed widgets stay off the palette.",
+          "Tap Done to save your personal Home. Owners and admins can also Save for team — that does not overwrite anyone else's personal layout.",
+          "Reset (under More / board tools) restores default home widgets for the active board.",
+        ],
+      },
+      {
+        heading: "Your layout vs the team",
+        body: [
+          "Each member has their own Home. Teammates do not see your widget arrangement unless you open a team board on purpose.",
+          "Match scores, scouting coverage, and TBA data stay team-scoped. Only the layout is personal.",
         ],
       },
     ],
@@ -132,7 +174,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         heading: "Where to scout",
         body: [
           "Open Competition → Scouting, or the Scouting Hub route under Competition.",
-          "Build or edit forms under Competition → Form builder before expecting match/pit sheets.",
+          "Build or edit forms under Competition → Scouting → Forms before expecting match/pit sheets.",
         ],
       },
       {
@@ -258,7 +300,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Alliance Selection Desk",
         body: [
-          "Open Alliance Selection Desk from Competition More tools (/alliance-selection-desk).",
+          "Open Alliance Selection Desk from Competition → Strategy → Alliance desk (/competition?tab=alliance-selection-desk).",
           "Use the live 8-alliance pick board, attach scout evidence, and watch TBA conflict flags against real team_event_metrics.",
           "Drive-team export/print is available when you have a real board — ranks are never DEMO.",
         ],
@@ -266,7 +308,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Season Planning Workspace",
         body: [
-          "Open Season Planning from Team More tools (/season-planning-workspace).",
+          "Open Season Planning from Team → Work → Season plan (/team?tab=season-planning-workspace).",
           "Map goals → milestones → owners, with optional ICS calendar hooks.",
           "Progress comes from real attendance and build_tasks only — completion % stays blank without those rows.",
         ],

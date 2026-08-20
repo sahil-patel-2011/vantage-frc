@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import {
   ISLAND_TAB_CATALOG,
+  LOGISTICS_DEEP_LINKS,
   MORE_SHEET_LINKS,
   ORG_EXEMPT_HREFS,
   PILLAR_SHEET_LINKS,
@@ -15,8 +16,10 @@ import {
   navTitleForPath,
   withOrgHref,
   withSelectedOrgHref,
+  type ProductNavGroup,
   type ProductNavIcon,
 } from "../lib/nav/product-nav";
+import { hubHref, hubPrimaryTabs, navHubByLabel } from "../lib/nav/hubs";
 import { defaultIslandHrefs, resolveIslandTabs } from "../lib/nav/island-preferences";
 import {
   pathAllowedByHubAccess,
@@ -68,6 +71,22 @@ type Me = {
 type IconName = ProductNavIcon;
 
 const groups = PRODUCT_NAV_GROUPS;
+
+function drawerNestedItems(group: ProductNavGroup): Array<{ href: string; label: string }> {
+  if (group.label === "Home") return [];
+  if (group.label === "Logistics") {
+    return [
+      { href: "/logistics", label: "Travel & hotels" },
+      ...LOGISTICS_DEEP_LINKS.map((item) => ({ href: item.href, label: item.label })),
+    ];
+  }
+  const hub = navHubByLabel(group.label);
+  if (!hub) return [];
+  return hubPrimaryTabs(hub).map((tab) => ({
+    href: hubHref(hub.href, tab.id),
+    label: tab.label,
+  }));
+}
 const pillarSheetLinks = PILLAR_SHEET_LINKS;
 const moreSheetLinks = MORE_SHEET_LINKS;
 
@@ -277,7 +296,7 @@ export default function AppShell() {
   const router = useRouter();
   const [orgId, setOrgId] = useState("");
   const [open, setOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [expandedHub, setExpandedHub] = useState<string | null>(null);
   const [commandOpen, setCommandOpen] = useState(false);
   const [me, setMe] = useState<Me>({});
   const [unreadCount, setUnreadCount] = useState(0);
@@ -307,6 +326,10 @@ export default function AppShell() {
   const activeGroupLabel = activeNav?.group.label;
 
   useEffect(() => {
+    if (open) setExpandedHub(activeGroupLabel ?? "Home");
+  }, [open, activeGroupLabel]);
+
+  useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
     setOrgId(id);
     document.body.classList.add("has-app-shell");
@@ -316,10 +339,10 @@ export default function AppShell() {
   useEffect(() => {
     document.body.classList.toggle(
       "soft-nav-open",
-      open || commandOpen || moreOpen || accountMenuOpen || islandEditorOpen || workspaceOpen,
+      open || commandOpen || accountMenuOpen || islandEditorOpen || workspaceOpen,
     );
     return () => document.body.classList.remove("soft-nav-open");
-  }, [open, commandOpen, moreOpen, accountMenuOpen, islandEditorOpen, workspaceOpen]);
+  }, [open, commandOpen, accountMenuOpen, islandEditorOpen, workspaceOpen]);
 
   useEffect(() => {
     setPathSearch(window.location.search);
@@ -327,7 +350,6 @@ export default function AppShell() {
 
   useEffect(() => {
     setOpen(false);
-    setMoreOpen(false);
     setCommandOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
@@ -437,7 +459,6 @@ export default function AppShell() {
   function openIslandEditor() {
     setIslandDraft(islandHrefs);
     setIslandMessage("");
-    setMoreOpen(false);
     setOpen(false);
     setIslandEditorOpen(true);
   }
@@ -483,12 +504,10 @@ export default function AppShell() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setCommandOpen(true);
-        setMoreOpen(false);
       }
       if (event.key === "Escape") {
         setCommandOpen(false);
         setOpen(false);
-        setMoreOpen(false);
         setAccountMenuOpen(false);
         setIslandEditorOpen(false);
         setWorkspaceOpen(false);
@@ -657,7 +676,6 @@ export default function AppShell() {
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
 
   const crumbHint = breadcrumbForPath(pathname);
-  const moreBadgeTotal = unreadCount + unreadMessages;
   const eventFocus = useMemo(() => buildEventFocus(myDayGlance, online), [myDayGlance, online]);
   const islandTabs = useMemo(
     () => resolveIslandTabs(islandHrefs).filter((tab) => navHrefAllowed(tab.href)),
@@ -675,7 +693,6 @@ export default function AppShell() {
 
   const closeOverlays = useCallback(() => {
     setOpen(false);
-    setMoreOpen(false);
     setCommandOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
@@ -781,7 +798,6 @@ export default function AppShell() {
             aria-expanded={open}
             onClick={() => {
               setOpen((value) => !value);
-              setMoreOpen(false);
             }}
           >
             <span className="soft-burger" aria-hidden="true">
@@ -790,8 +806,8 @@ export default function AppShell() {
               <i />
             </span>
           </button>
-          {showBack ? (
-            <div className="soft-page-head">
+          <div className="soft-page-head">
+            {showBack ? (
               <button
                 className="soft-icon-btn"
                 type="button"
@@ -800,12 +816,12 @@ export default function AppShell() {
               >
                 <Icon name="back" />
               </button>
-              <div className="soft-page-head-copy">
-                <h1>{title}</h1>
-                <small className="soft-org-crumb">{crumbHint}</small>
-              </div>
+            ) : null}
+            <div className="soft-page-head-copy">
+              <p className="soft-topbar-title">{title ?? "Vantage"}</p>
+              <small className="soft-org-crumb">{showBack ? crumbHint : orgLabel}</small>
             </div>
-          ) : null}
+          </div>
         </div>
         <div className="soft-topbar-actions">
           <ShellOutboxStatus orgId={orgId || null} />
@@ -815,7 +831,6 @@ export default function AppShell() {
             aria-label="Search"
             onClick={() => {
               setCommandOpen(true);
-              setMoreOpen(false);
             }}
           >
             <Icon name="search" />
@@ -1045,24 +1060,78 @@ export default function AppShell() {
             const item = group.items[0];
             if (!item || item.state === "planned") return null;
             const isActive = activeGroupLabel === group.label;
+            const nested = drawerNestedItems(group).filter((entry) => navHrefAllowed(entry.href));
+            const expanded = expandedHub === group.label;
+            const toneStyle = { ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg };
+            if (nested.length === 0) {
+              return (
+                <a
+                  key={group.label}
+                  className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
+                  aria-current={
+                    activeNav?.item.href === item.href && activeNav.group.label === group.label
+                      ? "page"
+                      : undefined
+                  }
+                  href={withOrgHref(item.href, orgId)}
+                  onClick={() => setOpen(false)}
+                  style={toneStyle}
+                >
+                  <i>
+                    <Icon name={group.icon} />
+                  </i>
+                  <span>{item.label}</span>
+                </a>
+              );
+            }
+            const hub = navHubByLabel(group.label);
+            const liveTab = new URLSearchParams(pathSearch.replace(/^\?/, "")).get("tab");
             return (
-              <a
+              <div
                 key={group.label}
-                className={`soft-drawer-hub${isActive ? " is-active" : ""}`}
-                aria-current={
-                  activeNav?.item.href === item.href && activeNav.group.label === group.label
-                    ? "page"
-                    : undefined
-                }
-                href={withOrgHref(item.href, orgId)}
-                onClick={() => setOpen(false)}
-                style={{ ["--tone" as string]: group.tone, ["--tone-bg" as string]: group.toneBg }}
+                className={`soft-nav-group${isActive ? " is-active" : ""}`}
+                style={toneStyle}
               >
-                <i>
-                  <Icon name={group.icon} />
-                </i>
-                <span>{item.label}</span>
-              </a>
+                <button
+                  type="button"
+                  className="soft-nav-heading"
+                  aria-expanded={expanded}
+                  onClick={() => setExpandedHub(expanded ? null : group.label)}
+                >
+                  <i>
+                    <Icon name={group.icon} />
+                  </i>
+                  <span>{group.label}</span>
+                  <em className="soft-nav-count">{nested.length}</em>
+                  <span className={`soft-nav-caret${expanded ? " open" : ""}`} aria-hidden="true">
+                    <Icon name="chevron" />
+                  </span>
+                </button>
+                {expanded ? (
+                  <div className="soft-nav-items">
+                    {nested.map((entry) => {
+                      const hrefTab = new URLSearchParams(entry.href.split("?")[1] ?? "").get("tab");
+                      const pathOnly = entry.href.split("?")[0] ?? entry.href;
+                      const onThisHub = pathname === pathOnly || pathname === item.href;
+                      const isCurrent =
+                        onThisHub &&
+                        (liveTab === hrefTab ||
+                          (!liveTab && hrefTab === hub?.defaultTab) ||
+                          (group.label === "Logistics" && pathname === pathOnly));
+                      return (
+                        <a
+                          key={entry.href}
+                          href={withOrgHref(entry.href, orgId)}
+                          aria-current={isCurrent ? "page" : undefined}
+                          onClick={() => setOpen(false)}
+                        >
+                          {entry.label}
+                        </a>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
             );
           })}
         </nav>
@@ -1078,9 +1147,9 @@ export default function AppShell() {
           <a href="/account" onClick={() => setOpen(false)}>
             Account
           </a>
-          <a href="/docs" onClick={() => setOpen(false)}>
-            App manual
-          </a>
+          <button type="button" onClick={() => openIslandEditor()}>
+            Customize island
+          </button>
           <button type="button" disabled={signingOut} onClick={() => void handleSignOut()}>
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
@@ -1089,8 +1158,9 @@ export default function AppShell() {
 
       <nav
         className="soft-island"
-        aria-label="Primary tabs"
-        title="Right-click or use More → Customize island to change these four apps"
+        data-testid="soft-island"
+        aria-label="Primary apps"
+        title="Press and hold or right-click to change these four apps"
         onContextMenu={(event) => {
           event.preventDefault();
           openIslandEditor();
@@ -1109,84 +1179,7 @@ export default function AppShell() {
             ) : null}
           </a>
         ))}
-        <button
-          type="button"
-          className={`soft-island-more${moreOpen ? " is-open" : ""}`}
-          aria-label="Open more destinations"
-          aria-expanded={moreOpen}
-          onClick={() => {
-            setMoreOpen((value) => !value);
-            setOpen(false);
-          }}
-        >
-          <Icon name="grid" />
-          <span>More</span>
-          {moreBadgeTotal >= 1 ? (
-            <b className="soft-island-badge">{moreBadgeTotal > 99 ? "99+" : moreBadgeTotal}</b>
-          ) : null}
-        </button>
       </nav>
-
-      {moreOpen ? (
-        <button className="soft-more-scrim" type="button" aria-label="Close more menu" onClick={() => setMoreOpen(false)} />
-      ) : null}
-      <div className={`soft-more-sheet${moreOpen ? " open" : ""}`} role="dialog" aria-label="More destinations" aria-hidden={!moreOpen}>
-        <div className="soft-more-handle" aria-hidden="true" />
-        <div className="soft-more-head">
-          <strong>More</strong>
-          <button className="soft-icon-btn" type="button" aria-label="Close more menu" onClick={() => setMoreOpen(false)}>
-            <Icon name="x" />
-          </button>
-        </div>
-        <div className="soft-more-grid soft-more-pillars">
-          {visiblePillarLinks.map((link) => (
-            <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
-              <Icon name={link.icon} />
-              {link.label}
-            </a>
-          ))}
-        </div>
-        <div className="soft-more-grid soft-more-quick">
-          {visibleMoreLinks.map((link) => (
-            <a key={link.href} href={withOrgHref(link.href, orgId)} onClick={() => setMoreOpen(false)}>
-              <Icon name={link.icon} />
-              {link.label}
-              {link.href.includes("tab=messages") && unreadMessages >= 1 ? (
-                <b>{unreadMessages > 99 ? "99+" : unreadMessages}</b>
-              ) : null}
-            </a>
-          ))}
-        </div>
-        <div className="soft-more-actions soft-more-actions-4">
-          <button
-            type="button"
-            onClick={() => {
-              setMoreOpen(false);
-              setOpen(true);
-            }}
-          >
-            <Icon name="menu" />
-            Menu
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              openIslandEditor();
-            }}
-          >
-            <Icon name="gear" />
-            Island
-          </button>
-          <a href="/docs" onClick={() => setMoreOpen(false)}>
-            <Icon name="clipboard" />
-            App manual
-          </a>
-          <a href={withOrgHref("/chat", orgId)} onClick={() => setMoreOpen(false)}>
-            <Icon name="chat" />
-            Chat
-          </a>
-        </div>
-      </div>
 
       {islandEditorOpen ? (
         <div className="soft-island-editor" role="dialog" aria-modal="true" aria-labelledby="island-editor-title">
@@ -1194,9 +1187,9 @@ export default function AppShell() {
           <section>
             <header>
               <div>
-                <span>PERSONAL NAVIGATION</span>
-                <h2 id="island-editor-title">Choose your four island apps</h2>
-                <p>The default stays Home, Compete, Team, and Business until you save a change.</p>
+                <span>BOTTOM ISLAND</span>
+                <h2 id="island-editor-title">Four apps</h2>
+                <p>Home, Compete, Team, and Business by default. Long-press the island or use the menu to change them.</p>
               </div>
               <button className="soft-icon-btn" type="button" aria-label="Close" onClick={() => setIslandEditorOpen(false)}><Icon name="x" /></button>
             </header>
@@ -1208,7 +1201,7 @@ export default function AppShell() {
                 return <span className={selectedHref ? "filled" : ""} key={slot}>{selected ? <><Icon name={selected.icon} />{selected.label}</> : `Slot ${slot + 1}`}</span>;
               })}
             </div>
-            <p className="soft-island-order-hint">Tap apps in the order you want them to appear. Tap a selected app to remove it.</p>
+            <p className="soft-island-order-hint">Tap apps in the order you want them. Tap a selected app to remove it.</p>
             <div className="soft-island-choice-grid">
               {visibleIslandCatalog.map((item) => {
                 const selected = islandDraft.includes(item.href);
@@ -1222,29 +1215,20 @@ export default function AppShell() {
                     type="button"
                     aria-pressed={selected}
                   >
-                    <Icon name={item.icon} /><span><strong>{item.label}</strong><small>{selected ? `Slot ${islandDraft.indexOf(item.href) + 1}` : "Add to island"}</small></span>
+                    <Icon name={item.icon} /><span><strong>{item.label}</strong><small>{selected ? `Slot ${islandDraft.indexOf(item.href) + 1}` : "Add"}</small></span>
                   </button>
                 );
               })}
             </div>
             {islandMessage ? <p className="soft-island-editor-error" role="alert">{islandMessage}</p> : null}
             <footer>
-              <a href="/docs/bottom-island">How to customize</a>
-              <a href={withOrgHref("/dashboard?customize=1", orgId)}>Customize dashboard</a>
-              <a href={withOrgHref("/competition?tab=forms", orgId)}>Build scouting forms</a>
-              <button type="button" onClick={() => setIslandDraft(defaultIslandHrefs())}>Reset default</button>
+              <button type="button" onClick={() => setIslandDraft(defaultIslandHrefs())}>Reset</button>
               <button className="primary" type="button" disabled={islandDraft.length !== 4 || islandSaving} onClick={() => void saveIsland()}>
                 {islandSaving ? "Saving…" : `Save ${islandDraft.length}/4`}
               </button>
             </footer>
           </section>
         </div>
-      ) : null}
-
-      {!moreOpen && !islandEditorOpen ? (
-        <a className="soft-fab soft-fab-desktop" href={withOrgHref("/chat", orgId)} aria-label="Open Vantage AI chat">
-          <Icon name="chat" />
-        </a>
       ) : null}
 
       {commandOpen ? (

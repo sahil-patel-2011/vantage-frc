@@ -15,19 +15,19 @@ Vantage is an invite-only Soft-UI competition operations platform for FIRST Robo
 
 ## Hubs and real module names
 ### Competition (${CANONICAL}/features · signed-in /competition)
-Primary tabs include Command, My Day, Strategy, Scouting, Form builder, Match checklist, Pick clock, and Chemistry. Featured More tools include Alliance Selection Desk. Offline scouting works when venue Wi-Fi drops; sync resumes with attribution.
+Primary tabs are four workbenches: Event day, Scouting, Strategy, and Pit. My Day sits under Event day; Forms under Scouting; Alliance Selection Desk under Strategy. Inner tabs replace the old More tools dump.
 
 ### Team (signed-in /team)
-Calendar, Todos, Messages, Practice, Knowledge, Attendance, Batteries, FMEA. Featured More tool: Season Planning Workspace (goals, milestones, owners from real logs).
+Calendar, Chat, People, Work, Knowledge. Season Planning is a Work tab; hours sit under People.
 
 ### Business (signed-in /business)
-Overview, Budget, Orders, Sponsors, Sponsorship, Grants, Partners, Awards — plus related fundraising and impact tools in More.
+Overview, Money, Sponsors, Grants, Outreach — budget and orders are Money tabs; packages and partners are Sponsors tabs.
 
 ### Build (signed-in /build)
-Kickoff, CAD, Code, FMEA, Prototypes, Batteries. CAD agent needs Onshape OAuth or Fusion relay (setup required). Code Coach proposes human-approved diffs only.
+Kickoff, CAD, Code, Robot. Bugbot is a Code tab; FMEA, batteries, and inspection are Robot tabs. CAD agent needs Onshape OAuth or Fusion relay (setup required). Code Coach proposes human-approved diffs only.
 
 ### AI (signed-in /ai)
-Chat, Budgets, Writer, Code assist, Memory, Governance. Featured More tool: AI API keys at /team/ai-keys for Free / BYOK teams. Paid plans add Vantage-hosted model routing.
+Chat, Writer, Agent, Controls, Notes. API keys, memory, and usage live under Controls.
 
 ## Island navigation
 Default Soft-UI island apps: Home, Compete, Team, Business (customizable to four apps). Drawer pillars: Competition, Team, Logistics, Business, Build, AI.

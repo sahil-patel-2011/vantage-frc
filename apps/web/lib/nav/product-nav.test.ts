@@ -35,7 +35,7 @@ describe("product-nav", () => {
     ]);
   });
 
-  it("separates pillar shortcuts from glanceable tools in the More sheet", () => {
+  it("keeps pillar and glanceable shortcuts for Search", () => {
     expect(PILLAR_SHEET_LINKS.map((link) => link.label)).toEqual([
       "Competition",
       "Team",
@@ -93,13 +93,13 @@ describe("product-nav", () => {
   it("resolves breadcrumbs by hub roots and PRODUCT_HUBS legacy paths", () => {
     expect(breadcrumbForPath("/team")).toBe("Team");
     expect(breadcrumbForPath("/team/calendar")).toBe("Team / Calendar");
-    expect(breadcrumbForPath("/todos")).toBe("Team / Todos");
-    expect(breadcrumbForPath("/command")).toBe("Competition / Command");
+    expect(breadcrumbForPath("/todos")).toBe("Team / Work");
+    expect(breadcrumbForPath("/command")).toBe("Competition / Event day");
     expect(breadcrumbForPath("/my-day")).toBe("Competition / My Day");
     expect(breadcrumbForPath("/business")).toBe("Business");
-    expect(breadcrumbForPath("/sponsorship")).toBe("Business / Sponsorship");
+    expect(breadcrumbForPath("/sponsorship")).toBe("Business / Packages");
     expect(breadcrumbForPath("/orders")).toBe("Business / Orders");
-    expect(breadcrumbForPath("/team/ai-keys")).toBe("AI / AI API keys");
+    expect(breadcrumbForPath("/team/ai-keys")).toBe("AI / API keys");
     expect(breadcrumbForPath("/kickoff")).toBe("Build / Kickoff");
     expect(breadcrumbForPath("/logistics")).toBe("Logistics");
     expect(breadcrumbForPath("/packing")).toBe("Logistics / Packing");
@@ -107,10 +107,10 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/visit-invites")).toBe("Logistics / Visit invites");
     expect(breadcrumbForPath("/strategy")).toBe("Competition / Strategy");
     expect(breadcrumbForPath("/scouting")).toBe("Competition / Scouting");
-    expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Form builder");
+    expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Forms");
     expect(breadcrumbForPath("/competition")).toBe("Competition");
     expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance desk");
-    expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season Planning Workspace");
+    expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season plan");
     expect(breadcrumbForPath("/media")).toBe("Media");
     expect(breadcrumbForPath("/media-kit")).toBe("Media / Kit");
     expect(breadcrumbForPath("/chat")).toBe("AI / Chat");
@@ -124,8 +124,8 @@ describe("product-nav", () => {
         (item) => item.href === "/competition?tab=forms",
       ),
     ).toBe(false);
-    expect(findNavMatch("/scouting/forms")?.item.label).toBe("Form builder");
-    expect(findNavMatch("/match-checklist")?.item.label).toBe("Match checklist");
+    expect(findNavMatch("/scouting/forms")?.item.label).toBe("Forms");
+    expect(findNavMatch("/match-checklist")?.item.label).toBe("Pit");
   });
 
   it("resolves nested team knowledge via hub legacy href", () => {

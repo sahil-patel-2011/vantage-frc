@@ -1,5 +1,5 @@
-import { auth, peekOrganizationInvite } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { auth, isInviteTokenShape, peekOrganizationInvite } from "@vantage/core";
+import { requestPool, withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { inviteTermsRequired } from "../../../../lib/invite";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
@@ -12,20 +12,47 @@ function privateJson(value: unknown, init?: ResponseInit) {
   return response;
 }
 
-export async function GET(request: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+async function peekInvite(token: string) {
+  const client = await requestPool.connect();
+  try {
+    return await peekOrganizationInvite(client, token);
+  } finally {
+    client.release();
+  }
+}
 
-  if (!(await limiter.allow(`${session.user.id}:${anonymizeIp(clientIp(request))}`))) {
+export async function GET(request: Request) {
+  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+  const key = session
+    ? `${session.user.id}:${anonymizeIp(clientIp(request))}`
+    : `anon:${anonymizeIp(clientIp(request))}`;
+  if (!(await limiter.allow(key))) {
     return rateLimitedResponse("Too many invite lookups. Wait a few minutes and try again.");
   }
 
-  const token = new URL(request.url).searchParams.get("token")?.trim();
-  if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
+  const token = new URL(request.url).searchParams.get("token")?.trim() ?? "";
+  if (!isInviteTokenShape(token)) {
     return Response.json({ error: "Invite token is invalid" }, { status: 400 });
   }
 
   try {
+    if (!session) {
+      const preview = await peekInvite(token);
+      if (!preview) {
+        return privateJson(
+          { preview: null, signedIn: false, emailMismatch: false, termsRequired: true },
+          { status: 404 },
+        );
+      }
+      return privateJson({
+        preview,
+        signedIn: false,
+        emailMismatch: false,
+        termsRequired: true,
+        sessionEmail: null,
+      });
+    }
+
     const result = await withRls({ userId: session.user.id }, async (client) => {
       const preview = await peekOrganizationInvite(client, token);
       const terms = await client.query<{ termsAcceptedAt: string | null }>(
@@ -39,16 +66,26 @@ export async function GET(request: Request) {
       };
     });
     if (!result.preview) {
-      return privateJson({ preview: null, termsRequired: result.termsRequired }, { status: 404 });
+      return privateJson(
+        {
+          preview: null,
+          signedIn: true,
+          emailMismatch: false,
+          termsRequired: result.termsRequired,
+          sessionEmail: session.user.email ?? null,
+        },
+        { status: 404 },
+      );
     }
-    const sessionEmail = session.user.email?.trim().toLowerCase();
-    // Exact-email gate: never return org identity to a mismatched session.
-    if (sessionEmail && result.preview.email.trim().toLowerCase() !== sessionEmail) {
-      return privateJson({ error: "This invite was sent to a different email address." }, { status: 403 });
-    }
+    const sessionEmail = session.user.email?.trim().toLowerCase() ?? "";
+    const invitedEmail = result.preview.email.trim().toLowerCase();
+    const emailMismatch = Boolean(sessionEmail && invitedEmail !== sessionEmail);
     return privateJson({
       preview: result.preview,
+      signedIn: true,
+      emailMismatch,
       termsRequired: result.termsRequired,
+      sessionEmail: session.user.email ?? null,
     });
   } catch (error) {
     return Response.json(

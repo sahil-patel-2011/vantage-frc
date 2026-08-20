@@ -63,10 +63,19 @@ export function formatInviteRole(role: string | null | undefined): string | null
   const normalized = role.trim().toLowerCase();
   if (normalized === "owner") return "Owner";
   if (normalized === "admin") return "Admin";
+  if (normalized === "scout") return "Scout";
+  if (normalized === "viewer") return "Viewer";
   if (normalized === "mentor") return "Mentor";
   if (normalized === "member") return "Member";
-  if (normalized === "viewer") return "Viewer";
   return role.trim();
+}
+
+/** Sign-in return that preserves the invite token. */
+export function inviteSignInHref(token?: string | null): string {
+  const inviteReturn = token?.trim()
+    ? `/invite?token=${encodeURIComponent(token.trim())}`
+    : "/invite";
+  return `/signin?next=${encodeURIComponent(inviteReturn)}`;
 }
 
 /** Clear team identity line: Team N · Org name · Role. */
@@ -108,14 +117,14 @@ export function classifyInviteFlow(input: {
   error?: string | null;
 }): InviteFlowKind {
   if (!input.token.trim()) return "missing_token";
-  if (input.authRequired) return "auth_required";
   if (input.loading) return "loading";
-  if (input.emailMismatch) return "email_mismatch";
   if (input.preview) {
     const status = normalizeInviteStatus(input.preview.status);
     if (status === "pending") {
       const expiresMs = Date.parse(input.preview.expiresAt);
       if (Number.isFinite(expiresMs) && expiresMs <= Date.now()) return "expired";
+      if (input.emailMismatch) return "email_mismatch";
+      if (input.authRequired) return "auth_required";
       return "ready";
     }
     if (status === "expired") return "expired";
@@ -123,6 +132,8 @@ export function classifyInviteFlow(input: {
     if (status === "revoked") return "revoked";
     return "invalid";
   }
+  if (input.emailMismatch) return "email_mismatch";
+  if (input.authRequired) return "auth_required";
   if (input.error?.trim()) return "error";
   return "invalid";
 }
@@ -134,8 +145,7 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
       kind,
       eyebrow: "TEAM INVITATION",
       title: "Loading invitation…",
-      description:
-        "Checking this invite against your verified email. Membership stays closed until accept succeeds.",
+      description: "Checking this invite. Nothing is joined until you accept.",
     };
   }
   if (kind === "missing_token") {
@@ -145,30 +155,30 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
       title: "This invitation link is incomplete",
       description:
         detail?.trim() ||
-        "Open the full link from your invite email. Vantage never opens a workspace from a team number alone.",
+        "Open the full link from your invite email or the copy your team admin shared.",
       badge: "Link missing",
     };
   }
   if (kind === "auth_required") {
     return {
       kind,
-      eyebrow: "SIGN IN REQUIRED",
+      eyebrow: "SIGN IN TO JOIN",
       title: "Sign in with the invited email",
       description:
         detail?.trim() ||
-        "Accepting an invite requires a verified session on the exact email that received it.",
-      badge: "Setup required",
+        "This invite is for one specific address. Sign in with that email, then accept.",
+      badge: "Sign in",
     };
   }
   if (kind === "email_mismatch") {
     return {
       kind,
-      eyebrow: "EMAIL DOES NOT MATCH",
-      title: "This invite was sent to a different email",
+      eyebrow: "WRONG ACCOUNT",
+      title: "You're signed in with a different email",
       description:
         detail?.trim() ||
-        "Sign out and sign in with the exact address on the invitation. Exact-email matching is intentional.",
-      badge: "Exact email",
+        "Sign out, then sign in with the address this invite was sent to.",
+      badge: "Wrong email",
     };
   }
   if (kind === "expired") {
@@ -178,7 +188,7 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
       title: "This invitation has expired",
       description:
         detail?.trim() ||
-        "Ask a team owner or admin to resend an invite to your verified email. Nothing was joined.",
+        "Ask a team owner or admin to send a new invite to your email.",
       badge: "Expired",
     };
   }
@@ -189,7 +199,7 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
       title: "This invitation was already used",
       description:
         detail?.trim() ||
-        "If you already joined, open Workspace. Otherwise ask an owner for a fresh invite to your email.",
+        "If you already joined, open Workspace. Otherwise ask an owner for a fresh invite.",
       badge: "Used",
     };
   }
@@ -197,10 +207,10 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
     return {
       kind,
       eyebrow: "INVITE REVOKED",
-      title: "This invitation was revoked",
+      title: "This invitation was cancelled",
       description:
         detail?.trim() ||
-        "A team leader cancelled this invite. Request a new one to your verified email if you still need access.",
+        "A team leader revoked this invite. Request a new one if you still need access.",
       badge: "Revoked",
     };
   }
@@ -211,7 +221,7 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
       title: "Could not load this invitation",
       description:
         detail?.trim() ||
-        "A network or server issue prevented loading. Nothing was filled with DEMO membership — retry when ready.",
+        "A network or server issue prevented loading. Retry when you're back online.",
       badge: "Retry",
     };
   }
@@ -221,7 +231,7 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
     title: "This invitation is invalid or unavailable",
     description:
       detail?.trim() ||
-      "The link may be wrong, already used, or revoked. Ask your coach for a new invite to your exact email.",
+      "The link may be wrong, already used, or revoked. Ask your team for a new invite.",
     badge: "Unavailable",
   };
 }
@@ -237,46 +247,23 @@ export function inviteNextActions(input: {
 }): InviteNextAction[] {
   const token = input.token?.trim() || "";
   const inviteReturn = token ? `/invite?token=${encodeURIComponent(token)}` : "/invite";
-  const signInHref = `/signin?next=${encodeURIComponent(inviteReturn)}`;
+  const signInHref = inviteSignInHref(token);
 
   if (input.kind === "ready") {
-    return [
-      {
-        id: "accept",
-        label: "Accept with this verified email",
-        detail: "Joining requires exact-email match. Team numbers never unlock a workspace by themselves.",
-        href: "#invite-accept",
-        primary: true,
-      },
-      {
-        id: "onboarding",
-        label: "Finish profile setup first",
-        detail: "If onboarding is incomplete, complete it then return to this invite link.",
-        href: "/onboarding",
-      },
-      {
-        id: "support",
-        label: "Help & Support",
-        detail: "Open a ticket if the invite email does not match the account you expected.",
-        href: "/support",
-      },
-    ];
+    return [];
   }
 
   if (input.kind === "auth_required" || input.kind === "email_mismatch") {
     return [
       {
         id: "signin",
-        label: input.kind === "email_mismatch" ? "Sign in with the invited email" : "Sign in to continue",
-        detail: "Use the exact verified address on the invitation — Google or email OTP.",
+        label: input.kind === "email_mismatch" ? "Sign in with the invited email" : "Sign in to accept",
+        detail:
+          input.kind === "email_mismatch"
+            ? "Sign out first, then use the address on this invite."
+            : "Use the email this invite was sent to — Google or email code.",
         href: signInHref,
         primary: true,
-      },
-      {
-        id: "support",
-        label: "Help & Support",
-        detail: "Ask for a new invite if you no longer have access to that email.",
-        href: "/support",
       },
     ];
   }
@@ -289,15 +276,9 @@ export function inviteNextActions(input: {
       {
         id: "workspace",
         label: "Open workspace",
-        detail: "If membership already exists, continue in your team workspace.",
+        detail: "Continue in the team workspace you already joined.",
         href: workspaceHref,
         primary: true,
-      },
-      {
-        id: "dashboard",
-        label: "Back to dashboard",
-        detail: "Return to the signed-in home surface.",
-        href: "/dashboard",
       },
     ];
   }
@@ -305,24 +286,11 @@ export function inviteNextActions(input: {
   if (input.kind === "expired" || input.kind === "revoked" || input.kind === "invalid") {
     return [
       {
-        id: "support",
-        label: "Ask for a new invite",
-        detail:
-          "Owners and admins resend exact-email invites from Team admin. Support can help if you are stuck.",
-        href: "/support",
-        primary: true,
-      },
-      {
         id: "workspace",
         label: "Check workspace access",
         detail: "If you already belong to a team, pick it from Workspace.",
         href: "/workspace",
-      },
-      {
-        id: "onboarding",
-        label: "Request access instead",
-        detail: "Without an invite, submit an access request — an owner still must approve.",
-        href: "/onboarding",
+        primary: true,
       },
     ];
   }
@@ -332,15 +300,9 @@ export function inviteNextActions(input: {
       {
         id: "signin",
         label: "Open invite from email",
-        detail: "Use the full link in the invitation message. Partial URLs cannot be accepted.",
+        detail: "Use the full link in the invitation. Partial URLs cannot be accepted.",
         href: "/signin",
         primary: true,
-      },
-      {
-        id: "support",
-        label: "Help & Support",
-        detail: "Request a fresh invite to your verified email if the message is lost.",
-        href: "/support",
       },
     ];
   }
@@ -349,16 +311,9 @@ export function inviteNextActions(input: {
     {
       id: "retry",
       label: "Retry invitation",
-      detail:
-        "Reload this page after checking your connection. No DEMO membership is invented while loading fails.",
+      detail: "Reload this page after checking your connection.",
       href: inviteReturn,
       primary: true,
-    },
-    {
-      id: "support",
-      label: "Help & Support",
-      detail: "Open a ticket if the invite keeps failing to load.",
-      href: "/support",
     },
   ];
 }

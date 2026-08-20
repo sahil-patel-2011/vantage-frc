@@ -26,6 +26,12 @@ import {
   shouldShowTeamAdminSummaryTiles,
   type TeamAdminNextAction,
 } from "../../lib/team/team-admin-related";
+import {
+  formatInviteRowMeta,
+  inviteDeliveryBanner,
+  inviteSendResultCopy,
+  type InviteDeliveryMode,
+} from "../../lib/team/team-invites";
 import { TeamProfilePanel } from "./team-profile-panel";
 import "./github-connection.css";
 import "./team-access-requests.css";
@@ -154,6 +160,14 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("scout");
   const [message, setMessage] = useState("");
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [actingInviteId, setActingInviteId] = useState<string | null>(null);
+  const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({});
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+  const [inviteNotice, setInviteNotice] = useState<{ tone: "ok" | "warn" | "error"; message: string } | null>(
+    null,
+  );
+  const [deliveryMode, setDeliveryMode] = useState<InviteDeliveryMode | null>(null);
   const [providers, setProviders] = useState<
     Array<{
       id: string;
@@ -195,6 +209,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     const data = await response.json();
     setInvites(data.invites ?? []);
     if (data.adminTenure) setAdminTenure(data.adminTenure as AdminTenure);
+    if (data.delivery) setDeliveryMode(data.delivery as InviteDeliveryMode);
     if (!response.ok) setMessage(data.error);
 
     const membersResponse = await fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`);
@@ -263,26 +278,108 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     if (params.get("github") === "error") setMessage(params.get("error") || "GitHub OAuth failed.");
     void load();
   }, [orgId]);
-  async function invite(event: React.FormEvent) {
-    event.preventDefault();
-    const response = await fetch("/api/organizations/invites", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, email, role }),
-    });
-    const data = await response.json();
-    setMessage(response.ok ? "Invitation sent." : data.error);
-    if (response.ok) { setEmail(""); await load(); }
+  async function copyInviteLink(id: string, url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedInviteId(id);
+      window.setTimeout(() => {
+        setCopiedInviteId((current) => (current === id ? null : current));
+      }, 2000);
+    } catch {
+      setInviteNotice({
+        tone: "error",
+        message: "Could not copy automatically. Select the invite link and copy it.",
+      });
+    }
   }
+
+  async function sendInvite(event: React.FormEvent) {
+    event.preventDefault();
+    if (inviteBusy) return;
+    setInviteBusy(true);
+    try {
+      const response = await fetch("/api/organizations/invites", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, email, role }),
+      });
+      const data = (await response.json()) as {
+        id?: string;
+        inviteUrl?: string;
+        emailSent?: boolean;
+        delivery?: InviteDeliveryMode;
+        emailError?: string;
+        error?: string;
+      };
+      if (!response.ok) {
+        setInviteNotice({ tone: "error", message: data.error ?? "Could not create invitation." });
+        return;
+      }
+      setInviteNotice(
+        inviteSendResultCopy({
+          emailSent: Boolean(data.emailSent),
+          delivery: data.delivery ?? "failed",
+          emailError: data.emailError,
+        }),
+      );
+      if (data.id && data.inviteUrl) {
+        setInviteLinks((current) => ({ ...current, [data.id!]: data.inviteUrl! }));
+        await copyInviteLink(data.id, data.inviteUrl);
+      }
+      setEmail("");
+      await load();
+    } finally {
+      setInviteBusy(false);
+    }
+  }
+
   async function act(inviteId: string, action: "resend" | "revoke") {
-    const response = await fetch("/api/organizations/invites", {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, inviteId, action }),
-    });
-    const data = await response.json();
-    setMessage(response.ok ? `Invite ${action === "resend" ? "resent" : "revoked"}.` : data.error);
-    if (response.ok) await load();
+    if (actingInviteId) return;
+    setActingInviteId(inviteId);
+    try {
+      const response = await fetch("/api/organizations/invites", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, inviteId, action }),
+      });
+      const data = (await response.json()) as {
+        inviteUrl?: string;
+        emailSent?: boolean;
+        delivery?: InviteDeliveryMode;
+        emailError?: string;
+        error?: string;
+      };
+      if (!response.ok) {
+        setInviteNotice({
+          tone: "error",
+          message: data.error ?? `Could not ${action} invitation.`,
+        });
+        return;
+      }
+      if (action === "resend") {
+        setInviteNotice(
+          inviteSendResultCopy({
+            emailSent: Boolean(data.emailSent),
+            delivery: data.delivery ?? "failed",
+            emailError: data.emailError,
+          }),
+        );
+        if (data.inviteUrl) {
+          setInviteLinks((current) => ({ ...current, [inviteId]: data.inviteUrl! }));
+          await copyInviteLink(inviteId, data.inviteUrl);
+        }
+      } else {
+        setInviteNotice({ tone: "ok", message: "Invite revoked." });
+        setInviteLinks((current) => {
+          const next = { ...current };
+          delete next[inviteId];
+          return next;
+        });
+      }
+      await load();
+    } finally {
+      setActingInviteId(null);
+    }
   }
   async function reviewAccess(requestId: string, decision: "approved" | "declined", role: "scout" | "viewer" = "viewer") {
     const response = await fetch("/api/organizations/access-requests", {
@@ -436,6 +533,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
 
   const pendingInvites = invites.filter((invite) => invite.status === "pending").length;
   const pendingAccess = accessRequests.filter((request) => request.status === "pending").length;
+  const deliveryBanner = inviteDeliveryBanner(deliveryMode);
   const membershipShell = classifyTeamAdminShell({
     loading: membershipLoading,
     fetchFailed: membershipFetchFailed,
@@ -703,79 +801,110 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </div>
         {message ? <p className="team-access-message" role="status">{message}</p> : null}
       </section>
-      <section className="admin-grid" id="invite-form">
-        <form className="intel-panel" onSubmit={invite}>
-          <span className="eyebrow">INVITE A SPECIFIC EMAIL</span>
+      <section className="admin-grid team-invite-grid" id="invite-form">
+        <form className="team-invite-form" onSubmit={sendInvite}>
+          <span className="eyebrow">INVITE BY EMAIL</span>
+          <h2>Add a teammate</h2>
           <p>
-            Team numbers never grant access. The recipient must verify this exact address — the ledger stays blank
-            until a real invite is sent, never DEMO members.
+            Send an invite to one email. They sign in with that address and accept the link. Team
+            numbers never grant access.
           </p>
           {adminTenure?.inviteHint ? (
             <p className="app-muted team-admin-tenure-hint" role="note">
               {adminTenure.inviteHint}
             </p>
           ) : null}
+          {deliveryBanner ? (
+            <p
+              className={`team-invite-banner ${deliveryBanner.tone === "setup" ? "setup" : "info"}`}
+              role="note"
+            >
+              <strong>{deliveryBanner.title}</strong>
+              <span>{deliveryBanner.detail}</span>
+            </p>
+          ) : null}
           <label>
             Email
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input
+              required
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="teammate@example.com"
+            />
           </label>
           <label>
             Role
             <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="admin">Admin</option>
               <option value="scout">Scout</option>
+              <option value="admin">Admin</option>
               <option value="viewer">Viewer</option>
             </select>
           </label>
-          <button className="primary-action">Send invitation</button>
-          <div className="intel-actions" style={{ marginTop: "0.75rem" }}>
-            <a className="app-button secondary" href="/account?tab=profile">
-              Account
-            </a>
-            <a className="app-button secondary" href={withOrgHref("/team/discord", orgId)}>
-              Discord
-            </a>
-            <a className="app-button secondary" href="/account?tab=integrations">
-              Connections
-            </a>
-          </div>
+          <button className="primary-action" type="submit" disabled={inviteBusy}>
+            {inviteBusy ? "Sending…" : "Send invite"}
+          </button>
+          {inviteNotice ? (
+            <p className={`team-invite-notice ${inviteNotice.tone}`} role="status">
+              {inviteNotice.message}
+            </p>
+          ) : null}
         </form>
-        <Panel className="invite-list" id="invitation-ledger">
-          <span className="eyebrow">Invitation ledger</span>
+        <Panel className="invite-list team-invite-ledger" id="invitation-ledger">
+          <span className="eyebrow">Pending and past invites</span>
           {!invites.length ? (
             <EmptyState
               soft
               badge="No invitations yet"
               badgeTone="setup"
-              title="Invite ledger is empty"
-              description="Send an exact-email invite on the left. Nothing is pre-seeded — never DEMO members."
+              title="No invites sent yet"
+              description="Send an email on the left. You will get a copyable link even if email is not configured."
             />
           ) : (
-            invites.map((inviteRow) => (
-              <article key={inviteRow.id}>
-                <div>
-                  <strong>{inviteRow.email}</strong>
-                  <small>
-                    {inviteRow.role} · {inviteRow.status}
-                  </small>
-                </div>
-                <time>
-                  {inviteRow.acceptedAt
-                    ? `Accepted ${new Date(inviteRow.acceptedAt).toLocaleDateString()}`
-                    : `Expires ${new Date(inviteRow.expiresAt).toLocaleString()}`}
-                </time>
-                {inviteRow.status === "pending" ? (
+            invites.map((inviteRow) => {
+              const link = inviteLinks[inviteRow.id];
+              const pending = inviteRow.status === "pending";
+              return (
+                <article key={inviteRow.id} className={pending ? "pending" : undefined}>
                   <div>
-                    <button type="button" onClick={() => void act(inviteRow.id, "resend")}>
-                      Resend
-                    </button>
-                    <button type="button" onClick={() => void act(inviteRow.id, "revoke")}>
-                      Revoke
-                    </button>
+                    <strong>{inviteRow.email}</strong>
+                    <small>{formatInviteRowMeta(inviteRow)}</small>
                   </div>
-                ) : null}
-              </article>
-            ))
+                  <time>
+                    {inviteRow.acceptedAt
+                      ? `Accepted ${new Date(inviteRow.acceptedAt).toLocaleDateString()}`
+                      : `Expires ${new Date(inviteRow.expiresAt).toLocaleString()}`}
+                  </time>
+                  {pending ? (
+                    <div className="team-invite-row-actions">
+                      {link ? (
+                        <button
+                          type="button"
+                          onClick={() => void copyInviteLink(inviteRow.id, link)}
+                        >
+                          {copiedInviteId === inviteRow.id ? "Copied" : "Copy link"}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={actingInviteId === inviteRow.id}
+                        onClick={() => void act(inviteRow.id, "resend")}
+                      >
+                        {actingInviteId === inviteRow.id ? "Working…" : link ? "Resend" : "Resend & copy link"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={actingInviteId === inviteRow.id}
+                        onClick={() => void act(inviteRow.id, "revoke")}
+                      >
+                        Revoke
+                      </button>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })
           )}
         </Panel>
       </section>

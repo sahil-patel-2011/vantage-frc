@@ -6,6 +6,7 @@ import {
   inviteCanAccept,
   inviteEmptyCopy,
   inviteNextActions,
+  inviteSignInHref,
   inviteTermsRequired,
   normalizeInviteStatus,
 } from "./invite-flow";
@@ -13,10 +14,11 @@ import {
 describe("invite Soft-UI flow helpers", () => {
   it("formats clear team identity and roles", () => {
     expect(formatInviteRole("admin")).toBe("Admin");
+    expect(formatInviteRole("scout")).toBe("Scout");
     expect(formatInviteRole("")).toBeNull();
     expect(
-      formatInviteTeamIdentity({ orgName: "Vantage Robotics", teamNumber: 254, role: "member" }),
-    ).toBe("Team 254 · Vantage Robotics · Member");
+      formatInviteTeamIdentity({ orgName: "Vantage Robotics", teamNumber: 254, role: "scout" }),
+    ).toBe("Team 254 · Vantage Robotics · Scout");
   });
 
   it("requires terms only when not previously accepted", () => {
@@ -75,18 +77,33 @@ describe("invite Soft-UI flow helpers", () => {
         },
       }),
     ).toBe("ready");
+    expect(
+      classifyInviteFlow({
+        token: "abc",
+        loading: false,
+        authRequired: true,
+        preview: {
+          orgName: "Team",
+          teamNumber: 1,
+          role: "scout",
+          email: "a@example.com",
+          status: "pending",
+          expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+        },
+      }),
+    ).toBe("auth_required");
     expect(classifyInviteFlow({ token: "", loading: false, preview: null })).toBe("missing_token");
   });
 
   it("keeps empty copy and next steps honest for exact-email security", () => {
-    expect(inviteEmptyCopy("email_mismatch").description).toMatch(/exact/i);
+    expect(inviteEmptyCopy("email_mismatch").description).toMatch(/sign out/i);
     expect(inviteEmptyCopy("expired").badge).toBe("Expired");
     expect(inviteEmptyCopy("invalid").title).toMatch(/invalid/i);
-    const ready = inviteNextActions({ kind: "ready", token: "tok" });
-    expect(ready[0]?.primary).toBe(true);
-    expect(ready.some((a) => /exact-email/i.test(a.detail))).toBe(true);
+    expect(inviteNextActions({ kind: "ready", token: "tok" })).toEqual([]);
     const mismatch = inviteNextActions({ kind: "email_mismatch", token: "tok" });
     expect(mismatch[0]?.href).toContain("/signin");
     expect(mismatch[0]?.href).toContain("invite");
+    expect(inviteSignInHref("abc")).toContain("/signin?next=");
+    expect(decodeURIComponent(inviteSignInHref("abc"))).toContain("/invite?token=abc");
   });
 });

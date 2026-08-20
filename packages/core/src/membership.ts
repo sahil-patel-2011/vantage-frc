@@ -1,5 +1,10 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { createEmailProvider, hashEmail, type EmailProvider } from "./email";
+import {
+  createEmailProvider,
+  hashEmail,
+  inviteAcceptUrl,
+  type EmailProvider,
+} from "./email";
 import { createInviteToken, type OrgRole } from "./index";
 import { assertOrgCapability } from "./capabilities";
 
@@ -71,12 +76,78 @@ export async function createOrganizationAsPlatformAdmin(
   return orgId;
 }
 
+export type InviteDeliveryMode = "resend" | "local" | "unconfigured" | "failed";
+
+export type CreatedOrganizationInvite = {
+  id: string;
+  expiresAt: Date;
+  email: string;
+  role: OrgRole;
+  organization: string;
+  /** Raw token — never persist; only used to build a one-time copy link / email. */
+  token: string;
+};
+
+export function inviteEmailDeliveryMode(
+  provider: EmailProvider = createEmailProvider(),
+): Exclude<InviteDeliveryMode, "failed"> {
+  if (provider.name === "resend") return "resend";
+  if (provider.name === "local-mailbox") return "local";
+  return "unconfigured";
+}
+
+export async function deliverInviteEmail(
+  invite: {
+    email: string;
+    organization: string;
+    role: OrgRole | string;
+    token: string;
+    expiresAt: Date;
+  },
+  provider: EmailProvider = createEmailProvider(),
+): Promise<{ emailSent: boolean; delivery: InviteDeliveryMode; error?: string }> {
+  const mode = inviteEmailDeliveryMode(provider);
+  if (mode === "unconfigured") {
+    return { emailSent: false, delivery: "unconfigured" };
+  }
+  try {
+    await provider.sendInvite({
+      email: invite.email,
+      organization: invite.organization,
+      role: invite.role,
+      token: invite.token,
+      expiresAt: invite.expiresAt,
+    });
+    return { emailSent: true, delivery: mode };
+  } catch (error) {
+    return {
+      emailSent: false,
+      delivery: "failed",
+      error: error instanceof Error ? error.message : "Email could not be sent",
+    };
+  }
+}
+
+export function publicCreatedInvite(invite: CreatedOrganizationInvite, delivery: {
+  emailSent: boolean;
+  delivery: InviteDeliveryMode;
+  error?: string;
+}) {
+  return {
+    id: invite.id,
+    expiresAt: invite.expiresAt,
+    inviteUrl: inviteAcceptUrl(invite.token),
+    emailSent: delivery.emailSent,
+    delivery: delivery.delivery,
+    ...(delivery.error ? { emailError: delivery.error } : {}),
+  };
+}
+
 export async function createOrganizationInvite(
   client: PoolClient,
   actorUserId: string,
   input: { orgId: string; email: string; role: OrgRole; expiresInHours?: number },
-  provider: EmailProvider = createEmailProvider(),
-) {
+): Promise<CreatedOrganizationInvite> {
   const email = normalizeEmail(input.email);
   await assertOrgCapability(client, input.orgId, "manage_members");
   if (input.role === "owner") {
@@ -97,29 +168,58 @@ export async function createOrganizationInvite(
   const expiresAt = new Date(
     Date.now() + Math.min(Math.max(input.expiresInHours ?? 72, 1), 168) * 3_600_000,
   );
-  const result = await client.query<{ id: string; organization: string }>(
-    `INSERT INTO invites(org_id,email,role,token_hash,invited_by,expires_at)
-     SELECT o.id,$2,$3,$4,$5,$6 FROM organizations o WHERE o.id=$1
-     RETURNING id,(SELECT name FROM organizations WHERE id=$1) AS organization`,
-    [input.orgId, email, input.role, tokenHash, actorUserId, expiresAt],
+
+  const pending = await client.query<{ id: string }>(
+    `SELECT id FROM invites
+      WHERE org_id=$1::uuid AND lower(email)=lower($2) AND status='pending'
+      ORDER BY created_at DESC
+      LIMIT 1`,
+    [input.orgId, email],
   );
-  const invite = result.rows[0]!;
-  await provider.sendInvite({
-    email,
-    organization: invite.organization,
-    role: input.role,
-    token,
+
+  let invite: { id: string; organization: string };
+  if (pending.rows[0]) {
+    const rotated = await client.query<{ id: string; organization: string }>(
+      `UPDATE invites SET token_hash=$1, role=$2, expires_at=$3, last_sent_at=now(), invited_by=$4
+       WHERE id=$5 AND org_id=$6 AND status='pending'
+       RETURNING id, (SELECT name FROM organizations WHERE id=$6) AS organization`,
+      [tokenHash, input.role, expiresAt, actorUserId, pending.rows[0].id, input.orgId],
+    );
+    invite = rotated.rows[0]!;
+    await audit(client, {
+      orgId: input.orgId,
+      inviteId: invite.id,
+      actorUserId,
+      action: "invite.rotated",
+      email,
+      metadata: { role: input.role, expiresAt: expiresAt.toISOString() },
+    });
+  } else {
+    const inserted = await client.query<{ id: string; organization: string }>(
+      `INSERT INTO invites(org_id,email,role,token_hash,invited_by,expires_at)
+       SELECT o.id,$2,$3,$4,$5,$6 FROM organizations o WHERE o.id=$1
+       RETURNING id,(SELECT name FROM organizations WHERE id=$1) AS organization`,
+      [input.orgId, email, input.role, tokenHash, actorUserId, expiresAt],
+    );
+    invite = inserted.rows[0]!;
+    await audit(client, {
+      orgId: input.orgId,
+      inviteId: invite.id,
+      actorUserId,
+      action: "invite.created",
+      email,
+      metadata: { role: input.role, expiresAt: expiresAt.toISOString() },
+    });
+  }
+
+  return {
+    id: invite.id,
     expiresAt,
-  });
-  await audit(client, {
-    orgId: input.orgId,
-    inviteId: invite.id,
-    actorUserId,
-    action: "invite.created",
     email,
-    metadata: { role: input.role, expiresAt: expiresAt.toISOString() },
-  });
-  return { id: invite.id, expiresAt };
+    role: input.role,
+    organization: invite.organization,
+    token,
+  };
 }
 
 export async function resendOrganizationInvite(
@@ -127,10 +227,10 @@ export async function resendOrganizationInvite(
   actorUserId: string,
   orgId: string,
   inviteId: string,
-  provider: EmailProvider = createEmailProvider(),
-) {
+): Promise<CreatedOrganizationInvite> {
   const { token, tokenHash } = createInviteToken();
   const result = await client.query<{
+    id: string;
     email: string;
     role: OrgRole;
     organization: string;
@@ -140,12 +240,11 @@ export async function resendOrganizationInvite(
        last_sent_at=now()
      FROM organizations o WHERE i.id=$2 AND i.org_id=$3 AND i.org_id=o.id
        AND i.status='pending' AND has_org_capability(i.org_id,'manage_members'::org_capability)
-     RETURNING i.email,i.role,o.name AS organization,i.expires_at AS "expiresAt"`,
+     RETURNING i.id,i.email,i.role,o.name AS organization,i.expires_at AS "expiresAt"`,
     [tokenHash, inviteId, orgId],
   );
   const invite = result.rows[0];
   if (!invite) throw new Error("Pending invite not found");
-  await provider.sendInvite({ ...invite, token });
   await audit(client, {
     orgId,
     inviteId,
@@ -153,6 +252,14 @@ export async function resendOrganizationInvite(
     action: "invite.resent",
     email: invite.email,
   });
+  return {
+    id: invite.id,
+    expiresAt: invite.expiresAt,
+    email: invite.email,
+    role: invite.role,
+    organization: invite.organization,
+    token,
+  };
 }
 
 export async function revokeOrganizationInvite(

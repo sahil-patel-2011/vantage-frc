@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { browserCommand, fusionAddinPaths, validatePluginEndpoint } from "../src/platform";
 import { providerPolicy } from "../src/provider";
-import { doctorExitCode, formatDoctorReport, onshapeEnvChecks, osCapabilityMatrix } from "../src/doctor";
+import { doctorExitCode, formatDoctorReport, onshapeCliKeyChecks, onshapeEnvChecks, osCapabilityMatrix } from "../src/doctor";
 import { findVantageRepoRoot } from "../src/update";
 
 describe("desktop CAD onboarding safety", () => {
@@ -78,6 +78,13 @@ describe("doctor / OS matrix", () => {
         ONSHAPE_OAUTH_CLIENT_ID: "id",
         ONSHAPE_OAUTH_CLIENT_SECRET: "secret",
       } as NodeJS.ProcessEnv).some((c) => c.id === "onshape-env" && c.status === "pass"),
+    ).toBe(true);
+    expect(onshapeCliKeyChecks({}).some((c) => c.id === "onshape-api-keys" && c.status === "warn")).toBe(true);
+    expect(
+      onshapeCliKeyChecks({
+        ONSHAPE_ACCESS_KEY: "ak",
+        ONSHAPE_SECRET_KEY: "sk",
+      } as NodeJS.ProcessEnv).some((c) => c.id === "onshape-api-keys" && c.status === "pass"),
     ).toBe(true);
   });
 

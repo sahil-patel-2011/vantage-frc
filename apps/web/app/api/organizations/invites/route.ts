@@ -1,8 +1,11 @@
 import {
   auth,
   createOrganizationInvite,
+  deliverInviteEmail,
   getAdminTenureSnapshot,
+  inviteEmailDeliveryMode,
   listOrganizationInvites,
+  publicCreatedInvite,
   resendOrganizationInvite,
   revokeOrganizationInvite,
   type OrgRole,
@@ -46,7 +49,7 @@ export async function GET(request: Request) {
     const data = await withRls({ userId: actor, orgId }, async (client) => {
       const invites = await listOrganizationInvites(client, orgId);
       const adminTenure = await getAdminTenureSnapshot(client, orgId);
-      return { invites, adminTenure };
+      return { invites, adminTenure, delivery: inviteEmailDeliveryMode() };
     });
     return privateJson(data);
   } catch (error) {
@@ -61,14 +64,15 @@ export async function POST(request: Request) {
       return rateLimitedResponse("Too many invite changes. Wait a few minutes and try again.");
     }
     const body = await parseSecureJson(request, createSchema);
-    const invite = await withRls({ userId: actor, orgId: body.orgId }, (client) =>
+    const created = await withRls({ userId: actor, orgId: body.orgId }, (client) =>
       createOrganizationInvite(client, actor, {
         orgId: body.orgId,
         email: body.email,
         role: body.role as OrgRole,
       }),
     );
-    return privateJson(invite, { status: 201 });
+    const delivery = await deliverInviteEmail(created);
+    return privateJson(publicCreatedInvite(created, delivery), { status: 201 });
   } catch (error) {
     return failure(error);
   }
@@ -81,12 +85,17 @@ export async function PATCH(request: Request) {
       return rateLimitedResponse("Too many invite changes. Wait a few minutes and try again.");
     }
     const body = await parseSecureJson(request, actionSchema);
-    await withRls({ userId: actor, orgId: body.orgId }, (client) =>
-      body.action === "resend"
-        ? resendOrganizationInvite(client, actor, body.orgId, body.inviteId)
-        : revokeOrganizationInvite(client, actor, body.orgId, body.inviteId),
+    if (body.action === "revoke") {
+      await withRls({ userId: actor, orgId: body.orgId }, (client) =>
+        revokeOrganizationInvite(client, actor, body.orgId, body.inviteId),
+      );
+      return privateJson({ success: true });
+    }
+    const resent = await withRls({ userId: actor, orgId: body.orgId }, (client) =>
+      resendOrganizationInvite(client, actor, body.orgId, body.inviteId),
     );
-    return privateJson({ success: true });
+    const delivery = await deliverInviteEmail(resent);
+    return privateJson({ success: true, ...publicCreatedInvite(resent, delivery) });
   } catch (error) {
     return failure(error);
   }

@@ -56,6 +56,18 @@ Future signed MSI stub: `scripts/cad/windows/VantageCadRelay.wxs` (needs Authent
 
 Mock without Autodesk: `VANTAGE_CAD_MOCK=1 vantage-cad start`
 
+## Claude Code in the terminal
+
+Keep Fusion open with **VantageCadRelay** running, then:
+
+```text
+npx vantage-cad fusion ping
+npx vantage-cad fusion sketch --width 40 --height 20
+npx vantage-cad fusion extrude --depth 10
+```
+
+Or use the repo `.mcp.json` (`fusion_status`, `fusion_sketch_rectangle`, `fusion_extrude`). Full steps: `docs/CLAUDE_CODE_CAD.md`.
+
 ## Secrets
 
 - `FUSION_RELAY_SIGNING_SECRET` must match between Vantage server and the Fusion add-in process env (default local secret is for demos only).

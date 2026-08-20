@@ -20,11 +20,11 @@ const body = `# Vantage
 
 ## What Vantage does (citeable)
 - Offline-first match and pit scouting with form builder, voice notes (opt-in), and sync when Wi-Fi returns.
-- Competition hub: Command, My Day, Strategy, Scouting, Form builder, Match checklist, Pick clock; Alliance Selection Desk in More tools.
-- Team hub: Calendar, todos, practice, attendance, knowledge; Season Planning Workspace in More tools.
-- Business hub: Budget, orders, sponsors, grants, partners, award evidence.
-- Build hub: Kickoff, CAD agent (Onshape/Fusion, setup required), Code Coach, FMEA, prototypes.
-- AI hub: Assistant chat, budgets, writer, code assist; AI API keys at /team/ai-keys (BYOK on Free).
+- Competition hub: Event day, Scouting, Strategy, and Pit workbenches; My Day / Forms / Alliance desk live as inner tabs — not a 40-item More tools list.
+- Team hub: Calendar, Chat, People, Work, Knowledge; Season Planning sits under Work.
+- Business hub: Overview, Money, Sponsors, Grants, Outreach.
+- Build hub: Kickoff, CAD, Code, Robot (FMEA/batteries/inspection as Robot tabs).
+- AI hub: Chat, Writer, Agent, Controls, Notes; API keys under Controls.
 - FRC Assistant answers cite labeled sources (official, scout, prediction); no invented DEMO win rates.
 - Vantage never auto-deploys robot code.
 

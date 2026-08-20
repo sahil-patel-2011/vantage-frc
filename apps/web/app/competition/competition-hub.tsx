@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { HubOrgGate, ProductHubShell } from "../../components/product-hub";
+import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
 import "../product-hub.css";
 import "../scouting/scouting.css";
 import "../scouting/forms/forms.css";
@@ -42,7 +42,7 @@ export default function CompetitionHub() {
             </HubOrgGate>
           );
         }
-        return null;
+        return <HubLegacyRedirect hubId="competition" tab={tab} orgId={orgId} />;
       }}
     </ProductHubShell>
   );

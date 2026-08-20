@@ -17,11 +17,13 @@ import {
 } from "./platform";
 import { runLocalCadUpdate } from "./update";
 import { doctorExitCode, formatDoctorReport, runDoctor } from "./doctor";
+import { runClaudeCadCli } from "./claude";
+import { runCadMcpStdio } from "@vantage/cad";
 
 const VERSION = "0.1.1";
 const command = process.argv[2] ?? "help";
 const base = (process.env.VANTAGE_URL ?? "http://localhost:3001").replace(/\/$/, "");
-const ask = createInterface({ input, output });
+const ask = command === "setup" ? createInterface({ input, output }) : null;
 
 async function json(path: string, init: RequestInit = {}) {
   const response = await fetch(`${base}${path}`, {
@@ -115,14 +117,14 @@ async function setup() {
     } else {
       console.log("Fusion AddIns folder exists, but VantageCadRelay is not installed yet.");
     }
-    const endpoint = await ask.question(`Fusion plugin endpoint [${DEFAULT_FUSION_PLUGIN_ENDPOINT}]: `);
+    const endpoint = await ask!.question(`Fusion plugin endpoint [${DEFAULT_FUSION_PLUGIN_ENDPOINT}]: `);
     paired.pluginEndpoint = validatePluginEndpoint(endpoint || DEFAULT_FUSION_PLUGIN_ENDPOINT).toString();
   }
 
   console.log(
     "\nAI execution source:\n1. Vantage managed plan (recommended reliable default)\n2. Team/platform configured OpenAI or Anthropic API\n3. Personal BYOK API key (configure in the encrypted Vantage browser form)\n4. Local OpenAI-compatible URL\n5. Claude Code local connector — platform owner private local sessions only; never team/background traffic",
   );
-  const provider = await ask.question("Choose 1–5: ");
+  const provider = await ask!.question("Choose 1–5: ");
   if (!["1", "2", "3", "4", "5"].includes(provider)) throw new Error("Unsupported provider selection");
   if (provider === "3") {
     console.log(
@@ -130,7 +132,7 @@ async function setup() {
     );
   }
   if (provider === "4") {
-    const url = await ask.question("Local OpenAI-compatible HTTPS URL: ");
+    const url = await ask!.question("Local OpenAI-compatible HTTPS URL: ");
     const parsed = new URL(url);
     if (!["https:", "http:"].includes(parsed.protocol)) throw new Error("Local provider URL must use HTTP(S)");
     paired.localBaseUrl = parsed.toString();
@@ -299,8 +301,15 @@ async function main() {
   else if (command === "start") await start();
   else if (command === "logout") await logout();
   else if (command === "update") await update();
-  else {
-    console.log("vantage-cad <setup|start|status|diagnose|doctor|update|logout>");
+  else if (command === "mcp") await runCadMcpStdio();
+  else if (command === "claude" || command === "onshape" || command === "fusion") {
+    await runClaudeCadCli(command, process.argv[3] ?? "");
+  } else {
+    console.log("vantage-cad <setup|start|status|diagnose|doctor|update|logout|claude|mcp|onshape|fusion>");
+    console.log("  claude                 print Claude Code CAD setup + status");
+    console.log("  mcp                    stdio MCP server for Claude Code");
+    console.log("  onshape docs|bind|sketch|extrude");
+    console.log("  fusion ping|sketch|extrude");
     console.log("  doctor|diagnose [--json]   run local CAD health checks");
     console.log("  update [--force-addin] [--skip-addin]  reinstall from VANTAGE_REPO / monorepo checkout");
   }
@@ -312,5 +321,5 @@ main()
     process.exitCode = 1;
   })
   .finally(() => {
-    if (command !== "start") ask.close();
+    ask?.close();
   });

@@ -1,4 +1,8 @@
-.product-hub-tabs { margin: 0 0 12px; }
+.product-hub-tabs { margin: 0 0 8px; }
+.product-hub-subtabs {
+  margin: 0 0 14px;
+  flex-wrap: wrap;
+}
 .product-hub-featured {
   display: flex;
   flex-wrap: wrap;

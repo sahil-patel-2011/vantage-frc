@@ -10,10 +10,10 @@ import {
 } from "../lib/nav/hub-access-filter";
 import {
   hubById,
-  hubFeaturedMoreTabs,
   hubLegacyHref,
-  hubMoreTabs,
+  hubNestedTabs,
   hubPrimaryTabs,
+  hubWorkbenchId,
   isHubTab,
   type ProductHubDef,
 } from "../lib/nav/hubs";
@@ -116,19 +116,17 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
     () => filterTabsByHubAccess(hubPrimaryTabs(hub), access.hubAccess, accessHubId),
     [access.hubAccess, accessHubId, hub],
   );
-  const moreTabs = useMemo(
-    () => filterTabsByHubAccess(hubMoreTabs(hub), access.hubAccess, accessHubId),
-    [access.hubAccess, accessHubId, hub],
-  );
-  const featuredMore = useMemo(
-    () => filterTabsByHubAccess(hubFeaturedMoreTabs(hub), access.hubAccess, accessHubId),
-    [access.hubAccess, accessHubId, hub],
-  );
-  const extraMore = useMemo(() => moreTabs.filter((entry) => !entry.featured), [moreTabs]);
   const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, accessHubId);
   const [tab, setTab] = useState(hub.defaultTab);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [orgReady, setOrgReady] = useState(false);
+  const workbenchId = hubWorkbenchId(hub, tab);
+  const nestedTabs = useMemo(() => {
+    const all = hubNestedTabs(hub, workbenchId);
+    if (all.length <= 1) return [];
+    if (primaryTabs.some((entry) => entry.id === workbenchId)) return all;
+    return filterTabsByHubAccess(all, access.hubAccess, accessHubId);
+  }, [access.hubAccess, accessHubId, hub, primaryTabs, workbenchId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,28 +153,24 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
 
   useEffect(() => {
     if (!access.ready || hubDenied || !primaryTabs.length) return;
-    if (primaryTabs.some((entry) => entry.id === tab)) return;
+    if (primaryTabs.some((entry) => entry.id === tab || entry.id === hubWorkbenchId(hub, tab))) return;
     const fallback = primaryTabs[0]?.id ?? hub.defaultTab;
     setTab(fallback);
     writeTabToUrl(fallback, hub.defaultTab);
-  }, [access.ready, hub.defaultTab, hubDenied, primaryTabs, tab]);
+  }, [access.ready, hub, hubDenied, primaryTabs, tab]);
 
   const selectTab = useCallback(
     (next: string) => {
       if (!isHubTab(hub, next)) return;
       if (access.ready && !clientCanAccessHub(access.hubAccess, accessHubId)) return;
-      const allowed = filterTabsByHubAccess(hub.tabs, access.hubAccess, accessHubId);
-      if (access.ready && !allowed.some((entry) => entry.id === next)) return;
-      const def = hub.tabs.find((entry) => entry.id === next);
-      // Non-primary tools live as standalone pages — jump there instead of a blank panel.
-      if (def?.primary === false && def.legacyHref && typeof window !== "undefined") {
-        window.location.assign(hubLegacyHref(def, orgId));
-        return;
+      if (access.ready && primaryTabs.length) {
+        const workbench = hubWorkbenchId(hub, next);
+        if (!primaryTabs.some((entry) => entry.id === workbench)) return;
       }
       setTab(next);
       writeTabToUrl(next, hub.defaultTab);
     },
-    [access.hubAccess, access.ready, accessHubId, hub, orgId],
+    [access.hubAccess, access.ready, accessHubId, hub, primaryTabs],
   );
 
   if (access.ready && hubDenied) {
@@ -209,7 +203,7 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
 
   const tabAllowed =
     !access.ready ||
-    filterTabsByHubAccess(hub.tabs, access.hubAccess, accessHubId).some((entry) => entry.id === tab);
+    primaryTabs.some((entry) => entry.id === tab || entry.id === workbenchId);
 
   return (
     <main className={`module-page product-hub product-hub--${hub.id}`}>
@@ -222,31 +216,20 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
       </PageHeader>
       <TabBar
         aria-label={`${hub.label} sections`}
-        value={primaryTabs.some((entry) => entry.id === tab) ? tab : (primaryTabs[0]?.id ?? hub.defaultTab)}
+        value={workbenchId}
         onChange={selectTab}
         tabs={primaryTabs.map((entry) => ({ id: entry.id, label: entry.label }))}
         className="product-hub-tabs"
       />
-      {featuredMore.length ? (
-        <nav className="product-hub-featured" aria-label={`Featured ${hub.label} tools`}>
-          {featuredMore.map((entry) => (
-            <a key={entry.id} className="app-button secondary" href={hubLegacyHref(entry, orgId)}>
-              {entry.label}
-            </a>
-          ))}
-        </nav>
-      ) : null}
-      {extraMore.length ? (
-        <details className="product-hub-more">
-          <summary>All tools</summary>
-          <div className="product-hub-more-links">
-            {extraMore.map((entry) => (
-              <a key={entry.id} href={hubLegacyHref(entry, orgId)}>
-                {entry.label}
-              </a>
-            ))}
-          </div>
-        </details>
+      {nestedTabs.length > 1 ? (
+        <TabBar
+          aria-label={`${hub.label} tools`}
+          value={tab}
+          onChange={selectTab}
+          tabs={nestedTabs.map((entry) => ({ id: entry.id, label: entry.label }))}
+          className="product-hub-subtabs"
+          variant="toolbar"
+        />
       ) : null}
       <div className="product-hub-panel" data-hub-tab={tab}>
         {(() => {
@@ -264,10 +247,6 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
           if (access.ready && !tabAllowed) {
             const active = hub.tabs.find((entry) => entry.id === tab);
             return <HubTabForbidden hubLabel={hub.label} tabLabel={active?.label} />;
-          }
-          const active = hub.tabs.find((entry) => entry.id === tab);
-          if (active?.primary === false && active.legacyHref) {
-            return <HubLegacyOpen label={active.label} href={hubLegacyHref(active, orgId)} />;
           }
           return children({ tab, orgId, selectTab });
         })()}

@@ -1,7 +1,7 @@
 import { createHash, createHmac } from "node:crypto";
 import { createSqlPool } from "@vantage/db/pool";
 import { firstConfiguredEnv } from "@vantage/db/postgres-url";
-import { runtimeEnv } from "./access-policy";
+import { resolveAuthBaseURL, runtimeEnv } from "./access-policy";
 
 export type OtpEmail = {
   email: string;
@@ -74,7 +74,8 @@ export class ResendEmailProvider implements EmailProvider {
     if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
   }
   async sendInvite(message: InviteEmail) {
-    const baseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3001";
+    const acceptUrl = inviteAcceptUrl(message.token);
+    const role = message.role.trim() || "member";
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -85,7 +86,10 @@ export class ResendEmailProvider implements EmailProvider {
         from: this.from,
         to: [message.email],
         subject: `Join ${message.organization} on Vantage`,
-        text: `You were invited as ${message.role}. Sign in with this email, then accept: ${baseUrl}/invite?token=${encodeURIComponent(message.token)}`,
+        text:
+          `You were invited to join ${message.organization} on Vantage as ${role}.\n\n` +
+          `Sign in with ${message.email}, then open this link to accept:\n${acceptUrl}\n\n` +
+          `This invite expires ${message.expiresAt.toUTCString()}. If you were not expecting this, you can ignore it.`,
       }),
     });
     if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
@@ -137,6 +141,11 @@ export function deterministicLocalOtp(email: string, type: string) {
 
 export function hashEmail(email: string) {
   return createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+}
+
+/** Public origin + `/invite?token=` for invite emails and one-time admin copy links. */
+export function inviteAcceptUrl(token: string) {
+  return `${resolveAuthBaseURL()}/invite?token=${encodeURIComponent(token.trim())}`;
 }
 
 export async function auditAuthEvent(input: {

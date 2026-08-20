@@ -119,7 +119,10 @@ body.has-app-shell .app-topbar{display:none}
 .soft-notif b:empty,
 .soft-notif b[data-count="0"]{display:none!important}
 .soft-page-head{display:flex;align-items:center;gap:4px;min-height:44px;min-width:0;flex:1}
-.soft-page-head h1{margin:0;font:700 28px/1.15 var(--font-source-sans),ui-sans-serif;letter-spacing:-.02em}
+.soft-page-head h1,.soft-topbar-title{
+  margin:0;font:650 15px/1.2 var(--font-source-sans),ui-sans-serif;letter-spacing:-.02em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 .soft-back{display:grid;place-items:center;width:40px;height:40px;color:var(--soft-ink);text-decoration:none}
 
 /* Drawer */
@@ -328,22 +331,26 @@ body.has-app-shell .app-topbar{display:none}
 
 /* Island + FAB */
 .soft-island{
-  position:fixed;z-index:95;left:50%;bottom:calc(14px + var(--soft-safe-bottom));transform:translateX(-50%);
-  display:flex;gap:4px;padding:8px;border-radius:999px;background:var(--soft-island);
-  border:1px solid color-mix(in srgb,var(--soft-line) 70%,transparent);box-shadow:0 12px 40px rgba(28,36,48,.16);
-  backdrop-filter:saturate(1.4) blur(16px);-webkit-backdrop-filter:saturate(1.4) blur(16px);
+  position:fixed;z-index:95;left:50%;bottom:calc(12px + var(--soft-safe-bottom));transform:translateX(-50%);
+  display:flex;align-items:stretch;gap:2px;width:min(420px,calc(100vw - 28px));
+  padding:6px;border-radius:28px;background:var(--soft-island);
+  border:1px solid color-mix(in srgb,var(--soft-line) 55%,transparent);
+  box-shadow:0 18px 50px rgba(16,24,40,.18);
+  backdrop-filter:saturate(1.8) blur(22px);-webkit-backdrop-filter:saturate(1.8) blur(22px);
   touch-action:manipulation;
 }
 .soft-island a,.soft-island-more{
-  display:grid;justify-items:center;gap:3px;min-width:64px;min-height:44px;padding:8px 10px;border-radius:16px;
-  color:var(--soft-muted);text-decoration:none;font:600 10px/1 ui-sans-serif;
+  position:relative;flex:1 1 0;display:grid;justify-items:center;gap:3px;
+  min-width:0;min-height:52px;padding:8px 4px;border-radius:22px;
+  color:var(--soft-muted);text-decoration:none;font:600 10px/1 var(--font-source-sans),ui-sans-serif;
   transition:background .18s ease,color .18s ease,transform .18s ease;
-  border:0;background:transparent;cursor:pointer;
-  place-content:center;
+  border:0;background:transparent;cursor:pointer;place-content:center;
 }
 .soft-island a:active,.soft-island-more:active{transform:scale(.96)}
-.soft-island a svg,.soft-island-more svg{width:20px;height:20px}
-.soft-island a[aria-current="page"],.soft-island-more.is-open{color:var(--soft-accent);background:var(--soft-accent-soft)}
+.soft-island a svg,.soft-island-more svg{width:22px;height:22px}
+.soft-island a[aria-current="page"],.soft-island-more.is-open{
+  color:var(--soft-accent);background:var(--soft-accent-soft);
+}
 .soft-island-more{position:relative}
 .soft-island-badge{
   position:absolute;top:2px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;
@@ -403,16 +410,12 @@ body.has-app-shell .app-topbar{display:none}
 .soft-island-editor-error{margin:10px 0 0;color:#b42318;font-size:12px;font-weight:700}
 .soft-island-editor footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--soft-line)}.soft-island-editor footer a,.soft-island-editor footer button{min-height:40px;padding:0 12px;border:1px solid var(--soft-line);border-radius:11px;background:var(--soft-bg);color:var(--soft-ink);font:700 12px var(--font-source-sans),ui-sans-serif;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.soft-island-editor footer a{color:var(--soft-accent)}.soft-island-editor footer a:first-child{margin-right:auto}.soft-island-editor footer button.primary{border-color:var(--soft-accent);color:#fff;background:var(--soft-accent)}.soft-island-editor footer button:disabled{opacity:.5;cursor:not-allowed}
 .soft-fab{
-  position:fixed;z-index:81;right:max(16px,env(safe-area-inset-right));bottom:calc(86px + var(--soft-safe-bottom));
-  display:none!important;place-items:center;width:52px;height:52px;border-radius:999px;color:#fff;background:var(--soft-accent);
-  box-shadow:0 8px 22px rgba(31,79,214,.24);text-decoration:none;
+  display:none!important;
 }
-.soft-fab svg{width:26px;height:26px}
 .soft-fab-desktop{display:none!important}
 @media(min-width:980px){
-  .soft-island{bottom:calc(20px + var(--soft-safe-bottom))}
-  .soft-fab.soft-fab-desktop{display:grid!important;right:max(28px,env(safe-area-inset-right));bottom:calc(28px + var(--soft-safe-bottom))}
-  body.has-app-shell{padding-bottom:calc(40px + var(--soft-safe-bottom)) !important}
+  .soft-island{bottom:calc(18px + var(--soft-safe-bottom));width:min(440px,calc(100vw - 48px))}
+  body.has-app-shell{padding-bottom:calc(100px + var(--soft-safe-bottom)) !important}
 }
 @media(max-width:620px){
   .soft-island-editor{padding-inline:0}
@@ -1598,7 +1601,7 @@ body.has-app-shell{
   letter-spacing:-.005em;
 }
 .soft-topbar{height:52px;padding:0 12px;gap:8px}
-.soft-page-head h1{font-size:22px;letter-spacing:-.03em}
+.soft-page-head h1,.soft-topbar-title{font-size:15px;letter-spacing:-.02em}
 .soft-icon-btn{width:40px;height:40px}
 .soft-theme-slot .theme-toggle{
   width:40px;min-height:40px;padding:0;justify-content:center;gap:0;
@@ -1615,30 +1618,25 @@ body.has-app-shell{
 .soft-nav-heading{padding:6px 8px 4px;font-size:12px}
 .soft-island{
   gap:2px;padding:6px;max-width:calc(100vw - 24px);
-  box-shadow:0 10px 32px rgba(28,36,48,.14);
+  box-shadow:0 16px 44px rgba(16,24,40,.16);
 }
 .soft-island a,.soft-island-more{
-  display:grid;justify-items:center;gap:2px;min-width:56px;min-height:44px;padding:7px 8px;border-radius:14px;
+  display:grid;justify-items:center;gap:2px;min-width:0;min-height:52px;padding:8px 4px;border-radius:22px;
   color:var(--soft-muted);text-decoration:none;font:600 10px/1 var(--font-source-sans),ui-sans-serif;
   background:transparent;border:0;cursor:pointer;place-content:center;
 }
-.soft-island a svg,.soft-island-more svg{width:20px;height:20px}
+.soft-island a svg,.soft-island-more svg{width:22px;height:22px}
 .soft-island a[aria-current="page"],.soft-island-more[aria-expanded="true"],.soft-island-more.is-open{
   color:var(--soft-accent);background:var(--soft-accent-soft);
 }
 @media(min-width:980px){
-  .soft-more-sheet,.soft-more-scrim{display:none!important}
-}
-.soft-fab{width:48px;height:48px;bottom:calc(78px + var(--soft-safe-bottom))}
-.soft-fab svg{width:22px;height:22px}
-@media(min-width:980px){
-  .soft-island{display:none}
-  .soft-fab.soft-fab-desktop{display:grid!important;bottom:calc(24px + var(--soft-safe-bottom))}
-  body.has-app-shell{padding-bottom:calc(28px + var(--soft-safe-bottom)) !important}
+  .soft-more-sheet,.soft-more-scrim,.soft-fab,.soft-fab.soft-fab-desktop{display:none!important}
+  .soft-island{display:flex}
+  body.has-app-shell{padding-bottom:calc(100px + var(--soft-safe-bottom)) !important}
 }
 @media(max-width:380px){
   .soft-island a span,.soft-island-more span{display:none}
-  .soft-island a,.soft-island-more{min-width:48px;min-height:44px;padding:10px 8px}
+  .soft-island a,.soft-island-more{min-height:48px;padding:10px 6px}
 }
 
 /* Shared denser module chrome */
