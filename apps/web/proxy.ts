@@ -6,6 +6,7 @@ import { safeAppPath } from "./lib/security/safe-navigation";
 
 const PUBLIC_PAGES = new Set([
   "/",
+  "/invite",
   "/features",
   "/features/cad",
   "/features/strategy",
@@ -27,6 +28,7 @@ const PUBLIC_PAGES = new Set([
 // Only intentionally public prefixes below — bootstrap-owner is token-gated + rate-limited.
 const PUBLIC_PREFIXES = [
   "/api/auth",
+  "/api/invites/preview",
   "/api/waitlist",
   "/api/admin/bootstrap-owner",
   "/api/showcase/public",

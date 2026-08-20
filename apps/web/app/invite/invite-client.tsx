@@ -12,9 +12,11 @@ import {
   inviteCanAccept,
   inviteEmptyCopy,
   inviteNextActions,
+  inviteSignInHref,
   type InviteFlowKind,
   type InvitePreview,
 } from "../../lib/invite";
+import { signOutAndRedirect } from "../../lib/sign-out";
 import "./invite-flow.css";
 
 /** Kept for onboarding handoff (`PENDING_INVITE_KEY` import). */
@@ -23,6 +25,9 @@ export const PENDING_INVITE_KEY = PENDING_INVITE_STORAGE_KEY;
 type PreviewResponse = {
   preview?: InvitePreview | null;
   termsRequired?: boolean;
+  signedIn?: boolean;
+  emailMismatch?: boolean;
+  sessionEmail?: string | null;
   error?: string;
 };
 
@@ -41,16 +46,10 @@ function NextActions({
   orgId?: string | null;
   token: string;
 }) {
-  const actions = inviteNextActions({ kind, orgId, token }).filter(
-    (action) => action.href !== "#invite-accept",
-  );
+  const actions = inviteNextActions({ kind, orgId, token });
   if (actions.length === 0) return null;
   return (
     <section className="invite-next-actions" aria-label="Next steps">
-      <header>
-        <h2>Next steps</h2>
-        <p>Closed membership — exact-email invites only. Never DEMO join links.</p>
-      </header>
       <ol>
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
@@ -68,6 +67,29 @@ function NextActions({
   );
 }
 
+function InviteIdentity({ preview }: { preview: InvitePreview }) {
+  return (
+    <div className="invite-team-identity" aria-label="Team invitation details">
+      <span>TEAM</span>
+      <strong>{formatInviteTeamIdentity(preview)}</strong>
+      <div className="invite-team-meta">
+        <div>
+          <span>ROLE</span>
+          <strong>{formatInviteRole(preview.role) ?? preview.role}</strong>
+        </div>
+        <div>
+          <span>SENT TO</span>
+          <strong>{preview.email}</strong>
+        </div>
+        <div>
+          <span>EXPIRES</span>
+          <strong>{new Date(preview.expiresAt).toLocaleString()}</strong>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function InviteClient() {
   const params = useSearchParams();
   const token = params.get("token")?.trim() ?? "";
@@ -79,6 +101,7 @@ export default function InviteClient() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
   const [emailMismatch, setEmailMismatch] = useState(false);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,6 +119,7 @@ export default function InviteClient() {
       setLoadError(null);
       setAuthRequired(false);
       setEmailMismatch(false);
+      setSessionEmail(null);
       return;
     }
     let active = true;
@@ -103,30 +127,34 @@ export default function InviteClient() {
     setLoadError(null);
     setAuthRequired(false);
     setEmailMismatch(false);
+    setSessionEmail(null);
     void fetch(`/api/invites/preview?token=${encodeURIComponent(token)}`)
       .then(async (response) => {
         const data = (await response.json()) as PreviewResponse;
         if (!active) return;
+        setSessionEmail(data.sessionEmail ?? null);
+        setTermsRequired(data.termsRequired !== false);
         if (response.status === 401) {
           setAuthRequired(true);
-          setPreview(null);
+          setPreview(data.preview ?? null);
           setLoadError(data.error ?? "Sign in required.");
           return;
         }
-        if (response.status === 403) {
-          setEmailMismatch(true);
+        if (response.status === 404) {
           setPreview(null);
-          setLoadError(data.error ?? "This invite was sent to a different email address.");
           return;
         }
-        if (!response.ok) {
-          setPreview(null);
+        if (!response.ok && response.status !== 403) {
+          setPreview(data.preview ?? null);
           setLoadError(data.error ?? "Could not load invitation details.");
           return;
         }
-        setTermsRequired(data.termsRequired !== false);
-        setPreview(data.preview ?? null);
-        if (!data.preview) {
+        const nextPreview = data.preview ?? null;
+        setPreview(nextPreview);
+        const mismatch = Boolean(data.emailMismatch) || response.status === 403;
+        setEmailMismatch(mismatch);
+        setAuthRequired(data.signedIn === false && Boolean(nextPreview) && !mismatch);
+        if (!nextPreview) {
           setLoadError(data.error ?? "This invitation is invalid or unavailable.");
         }
       })
@@ -157,9 +185,13 @@ export default function InviteClient() {
     termsRequired,
     status: preview?.status,
   });
+  const identityPreview =
+    preview && (kind === "ready" || kind === "auth_required" || kind === "email_mismatch")
+      ? preview
+      : null;
   const identity = useMemo(
-    () => (preview && kind === "ready" ? formatInviteTeamIdentity(preview) : null),
-    [preview, kind],
+    () => (identityPreview ? formatInviteTeamIdentity(identityPreview) : null),
+    [identityPreview],
   );
 
   async function accept() {
@@ -232,11 +264,16 @@ export default function InviteClient() {
           <div className="onboarding-brand">
             <VantageLogo />
           </div>
+          {empty.badge && !showReady ? (
+            <span className={`invite-empty-badge ${badgeClass(kind)}`.trim()}>{empty.badge}</span>
+          ) : null}
           <span>{empty.eyebrow}</span>
-          <h1 id="invite-title">{showReady ? "Join your team workspace" : empty.title}</h1>
+          <h1 id="invite-title">{showReady ? "Join your team" : empty.title}</h1>
           <p className="onboarding-sub">
             {showReady
-              ? "Sign in with the verified email that received this invite, accept terms if needed, then join."
+              ? identity
+                ? `Join ${identity} with ${preview.email}.`
+                : "Accept this invite with the email it was sent to."
               : empty.description}
           </p>
         </header>
@@ -247,27 +284,10 @@ export default function InviteClient() {
           </p>
         ) : null}
 
+        {identityPreview ? <InviteIdentity preview={identityPreview} /> : null}
+
         {showReady ? (
           <>
-            <div className="invite-team-identity" aria-label="Team invitation details">
-              <span>TEAM IDENTITY</span>
-              <strong>{identity}</strong>
-              <div className="invite-team-meta">
-                <div>
-                  <span>ROLE</span>
-                  <strong>{formatInviteRole(preview.role) ?? preview.role}</strong>
-                </div>
-                <div>
-                  <span>SENT TO</span>
-                  <strong>{preview.email}</strong>
-                </div>
-                <div>
-                  <span>EXPIRES</span>
-                  <strong>{new Date(preview.expiresAt).toLocaleString()}</strong>
-                </div>
-              </div>
-            </div>
-
             {termsRequired ? (
               <LegalAgreementCheckbox
                 id="invite-terms"
@@ -284,46 +304,50 @@ export default function InviteClient() {
                 disabled={busy || !token || !canAccept}
                 onClick={() => void accept()}
               >
-                {busy ? "Accepting…" : "Accept invitation"}
+                {busy ? "Joining…" : "Accept invitation"}
               </button>
-              <a className="signin-link" href="/workspace">
-                Workspace
-              </a>
             </div>
           </>
         ) : (
           <div className="invite-empty-shell">
-            {empty.badge ? (
-              <span className={`invite-empty-badge ${badgeClass(kind)}`.trim()}>{empty.badge}</span>
-            ) : null}
             {kind === "auth_required" ? (
               <div className="invite-actions">
-                <a
-                  className="signin-submit"
-                  href={`/signin?next=${encodeURIComponent(token ? `/invite?token=${encodeURIComponent(token)}` : "/invite")}`}
-                  style={{ display: "inline-flex", textDecoration: "none", width: "auto" }}
-                >
-                  Sign in to continue
+                <a className="signin-submit" href={inviteSignInHref(token)}>
+                  Sign in to accept
                 </a>
               </div>
             ) : null}
             {kind === "email_mismatch" ? (
-              <div className="invite-security-note">
-                <b aria-hidden="true">!</b>
-                <p>
-                  <strong>Wrong account for this invite</strong>
-                  <span>
-                    Sign out, then sign in with the exact address on the invitation. Preview details
-                    stay hidden on mismatch.
-                  </span>
-                </p>
-              </div>
+              <>
+                <div className="invite-security-note">
+                  <b aria-hidden="true">!</b>
+                  <p>
+                    <strong>Wrong account for this invite</strong>
+                    <span>
+                      You are signed in as {sessionEmail || "a different email"}. This invite is for{" "}
+                      {preview?.email || "another address"}.
+                    </span>
+                  </p>
+                </div>
+                <div className="invite-actions">
+                  <button
+                    type="button"
+                    className="signin-submit"
+                    disabled={busy}
+                    onClick={() => void signOutAndRedirect(inviteSignInHref(token))}
+                  >
+                    Sign out and switch accounts
+                  </button>
+                </div>
+              </>
             ) : null}
             {kind === "loading" ? <p className="onboarding-sub">Checking invite…</p> : null}
           </div>
         )}
 
-        <NextActions kind={kind} orgId={preview?.orgId} token={token} />
+        {kind !== "ready" && kind !== "auth_required" && kind !== "email_mismatch" ? (
+          <NextActions kind={kind} orgId={preview?.orgId} token={token} />
+        ) : null}
       </section>
     </main>
   );

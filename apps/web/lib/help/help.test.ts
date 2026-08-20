@@ -7,6 +7,7 @@ describe("help articles", () => {
     const slugs = HELP_ARTICLES.map((a) => a.slug);
     expect(slugs).toEqual([
       "bottom-island",
+      "team-invites",
       "edit-home",
       "scouting-offline",
       "byok-automode",

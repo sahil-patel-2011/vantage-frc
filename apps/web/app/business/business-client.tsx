@@ -26,8 +26,9 @@ import {
 import {
   hubById,
   hubLegacyHref,
-  hubMoreTabs,
+  hubNestedTabs,
   hubPrimaryTabs,
+  hubWorkbenchId,
   isHubTab,
 } from "../../lib/nav/hubs";
 import { useClientAccessProfile } from "../../lib/nav/use-client-access";
@@ -40,8 +41,7 @@ const SeasonFinanceClient = dynamic(() => import("./season-finance-client"), { s
 const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-client"), { ssr: false });
 
 const BUSINESS_HUB = hubById("business");
-const PRIMARY_TABS = hubPrimaryTabs(BUSINESS_HUB);
-const MORE_TABS = hubMoreTabs(BUSINESS_HUB);
+const WORKBENCHES = hubPrimaryTabs(BUSINESS_HUB);
 
 type Tab =
   | "overview"
@@ -54,10 +54,17 @@ type Tab =
   | "grants"
   | "evidence";
 
-const TABS: Array<{ id: Tab; label: string }> = PRIMARY_TABS.map((tab) => ({
-  id: tab.id as Tab,
-  label: tab.label,
-}));
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "overview", label: "Overview" },
+  { id: "finance", label: "Money" },
+  { id: "budget", label: "Budget" },
+  { id: "orders", label: "Orders" },
+  { id: "sponsors", label: "Sponsors" },
+  { id: "sponsorship", label: "Packages" },
+  { id: "placements", label: "Partners" },
+  { id: "grants", label: "Grants" },
+  { id: "evidence", label: "Outreach" },
+];
 
 function isTab(value: string | null): value is Tab {
   return TABS.some((tab) => tab.id === value);
@@ -74,14 +81,14 @@ function readTabFromUrl(): Tab {
   return isTab(tab) ? tab : "overview";
 }
 
-/** More-tools tabs live as standalone pages — jump there instead of a blank panel. */
+/** Nested tools that are not in-panel jump to their standalone page. */
 function redirectMoreToolTab(): boolean {
   if (typeof window === "undefined") return false;
   const tab = new URLSearchParams(window.location.search).get("tab");
   if (!tab || isTab(tab) || !isHubTab(BUSINESS_HUB, tab)) return false;
-  const more = MORE_TABS.find((entry) => entry.id === tab);
-  if (!more?.legacyHref) return false;
-  window.location.replace(hubLegacyHref(more, readOrgIdFromUrl()));
+  const nested = BUSINESS_HUB.tabs.find((entry) => entry.id === tab);
+  if (!nested?.legacyHref) return false;
+  window.location.replace(hubLegacyHref(nested, readOrgIdFromUrl()));
   return true;
 }
 
@@ -165,24 +172,25 @@ export default function BusinessClient() {
 
   const live = view?.status === "live" ? view : null;
   const sponsorsAllowed = live?.sponsorsAllowed ?? access.sponsorsAllowed;
-  const visibleTabs = useMemo(
+  const visibleWorkbenches = useMemo(
     () =>
       filterTabsByHubAccess(
-        filterSponsorTabs(TABS, sponsorsAllowed),
+        filterSponsorTabs(WORKBENCHES, sponsorsAllowed),
         access.hubAccess,
         "business",
       ),
     [access.hubAccess, sponsorsAllowed],
   );
-  const visibleMoreTabs = useMemo(
-    () =>
-      filterTabsByHubAccess(
-        filterSponsorTabs(MORE_TABS, sponsorsAllowed),
-        access.hubAccess,
-        "business",
-      ),
-    [access.hubAccess, sponsorsAllowed],
-  );
+  const workbenchId = hubWorkbenchId(BUSINESS_HUB, tab);
+  const visibleNested = useMemo(() => {
+    const nested = hubNestedTabs(BUSINESS_HUB, workbenchId);
+    if (nested.length <= 1) return [];
+    return filterTabsByHubAccess(
+      filterSponsorTabs(nested, sponsorsAllowed),
+      access.hubAccess,
+      "business",
+    );
+  }, [sponsorsAllowed, access.hubAccess, workbenchId]);
   const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, "business");
 
   useEffect(() => {
@@ -190,10 +198,10 @@ export default function BusinessClient() {
       selectTab("overview");
       return;
     }
-    if (!access.ready || !visibleTabs.length) return;
-    if (visibleTabs.some((entry) => entry.id === tab)) return;
-    selectTab((visibleTabs[0]?.id as Tab) ?? "overview");
-  }, [access.ready, selectTab, sponsorsAllowed, tab, visibleTabs]);
+    if (!access.ready || !visibleWorkbenches.length) return;
+    if (visibleWorkbenches.some((entry) => entry.id === tab || entry.id === workbenchId)) return;
+    selectTab((visibleWorkbenches[0]?.id as Tab) ?? "overview");
+  }, [access.ready, selectTab, sponsorsAllowed, tab, visibleWorkbenches, workbenchId]);
 
   const mutate = useCallback(async (payload: Record<string, unknown>): Promise<boolean> => {
     if (!live || busy) return false;
@@ -259,7 +267,6 @@ export default function BusinessClient() {
   }, [busy, live, load]);
 
   const orgId = live?.orgId;
-  const q = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
 
   if (hubDenied) {
     return (
@@ -302,44 +309,6 @@ export default function BusinessClient() {
         ) : null}
       </PageHeader>
 
-      {live ? (
-        <nav className="biz-related" aria-label="Related finance tools">
-          <a className="app-button secondary" href={`/costs${q}`}>
-            Season Costs
-          </a>
-          <a className="app-button secondary" href={`/fundraisers${q}`}>
-            Fundraisers
-          </a>
-          <a
-            className="app-button secondary"
-            href={`/impact?orgId=${encodeURIComponent(live.orgId)}&season=${live.seasonYear}`}
-          >
-            Community Impact
-          </a>
-          <a className="app-button secondary" href={`/team/grants${q}`}>
-            Grants workbench
-          </a>
-          <a className="app-button secondary" href={`/team/awards${q}`}>
-            Awards workbench
-          </a>
-          <a className="app-button secondary" href={`/award-tracker${q}`}>
-            Award tracker
-          </a>
-          <a
-            className="app-button secondary"
-            href={orgId ? `/ai?tab=finance&orgId=${encodeURIComponent(orgId)}` : "/ai?tab=finance"}
-          >
-            Finance-in-AI
-          </a>
-          <a
-            className="app-button secondary"
-            href={`/exports?orgId=${encodeURIComponent(live.orgId)}&domains=usage,wallet,membership`}
-          >
-            Exports
-          </a>
-        </nav>
-      ) : null}
-
       {error ? (
         <div className="biz-alert danger" role="alert">
           <strong>Couldn’t complete that.</strong>
@@ -365,22 +334,32 @@ export default function BusinessClient() {
 
       <TabBar
         aria-label="Business sections"
-        value={tab}
-        onChange={(id) => selectTab(id as Tab)}
-        tabs={visibleTabs}
+        value={workbenchId}
+        onChange={(id) => {
+          if (isTab(id)) selectTab(id);
+          else selectTab((hubWorkbenchId(BUSINESS_HUB, id) as Tab) || "overview");
+        }}
+        tabs={visibleWorkbenches.map((entry) => ({ id: entry.id, label: entry.label }))}
         className="product-hub-tabs"
       />
-      {visibleMoreTabs.length ? (
-        <details className="product-hub-more">
-          <summary>More tools ({visibleMoreTabs.length})</summary>
-          <div className="product-hub-more-links">
-            {visibleMoreTabs.map((entry) => (
-              <a key={entry.id} href={hubLegacyHref(entry, orgId ?? live?.orgId ?? null)}>
-                {entry.label}
-              </a>
-            ))}
-          </div>
-        </details>
+      {visibleNested.length > 1 ? (
+        <TabBar
+          aria-label="Business tools"
+          value={tab}
+          onChange={(id) => {
+            if (isTab(id)) {
+              selectTab(id);
+              return;
+            }
+            const nested = BUSINESS_HUB.tabs.find((entry) => entry.id === id);
+            if (nested?.legacyHref) {
+              window.location.assign(hubLegacyHref(nested, orgId ?? live?.orgId ?? null));
+            }
+          }}
+          tabs={visibleNested.map((entry) => ({ id: entry.id, label: entry.label }))}
+          className="product-hub-subtabs"
+          variant="toolbar"
+        />
       ) : null}
 
       {view?.status === "setup_required" ? (

@@ -6,6 +6,7 @@ export {
   inviteCanAccept,
   inviteEmptyCopy,
   inviteNextActions,
+  inviteSignInHref,
   inviteTermsRequired,
   normalizeInviteStatus,
   type InviteEmptyCopy,

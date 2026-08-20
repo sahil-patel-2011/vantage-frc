@@ -4,6 +4,12 @@ import { useCallback, useEffect, useMemo, useState, type DragEvent as ReactDragE
 import PartnerPlacement from "../../components/partner-placement";
 import GridLayout, { useContainerWidth, verticalCompactor, type Layout, type LayoutItem } from "react-grid-layout";
 import {
+  applyGridDrag,
+  dropWidgetOntoLayout,
+  readStoredBoardId,
+  writeStoredBoardId,
+} from "../../lib/dashboard/boards";
+import {
   DASHBOARD_COLUMNS,
   DEFAULT_DASHBOARD_LAYOUT,
   SECONDARY_WIDGET_TYPES,
@@ -14,7 +20,6 @@ import {
   canAccessWidget,
   catalogEntry,
   dashboardGridForWidth,
-  findDashboardSlot,
   inferWidgetSize,
   packDashboardLayout,
   scaleLayoutToCols,
@@ -46,6 +51,7 @@ import "./dashboard-editor.css";
 import "./dashboard-dnd.css";
 
 type Me = {
+  userId?: string;
   name?: string;
   orgId?: string | null;
   orgName?: string | null;
@@ -71,27 +77,6 @@ type BoardState = {
   layout: DashboardWidgetLayout[];
   isDefault?: boolean;
 };
-
-function boardStorageKey(orgId: string) {
-  return `vantage.dashboard.board.${orgId}`;
-}
-
-function readStoredBoardId(orgId: string) {
-  try {
-    return window.localStorage.getItem(boardStorageKey(orgId));
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredBoardId(orgId: string, boardId: string | null) {
-  try {
-    if (!boardId) window.localStorage.removeItem(boardStorageKey(orgId));
-    else window.localStorage.setItem(boardStorageKey(orgId), boardId);
-  } catch {
-    /* ignore quota / private mode */
-  }
-}
 
 type SnapFeedback = {
   mode: "Moving" | "Resizing";
@@ -155,10 +140,11 @@ export default function DashboardClient() {
   const [renameDraft, setRenameDraft] = useState("");
 
   const orgId = me.orgId ?? "";
+  const userId = me.userId ?? "";
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId || null);
 
   const loadBoard = useCallback(async (id: string, preferredBoardId?: string | null) => {
-    const stored = preferredBoardId === undefined ? readStoredBoardId(id) : preferredBoardId;
+    const stored = preferredBoardId === undefined ? readStoredBoardId(id, userId) : preferredBoardId;
     const qs = new URLSearchParams({ orgId: id });
     if (stored) qs.set("boardId", stored);
     const response = await fetch(`/api/dashboards?${qs.toString()}`);
@@ -184,8 +170,8 @@ export default function DashboardClient() {
     setBoard(data.active);
     setScope(data.active?.scope === "org" ? "org" : "personal");
     setLayout(data.active?.layout?.length ? data.active.layout : DEFAULT_DASHBOARD_LAYOUT);
-    if (data.active?.id) writeStoredBoardId(id, data.active.id);
-  }, []);
+    if (data.active?.id) writeStoredBoardId(id, userId, data.active.id);
+  }, [userId]);
 
   const loadSnapshot = useCallback(async (id: string) => {
     const response = await fetch(`/api/dashboards?orgId=${encodeURIComponent(id)}&mode=snapshot`);
@@ -202,6 +188,7 @@ export default function DashboardClient() {
       .then((data) => {
         if (!data) return;
         setMe({
+          userId: typeof data.userId === "string" ? data.userId : undefined,
           name: data.firstName || data.name,
           orgId: data.orgId,
           orgName: data.orgName,
@@ -294,53 +281,24 @@ export default function DashboardClient() {
   function onLayoutChange(next: Layout) {
     if (!editing) return;
     const cols = currentGrid().cols;
-    setLayout((current) =>
-      scaleLayoutToCols(
-        current.map((item) => {
-          const match = next.find((row) => row.i === item.i);
-          if (!match) return item;
-          return { ...item, x: match.x, y: match.y, w: match.w, h: match.h };
-        }),
-        cols,
-        DASHBOARD_COLUMNS,
-      ),
-    );
+    setLayout((current) => applyGridDrag(current, next, cols));
   }
 
   function addWidget(type: DashboardWidgetType, drop?: Pick<LayoutItem, "x" | "y">) {
-    if (layout.some((item) => item.type === type)) {
+    const result = dropWidgetOntoLayout(layout, type, {
+      drop,
+      displayCols: currentGrid().cols,
+      now: Date.now(),
+    });
+    if (!result.ok) {
       setMessageKind("error");
-      setMessage("That widget is already on the board.");
+      setMessage(result.error);
       return;
     }
     const entry = catalogEntry(type);
-    if (!entry) return;
-    const grid = currentGrid();
-    const dropCanonical = drop
-      ? scaleLayoutToCols(
-          [{ i: "drop", type, x: drop.x, y: drop.y, w: entry.defaultW, h: entry.defaultH }],
-          grid.cols,
-          DASHBOARD_COLUMNS,
-        )[0]
-      : null;
-    const position = dropCanonical
-      ? { x: dropCanonical.x, y: dropCanonical.y }
-      : findDashboardSlot(layout, entry.defaultW, entry.defaultH);
-    setLayout((current) => [
-      ...current,
-      {
-        i: `w-${type}-${Date.now()}`,
-        type,
-        x: Math.max(0, Math.min(DASHBOARD_COLUMNS - entry.defaultW, position.x)),
-        y: Math.max(0, position.y),
-        w: entry.defaultW,
-        h: entry.defaultH,
-        minW: entry.minW,
-        minH: entry.minH,
-      },
-    ]);
+    setLayout(result.layout);
     setMessageKind("success");
-    setMessage(`${entry.label} snapped onto the dashboard.`);
+    setMessage(`${entry?.label ?? type} snapped onto the dashboard.`);
     setLibraryOpen(false);
   }
 
@@ -400,7 +358,7 @@ export default function DashboardClient() {
     setMessage(`${label} removed. Tap Done to save, or add another from the palette.`);
   }
 
-  async function save(activateScope: "personal" | "org" = scope) {
+  async function save(activateScope: "personal" | "org" = "personal") {
     if (!orgId) {
       setMessageKind("error");
       setMessage("Select a team workspace to save a custom layout.");
@@ -440,7 +398,7 @@ export default function DashboardClient() {
         setMessage(data.error ?? "Save failed");
         return;
       }
-      writeStoredBoardId(orgId, data.id);
+      writeStoredBoardId(orgId, userId, data.id);
       setBoard({
         id: data.id,
         name: data.name,
@@ -475,7 +433,7 @@ export default function DashboardClient() {
         setMessage(data.error ?? "Could not switch boards");
         return;
       }
-      writeStoredBoardId(orgId, data.id);
+      writeStoredBoardId(orgId, userId, data.id);
       setBoard({
         id: data.id,
         name: data.name,
@@ -525,7 +483,7 @@ export default function DashboardClient() {
         setMessage(data.error ?? "Could not create board");
         return;
       }
-      writeStoredBoardId(orgId, data.id);
+      writeStoredBoardId(orgId, userId, data.id);
       setEditing(true);
       setBoardsOpen(false);
       setMessageKind("success");
@@ -591,7 +549,7 @@ export default function DashboardClient() {
         setMessage(data.error ?? "Delete failed");
         return;
       }
-      if (board?.id === targetId) writeStoredBoardId(orgId, data.activatedId ?? null);
+      if (board?.id === targetId) writeStoredBoardId(orgId, userId, data.activatedId ?? null);
       setRenameId(null);
       setMessageKind("success");
       setMessage(`Deleted ${target.name}`);
@@ -1006,8 +964,8 @@ export default function DashboardClient() {
               Drag widgets onto the board, move cards by the grip, resize from a corner, or tap Remove on any card.
               {orgId
                 ? canShareOrg
-                  ? " Save personally or for the team when you are done."
-                  : " Save as your personal layout when you are done."
+                  ? " Done saves your personal Home. Save for team is optional and does not overwrite teammates' layouts."
+                  : " Done saves your personal Home — teammates keep their own layouts."
                 : " Select a workspace to persist."}
             </span>
           </div>
@@ -1045,6 +1003,8 @@ export default function DashboardClient() {
         ref={containerRef}
         className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${externalWidget ? " receiving-widget" : ""}`}
         aria-label="Dashboard widgets"
+        data-testid="dash-widget-grid"
+        data-dash-drag={editing ? "on" : "off"}
       >
         {editing ? (
           <div className="dash-grid-guide">
@@ -1082,7 +1042,12 @@ export default function DashboardClient() {
                 margin: grid.margin,
                 containerPadding: [0, 0],
               }}
-              dragConfig={{ enabled: editing, bounded: true, handle: ".dash-drag-handle", threshold: 3 }}
+              dragConfig={{
+                enabled: editing,
+                bounded: true,
+                handle: ".dash-drag-handle, .dash-widget-hit",
+                threshold: 3,
+              }}
               resizeConfig={{ enabled: editing, handles: ["se", "sw"] }}
               dropConfig={{
                 enabled: editing,
@@ -1107,7 +1072,14 @@ export default function DashboardClient() {
               onResizeStop={() => { setDragging(false); setSnapFeedback(null); }}
             >
               {layout.map((item) => (
-                <div key={item.i} className={`dash-grid-item${editing ? " jiggling" : ""}`}>
+                <div
+                  key={item.i}
+                  className={`dash-grid-item${editing ? " jiggling" : ""}`}
+                  data-testid="dash-grid-item"
+                  data-widget-type={item.type}
+                  data-widget-x={item.x}
+                  data-widget-y={item.y}
+                >
                   {editing ? (
                     <div className="dash-item-tools">
                       <button
@@ -1141,15 +1113,15 @@ export default function DashboardClient() {
                             </button>
                           ))}
                         </div>
-                        <button
-                          type="button"
+                        <div
                           className="dash-drag-handle dash-drag-surface"
+                          data-testid="dash-drag-handle"
                           aria-label={`Move ${catalogEntry(item.type)?.label ?? item.type}`}
                           title="Drag to rearrange"
                         >
                           <span className="dash-drag-dots" aria-hidden="true" />
                           <span className="dash-drag-label">Drag</span>
-                        </button>
+                        </div>
                       </div>
                     </div>
                   ) : null}

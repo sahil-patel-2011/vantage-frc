@@ -187,6 +187,7 @@ export async function GET(request: Request) {
 
     return Response.json({
       authenticated: true,
+      userId: session.user.id,
       name: displayName,
       displayName,
       firstName: displayFirst,
