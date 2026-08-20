@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { pickHomeBoard } from "../../../lib/dashboard/boards";
 import {
   canWriteOrgDashboard,
   catalogEntry,
@@ -81,18 +82,6 @@ async function listBoards(
   );
 }
 
-/** Prefer the board the user just activated; personal active beats org active for GET default. */
-function pickActive(boards: BoardRow[], preferredId?: string | null) {
-  if (preferredId) {
-    const preferred = boards.find((board) => board.id === preferredId);
-    if (preferred) return preferred;
-  }
-  return (
-    boards.find((board) => board.scope === "personal" && board.isActive) ??
-    boards.find((board) => board.scope === "org" && board.isActive) ??
-    null
-  );
-}
 
 async function deactivateForSwitch(
   client: import("@neondatabase/serverless").PoolClient,
@@ -163,7 +152,10 @@ export async function GET(request: Request) {
       }
 
       const boards = await listBoards(client, orgId, session.user.id);
-      const active = pickActive(boards.rows, boardId);
+      const active = pickHomeBoard(boards.rows, {
+        userId: session.user.id,
+        preferredId: boardId,
+      });
 
       const layout = filterLayoutForRole(
         ensureOnboardingChecklist(active?.layout?.length ? active.layout : DEFAULT_DASHBOARD_LAYOUT),

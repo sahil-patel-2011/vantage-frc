@@ -2,6 +2,7 @@ import {
   acceptOrganizationInvite,
   assertTermsAccepted,
   auth,
+  isInviteTokenShape,
   peekOrganizationInvite,
   recordLegalAcceptance,
 } from "@vantage/core";
@@ -20,7 +21,7 @@ import { parseSecureJson, securityErrorResponse } from "../../../../lib/security
 const limiter = createRateLimiter({ limit: 20, windowMs: 10 * 60_000, namespace: "invite-accept" });
 const acceptSchema = z
   .object({
-    token: z.string().trim().length(43).regex(/^[A-Za-z0-9_-]+$/),
+    token: z.string().trim().refine(isInviteTokenShape, "Invite token is invalid"),
     /** Required when the account has not yet accepted Terms/Privacy. */
     termsAccepted: z.boolean().optional(),
   })

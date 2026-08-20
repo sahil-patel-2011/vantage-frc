@@ -169,7 +169,7 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
 ];
 
 /**
- * Soft-UI pillars for the More sheet — hub roots only.
+ * Soft-UI pillars for Search (⌘K) shortcuts — hub roots only.
  */
 export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/competition", label: "Competition", icon: "swords" },

@@ -113,6 +113,40 @@ export function onshapeEnvChecks(env: NodeJS.ProcessEnv = process.env): DoctorCh
   ];
 }
 
+export function onshapeCliKeyChecks(env: NodeJS.ProcessEnv = process.env): DoctorCheck[] {
+  const access = (env.ONSHAPE_ACCESS_KEY ?? env.ONSHAPE_API_KEY ?? "").trim();
+  const secret = (env.ONSHAPE_SECRET_KEY ?? env.ONSHAPE_API_SECRET ?? "").trim();
+  if (access && secret) {
+    return [
+      {
+        id: "onshape-api-keys",
+        title: "Onshape API keys (Claude Code / CLI)",
+        status: "pass",
+        detail: "ONSHAPE_ACCESS_KEY and ONSHAPE_SECRET_KEY are set for terminal CAD.",
+      },
+    ];
+  }
+  if (access || secret) {
+    return [
+      {
+        id: "onshape-api-keys",
+        title: "Onshape API keys (Claude Code / CLI)",
+        status: "fail",
+        detail: "Only one of ONSHAPE_ACCESS_KEY / ONSHAPE_SECRET_KEY is set. Both are required.",
+      },
+    ];
+  }
+  return [
+    {
+      id: "onshape-api-keys",
+      title: "Onshape API keys (Claude Code / CLI)",
+      status: "warn",
+      detail:
+        "No API keys in this terminal. Create a pair at https://dev-portal.onshape.com/keys then run `vantage-cad claude`. Web OAuth is separate.",
+    },
+  ];
+}
+
 export async function runDoctor(input: {
   version: string;
   vantageUrl: string;
@@ -241,6 +275,7 @@ export async function runDoctor(input: {
   }
 
   checks.push(...onshapeEnvChecks(env));
+  checks.push(...onshapeCliKeyChecks(env));
 
   const platformChoice = credential?.platform ?? "";
   if (platformChoice === "onshape") {

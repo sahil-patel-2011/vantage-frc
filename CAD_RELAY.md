@@ -46,7 +46,7 @@ GitHub Actions: `.github/workflows/cad-package.yml` builds Linux + macOS artifac
 
 Browser setup wizard: `/cad/setup?orgId=…` (pick CAD → AI brain → copy commands → verify heartbeat).
 
-Commands: `setup`, `start`, `status`, `doctor` (alias `diagnose`), `update`, and `logout`.
+Commands: `setup`, `start`, `status`, `doctor` (alias `diagnose`), `update`, `logout`, plus **Claude Code CAD**: `claude`, `mcp`, `onshape`, `fusion`. See [`docs/CLAUDE_CODE_CAD.md`](docs/CLAUDE_CODE_CAD.md).
 
 ### Doctor
 

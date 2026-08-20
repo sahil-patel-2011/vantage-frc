@@ -100,3 +100,131 @@
 .team-admin-members small {
   color: var(--app-muted, #656d76);
 }
+
+.team-invite-grid {
+  align-items: start;
+}
+
+.team-invite-form,
+.team-invite-ledger {
+  padding: 1.15rem 1.2rem;
+  border: 1px solid color-mix(in srgb, var(--app-border, #d0d7de) 85%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--app-surface, #fff) 92%, var(--app-border, #d0d7de));
+}
+
+.team-invite-form h2 {
+  margin: 0.15rem 0 0.45rem;
+  font-size: 1.2rem;
+}
+
+.team-invite-form > p {
+  margin: 0 0 0.9rem;
+  color: var(--app-muted, #656d76);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.team-invite-form label {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.team-invite-form input,
+.team-invite-form select {
+  width: 100%;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--app-border, #d0d7de);
+  border-radius: 0.7rem;
+  background: var(--app-surface, #fff);
+}
+
+.team-invite-banner,
+.team-invite-notice {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.75rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.team-invite-banner span {
+  color: inherit;
+  font-weight: 400;
+}
+
+.team-invite-banner.setup,
+.team-invite-notice.warn {
+  border: 1px solid #f0c36d;
+  background: #fff8eb;
+  color: #8a5a10;
+}
+
+.team-invite-banner.info {
+  border: 1px solid #b9cef2;
+  background: #f0f6ff;
+  color: #25436f;
+}
+
+.team-invite-notice.ok {
+  border: 1px solid #a8d4bf;
+  background: #eef9f4;
+  color: #166534;
+}
+
+.team-invite-notice.error {
+  border: 1px solid #f0b4ba;
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.team-invite-ledger article {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-border, #d0d7de) 80%, transparent);
+}
+
+.team-invite-ledger article:last-child {
+  border-bottom: none;
+}
+
+.team-invite-ledger article.pending {
+  background: color-mix(in srgb, #f0f6ff 55%, transparent);
+  margin: 0 -0.6rem;
+  padding: 0.85rem 0.6rem;
+  border-radius: 0.7rem;
+  border-bottom: none;
+}
+
+.team-invite-ledger strong {
+  display: block;
+}
+
+.team-invite-ledger small,
+.team-invite-ledger time {
+  color: var(--app-muted, #656d76);
+  font-size: 0.82rem;
+}
+
+.team-invite-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.team-invite-row-actions button {
+  min-height: 2rem;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--app-border, #d0d7de);
+  border-radius: 999px;
+  background: var(--app-surface, #fff);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
