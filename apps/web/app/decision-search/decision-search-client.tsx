@@ -4,11 +4,8 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { decisionSearchSourceLabel } from "../../lib/decision-search";
-import {
-  DECISION_SEARCH_SOURCE_KINDS,
-  type DecisionSearchView,
-} from "../../lib/decision-search/compute-decision-search";
+import { DECISION_SEARCH_SOURCE_KINDS, decisionSearchSourceLabel } from "../../lib/decision-search";
+import type { DecisionSearchView } from "../../lib/decision-search/compute-decision-search";
 import {
   DECISION_SEARCH_RELATED_INCLUDE,
   classifyDecisionSearchShell,

@@ -4,7 +4,9 @@
 // wraps this with DB I/O; the API route and client render the results and let a team generate
 // and pack from a checklist.
 
-import type { KitChecklistItem, KitPriority, SpareKitBin, SubsystemFailureAggregate } from "./types";
+import type { ChecklistStatus, KitChecklistItem, KitPriority, SpareKitBin, SubsystemFailureAggregate } from "./types";
+
+export const CHECKLIST_STATUSES: ChecklistStatus[] = ["draft", "finalized"];
 
 const round = (value: number, places = 2) => {
   const factor = 10 ** places;

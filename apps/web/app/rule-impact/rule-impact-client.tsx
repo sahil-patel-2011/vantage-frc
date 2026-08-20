@@ -3,17 +3,15 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import {
+  RULE_CHANGE_CATEGORIES,
+  RULE_CHANGE_SEVERITIES,
+  SUBSYSTEM_CATEGORIES,
   ruleChangeCategoryLabel,
   ruleChangeSeverityLabel,
   ruleImpactStatusLabel,
   subsystemCategoryLabel,
 } from "../../lib/rule-impact";
-import {
-  RULE_CHANGE_CATEGORIES,
-  RULE_CHANGE_SEVERITIES,
-  SUBSYSTEM_CATEGORIES,
-  type RuleImpactView,
-} from "../../lib/rule-impact/compute-rule-impact";
+import type { RuleImpactView } from "../../lib/rule-impact/compute-rule-impact";
 import {
   RULE_IMPACT_RELATED_INCLUDE,
   classifyRuleImpactShell,

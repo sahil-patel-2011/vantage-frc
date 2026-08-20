@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { decisionOutcomeLabel, decisionVerdictLabel } from "../../lib/decision-critic";
 import {
   DECISION_CRITIC_CATEGORIES,
   DECISION_CRITIC_OUTCOMES,
-  type DecisionCriticView,
-} from "../../lib/decision-critic/compute-decision-critic";
+  decisionOutcomeLabel,
+  decisionVerdictLabel,
+} from "../../lib/decision-critic";
+import type { DecisionCriticView } from "../../lib/decision-critic/compute-decision-critic";
 import type { DecisionCriticCategory, DecisionCriticOutcome, DecisionCriticVerdict } from "../../lib/decision-critic/types";
 
 const VERDICT_TONE: Record<DecisionCriticVerdict, string> = {

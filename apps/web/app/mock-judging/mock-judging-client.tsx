@@ -2,8 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { mockJudgingAwardCategoryLabel, mockJudgingCriterionLabel } from "../../lib/mock-judging";
-import { MOCK_JUDGING_AWARD_CATEGORIES, type MockJudgingView } from "../../lib/mock-judging/compute-mock-judging";
+import {
+  MOCK_JUDGING_AWARD_CATEGORIES,
+  mockJudgingAwardCategoryLabel,
+  mockJudgingCriterionLabel,
+} from "../../lib/mock-judging";
+import type { MockJudgingView } from "../../lib/mock-judging/compute-mock-judging";
 import type { MockJudgingAwardCategory, MockJudgingCriterion } from "../../lib/mock-judging/types";
 
 function scoreTone(score: number): string {

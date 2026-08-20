@@ -2,12 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { changeTypeLabel, subsystemLabel, verdictLabel } from "../../lib/code-perf";
-import {
-  CHANGE_TYPES,
-  SUBSYSTEMS,
-  type CodePerfView,
-} from "../../lib/code-perf/compute-code-perf";
+import { CHANGE_TYPES, SUBSYSTEMS, changeTypeLabel, subsystemLabel, verdictLabel } from "../../lib/code-perf";
+import type { CodePerfView } from "../../lib/code-perf/compute-code-perf";
 import type { ChangeType, CorrelationVerdict, Subsystem } from "../../lib/code-perf/types";
 
 function verdictTone(verdict: CorrelationVerdict): string {

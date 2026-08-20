@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { FINANCE_IN_AI_ACK_VERSION } from "@vantage/billing";
+import { FINANCE_IN_AI_ACK_VERSION } from "@vantage/billing/ai-policy";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { hubHref } from "../../lib/nav/hubs";
 

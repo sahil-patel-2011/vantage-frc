@@ -4,7 +4,9 @@
 // a value. compute-spare-forecast.ts wraps this with DB I/O; the API route and client render
 // the results and let a team draft a purchase request from what would otherwise run out.
 
-import type { ExhaustionForecast, ForecastUrgency, PurchaseRequestLineItem, SpareForecastLine } from "./types";
+import type { ExhaustionForecast, ForecastUrgency, PurchaseRequestLineItem, PurchaseRequestStatus, SpareForecastLine } from "./types";
+
+export const PURCHASE_REQUEST_STATUSES: PurchaseRequestStatus[] = ["draft", "approved", "ordered", "dismissed"];
 
 /** FRC build+competition season window used as the forecast horizon (Jan 1 kickoff through mid-summer champs). */
 export const SEASON_START_MONTH_DAY = { month: 0, day: 1 } as const;

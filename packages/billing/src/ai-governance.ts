@@ -1,5 +1,8 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { CommitAndThrowError } from "@vantage/db";
+import { FINANCE_IN_AI_ACK_VERSION } from "./ai-policy-public";
+
+export { FINANCE_IN_AI_ACK_VERSION } from "./ai-policy-public";
 
 export class ApprovalRequiredError extends Error {
   constructor(
@@ -17,9 +20,6 @@ export class AiPolicyDeniedError extends Error {
     this.name = "AiPolicyDeniedError";
   }
 }
-
-/** Bump when risk-acceptance modal copy changes — forces re-acceptance. */
-export const FINANCE_IN_AI_ACK_VERSION = "2026-07-17";
 
 export type OrgAiPolicy = {
   featureAllowlistEnabled: boolean;

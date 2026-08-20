@@ -2,11 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, diagnosticSeverityLabel } from "../../lib/wiring-diagnoser";
-import {
-  currentSeasonYear,
-  type WiringDiagnoserView,
-} from "../../lib/wiring-diagnoser/compute-wiring-diagnoser";
+import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, currentSeasonYear, diagnosticSeverityLabel } from "../../lib/wiring-diagnoser";
+import type { WiringDiagnoserView } from "../../lib/wiring-diagnoser/compute-wiring-diagnoser";
 import type {
   DiagnosticSeverity,
   ExpectedCircuit,
