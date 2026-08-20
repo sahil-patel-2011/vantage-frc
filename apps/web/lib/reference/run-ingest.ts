@@ -1,4 +1,3 @@
-import { createProductionReferenceJobs } from "@vantage/reference/production-worker";
 import type { EventDaySyncInput, SyncSummary } from "@vantage/reference";
 
 export type ReferenceIngestOptions = {
@@ -14,6 +13,7 @@ export async function runTbaSeasonSync(
   year?: number,
   options: ReferenceIngestOptions = {},
 ): Promise<SyncSummary> {
+  const { createProductionReferenceJobs } = await import("@vantage/reference/production-worker");
   const jobs = createProductionReferenceJobs(options);
   return jobs.syncSeason.run({ year: year ?? currentFrcSeasonYear() });
 }
@@ -22,6 +22,7 @@ export async function runTbaEventDaySync(
   input: EventDaySyncInput = {},
   options: ReferenceIngestOptions = {},
 ): Promise<SyncSummary> {
+  const { createProductionReferenceJobs } = await import("@vantage/reference/production-worker");
   const jobs = createProductionReferenceJobs(options);
   return jobs.syncEventDay.run({
     year: input.year ?? currentFrcSeasonYear(),

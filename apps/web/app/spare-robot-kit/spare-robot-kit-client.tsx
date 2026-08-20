@@ -11,8 +11,8 @@ import {
   SoftBlockSkeleton,
   StatTile,
 } from "../../components/ui";
-import { priorityLabel } from "../../lib/spare-robot-kit";
-import { CHECKLIST_STATUSES, type SpareRobotKitView } from "../../lib/spare-robot-kit/compute-spare-robot-kit";
+import { CHECKLIST_STATUSES, priorityLabel } from "../../lib/spare-robot-kit";
+import type { SpareRobotKitView } from "../../lib/spare-robot-kit/compute-spare-robot-kit";
 import type { ChecklistStatus, KitPriority } from "../../lib/spare-robot-kit/types";
 import {
   SPARE_ROBOT_KIT_RELATED_INCLUDE,

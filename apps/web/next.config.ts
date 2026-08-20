@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { expandLegacyRedirects } from "./lib/nav/legacy-redirects";
 
 const config: NextConfig = {
+  serverExternalPackages: ["pg"],
   transpilePackages: [
     "@vantage/agent",
     "@vantage/billing",

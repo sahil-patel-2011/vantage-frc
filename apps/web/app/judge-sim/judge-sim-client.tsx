@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { judgeSimCategoryLabel, judgeSimVerdictLabel } from "../../lib/judge-sim";
-import { JUDGE_SIM_CATEGORIES, type JudgeSimView } from "../../lib/judge-sim/compute-judge-sim";
+import { JUDGE_SIM_CATEGORIES, judgeSimCategoryLabel, judgeSimVerdictLabel } from "../../lib/judge-sim";
+import type { JudgeSimView } from "../../lib/judge-sim/compute-judge-sim";
 import {
   JUDGE_SIM_RELATED_INCLUDE,
   classifyJudgeSimShell,

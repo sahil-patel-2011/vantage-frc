@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
-import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, diagnoseWiring } from ".";
+import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, currentSeasonYear, diagnoseWiring } from ".";
 import type {
   DiagnosticFlag,
   ExpectedCircuit,
@@ -11,7 +11,7 @@ import type {
   WiringMapDevice,
 } from "./types";
 
-export { STANDARD_BREAKER_AMPS, WIRE_GAUGES };
+export { STANDARD_BREAKER_AMPS, WIRE_GAUGES, currentSeasonYear };
 
 export type WiringDiagnoserSetupStep = {
   id: string;
@@ -39,10 +39,6 @@ export type WiringDiagnoserView =
       wiringMap: WiringMapDevice[];
       computedAt: string;
     };
-
-export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
-}
 
 function isWireGauge(value: unknown): value is WireGauge {
   return typeof value === "string" && (WIRE_GAUGES as string[]).includes(value);

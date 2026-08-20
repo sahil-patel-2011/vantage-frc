@@ -2,11 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
-import { reuseRecommendationLabel, subsystemCategoryLabel } from "../../lib/reuse-advisor";
-import {
-  REUSE_ASSESSMENT_STATUSES,
-  type ReuseAdvisorView,
-} from "../../lib/reuse-advisor/compute-reuse-advisor";
+import { REUSE_ASSESSMENT_STATUSES, reuseRecommendationLabel, subsystemCategoryLabel } from "../../lib/reuse-advisor";
+import type { ReuseAdvisorView } from "../../lib/reuse-advisor/compute-reuse-advisor";
 import type { ReuseAssessmentStatus, ReuseCandidate, ReuseRecommendation } from "../../lib/reuse-advisor/types";
 
 const RECOMMENDATION_TONE: Record<ReuseRecommendation, string> = {

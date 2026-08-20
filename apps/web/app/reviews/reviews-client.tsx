@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { gateLabel, reviewStageLabel, reviewStatusLabel } from "../../lib/reviews";
-import { ITEM_VERDICTS, REVIEW_STAGES, REVIEW_STATUSES, type ReviewsView } from "../../lib/reviews/compute-reviews";
+import { ITEM_VERDICTS, REVIEW_STAGES, REVIEW_STATUSES, gateLabel, reviewStageLabel, reviewStatusLabel } from "../../lib/reviews";
+import type { ReviewsView } from "../../lib/reviews/compute-reviews";
 import type { GateDecision, ItemVerdict, ReviewEvaluation, ReviewStage, ReviewStatus } from "../../lib/reviews/types";
 
 type LiveView = Extract<ReviewsView, { status: "live" }>;

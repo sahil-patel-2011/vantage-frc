@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
-import { draftPurchaseRequestLines, forecastExhaustion, seasonWindow, sortForecastLines } from ".";
+import { draftPurchaseRequestLines, forecastExhaustion, PURCHASE_REQUEST_STATUSES, seasonWindow, sortForecastLines } from ".";
 import type {
   ExhaustionForecast,
   PurchaseRequestDraft,
@@ -10,7 +10,7 @@ import type {
   SpareForecastLine,
 } from "./types";
 
-export const PURCHASE_REQUEST_STATUSES: PurchaseRequestStatus[] = ["draft", "approved", "ordered", "dismissed"];
+export { PURCHASE_REQUEST_STATUSES };
 
 export type SpareForecastSetupStep = {
   id: string;
