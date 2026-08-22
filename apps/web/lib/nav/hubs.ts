@@ -146,7 +146,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "pit-map-planner", label: "Pit map", legacyHref: "/pit-map-planner" },
         { id: "field-reset-timer", label: "Field reset", legacyHref: "/field-reset-timer" },
       ]),
-      { id: "knowledge", label: "Knowledge", legacyHref: "/team/knowledge" },
+      { id: "knowledge", label: "Playbook", legacyHref: "/team/knowledge" },
       ...nest("knowledge", [
         { id: "migrate", label: "Bring your season", legacyHref: "/migrate", featured: true },
         { id: "knowledge-gap", label: "Knowledge gaps", legacyHref: "/knowledge-gap" },

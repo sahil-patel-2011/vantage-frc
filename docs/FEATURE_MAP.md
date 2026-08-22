@@ -3,7 +3,7 @@
 | Hub | Route | Tabs |
 |---|---|---|
 | Competition | `/competition` | **Event day · Scouting · Strategy · Pit** — related tools are inner tabs, not a More-tools dump (My Day under Event day, Forms under Scouting, Alliance desk under Strategy) |
-| Team | `/team` | **Calendar · Chat · People · Work · Knowledge** — hours under People, practice/FMEA/batteries under Work, Bring your season under Knowledge |
+| Team | `/team` | **Calendar · Chat · People · Work · Playbook** — hours under People, practice/FMEA/batteries under Work |
 | Business | `/business` | **Overview · Money · Sponsors · Grants · Outreach** — budget/orders under Money, packages/partners under Sponsors |
 | Build | `/build` | **Kickoff · CAD · Code · Robot** — Bugbot under Code; FMEA, batteries, inspection under Robot |
 | AI | `/ai` | **Chat · Writer · Agent · Controls · Notes** — keys/memory/usage under Controls |
@@ -30,11 +30,11 @@
 | Defense Planner Soft-UI | `/defense-planner` (Competition More tools) | Mass/drivetrain vs scouted cycle defense plans; empty/setup + next actions; UsageCutoffBanner on metered matchup writes; Strategy / Scouting / Counter-book via hubHref — never DEMO defense metrics |
 | Home dashboard | `/dashboard` | Per-member personal layout. **Live widgets only** — empty cards stay off until Edit Home. **Bottom island is four apps on every screen size** (Home · Compete · Team · Business by default). Menu + ⌘K for the rest — no More dump on the island — never DEMO widget metrics |
 | Displays Soft-UI | `/display`, `/display/kiosk`, `/display/pit` | Pit TV + kiosk; PitFUSION-style queue (leave pit at 15m, **red QUEUE SOON under 5m** from TBA time) + bumper color from alliance lists; TBA/prediction widgets stay blank until real rows — never DEMO ranks or coverage zeros |
-| Team | `/team` | Calendar · Chat · People · Work · Knowledge; extra tools in a section menu |
+| Team | `/team` | Calendar · Chat · People · Work · Playbook |
 | Bus-Factor Soft-UI | `/bus-factor` (Team More tools) | Workload concentration / overload from logged entries only; empty/setup + next actions; Attendance / My Hours / Task board via hubHref — never DEMO risk scores |
-| Calendar Soft-UI | `/team?tab=calendar` (also `/team/calendar`) | Day / Week timed grid (hours 7–22), Month, List; GitHub due dates overlay when a default repo is connected — never invented dates; subteams + events only when created — never DEMO events |
+| Calendar Soft-UI | `/team?tab=calendar` (also `/team/calendar`) | Day / Week timed grid (hours 7–22), Month, List; this team’s TBA matches (real `matches_ref` times + bumper color) and GitHub due dates — never invented dates; subteams + events only when created — never DEMO events |
 | Batteries Soft-UI | `/team?tab=batteries`, `/build?tab=batteries` (also `/batteries`) | Pack list, rotation, Killer Bees **cart slots** (15 min cool-down → Beak test → Ready from real charge logs); **break-in cue** when logged match/practice cycles are under 3; **over-discharge cue** when last rest voltage is under 12.0 V after cycles; IR/cycles from logs only — never DEMO metrics |
-| Knowledge Soft-UI | `/team?tab=knowledge` (also `/team/knowledge`) | Season playbook personalized with this team’s number/name/year; page list; empty/setup shells; mutations stay org-scoped — never DEMO articles |
+| Playbook Soft-UI | `/team?tab=knowledge` (also `/team/knowledge`) | Season wiki; Start season playbook on empty; page list + editor; mutations stay org-scoped — never DEMO articles |
 | FMEA Soft-UI | `/team?tab=fmea`, `/build?tab=fmea` (also `/fmea`) | Risk rows with O×S×D + RPN, empty/setup + next actions; cross-links to Knowledge / CAD / Prototypes; RPN only from logged scores — never DEMO numbers |
 | Risk Register Soft-UI | `/risks` | Proactive season L×I register (distinct from FMEA); empty/setup + next actions; top score blank until real entries; cross-links to FMEA / Knowledge |
 | Goals Soft-UI | `/goals` | Season objectives + scorecard from logged current/target values only; empty/setup + next actions; progress blank until goals exist; cross-links to Todos / Practice / Team hub — never DEMO % |

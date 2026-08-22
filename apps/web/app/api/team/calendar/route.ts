@@ -30,6 +30,8 @@ import {
   type SubteamCalendarView,
   type SubteamMemberLite,
   type TravelLegOnCalendar,
+  githubItemsToIcsEvents,
+  tbaMatchesToCalendarEvents,
 } from "../../../../lib/subteam-calendar";
 
 function newFeedToken() {
@@ -112,6 +114,39 @@ async function loadGitHubCalendarOverlay(
     }
   } catch {
     return empty;
+  }
+}
+
+/** This team's matches at the active event. Empty if TBA cache has no time — never invent DEMO matches. */
+async function loadTbaMatchCalendar(client: PoolClient, orgId: string, teamNumber: number | null): Promise<CalendarEvent[]> {
+  if (teamNumber == null || !Number.isFinite(teamNumber)) return [];
+  const teamKey = `frc${teamNumber}`;
+  try {
+    const result = await client.query<{
+      matchKey: string;
+      compLevel: string;
+      matchNumber: number;
+      scheduledTime: string | null;
+      redAlliance: unknown;
+      blueAlliance: unknown;
+      eventName: string | null;
+    }>(
+      `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
+              COALESCE(m.actual_time, m.predicted_time, m.event_time)::text AS "scheduledTime",
+              m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
+              ev.name AS "eventName"
+       FROM org_active_context ctx
+       JOIN matches_ref m ON m.event_key = ctx.active_event_key
+       LEFT JOIN events_ref ev ON ev.event_key = ctx.active_event_key
+       WHERE ctx.org_id = $1::uuid
+         AND COALESCE(m.actual_time, m.predicted_time, m.event_time) IS NOT NULL
+       ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time) ASC
+       LIMIT 120`,
+      [orgId],
+    );
+    return tbaMatchesToCalendarEvents(result.rows, teamKey);
+  } catch {
+    return [];
   }
 }
 
@@ -342,6 +377,7 @@ async function loadView(
   }
 
   const githubCalendar = await loadGitHubCalendarOverlay(client, orgId);
+  const tbaMatches = await loadTbaMatchCalendar(client, orgId, orgRow.teamNumber);
 
   return {
     status: "ready",
@@ -363,11 +399,12 @@ async function loadView(
     practiceSessions,
     calendarFeed,
     githubCalendar,
+    tbaMatches,
   };
 }
 
 function eventsToIcs(view: Extract<SubteamCalendarView, { status: "ready" }>, scope: CalendarFeedScope, subteamId: string | null) {
-  let events = view.events;
+  let events = [...view.events, ...(view.tbaMatches ?? [])];
   if (scope === "personal") events = eventsForMySubteams(events, view.mySubteamIds);
   else if (scope === "subteam") events = filterEventsBySubteam(events, subteamId);
 
@@ -382,6 +419,10 @@ function eventsToIcs(view: Extract<SubteamCalendarView, { status: "ready" }>, sc
     updatedAt: event.startsAt,
     allDay: false,
   }));
+
+  if (scope !== "subteam") {
+    icsEvents.push(...githubItemsToIcsEvents(view.githubCalendar?.items));
+  }
 
   // Duties without a linked calendar row still appear on personal / org feeds.
   const userId = view.context.userId;

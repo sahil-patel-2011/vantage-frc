@@ -15,7 +15,6 @@ import "./knowledge.css";
 
 type Tab = "wiki" | "search" | "templates" | "ai";
 type LinkTargetType = "decision" | "design_review";
-type ListFilter = "all" | KnowledgeTemplateKind;
 
 function fmtUpdated(iso: string): string {
   const d = new Date(iso);
@@ -28,10 +27,9 @@ function fmtUpdated(iso: string): string {
   });
 }
 
-function filterPages(pages: KnowledgePageSummary[], q: string, kind: ListFilter): KnowledgePageSummary[] {
+function filterPages(pages: KnowledgePageSummary[], q: string): KnowledgePageSummary[] {
   const needle = q.trim().toLowerCase();
   return pages.filter((page) => {
-    if (kind !== "all" && page.templateKind !== kind) return false;
     if (!needle) return true;
     const hay = [page.title, page.slug, TEMPLATE_KIND_LABEL[page.templateKind], ...page.tags]
       .join(" ")
@@ -49,7 +47,6 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   const [searchDraft, setSearchDraft] = useState("");
   const [creating, setCreating] = useState(false);
   const [listQuery, setListQuery] = useState("");
-  const [listKind, setListKind] = useState<ListFilter>("all");
 
   const [draftTitle, setDraftTitle] = useState("");
   const [draftBody, setDraftBody] = useState("");
@@ -90,8 +87,8 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   }, [creating, draftBody, draftPinned, draftSeason, draftTags, draftTemplate, draftTitle, ready]);
 
   const filteredPages = useMemo(
-    () => (ready ? filterPages(ready.pages, listQuery, listKind) : []),
-    [listKind, listQuery, ready],
+    () => (ready ? filterPages(ready.pages, listQuery) : []),
+    [listQuery, ready],
   );
 
   const hydrateFromSelected = useCallback((data: Extract<KnowledgeWikiView, { status: "ready" }>) => {
@@ -216,6 +213,15 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
     setStatus("");
   }
 
+  function startSeasonPlaybook() {
+    void run({
+      action: "upsert_page",
+      fromTemplate: "season_playbook",
+      templateKind: "season_playbook",
+      seasonYear: new Date().getFullYear(),
+    });
+  }
+
   function selectPage(pageId: string) {
     if (dirty && !window.confirm("Discard unsaved changes?")) return;
     void load({ pageId });
@@ -278,17 +284,11 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
         </header>
       ) : null}
 
-      <select
-        className="kb-section-select"
-        value={tab}
-        aria-label="Playbook section"
-        onChange={(e) => setTab(e.target.value as Tab)}
-      >
-        <option value="wiki">Pages</option>
-        <option value="templates">Templates</option>
-        <option value="search">Search</option>
-        <option value="ai">Assistant</option>
-      </select>
+      {tab !== "wiki" ? (
+        <button type="button" className="kb-back" onClick={() => setTab("wiki")}>
+          ← Pages
+        </button>
+      ) : null}
 
       {error ? (
         <p className="kb-alert" role="alert">
@@ -404,47 +404,38 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
         <section className="kb-layout">
           <aside className="kb-side">
             <div className="kb-side-head">
-              <button type="button" className="button primary" disabled={busy} onClick={beginCreate}>
-                New page
-              </button>
+              {ready.pages.length === 0 ? (
+                <button
+                  type="button"
+                  className="button primary"
+                  disabled={busy}
+                  onClick={startSeasonPlaybook}
+                >
+                  Start season playbook
+                </button>
+              ) : (
+                <button type="button" className="button primary" disabled={busy} onClick={beginCreate}>
+                  New page
+                </button>
+              )}
               <p className="kb-meta">
                 {ready.pages.length} page{ready.pages.length === 1 ? "" : "s"}
                 {filteredPages.length !== ready.pages.length ? ` · ${filteredPages.length} shown` : ""}
               </p>
             </div>
 
-            <label className="kb-field">
-              <span>Filter pages</span>
-              <input
-                value={listQuery}
-                onChange={(e) => setListQuery(e.target.value)}
-                placeholder="Title, tag, or kind…"
-                aria-label="Filter wiki pages"
-              />
-            </label>
-
-            <label className="kb-field">
-              <span>Kind</span>
-              <select
-                value={listKind}
-                aria-label="Filter by kind"
-                onChange={(e) => setListKind(e.target.value as ListFilter)}
-              >
-                <option value="all">All</option>
-                {KNOWLEDGE_TEMPLATE_KINDS.filter((k) => k !== "blank" && k !== "other").map((kind) => (
-                  <option key={kind} value={kind}>
-                    {TEMPLATE_KIND_LABEL[kind]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {ready.pages.length > 0 ? (
+              <label className="kb-field">
+                <input
+                  value={listQuery}
+                  onChange={(e) => setListQuery(e.target.value)}
+                  placeholder="Filter pages"
+                  aria-label="Filter wiki pages"
+                />
+              </label>
+            ) : null}
 
             <ul className="kb-list">
-              {ready.pages.length === 0 && !creating ? (
-                <li>
-                  <EmptyState soft title="No pages yet" description="Use New page, or pick a template." />
-                </li>
-              ) : null}
               {ready.pages.length > 0 && filteredPages.length === 0 ? (
                 <li className="kb-list-empty">No pages match this filter.</li>
               ) : null}
@@ -469,6 +460,19 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                 </li>
               ))}
             </ul>
+            <div className="kb-side-links">
+              <button type="button" className="kb-link" onClick={() => setTab("templates")}>
+                Templates
+              </button>
+              {ready.pages.length > 0 ? (
+                <button type="button" className="kb-link" onClick={() => setTab("search")}>
+                  Search
+                </button>
+              ) : null}
+              <button type="button" className="kb-link" onClick={() => setTab("ai")}>
+                Assistant
+              </button>
+            </div>
           </aside>
 
           <div className="kb-main kb-editor">
@@ -702,7 +706,20 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
             ) : null}
 
             {!creating && !ready.selected ? (
-              <EmptyState soft title="Select a page" />
+              ready.pages.length === 0 ? (
+                <EmptyState soft title="No pages yet">
+                  <button
+                    type="button"
+                    className="button primary"
+                    disabled={busy}
+                    onClick={startSeasonPlaybook}
+                  >
+                    Start season playbook
+                  </button>
+                </EmptyState>
+              ) : (
+                <EmptyState soft title="Select a page" />
+              )
             ) : null}
           </div>
         </section>

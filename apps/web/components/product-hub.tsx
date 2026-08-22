@@ -124,6 +124,9 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
   const nestedTabs = useMemo(() => {
     const all = hubNestedTabs(hub, workbenchId);
     if (all.length <= 1) return [];
+    if (hub.id === "team" && (workbenchId === "calendar" || workbenchId === "messages" || workbenchId === "knowledge")) {
+      return [];
+    }
     if (primaryTabs.some((entry) => entry.id === workbenchId)) return all;
     return filterTabsByHubAccess(all, access.hubAccess, accessHubId);
   }, [access.hubAccess, accessHubId, hub, primaryTabs, workbenchId]);
