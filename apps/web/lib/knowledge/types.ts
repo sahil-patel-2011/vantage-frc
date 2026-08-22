@@ -2,6 +2,7 @@
 
 export const KNOWLEDGE_TEMPLATE_KINDS = [
   "blank",
+  "season_playbook",
   "season_handoff",
   "subsystem",
   "role_onboarding",
@@ -15,6 +16,7 @@ export type KnowledgeTemplateKind = (typeof KNOWLEDGE_TEMPLATE_KINDS)[number];
 
 export const TEMPLATE_KIND_LABEL: Record<KnowledgeTemplateKind, string> = {
   blank: "Blank page",
+  season_playbook: "Season playbook",
   season_handoff: "Season handoff",
   subsystem: "Subsystem dump",
   role_onboarding: "Role onboarding",

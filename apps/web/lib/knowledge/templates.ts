@@ -12,6 +12,44 @@ export type KnowledgeTemplate = {
 
 export const KNOWLEDGE_TEMPLATES: KnowledgeTemplate[] = [
   {
+    kind: "season_playbook",
+    title: "Season playbook",
+    blurb: "Before the season, meetings, build, competition ops, and after — fill in this team’s real facts.",
+    defaultTags: ["playbook", "season", "ops"],
+    body: `# {{team}} {{year}} season playbook
+
+**Season year:** {{year}}
+**Team:** {{team}}
+**Owners:**
+
+## Before the season
+- Shop / storage access, insurance, and student paperwork
+- Kickoff watch plan and first-meeting agenda
+- Budget envelope and sponsor asks already in motion
+- Tooling, printer, and inventory that actually exists
+
+## Meetings
+- Weekly cadence (day, time, who must be in the room)
+- Agenda for the next meeting (decisions, not status theater)
+- Who captures notes in Team chat after each meeting
+
+## Build
+- Mechanism owners and “done” definition for each
+- Integration checkpoints before stop-build
+- Spare parts that have already failed once
+
+## Competition ops
+- Pit roles, queue time, bumper color, and pack-out
+- Drive-team brief: auto, defense, and partner asks
+- Inspection / re-weigh / battery cart
+
+## After the season
+- What to keep vs scrap
+- Handoff owners for CAD, code, and inventory
+- Post-mortem: what burned time, what we would repeat
+`,
+  },
+  {
     kind: "season_handoff",
     title: "Season handoff",
     blurb: "End-of-season dump so next year’s team inherits what actually mattered.",
@@ -227,17 +265,26 @@ export function templateByKind(kind: string | null | undefined): KnowledgeTempla
 export function applyKnowledgeTemplate(
   kind: KnowledgeTemplateKind,
   teamNumber: number | null,
+  extras?: { orgName?: string | null; seasonYear?: number | null },
 ): { title: string; body: string; tags: string[]; templateKind: KnowledgeTemplateKind } {
   const tpl = templateByKind(kind);
+  const team = teamNumber
+    ? `Team ${teamNumber}`
+    : extras?.orgName?.trim() || "Our team";
+  const year = extras?.seasonYear ?? new Date().getFullYear();
   if (!tpl) {
     return {
       title: "New page",
-      body: teamNumber ? `# Team ${teamNumber}\n\n` : "# \n\n",
+      body: `# ${team}\n\n`,
       tags: [],
       templateKind: kind === "other" ? "other" : "blank",
     };
   }
-  const team = teamNumber ? `Team ${teamNumber}` : "Our team";
-  const body = tpl.body.replace(/^# /m, `# ${team} — `);
-  return { title: tpl.title, body, tags: [...tpl.defaultTags], templateKind: kind };
+  const titled = /season/i.test(tpl.title) ? `${team} ${tpl.title.toLowerCase()}` : tpl.title;
+  const personalized = tpl.body
+    .replaceAll("{{team}}", team)
+    .replaceAll("{{year}}", String(year));
+  const alreadyNamed = tpl.body.includes("{{team}}") || personalized.startsWith(`# ${team}`);
+  const body = alreadyNamed ? personalized : personalized.replace(/^# /m, `# ${team} — `);
+  return { title: titled, body, tags: [...tpl.defaultTags], templateKind: kind };
 }

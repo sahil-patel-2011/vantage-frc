@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDayCells,
   buildMonthCells,
   buildWeekCells,
   eventWorkflowLinks,
   eventsForMySubteams,
   filterEventsBySubteam,
   groupEventsByDay,
+  layoutTimedEventsForDay,
   localDayKey,
+  overlayItemsForDay,
   parseSubteamCalendarAction,
+  shiftAnchor,
   sortEvents,
   upcomingEvents,
   type CalendarEvent,
@@ -247,5 +251,59 @@ describe("week / month grids", () => {
     const month = buildMonthCells(anchor, events, today);
     expect(month).toHaveLength(42);
     expect(month.filter((c) => c.inMonth).length).toBeGreaterThanOrEqual(28);
+  });
+
+  it("builds a single-day cell and shifts the day anchor", () => {
+    const anchor = new Date(2026, 2, 11);
+    const today = new Date(2026, 2, 11);
+    const events = [
+      event({
+        id: "1",
+        title: "Shop",
+        startsAt: new Date(2026, 2, 11, 16, 0).toISOString(),
+      }),
+    ];
+    const day = buildDayCells(anchor, events, today);
+    expect(day).toHaveLength(1);
+    expect(day[0]!.day).toBe(localDayKey(anchor));
+    expect(day[0]!.items.map((item) => item.id)).toEqual(["1"]);
+    expect(localDayKey(shiftAnchor(anchor, "day", 1))).toBe(localDayKey(new Date(2026, 2, 12)));
+  });
+});
+
+describe("timed grid + GitHub overlay", () => {
+  it("lays out timed events and excludes all-day midnight rows", () => {
+    const timed = event({
+      id: "shop",
+      title: "Shop",
+      startsAt: new Date(2026, 2, 11, 16, 0).toISOString(),
+      endsAt: new Date(2026, 2, 11, 18, 0).toISOString(),
+    });
+    const overlap = event({
+      id: "code",
+      title: "Code",
+      startsAt: new Date(2026, 2, 11, 16, 30).toISOString(),
+      endsAt: new Date(2026, 2, 11, 17, 30).toISOString(),
+    });
+    const allDay = event({
+      id: "bag",
+      title: "Bag day",
+      startsAt: new Date(2026, 2, 11, 0, 0).toISOString(),
+      endsAt: null,
+    });
+    const blocks = layoutTimedEventsForDay([timed, overlap, allDay]);
+    expect(blocks.map((block) => block.event.id)).toEqual(["shop", "code"]);
+    expect(blocks[0]!.cols).toBe(2);
+    expect(blocks[1]!.col).toBeGreaterThanOrEqual(0);
+  });
+
+  it("keeps GitHub overlay items on their real due date only", () => {
+    const items = [
+      { id: "ms-1", title: "Stop build", dueOn: "2026-02-18", href: "https://github.com/org/repo/milestone/1", source: "github" as const },
+      { id: "ms-2", title: "Ship", dueOn: "2026-02-20", href: "https://github.com/org/repo/milestone/2", source: "github" as const },
+    ];
+    expect(overlayItemsForDay(items, "2026-02-18").map((item) => item.id)).toEqual(["ms-1"]);
+    expect(overlayItemsForDay(items, "2026-02-19")).toEqual([]);
+    expect(overlayItemsForDay(undefined, "2026-02-18")).toEqual([]);
   });
 });

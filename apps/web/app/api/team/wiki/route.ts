@@ -97,8 +97,8 @@ export async function POST(request: Request) {
       let action: KnowledgeWikiAction = parsed;
 
       if (action.action === "upsert_page") {
-        const member = await client.query<{ teamNumber: number | null }>(
-          `SELECT o.team_number AS "teamNumber"
+        const member = await client.query<{ teamNumber: number | null; orgName: string }>(
+          `SELECT o.team_number AS "teamNumber", o.name AS "orgName"
            FROM memberships m JOIN organizations o ON o.id = m.org_id
            WHERE m.org_id = $1::uuid AND m.user_id = $2::uuid`,
           [action.orgId, session.user.id],
@@ -110,7 +110,11 @@ export async function POST(request: Request) {
         let tags = action.tags;
         let templateKind = action.templateKind;
         if (action.fromTemplate) {
-          const applied = applyKnowledgeTemplate(action.fromTemplate, member.rows[0]!.teamNumber);
+          const row = member.rows[0]!;
+          const applied = applyKnowledgeTemplate(action.fromTemplate, row.teamNumber, {
+            orgName: row.orgName,
+            seasonYear: action.seasonYear,
+          });
           title = title || applied.title;
           body = body || applied.body;
           tags = tags.length ? tags : applied.tags;

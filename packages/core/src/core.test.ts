@@ -65,6 +65,17 @@ describe("waitlist-only auth access policy", () => {
     expect(resolveAuthSecret("", "development")).toMatch(/local-development/);
   });
 
+  it("treats Google OAuth callbacks as a finished sign-in", async () => {
+    const { resolveSessionAuthMethod, email2faSatisfiedByAuthMethod } = await import("./access-policy");
+    expect(resolveSessionAuthMethod("/api/auth/callback/google")).toBe("google");
+    expect(resolveSessionAuthMethod("/sign-in/social")).toBe("google");
+    expect(resolveSessionAuthMethod("/sign-in/email-otp")).toBe("email_otp");
+    expect(resolveSessionAuthMethod("/sign-in/email")).toBe("password");
+    expect(email2faSatisfiedByAuthMethod("google", true)).toBe(true);
+    expect(email2faSatisfiedByAuthMethod("password", true)).toBe(false);
+    expect(email2faSatisfiedByAuthMethod("password", false)).toBe(true);
+  });
+
   it("reports public signup closed and gates email OTP when Resend is missing in production", async () => {
     const previous = {
       nodeEnv: process.env.NODE_ENV,

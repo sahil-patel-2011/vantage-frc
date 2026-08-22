@@ -81,6 +81,55 @@ export async function listGitHubRepos(http: GitHubHttp, limit = 50): Promise<Git
   }));
 }
 
+export type GitHubMilestoneCalendarItem = {
+  id: string;
+  title: string;
+  dueOn: string;
+  htmlUrl: string;
+};
+
+/** Keep milestones that have a real GitHub due date — never invent one. */
+export function parseGitHubMilestoneCalendarItems(payload: unknown): GitHubMilestoneCalendarItem[] {
+  if (!Array.isArray(payload)) return [];
+  const items: GitHubMilestoneCalendarItem[] = [];
+  for (const raw of payload) {
+    if (!raw || typeof raw !== "object") continue;
+    const row = raw as Record<string, unknown>;
+    const dueOn = typeof row.due_on === "string" ? row.due_on.slice(0, 10) : "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dueOn)) continue;
+    const title = String(row.title ?? "").trim();
+    const htmlUrl = String(row.html_url ?? "").trim();
+    if (!title || !htmlUrl.startsWith("https://")) continue;
+    const number = typeof row.number === "number" ? row.number : items.length;
+    items.push({
+      id: `ms-${number}`,
+      title,
+      dueOn,
+      htmlUrl,
+    });
+  }
+  return items;
+}
+
+export async function fetchGitHubMilestoneCalendarItems(
+  http: GitHubHttp,
+  fullName: string,
+): Promise<GitHubMilestoneCalendarItem[]> {
+  const { owner, repo } = parseOwnerRepo(fullName);
+  const response = await http(
+    `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/milestones?state=open&per_page=25&sort=due_date&direction=asc`,
+  );
+  const data = (await response.json()) as unknown;
+  if (!response.ok) {
+    const message =
+      data && typeof data === "object" && "message" in data
+        ? String((data as { message?: string }).message)
+        : "Failed to load GitHub milestones";
+    throw new Error(message);
+  }
+  return parseGitHubMilestoneCalendarItems(data);
+}
+
 function parseOwnerRepo(fullName: string): { owner: string; repo: string } {
   const [owner, repo] = fullName.split("/");
   if (!owner?.trim() || !repo?.trim() || fullName.includes("..")) {

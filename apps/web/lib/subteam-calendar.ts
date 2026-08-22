@@ -84,7 +84,39 @@ export type CalendarEvent = {
   rsvpNo: number;
 };
 
-export type CalendarViewMode = "agenda" | "week" | "month";
+export type CalendarViewMode = "agenda" | "week" | "month" | "day";
+
+/** Timed week/day grid — Google Calendar-style hours, never invented events. */
+export const CALENDAR_GRID_START_HOUR = 7;
+export const CALENDAR_GRID_END_HOUR = 22;
+export const CALENDAR_GRID_HOURS = Array.from(
+  { length: CALENDAR_GRID_END_HOUR - CALENDAR_GRID_START_HOUR },
+  (_, index) => CALENDAR_GRID_START_HOUR + index,
+);
+
+export type CalendarOverlayItem = {
+  id: string;
+  title: string;
+  dueOn: string;
+  href: string;
+  source: "github";
+};
+
+export type GitHubCalendarOverlay = {
+  connected: boolean;
+  repo: string | null;
+  items: CalendarOverlayItem[];
+};
+
+export type TimedCalendarBlock = {
+  event: CalendarEvent;
+  startMin: number;
+  endMin: number;
+  topPct: number;
+  heightPct: number;
+  col: number;
+  cols: number;
+};
 
 export type CalendarGridCell = {
   day: string;
@@ -176,6 +208,8 @@ export type SubteamCalendarView =
       practiceSessions: LinkablePractice[];
       /** Personal subscribe token for the active scope (opaque; treat as a secret). */
       calendarFeed: CalendarFeedInfo;
+      /** GitHub milestones with real due dates — empty until a repo is connected. */
+      githubCalendar?: GitHubCalendarOverlay;
     }
   | { status: "setup_required"; context: SubteamCalendarContext; message: string };
 
@@ -350,6 +384,19 @@ export function buildWeekCells(anchor: Date, events: CalendarEvent[], today: Dat
   return cells;
 }
 
+export function buildDayCells(anchor: Date, events: CalendarEvent[], today: Date = new Date()): CalendarGridCell[] {
+  const day = localDayKey(anchor);
+  const byDay = eventsByLocalDay(events);
+  return [
+    {
+      day,
+      inMonth: true,
+      isToday: day === localDayKey(today),
+      items: byDay.get(day) ?? [],
+    },
+  ];
+}
+
 export function buildMonthCells(anchor: Date, events: CalendarEvent[], today: Date = new Date()): CalendarGridCell[] {
   const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
   const gridStart = startOfWeek(monthStart);
@@ -376,6 +423,10 @@ export function shiftAnchor(anchor: Date, mode: CalendarViewMode, delta: number)
     next.setMonth(next.getMonth() + delta);
     return next;
   }
+  if (mode === "day") {
+    next.setDate(next.getDate() + delta);
+    return next;
+  }
   next.setDate(next.getDate() + delta * 7);
   return next;
 }
@@ -384,6 +435,14 @@ export function formatAnchorLabel(anchor: Date, mode: CalendarViewMode): string 
   if (mode === "month") {
     return anchor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
   }
+  if (mode === "day") {
+    return anchor.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
   const start = startOfWeek(anchor);
   const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
   const left = start.toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -391,11 +450,78 @@ export function formatAnchorLabel(anchor: Date, mode: CalendarViewMode): string 
   return `${left} – ${right}`;
 }
 
-/** Default local datetime-local value for quick-add (next top-of-hour, or noon on a picked day). */
-export function defaultQuickAddStartsAt(day?: string | null, now: Date = new Date()): string {
+export function formatHourLabel(hour: number): string {
+  const date = new Date(2026, 0, 1, hour, 0, 0);
+  return date.toLocaleTimeString(undefined, { hour: "numeric" });
+}
+
+export function isAllDayCalendarEvent(event: CalendarEvent): boolean {
+  const start = new Date(event.startsAt);
+  if (Number.isNaN(start.getTime())) return true;
+  const end = event.endsAt ? new Date(event.endsAt) : null;
+  if (start.getHours() === 0 && start.getMinutes() === 0 && !end) return true;
+  if (end && !Number.isNaN(end.getTime()) && end.getTime() - start.getTime() >= 12 * 60 * 60 * 1000) {
+    return true;
+  }
+  return false;
+}
+
+export function layoutTimedEventsForDay(events: CalendarEvent[]): TimedCalendarBlock[] {
+  const span = (CALENDAR_GRID_END_HOUR - CALENDAR_GRID_START_HOUR) * 60;
+  const origin = CALENDAR_GRID_START_HOUR * 60;
+  const timed = events.filter((event) => !isAllDayCalendarEvent(event));
+  const blocks: TimedCalendarBlock[] = timed
+    .map((event) => {
+      const start = new Date(event.startsAt);
+      const end = event.endsAt ? new Date(event.endsAt) : new Date(start.getTime() + 60 * 60 * 1000);
+      const startMin = Math.max(0, start.getHours() * 60 + start.getMinutes() - origin);
+      const rawEnd = Number.isNaN(end.getTime())
+        ? startMin + 60
+        : end.getHours() * 60 + end.getMinutes() - origin;
+      const endMin = Math.min(span, Math.max(startMin + 30, rawEnd));
+      return {
+        event,
+        startMin,
+        endMin,
+        topPct: (startMin / span) * 100,
+        heightPct: ((endMin - startMin) / span) * 100,
+        col: 0,
+        cols: 1,
+      };
+    })
+    .sort((a, b) => a.startMin - b.startMin || a.event.title.localeCompare(b.event.title));
+
+  const columnEnds: number[] = [];
+  for (const block of blocks) {
+    let col = columnEnds.findIndex((end) => end <= block.startMin);
+    if (col < 0) {
+      col = columnEnds.length;
+      columnEnds.push(block.endMin);
+    } else {
+      columnEnds[col] = block.endMin;
+    }
+    block.col = col;
+  }
+  const cols = Math.max(1, columnEnds.length);
+  for (const block of blocks) block.cols = cols;
+  return blocks;
+}
+
+export function overlayItemsForDay(items: CalendarOverlayItem[] | undefined, day: string): CalendarOverlayItem[] {
+  if (!items?.length) return [];
+  return items.filter((item) => item.dueOn === day);
+}
+
+/** Default local datetime-local value for quick-add (next top-of-hour, or a picked day/hour). */
+export function defaultQuickAddStartsAt(
+  day?: string | null,
+  now: Date = new Date(),
+  hour?: number | null,
+): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   if (day) {
-    return `${day}T16:00`;
+    const picked = hour == null ? 16 : Math.max(0, Math.min(23, Math.floor(hour)));
+    return `${day}T${pad(picked)}:00`;
   }
   const d = new Date(now);
   d.setMinutes(0, 0, 0);

@@ -4,7 +4,7 @@ test("landing sign in reaches dashboard with local auth fixture", async ({ conte
   await page.goto("/");
   await page.getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/signin$/);
-  await expect(page.getByRole("heading", { name: "Welcome to Vantage" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
   await context.addCookies([{
     name: "vantage-e2e-session",
