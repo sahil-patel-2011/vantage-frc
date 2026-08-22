@@ -1,3 +1,4 @@
+import { formatBugbotScanBundle, pickBugbotScanEntries } from "@vantage/agent/bugbot";
 import { GITHUB_API_BASE } from "./oauth";
 
 export const GITHUB_MAX_FILE_CHARS = 48_000;
@@ -194,4 +195,51 @@ export function formatGitHubTreeContext(input: {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+export type GitHubScanBundle = {
+  path: string;
+  content: string;
+  filesScanned: number;
+  truncated: boolean;
+  files: string[];
+  fullName: string;
+  ref: string;
+  treeTruncated: boolean;
+  emptyReason: string | null;
+};
+
+/**
+ * Load a size-capped robot-code bundle for Bugbot. Skips unreadable blobs.
+ * Never invents DEMO source when the tree is empty or disconnected.
+ */
+export async function fetchGitHubScanBundle(
+  http: GitHubHttp,
+  fullName: string,
+  ref: string,
+): Promise<GitHubScanBundle> {
+  const tree = await fetchGitHubTree(http, fullName, ref, { maxEntries: 400 });
+  const paths = pickBugbotScanEntries(tree.entries);
+  const files: Array<{ path: string; content: string }> = [];
+  for (const path of paths) {
+    try {
+      const snippet = await fetchGitHubFileSnippet(http, fullName, path, ref, 12_000);
+      if (snippet.content.trim()) files.push({ path: snippet.path, content: snippet.content });
+    } catch {
+      // Binary / missing / encoding skip — never fabricate the file.
+    }
+  }
+  const bundle = formatBugbotScanBundle(files);
+  return {
+    ...bundle,
+    files: files.map((file) => file.path),
+    fullName,
+    ref,
+    treeTruncated: tree.truncated,
+    emptyReason: bundle.filesScanned
+      ? null
+      : paths.length
+        ? "Robot-code files in this repo could not be read (binary or encoding)."
+        : "No robot-code files (.java, .cpp, .py, …) in the connected repo tree.",
+  };
 }

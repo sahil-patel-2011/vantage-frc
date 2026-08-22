@@ -83,3 +83,12 @@ step also links to Team → GitHub.
 | GET | `/api/github/oauth/callback` | OAuth redirect |
 | GET | `/api/github/repos?orgId=` | List repos for linked account |
 | GET | `/api/github/contents?orgId=&path=` | Size-capped file/tree snippets |
+
+## Bugbot
+
+Build → Code → **AI Bugbot** (also `/bugbot`) can scan the linked default repo (or a repo picked on that screen).
+
+- **Subscription Bugbot** meters `feature=coding` on the org BYOK / plan allowance.
+- **Bugbot Ultra** is a hosted flat SKU: **$1 scan**, **$2 propose fix**, **$1 recheck**. It does not use the org BYO key. Fixes are unified diffs for human approval — Vantage never pushes.
+
+Empty GitHub / empty trees stay empty. No DEMO findings.

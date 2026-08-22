@@ -18,6 +18,7 @@ describe("help articles", () => {
       "hub-access",
       "funding-profile",
       "season-finance",
+      "bugbot-ultra",
     ]);
   });
 

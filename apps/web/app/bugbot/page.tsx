@@ -4,7 +4,7 @@ import "../code/code.css";
 export const metadata = {
   title: "AI Bugbot · Vantage",
   description:
-    "Metered FRC robot-code review. Findings must quote the submitted source. Never deploys to a robot.",
+    "Scan connected GitHub robot-code with subscription Bugbot or Bugbot Ultra ($1 scan, $2 fix, $1 recheck). Findings must quote the source. Never deploys or pushes.",
 };
 
 export default async function BugbotPage({
