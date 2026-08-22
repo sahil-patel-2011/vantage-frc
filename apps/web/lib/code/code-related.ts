@@ -114,7 +114,7 @@ export function codeCoachNextActions(input: {
     {
       id: "github",
       label: "Connect GitHub",
-      detail: "Optional: hydrate file content from your default repo — still reviewed with local rules only.",
+      detail: "Link a robot-code repo so Bugbot can scan it. PAT or OAuth — read-only, never a push.",
       href: githubConnectionHref(orgId),
     },
     {
@@ -126,7 +126,7 @@ export function codeCoachNextActions(input: {
     {
       id: "bugbot",
       label: "Run AI Bugbot",
-      detail: "Metered review quotes this file only. Empty until you paste source and a provider key exists.",
+      detail: "Subscription uses your plan/BYO key. Bugbot Ultra is $1 scan, $2 fix, $1 recheck — never DEMO bugs, never a GitHub push.",
       href: withOrgHref("/bugbot", orgId),
     },
   );
