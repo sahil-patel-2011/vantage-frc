@@ -17,6 +17,11 @@
   border:1px solid var(--soft-line,var(--app-line));border-radius:10px;
   background:var(--soft-card,var(--app-surface));color:var(--soft-ink,var(--app-ink));font:600 13px inherit;
 }
+.kb-back{
+  display:inline-flex;align-items:center;border:0;background:none;color:var(--soft-accent,var(--app-accent));
+  font:700 13px inherit;cursor:pointer;padding:0;margin:0 0 12px;
+}
+.kb-side-links{display:flex;flex-wrap:wrap;gap:4px 12px;padding-top:4px}
 
 .kb-alert{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--app-critical) 10%,transparent);color:var(--app-critical);font-size:13px}
 .kb-status{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--app-positive) 12%,transparent);color:var(--app-positive);font-size:13px}
