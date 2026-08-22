@@ -224,6 +224,7 @@ export type MeteredAIInput<T> = {
    * When `byo` / `local`, skip hosted credit caps (caller already resolved org keys).
    * When `sponsored`, platform promo pool — ledger cost 0, no credit debit.
    * When omitted, prefer configured org BYOK/local over hosted platform for any tier.
+   * When `platform`, skip BYOK detection — used by flat-fee hosted SKUs (Bugbot Ultra).
    */
   keySource?: MeterKeySource;
   invoke: (keySource: MeterKeySource) => Promise<UsageReceipt<T>>;
@@ -580,7 +581,9 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   if (account.kill_switch) throw new BillingDisabledError();
 
   let keySource: MeterKeySource;
-  if (input.keySource === "byo" || input.keySource === "local" || input.keySource === "sponsored") {
+  if (input.keySource === "platform") {
+    keySource = "platform";
+  } else if (input.keySource === "byo" || input.keySource === "local" || input.keySource === "sponsored") {
     keySource = input.keySource;
   } else {
     const detected = await detectOrgByokKeySource(input.client, input.orgId);

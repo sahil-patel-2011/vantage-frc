@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./repository": "./src/repository.ts",
-    "./coding-assistant": "./src/coding-assistant.ts"
+    "./coding-assistant": "./src/coding-assistant.ts",
+    "./bugbot": "./src/bugbot.ts"
   },
   "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
   "dependencies": { "@neondatabase/serverless": "latest", "@vantage/billing": "*" }

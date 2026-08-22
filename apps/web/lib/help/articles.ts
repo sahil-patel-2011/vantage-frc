@@ -534,6 +534,48 @@ export const HELP_ARTICLES: HelpArticle[] = [
       },
     ],
   },
+  {
+    id: "bugbot-ultra",
+    slug: "bugbot-ultra",
+    title: "Scan GitHub with Bugbot",
+    summary:
+      "Connect a robot-code repo, then scan on your subscription or pay Bugbot Ultra ($1 scan, $2 fix, $1 recheck). Findings must quote the source.",
+    category: "Build",
+    keywords: [
+      "bugbot",
+      "github",
+      "code review",
+      "ultra",
+      "scan repo",
+      "fix diff",
+      "recheck",
+      "robot code",
+    ],
+    relatedHref: "/bugbot",
+    sections: [
+      {
+        heading: "Connect GitHub first",
+        body: [
+          "Owners and admins link a PAT or OAuth app under Team admin. Bugbot never requests workflow scope and never pushes.",
+          "On Bugbot, pick the robot-code repo and optionally load one file, or scan the connected tree (.java, .cpp, .py, vendordeps).",
+        ],
+      },
+      {
+        heading: "Subscription vs Ultra",
+        body: [
+          "Subscription Bugbot uses your workspace AI key or plan allowance (feature coding).",
+          "Bugbot Ultra is a hosted API priced at $1.00 to scan, $2.00 to propose a fix, and $1.00 to recheck. It does not use your BYO key.",
+        ],
+      },
+      {
+        heading: "Fixes stay human-approved",
+        body: [
+          "A proposed fix is a unified diff you copy. Vantage does not open a pull request or deploy to a robot.",
+          "Recheck quotes remaining issues in the current source. Empty findings are not a competition-legal stamp.",
+        ],
+      },
+    ],
+  },
 ];
 
 export function getHelpArticle(slug: string): HelpArticle | undefined {

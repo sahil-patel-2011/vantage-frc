@@ -65,6 +65,7 @@ const KNOWN_FEATURES = [
   "prediction",
   "cad",
   "coding",
+  "bugbot_ultra",
   "maintenance",
   "chat",
   "writer",

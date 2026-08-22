@@ -375,4 +375,33 @@ describe("resolveOrgChatAdapter", () => {
     expect(adapter.provider).toBe("anthropic");
     expect(adapter.model).toContain("claude");
   });
+
+  it("preferPlatform skips org BYOK and uses hosted Anthropic", async () => {
+    process.env.ANTHROPIC_API_KEY = "sk-ant-platform";
+    const client = fakeClient([]);
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      feature: "bugbot_ultra",
+      preferPlatform: true,
+      decrypt: async () => "unused",
+    });
+    expect(adapter.provider).toBe("anthropic");
+    expect(client.query).not.toHaveBeenCalled();
+  });
+
+  it("preferPlatform fails honestly when no hosted key exists", async () => {
+    const client = fakeClient([
+      () => ({ rowCount: 1, rows: [{ tier: "team" }] }),
+      () => ({ rowCount: 0, rows: [] }),
+    ]);
+    await expect(
+      resolveOrgChatAdapter(client as never, {
+        orgId: "org-1",
+        promptCachingEnabled: false,
+        preferPlatform: true,
+        decrypt: async () => "unused",
+      }),
+    ).rejects.toBeInstanceOf(ChatProviderResolutionError);
+  });
 });

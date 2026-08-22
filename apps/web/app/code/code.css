@@ -30,7 +30,7 @@
 }
 .cdc-billing {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 .cdc-billing article {
@@ -60,6 +60,49 @@
 }
 .cdc-billing-local {
   border-color: color-mix(in srgb, var(--app-good, #15803d) 28%, var(--app-line));
+}
+.cdc-billing-ultra {
+  border-color: color-mix(in srgb, var(--app-accent, #2563eb) 28%, var(--app-line));
+}
+.cdc-bugbot-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cdc-bugbot-modes button {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+  background: var(--app-bg);
+  cursor: pointer;
+  color: inherit;
+}
+.cdc-bugbot-modes button.is-active {
+  border-color: color-mix(in srgb, var(--app-accent, #2563eb) 45%, var(--app-line));
+  background: color-mix(in srgb, var(--app-accent, #2563eb) 8%, var(--app-surface));
+}
+.cdc-bugbot-modes strong {
+  font-size: 13px;
+}
+.cdc-bugbot-modes span {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+.cdc-github-scan {
+  display: grid;
+  gap: 10px;
+}
+.cdc-github-scan label,
+.cdc-github-scan select {
+  width: 100%;
+}
+.cdc-bugbot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .cdc-cutoff {
   margin: 0;
@@ -364,6 +407,14 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+@media (max-width: 1100px) {
+  .cdc-billing {
+    grid-template-columns: 1fr;
+  }
+  .cdc-bugbot-modes {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 900px) {
   .cdc-billing {

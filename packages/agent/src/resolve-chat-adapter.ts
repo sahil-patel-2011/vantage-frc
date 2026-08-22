@@ -36,6 +36,11 @@ export type ResolveOrgChatAdapterInput = {
   promptCachingEnabled: boolean;
   /** Feature tag for Automode (cad, coding, strategy, chat, …). */
   feature?: string;
+  /**
+   * Skip org BYOK / local connectors and use hosted Vantage keys only.
+   * Used by Bugbot Ultra (flat-fee SKU). Honest error when no hosted key exists.
+   */
+  preferPlatform?: boolean;
   /** Injected for tests. Defaults to billing KMS decrypt. */
   decrypt?: (parts: {
     ciphertext: string;
@@ -299,6 +304,75 @@ function availableProvidersFrom(
 }
 
 /**
+ * Hosted Vantage keys only — used by Bugbot Ultra. Never silently uses org BYOK.
+ * Honest ChatProviderResolutionError when ANTHROPIC_API_KEY / managed peek / OpenRouter are absent.
+ */
+async function resolveHostedPlatformChatAdapter(
+  client: PoolClient,
+  input: ResolveOrgChatAdapterInput,
+): Promise<ChatAdapter> {
+  const hostedAnthropic = tryCreateHostedAnthropicAdapter({
+    promptCachingEnabled: input.promptCachingEnabled,
+    fetchImpl: input.fetchImpl,
+    feature: input.feature,
+  });
+  if (hostedAnthropic) return hostedAnthropic;
+
+  const billing = await client.query<{ tier: string }>(
+    `SELECT tier FROM org_billing WHERE org_id = $1`,
+    [input.orgId],
+  );
+  const tier = billing.rows[0]?.tier ?? "free";
+
+  if (tier !== "free") {
+    const managed = await client.query<ManagedRow>(
+      `SELECT provider, model,
+              key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
+              key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
+              kms_key_id AS "kmsKeyId", key_id AS "keyId",
+              input_price_per_million_usd::text AS "inputPrice",
+              output_price_per_million_usd::text AS "outputPrice",
+              cache_read_price_per_million_usd::text AS "cacheReadPrice",
+              cache_write_price_per_million_usd::text AS "cacheWritePrice"
+       FROM peek_managed_chat_provider($1::uuid)`,
+      [input.orgId],
+    );
+    const row = managed.rows[0];
+    if (row) {
+      const provider = normalizeProvider(row.provider);
+      if (provider === "openai" || provider === "anthropic") {
+        const apiKey = await decryptRow(row, input.decrypt);
+        return new HttpChatAdapter({
+          provider,
+          model: row.model || DEFAULT_MODELS[provider],
+          apiKey,
+          promptCachingEnabled: input.promptCachingEnabled,
+          prices: pricesFromNumbers({
+            input: row.inputPrice,
+            output: row.outputPrice,
+            cacheRead: row.cacheReadPrice,
+            cacheWrite: row.cacheWritePrice,
+            fallback: DEFAULT_PRICES[provider],
+          }),
+          fetchImpl: input.fetchImpl,
+        });
+      }
+    }
+  }
+
+  const openrouter = tryCreateOpenRouterFreeAdapter({
+    promptCachingEnabled: input.promptCachingEnabled,
+    fetchImpl: input.fetchImpl,
+    capability: input.feature,
+  });
+  if (openrouter) return openrouter;
+
+  throw new ChatProviderResolutionError(
+    "Bugbot Ultra needs a hosted Vantage model (ANTHROPIC_API_KEY, managed peek, or OPENROUTER_API_KEY). Use subscription Bugbot with your own key instead.",
+  );
+}
+
+/**
  * Resolve a live HTTP chat adapter for an org.
  * Order: org BYOK / custom HTTPS → paid managed peek → paid Anthropic env →
  * free OpenRouter env → local-relay hard-fail → team 1111 sponsored pool.
@@ -309,6 +383,9 @@ export async function resolveOrgChatAdapter(
   client: PoolClient,
   input: ResolveOrgChatAdapterInput,
 ): Promise<ChatAdapter> {
+  if (input.preferPlatform) {
+    return resolveHostedPlatformChatAdapter(client, input);
+  }
   const prefs = await loadRoutingPrefs(client, input.orgId);
 
   const orgProviders = await client.query<OrgProviderRow>(

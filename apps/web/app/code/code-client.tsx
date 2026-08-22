@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { BUGBOT_ULTRA_PRICES_USD, isBugbotScanPath } from "@vantage/agent/bugbot";
 import { buildDiffProposal, reviewFrcCode } from "@vantage/agent/coding-assistant";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { BuildHubRelated } from "../../components/build-hub-related";
@@ -12,6 +13,7 @@ import {
 } from "../../components/usage-cutoff-banner";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { githubConnectionHref } from "../../lib/github/github-related";
 import {
   CODE_COACH_RELATED_INCLUDE,
   CODE_COACH_SAMPLE,
@@ -86,7 +88,21 @@ type BugbotHistoryRow = {
   provider: string | null;
   model: string | null;
   createdAt: string;
+  tier?: string;
+  phase?: string;
+  githubRepo?: string | null;
+  chargeUsd?: string;
+  filesScanned?: number;
 };
+
+type GitHubRepoOption = {
+  fullName: string;
+  defaultBranch: string;
+  private: boolean;
+};
+
+type BugbotMode = "subscription" | "ultra";
+type BugbotPhase = "scan" | "fix" | "recheck";
 
 export function CodeClient({
   orgId = "",
@@ -103,11 +119,28 @@ export function CodeClient({
   const [review, setReview] = useState<Review | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [bugbot, setBugbot] = useState<BugbotReview | null>(null);
-  const [bugbotMeta, setBugbotMeta] = useState<{ provider?: string; model?: string } | null>(null);
+  const [bugbotMeta, setBugbotMeta] = useState<{
+    provider?: string;
+    model?: string;
+    mode?: BugbotMode;
+    phase?: BugbotPhase;
+    chargeUsd?: number;
+    proposedDiff?: string | null;
+    filesScanned?: number;
+  } | null>(null);
   const [history, setHistory] = useState<BugbotHistoryRow[]>([]);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [bugbotMode, setBugbotMode] = useState<BugbotMode>("subscription");
+  const [githubConnected, setGithubConnected] = useState(false);
+  const [githubLogin, setGithubLogin] = useState<string | null>(null);
+  const [repos, setRepos] = useState<GitHubRepoOption[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState("");
+  const [selectedRef, setSelectedRef] = useState("main");
+  const [repoFiles, setRepoFiles] = useState<string[]>([]);
+  const [treeTruncated, setTreeTruncated] = useState(false);
+  const [githubEmptyReason, setGithubEmptyReason] = useState<string | null>(null);
 
   const hasSource = Boolean(content.trim());
   const showMeteredBanner = Boolean(orgId) && related === "ai";
@@ -117,29 +150,137 @@ export function CodeClient({
     hasSource,
     hasReview: Boolean(review),
   });
-  const chatHref = orgId ? hubHref("/ai", "chat", orgId) : "/ai?tab=chat";
-  const cadHref = orgId ? hubHref("/build", "cad", orgId) : "/build?tab=cad";
   const budgetsHref = orgId ? hubHref("/ai", "budgets", orgId) : "/ai?tab=budgets";
   const keysHref = orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys";
+
+  const githubHref = orgId ? githubConnectionHref(orgId) : "/team/admin#github-connection";
+  const robotFiles = useMemo(() => repoFiles.filter((file) => isBugbotScanPath(file)).slice(0, 80), [repoFiles]);
 
   useEffect(() => {
     if (!orgId) return;
     void fetch(`/api/code?orgId=${encodeURIComponent(orgId)}`)
       .then(async (response) => {
         if (!response.ok) return;
-        const data = (await response.json()) as { reviews?: BugbotHistoryRow[] };
+        const data = (await response.json()) as {
+          reviews?: BugbotHistoryRow[];
+          github?: {
+            connected?: boolean;
+            login?: string | null;
+            defaultRepoFullName?: string | null;
+            defaultRepoDefaultBranch?: string | null;
+          };
+        };
         setHistory(data.reviews ?? []);
+        if (data.github?.connected) {
+          setGithubConnected(true);
+          setGithubLogin(data.github.login ?? null);
+          if (data.github.defaultRepoFullName) {
+            setSelectedRepo((prev) => prev || data.github!.defaultRepoFullName!);
+            setSelectedRef(data.github.defaultRepoDefaultBranch || "main");
+          }
+        } else {
+          setGithubConnected(false);
+        }
       })
       .catch(() => undefined);
   }, [orgId]);
 
-  async function runBugbot() {
-    if (!content.trim()) {
-      setMessage("Paste robot source before running AI Bugbot.");
+  useEffect(() => {
+    if (!orgId || !githubConnected) return;
+    void fetch(`/api/github/repos?orgId=${encodeURIComponent(orgId)}`)
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = (await response.json()) as {
+          empty?: boolean;
+          emptyReason?: string | null;
+          repos?: GitHubRepoOption[];
+          defaultRepoFullName?: string | null;
+        };
+        setRepos(data.repos ?? []);
+        setGithubEmptyReason(data.empty ? data.emptyReason ?? "No repositories visible." : null);
+        if (data.defaultRepoFullName) {
+          setSelectedRepo((prev) => prev || data.defaultRepoFullName!);
+        }
+      })
+      .catch(() => undefined);
+  }, [orgId, githubConnected]);
+
+  useEffect(() => {
+    if (!orgId || !githubConnected || !selectedRepo) {
+      setRepoFiles([]);
+      return;
+    }
+    const params = new URLSearchParams({
+      orgId,
+      repo: selectedRepo,
+      ref: selectedRef || "main",
+      tree: "1",
+    });
+    void fetch(`/api/github/contents?${params}`)
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = (await response.json()) as {
+          empty?: boolean;
+          emptyReason?: string | null;
+          tree?: { entries?: Array<{ path: string; type: string }>; truncated?: boolean } | null;
+        };
+        const entries = data.tree?.entries ?? [];
+        setRepoFiles(entries.filter((entry) => entry.type === "blob").map((entry) => entry.path));
+        setTreeTruncated(Boolean(data.tree?.truncated));
+        if (data.empty && data.emptyReason) setGithubEmptyReason(data.emptyReason);
+      })
+      .catch(() => undefined);
+  }, [orgId, githubConnected, selectedRepo, selectedRef]);
+
+  async function loadGithubFile(filePath: string) {
+    if (!orgId || !selectedRepo || !filePath) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const params = new URLSearchParams({
+        orgId,
+        repo: selectedRepo,
+        ref: selectedRef || "main",
+        path: filePath,
+      });
+      const response = await fetch(`/api/github/contents?${params}`);
+      const data = (await response.json()) as {
+        error?: string;
+        empty?: boolean;
+        emptyReason?: string | null;
+        file?: { path: string; content: string } | null;
+      };
+      if (!response.ok || data.empty || !data.file?.content) {
+        setMessage(data.emptyReason || data.error || "Could not load that GitHub file.");
+        return;
+      }
+      setPath(data.file.path);
+      setContent(data.file.content);
+      setReview(null);
+      setProposal(null);
+      setBugbot(null);
+      setMessage(`Loaded ${selectedRepo}:${data.file.path} (read-only).`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Failed to load GitHub file");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runBugbot(options?: { mode?: BugbotMode; phase?: BugbotPhase; scanRepo?: boolean }) {
+    const mode = options?.mode ?? bugbotMode;
+    const phase = options?.phase ?? "scan";
+    const scanRepo = Boolean(options?.scanRepo);
+    if (!scanRepo && !content.trim()) {
+      setMessage("Paste robot source, load a GitHub file, or scan the connected repo.");
       return;
     }
     if (!orgId) {
-      setMessage("Choose a workspace before the metered Bugbot pass.");
+      setMessage("Choose a workspace before running Bugbot.");
+      return;
+    }
+    if (scanRepo && !githubConnected) {
+      setMessage("Connect GitHub in Team admin before scanning a repo.");
       return;
     }
     setBusy(true);
@@ -149,7 +290,20 @@ export function CodeClient({
       const response = await fetch("/api/code", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "bugbot", path, content, orgId }),
+        body: JSON.stringify({
+          action: "bugbot",
+          path,
+          content: scanRepo ? undefined : content,
+          orgId,
+          mode,
+          phase,
+          scanRepo,
+          githubRepo: selectedRepo || undefined,
+          githubRef: selectedRef || undefined,
+          githubPath: !scanRepo && path && githubConnected ? path : undefined,
+          findings: bugbot?.findings,
+          parentReviewId: history[0]?.id && history[0].id !== "latest" ? history[0].id : undefined,
+        }),
       });
       const data = (await response.json()) as {
         error?: string;
@@ -159,6 +313,12 @@ export function CodeClient({
         review?: BugbotReview;
         provider?: string;
         model?: string;
+        mode?: BugbotMode;
+        phase?: BugbotPhase;
+        chargeUsd?: number;
+        proposedDiff?: string | null;
+        filesScanned?: number;
+        fixDropped?: boolean;
       };
       if (!response.ok) {
         const cutoff = resolveCutoffErrorCode(response.status, {
@@ -173,12 +333,32 @@ export function CodeClient({
       }
       if (data.review) {
         setBugbot(data.review);
-        setBugbotMeta({ provider: data.provider, model: data.model });
-        setMessage(
-          data.review.findings.length
-            ? `Bugbot: ${data.review.findings.length} grounded finding${data.review.findings.length === 1 ? "" : "s"} (${data.review.localRiskCount} local · ${data.review.modelFindingCount} model). Ungrounded model claims dropped: ${data.review.droppedUngrounded}. Never deploys.`
-            : "Bugbot complete — no grounded findings in this source.",
-        );
+        setBugbotMeta({
+          provider: data.provider,
+          model: data.model,
+          mode: data.mode ?? mode,
+          phase: data.phase ?? phase,
+          chargeUsd: data.chargeUsd,
+          proposedDiff: data.proposedDiff,
+          filesScanned: data.filesScanned,
+        });
+        const billed =
+          data.mode === "ultra" && data.chargeUsd
+            ? ` Charged $${Number(data.chargeUsd).toFixed(2)} Bugbot Ultra.`
+            : " Uses your subscription / BYO key.";
+        if (phase === "fix") {
+          setMessage(
+            data.proposedDiff
+              ? `Grounded fix ready — human approval required. Never pushed to GitHub.${billed}`
+              : `No grounded diff (unquoted removals dropped). Nothing was pushed.${billed}`,
+          );
+        } else {
+          setMessage(
+            data.review.findings.length
+              ? `Bugbot ${phase}: ${data.review.findings.length} grounded finding${data.review.findings.length === 1 ? "" : "s"} (${data.review.localRiskCount} local · ${data.review.modelFindingCount} model). Ungrounded claims dropped: ${data.review.droppedUngrounded}.${billed} Never deploys.`
+              : `Bugbot ${phase} complete — no grounded findings.${billed} Empty is not certification.`,
+          );
+        }
         setHistory((prev) => [
           {
             id: "latest",
@@ -190,6 +370,10 @@ export function CodeClient({
             provider: data.provider ?? null,
             model: data.model ?? null,
             createdAt: new Date().toISOString(),
+            tier: data.mode,
+            phase: data.phase,
+            filesScanned: data.filesScanned,
+            chargeUsd: data.chargeUsd != null ? String(data.chargeUsd) : undefined,
           },
           ...prev.filter((row) => row.id !== "latest"),
         ].slice(0, 12));
@@ -345,24 +529,35 @@ export function CodeClient({
           </p>
         </article>
         <article className="cdc-billing-metered">
-          <span className="app-badge">Metered AI</span>
-          <h2>AI Bugbot</h2>
+          <span className="app-badge">Subscription</span>
+          <h2>Bugbot on your plan</h2>
           <p>
-            A second pass uses your plan allowance / credits. Findings must quote a substring from this file — invented
-            issues are dropped. Distinct from CAD briefs and chat.
+            Scan connected GitHub robot-code (or a pasted file) on your workspace allowance / BYO key. Findings must
+            quote the source. Distinct from CAD briefs and chat.
           </p>
           <div className="cdc-billing-actions">
             <a className="app-button secondary" href="#bugbot">
               AI Bugbot
             </a>
-            <a className="app-button secondary" href={chatHref}>
-              AI chat
-            </a>
-            <a className="app-button secondary" href={cadHref}>
-              Build · CAD
-            </a>
             <a className="app-button secondary" href={keysHref}>
               AI API keys
+            </a>
+          </div>
+        </article>
+        <article className="cdc-billing-ultra">
+          <span className="app-badge">Bugbot Ultra</span>
+          <h2>Hosted API · published prices</h2>
+          <p>
+            Straight hosted pass that does not use your BYO key: ${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} to scan, $
+            {BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} to propose a fix, ${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} to
+            recheck. Fixes stay diffs — never pushed to GitHub.
+          </p>
+          <div className="cdc-billing-actions">
+            <a className="app-button secondary" href="#bugbot">
+              Ultra prices
+            </a>
+            <a className="app-button secondary" href={githubHref}>
+              Connect GitHub
             </a>
           </div>
         </article>
@@ -601,30 +796,164 @@ export function CodeClient({
         <article className="cdc-panel">
           <header>
             <div>
-              <span className="app-badge">Metered AI</span>
+              <span className="app-badge">{bugbotMode === "ultra" ? "Bugbot Ultra" : "Subscription"}</span>
               <h2>AI Bugbot</h2>
               <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                Quotes evidence from this file only. Local rules stay even if the model is quiet. Never deploys.
+                Connect a GitHub repo, scan robot-code, then optionally propose a human-approved diff and recheck.
+                Findings must quote the source. Never deploys, never pushes.
                 {bugbotMeta?.model ? ` · ${bugbotMeta.provider}/${bugbotMeta.model}` : ""}
               </p>
             </div>
-            <button type="button" className="primary-action" disabled={busy || !hasSource || !orgId} onClick={() => void runBugbot()}>
-              Run AI Bugbot
-            </button>
           </header>
+
+          <div className="cdc-bugbot-modes" role="group" aria-label="Bugbot billing mode">
+            <button
+              type="button"
+              className={bugbotMode === "subscription" ? "is-active" : undefined}
+              disabled={busy}
+              onClick={() => setBugbotMode("subscription")}
+            >
+              <strong>On your subscription</strong>
+              <span>Plan allowance or BYO key · feature=coding</span>
+            </button>
+            <button
+              type="button"
+              className={bugbotMode === "ultra" ? "is-active" : undefined}
+              disabled={busy}
+              onClick={() => setBugbotMode("ultra")}
+            >
+              <strong>Bugbot Ultra</strong>
+              <span>
+                ${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} scan · ${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} fix · $
+                {BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} recheck
+              </span>
+            </button>
+          </div>
+
           {!orgId ? (
             <EmptyState
               soft
               badge="Setup required"
               badgeTone="setup"
               title="Choose a workspace for Bugbot"
-              description="Local pattern review is free. The metered Bugbot pass needs a team and an AI provider key."
+              description="Local pattern review is free. GitHub scans and both Bugbot modes need a team."
             >
               <a className="app-button" href="/workspace">
                 Choose workspace
               </a>
             </EmptyState>
-          ) : bugbot ? (
+          ) : !githubConnected ? (
+            <EmptyState
+              soft
+              badge="GitHub"
+              badgeTone="setup"
+              title="Connect a GitHub repo to scan"
+              description="Owners and admins link a PAT or OAuth app under Team admin. You can still paste a file below without GitHub."
+            >
+              <a className="app-button" href={githubHref}>
+                Connect GitHub
+              </a>
+            </EmptyState>
+          ) : (
+            <div className="cdc-github-scan">
+              <p className="app-muted" style={{ margin: 0 }}>
+                Linked as {githubLogin ?? "GitHub"} · read-only. Pick the robot-code repo to scan.
+              </p>
+              <label>
+                Repository
+                <select
+                  value={selectedRepo}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setSelectedRepo(next);
+                    const meta = repos.find((repo) => repo.fullName === next);
+                    if (meta?.defaultBranch) setSelectedRef(meta.defaultBranch);
+                  }}
+                  aria-label="GitHub repository"
+                >
+                  {!selectedRepo ? <option value="">Select a repository</option> : null}
+                  {repos.map((repo) => (
+                    <option key={repo.fullName} value={repo.fullName}>
+                      {repo.fullName}
+                      {repo.private ? " (private)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {githubEmptyReason && !repos.length ? <p className="app-muted">{githubEmptyReason}</p> : null}
+              {robotFiles.length ? (
+                <label>
+                  Robot-code files
+                  <select
+                    defaultValue=""
+                    onChange={(event) => {
+                      const filePath = event.target.value;
+                      if (filePath) void loadGithubFile(filePath);
+                    }}
+                    aria-label="GitHub robot-code file"
+                  >
+                    <option value="">Load one file into the editor</option>
+                    {robotFiles.map((file) => (
+                      <option key={file} value={file}>
+                        {file}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : selectedRepo ? (
+                <p className="app-muted">
+                  {treeTruncated
+                    ? "Tree listing truncated — no robot-code files in the first slice."
+                    : "No .java / .cpp / .py files visible in this tree yet."}
+                </p>
+              ) : null}
+            </div>
+          )}
+
+          <footer className="cdc-bugbot-actions">
+            <button
+              type="button"
+              className="primary-action"
+              disabled={busy || !orgId || !hasSource}
+              onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: false })}
+            >
+              {bugbotMode === "ultra" ? `Scan file · $${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)}` : "Scan this file"}
+            </button>
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy || !orgId || !githubConnected || !selectedRepo}
+              onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: true })}
+            >
+              {bugbotMode === "ultra" ? `Scan repo · $${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)}` : "Scan connected repo"}
+            </button>
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy || !orgId || !hasSource}
+              onClick={() => void runBugbot({ mode: bugbotMode, phase: "fix", scanRepo: false })}
+            >
+              {bugbotMode === "ultra" ? `Propose fix · $${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)}` : "Propose fix"}
+            </button>
+            <button
+              type="button"
+              className="app-button secondary"
+              disabled={busy || !orgId || !hasSource}
+              onClick={() => void runBugbot({ mode: bugbotMode, phase: "recheck", scanRepo: false })}
+            >
+              {bugbotMode === "ultra" ? `Recheck · $${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)}` : "Recheck"}
+            </button>
+          </footer>
+
+          {bugbotMeta?.proposedDiff ? (
+            <div className="cdc-proposal">
+              <span>Proposed fix · human approval required</span>
+              <strong>Never pushed to GitHub · never deployed</strong>
+              <pre aria-label="Bugbot unified diff">{bugbotMeta.proposedDiff}</pre>
+            </div>
+          ) : null}
+
+          {bugbot ? (
             bugbot.findings.length === 0 ? (
               <EmptyState
                 soft
@@ -665,31 +994,33 @@ export function CodeClient({
                 {bugbot.droppedUngrounded > 0 ? (
                   <p className="app-muted">
                     Dropped {bugbot.droppedUngrounded} ungrounded model claim{bugbot.droppedUngrounded === 1 ? "" : "s"} that
-                    did not quote this file.
+                    did not quote this source.
                   </p>
                 ) : null}
               </div>
             )
-          ) : (
+          ) : orgId ? (
             <EmptyState
               soft
               badge="Idle"
               badgeTone="setup"
               title="No Bugbot pass yet"
-              description="Paste source, then run AI Bugbot. Needs an AI provider key under Team → AI API keys. Findings stay empty until evidence is in the file."
+              description="Scan a connected repo or this file. Subscription uses your key. Ultra is the published hosted SKU. Findings stay empty until evidence is in the source."
             >
-              <a className="app-button secondary" href={keysHref}>
-                AI API keys
+              <a className="app-button secondary" href={githubHref}>
+                GitHub connection
               </a>
             </EmptyState>
-          )}
+          ) : null}
           {history.length ? (
             <ol className="cdc-bugbot-history" aria-label="Recent Bugbot runs">
               {history.slice(0, 6).map((row) => (
                 <li key={row.id}>
                   <strong>{row.path}</strong>
                   <span>
-                    {row.riskLevel} · {row.localRiskCount} local · {row.modelFindingCount} model
+                    {row.tier ?? "subscription"} · {row.phase ?? "scan"} · {row.riskLevel} · {row.localRiskCount} local ·{" "}
+                    {row.modelFindingCount} model
+                    {row.chargeUsd && Number(row.chargeUsd) > 0 ? ` · $${Number(row.chargeUsd).toFixed(2)}` : ""}
                     {row.model ? ` · ${row.model}` : ""}
                   </span>
                 </li>

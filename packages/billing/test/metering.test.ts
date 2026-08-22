@@ -329,4 +329,66 @@ describe("serialized AI metering", () => {
     expect(result).toBe("hosted");
     expect(invoke).toHaveBeenCalledWith("platform");
   });
+
+  it("forces hosted platform billing when keySource is platform even if BYOK exists", async () => {
+    const queries: string[] = [];
+    const client = {
+      async query(sql: string) {
+        queries.push(sql);
+        if (sql.includes("FROM org_billing")) {
+          return {
+            rows: [{
+              tier: "team",
+              credit_cap_usd: "20",
+              kill_switch: false,
+              period_start: new Date("2026-01-01"),
+              period_end: new Date("2027-01-01"),
+            }],
+            rowCount: 1,
+          };
+        }
+        if (sql.includes("FROM org_usage_policies")) {
+          return {
+            rows: [{
+              payg_enabled: false,
+              prepaid_balance_usd: "0",
+              overage_spend_cap_usd: "0",
+              kill_switch: false,
+            }],
+            rowCount: 1,
+          };
+        }
+        if (sql.includes("ai_credit_grants") || (sql.includes("COALESCE") && sql.includes("AS used"))) {
+          return { rows: [{ used: "1", grants: "0" }], rowCount: 1 };
+        }
+        if (sql.includes("FROM org_llm_keys") || sql.includes("FROM org_provider_configs")) {
+          return { rows: [{ "?column?": 1 }], rowCount: 1 };
+        }
+        return { rows: [], rowCount: 1 };
+      },
+    } as unknown as PoolClient;
+    const invoke = vi.fn(async (source: "platform" | "byo" | "local" | "local_cli" | "sponsored") => ({
+      value: "ultra-ok",
+      promptTokens: 10,
+      completionTokens: 20,
+      costUsd: 1,
+      model: "claude-sonnet-4-20250514",
+      provider: "anthropic",
+      keySource: source,
+    }));
+    const result = await meteredAI({
+      client,
+      orgId: "org",
+      userId: "user",
+      feature: "bugbot_ultra",
+      requestId: "ultra-scan",
+      estimatedCostUsd: 1,
+      keySource: "platform",
+      invoke,
+    });
+    expect(result).toBe("ultra-ok");
+    expect(invoke).toHaveBeenCalledWith("platform");
+    expect(queries.some((q) => q.includes("FROM org_llm_keys"))).toBe(false);
+    expect(queries.some((q) => q.includes("INSERT INTO ai_usage_events"))).toBe(true);
+  });
 });
