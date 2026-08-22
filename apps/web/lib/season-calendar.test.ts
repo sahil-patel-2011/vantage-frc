@@ -92,6 +92,7 @@ describe("SEASON_TEMPLATES", () => {
       "stop_build_ship",
       "competition_markers",
       "outreach",
+      "season_ops",
       "full_season",
     ]);
     for (const template of SEASON_TEMPLATES) {
@@ -110,6 +111,7 @@ describe("SEASON_TEMPLATES", () => {
     expect(full.entries.some((entry) => entry.title === "Stop-build / bag day")).toBe(true);
     expect(full.entries.some((entry) => entry.title === "Week 1 event")).toBe(true);
     expect(full.entries.some((entry) => entry.kind === "outreach")).toBe(true);
+    expect(full.entries.some((entry) => entry.title === "Preseason kickoff meeting")).toBe(true);
   });
 });
 

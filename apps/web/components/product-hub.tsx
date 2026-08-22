@@ -176,11 +176,7 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
   if (access.ready && hubDenied) {
     return (
       <main className={`module-page product-hub product-hub--${hub.id} soft-gate`}>
-        <PageHeader
-          breadcrumbs={breadcrumbs}
-          title={hub.title}
-          description={hub.description}
-        >
+        <PageHeader breadcrumbs={breadcrumbs} title={hub.title}>
           {headerActions}
         </PageHeader>
         <EmptyState
@@ -188,13 +184,10 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
           badge="Access limited"
           badgeTone="setup"
           title={`${hub.label} is not available`}
-          description={`Your team admin limited which sections you can open. Ask an owner to update section access under Team → Security, or return Home.`}
+          description="Your access to this section is limited. Ask an owner to update it under Security."
         >
           <a className="app-button" href="/dashboard">
-            Back to Home
-          </a>
-          <a className="app-button secondary" href="/docs?q=hub+access">
-            How section access works
+            Home
           </a>
         </EmptyState>
       </main>
@@ -207,11 +200,7 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
 
   return (
     <main className={`module-page product-hub product-hub--${hub.id}`}>
-      <PageHeader
-        breadcrumbs={breadcrumbs}
-        title={hub.title}
-        description={hub.description}
-      >
+      <PageHeader breadcrumbs={breadcrumbs} title={hub.title}>
         {headerActions}
       </PageHeader>
       <TabBar
@@ -222,14 +211,16 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
         className="product-hub-tabs"
       />
       {nestedTabs.length > 1 ? (
-        <TabBar
-          aria-label={`${hub.label} tools`}
-          value={tab}
-          onChange={selectTab}
-          tabs={nestedTabs.map((entry) => ({ id: entry.id, label: entry.label }))}
-          className="product-hub-subtabs"
-          variant="toolbar"
-        />
+        <label className="product-hub-tools">
+          <span>In this section</span>
+          <select value={tab} onChange={(event) => selectTab(event.target.value)} aria-label={`${hub.label} tools`}>
+            {nestedTabs.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.label}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
       <div className="product-hub-panel" data-hub-tab={tab}>
         {(() => {
@@ -269,26 +260,11 @@ export function HubOrgGate({
       <section className="app-card soft-panel product-hub-setup">
         <span className="app-badge setup">Team needed</span>
         <h2>Choose a team</h2>
-        <p className="app-muted">
-          {label} loads after you pick a team. This screen stays empty until then.
-        </p>
+        <p className="app-muted">{label} needs a team selected.</p>
         <div className="product-hub-setup-actions">
           <a className="app-button" href="/workspace">
-            Choose workspace
+            Choose team
           </a>
-          <a className="app-button secondary" href="/dashboard">
-            Back to Home
-          </a>
-          {label === "AI" ? (
-            <>
-              <a className="app-button secondary" href={withOrgHref("/account", null)}>
-                Account
-              </a>
-              <a className="app-button secondary" href="/team/ai-keys">
-                AI API keys
-              </a>
-            </>
-          ) : null}
         </div>
       </section>
     );

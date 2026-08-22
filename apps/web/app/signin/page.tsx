@@ -7,8 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Sign in · Vantage",
-  description:
-    "Sign in with an authorized Vantage account — Google, password, or email code. Closed waitlist access; no public signup.",
+  description: "Sign in with Google or email. Invite-only — no public signup.",
 };
 
 export default async function SignInPage({

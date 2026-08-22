@@ -47,10 +47,9 @@ export type RaisedPriceItem = {
 export const SIGN_IN_RAISED_PRICES: RaisedPriceItem[] = catalogRaisedPricingStrip();
 
 export const WAITLIST_ONLY_MESSAGE =
-  "Vantage is waitlist-only right now. Join the waitlist for access, or sign in with an authorized account.";
+  "This account isn’t on a team yet. Join the waitlist, or sign in with an authorized email.";
 
-export const SIGN_IN_FAILED_MESSAGE =
-  "We could not sign you in. Check the email and code/password, or request a fresh email code.";
+export const SIGN_IN_FAILED_MESSAGE = "Couldn’t sign in. Check your email and try again.";
 
 const PUBLIC_EMAIL_UNAVAILABLE =
   "Email code sign-in is temporarily unavailable. Use another enabled method or contact your team leader.";
@@ -58,8 +57,7 @@ const PUBLIC_EMAIL_UNAVAILABLE =
 const PUBLIC_PASSWORD_UNAVAILABLE =
   "Password sign-in is temporarily unavailable. Use another enabled method or contact your team leader.";
 
-const PUBLIC_GOOGLE_UNAVAILABLE =
-  "Google sign-in is not configured for this deployment yet. Use email and password or an email code if available.";
+const PUBLIC_GOOGLE_UNAVAILABLE = "Google isn’t set up yet. Use email instead.";
 
 /** Browser-safe copy — never surface env var names or provider secrets. */
 export function publicEmailUnavailableCopy(reason?: string | null): string {
@@ -105,7 +103,7 @@ export function signInSetupCopy(
     return {
       kind,
       badge: "setup_required",
-      title: "Google sign-in is unavailable",
+      title: "Google is unavailable",
       description: PUBLIC_GOOGLE_UNAVAILABLE,
     };
   }
@@ -125,15 +123,9 @@ export function signInSetupCopy(
   };
 }
 
-/** Lead subtitle clarifying Google vs password vs email OTP. */
-export function signInSubtitle(status: Pick<SignInAuthStatus, "email2faEnforced" | "emailOtpAvailable">) {
-  if (status.email2faEnforced) {
-    return "Continue with Google or password, then enter an email code — or sign in with an email code alone.";
-  }
-  if (status.emailOtpAvailable) {
-    return "Continue with Google, email and password, or a one-time email code.";
-  }
-  return "Continue with Google or email and password. Email codes are setup_required until mail delivery is configured.";
+/** One line under the title — buttons do the rest. */
+export function signInSubtitle(_status?: Pick<SignInAuthStatus, "email2faEnforced" | "emailOtpAvailable">) {
+  return "Authorized teams only.";
 }
 
 export function signInModeLabel(mode: SignInMode) {
@@ -150,8 +142,8 @@ export function signInProgressLabel(active: 1 | 2 | 3) {
 
 export function signInAccessNote() {
   return {
-    title: "Closed team access",
-    body: "Sign-in proves who you are. An invite or team-leader approval controls which workspace you can enter — never a public signup.",
+    title: "Invite only",
+    body: "An owner has to add you.",
   };
 }
 
@@ -193,5 +185,5 @@ export function oauthErrorMessage(code: string | null | undefined) {
   ) {
     return WAITLIST_ONLY_MESSAGE;
   }
-  return "Google sign-in could not be completed. If you already have access, try again or use email and password.";
+  return "Google sign-in didn’t finish. Try again, or use email.";
 }

@@ -434,17 +434,18 @@
   font-size: 13px;
 }
 
-.tc-related {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 4px;
-}
-.tc-related a {
-  font-size: 12px;
-  font-weight: 650;
-  color: var(--app-accent);
-  text-decoration: none;
+.tc-section-select {
+  display: block;
+  margin: 0 0 12px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--soft-line, var(--app-line));
+  border-radius: 10px;
+  background: var(--soft-card, var(--app-surface));
+  color: var(--soft-ink, var(--app-ink));
+  font: 600 13px inherit;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .tc-guide-actions {
@@ -882,3 +883,167 @@
 }
 
 .tc-travel{border-left:3px solid #1f4fd6;padding-left:10px}
+
+.tc-page > .team-hq-strip {
+  margin-bottom: 12px;
+}
+
+.tc-github-hint {
+  margin: 0 0 12px;
+  color: var(--app-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.tc-github-hint a {
+  color: inherit;
+}
+
+.tc-github-chip,
+.tc-allday-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--app-line);
+  background: color-mix(in srgb, var(--app-ink) 7%, var(--app-surface));
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.3;
+  text-decoration: none;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tc-github-chip {
+  background: color-mix(in srgb, var(--app-ink) 10%, var(--app-surface));
+}
+.tc-github-peek {
+  background: color-mix(in srgb, var(--app-ink) 12%, var(--app-surface)) !important;
+  color: var(--app-ink) !important;
+}
+
+.tc-timed-wrap {
+  overflow-x: auto;
+}
+.tc-timed {
+  --tc-slot: 44px;
+  min-width: 640px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  background: var(--app-surface);
+  overflow: hidden;
+}
+.tc-timed.is-day {
+  min-width: 0;
+}
+.tc-timed-head,
+.tc-timed-allday,
+.tc-timed-body {
+  display: grid;
+  grid-template-columns: 52px repeat(var(--tc-cols, 7), minmax(0, 1fr));
+}
+.tc-timed-corner {
+  border-bottom: 1px solid var(--app-line);
+}
+.tc-timed-head > button {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 8px 6px;
+  border: 0;
+  border-left: 1px solid var(--app-line);
+  border-bottom: 1px solid var(--app-line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.tc-timed-head > button.today strong {
+  color: var(--app-accent);
+}
+.tc-allday-label,
+.tc-timed-gutter {
+  color: var(--app-muted);
+  font-size: 11px;
+  padding: 6px 4px;
+}
+.tc-allday-label {
+  border-top: 1px solid var(--app-line);
+}
+.tc-allday {
+  min-height: 36px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-left: 1px solid var(--app-line);
+  border-top: 1px solid var(--app-line);
+}
+.tc-timed-body {
+  position: relative;
+}
+.tc-timed-gutter {
+  display: grid;
+  grid-template-rows: repeat(var(--tc-hours, 15), var(--tc-slot));
+}
+.tc-timed-gutter span {
+  transform: translateY(-0.55em);
+  text-align: right;
+  padding-right: 6px;
+}
+.tc-timed-col {
+  position: relative;
+  height: calc(var(--tc-slot) * var(--tc-hours, 15));
+  border-left: 1px solid var(--app-line);
+}
+.tc-timed-slot {
+  display: block;
+  width: 100%;
+  height: var(--tc-slot);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--app-line) 65%, transparent);
+  background: transparent;
+  cursor: pointer;
+}
+.tc-timed-slot:hover {
+  background: color-mix(in srgb, var(--app-accent) 8%, transparent);
+}
+.tc-timed-block {
+  position: absolute;
+  z-index: 1;
+  overflow: hidden;
+  padding: 2px 6px;
+  border: 1px solid var(--app-accent);
+  border-left-width: 3px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+.tc-timed-block.selected {
+  outline: 2px solid var(--app-accent);
+}
+.tc-timed-block b,
+.tc-timed-block span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .tc-timed.is-day {
+    min-width: 0;
+  }
+}

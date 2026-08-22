@@ -21,19 +21,6 @@ const AttendanceClient = dynamic(() => import("../attendance/attendance-client")
 const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false });
 const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false });
 
-function TeamAdminLink() {
-  const [href, setHref] = useState("/team/admin");
-  useEffect(() => {
-    const orgId = new URLSearchParams(window.location.search).get("orgId");
-    if (orgId) setHref(`/team/admin?orgId=${encodeURIComponent(orgId)}`);
-  }, []);
-  return (
-    <a className="app-button secondary" href={href}>
-      Team admin
-    </a>
-  );
-}
-
 function MessagesTab({ orgId }: { orgId: string }) {
   const [initialConversationId, setInitialConversationId] = useState<string | null>(null);
   const [initialObjectLink, setInitialObjectLink] = useState<MessageObjectLink | null>(null);
@@ -59,7 +46,7 @@ function MessagesTab({ orgId }: { orgId: string }) {
 
 export default function TeamHub() {
   return (
-    <ProductHubShell hubId="team" headerActions={<TeamAdminLink />}>
+    <ProductHubShell hubId="team">
       {({ tab, orgId }) => {
         if (tab === "calendar") return <TeamCalendarClient embedded />;
         if (tab === "todos") return <TodosClient embedded />;

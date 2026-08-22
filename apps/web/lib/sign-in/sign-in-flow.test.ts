@@ -22,12 +22,8 @@ describe("sign-in Soft-UI helpers", () => {
   });
 
   it("clarifies Google vs email OTP in the subtitle", () => {
-    expect(
-      signInSubtitle({ email2faEnforced: true, emailOtpAvailable: true }),
-    ).toMatch(/Google|email code/i);
-    expect(
-      signInSubtitle({ email2faEnforced: false, emailOtpAvailable: false }),
-    ).toMatch(/setup_required/i);
+    expect(signInSubtitle({ email2faEnforced: true, emailOtpAvailable: true })).toMatch(/authorized/i);
+    expect(signInSubtitle({ email2faEnforced: false, emailOtpAvailable: false })).toMatch(/authorized/i);
     expect(googleReady({ googleSignInAvailable: false }, true)).toBe(true);
     expect(googleReady({ googleSignInAvailable: false }, false)).toBe(false);
   });

@@ -1,8 +1,6 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
-import { TeamHubRelated } from "../../components/team-hub-related";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { EmptyState, PageHeader } from "../../components/ui";
 import {
   applyMention,
@@ -26,7 +24,6 @@ import {
   pollBackoffMs,
   totalUnread,
 } from "../../lib/messages/sync";
-import { MESSAGES_RELATED_INCLUDE } from "../../lib/team/team-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 
 type Conversation = {
@@ -598,29 +595,13 @@ export default function MessagesClient({
   return (
     <main className={`chat-page messages-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
-        <>
-          <PageHeader
-            breadcrumbs="Team / Team chat"
-            title="Team chat"
-            description="Org-scoped team channel and private chats — real members only, never demo threads."
-          >
-            <span className={`messages-live ${live ? "on" : "off"}`}>
-              <i aria-hidden="true" />
-              {live ? "Live" : "Paused"}
-              {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
-            </span>
-            <a className="app-button secondary" href={withOrgHref("/team/slack", orgId)}>
-              Slack
-            </a>
-          </PageHeader>
-          <TeamOpsNav orgId={orgId} active="messages" />
-          <TeamHubRelated
-            orgId={orgId}
-            active="messages"
-            include={MESSAGES_RELATED_INCLUDE}
-            ariaLabel="Related team ops for messages"
-          />
-        </>
+        <PageHeader breadcrumbs="Team / Chat" title="Chat">
+          <span className={`messages-live ${live ? "on" : "off"}`}>
+            <i aria-hidden="true" />
+            {live ? "Live" : "Paused"}
+            {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
+          </span>
+        </PageHeader>
       ) : (
         <div className="messages-embed-status" aria-live="polite">
           <span className={`messages-live ${live ? "on" : "off"}`}>
@@ -632,7 +613,7 @@ export default function MessagesClient({
       )}
 
       {loading ? (
-        <EmptyState soft title="Loading messages…" description="Opening your org inbox." aria-busy />
+        <EmptyState soft title="Loading…" aria-busy />
       ) : loadError ? (
         <EmptyState
           title="Could not load messages"
@@ -643,9 +624,6 @@ export default function MessagesClient({
           <button type="button" className="app-button secondary" onClick={() => void reloadMessages()}>
             Retry
           </button>
-          <a className="app-button secondary" href="/workspace">
-            Choose workspace
-          </a>
         </EmptyState>
       ) : (
         <div className="messages-layout">
@@ -987,12 +965,12 @@ export default function MessagesClient({
             Close
           </button>
           <span className="eyebrow">Team members</span>
-          <p>Private chats stay inside this organization. Only you and the other member can read them.</p>
+          <p>Pick someone to message.</p>
           {members.length === 0 ? (
             <EmptyState
               soft
               title="No teammates yet"
-              description="Invite members under Team admin, then start a private chat here. Empty orgs stay empty."
+              description="Invite people under Team admin."
             >
               <a className="app-button secondary" href={withOrgHref("/team/admin", orgId)}>
                 Team admin

@@ -29,6 +29,23 @@ export function isGoogleAuthConfigured() {
   return Boolean(runtimeEnv("GOOGLE_CLIENT_ID") && runtimeEnv("GOOGLE_CLIENT_SECRET"));
 }
 
+export type SessionAuthMethod = "email_otp" | "password" | "google" | "unknown";
+
+/** Map Better Auth request paths onto the session auth_method we persist. */
+export function resolveSessionAuthMethod(path: string): SessionAuthMethod {
+  const value = path.toLowerCase();
+  if (value.includes("email-otp")) return "email_otp";
+  if (value.includes("/sign-in/email") || value.includes("/sign-up/email")) return "password";
+  if (value.includes("google") || value.includes("sign-in/social")) return "google";
+  return "unknown";
+}
+
+/** Google already proved the mailbox. Password still needs the email code when 2FA is on. */
+export function email2faSatisfiedByAuthMethod(method: SessionAuthMethod, enforced: boolean) {
+  if (!enforced) return true;
+  return method === "email_otp" || method === "google";
+}
+
 /** Resolve the public auth origin for Better Auth callbacks (never use bare VERCEL_URL alone when BETTER_AUTH_URL is set). */
 export function resolveAuthBaseURL() {
   const explicit = runtimeEnv("BETTER_AUTH_URL") || runtimeEnv("NEXT_PUBLIC_APP_URL");

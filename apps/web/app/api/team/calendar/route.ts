@@ -5,6 +5,11 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { buildCalendar, type CalendarIcsEvent } from "../../../../lib/calendar-ics";
 import { listDutiesForOrg } from "../../../../lib/duty-roster";
+import {
+  createGitHubHttp,
+  fetchGitHubMilestoneCalendarItems,
+  getGitHubAccessToken,
+} from "../../../../lib/github";
 import { notifyCalendarEvent } from "../../../../lib/notify-calendar";
 import {
   attendanceDateFromStart,
@@ -17,6 +22,7 @@ import {
   type CalendarFeedScope,
   type CalendarEvent,
   type DutyOnCalendar,
+  type GitHubCalendarOverlay,
   type LinkableAttendance,
   type LinkablePractice,
   type RsvpResponse,
@@ -55,6 +61,59 @@ async function membershipRole(client: PoolClient, orgId: string, userId: string)
 }
 
 const isAdmin = (role: string) => role === "owner" || role === "admin";
+
+const GITHUB_OVERLAY_TIMEOUT_MS = 4000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("GitHub calendar overlay timed out")), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+/** Overlay open GitHub milestones that already have due dates. Never invent dates; never fail the calendar. */
+async function loadGitHubCalendarOverlay(
+  client: PoolClient,
+  orgId: string,
+): Promise<GitHubCalendarOverlay> {
+  const empty: GitHubCalendarOverlay = { connected: false, repo: null, items: [] };
+  try {
+    const authToken = await getGitHubAccessToken(client, orgId);
+    if (!authToken) return empty;
+    const repo = authToken.connection.defaultRepoFullName?.trim() || null;
+    if (!repo) return { connected: true, repo: null, items: [] };
+    try {
+      const milestones = await withTimeout(
+        fetchGitHubMilestoneCalendarItems(createGitHubHttp(authToken.accessToken), repo),
+        GITHUB_OVERLAY_TIMEOUT_MS,
+      );
+      return {
+        connected: true,
+        repo,
+        items: milestones.map((item) => ({
+          id: item.id,
+          title: item.title,
+          dueOn: item.dueOn,
+          href: item.htmlUrl,
+          source: "github" as const,
+        })),
+      };
+    } catch {
+      return { connected: true, repo, items: [] };
+    }
+  } catch {
+    return empty;
+  }
+}
 
 function fail(error: unknown) {
   const message = error instanceof Error ? error.message : "Calendar request failed";
@@ -282,6 +341,8 @@ async function loadView(
     travelLegs = [];
   }
 
+  const githubCalendar = await loadGitHubCalendarOverlay(client, orgId);
+
   return {
     status: "ready",
     context: {
@@ -301,6 +362,7 @@ async function loadView(
     attendanceEvents,
     practiceSessions,
     calendarFeed,
+    githubCalendar,
   };
 }
 

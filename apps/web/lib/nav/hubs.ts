@@ -107,7 +107,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     href: "/team",
     label: "Team",
     title: "Team",
-    description: "Calendar, chat, people, work, and knowledge — extras live as tabs inside each.",
+    description: "",
     defaultTab: "calendar",
     tabs: [
       { id: "calendar", label: "Calendar", legacyHref: "/team/calendar" },

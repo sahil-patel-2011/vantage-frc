@@ -109,6 +109,7 @@ export type SeasonTemplateId =
   | "stop_build_ship"
   | "competition_markers"
   | "outreach"
+  | "season_ops"
   | "full_season";
 
 export type TemplateEntry = {
@@ -185,6 +186,33 @@ const OUTREACH_ENTRIES: TemplateEntry[] = [
   { offsetDays: 75, title: "Post-event impact write-up due", kind: "deadline" },
 ];
 
+const SEASON_OPS_ENTRIES: TemplateEntry[] = [
+  {
+    offsetDays: -21,
+    title: "Preseason kickoff meeting",
+    kind: "meeting",
+    notes: "Agenda, shop access, and paperwork for this team — customize after seeding.",
+  },
+  {
+    offsetDays: 3,
+    title: "Weekly shop cadence starts",
+    kind: "meeting",
+    notes: "Set the real weekday and time after seeding. Nothing is invented for you.",
+  },
+  {
+    offsetDays: 60,
+    title: "Post-event debrief",
+    kind: "meeting",
+    notes: "Replace with the day after your first real event.",
+  },
+  {
+    offsetDays: 100,
+    title: "Post-season handoff",
+    kind: "deadline",
+    notes: "CAD, code, and inventory owners — fill in this team’s facts.",
+  },
+];
+
 function mergeUnique(groups: TemplateEntry[][]): TemplateEntry[] {
   const seen = new Set<string>();
   const out: TemplateEntry[] = [];
@@ -224,10 +252,22 @@ export const SEASON_TEMPLATES: SeasonTemplate[] = [
     entries: OUTREACH_ENTRIES,
   },
   {
+    id: "season_ops",
+    label: "Meetings & season ops",
+    description: "Preseason meeting, weekly shop cadence, post-event debrief, and post-season handoff — rename to this team’s real dates.",
+    entries: SEASON_OPS_ENTRIES,
+  },
+  {
     id: "full_season",
     label: "Typical FRC season (all)",
-    description: "Build arc + stop-build/ship + competition placeholders + outreach — seed once, then customize.",
-    entries: mergeUnique([BUILD_ENTRIES, STOP_BUILD_ENTRIES, COMPETITION_ENTRIES, OUTREACH_ENTRIES]),
+    description: "Build arc + stop-build/ship + competition placeholders + outreach + season ops — seed once, then customize.",
+    entries: mergeUnique([
+      BUILD_ENTRIES,
+      STOP_BUILD_ENTRIES,
+      COMPETITION_ENTRIES,
+      OUTREACH_ENTRIES,
+      SEASON_OPS_ENTRIES,
+    ]),
   },
 ];
 

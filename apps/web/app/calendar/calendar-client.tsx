@@ -7,7 +7,6 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
   daysUntil,
   groupByMonth,
@@ -334,7 +333,6 @@ export default function CalendarClient() {
     return (
       <main className="module-page cal-page">
         <PageHeader breadcrumbs="Calendar / Season Calendar" title="Season Calendar" />
-        <TeamOpsNav active="calendar" />
       <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
         {fetchFailed ? (
           <EmptyState
@@ -358,13 +356,8 @@ export default function CalendarClient() {
   if (view.status === "setup_required") {
     return (
       <main className="module-page cal-page">
-        <PageHeader
-          breadcrumbs="Calendar / Season Calendar"
-          title="Season Calendar"
-          description="Build-season milestones and countdowns from Kickoff through competition."
-        />
-        <TeamOpsNav active="calendar" />
-        <EmptyState soft title="Select a team workspace" description={view.message}>
+        <PageHeader breadcrumbs="Calendar / Season Calendar" title="Season Calendar" />
+        <EmptyState soft title="Choose a team" description={view.message}>
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
@@ -457,20 +450,7 @@ function ReadyCalendar({
 
   return (
     <main className="module-page cal-page">
-      <PageHeader
-        breadcrumbs="Calendar / Season Calendar"
-        title="Season Calendar"
-        description={
-          <>
-            Milestone markers for {view.context.orgName ?? "your team"}
-            {view.context.teamNumber ? ` (Team ${view.context.teamNumber})` : ""} — kickoff, build, stop-build, events,
-            ship deadlines, and outreach. Seed a template, then customize. For timed practices, open{" "}
-            <a href={orgId ? `/team/calendar?orgId=${encodeURIComponent(orgId)}` : "/team/calendar"}>Team Calendar</a>
-            {" "}(Sync tab for Google/Apple ICS subscribe).
-          </>
-        }
-      />
-      <TeamOpsNav orgId={orgId} active="calendar" />
+      <PageHeader breadcrumbs="Calendar / Season Calendar" title="Season Calendar" />
 
       {error ? (
         <p className="telemetry-status" role="alert">
