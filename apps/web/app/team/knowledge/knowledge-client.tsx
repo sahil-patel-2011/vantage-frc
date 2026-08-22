@@ -10,11 +10,7 @@ import {
   type KnowledgeTemplateKind,
   type KnowledgeWikiView,
 } from "../../../lib/knowledge";
-import { knowledgeSetupNextActions } from "../../../lib/knowledge/knowledge-related";
 import { EmptyState } from "../../../components/ui";
-import { KnowledgeHubRelated } from "../../../components/knowledge-hub-related";
-import { TeamHubRelated } from "../../../components/team-hub-related";
-import { hubHref } from "../../../lib/nav/hubs";
 import "./knowledge.css";
 
 type Tab = "wiki" | "search" | "templates" | "ai";
@@ -243,13 +239,12 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
     setDraftBody((prev) => (prev ? `${prev.trimEnd()}\n\n${snippet}` : snippet));
   }
 
-  const setupActions = knowledgeSetupNextActions(orgId || null);
   const bodyRemaining = MAX_BODY - draftBody.length;
 
   if (!view && !error) {
     return (
       <main className="module-page kb-page">
-        <EmptyState soft title="Loading knowledge…" description="Opening your team wiki." aria-busy />
+        <EmptyState soft title="Loading…" aria-busy />
       </main>
     );
   }
@@ -257,34 +252,17 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
   if (view?.status === "setup_required") {
     return (
       <main className="module-page kb-page">
-        <header className="kb-hero">
-          <div>
-            <h1>Knowledge Base</h1>
-            <p>Org-scoped wiki and handoff templates. Empty until your team writes real procedures — never DEMO articles.</p>
-          </div>
-        </header>
-        <EmptyState
-          soft
-          badge="Setup required"
-          badgeTone="setup"
-          title="Knowledge wiki not ready"
-          description={view.message}
-        >
-          <div className="kb-empty-actions">
-            {setupActions.map((action) => (
-              <a
-                key={action.id}
-                className={action.primary ? "button primary" : "button secondary"}
-                href={action.href}
-              >
-                {action.label}
-              </a>
-            ))}
-          </div>
-          <KnowledgeHubRelated
-            orgId={view.orgId || null}
-            include={["messages", "fmea", "cad", "getting-started"]}
-          />
+        {!embedded ? (
+          <header className="kb-hero">
+            <div>
+              <h1>Playbook</h1>
+            </div>
+          </header>
+        ) : null}
+        <EmptyState soft badge="Setup" badgeTone="setup" title="Choose a team" description={view.message}>
+          <a className="button primary" href="/workspace">
+            Choose team
+          </a>
         </EmptyState>
       </main>
     );
@@ -292,54 +270,25 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
 
   return (
     <main className={`module-page kb-page${embedded ? " is-embedded" : ""}`}>
-      <header className="kb-hero">
-        <div>
-          {!embedded ? <h1>Knowledge Base</h1> : null}
-          <p>
-            Searchable wiki with handoff templates, linked to decisions and design reviews. The FRC Assistant and CAD
-            agent retrieve these as tools — empty corpus means empty answers, never invented history.
-          </p>
-        </div>
-        {!embedded ? (
-          <div className="kb-hero-actions">
-            {orgId ? (
-              <>
-                <a className="button secondary" href={hubHref("/team", "messages", orgId)}>
-                  Messages
-                </a>
-                <a className="button secondary" href={hubHref("/team", "fmea", orgId)}>
-                  FMEA
-                </a>
-                <a className="button secondary" href={hubHref("/build", "cad", orgId)}>
-                  CAD
-                </a>
-              </>
-            ) : null}
+      {!embedded ? (
+        <header className="kb-hero">
+          <div>
+            <h1>Playbook</h1>
           </div>
-        ) : null}
-      </header>
-
-      {orgId && !embedded ? (
-        <>
-          <KnowledgeHubRelated orgId={orgId} include={["messages", "fmea", "cad", "decisions", "assistant"]} />
-          <TeamHubRelated orgId={orgId} active="knowledge" />
-        </>
+        </header>
       ) : null}
 
-      <div className="kb-tabs" role="tablist" aria-label="Knowledge sections">
-        {(
-          [
-            ["wiki", "Wiki"],
-            ["search", "Search history"],
-            ["templates", "Templates"],
-            ["ai", "Assistant summary"],
-          ] as const
-        ).map(([id, label]) => (
-          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <select
+        className="kb-section-select"
+        value={tab}
+        aria-label="Playbook section"
+        onChange={(e) => setTab(e.target.value as Tab)}
+      >
+        <option value="wiki">Pages</option>
+        <option value="templates">Templates</option>
+        <option value="search">Search</option>
+        <option value="ai">Assistant</option>
+      </select>
 
       {error ? (
         <p className="kb-alert" role="alert">
@@ -354,10 +303,6 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
 
       {tab === "search" && ready ? (
         <section className="kb-main">
-          <h2>Cross-season search</h2>
-          <p className="kb-meta">
-            Search wiki pages, decisions, and design reviews in this org only — no fabricated hits.
-          </p>
           <form
             className="kb-tools"
             onSubmit={(e) => {
@@ -368,21 +313,15 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
             <input
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
-              placeholder='e.g. "swerve over tank"'
-              aria-label="Search wiki, decisions, and reviews"
+              placeholder="Search pages…"
+              aria-label="Search wiki"
             />
             <button type="submit" className="button primary" disabled={busy}>
               Search
             </button>
           </form>
           {ready.searchQuery && ready.searchHits.length === 0 ? (
-            <EmptyState
-              soft
-              title="No matches"
-              description={`Nothing matched “${ready.searchQuery}”. Write a real page or link a decision — results stay empty until then.`}
-            >
-              <KnowledgeHubRelated orgId={orgId} include={["messages", "decisions", "cad"]} />
-            </EmptyState>
+            <EmptyState soft title="No matches" description={`Nothing matched “${ready.searchQuery}”.`} />
           ) : null}
           <ul className="kb-list" style={{ marginTop: 12 }}>
             {ready.searchHits.map((hit) => (
@@ -403,10 +342,6 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
 
       {tab === "templates" && ready ? (
         <section className="kb-main kb-templates">
-          <h2>Handoff templates</h2>
-          <p className="kb-meta">
-            Create a structured page — fill in real team facts; nothing is pre-filled with demo data.
-          </p>
           <div className="kb-template-grid">
             {KNOWLEDGE_TEMPLATES.map((tpl) => (
               <button
@@ -435,10 +370,8 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
 
       {tab === "ai" && ready ? (
         <section className="kb-main kb-ai">
-          <h2>Assistant summary</h2>
           <p className="kb-ai-hint">
-            One markdown document injected into every team-scope chat. Prefer durable facts here; put structured handoffs
-            and linked decisions in the Wiki.
+            Facts the assistant should always know.
             {aiUpdatedAt ? ` Updated ${new Date(aiUpdatedAt).toLocaleString()}.` : ""}
           </p>
           <textarea
@@ -462,8 +395,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
             </>
           ) : null}
           <div className="kb-ai-links">
-            <a href={`/team/knowledge/history?orgId=${orgId}`}>Revision history</a>
-            <KnowledgeHubRelated orgId={orgId} include={["assistant", "messages", "cad"]} />
+            <a href={`/team/knowledge/history?orgId=${orgId}`}>History</a>
           </div>
         </section>
       ) : null}
@@ -491,40 +423,26 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
               />
             </label>
 
-            <div className="kb-cat" role="group" aria-label="Filter by template kind">
-              <button type="button" aria-pressed={listKind === "all"} onClick={() => setListKind("all")}>
-                All
-              </button>
-              {KNOWLEDGE_TEMPLATE_KINDS.filter((k) => k !== "blank" && k !== "other").map((kind) => (
-                <button
-                  key={kind}
-                  type="button"
-                  aria-pressed={listKind === kind}
-                  onClick={() => setListKind(kind)}
-                >
-                  {TEMPLATE_KIND_LABEL[kind]}
-                </button>
-              ))}
-            </div>
+            <label className="kb-field">
+              <span>Kind</span>
+              <select
+                value={listKind}
+                aria-label="Filter by kind"
+                onChange={(e) => setListKind(e.target.value as ListFilter)}
+              >
+                <option value="all">All</option>
+                {KNOWLEDGE_TEMPLATE_KINDS.filter((k) => k !== "blank" && k !== "other").map((kind) => (
+                  <option key={kind} value={kind}>
+                    {TEMPLATE_KIND_LABEL[kind]}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <ul className="kb-list">
               {ready.pages.length === 0 && !creating ? (
                 <li>
-                  <EmptyState
-                    soft
-                    title="No wiki pages yet"
-                    description="Start from Templates or New page. The list stays empty until someone writes real procedures."
-                  >
-                    <div className="kb-empty-actions">
-                      <button type="button" className="button primary" onClick={() => setTab("templates")}>
-                        Browse templates
-                      </button>
-                      <button type="button" className="button secondary" onClick={beginCreate}>
-                        Blank page
-                      </button>
-                    </div>
-                    <KnowledgeHubRelated orgId={orgId} include={["messages", "fmea", "cad"]} />
-                  </EmptyState>
+                  <EmptyState soft title="No pages yet" description="Use New page, or pick a template." />
                 </li>
               ) : null}
               {ready.pages.length > 0 && filteredPages.length === 0 ? (
@@ -566,7 +484,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                         {ready.selected.slug ? ` · /${ready.selected.slug}` : ""}
                       </p>
                     ) : (
-                      <p className="kb-meta">Markdown body. Save only real team knowledge — no DEMO articles.</p>
+                      <p className="kb-meta">Markdown.</p>
                     )}
                   </div>
                   {dirty ? (
@@ -778,37 +696,13 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                         Link
                       </button>
                     </div>
-                    {draftTemplate === "cad_conventions" || draftTemplate === "subsystem" ? (
-                      <p className="kb-meta kb-cross-hint">
-                        Related shop tools:{" "}
-                        <a href={hubHref("/build", "cad", orgId)}>CAD</a>
-                        {" · "}
-                        <a href={hubHref("/team", "fmea", orgId)}>FMEA</a>
-                        {" · "}
-                        <a href={hubHref("/team", "messages", orgId)}>Messages</a>
-                      </p>
-                    ) : null}
                   </section>
                 ) : null}
               </>
             ) : null}
 
             {!creating && !ready.selected ? (
-              <EmptyState
-                soft
-                title="No page selected"
-                description="Pick a page, create one, or start from a handoff template. Nothing invents DEMO wiki content."
-              >
-                <div className="kb-empty-actions">
-                  <button type="button" className="button primary" onClick={beginCreate}>
-                    New page
-                  </button>
-                  <button type="button" className="button secondary" onClick={() => setTab("templates")}>
-                    Templates
-                  </button>
-                </div>
-                <KnowledgeHubRelated orgId={orgId} include={["messages", "fmea", "cad"]} />
-              </EmptyState>
+              <EmptyState soft title="Select a page" />
             ) : null}
           </div>
         </section>

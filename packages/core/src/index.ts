@@ -11,12 +11,14 @@ import {
   deterministicLocalOtp,
 } from "./email";
 import {
+  email2faSatisfiedByAuthMethod,
   getAuthCapabilities,
   isEmailProviderConfigured,
   isGoogleAuthConfigured,
   resolveAuthBaseURL,
   resolveAuthSecret,
   resolveAuthTrustedOrigins,
+  resolveSessionAuthMethod,
 } from "./access-policy";
 import {
   WAITLIST_ONLY_MESSAGE,
@@ -33,6 +35,7 @@ function googleSocialProvider() {
     google: {
       clientId: process.env["GOOGLE_CLIENT_ID"]!,
       clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
+      prompt: "select_account",
       // New Google users are gated by databaseHooks.user.create.before
       // (platform owner / existing / pending invite only).
       disableSignUp: false,
@@ -108,18 +111,11 @@ export const auth = betterAuth({
       create: {
         before: async (session, context) => {
           const path = context?.path ?? "";
-          const authMethod = path.includes("email-otp")
-            ? "email_otp"
-            : path === "/sign-in/email" || path === "/sign-up/email"
-              ? "password"
-              : path.includes("callback/google")
-                ? "google"
-                : "unknown";
-          // Email-OTP as first factor already proved mailbox control; otherwise leave pending
-          // unless Resend is missing / emergency bypass disables enforcement.
+          const authMethod = resolveSessionAuthMethod(path);
           const { isEmail2faEnforced } = await import("./email-2fa");
-          const email2faVerifiedAt =
-            authMethod === "email_otp" || !isEmail2faEnforced() ? new Date() : undefined;
+          const email2faVerifiedAt = email2faSatisfiedByAuthMethod(authMethod, isEmail2faEnforced())
+            ? new Date()
+            : undefined;
           return { data: { ...session, authMethod, ...(email2faVerifiedAt ? { email2faVerifiedAt } : {}) } };
         },
       },

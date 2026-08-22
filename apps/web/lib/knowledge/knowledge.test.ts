@@ -32,6 +32,8 @@ describe("knowledge wiki helpers", () => {
   it("ships structured handoff templates", () => {
     expect(KNOWLEDGE_TEMPLATES.length).toBeGreaterThanOrEqual(5);
     expect(TEMPLATE_KIND_LABEL.season_handoff).toMatch(/handoff/i);
+    expect(TEMPLATE_KIND_LABEL.season_playbook).toMatch(/playbook/i);
+    expect(KNOWLEDGE_TEMPLATES[0]?.kind).toBe("season_playbook");
     const applied = applyKnowledgeTemplate("season_handoff", 254);
     expect(applied.title).toMatch(/handoff/i);
     expect(applied.body).toContain("Team 254");
@@ -39,6 +41,20 @@ describe("knowledge wiki helpers", () => {
     const inventory = applyKnowledgeTemplate("inventory_handoff",254);
     expect(inventory.body).toMatch(/bin naming|Critical spares/i);
     expect(inventory.tags).toContain("inventory");
+    const playbook = applyKnowledgeTemplate("season_playbook", 118, { seasonYear: 2027 });
+    expect(playbook.title).toMatch(/118/i);
+    expect(playbook.body).toContain("Team 118");
+    expect(playbook.body).toContain("2027");
+    expect(playbook.body).toMatch(/Before the season/);
+    expect(playbook.body).toMatch(/Competition ops/);
+    expect(playbook.body).not.toContain("{{team}}");
+    expect(playbook.body).not.toMatch(/Team 118 — Team 118/);
+    const named = applyKnowledgeTemplate("season_playbook", null, {
+      orgName: "Cheesy Poofs",
+      seasonYear: 2026,
+    });
+    expect(named.body).toContain("Cheesy Poofs");
+    expect(named.body).toContain("2026");
   });
 
   it("builds snippets and hrefs", () => {

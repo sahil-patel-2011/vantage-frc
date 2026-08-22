@@ -45,8 +45,30 @@
 
 .signin-sub {
   max-width: 420px;
-  margin: 10px auto 18px;
+  margin: 10px auto 22px;
   line-height: 1.5;
+}
+
+.signin-google {
+  width: 100%;
+}
+
+.signin-email-toggle {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  text-align: center;
+}
+
+.signin-waitlist {
+  margin: 18px 0 0;
+  text-align: center;
+  color: #6e6e73;
+  font-size: 13px;
+}
+
+.signin-waitlist a {
+  color: inherit;
 }
 
 .signin-method-tabs {

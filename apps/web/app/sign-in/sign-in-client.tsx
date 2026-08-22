@@ -11,9 +11,6 @@ import {
   passwordSetupRequired,
   publicEmailUnavailableCopy,
   publicPasswordUnavailableCopy,
-  signInAccessNote,
-  signInNextActions,
-  signInProgressLabel,
   signInSetupCopy,
   signInSubtitle,
   type SignInAuthStatus,
@@ -78,18 +75,12 @@ function SetupShell({
 }
 
 function AccessFooter() {
-  const actions = signInNextActions();
   return (
-    <div className="signin-cta-block">
-      <p>Need access? Join the waitlist. Sign-in is for provisioned teams only.</p>
-      <div className="signin-cta-row">
-        {actions.map((action) => (
-          <a key={action.id} className={action.primary ? "primary" : undefined} href={action.href}>
-            {action.label}
-          </a>
-        ))}
-      </div>
-    </div>
+    <p className="signin-waitlist">
+      Need access? <a href="/#waitlist">Join the waitlist</a>
+      <span aria-hidden="true"> · </span>
+      <a href="/pricing">Pricing</a>
+    </p>
   );
 }
 
@@ -108,6 +99,7 @@ export default function SignInClient({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<SignInMode>("password");
+  const [emailOpen, setEmailOpen] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [code, setCode] = useState("");
@@ -276,9 +268,7 @@ export default function SignInClient({
     setBusy(true);
     setMessage("");
     try {
-      const callbackURL = status.email2faEnforced
-        ? `/signin?verify=1&next=${encodeURIComponent(nextPath)}`
-        : nextPath;
+      const callbackURL = nextPath;
       const response = await fetch("/api/auth/sign-in/social", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -400,6 +390,7 @@ export default function SignInClient({
 
   function switchMode(next: SignInMode) {
     setMode(next);
+    setEmailOpen(true);
     setMessage("");
     setOtpSent(false);
     setResetSent(false);
@@ -411,8 +402,7 @@ export default function SignInClient({
   }
 
   const googleReady = isGoogleReady(status, googleEnabled);
-  const accessNote = signInAccessNote();
-  const activeStep: 1 | 2 = otpSent || resetSent || verifyStep ? 2 : 1;
+  const showEmail = emailOpen || mode !== "password" || !googleReady;
 
   if (verifyStep) {
     return (
@@ -421,14 +411,8 @@ export default function SignInClient({
           <div className="signin-brand">
             <VantageLogo />
           </div>
-          <span className="signin-eyebrow">SECURE SIGN-IN</span>
-          <p className="signin-progress-label">{signInProgressLabel(2)}</p>
-          <SignInProgress active={2} />
           <h1 id="signin-title">Check your email</h1>
-          <p className="signin-sub">
-            Default 2FA: enter the one-time code we sent{emailHint ? ` to ${emailHint}` : ""}. Google or password was
-            only the first factor.
-          </p>
+          <p className="signin-sub">Enter the code we sent{emailHint ? ` to ${emailHint}` : ""}.</p>
           {emailOtpSetupRequired(status) ? (
             <SetupShell kind="email_otp" status={status} />
           ) : (
@@ -491,54 +475,29 @@ export default function SignInClient({
         <div className="signin-brand">
           <VantageLogo />
         </div>
-        <span className="signin-eyebrow">SECURE SIGN-IN</span>
-        <p className="signin-progress-label">{signInProgressLabel(activeStep)}</p>
-        <SignInProgress active={activeStep} />
-        <h1 id="signin-title">Welcome to Vantage</h1>
+        <h1 id="signin-title">Sign in</h1>
         <p className="signin-sub">{signInSubtitle(status)}</p>
-        <p className="signin-access-note">
-          <b className="signin-access-mark" aria-hidden="true">
-            ✓
-          </b>
-          <span>
-            <b>{accessNote.title}</b>
-            {accessNote.body}
-          </span>
-        </p>
 
-        <div className="signin-method-panel">
-          <p className="signin-method-heading">
-            <span>METHOD · GOOGLE</span>
-            <strong>{googleReady ? "Continue with Google" : "Google sign-in unavailable"}</strong>
-          </p>
-          {googleReady ? (
+        {googleReady ? (
+          <>
             <button className="signin-google" type="button" onClick={google} disabled={busy}>
               <GoogleMark />
               Continue with Google
             </button>
-          ) : (
-            <>
-              <SetupShell kind="google" />
-              <button
-                className="signin-google disabled"
-                type="button"
-                disabled
-                aria-disabled="true"
-                title="Google sign-in is not configured for this deployment yet."
-              >
-                <GoogleMark />
-                Continue with Google
-                <em>Not configured</em>
+            <div className="signin-or" role="separator">
+              <span>or</span>
+            </div>
+            {!showEmail ? (
+              <button type="button" className="signin-link signin-email-toggle" onClick={() => setEmailOpen(true)}>
+                Use email
               </button>
-            </>
-          )}
-        </div>
+            ) : null}
+          </>
+        ) : (
+          <SetupShell kind="google" />
+        )}
 
-        <div className="signin-or" role="separator">
-          <span>OR EMAIL</span>
-        </div>
-
-        {mode !== "reset" ? (
+        {showEmail && mode !== "reset" ? (
           <div className="signin-method-tabs" role="tablist" aria-label="Email sign-in method">
             <button
               type="button"
@@ -559,16 +518,8 @@ export default function SignInClient({
           </div>
         ) : null}
 
-        {mode === "password" ? (
+        {showEmail && mode === "password" ? (
           <div className="signin-method-panel">
-            <p className="signin-method-heading">
-              <span>METHOD · PASSWORD</span>
-              <strong>
-                {status.email2faEnforced
-                  ? "Email + password, then an email verification code"
-                  : "Email + password for authorized accounts"}
-              </strong>
-            </p>
             {passwordSetupRequired(status) ? <SetupShell kind="password" status={status} /> : null}
             <form className="signin-form" onSubmit={(event) => void passwordSignIn(event)}>
               <label>
@@ -619,12 +570,8 @@ export default function SignInClient({
           </div>
         ) : null}
 
-        {mode === "email-otp" ? (
+        {showEmail && mode === "email-otp" ? (
           <div className="signin-method-panel">
-            <p className="signin-method-heading">
-              <span>METHOD · EMAIL OTP</span>
-              <strong>6-digit code to your authorized mailbox — no password</strong>
-            </p>
             {emailOtpSetupRequired(status) ? <SetupShell kind="email_otp" status={status} /> : null}
             <form className="signin-form" onSubmit={(event) => void emailOtpSignIn(event)}>
               <label>
@@ -703,10 +650,6 @@ export default function SignInClient({
 
         {mode === "reset" ? (
           <div className="signin-method-panel">
-            <p className="signin-method-heading">
-              <span>METHOD · RESET</span>
-              <strong>Email a short-lived reset code to an authorized account</strong>
-            </p>
             {emailOtpSetupRequired(status) ? <SetupShell kind="email_otp" status={status} /> : null}
             <form className="signin-form" onSubmit={(event) => void resetPassword(event)}>
               <label>
@@ -791,11 +734,6 @@ export default function SignInClient({
           </div>
         ) : null}
 
-        {status.email2faEnforced === false && status.emailOtpReason && mode === "password" ? (
-          <p className="signin-status" role="status">
-            Email 2FA not enforced yet: {publicEmailUnavailableCopy(status.emailOtpReason)}
-          </p>
-        ) : null}
         {message ? (
           <p className="signin-status" role="status">
             {message}
@@ -803,44 +741,23 @@ export default function SignInClient({
         ) : null}
 
         <div className="signin-footer">
-          <div className="signin-footer-modes">
-            {mode === "password" ? (
-              <button type="button" className="signin-link" onClick={() => switchMode("reset")}>
-                Forgot password?
-              </button>
-            ) : mode === "email-otp" ? (
-              <button type="button" className="signin-link" onClick={() => switchMode("password")}>
-                Back to password sign in
-              </button>
-            ) : (
-              <button type="button" className="signin-link" onClick={() => switchMode("password")}>
-                Back to password sign in
-              </button>
-            )}
-          </div>
+          {showEmail ? (
+            <div className="signin-footer-modes">
+              {mode === "password" ? (
+                <button type="button" className="signin-link" onClick={() => switchMode("reset")}>
+                  Forgot password?
+                </button>
+              ) : (
+                <button type="button" className="signin-link" onClick={() => switchMode("password")}>
+                  Back
+                </button>
+              )}
+            </div>
+          ) : null}
           <AccessFooter />
         </div>
       </section>
     </main>
-  );
-}
-
-function SignInProgress({ active }: { active: 1 | 2 }) {
-  return (
-    <ol className="signin-progress" aria-label="Account setup progress">
-      <li className="active" aria-current={active === 1 ? "step" : undefined}>
-        <b>{active > 1 ? "✓" : "1"}</b>
-        <span>Identity</span>
-      </li>
-      <li className={active >= 2 ? "active" : undefined} aria-current={active === 2 ? "step" : undefined}>
-        <b>2</b>
-        <span>Verify</span>
-      </li>
-      <li>
-        <b>3</b>
-        <span>Team setup</span>
-      </li>
-    </ol>
   );
 }
 
