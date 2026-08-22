@@ -1,18 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
+  allianceTeamKeys,
   buildDayCells,
   buildMonthCells,
   buildWeekCells,
   eventWorkflowLinks,
   eventsForMySubteams,
   filterEventsBySubteam,
+  githubItemsToIcsEvents,
   groupEventsByDay,
+  isReadonlyCalendarEvent,
   layoutTimedEventsForDay,
   localDayKey,
   overlayItemsForDay,
   parseSubteamCalendarAction,
   shiftAnchor,
   sortEvents,
+  tbaMatchesToCalendarEvents,
+  tbaMatchTitle,
   upcomingEvents,
   type CalendarEvent,
 } from "./subteam-calendar";
@@ -305,5 +310,80 @@ describe("timed grid + GitHub overlay", () => {
     expect(overlayItemsForDay(items, "2026-02-18").map((item) => item.id)).toEqual(["ms-1"]);
     expect(overlayItemsForDay(items, "2026-02-19")).toEqual([]);
     expect(overlayItemsForDay(undefined, "2026-02-18")).toEqual([]);
+  });
+});
+
+describe("TBA match calendar overlay", () => {
+  const row = {
+    matchKey: "2026nhdur_qm12",
+    compLevel: "qm",
+    matchNumber: 12,
+    scheduledTime: "2026-03-14T15:10:00.000Z",
+    redAlliance: { teamKeys: ["frc3467", "frc123", "frc1"] },
+    blueAlliance: { teamKeys: ["frc254", "frc1678", "frc118"] },
+    eventName: "Week 1",
+  };
+
+  it("places this team on the timed grid with bumper color from the alliance list", () => {
+    const events = tbaMatchesToCalendarEvents([row], "frc123");
+    expect(events).toHaveLength(1);
+    expect(events[0]!.id).toBe("match-2026nhdur_qm12");
+    expect(events[0]!.title).toBe(tbaMatchTitle("qm", 12, "red"));
+    expect(events[0]!.source).toBe("tba");
+    expect(events[0]!.bumper).toBe("red");
+    expect(events[0]!.notes).toBe("RED bumpers");
+    expect(events[0]!.location).toBe("Week 1");
+    expect(isReadonlyCalendarEvent(events[0]!)).toBe(true);
+  });
+
+  it("skips matches without a real time and matches this team is not on", () => {
+    expect(
+      tbaMatchesToCalendarEvents(
+        [
+          { ...row, scheduledTime: null },
+          { ...row, matchKey: "other", redAlliance: { teamKeys: ["frc9"] }, blueAlliance: { team_keys: ["frc8"] } },
+          { ...row, scheduledTime: "not-a-time" },
+        ],
+        "frc123",
+      ),
+    ).toEqual([]);
+    expect(tbaMatchesToCalendarEvents([row], "")).toEqual([]);
+  });
+
+  it("reads snake_case team_keys from alliance JSON", () => {
+    const events = tbaMatchesToCalendarEvents(
+      [
+        {
+          ...row,
+          redAlliance: { team_keys: ["frc1"] },
+          blueAlliance: { team_keys: ["frc123"] },
+        },
+      ],
+      "frc123",
+    );
+    expect(events[0]!.bumper).toBe("blue");
+    expect(allianceTeamKeys({ team_keys: ["frc123"] })).toEqual(["frc123"]);
+  });
+});
+
+describe("githubItemsToIcsEvents", () => {
+  it("emits all-day rows only for items with a due date", () => {
+    const ics = githubItemsToIcsEvents([
+      { id: "ms-4", title: "Stop build", dueOn: "2026-02-18", href: "https://github.com/org/robot/milestone/4", source: "github" },
+    ]);
+    expect(ics).toEqual([
+      {
+        id: "github-ms-4",
+        title: "GitHub · Stop build",
+        kind: "deadline",
+        location: "",
+        description: "https://github.com/org/robot/milestone/4",
+        startsAt: "2026-02-18",
+        endsAt: "2026-02-18",
+        updatedAt: "2026-02-18T00:00:00.000Z",
+        allDay: true,
+      },
+    ]);
+    expect(githubItemsToIcsEvents(undefined)).toEqual([]);
   });
 });

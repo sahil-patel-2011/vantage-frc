@@ -5,7 +5,7 @@ export const TEAM_HUB_RELATED_LINKS = [
   { id: "calendar", label: "Calendar & subteams" },
   { id: "practice", label: "Practice" },
   { id: "attendance", label: "Attendance" },
-  { id: "knowledge", label: "Knowledge" },
+  { id: "knowledge", label: "Playbook" },
   { id: "messages", label: "Team chat" },
   { id: "todos", label: "Todos" },
   { id: "batteries", label: "Batteries" },

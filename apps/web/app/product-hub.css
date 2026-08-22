@@ -151,6 +151,21 @@
 .product-hub-panel .kb-hero {
   margin-bottom: 4px;
 }
+.product-hub-panel .tc-page,
+.product-hub-panel .kb-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 8px;
+}
+.product-hub-panel .tc-layout,
+.product-hub-panel .kb-layout {
+  min-height: min(68vh, 720px);
+  align-items: stretch;
+}
+.product-hub-panel .tc-timed-wrap {
+  min-height: min(56vh, 560px);
+}
 .product-hub-panel .att-page {
   padding-top: 0;
 }

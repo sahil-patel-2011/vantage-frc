@@ -4,15 +4,8 @@ import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
-  GITHUB_RELATED_INCLUDE,
   classifyGitHubShell,
-  formatGitHubRepoMetric,
-  githubNextActions,
-  githubRelatedLinks,
-  githubSetupSteps,
   githubShellCopy,
-  shouldShowGitHubSummaryTiles,
-  type GitHubNextAction,
 } from "../../lib/github/github-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
@@ -99,31 +92,6 @@ type GitHubRepo = {
   description: string | null;
 };
 
-function GitHubNextActionsPanel({ actions }: { actions: GitHubNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section className="app-card soft-panel github-next-actions" aria-label="GitHub next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p className="app-muted">Pair VS Code, Code Coach, and Account Connections — never DEMO repos.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </div>
-            <a className="app-button secondary" href={action.href}>
-              Open
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function MembershipNextActionsPanel({ actions }: { actions: TeamAdminNextAction[] }) {
   if (!actions.length) return null;
   return (
@@ -180,23 +148,13 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       disabledAt?: string | null;
     }>
   >([]);
-  const [provider, setProvider] = useState({
-    kind: "openai-compatible",
-    label: "",
-    baseUrl: "",
-    apiKey: "",
-    localRelay: false,
-    model: "",
-  });
   const [githubOAuthSetupRequired, setGithubOAuthSetupRequired] = useState(false);
   const [githubConnection, setGithubConnection] = useState<GitHubConnection | null>(null);
-  const [githubEmptyReason, setGithubEmptyReason] = useState("");
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
   const [githubPat, setGithubPat] = useState("");
   const [githubBusy, setGithubBusy] = useState(false);
   const [githubLoading, setGithubLoading] = useState(true);
   const [githubFetchFailed, setGithubFetchFailed] = useState(false);
-  const [githubReposLoaded, setGithubReposLoaded] = useState(false);
   const [defaultRepo, setDefaultRepo] = useState("");
 
   async function load() {
@@ -245,28 +203,23 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         Boolean(githubData.oauthSetupRequired ?? (githubData.setupRequired && !githubData.patAvailable)),
       );
       setGithubConnection(githubData.connection ?? null);
-      setGithubEmptyReason(githubData.emptyReason ?? "");
       setDefaultRepo(githubData.connection?.defaultRepoFullName ?? "");
       if (githubData.connection) {
         const reposResponse = await fetch(`/api/github/repos?orgId=${encodeURIComponent(orgId)}`);
         const reposData = await reposResponse.json();
         if (reposResponse.ok) {
           setGithubRepos(Array.isArray(reposData.repos) ? reposData.repos : []);
-          setGithubReposLoaded(true);
         } else {
           setGithubRepos([]);
-          setGithubReposLoaded(true);
         }
       } else {
         setGithubRepos([]);
-        setGithubReposLoaded(true);
       }
       setGithubFetchFailed(false);
     } else {
       setGithubFetchFailed(true);
       setGithubConnection(null);
       setGithubRepos([]);
-      setGithubReposLoaded(false);
       setMessage(githubData.error ?? "Could not load GitHub context");
     }
     setGithubLoading(false);
@@ -397,20 +350,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     );
     if (response.ok) await load();
   }
-  async function saveProvider(event: React.FormEvent) {
-    event.preventDefault();
-    const response = await fetch("/api/organizations/providers", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, ...provider, modelMappings: { default: provider.model } }),
-    });
-    const data = await response.json();
-    setMessage(response.ok ? "Custom provider encrypted and saved." : data.error);
-    if (response.ok) {
-      setProvider({ ...provider, apiKey: "" });
-      await load();
-    }
-  }
   async function providerAction(id: string, action: "test" | "disable") {
     if (action === "disable" && !confirm("Disable this custom provider? Chat/CAD routes using it will stop.")) return;
     const response = await fetch("/api/organizations/providers", {
@@ -514,22 +453,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     connected: githubConnected,
   });
   const githubCopy = githubShellCopy(githubShell);
-  const githubActions = githubNextActions({
-    orgId,
-    shell: githubShell,
-    connected: githubConnected,
-    hasDefaultRepo: Boolean(githubConnection?.defaultRepoFullName),
-    oauthSetupRequired: githubOAuthSetupRequired,
-    repoCount: githubRepos.length,
-  });
-  const githubRelated = githubRelatedLinks(orgId, {
-    include: [...GITHUB_RELATED_INCLUDE],
-  });
-  const githubSteps = githubShell === "setup" ? githubSetupSteps(orgId) : [];
-  const showGithubTiles = shouldShowGitHubSummaryTiles({
-    connected: githubConnected,
-    repoCount: githubRepos.length,
-  });
 
   const pendingInvites = invites.filter((invite) => invite.status === "pending").length;
   const pendingAccess = accessRequests.filter((request) => request.status === "pending").length;
@@ -587,12 +510,8 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           <span>Auth policy and API-key powers</span>
         </a>
         <a href={withOrgHref("/team/ai-keys", orgId)}>
-          <strong>Add your API keys</strong>
-          <span>OpenAI · Anthropic · Google</span>
-        </a>
-        <a href="#custom-providers">
-          <strong>Custom providers</strong>
-          <span>OpenAI-compatible / local relay</span>
+          <strong>AI keys</strong>
+          <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
         </a>
         <a href={withOrgHref("/team/budgets", orgId)}>
           <strong>API budgets</strong>
@@ -909,14 +828,8 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         </Panel>
       </section>
       <section className="compare-panel github-panel" id="github-connection">
-        <span className="eyebrow">GITHUB ROBOT-CODE CONTEXT</span>
-        <nav className="product-hub-related github-related" aria-label="Related code tools">
-          {githubRelated.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
+        <h2>GitHub</h2>
+        <p className="app-muted">Connect so calendar due dates and code tools can use this team’s repo.</p>
 
         {githubShell === "loading" || githubShell === "error" ? (
           <EmptyState
@@ -935,73 +848,12 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           </EmptyState>
         ) : null}
 
-        {githubShell === "empty" ? (
-          <EmptyState
-            soft
-            badge={githubCopy.badge}
-            badgeTone="setup"
-            title={githubCopy.title}
-            description={githubEmptyReason || githubCopy.description}
-          >
-            <p className="app-muted">
-              OAuth is optional when server credentials are missing — encrypt a PAT below. Pair VS Code, Code Coach, and
-              Account Connections stay honest until a real link exists.
-            </p>
-          </EmptyState>
-        ) : null}
-
-        {githubSteps.length > 0 ? (
-          <Panel className="github-panel" aria-label="GitHub setup steps">
-            <header>
-              <h2>Setup steps</h2>
-              <p className="app-muted">Workspace, PAT, Code Coach, and Pair VS Code — never DEMO repos.</p>
-            </header>
-            <ul className="github-setup-steps">
-              {githubSteps.map((step) => (
-                <li key={step.id}>
-                  <div>
-                    <strong>{step.label}</strong>
-                    <p className="app-muted github-tip">{step.detail}</p>
-                  </div>
-                  <a className="app-button secondary" href={step.href}>
-                    Open
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        ) : null}
-
-        <GitHubNextActionsPanel actions={githubActions} />
-
-        {showGithubTiles ? (
-          <div className="github-metrics" aria-label="GitHub connection metrics">
-            <article>
-              <strong>{formatGitHubRepoMetric(githubRepos.length, githubReposLoaded)}</strong>
-              <span>Real repositories</span>
-            </article>
-            <article>
-              <strong>{githubConnection?.defaultRepoFullName ? "1" : "0"}</strong>
-              <span>Default robot-code repo</span>
-            </article>
-          </div>
-        ) : null}
-
         <div className="admin-grid">
           <section className="intel-panel">
-            <p>
-              Link one GitHub account to this workspace so AI chat/code assist can pull size-capped file snippets from your
-              robot-code repo. Tokens are encrypted at rest. Vantage never pushes and never requests the <code>workflow</code>{" "}
-              scope. Repo pickers stay blank until the linked account returns real repositories — never DEMO repos.
-            </p>
-            {githubOAuthSetupRequired && (
-              <p className="app-muted github-oauth-note">
-                One-click OAuth is optional on this deployment (server missing{" "}
-                <code>GITHUB_OAUTH_CLIENT_ID</code> / <code>GITHUB_OAUTH_CLIENT_SECRET</code>). Use an encrypted personal
-                access token below — that path is fully production-ready without those env vars.
-              </p>
-            )}
-            {githubConnection && (
+            {githubOAuthSetupRequired ? (
+              <p className="app-muted github-oauth-note">OAuth isn’t configured on this server. Save a PAT instead.</p>
+            ) : null}
+            {githubConnection ? (
               <article className="admin-org">
                 <b>LINKED</b>
                 <div>
@@ -1009,46 +861,31 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                   <small>
                     {githubConnection.authMethod} · {githubConnection.status}
                     {githubConnection.defaultRepoFullName
-                      ? ` · default ${githubConnection.defaultRepoFullName}@${githubConnection.defaultRepoDefaultBranch ?? "main"}`
-                      : " · no default repo"}
+                      ? ` · ${githubConnection.defaultRepoFullName}`
+                      : " · pick a default repo"}
                   </small>
                 </div>
               </article>
-            )}
+            ) : null}
             <div className="intel-actions">
               <button
                 type="button"
                 className={githubOAuthSetupRequired ? undefined : "primary-action"}
                 disabled={githubBusy || githubOAuthSetupRequired || githubLoading}
                 onClick={() => void connectGitHubOAuth()}
-                title={
-                  githubOAuthSetupRequired
-                    ? "OAuth App credentials are not configured on the server. Save a PAT instead."
-                    : "Authorize GitHub for this workspace"
-                }
               >
                 {githubOAuthSetupRequired ? "Connect GitHub (OAuth unavailable)" : "Connect GitHub"}
               </button>
-              {githubConnection && (
+              {githubConnection ? (
                 <button type="button" disabled={githubBusy} onClick={() => void disconnectGitHub()}>
                   Disconnect
                 </button>
-              )}
-              <a className="app-button secondary" href={withOrgHref("/editor/pair", orgId)}>
-                Pair VS Code
-              </a>
-              <a className="app-button secondary" href="/account?tab=integrations">
-                Account Connections
-              </a>
+              ) : null}
             </div>
           </section>
           <section className="intel-panel">
             <form onSubmit={saveGitHubPat}>
               <span className="eyebrow">{githubOAuthSetupRequired ? "CONNECT WITH PAT" : "OR SAVE A PAT"}</span>
-              <p className="app-muted">
-                Fine-grained or classic PAT with Contents: Read. Encrypted like other BYOK secrets.
-                {githubOAuthSetupRequired ? " Recommended when OAuth is not configured on the server." : ""}
-              </p>
               <label>
                 Personal access token
                 <input
@@ -1061,12 +898,12 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                 />
               </label>
               <button className="primary-action" disabled={githubBusy}>
-                Encrypt and save PAT
+                Save token
               </button>
             </form>
-            {githubConnection && (
+            {githubConnection ? (
               <form id="github-default-repo" onSubmit={setGitHubDefaultRepo} style={{ marginTop: "1.25rem" }}>
-                <span className="eyebrow">DEFAULT ROBOT-CODE REPO</span>
+                <span className="eyebrow">DEFAULT REPO</span>
                 <label>
                   Repository
                   <select value={defaultRepo} onChange={(e) => setDefaultRepo(e.target.value)} required>
@@ -1079,76 +916,27 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                     ))}
                   </select>
                 </label>
-                {!githubRepos.length && (
-                  <p className="app-muted">
-                    No repositories returned for this account yet — the list stays blank, never DEMO repos.
-                  </p>
-                )}
+                {!githubRepos.length ? (
+                  <p className="app-muted">No repositories on this account yet.</p>
+                ) : null}
                 <button className="primary-action" disabled={githubBusy || !defaultRepo}>
                   Set default repo
                 </button>
               </form>
-            )}
+            ) : null}
           </section>
         </div>
       </section>
       <section className="compare-panel" id="custom-providers">
-        <span className="eyebrow">Custom / local model provider (API keys)</span>
-        <div className="admin-grid">
-          <form className="intel-panel" onSubmit={saveProvider}>
-            <p>
-              Prefer first-party OpenAI, Anthropic, or Google? Use{" "}
-              <a href={withOrgHref("/team/ai-keys", orgId)}>AI API keys</a> — encrypted paste stop for Free / your-keys
-              workspaces. Below is for custom OpenAI-compatible HTTPS endpoints or a local desktop relay. Keys are
-              encrypted at rest and never returned. Paid plans can use Vantage-hosted AI instead (cheaper than own keys).
-            </p>
-            <label>
-              Label
-              <input required value={provider.label} onChange={(e) => setProvider({ ...provider, label: e.target.value })} />
-            </label>
-            <label className="check-field">
-              <input
-                type="checkbox"
-                checked={provider.localRelay}
-                onChange={(e) => setProvider({ ...provider, localRelay: e.target.checked })}
-              />{" "}
-              Local/LAN through desktop relay
-            </label>
-            {!provider.localRelay && (
-              <label>
-                HTTPS OpenAI-compatible base URL
-                <input
-                  required
-                  type="url"
-                  placeholder="https://api.example.com/v1"
-                  value={provider.baseUrl}
-                  onChange={(e) => setProvider({ ...provider, baseUrl: e.target.value })}
-                />
-              </label>
-            )}
-            <label>
-              Provider model mapping
-              <input
-                required
-                placeholder="gpt-4.1-mini"
-                value={provider.model}
-                onChange={(e) => setProvider({ ...provider, model: e.target.value })}
-              />
-            </label>
-            <label>
-              API key (optional)
-              <input
-                type="password"
-                autoComplete="off"
-                value={provider.apiKey}
-                onChange={(e) => setProvider({ ...provider, apiKey: e.target.value })}
-              />
-            </label>
-            <button className="primary-action">Encrypt and save provider</button>
-          </form>
+        <span className="eyebrow">AI keys</span>
+        <p>
+          OpenAI, Anthropic, and Ollama / LM Studio live on{" "}
+          <a href={withOrgHref("/team/ai-keys", orgId)}>AI keys</a>
+          — personal or team-wide.
+        </p>
+        {providers.length ? (
           <section className="intel-panel">
-            <span className="eyebrow">SAVED PROVIDERS</span>
-            {!providers.length && <p className="app-muted">No custom providers yet. Add one to use BYOK/local chat routing.</p>}
+            <span className="eyebrow">LEFTOVER CUSTOM ENDPOINTS</span>
             {providers.map((item) => (
               <article className="admin-org" key={item.id}>
                 <b>{item.localRelay ? "RELAY" : "API"}</b>
@@ -1159,7 +947,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                     {item.baseUrl ? ` · ${item.baseUrl}` : ""}
                     {item.lastTestedAt ? ` · tested ${new Date(item.lastTestedAt).toLocaleString()}` : " · not tested"}
                   </small>
-                  {item.enabled && (
+                  {item.enabled ? (
                     <div>
                       <button type="button" onClick={() => void providerAction(item.id, "test")}>
                         Test
@@ -1168,12 +956,12 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
                         Disable
                       </button>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </article>
             ))}
           </section>
-        </div>
+        ) : null}
       </section>
     </main>
   );

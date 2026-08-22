@@ -13,7 +13,7 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
   { key: "messages", href: "/team?tab=messages", label: "Team chat", match: (p) => p.startsWith("/messages") },
   { key: "calendar", href: "/team?tab=calendar", label: "Calendar", match: (p) => p.startsWith("/team/calendar") || p === "/calendar" },
   { key: "attendance", href: "/team?tab=attendance", label: "Attendance", match: (p) => p.startsWith("/attendance") },
-  { key: "knowledge", href: "/team?tab=knowledge", label: "Knowledge", match: (p) => p.startsWith("/team/knowledge") || p.startsWith("/knowledge") },
+  { key: "knowledge", href: "/team?tab=knowledge", label: "Playbook", match: (p) => p.startsWith("/team/knowledge") || p.startsWith("/knowledge") },
   { key: "logistics", href: "/logistics", label: "Logistics", match: (p) => p.startsWith("/logistics") || p.startsWith("/travel") },
   { key: "goals", href: "/goals", label: "Goals", match: (p) => p.startsWith("/goals") },
   { key: "batteries", href: "/team?tab=batteries", label: "Batteries", match: (p) => p.startsWith("/batteries") },

@@ -723,8 +723,8 @@ export default function MessagesClient({
                       title="No messages yet"
                       description={
                         active.kind === "team"
-                          ? "Say something the whole team should see—pit schedule, travel notes, or a quick heads-up. Use @name to notify someone, and pin important match-day notes. Nothing is invented for empty channels."
-                          : "Start a private thread with this teammate. Only the two of you in this organization can read it."
+                          ? "Message the whole team. Use @name to notify someone."
+                          : "Private to the two of you."
                       }
                     />
                   ) : (

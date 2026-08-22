@@ -61,6 +61,8 @@ export const RSVP_LABELS: Record<RsvpResponse, string> = {
   no: "Can't make it",
 };
 
+export type CalendarEventSource = "team" | "tba";
+
 export type CalendarEvent = {
   id: string;
   title: string;
@@ -82,6 +84,9 @@ export type CalendarEvent = {
   rsvpGoing: number;
   rsvpMaybe: number;
   rsvpNo: number;
+  /** TBA matches are read-only overlays from Neon `matches_ref` — never invented times. */
+  source?: CalendarEventSource;
+  bumper?: "red" | "blue";
 };
 
 export type CalendarViewMode = "agenda" | "week" | "month" | "day";
@@ -210,6 +215,8 @@ export type SubteamCalendarView =
       calendarFeed: CalendarFeedInfo;
       /** GitHub milestones with real due dates — empty until a repo is connected. */
       githubCalendar?: GitHubCalendarOverlay;
+      /** This team's matches at the active event — empty until TBA cache has a real time. */
+      tbaMatches?: CalendarEvent[];
     }
   | { status: "setup_required"; context: SubteamCalendarContext; message: string };
 
@@ -510,6 +517,120 @@ export function layoutTimedEventsForDay(events: CalendarEvent[]): TimedCalendarB
 export function overlayItemsForDay(items: CalendarOverlayItem[] | undefined, day: string): CalendarOverlayItem[] {
   if (!items?.length) return [];
   return items.filter((item) => item.dueOn === day);
+}
+
+const TBA_MATCH_MS = 15 * 60 * 1000;
+const TBA_RED = "#b91c1c";
+const TBA_BLUE = "#1d4ed8";
+
+const TBA_COMP_LABEL: Record<string, string> = {
+  qm: "Qual",
+  ef: "Eighth",
+  qf: "QF",
+  sf: "SF",
+  f: "Final",
+};
+
+export type TbaMatchCalendarRow = {
+  matchKey: string;
+  compLevel: string;
+  matchNumber: number;
+  scheduledTime: string | null;
+  redAlliance: unknown;
+  blueAlliance: unknown;
+  eventName: string | null;
+};
+
+/** Alliance JSON from `matches_ref` — TBA cache uses `teamKeys`. */
+export function allianceTeamKeys(value: unknown): string[] {
+  if (!value || typeof value !== "object") return [];
+  const rec = value as Record<string, unknown>;
+  const raw = rec.teamKeys ?? rec.team_keys;
+  if (!Array.isArray(raw)) return [];
+  return raw.map((key) => String(key)).filter(Boolean);
+}
+
+export function tbaMatchTitle(compLevel: string, matchNumber: number, bumper: "red" | "blue"): string {
+  const label = TBA_COMP_LABEL[compLevel] ?? compLevel.toUpperCase();
+  return `${label} ${matchNumber} · ${bumper.toUpperCase()}`;
+}
+
+/**
+ * Map cached TBA matches onto the team calendar.
+ * Skips rows without a real start time and rows this team is not on — never invents DEMO matches.
+ */
+export function tbaMatchesToCalendarEvents(rows: TbaMatchCalendarRow[], teamKey: string): CalendarEvent[] {
+  const key = teamKey.trim();
+  if (!key) return [];
+  const events: CalendarEvent[] = [];
+  for (const row of rows) {
+    const startsAt = row.scheduledTime?.trim() ?? "";
+    if (!startsAt) continue;
+    const start = new Date(startsAt);
+    if (Number.isNaN(start.getTime())) continue;
+    const red = allianceTeamKeys(row.redAlliance);
+    const blue = allianceTeamKeys(row.blueAlliance);
+    const bumper: "red" | "blue" | null = red.includes(key) ? "red" : blue.includes(key) ? "blue" : null;
+    if (!bumper) continue;
+    const matchKey = row.matchKey.trim();
+    if (!matchKey) continue;
+    events.push({
+      id: `match-${matchKey}`,
+      title: tbaMatchTitle(row.compLevel, row.matchNumber, bumper),
+      kind: "event",
+      startsAt,
+      endsAt: new Date(start.getTime() + TBA_MATCH_MS).toISOString(),
+      location: row.eventName?.trim() || "",
+      notes: bumper === "red" ? "RED bumpers" : "BLUE bumpers",
+      subteamId: null,
+      subteamName: null,
+      subteamColor: bumper === "red" ? TBA_RED : TBA_BLUE,
+      attendanceEventId: null,
+      attendanceEventTitle: null,
+      milestoneId: null,
+      driverSessionId: null,
+      createdByName: null,
+      myRsvp: null,
+      rsvpGoing: 0,
+      rsvpMaybe: 0,
+      rsvpNo: 0,
+      source: "tba",
+      bumper,
+    });
+  }
+  return events;
+}
+
+export function isReadonlyCalendarEvent(event: CalendarEvent): boolean {
+  return event.source === "tba";
+}
+
+/** All-day ICS rows for GitHub milestones that already have a due date. */
+export function githubItemsToIcsEvents(
+  items: CalendarOverlayItem[] | undefined,
+): Array<{
+  id: string;
+  title: string;
+  kind: string;
+  location: string;
+  description: string;
+  startsAt: string;
+  endsAt: string | null;
+  updatedAt: string;
+  allDay?: boolean;
+}> {
+  if (!items?.length) return [];
+  return items.map((item) => ({
+    id: `github-${item.id}`,
+    title: `GitHub · ${item.title}`,
+    kind: "deadline",
+    location: "",
+    description: item.href,
+    startsAt: item.dueOn,
+    endsAt: item.dueOn,
+    updatedAt: `${item.dueOn}T00:00:00.000Z`,
+    allDay: true,
+  }));
 }
 
 /** Default local datetime-local value for quick-add (next top-of-hour, or a picked day/hour). */

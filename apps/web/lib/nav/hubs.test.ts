@@ -63,7 +63,7 @@ describe("product hubs", () => {
     expect(media.tabs.find((tab) => tab.id === "kit")?.legacyHref).toBe("/media-kit");
   });
 
-  it("keeps Team workbenches to calendar, chat, people, work, and knowledge", () => {
+  it("keeps Team workbenches to calendar, chat, people, work, and playbook", () => {
     const team = hubById("team");
     expect(hubPrimaryTabs(team).map((tab) => tab.id)).toEqual([
       "calendar",
@@ -72,6 +72,7 @@ describe("product hubs", () => {
       "todos",
       "knowledge",
     ]);
+    expect(team.tabs.find((tab) => tab.id === "knowledge")?.label).toBe("Playbook");
     expect(hubNestedTabs(team, "todos").map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["practice", "batteries", "fmea", "season-planning-workspace"]),
     );
