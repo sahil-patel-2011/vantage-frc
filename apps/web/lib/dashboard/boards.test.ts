@@ -82,7 +82,7 @@ describe("dashboard drag and drop", () => {
     const moved = dragged.find((item) => item.type === "next_match");
     expect(moved?.x).toBe(6);
     expect(moved?.y).toBe(4);
-    expect(dragged.find((item) => item.type === "competition_snapshot")?.x).toBe(6);
+    expect(dragged.find((item) => item.type === "competition_snapshot")?.x).toBe(0);
   });
 
   it("scales a phone-grid drag back onto the saved 12-column board", () => {

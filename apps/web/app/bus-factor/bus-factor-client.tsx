@@ -30,7 +30,7 @@ import {
   type BusFactorShellKind,
 } from "../../lib/bus-factor/bus-factor-related";
 import type { BusFactorArea, RiskLevel } from "../../lib/bus-factor/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./bus-factor.css";
 
@@ -105,7 +105,7 @@ function BusFactorShell({
 }) {
   const actions = busFactorNextActions({ orgId, shell });
   const copy = busFactorShellCopy(shell);
-  const teamHref = hubHref("/team", "bus-factor", orgId);
+  const teamHref = hubWorkbenchHref("team", "bus-factor", orgId);
   const steps = shell === "setup" ? busFactorSetupSteps(orgId) : [];
 
   return (
@@ -237,7 +237,7 @@ export default function BusFactorClient() {
   const relatedLinks = busFactorRelatedLinks(orgId, {
     include: [...BUS_FACTOR_RELATED_INCLUDE],
   });
-  const teamHref = hubHref("/team", "bus-factor", orgId);
+  const teamHref = hubWorkbenchHref("team", "bus-factor", orgId);
   const showTiles = shouldShowBusFactorSummaryTiles(entryCount);
 
   const mutate = useCallback(

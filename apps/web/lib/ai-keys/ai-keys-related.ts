@@ -44,13 +44,7 @@ export function aiKeysRelatedLinks(
   });
 }
 
-export const AI_KEYS_RELATED_INCLUDE: AiKeysRelatedId[] = [
-  "chat",
-  "budgets",
-  "byok-usage",
-  "pricing",
-  "account",
-];
+export const AI_KEYS_RELATED_INCLUDE: AiKeysRelatedId[] = ["chat"];
 
 export type AiKeysShellKind =
   | "loading"
@@ -103,7 +97,7 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     return {
       eyebrow: "CHOOSE A WORKSPACE",
       title: "Select a team to add API keys",
-      description: "Open Workspace, pick your organization, then return here to paste OpenAI, Anthropic, Google, or OpenRouter keys.",
+      description: "Open Workspace, pick your organization, then return here to paste keys for yourself or the team.",
       badge: "No workspace",
     };
   }
@@ -120,10 +114,10 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
   if (kind === "forbidden") {
     return {
       eyebrow: "PERMISSION NEEDED",
-      title: "You can view status, not change keys",
+      title: "Team keys are admin-only",
       description:
         detail?.trim() ||
-        "Saving or removing BYOK keys requires the Manage API keys capability (owners/admins or a delegated member).",
+        "Anyone on the team can save personal keys. Team-wide keys require Manage API keys (owner/admin).",
       badge: "View only",
     };
   }
@@ -136,10 +130,10 @@ export function aiKeysShellCopy(kind: AiKeysShellKind, detail?: string | null): 
     };
   }
   return {
-    eyebrow: "YOUR KEYS",
-    title: "Workspace AI API keys",
+    eyebrow: "AI KEYS",
+    title: "Your keys or the team's",
     description:
-      "Paste OpenAI, Anthropic, Google, or OpenRouter keys, or use hosted AI. Free workspaces use the platform OpenRouter free pool; paid plans use Anthropic Sonnet/Opus. Your keys never consume hosted usage.",
+      "Paste OpenAI or Anthropic, or point OpenAI at Ollama / LM Studio. Your keys override the team's for your chats. Hosted AI is used when nothing is saved.",
   };
 }
 

@@ -4,6 +4,7 @@ export { FormGrid, FormRow } from "./form-row";
 export { PageHeader } from "./page-header";
 export { Panel } from "./panel";
 export { TabBar, type SoftTab } from "./tab-bar";
+export { ToolStrip, type ToolStripItem } from "./tool-strip";
 
 // --- New primitives (design-system) ---
 export { Card } from "./card";

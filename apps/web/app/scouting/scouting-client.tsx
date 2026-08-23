@@ -55,6 +55,7 @@ import {
 } from "../../lib/scouting/scouting-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import ScoutingTrustPanel from "./scouting-trust-panel";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
@@ -172,6 +173,7 @@ function ScoutingShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   embedded = false,
   children,
@@ -179,12 +181,31 @@ function ScoutingShell({
   orgId?: string | null;
   shell: ScoutingShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   embedded?: boolean;
   children?: ReactNode;
 }) {
   const actions = scoutingNextActions({ orgId, shell });
   const copy = scoutingShellCopy(shell);
+  const failureCopy =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || copy.description,
+          },
+        )
+      : null;
   const steps = shell === "setup" ? scoutingSetupSteps(orgId) : [];
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const commandHref = hubHref("/competition", "command", orgId);
@@ -218,11 +239,16 @@ function ScoutingShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failureCopy ? failureCopy.title : copy.title}
+        description={failureCopy ? failureCopy.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failureCopy?.primary ? (
+          <a className="app-button" href={failureCopy.primary.href}>
+            {failureCopy.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failureCopy?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -272,6 +298,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [data, setData] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [bootstrapStatus, setBootstrapStatus] = useState<number | null>(null);
   const [tab, setTab] = useState<ScoutTab>("match");
   const [matchKey, setMatchKey] = useState("");
   const [teamKey, setTeamKey] = useState("");
@@ -363,6 +391,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     void (async () => {
       setLoading(true);
       setFetchFailed(false);
+      setBootstrapStatus(null);
       const cached = await getCachedEvent<Bootstrap>(orgId);
       if (cached) {
         setData(cached);
@@ -381,6 +410,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setMessage("Using cached event data — bootstrap unavailable");
         } else {
           setFetchFailed(true);
+          setBootstrapStatus(response.status);
           setMessage("Could not load scouting bootstrap");
         }
       } catch {
@@ -703,6 +733,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const reloadBootstrap = useCallback(() => {
     setLoading(true);
     setFetchFailed(false);
+    setBootstrapStatus(null);
     void (async () => {
       try {
         const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`);
@@ -715,6 +746,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           await loadTrust(fresh.eventKey);
         } else {
           setFetchFailed(true);
+          setBootstrapStatus(response.status);
         }
       } catch {
         setFetchFailed(true);
@@ -748,6 +780,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         orgId={orgId}
         shell={shell}
         error={message || undefined}
+        errorStatus={bootstrapStatus}
         onRetry={reloadBootstrap}
         embedded={embedded}
       >

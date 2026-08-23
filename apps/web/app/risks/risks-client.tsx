@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { riskCategoryLabel, riskLevelLabel, riskStatusLabel } from "../../lib/risks";
 import { RISK_CATEGORIES, RISK_STATUSES, type RisksView } from "../../lib/risks/compute-risks";
@@ -88,6 +89,9 @@ export default function RisksClient() {
   const [view, setView] = useState<RisksView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadError, setLoadError] = useState("");
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -95,6 +99,8 @@ export default function RisksClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setLoadError("");
+    setLoadErrorStatus(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -106,6 +112,8 @@ export default function RisksClient() {
       .then(async (response) => {
         const data = (await response.json()) as RisksView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadError("error" in data && data.error ? data.error : "");
+          setLoadErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
@@ -145,6 +153,23 @@ export default function RisksClient() {
   );
 
   if (fetchFailed || view == null) {
+    // Retry cannot fix an expired session — offer the action that actually resolves it.
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: loadErrorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page risks-page">
         <PageHeader
@@ -154,15 +179,16 @@ export default function RisksClient() {
         />
         <EmptyState
           soft
-          title={fetchFailed ? "Could not load the risk register" : "Loading risk register…"}
-          description={
-            fetchFailed
-              ? "A network or server issue prevented loading. Try again."
-              : "Checking your workspace."
-          }
+          title={failure ? failure.title : "Loading risk register…"}
+          description={failure ? failure.description : "Checking your workspace."}
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {failure?.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={() => load()}>
               Retry
             </button>

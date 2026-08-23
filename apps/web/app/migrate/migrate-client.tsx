@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import type { MigrateView } from "../../lib/migrate/compute-migrate";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ConnectorId = "ics" | "scout" | "hours" | "notion";
 
@@ -30,6 +31,8 @@ const CONNECTORS: Array<{
 export default function MigrateClient() {
   const [view, setView] = useState<MigrateView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [connector, setConnector] = useState<ConnectorId | null>(null);
   const [icsUrl, setIcsUrl] = useState("");
@@ -46,9 +49,12 @@ export default function MigrateClient() {
       .then(async (response) => {
         const data = (await response.json()) as MigrateView | { error?: string };
         if (!response.ok || !("status" in data)) {
-          setError("Could not load the switching kit.");
+          setErrorStatus(response.status);
+          setError("error" in data && data.error ? data.error : "Could not load the switching kit.");
           return;
         }
+        setErrorStatus(null);
+        setError("");
         setView(data);
       })
       .catch(() => setError("Network error — please try again."));
@@ -108,7 +114,40 @@ export default function MigrateClient() {
         title="Bring your season"
         description="Pick one source, preview real rows, then import. Dual-run until you turn the old tool off — never invent events."
       />
-      {error ? <p className="app-muted migrate-error">{error}</p> : null}
+      {error && view == null ? (
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: error,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: error,
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
+      ) : error ? (
+        <p className="app-muted migrate-error">{error}</p>
+      ) : null}
       {view?.status === "setup_required" ? (
         <EmptyState title="Workspace required" description={view.message} />
       ) : null}

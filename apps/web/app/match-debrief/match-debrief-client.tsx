@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { MATCH_RESULTS, type Alliance, type MatchResult } from "../../lib/match-debrief";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Debrief = {
   id: string; seasonYear: number; eventKey: string; matchLabel: string; alliance: Alliance; result: MatchResult;
@@ -18,12 +19,15 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead end.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/match-debrief?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load match log"); return; }
+    if (!response.ok) { setErrorStatus(response.status); setMessage(data.error ?? "Failed to load match log"); return; }
+    setErrorStatus(null);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
@@ -45,7 +49,38 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
     if (view?.status === "ready") setForm({ ...EMPTY });
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading match log…"}</p></main>;
+  if (!view) {
+    if (!message) return <main className="intel-app"><p className="telemetry-status">Loading match log…</p></main>;
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status">
+          <strong>{copy.title}</strong> {copy.description}
+        </p>
+        {copy.primary ? (
+          <a className="app-button" href={copy.primary.href}>
+            {copy.primary.label}
+          </a>
+        ) : null}
+        {copy.showRetry ? (
+          <button type="button" className="app-button secondary" onClick={() => void load()}>
+            Retry
+          </button>
+        ) : null}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Match debrief</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }

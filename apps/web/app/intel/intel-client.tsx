@@ -17,6 +17,7 @@ import {
   type IntelShellKind,
 } from "../../lib/intel/intel-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./intel.css";
 
@@ -133,17 +134,37 @@ function IntelShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
   orgId?: string | null;
   shell: IntelShellKind;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = intelNextActions({ orgId, shell });
   const copy = intelShellCopy(shell);
+  // An expired session cannot be fixed by retrying, so say what actually happened.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error ?? null,
+          },
+        )
+      : null;
   const steps = shell === "setup" ? intelSetupSteps(orgId) : [];
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const dossierHref = withOrgHref("/dossier", orgId);
@@ -173,11 +194,16 @@ function IntelShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failure?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -246,6 +272,8 @@ export default function IntelClient({ orgId }: { orgId: string }) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(false);
 
   const strategyHref = hubHref("/competition", "strategy", orgId);
@@ -264,12 +292,14 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     event.preventDefault();
     setStatus("Searching global team index…");
     setFetchFailed(false);
+    setErrorStatus(null);
     setCutoffCode(null);
     try {
       const response = await fetch(`/api/intel/teams?orgId=${orgId}&q=${encodeURIComponent(query)}`);
       const data = (await response.json()) as { teams?: SearchTeam[]; error?: string };
       if (!response.ok) {
         setFetchFailed(true);
+        setErrorStatus(response.status);
         setResults([]);
         setStatus(data.error ?? "Could not search teams");
         setMessageKind("error");
@@ -290,6 +320,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
     setStatus(`Loading Team ${teamNumber}…`);
     setLoadingTeam(true);
     setFetchFailed(false);
+    setErrorStatus(null);
     setCutoffCode(null);
     try {
       const response = await fetch(`/api/intel/teams?orgId=${orgId}&team=${teamNumber}`);
@@ -300,6 +331,7 @@ export default function IntelClient({ orgId }: { orgId: string }) {
       };
       if (!response.ok) {
         setFetchFailed(true);
+        setErrorStatus(response.status);
         setIntel(null);
         setSimilar([]);
         setStatus(data.error ?? "Could not load team");
@@ -426,10 +458,12 @@ export default function IntelClient({ orgId }: { orgId: string }) {
         orgId={orgId}
         shell={shell}
         error={shell === "error" ? status || "Could not load Team Intel." : undefined}
+        errorStatus={errorStatus}
         onRetry={
           shell === "error"
             ? () => {
                 setFetchFailed(false);
+                setErrorStatus(null);
                 setStatus("");
               }
             : undefined

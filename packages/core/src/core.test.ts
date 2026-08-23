@@ -177,6 +177,8 @@ describe("waitlist-only auth access policy", () => {
     expect(isDatabaseConfigured()).toBe(true);
     delete process.env.POSTGRES_URL;
     expect(isDatabaseConfigured()).toBe(false);
+    process.env.DATABASE_AUTH_URL = "[SENSITIVE]";
+    expect(isDatabaseConfigured()).toBe(false);
     process.env.DATABASE_AUTH_URL = previous.auth;
     process.env.DATABASE_URL = previous.db;
     process.env.DATABASE_ADMIN_URL = previous.admin;

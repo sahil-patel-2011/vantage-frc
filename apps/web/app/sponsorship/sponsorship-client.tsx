@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   buildOnePagerLines,
   defaultTitle,
@@ -89,6 +90,8 @@ async function downloadBlob(response: Response, fallbackName: string) {
 export default function SponsorshipClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<SponsorshipView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a bare error line.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -107,9 +110,11 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
       .then(async (response) => {
         const data = (await response.json()) as SponsorshipView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
           setError("error" in data && data.error ? data.error : "Could not load sponsorship one-pagers.");
           return;
         }
+        setErrorStatus(null);
         setView(data);
         setSeason(data.seasonYear);
         if (data.status === "ready") {
@@ -127,7 +132,10 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
           );
         }
       })
-      .catch(() => setError("Network error — please try again."));
+      .catch(() => {
+        setErrorStatus(null);
+        setError("Network error — please try again.");
+      });
   }, []);
 
   useEffect(() => {
@@ -232,11 +240,38 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
         {!embedded ? (
           <PageHeader navPath="/sponsorship" title="Sponsorship one-pagers" description="Loading…" />
         ) : null}
-        {error ? (
-          <p className="telemetry-status" role="alert">
-            {error}
-          </p>
-        ) : null}
+        {error
+          ? (() => {
+              const copy = loadFailureCopy(
+                classifyLoadFailure({
+                  status: errorStatus,
+                  message: error,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message: error,
+                },
+              );
+              return (
+                <EmptyState title={copy.title} description={copy.description}>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </EmptyState>
+              );
+            })()
+          : null}
       </main>
     );
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { ITEM_VERDICTS, REVIEW_STAGES, REVIEW_STATUSES, gateLabel, reviewStageLabel, reviewStatusLabel } from "../../lib/reviews";
 import type { ReviewsView } from "../../lib/reviews/compute-reviews";
 import type { GateDecision, ItemVerdict, ReviewEvaluation, ReviewStage, ReviewStatus } from "../../lib/reviews/types";
@@ -25,6 +26,9 @@ export default function ReviewsClient() {
   const [view, setView] = useState<ReviewsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadError, setLoadError] = useState("");
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -32,6 +36,8 @@ export default function ReviewsClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setLoadError("");
+    setLoadErrorStatus(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -43,6 +49,8 @@ export default function ReviewsClient() {
       .then(async (response) => {
         const data = (await response.json()) as ReviewsView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadError("error" in data && data.error ? data.error : "");
+          setLoadErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
@@ -120,13 +128,39 @@ export default function ReviewsClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load design reviews</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </section>
+        (() => {
+          // Retry cannot fix an expired session — offer the action that actually resolves it.
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: loadErrorStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <section className="app-card soft-panel">
+              <h2>{copy.title}</h2>
+              <p className="app-muted">{copy.description}</p>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </section>
+          );
+        })()
       ) : view == null ? (
         <section className="app-card soft-panel">
           <h2>Loading…</h2>

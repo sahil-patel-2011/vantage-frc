@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { COSTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { costsNextActions } from "../../lib/business/costs-next-actions";
 import { costCategoryLabel, subscriptionCadenceLabel, usd } from "../../lib/costs";
@@ -102,6 +103,9 @@ export default function CostsClient() {
   const [view, setView] = useState<CostsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadStatus, setLoadStatus] = useState<number | null>(null);
+  const [loadMessage, setLoadMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -110,6 +114,8 @@ export default function CostsClient() {
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
+    setLoadStatus(null);
+    setLoadMessage("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
@@ -120,6 +126,8 @@ export default function CostsClient() {
       .then(async (response) => {
         const data = (await response.json()) as CostsView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadStatus(response.status);
+          setLoadMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -159,6 +167,23 @@ export default function CostsClient() {
   );
 
   if (fetchFailed || view == null) {
+    // Retry cannot fix an expired session — offer the action that can.
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: loadStatus,
+            message: loadMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page costs-page">
         <PageHeader
@@ -168,15 +193,16 @@ export default function CostsClient() {
         />
         <EmptyState
           soft
-          title={fetchFailed ? "Could not load season costs" : "Loading season costs…"}
-          description={
-            fetchFailed
-              ? "A network or server issue prevented loading. Try again."
-              : "Checking your workspace."
-          }
+          title={copy ? copy.title : "Loading season costs…"}
+          description={copy ? copy.description : "Checking your workspace."}
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {copy?.primary ? (
+            <a className="app-button" href={copy.primary.href}>
+              {copy.primary.label}
+            </a>
+          ) : null}
+          {copy?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={() => load()}>
               Retry
             </button>

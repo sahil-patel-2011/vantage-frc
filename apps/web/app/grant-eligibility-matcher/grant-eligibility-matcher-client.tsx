@@ -24,7 +24,7 @@ import {
   type GrantEligibilityMatcherNextAction,
   type GrantEligibilityMatcherShellKind,
 } from "../../lib/grant-eligibility-matcher/grant-eligibility-matcher-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./grant-eligibility-matcher.css";
 
@@ -106,7 +106,7 @@ function MatcherShell({
 }) {
   const actions = grantEligibilityMatcherNextActions({ orgId, shell });
   const copy = grantEligibilityMatcherShellCopy(shell);
-  const businessHref = hubHref("/business", "grant-eligibility-matcher", orgId);
+  const businessHref = hubWorkbenchHref("business", "grant-eligibility-matcher", orgId);
   const steps = shell === "setup" ? grantEligibilityMatcherSetupSteps(orgId) : [];
 
   return (
@@ -234,7 +234,7 @@ export default function GrantEligibilityMatcherClient() {
   const relatedLinks = grantEligibilityMatcherRelatedLinks(orgId, {
     include: [...GRANT_ELIGIBILITY_MATCHER_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "grant-eligibility-matcher", orgId);
+  const businessHref = hubWorkbenchHref("business", "grant-eligibility-matcher", orgId);
   const showTiles = shouldShowGrantEligibilityMatcherSummaryTiles(eligibleCount, catalogSize);
 
   const mutate = useCallback(

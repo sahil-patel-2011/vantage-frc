@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DisplayRelated } from "../../components/display-related";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   DISPLAY_WIDGET_TYPES,
   PRESET_META,
@@ -54,12 +55,17 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   const [messageOk, setMessageOk] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadStatus, setLoadStatus] = useState<number | null>(null);
+  const [loadMessage, setLoadMessage] = useState("");
   const [minted, setMinted] = useState<MintedToken | null>(null);
   const [pairBoardId, setPairBoardId] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     setFetchFailed(false);
+    setLoadStatus(null);
+    setLoadMessage("");
     try {
       const r = await fetch(`/api/display/boards?orgId=${encodeURIComponent(orgId)}`);
       const d = (await r.json()) as {
@@ -71,6 +77,8 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       if (!r.ok) {
         setMessage(d.error ?? "Failed to load display boards");
         setMessageOk(false);
+        setLoadStatus(r.status);
+        setLoadMessage(d.error ?? "");
         setFetchFailed(true);
         return;
       }
@@ -81,6 +89,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     } catch {
       setFetchFailed(true);
       setMessage("Network error — could not load display boards.");
+      setLoadMessage("Network error — could not load display boards.");
       setMessageOk(false);
     } finally {
       setLoading(false);
@@ -239,22 +248,46 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         <DisplayRelated orgId={orgId} include={[...DISPLAY_RELATED_INCLUDE]} />
       </div>
 
-      {message ? (
+      {message && !fetchFailed ? (
         <p className={`display-status${messageOk ? " ok" : ""}`} role="status">
           {message}
         </p>
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          soft
-          title="Could not load display boards"
-          description="A network or server issue prevented loading. Try again — nothing was filled with DEMO layouts."
-        >
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          // Retry cannot fix an expired session — offer the action that can.
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: loadStatus,
+              message: loadMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message:
+                loadMessage ||
+                "A network or server issue prevented loading. Try again — nothing was filled with DEMO layouts.",
+            },
+          );
+          return (
+            <EmptyState soft title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => void load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : (
         <div className="disp-stack">
           <NextActionsPanel actions={nextActions} />

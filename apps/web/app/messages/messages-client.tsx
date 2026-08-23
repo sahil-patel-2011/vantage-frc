@@ -25,6 +25,7 @@ import {
   totalUnread,
 } from "../../lib/messages/sync";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Conversation = {
   id: string;
@@ -185,6 +186,8 @@ export default function MessagesClient({
   const [linkTargets, setLinkTargets] = useState<LinkTarget[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   const [live, setLive] = useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -258,10 +261,12 @@ export default function MessagesClient({
     if (!response.ok) {
       const message = data.error || "Could not load conversations.";
       setLoadError(message);
+      setLoadErrorStatus(response.status);
       setStatus(message);
       return null;
     }
     setLoadError(null);
+    setLoadErrorStatus(null);
     applyInbox(data.conversations ?? []);
     if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
     return data.conversations as Conversation[];
@@ -318,6 +323,7 @@ export default function MessagesClient({
   async function reloadMessages() {
     setLoading(true);
     setLoadError(null);
+    setLoadErrorStatus(null);
     setStatus("");
     const list = await loadInbox();
     const preferred =
@@ -602,40 +608,62 @@ export default function MessagesClient({
             {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
           </span>
         </PageHeader>
-      ) : (
+      ) : inboxUnread > 0 ? (
         <div className="messages-embed-status" aria-live="polite">
-          <span className={`messages-live ${live ? "on" : "off"}`}>
-            <i aria-hidden="true" />
-            {live ? "Live" : "Paused"}
-            {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
+          <span className="messages-live on">
+            {inboxUnread} unread
           </span>
         </div>
-      )}
+      ) : null}
 
       {loading ? (
         <EmptyState soft title="Loading…" aria-busy />
       ) : loadError ? (
-        <EmptyState
-          title="Could not load messages"
-          description={loadError}
-          badge="Setup"
-          badgeTone="setup"
-        >
-          <button type="button" className="app-button secondary" onClick={() => void reloadMessages()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: loadErrorStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError,
+            },
+          );
+          return (
+            <EmptyState
+              title={copy.title}
+              description={copy.description}
+              badge="Setup"
+              badgeTone="setup"
+            >
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => void reloadMessages()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : (
         <div className="messages-layout">
           <aside className="chat-sidebar">
-            <span className="eyebrow">Inbox</span>
             <button
               type="button"
               className="messages-new-dm"
               onClick={() => void openMemberPicker()}
               disabled={sending}
             >
-              + Private message
+              New Message
             </button>
             {conversations.map((item) => (
               <button
@@ -661,7 +689,7 @@ export default function MessagesClient({
               <EmptyState
                 soft
                 title="No conversations yet"
-                description="Your team channel opens with this workspace. Private chats appear after you message a teammate in this org."
+                description="Your team channel opens with this workspace."
               />
             ) : null}
           </aside>
@@ -671,7 +699,7 @@ export default function MessagesClient({
               <EmptyState
                 soft
                 title="Team messages"
-                description="Use the org team channel for shared updates, or message a teammate privately. Conversations stay organization-scoped — never shared across teams."
+                description="The team channel, or a private message."
               >
                 <button type="button" className="app-button" onClick={() => void openMemberPicker()}>
                   Message a teammate

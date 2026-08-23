@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { BRINGUP_PHASES, BRINGUP_PHASE_LABEL, BRINGUP_RESULTS, type BringupPhase, type BringupResult } from "../../lib/bringup";
 
 type Item = { id: string; phase: BringupPhase; label: string; result: BringupResult; note: string; sortOrder: number };
@@ -13,12 +14,15 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [custom, setCustom] = useState({ phase: "mechanical", label: "" });
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/bringup?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load checklist"); return; }
+    if (!response.ok) { setMessage(data.error ?? "Failed to load checklist"); setErrorStatus(response.status); return; }
+    setErrorStatus(null);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
@@ -34,7 +38,45 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
     if (response.ok) await load();
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading bring-up checklist…"}</p></main>;
+  if (!view) {
+    const copy = message
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message,
+          },
+        )
+      : null;
+    return (
+      <main className="intel-app">
+        {copy ? (
+          <p className="telemetry-status">
+            <strong>{copy.title}</strong> {copy.description}{" "}
+            {copy.primary ? (
+              <a className="app-button" href={copy.primary.href}>
+                {copy.primary.label}
+              </a>
+            ) : null}
+            {copy.showRetry ? (
+              <button type="button" className="app-button secondary" onClick={() => void load()}>
+                Retry
+              </button>
+            ) : null}
+          </p>
+        ) : (
+          <p className="telemetry-status">Loading bring-up checklist…</p>
+        )}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / BRING-UP</span><h1>Robot bring-up</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }

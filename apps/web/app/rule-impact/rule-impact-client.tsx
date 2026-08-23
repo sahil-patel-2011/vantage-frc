@@ -29,7 +29,7 @@ import type {
   RuleImpactStatus,
   SubsystemCategory,
 } from "../../lib/rule-impact/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./rule-impact.css";
 
@@ -108,7 +108,7 @@ function RuleImpactShell({
 }) {
   const actions = ruleImpactNextActions({ orgId, shell });
   const copy = ruleImpactShellCopy(shell);
-  const buildHref = hubHref("/build", "rule-impact", orgId);
+  const buildHref = hubWorkbenchHref("build", "rule-impact", orgId);
   const kickoffHref = hubHref("/build", "kickoff", orgId);
   const cadHref = hubHref("/build", "cad", orgId);
   const subsystemsHref = withOrgHref("/subsystems", orgId);
@@ -240,7 +240,7 @@ export default function RuleImpactClient() {
   const relatedLinks = ruleImpactRelatedLinks(orgId, {
     include: [...RULE_IMPACT_RELATED_INCLUDE],
   });
-  const buildHref = hubHref("/build", "rule-impact", orgId);
+  const buildHref = hubWorkbenchHref("build", "rule-impact", orgId);
   const kickoffHref = hubHref("/build", "kickoff", orgId);
   const cadHref = hubHref("/build", "cad", orgId);
   const subsystemsHref = withOrgHref("/subsystems", orgId);

@@ -19,6 +19,7 @@ import {
   resolveAuthSecret,
   resolveAuthTrustedOrigins,
   resolveSessionAuthMethod,
+  runtimeEnv,
 } from "./access-policy";
 import {
   WAITLIST_ONLY_MESSAGE,
@@ -33,8 +34,8 @@ function googleSocialProvider() {
   if (!isGoogleAuthConfigured()) return {};
   return {
     google: {
-      clientId: process.env["GOOGLE_CLIENT_ID"]!,
-      clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
+      clientId: runtimeEnv("GOOGLE_CLIENT_ID"),
+      clientSecret: runtimeEnv("GOOGLE_CLIENT_SECRET"),
       prompt: "select_account",
       // New Google users are gated by databaseHooks.user.create.before
       // (platform owner / existing / pending invite only).

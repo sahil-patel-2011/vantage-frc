@@ -18,9 +18,12 @@ const MatchChecklistClient = dynamic(() => import("../match-checklist/match-chec
 const PickClockClient = dynamic(() => import("../pick-clock/pick-clock-client"), { ssr: false });
 const ChemistryClient = dynamic(() => import("../chemistry/chemistry-client"), { ssr: false });
 
+/** Tab ids rendered inline below. Anything else opens its own route directly. */
+const EMBEDDED_TABS = ["command", "my-day", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms"] as const;
+
 export default function CompetitionHub() {
   return (
-    <ProductHubShell hubId="competition">
+    <ProductHubShell hubId="competition" embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => {
         if (tab === "command") return <CommandClient embedded />;
         if (tab === "my-day") return <MyDayClient embedded />;

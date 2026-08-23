@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { ALLIANCE_SIM_ROLE_DEFS, allianceSimRoleLabel } from "../../lib/alliance-sim";
 import type { AllianceSimView } from "../../lib/alliance-sim/compute-alliance-sim";
 import type { AllianceSimRole } from "../../lib/alliance-sim/types";
@@ -16,6 +17,9 @@ export default function AllianceSimClient() {
   const [view, setView] = useState<AllianceSimView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -23,6 +27,8 @@ export default function AllianceSimClient() {
   const load = useCallback((scenarioOverride?: string | null) => {
     setFetchFailed(false);
     setError("");
+    setFailureStatus(null);
+    setFailureMessage(null);
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const scenarioQuery = scenarioOverride !== undefined ? scenarioOverride : params.get("scenarioId");
@@ -33,6 +39,8 @@ export default function AllianceSimClient() {
       .then(async (response) => {
         const data = (await response.json()) as AllianceSimView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setFailureStatus(response.status);
+          setFailureMessage("error" in data && data.error ? data.error : null);
           setFetchFailed(true);
           return;
         }
@@ -107,14 +115,36 @@ export default function AllianceSimClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load Alliance Sim"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: failureStatus,
+              message: failureMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: failureMessage ?? "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

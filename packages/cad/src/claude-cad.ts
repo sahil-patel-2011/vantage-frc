@@ -1,15 +1,25 @@
 import { randomUUID } from "node:crypto";
 import type { CadOperation } from "./agent-policy";
 import { FUSION_RELAY_PROTOCOL_VERSION, signFusionRelayJob } from "./fusion-relay";
-import { loadClaudeCadSession, requireBoundDocument, saveClaudeCadSession } from "./claude-session";
+import { loadClaudeCadSession, requireBoundDocument, saveClaudeCadSession, type ClaudeCadSession } from "./claude-session";
 import {
   createOnshapeApiKeyHttp,
   onshapeApiKeysStatus,
   onshapeHttpError,
   readOnshapeApiKeys,
   readOnshapeJson,
+  type OnshapeKeyHttp,
 } from "./onshape-api-keys";
 import { extrudeFeature, parseAddedFeatureId, rectangleSketchFeature } from "./onshape-features";
+
+/** Optional hosted runtime so the web CAD agent can use org OAuth + DB session instead of env keys. */
+export type ClaudeCadRuntime = {
+  http?: OnshapeKeyHttp;
+  loadSession?: () => Promise<ClaudeCadSession>;
+  saveSession?: (session: ClaudeCadSession) => Promise<void>;
+  /** Skip loopback Fusion probes (Vercel / hosted). */
+  hosted?: boolean;
+};
 
 export const CLAUDE_CAD_INSTRUCTIONS = `Vantage CAD from Claude Code (terminal)
 
@@ -178,6 +188,33 @@ async function requireOnshapeHttp() {
   return createOnshapeApiKeyHttp(creds);
 }
 
+async function getHttp(runtime: ClaudeCadRuntime): Promise<OnshapeKeyHttp> {
+  if (runtime.http) return runtime.http;
+  return requireOnshapeHttp();
+}
+
+async function getSession(runtime: ClaudeCadRuntime): Promise<ClaudeCadSession> {
+  if (runtime.loadSession) return runtime.loadSession();
+  return loadClaudeCadSession();
+}
+
+async function putSession(runtime: ClaudeCadRuntime, session: ClaudeCadSession): Promise<void> {
+  if (runtime.saveSession) {
+    await runtime.saveSession(session);
+    return;
+  }
+  await saveClaudeCadSession(session);
+}
+
+function hostedFusionUnavailable() {
+  return {
+    reachable: false,
+    setupRequired: true,
+    message:
+      "Fusion 360 is not available in the hosted CAD agent. Use Onshape here, or run vantage-cad on your PC for Fusion.",
+  };
+}
+
 async function fusionExecute(operation: string, parameters: Record<string, unknown>) {
   const envelope = signFusionRelayJob({
     version: FUSION_RELAY_PROTOCOL_VERSION,
@@ -211,24 +248,34 @@ async function fusionExecute(operation: string, parameters: Record<string, unkno
   return body;
 }
 
-export async function callClaudeCadTool(name: string, args: Record<string, unknown> = {}): Promise<unknown> {
+export async function callClaudeCadTool(
+  name: string,
+  args: Record<string, unknown> = {},
+  runtime: ClaudeCadRuntime = {},
+): Promise<unknown> {
   switch (name) {
     case "cad_setup":
       return { instructions: CLAUDE_CAD_INSTRUCTIONS };
     case "cad_status": {
-      const keys = onshapeApiKeysStatus();
-      const session = await loadClaudeCadSession();
+      const keys = runtime.http
+        ? { configured: true, setupRequired: false, message: "Onshape is connected for this team member." }
+        : onshapeApiKeysStatus();
+      const session = await getSession(runtime);
       let fusion: unknown = { reachable: false };
-      try {
-        const response = await fetch(`${fusionEndpoint()}/health`, { signal: AbortSignal.timeout(3_000) });
-        fusion = { reachable: response.ok, ...(await response.json().catch(() => ({}))) };
-      } catch {
-        fusion = {
-          reachable: false,
-          setupRequired: true,
-          message:
-            "Fusion add-in is not listening on 127.0.0.1:32145. Open Fusion → run VantageCadRelay. Linux has no Fusion — use Onshape.",
-        };
+      if (runtime.hosted) {
+        fusion = hostedFusionUnavailable();
+      } else {
+        try {
+          const response = await fetch(`${fusionEndpoint()}/health`, { signal: AbortSignal.timeout(3_000) });
+          fusion = { reachable: response.ok, ...(await response.json().catch(() => ({}))) };
+        } catch {
+          fusion = {
+            reachable: false,
+            setupRequired: true,
+            message:
+              "Fusion add-in is not listening on 127.0.0.1:32145. Open Fusion → run VantageCadRelay. Linux has no Fusion — use Onshape.",
+          };
+        }
       }
       return {
         onshape: keys,
@@ -245,7 +292,7 @@ export async function callClaudeCadTool(name: string, args: Record<string, unkno
       };
     }
     case "onshape_list_documents": {
-      const http = await requireOnshapeHttp();
+      const http = await getHttp(runtime);
       const limit = Math.min(40, Math.max(1, Math.floor(num(args.limit, 12))));
       const response = await http(`/documents?filter=0&offset=0&limit=${limit}`);
       const body = (await readOnshapeJson(response)) as { items?: Array<Record<string, unknown>> };
@@ -261,7 +308,7 @@ export async function callClaudeCadTool(name: string, args: Record<string, unkno
       };
     }
     case "onshape_list_elements": {
-      const http = await requireOnshapeHttp();
+      const http = await getHttp(runtime);
       const documentId = str(args.documentId);
       const workspaceId = str(args.workspaceId);
       const response = await http(`/documents/d/${documentId}/w/${workspaceId}/elements`);
@@ -286,12 +333,12 @@ export async function callClaudeCadTool(name: string, args: Record<string, unkno
       if (!session.documentId || !session.workspaceId || !session.elementId) {
         throw new Error("documentId, workspaceId, and elementId are required.");
       }
-      await saveClaudeCadSession(session);
+      await putSession(runtime, session);
       return { bound: session, note: "Edits go to this Part Studio until you bind another." };
     }
     case "onshape_describe": {
-      const http = await requireOnshapeHttp();
-      const doc = requireBoundDocument(await loadClaudeCadSession());
+      const http = await getHttp(runtime);
+      const doc = requireBoundDocument(await getSession(runtime));
       const response = await http(
         `/partstudios/d/${doc.documentId}/w/${doc.workspaceId}/e/${doc.elementId}/features`,
       );
@@ -309,8 +356,8 @@ export async function callClaudeCadTool(name: string, args: Record<string, unkno
       };
     }
     case "onshape_sketch_rectangle": {
-      const http = await requireOnshapeHttp();
-      const session = await loadClaudeCadSession();
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
       const doc = requireBoundDocument(session);
       const payload = rectangleSketchFeature({
         widthMm: num(args.widthMm, 40),
@@ -325,12 +372,12 @@ export async function callClaudeCadTool(name: string, args: Record<string, unkno
       const body = await readOnshapeJson(response);
       if (!response.ok) throw onshapeHttpError(response.status, body);
       const featureId = parseAddedFeatureId(body);
-      await saveClaudeCadSession({ ...session, lastSketchFeatureId: featureId });
+      await putSession(runtime, { ...session, lastSketchFeatureId: featureId });
       return { ok: true, featureId, operation: "create_sketch" };
     }
     case "onshape_extrude": {
-      const http = await requireOnshapeHttp();
-      const session = await loadClaudeCadSession();
+      const http = await getHttp(runtime);
+      const session = await getSession(runtime);
       const doc = requireBoundDocument(session);
       const sketchFeatureId = str(args.sketchFeatureId) || session.lastSketchFeatureId || "";
       const payload = extrudeFeature({
@@ -347,6 +394,7 @@ export async function callClaudeCadTool(name: string, args: Record<string, unkno
       return { ok: true, featureId: parseAddedFeatureId(body), operation: "create_extrude" };
     }
     case "fusion_status": {
+      if (runtime.hosted) return hostedFusionUnavailable();
       try {
         const response = await fetch(`${fusionEndpoint()}/health`, { signal: AbortSignal.timeout(3_000) });
         const body = await response.json().catch(() => ({}));
@@ -361,14 +409,17 @@ export async function callClaudeCadTool(name: string, args: Record<string, unkno
       }
     }
     case "fusion_describe":
+      if (runtime.hosted) return hostedFusionUnavailable();
       return fusionExecute("verify_topology", {});
     case "fusion_sketch_rectangle":
+      if (runtime.hosted) return hostedFusionUnavailable();
       return fusionExecute("create_sketch", {
         widthMm: num(args.widthMm, 40),
         heightMm: num(args.heightMm, 40),
         name: str(args.name) || "VantageSketch",
       });
     case "fusion_extrude":
+      if (runtime.hosted) return hostedFusionUnavailable();
       return fusionExecute("create_extrude", { depthMm: num(args.depthMm, 10) });
     default:
       throw new Error(`Unknown CAD tool "${name}".`);

@@ -240,8 +240,8 @@ export function AutonomousAgentPanel({ orgId }: { orgId: string }) {
             {error ??
               "Add a BYOK / managed / sponsored AI key under AI API keys, or configure BRAVE_SEARCH_API_KEY for web search."}
           </p>
-          <a className="app-button" href={hubHref("/ai", "ai-keys", orgId)}>
-            Open AI API keys
+            <a className="app-button" href={hubHref("/ai", "ai-keys", orgId)}>
+            Open AI keys
           </a>
         </section>
       ) : null}

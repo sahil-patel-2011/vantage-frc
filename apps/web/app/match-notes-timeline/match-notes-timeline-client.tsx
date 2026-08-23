@@ -20,7 +20,7 @@ import {
   type MatchNotesTimelineShellKind,
 } from "../../lib/match-notes-timeline/match-notes-timeline-related";
 import type { MatchNoteCategory, MatchNotePhase } from "../../lib/match-notes-timeline/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./match-notes-timeline.css";
 
@@ -87,7 +87,7 @@ function MatchNotesShell({
 }) {
   const actions = matchNotesTimelineNextActions({ orgId, shell });
   const copy = matchNotesTimelineShellCopy(shell);
-  const competitionHref = hubHref("/competition", "match-notes-timeline", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-notes-timeline", orgId);
   const scheduleHref = withOrgHref("/schedule", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -210,7 +210,7 @@ export default function MatchNotesTimelineClient() {
   const relatedLinks = matchNotesTimelineRelatedLinks(orgId, {
     include: [...MATCH_NOTES_TIMELINE_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "match-notes-timeline", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-notes-timeline", orgId);
   const scheduleHref = withOrgHref("/schedule", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);

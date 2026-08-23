@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces from Account (never DEMO plan/usage figures). */
 export const ACCOUNT_RELATED_LINKS = [
-  { id: "ai-keys", label: "AI API keys", kind: "path" as const, path: "/team/ai-keys" },
+  { id: "ai-keys", label: "AI keys", kind: "path" as const, path: "/team/ai-keys" },
   { id: "billing", label: "Billing", kind: "hub" as const, hub: "/ai" as const, tab: "budgets" },
   { id: "usage", label: "AI usage", kind: "path" as const, path: "/team/usage" },
   { id: "support", label: "Help & Support", kind: "path" as const, path: "/support" },
@@ -170,8 +170,8 @@ export function accountNextActions(input: {
   actions.push(
     {
       id: "ai-keys",
-      label: "Add AI API keys",
-      detail: "Paste OpenAI, Anthropic, or Google keys for this workspace — encrypted; no invented spend.",
+      label: "Add AI keys",
+      detail: "OpenAI, Anthropic, or Ollama / LM Studio — yours or the team’s.",
       href: withOrgHref("/team/ai-keys", orgId),
       primary: actions.length === 0,
     },

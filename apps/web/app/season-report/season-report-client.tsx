@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   SEASON_REPORT_CATEGORIES,
@@ -105,7 +105,7 @@ function SeasonReportShell({
     snapshotCount,
   });
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
-  const aiHref = hubHref("/ai", "season-report", orgId);
+  const aiHref = hubWorkbenchHref("ai", "season-report", orgId);
 
   return (
     <main className="module-page season-report-page soft-gate">
@@ -254,7 +254,7 @@ export default function SeasonReportClient() {
     entryCount,
     snapshotCount,
   });
-  const aiHref = hubHref("/ai", "season-report", orgId);
+  const aiHref = hubWorkbenchHref("ai", "season-report", orgId);
   const relatedLinks = seasonReportRelatedLinks(orgId, {
     include: [...SEASON_REPORT_RELATED_INCLUDE],
   });

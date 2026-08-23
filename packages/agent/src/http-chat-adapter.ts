@@ -95,7 +95,7 @@ export class HttpChatAdapter implements ChatAdapter {
   readonly provider: string;
   readonly model: string;
   private readonly apiKey: string;
-  private readonly baseUrl: string;
+  readonly baseUrl: string;
   private readonly kind: HttpChatAdapterConfig["provider"];
   private readonly promptCachingEnabled: boolean;
   private readonly prices: PromptCachePrices;

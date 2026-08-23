@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { BusinessRelated } from "../../components/business-related";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, PageHeader, TabBar } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   GRANT_STATUSES,
   SPONSOR_STATUSES,
@@ -141,6 +142,8 @@ export default function BusinessClient() {
   const [tab, setTab] = useState<Tab>("overview");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
 
   const selectTab = useCallback((next: Tab) => {
@@ -150,6 +153,7 @@ export default function BusinessClient() {
 
   const load = useCallback(async (seasonOverride?: number) => {
     setError("");
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const query = new URLSearchParams();
     if (params.get("orgId")) query.set("orgId", params.get("orgId")!);
@@ -157,7 +161,10 @@ export default function BusinessClient() {
     try {
       const response = await fetch(`/api/business?${query.toString()}`);
       const data = (await response.json()) as BusinessPortalView | { error?: string };
-      if (!response.ok || !("status" in data)) throw new Error("error" in data ? data.error : "Could not load portal");
+      if (!response.ok || !("status" in data)) {
+        setErrorStatus(response.status);
+        throw new Error("error" in data ? data.error : "Could not load portal");
+      }
       setView(data);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load the business portal");
@@ -328,8 +335,41 @@ export default function BusinessClient() {
         </div>
       ) : null}
 
-      {!view && !error ? (
-        <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
+      {!view ? (
+        error ? (
+          (() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: errorStatus,
+                message: error,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: error,
+              },
+            );
+            return (
+              <EmptyState soft title={copy.title} description={copy.description}>
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+                {copy.showRetry ? (
+                  <button type="button" className="app-button secondary" onClick={() => void load()}>
+                    Retry
+                  </button>
+                ) : null}
+              </EmptyState>
+            );
+          })()
+        ) : (
+          <EmptyState soft title="Opening business…" description="Loading this season’s budget, orders, partners, grants, and evidence." aria-busy />
+        )
       ) : null}
 
       <TabBar

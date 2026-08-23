@@ -31,7 +31,7 @@ import {
   type FailurePatternsNextAction,
   type FailurePatternsShellKind,
 } from "../../lib/failure-patterns/failure-patterns-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./failure-patterns.css";
 
@@ -101,7 +101,7 @@ function PatternsShell({
 }) {
   const actions = failurePatternsNextActions({ orgId, shell });
   const copy = failurePatternsShellCopy(shell);
-  const buildHref = hubHref("/build", "failure-patterns", orgId);
+  const buildHref = hubWorkbenchHref("build", "failure-patterns", orgId);
   const steps = shell === "setup" ? failurePatternsSetupSteps(orgId) : [];
 
   return (
@@ -228,7 +228,7 @@ export default function FailurePatternsClient() {
     clusterCount,
     criticalCount,
   });
-  const buildHref = hubHref("/build", "failure-patterns", orgId);
+  const buildHref = hubWorkbenchHref("build", "failure-patterns", orgId);
   const showTiles = shouldShowFailurePatternsSummaryTiles(eventCount, clusterCount);
   const loaded = view?.status === "live";
 

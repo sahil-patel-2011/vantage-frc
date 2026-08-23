@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import type { DossierView } from "../../lib/dossier/compute-dossier";
 import {
@@ -78,17 +79,38 @@ function DossierShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
   orgId?: string | null;
   shell: DossierShellKind;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = dossierNextActions({ orgId, shell });
   const copy = dossierShellCopy(shell);
+  // Retry cannot fix an expired session — diagnose the failure and offer the
+  // action that can.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
   const steps = shell === "setup" ? dossierSetupSteps(orgId) : [];
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -118,11 +140,16 @@ function DossierShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : (error ?? copy.description)}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failure?.showRetry !== false ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -181,12 +208,15 @@ export default function DossierClient() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
 
   const load = useCallback(
     (team?: string, resolvedOrg?: string | null) => {
       setFetchFailed(false);
       setError("");
+      setErrorStatus(null);
       setLoading(true);
       const params = new URLSearchParams();
       const activeOrg =
@@ -199,6 +229,7 @@ export default function DossierClient() {
           const data = (await response.json()) as DossierView | { error?: string };
           if (!response.ok || !("status" in data)) {
             setError("error" in data && data.error ? data.error : "Could not load dossier");
+            setErrorStatus(response.status);
             setFetchFailed(true);
             setView(null);
             return;
@@ -271,6 +302,7 @@ export default function DossierClient() {
               ? `${view.message} Facts stay blank until real TBA/Statbotics rows exist — never DEMO stats.`
               : undefined
         }
+        errorStatus={shell === "error" ? errorStatus : null}
         onRetry={
           shell === "error"
             ? () => {

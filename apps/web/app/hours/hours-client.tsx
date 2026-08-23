@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   HOUR_KIND_LABELS,
   HOUR_KINDS,
@@ -185,6 +186,8 @@ export default function HoursClient() {
   const [view, setView] = useState<BuildHoursView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [kind, setKind] = useState<HourKind>("build");
   const [now, setNow] = useState(() => Date.now());
@@ -198,6 +201,7 @@ export default function HoursClient() {
 
   const load = useCallback(async () => {
     setFetchFailed(false);
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
@@ -205,10 +209,12 @@ export default function HoursClient() {
       const data = (await response.json()) as BuildHoursView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load build hours.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setView(data);
       setNow(Date.now());
     } catch {
@@ -256,13 +262,37 @@ export default function HoursClient() {
         </header>
         <div className="app-card hours-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load build hours</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
+            (() => {
+              // Retry cannot fix an expired session — offer the action that can.
+              const failureKind = classifyLoadFailure({
+                status: errorStatus,
+                message: error,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              });
+              const copy = loadFailureCopy(failureKind, {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: error || "Check your connection and try again.",
+              });
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading build hours…</p>
           )}

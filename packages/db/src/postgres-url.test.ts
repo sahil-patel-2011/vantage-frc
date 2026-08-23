@@ -57,6 +57,8 @@ describe("postgres host detection", () => {
         UnsafePostgresUrlError,
       );
       expect(() => assertSafePostgresUrl("https://abcdefghijkl.supabase.co/rest/v1")).toThrow(UnsafePostgresUrlError);
+      process.env.DATABASE_URL = "[SENSITIVE]";
+      expect(firstConfiguredEnv("DATABASE_URL", "POSTGRES_URL")).toContain("pooler.supabase.com");
     } finally {
       if (previous.database == null) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = previous.database;

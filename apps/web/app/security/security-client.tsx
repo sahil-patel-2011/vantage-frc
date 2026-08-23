@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { safeAppPath } from "../../lib/security/safe-navigation";
 
 type Device = {
@@ -28,6 +29,10 @@ export default function SecurityClient({
   const [code, setCode] = useState("");
   const [recovery, setRecovery] = useState<string[]>([]);
   const [message, setMessage] = useState("");
+  // Load failures get their own channel so an expired session shows a recovery
+  // action instead of hiding "Authentication required" in the action toast.
+  const [loadError, setLoadError] = useState("");
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -37,8 +42,11 @@ export default function SecurityClient({
     if (response.ok) {
       setStatus(data);
       setMessage("");
+      setLoadError("");
+      setLoadErrorStatus(null);
     } else {
-      setMessage(data.error ?? "Could not load security settings.");
+      setLoadError(data.error ?? "Could not load security settings.");
+      setLoadErrorStatus(response.status);
     }
     setLoading(false);
   }
@@ -133,6 +141,37 @@ export default function SecurityClient({
 
       {loading ? (
         <EmptyState soft title="Loading security…" description="Checking authenticator enrollment and remembered devices." aria-busy />
+      ) : loadError ? (
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: loadErrorStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError,
+            },
+          );
+          return (
+            <EmptyState soft title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => void load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : (
         <section className="admin-grid">
           <Panel as="article">

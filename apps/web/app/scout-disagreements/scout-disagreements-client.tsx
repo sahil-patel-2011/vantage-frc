@@ -19,6 +19,7 @@ import {
 } from "../../lib/scout-disagreements/scout-disagreements-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./scout-disagreements.css";
 
 function statusTone(status: ScoutDisagreement["status"]): string {
@@ -81,6 +82,7 @@ function ScoutDisagreementsShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -88,11 +90,30 @@ function ScoutDisagreementsShell({
   orgId?: string | null;
   shell: ScoutDisagreementsShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = scoutDisagreementsNextActions({ orgId, shell });
   const copy = scoutDisagreementsShellCopy(shell);
+  const failureCopy =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || copy.description,
+          },
+        )
+      : null;
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const steps = shell === "setup" ? scoutDisagreementsSetupSteps(orgId) : [];
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -126,11 +147,16 @@ function ScoutDisagreementsShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failureCopy ? failureCopy.title : copy.title}
+        description={failureCopy ? failureCopy.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failureCopy?.primary ? (
+          <a className="app-button" href={failureCopy.primary.href}>
+            {failureCopy.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failureCopy?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -184,6 +210,8 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
   const [view, setView] = useState<ScoutDisagreementsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -192,6 +220,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
   const load = useCallback(
     (seasonOverride?: number) => {
       setFetchFailed(false);
+      setErrorStatus(null);
       setError("");
       const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
       const urlOrg = initialOrgId ?? params.get("orgId");
@@ -205,6 +234,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
           const data = (await response.json()) as ScoutDisagreementsView | { error?: string };
           if (!response.ok || !("status" in data)) {
             setFetchFailed(true);
+            setErrorStatus(response.status);
             setError("error" in data && data.error ? data.error : "Could not load scout disagreements.");
             return;
           }
@@ -291,6 +321,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={errorStatus}
         onRetry={() => load()}
       />
     );

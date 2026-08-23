@@ -1,6 +1,9 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { Badge } from "./badge";
 import { Button } from "./button";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import styles from "./ui.module.css";
 
 type ErrorStateProps = {
@@ -11,6 +14,8 @@ type ErrorStateProps = {
   onRetry?: () => void;
   retryLabel?: ReactNode;
   className?: string;
+  /** HTTP status from the failed request, when the caller kept it. */
+  status?: number | null;
 };
 
 const WarnGlyph = () => (
@@ -21,21 +26,41 @@ const WarnGlyph = () => (
 );
 
 /**
- * Semantic error surface — distinct from the neutral setup EmptyState. Shows the REAL
- * captured message and ALWAYS renders a Retry (defaults to reload when no handler wired).
+ * Semantic error surface — distinct from the neutral setup EmptyState.
+ *
+ * The recovery action is chosen from the failure itself: an expired session
+ * offers "Sign in again" instead of a Retry that can never succeed, and a
+ * permissions failure says so rather than pretending it is a transient error.
+ * Callers that pass only a message still benefit, because the message text is
+ * classified when no status was kept.
  */
 export function ErrorState({
-  title = "Something went wrong",
+  title,
   message,
   onRetry,
   retryLabel = "Retry",
   className,
+  status,
 }: ErrorStateProps) {
+  const messageText = typeof message === "string" ? message : null;
+  const online = typeof navigator === "undefined" ? true : navigator.onLine;
+  const kind = classifyLoadFailure({ status, message: messageText, online });
+  const nextPath =
+    typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`;
+  const copy = loadFailureCopy(kind, { nextPath, message: messageText });
+
   const retry =
     onRetry ??
     (() => {
       if (typeof window !== "undefined") window.location.reload();
     });
+
+  // An explicit title from the caller still wins; otherwise use the diagnosis.
+  const heading = title ?? copy.title;
+  // Only replace the caller's message when we have something more useful to say.
+  const body =
+    message != null && message !== "" && kind === "unknown" ? message : copy.description;
+
   return (
     <section
       role="alert"
@@ -44,12 +69,23 @@ export function ErrorState({
       <span className={styles.errorGlyph}>
         <WarnGlyph />
       </span>
-      <Badge tone="error">Error</Badge>
-      <h2 style={{ margin: 0 }}>{title}</h2>
-      {message != null && message !== "" ? <p className={styles.errorMessage}>{message}</p> : null}
-      <Button variant="secondary" size="sm" onClick={retry}>
-        {retryLabel}
-      </Button>
+      <Badge tone={kind === "auth" || kind === "forbidden" ? "setup" : "error"}>
+        {kind === "auth" ? "Signed out" : kind === "forbidden" ? "No access" : kind === "offline" ? "Offline" : "Error"}
+      </Badge>
+      <h2 style={{ margin: 0 }}>{heading}</h2>
+      {body != null && body !== "" ? <p className={styles.errorMessage}>{body}</p> : null}
+      <div className={styles.errorActions}>
+        {copy.primary ? (
+          <a className="app-button" href={copy.primary.href}>
+            {copy.primary.label}
+          </a>
+        ) : null}
+        {copy.showRetry ? (
+          <Button variant="secondary" size="sm" onClick={retry}>
+            {retryLabel}
+          </Button>
+        ) : null}
+      </div>
     </section>
   );
 }

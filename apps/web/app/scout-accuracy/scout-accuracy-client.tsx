@@ -21,6 +21,7 @@ import {
 } from "../../lib/scout-accuracy/scout-accuracy-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./scout-accuracy.css";
 
 function tierTone(tier: ScoutAccuracyTier): "good" | "setup" | "" {
@@ -80,6 +81,7 @@ function ScoutAccuracyShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -87,11 +89,30 @@ function ScoutAccuracyShell({
   orgId?: string | null;
   shell: ScoutAccuracyShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = scoutAccuracyNextActions({ orgId, shell });
   const copy = scoutAccuracyShellCopy(shell);
+  const failureCopy =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || copy.description,
+          },
+        )
+      : null;
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const steps = shell === "setup" ? scoutAccuracySetupSteps(orgId) : [];
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -125,11 +146,16 @@ function ScoutAccuracyShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failureCopy ? failureCopy.title : copy.title}
+        description={failureCopy ? failureCopy.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failureCopy?.primary ? (
+          <a className="app-button" href={failureCopy.primary.href}>
+            {failureCopy.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failureCopy?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -183,12 +209,15 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
   const [view, setView] = useState<ScoutAccuracyView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
   const load = useCallback((eventOverride?: string) => {
     setFetchFailed(false);
+    setErrorStatus(null);
     setError("");
     const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
     const urlOrg = initialOrgId ?? params.get("orgId");
@@ -201,6 +230,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         const data = (await response.json()) as ScoutAccuracyView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setFetchFailed(true);
+          setErrorStatus(response.status);
           setError("error" in data && data.error ? data.error : "Could not load scout accuracy.");
           return;
         }
@@ -282,6 +312,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={errorStatus}
         onRetry={() => load()}
       />
     );

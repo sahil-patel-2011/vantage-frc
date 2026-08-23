@@ -27,7 +27,7 @@ import {
   type SponsorRenewalRoiNextAction,
   type SponsorRenewalRoiShellKind,
 } from "../../lib/sponsor-renewal-roi/sponsor-renewal-roi-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sponsor-renewal-roi.css";
 
@@ -111,7 +111,7 @@ function RoiShell({
 }) {
   const actions = sponsorRenewalRoiNextActions({ orgId, shell });
   const copy = sponsorRenewalRoiShellCopy(shell);
-  const businessHref = hubHref("/business", "sponsor-renewal-roi", orgId);
+  const businessHref = hubWorkbenchHref("business", "sponsor-renewal-roi", orgId);
   const steps = shell === "setup" ? sponsorRenewalRoiSetupSteps(orgId) : [];
 
   return (
@@ -237,7 +237,7 @@ export default function SponsorRenewalRoiClient() {
   const relatedLinks = sponsorRenewalRoiRelatedLinks(orgId, {
     include: [...SPONSOR_RENEWAL_ROI_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "sponsor-renewal-roi", orgId);
+  const businessHref = hubWorkbenchHref("business", "sponsor-renewal-roi", orgId);
   const showTiles = shouldShowSponsorRenewalRoiSummaryTiles(sponsorCount);
 
   const mutate = useCallback(

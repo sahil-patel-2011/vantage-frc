@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   ACCOUNT_RELATED_INCLUDE,
   CONNECTIONS_RELATED_INCLUDE,
@@ -322,12 +323,11 @@ function OrgContextCard({ org }: { org: OrgContext }) {
         </div>
       </div>
       <p className="app-muted">
-        Display name and notification prefs are personal. AI API keys, billing, TBA connectors, and team security follow
-        this workspace.
+        Display name and notification prefs are personal. AI keys, billing, and connectors follow this workspace.
       </p>
       <div className="settings-inline-links">
         <a href="/workspace">Switch workspace</a>
-        <a href={withOrgHref("/team/ai-keys", org.orgId)}>AI API keys</a>
+        <a href={withOrgHref("/team/ai-keys", org.orgId)}>AI keys</a>
         <a href={withOrgHref("/ai?tab=budgets", org.orgId)}>Billing</a>
         <a href={withOrgHref("/team/usage", org.orgId)}>AI usage</a>
       </div>
@@ -377,6 +377,8 @@ export default function AccountClient() {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -403,12 +405,14 @@ export default function AccountClient() {
   async function load() {
     setLoading(true);
     setFetchFailed(false);
+    setErrorStatus(null);
     try {
       const response = await fetch("/api/account");
       if (!response.ok) {
         setMessage("Could not load account settings.");
         setMessageOk(false);
         setAccount(null);
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
@@ -662,22 +666,42 @@ export default function AccountClient() {
 
       {fetchFailed ? (
         <>
-          <EmptyState
-            soft
-            badge="Unavailable"
-            badgeTone="setup"
-            title="Couldn’t load account settings"
-            description="A network or server issue prevented loading. Try again, or open Support if this keeps failing."
-          >
-            <div className="account-empty-actions">
-              <button type="button" className="app-button" onClick={() => void load()}>
-                Retry
-              </button>
-              <a className="app-button secondary" href="/support">
-                Help & Support
-              </a>
-            </div>
-          </EmptyState>
+          {(() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: errorStatus,
+                message,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message:
+                  "A network or server issue prevented loading. Try again, or open Support if this keeps failing.",
+              },
+            );
+            return (
+              <EmptyState soft badge="Unavailable" badgeTone="setup" title={copy.title} description={copy.description}>
+                <div className="account-empty-actions">
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                  <a className="app-button secondary" href="/support">
+                    Help & Support
+                  </a>
+                </div>
+              </EmptyState>
+            );
+          })()}
           <NextActions
             orgId={null}
             hasProfile={false}
@@ -703,27 +727,17 @@ export default function AccountClient() {
           ) : null}
 
           {orgId ? (
-            <section className="account-ai-keys app-card soft-panel" aria-label="AI API keys">
+            <section className="account-ai-keys app-card soft-panel" aria-label="AI keys">
               <header>
-                <span className="app-badge">Your keys</span>
-                <h2>AI API keys</h2>
+                <span className="app-badge">Keys</span>
+                <h2>AI keys</h2>
                 <p>
-                  Paste OpenAI, Anthropic, or Google keys for this workspace. Keys are encrypted at rest; your-key
-                  traffic does not invent hosted spend.
+                  Your OpenAI or Anthropic key, or an Ollama / LM Studio URL. Yours override the team for your chats.
                 </p>
               </header>
               <div className="account-ai-keys-actions">
-                <a className="app-button" href={withOrgHref("/team/ai-keys", orgId)}>
-                  Manage API keys
-                </a>
-                <a className="app-button secondary" href={withOrgHref("/team/ai-usage", orgId)}>
-                  BYOK usage
-                </a>
-                <a className="app-button secondary" href={withOrgHref("/ai?tab=budgets", orgId)}>
-                  API budgets
-                </a>
-                <a className="app-button secondary" href={withOrgHref("/team/usage", orgId)}>
-                  AI usage
+                <a className="app-button primary" href={withOrgHref("/team/ai-keys", orgId)}>
+                  Open AI keys
                 </a>
               </div>
             </section>
@@ -749,8 +763,8 @@ export default function AccountClient() {
             {orgId ? (
               <>
                 <a href={withOrgHref("/team/ai-keys", orgId)}>
-                  <strong>AI API keys</strong>
-                  <span>OpenAI, Anthropic, Google — encrypted paste stop</span>
+                  <strong>AI keys</strong>
+                  <span>Yours or the team’s · OpenAI, Anthropic, Ollama</span>
                 </a>
                 <a href={withOrgHref("/ai?tab=budgets", orgId)}>
                   <strong>Billing</strong>
@@ -1057,7 +1071,7 @@ export default function AccountClient() {
                 </p>
                 <div className="settings-inline-links">
                   <a href="/security">Security</a>
-                  {orgId ? <a href={withOrgHref("/team/ai-keys", orgId)}>AI API keys</a> : null}
+                  {orgId ? <a href={withOrgHref("/team/ai-keys", orgId)}>AI keys</a> : null}
                   {orgId ? <a href={withOrgHref("/ai?tab=budgets", orgId)}>Billing</a> : null}
                   {orgId ? <a href={withOrgHref("/team/usage", orgId)}>AI usage</a> : null}
                   {orgId ? <a href={withOrgHref("/cad/connections", orgId)}>CAD Connections</a> : null}

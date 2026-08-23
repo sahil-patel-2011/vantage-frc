@@ -17,7 +17,7 @@ import {
   type SponsorWallShellKind,
 } from "../../lib/sponsor-wall/sponsor-wall-related";
 import type { SponsorWallTheme, SponsorWallTier } from "../../lib/sponsor-wall/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sponsor-wall.css";
 
@@ -90,7 +90,7 @@ function SponsorWallShell({
 }) {
   const actions = sponsorWallNextActions({ orgId, shell });
   const copy = sponsorWallShellCopy(shell);
-  const businessHref = hubHref("/business", "sponsor-wall", orgId);
+  const businessHref = hubWorkbenchHref("business", "sponsor-wall", orgId);
   const steps = shell === "setup" ? sponsorWallSetupSteps(orgId) : [];
 
   return (
@@ -218,7 +218,7 @@ export default function SponsorWallClient() {
   const relatedLinks = sponsorWallRelatedLinks(orgId, {
     include: [...SPONSOR_WALL_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "sponsor-wall", orgId);
+  const businessHref = hubWorkbenchHref("business", "sponsor-wall", orgId);
   const sponsorsHref = hubHref("/business", "sponsors", orgId);
   const sponsorshipHref = hubHref("/business", "sponsorship", orgId);
   const suiteHref = hubHref("/business", "sponsor-suite", orgId);

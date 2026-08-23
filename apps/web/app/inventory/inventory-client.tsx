@@ -29,6 +29,7 @@ import {
   type InventoryShellKind,
 } from "../../lib/inventory/inventory-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import InventoryLabelTools from "./inventory-label-tools";
 
@@ -533,6 +534,7 @@ function InventoryShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -540,11 +542,30 @@ function InventoryShell({
   orgId?: string | null;
   shell: InventoryShellKind;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = inventoryNextActions({ orgId, shell });
   const copy = inventoryShellCopy(shell);
+  // An expired session cannot be fixed by retrying, so say what actually happened.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error ?? null,
+          },
+        )
+      : null;
   const buildHref = withOrgHref("/build", orgId);
   const vendorsHref = withOrgHref("/vendors", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
@@ -577,11 +598,16 @@ function InventoryShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failure?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -645,6 +671,8 @@ export default function InventoryClient() {
   const [view, setView] = useState<InventoryView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [tab, setTab] = useState<InventoryTab>("stock");
   const [search, setSearch] = useState("");
@@ -657,6 +685,7 @@ export default function InventoryClient() {
   const load = useCallback(async () => {
     setFetchFailed(false);
     setError("");
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
@@ -664,6 +693,7 @@ export default function InventoryClient() {
       const data = (await response.json()) as InventoryView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load inventory.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
@@ -748,6 +778,7 @@ export default function InventoryClient() {
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={errorStatus}
         onRetry={() => void load()}
       />
     );

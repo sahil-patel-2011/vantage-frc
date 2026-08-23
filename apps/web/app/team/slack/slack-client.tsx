@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import { slackNextActions, slackRelatedLinks } from "../../../lib/slack-related";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import "../discord/discord.css";
 
@@ -45,6 +46,8 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a dead-end error card.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   async function load() {
     setFetchFailed(false);
@@ -54,9 +57,11 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
       setOk(false);
       setStatus(data.error ?? "Unable to load Slack settings");
       setView(null);
+      setErrorStatus(response.status);
       setFetchFailed(true);
       return;
     }
+    setErrorStatus(null);
     setView(data as SlackView);
     setForm({
       webhookUrl: "",
@@ -145,14 +150,36 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
         ))}
       </nav>
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load Slack"
-          description={status || "Try again from Team admin."}
-          badge="Error"
-          badgeTone="setup"
-        />
-      ) : null}
+      {fetchFailed
+        ? (() => {
+            const kind = classifyLoadFailure({
+              status: errorStatus,
+              message: status,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            });
+            const copy = loadFailureCopy(kind, {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: status || "Try again from Team admin.",
+            });
+            return (
+              <EmptyState
+                title={copy.title}
+                description={copy.description}
+                badge={kind === "auth" ? "Signed out" : kind === "forbidden" ? "No access" : "Error"}
+                badgeTone="setup"
+              >
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+              </EmptyState>
+            );
+          })()
+        : null}
 
       {!view && !fetchFailed ? <p className="app-muted">Loading Slack settings…</p> : null}
 

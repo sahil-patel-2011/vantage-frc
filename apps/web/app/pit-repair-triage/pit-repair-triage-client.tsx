@@ -35,7 +35,7 @@ import {
   type PitRepairTriageNextAction,
   type PitRepairTriageShellKind,
 } from "../../lib/pit-repair-triage/pit-repair-triage-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./pit-repair-triage.css";
 
@@ -115,7 +115,7 @@ function TriageShell({
 }) {
   const actions = pitRepairTriageNextActions({ orgId, shell });
   const copy = pitRepairTriageShellCopy(shell);
-  const competitionHref = hubHref("/competition", "pit-repair-triage", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "pit-repair-triage", orgId);
   const steps = shell === "setup" ? pitRepairTriageSetupSteps(orgId) : [];
 
   return (
@@ -251,7 +251,7 @@ export default function PitRepairTriageClient() {
     openCount,
     reinspectReports,
   });
-  const competitionHref = hubHref("/competition", "pit-repair-triage", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "pit-repair-triage", orgId);
   const showTiles = shouldShowPitRepairTriageSummaryTiles(reportCount, fmeaCount, spareCount);
   const loaded = view?.status === "live";
 

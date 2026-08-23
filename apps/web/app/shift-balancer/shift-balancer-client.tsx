@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DEFAULT_STATIONS, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
 import type { ShiftBalancerView } from "../../lib/shift-balancer/compute-shift-balancer";
 
@@ -11,6 +12,9 @@ export default function ShiftBalancerClient() {
   const [view, setView] = useState<ShiftBalancerView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadMessage, setLoadMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -26,12 +30,20 @@ export default function ShiftBalancerClient() {
       .then(async (response) => {
         const data = (await response.json()) as ShiftBalancerView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setLoadMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
+        setErrorStatus(null);
+        setLoadMessage("");
         setView(data);
       })
-      .catch(() => setFetchFailed(true));
+      .catch(() => {
+        setErrorStatus(null);
+        setLoadMessage("");
+        setFetchFailed(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -84,14 +96,36 @@ export default function ShiftBalancerClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the shift balancer"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: loadMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadMessage || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

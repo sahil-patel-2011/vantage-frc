@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   SUPPORT_RELATED_INCLUDE,
   statusLabel,
@@ -65,6 +66,8 @@ export default function SupportTicketsClient() {
   const [view, setView] = useState<SupportTicketMemberView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -81,13 +84,16 @@ export default function SupportTicketsClient() {
         const data = (await response.json()) as SupportTicketMemberView & { error?: string };
         if (!response.ok) {
           setFetchFailed(true);
+          setErrorStatus(response.status);
           setError(data.error ?? "Could not load tickets");
           return;
         }
+        setErrorStatus(null);
         setView(data);
       })
       .catch(() => {
         setFetchFailed(true);
+        setErrorStatus(null);
         setError("Network error — please try again.");
       });
   }, []);
@@ -125,6 +131,24 @@ export default function SupportTicketsClient() {
   }
 
   if (fetchFailed || view == null) {
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message:
+              error ||
+              "A network or server issue prevented loading. Try again — nothing was filled with DEMO tickets.",
+          },
+        )
+      : null;
     return (
       <main className="module-page support-tickets-page">
         <PageHeader
@@ -134,15 +158,16 @@ export default function SupportTicketsClient() {
         />
         <EmptyState
           soft
-          title={fetchFailed ? "Could not load support tickets" : "Loading support…"}
-          description={
-            fetchFailed
-              ? "A network or server issue prevented loading. Try again — nothing was filled with DEMO tickets."
-              : "Checking your workspace."
-          }
+          title={copy ? copy.title : "Loading support…"}
+          description={copy ? copy.description : "Checking your workspace."}
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {copy?.primary ? (
+            <a className="app-button" href={copy.primary.href}>
+              {copy.primary.label}
+            </a>
+          ) : null}
+          {copy?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={() => load()}>
               Retry
             </button>

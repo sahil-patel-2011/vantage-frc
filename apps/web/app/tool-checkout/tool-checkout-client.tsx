@@ -29,7 +29,7 @@ import {
   type ToolCheckoutNextAction,
   type ToolCheckoutShellKind,
 } from "../../lib/tool-checkout/tool-checkout-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./tool-checkout.css";
 
@@ -103,7 +103,7 @@ function CheckoutShell({
 }) {
   const actions = toolCheckoutNextActions({ orgId, shell });
   const copy = toolCheckoutShellCopy(shell);
-  const teamHref = hubHref("/team", "tool-checkout", orgId);
+  const teamHref = hubWorkbenchHref("team", "tool-checkout", orgId);
   const steps = shell === "setup" ? toolCheckoutSetupSteps(orgId) : [];
 
   return (
@@ -224,7 +224,7 @@ export default function ToolCheckoutClient() {
     toolCount,
     overdueCount,
   });
-  const teamHref = hubHref("/team", "tool-checkout", orgId);
+  const teamHref = hubWorkbenchHref("team", "tool-checkout", orgId);
   const showTiles = shouldShowToolCheckoutSummaryTiles(toolCount);
   const loaded = view?.status === "live";
 

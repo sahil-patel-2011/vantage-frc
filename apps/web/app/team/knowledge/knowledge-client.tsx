@@ -11,6 +11,7 @@ import {
   type KnowledgeWikiView,
 } from "../../../lib/knowledge";
 import { EmptyState } from "../../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./knowledge.css";
 
 type Tab = "wiki" | "search" | "templates" | "ai";
@@ -41,6 +42,8 @@ function filterPages(pages: KnowledgePageSummary[], q: string): KnowledgePageSum
 export default function KnowledgeClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<KnowledgeWikiView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of an alert that never clears.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("wiki");
@@ -119,15 +122,18 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
         const data = (await response.json()) as KnowledgeWikiView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setError("error" in data && data.error ? data.error : "Could not load knowledge base.");
+          setErrorStatus(response.status);
           return;
         }
         setError("");
+        setErrorStatus(null);
         setView(data);
         if (data.status === "ready" && data.selected && !opts?.q) {
           hydrateFromSelected(data);
         }
       } catch {
         setError("Network error loading knowledge base.");
+        setErrorStatus(null);
       }
     },
     [hydrateFromSelected],
@@ -251,6 +257,41 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
     return (
       <main className="module-page kb-page">
         <EmptyState soft title="Loading…" aria-busy />
+      </main>
+    );
+  }
+
+  // The first load never landed: say why and offer the action that fixes it,
+  // instead of dropping the member into an empty editor behind a red alert.
+  if (!view) {
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: error,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined"
+            ? null
+            : `${window.location.pathname}${window.location.search}`,
+        message: error,
+      },
+    );
+    return (
+      <main className="module-page kb-page">
+        <EmptyState soft title={copy.title} description={copy.description}>
+          {copy.primary ? (
+            <a className="button primary" href={copy.primary.href}>
+              {copy.primary.label}
+            </a>
+          ) : null}
+          {copy.showRetry ? (
+            <button type="button" className="button primary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }

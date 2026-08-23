@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { bomCategoryLabel, bomSourceLabel, bomStatusLabel } from "../../lib/bom-cost-rollup";
 import type { BomCostRollupView } from "../../lib/bom-cost-rollup/compute-bom-cost-rollup";
 import type { BomCategory, BomLineItem, BomStatus } from "../../lib/bom-cost-rollup/types";
@@ -24,6 +25,9 @@ export default function BomCostRollupClient() {
   const [view, setView] = useState<BomCostRollupView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -31,6 +35,8 @@ export default function BomCostRollupClient() {
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
+    setFailureStatus(null);
+    setFailureMessage(null);
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = seasonOverride != null ? String(seasonOverride) : params.get("seasonYear");
@@ -41,6 +47,8 @@ export default function BomCostRollupClient() {
       .then(async (response) => {
         const data = (await response.json()) as BomCostRollupView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setFailureStatus(response.status);
+          setFailureMessage("error" in data && data.error ? data.error : null);
           setFetchFailed(true);
           return;
         }
@@ -113,14 +121,36 @@ export default function BomCostRollupClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the BOM cost rollup"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: failureStatus,
+              message: failureMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: failureMessage ?? "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

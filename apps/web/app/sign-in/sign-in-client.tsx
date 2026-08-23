@@ -8,7 +8,6 @@ import {
   emailOtpSetupRequired,
   googleReady as isGoogleReady,
   oauthErrorMessage,
-  passwordSetupRequired,
   publicEmailUnavailableCopy,
   publicPasswordUnavailableCopy,
   signInSetupCopy,
@@ -99,7 +98,6 @@ export default function SignInClient({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<SignInMode>("password");
-  const [emailOpen, setEmailOpen] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [code, setCode] = useState("");
@@ -195,10 +193,6 @@ export default function SignInClient({
 
   async function passwordSignIn(event: React.FormEvent) {
     event.preventDefault();
-    if (!status.passwordSignInAvailable) {
-      setMessage(publicPasswordUnavailableCopy(status.passwordReason));
-      return;
-    }
     setBusy(true);
     setMessage("");
     try {
@@ -211,7 +205,11 @@ export default function SignInClient({
         await continueAfterFirstFactor();
         return;
       }
-      setMessage(SIGN_IN_FAILED_MESSAGE);
+      setMessage(
+        status.passwordSignInAvailable
+          ? SIGN_IN_FAILED_MESSAGE
+          : publicPasswordUnavailableCopy(status.passwordReason),
+      );
     } finally {
       setBusy(false);
     }
@@ -390,7 +388,6 @@ export default function SignInClient({
 
   function switchMode(next: SignInMode) {
     setMode(next);
-    setEmailOpen(true);
     setMessage("");
     setOtpSent(false);
     setResetSent(false);
@@ -402,7 +399,7 @@ export default function SignInClient({
   }
 
   const googleReady = isGoogleReady(status, googleEnabled);
-  const showEmail = emailOpen || mode !== "password" || !googleReady;
+  const emailForm = mode === "password" || mode === "email-otp" || mode === "reset";
 
   if (verifyStep) {
     return (
@@ -487,114 +484,142 @@ export default function SignInClient({
             <div className="signin-or" role="separator">
               <span>or</span>
             </div>
-            {!showEmail ? (
-              <button type="button" className="signin-link signin-email-toggle" onClick={() => setEmailOpen(true)}>
-                Use email
-              </button>
-            ) : null}
           </>
-        ) : (
-          <SetupShell kind="google" />
-        )}
-
-        {showEmail && mode !== "reset" ? (
-          <div className="signin-method-tabs" role="tablist" aria-label="Email sign-in method">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "password"}
-              onClick={() => switchMode("password")}
-            >
-              Password
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "email-otp"}
-              onClick={() => switchMode("email-otp")}
-            >
-              Email code
-            </button>
-          </div>
         ) : null}
 
-        {showEmail && mode === "password" ? (
-          <div className="signin-method-panel">
-            {passwordSetupRequired(status) ? <SetupShell kind="password" status={status} /> : null}
-            <form className="signin-form" onSubmit={(event) => void passwordSignIn(event)}>
+        {mode !== "reset" && mode !== "email-otp" ? (
+          <form className="signin-form" onSubmit={(event) => void passwordSignIn(event)}>
+            <label>
+              Email
+              <span className="signin-field">
+                <MailIcon />
+                <input
+                  type="email"
+                  required
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  onBlur={() => setEmail((value) => value.trim().toLowerCase())}
+                />
+              </span>
+            </label>
+            <label>
+              Password
+              <span className="signin-field">
+                <LockIcon />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  onKeyDown={(event) => setCapsLock(event.getModifierState("CapsLock"))}
+                  onKeyUp={(event) => setCapsLock(event.getModifierState("CapsLock"))}
+                />
+                <button
+                  type="button"
+                  className="signin-password-toggle"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((value) => !value)}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </span>
+              {capsLock ? <small className="signin-expiry expired">Caps Lock is on.</small> : null}
+            </label>
+            <button className="signin-submit" disabled={busy}>
+              {busy ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+        ) : null}
+
+        {mode === "email-otp" ? (
+          <form className="signin-form" onSubmit={(event) => void emailOtpSignIn(event)}>
+            {emailOtpSetupRequired(status) ? <SetupShell kind="email_otp" status={status} /> : null}
+            <label>
+              Email
+              <span className="signin-field">
+                <MailIcon />
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  onBlur={() => setEmail((value) => value.trim().toLowerCase())}
+                  disabled={emailOtpSetupRequired(status)}
+                />
+              </span>
+            </label>
+            {otpSent && !codeExpired ? (
               <label>
-                Email
-                <span className="signin-field">
-                  <MailIcon />
-                  <input
-                    type="email"
-                    required
-                    autoComplete="username"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    onBlur={() => setEmail((value) => value.trim().toLowerCase())}
-                  />
-                </span>
-              </label>
-              <label>
-                Password
+                Sign-in code
                 <span className="signin-field">
                   <LockIcon />
                   <input
-                    type={showPassword ? "text" : "password"}
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
                     required
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    onKeyDown={(event) => setCapsLock(event.getModifierState("CapsLock"))}
-                    onKeyUp={(event) => setCapsLock(event.getModifierState("CapsLock"))}
+                    autoComplete="one-time-code"
+                    autoFocus
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                   />
-                  <button
-                    type="button"
-                    className="signin-password-toggle"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    onClick={() => setShowPassword((value) => !value)}
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
                 </span>
-                {capsLock ? <small className="signin-expiry expired">Caps Lock is on.</small> : null}
+                <small className="signin-expiry">Code expires in {timeLabel(secondsLeft)}.</small>
               </label>
-              <button className="signin-submit" disabled={busy || !status.passwordSignInAvailable}>
-                {busy ? "Signing in…" : "Sign in"}
-              </button>
-            </form>
-          </div>
+            ) : null}
+            {otpSent && codeExpired ? (
+              <p className="signin-status">That sign-in code expired. Send a new code to continue.</p>
+            ) : null}
+            <button
+              className="signin-submit"
+              disabled={
+                busy || emailOtpSetupRequired(status) || (otpSent && !codeExpired && code.length !== 6)
+              }
+            >
+              {busy
+                ? "Working…"
+                : otpSent && !codeExpired
+                  ? "Verify code"
+                  : codeExpired
+                    ? "Send a new code"
+                    : "Email me a code"}
+            </button>
+          </form>
         ) : null}
 
-        {showEmail && mode === "email-otp" ? (
-          <div className="signin-method-panel">
+        {mode === "reset" ? (
+          <form className="signin-form" onSubmit={(event) => void resetPassword(event)}>
             {emailOtpSetupRequired(status) ? <SetupShell kind="email_otp" status={status} /> : null}
-            <form className="signin-form" onSubmit={(event) => void emailOtpSignIn(event)}>
-              <label>
-                Email
-                <span className="signin-field">
-                  <MailIcon />
-                  <input
-                    type="email"
-                    required
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    onBlur={() => setEmail((value) => value.trim().toLowerCase())}
-                    disabled={emailOtpSetupRequired(status)}
-                  />
-                </span>
-              </label>
-              {otpSent && !codeExpired ? (
+            <label>
+              Email
+              <span className="signin-field">
+                <MailIcon />
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setEmail((value) => value.trim().toLowerCase())}
+                  disabled={emailOtpSetupRequired(status)}
+                />
+              </span>
+            </label>
+            {resetSent && !codeExpired ? (
+              <>
                 <label>
-                  Sign-in code
+                  Reset code
                   <span className="signin-field">
                     <LockIcon />
                     <input
@@ -602,136 +627,46 @@ export default function SignInClient({
                       pattern="[0-9]{6}"
                       maxLength={6}
                       required
-                      autoComplete="one-time-code"
-                      autoFocus
                       value={code}
                       onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                     />
                   </span>
-                  <small className="signin-expiry">Code expires in {timeLabel(secondsLeft)}.</small>
                 </label>
-              ) : null}
-              {otpSent && codeExpired ? (
-                <p className="signin-status">That sign-in code expired. Send a new code to continue.</p>
-              ) : null}
-              <button
-                className="signin-submit"
-                disabled={
-                  busy ||
-                  emailOtpSetupRequired(status) ||
-                  (otpSent && !codeExpired && code.length !== 6)
-                }
-              >
-                {busy
-                  ? "Working…"
-                  : otpSent && !codeExpired
-                    ? "Verify code"
-                    : codeExpired
-                      ? "Send a new code"
-                      : "Email me a code"}
-              </button>
-              {otpSent ? (
-                <button
-                  type="button"
-                  className="signin-link signin-inline-link"
-                  onClick={() => {
-                    setOtpSent(false);
-                    setCode("");
-                    setCodeExpiresAt(null);
-                    setMessage("");
-                  }}
-                >
-                  Use a different email
-                </button>
-              ) : null}
-            </form>
-          </div>
-        ) : null}
-
-        {mode === "reset" ? (
-          <div className="signin-method-panel">
-            {emailOtpSetupRequired(status) ? <SetupShell kind="email_otp" status={status} /> : null}
-            <form className="signin-form" onSubmit={(event) => void resetPassword(event)}>
-              <label>
-                Email
-                <span className="signin-field">
-                  <MailIcon />
-                  <input
-                    type="email"
-                    required
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onBlur={() => setEmail((value) => value.trim().toLowerCase())}
-                    disabled={emailOtpSetupRequired(status)}
-                  />
-                </span>
-              </label>
-              {resetSent && !codeExpired ? (
-                <>
-                  <label>
-                    Reset code
-                    <span className="signin-field">
-                      <LockIcon />
-                      <input
-                        inputMode="numeric"
-                        pattern="[0-9]{6}"
-                        maxLength={6}
-                        required
-                        value={code}
-                        onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                      />
-                    </span>
-                  </label>
-                  <label>
-                    New password
-                    <span className="signin-field">
-                      <LockIcon />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        minLength={12}
-                        required
-                        autoComplete="new-password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="signin-password-toggle"
-                        onClick={() => setShowPassword((value) => !value)}
-                      >
-                        {showPassword ? "Hide" : "Show"}
-                      </button>
-                    </span>
-                    <small className="signin-expiry">
-                      Use 12+ characters and a password you do not reuse elsewhere.
-                    </small>
-                  </label>
-                </>
-              ) : null}
-              {resetSent ? (
-                <small className={codeExpired ? "signin-expiry expired" : "signin-expiry"}>
-                  {codeExpired ? "Reset code expired." : `Reset code expires in ${timeLabel(secondsLeft)}.`}
-                </small>
-              ) : null}
-              <button
-                className="signin-submit"
-                disabled={
-                  busy ||
-                  emailOtpSetupRequired(status) ||
-                  (resetSent && !codeExpired && (code.length !== 6 || password.length < 12))
-                }
-              >
-                {resetSent && !codeExpired
-                  ? "Reset password"
-                  : codeExpired
-                    ? "Send a new reset code"
-                    : "Send reset code"}
-              </button>
-            </form>
-          </div>
+                <label>
+                  New password
+                  <span className="signin-field">
+                    <LockIcon />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      minLength={12}
+                      required
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button type="button" className="signin-password-toggle" onClick={() => setShowPassword((value) => !value)}>
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </span>
+                </label>
+              </>
+            ) : null}
+            {resetSent ? (
+              <small className={codeExpired ? "signin-expiry expired" : "signin-expiry"}>
+                {codeExpired ? "Reset code expired." : `Reset code expires in ${timeLabel(secondsLeft)}.`}
+              </small>
+            ) : null}
+            <button
+              className="signin-submit"
+              disabled={
+                busy ||
+                emailOtpSetupRequired(status) ||
+                (resetSent && !codeExpired && (code.length !== 6 || password.length < 12))
+              }
+            >
+              {resetSent && !codeExpired ? "Reset password" : codeExpired ? "Send a new reset code" : "Send reset code"}
+            </button>
+          </form>
         ) : null}
 
         {message ? (
@@ -741,15 +676,20 @@ export default function SignInClient({
         ) : null}
 
         <div className="signin-footer">
-          {showEmail ? (
+          {emailForm ? (
             <div className="signin-footer-modes">
               {mode === "password" ? (
-                <button type="button" className="signin-link" onClick={() => switchMode("reset")}>
-                  Forgot password?
-                </button>
+                <>
+                  <button type="button" className="signin-link" onClick={() => switchMode("reset")}>
+                    Forgot password?
+                  </button>
+                  <button type="button" className="signin-link" onClick={() => switchMode("email-otp")}>
+                    Email me a code
+                  </button>
+                </>
               ) : (
                 <button type="button" className="signin-link" onClick={() => switchMode("password")}>
-                  Back
+                  Back to password
                 </button>
               )}
             </div>

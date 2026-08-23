@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { isFilled, subteamLabel } from "../../lib/roles";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SUBTEAMS, type RolesView } from "../../lib/roles/compute-roles";
 import type { Subteam, TeamRole } from "../../lib/roles/types";
 
@@ -16,6 +17,9 @@ export default function RolesClient() {
   const [view, setView] = useState<RolesView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadStatus, setLoadStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -23,6 +27,8 @@ export default function RolesClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setLoadStatus(null);
+    setLoadError("");
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -34,6 +40,8 @@ export default function RolesClient() {
       .then(async (response) => {
         const data = (await response.json()) as RolesView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -111,13 +119,38 @@ export default function RolesClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load roles</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </section>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: loadStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <section className="app-card soft-panel">
+              <h2>{copy.title}</h2>
+              <p className="app-muted">{copy.description}</p>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </section>
+          );
+        })()
       ) : view == null ? (
         <section className="app-card soft-panel">
           <h2>Loading…</h2>

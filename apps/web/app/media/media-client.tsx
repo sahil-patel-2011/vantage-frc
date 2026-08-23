@@ -20,6 +20,7 @@ import {
   MEDIA_HUB_TABS,
 } from "../../lib/media";
 import type { MediaView } from "../../lib/media/compute-media";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   MEDIA_RELATED_INCLUDE,
   classifyMediaShell,
@@ -143,6 +144,7 @@ function MediaShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -150,12 +152,31 @@ function MediaShell({
   orgId?: string | null;
   shell: MediaShellKind;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = mediaNextActions({ orgId, shell });
   const copy = mediaShellCopy(shell);
   const steps = shell === "setup" ? mediaSetupSteps(orgId) : [];
+  // An expired session cannot be fixed by retrying, so say what actually happened.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error ?? null,
+          },
+        )
+      : null;
 
   return (
     <main className="module-page media-page soft-gate">
@@ -177,11 +198,16 @@ function MediaShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failure?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -837,6 +863,8 @@ export default function MediaClient() {
   const [view, setView] = useState<MediaView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("calendar");
@@ -853,6 +881,7 @@ export default function MediaClient() {
     setFetchFailed(false);
     setAccessDenied(false);
     setError("");
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = params.get("season") ? Number(params.get("season")) : null;
@@ -871,6 +900,7 @@ export default function MediaClient() {
         }
         if (!response.ok || !("status" in data)) {
           setFetchFailed(true);
+          setErrorStatus(response.status);
           setError("error" in data && data.error ? data.error : "Could not load Media");
           return;
         }
@@ -1045,6 +1075,7 @@ export default function MediaClient() {
       orgId={orgId}
       shell={shell === "ready" ? "empty" : shell}
       error={error || undefined}
+      errorStatus={errorStatus}
       onRetry={load}
     />
   );

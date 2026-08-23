@@ -11,22 +11,32 @@ export function configuredPlatformOwnerEmail() {
 
 export function isDatabaseConfigured() {
   return ["DATABASE_AUTH_URL", "DATABASE_URL", "DATABASE_ADMIN_URL", "POSTGRES_URL"].some((name) =>
-    Boolean(process.env[name]?.trim()),
+    Boolean(runtimeEnv(name)),
   );
 }
 
 /** Avoid Next.js build-time inlining of `process.env.NAME` so Sensitive Vercel secrets remain runtime-readable. */
 export function runtimeEnv(name: string) {
-  return process.env[name]?.trim() || "";
+  const value = process.env[name]?.trim() || "";
+  if (!value || value === "[SENSITIVE]") return "";
+  return value;
 }
 
+/** Local OTP can use the in-memory mailbox. Production delivery needs Resend. */
 export function isEmailProviderConfigured() {
   if (process.env.NODE_ENV !== "production") return true;
+  return isEmailDeliveryConfigured();
+}
+
+/** Real outbound email (Resend). Password sign-in must not wait on this. */
+export function isEmailDeliveryConfigured() {
   return Boolean(runtimeEnv("RESEND_API_KEY") && runtimeEnv("AUTH_EMAIL_FROM"));
 }
 
 export function isGoogleAuthConfigured() {
-  return Boolean(runtimeEnv("GOOGLE_CLIENT_ID") && runtimeEnv("GOOGLE_CLIENT_SECRET"));
+  const clientId = runtimeEnv("GOOGLE_CLIENT_ID");
+  const clientSecret = runtimeEnv("GOOGLE_CLIENT_SECRET");
+  return Boolean(clientId && clientSecret && clientId.endsWith(".apps.googleusercontent.com"));
 }
 
 export type SessionAuthMethod = "email_otp" | "password" | "google" | "unknown";
@@ -155,7 +165,7 @@ export function getAuthCapabilities(): AuthCapabilityReport {
   const ownerEmail = configuredPlatformOwnerEmail();
   const google = getGoogleAuthEnvDiagnostics();
   const bypass = runtimeEnv("ENABLE_EMAIL_2FA_BYPASS") === "true";
-  const email2faEnforced = emailOtpAvailable && !bypass;
+  const email2faEnforced = databaseConfigured && isEmailDeliveryConfigured() && !bypass;
   return {
     waitlistOnly: true,
     publicSignup: false,

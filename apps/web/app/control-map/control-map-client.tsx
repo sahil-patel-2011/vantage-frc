@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   COMMON_INPUTS,
   CONTROLLER_LABEL,
@@ -101,6 +102,7 @@ function ControlMapShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -108,12 +110,32 @@ function ControlMapShell({
   orgId?: string | null;
   shell: ControlMapShellKind;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = controlMapNextActions({ orgId, shell });
   const buildHref = hubHref("/build", "fmea", orgId);
   const copy = controlMapShellCopy(shell);
+  // Retry cannot fix an expired session — diagnose the failure and offer the
+  // action that can.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
 
   return (
     <main className="module-page control-map-page soft-gate">
@@ -142,11 +164,16 @@ function ControlMapShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : (error ?? copy.description)}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failure?.showRetry !== false ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -167,12 +194,15 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
 
   const load = useCallback(async () => {
     setFetchFailed(false);
     setMessage("");
+    setErrorStatus(null);
     try {
       const params = new URLSearchParams();
       params.set("seasonYear", String(seasonYear));
@@ -181,6 +211,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
       const data = (await response.json()) as View & { error?: string };
       if (!response.ok || !("status" in data)) {
         setFetchFailed(true);
+        setErrorStatus(response.status);
         setMessage(data.error ?? "Failed to load control map");
         return;
       }
@@ -268,6 +299,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         orgId={orgIdProp}
         shell="error"
         error={message || shellCopy.description}
+        errorStatus={errorStatus}
         onRetry={() => void load()}
       />
     );

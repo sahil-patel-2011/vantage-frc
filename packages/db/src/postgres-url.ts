@@ -49,7 +49,7 @@ export function sslOptionForUrl(connectionString: string): boolean | { rejectUna
 export function firstConfiguredEnv(...names: string[]): string {
   for (const name of names) {
     const value = process.env[name]?.trim();
-    if (value) return value;
+    if (value && value !== "[SENSITIVE]") return value;
   }
   return "";
 }

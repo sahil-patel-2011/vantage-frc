@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { BusinessRelated } from "../../components/business-related";
 import { EmptyState } from "../../components/ui/empty-state";
 import { PageHeader } from "../../components/ui/page-header";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { ORDERS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
   ordersNextActions,
@@ -92,6 +93,9 @@ function ApprovalFlowStrip() {
 export default function OrdersClient({ embedded = false, seasonYear, orgId: orgIdProp }: OrdersClientProps = {}) {
   const [view, setView] = useState<OrdersView | null>(null);
   const [error, setError] = useState("");
+  const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(seasonYear ?? null);
 
@@ -100,6 +104,8 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
   const load = useCallback(
     (seasonOverride?: number) => {
       setError("");
+      setFetchFailed(false);
+      setErrorStatus(null);
       const params = new URLSearchParams(window.location.search);
       const urlOrg = orgIdProp ?? params.get("orgId");
       const orderId = params.get("orderId");
@@ -116,12 +122,17 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
           const data = (await response.json()) as OrdersView & { error?: string };
           if (!response.ok || !("status" in data)) {
             setError("error" in data && data.error ? data.error : "Could not load orders");
+            setErrorStatus(response.status);
+            setFetchFailed(true);
             return;
           }
           setView(data);
           if (data.status === "live") setSeason(data.seasonYear);
         })
-        .catch(() => setError("Network error — please try again."));
+        .catch(() => {
+          setError("Network error — please try again.");
+          setFetchFailed(true);
+        });
     },
     [orgIdProp, seasonYear],
   );
@@ -192,14 +203,48 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
 
   const body = (
     <>
-      {error ? (
+      {error && !(fetchFailed && !view) ? (
         <p className="orders-error" role="alert">
           {error}
         </p>
       ) : null}
 
       {!view ? (
-        <EmptyState soft title="Opening orders…" description="Loading this season’s purchase requests." aria-busy />
+        fetchFailed ? (
+          (() => {
+            // Retry cannot fix an expired session — offer the action that actually resolves it.
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: errorStatus,
+                message: error,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: error || "Check your connection and try again.",
+              },
+            );
+            return (
+              <EmptyState soft badge="Unavailable" badgeTone="setup" title={copy.title} description={copy.description}>
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+                {copy.showRetry ? (
+                  <button type="button" className="app-button secondary" onClick={() => load()}>
+                    Retry
+                  </button>
+                ) : null}
+              </EmptyState>
+            );
+          })()
+        ) : (
+          <EmptyState soft title="Opening orders…" description="Loading this season’s purchase requests." aria-busy />
+        )
       ) : view.status === "setup_required" ? (
         <>
           {related}

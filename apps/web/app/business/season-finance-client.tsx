@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { EmptyState } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SEASON_FINANCE_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
   FUNDING_KIND_LABELS,
@@ -43,15 +44,19 @@ export default function SeasonFinanceClient({
   const [view, setView] = useState<SeasonFinanceView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
     setError("");
+    setErrorStatus(null);
     const query = new URLSearchParams({ orgId, season: String(seasonYear) });
     try {
       const response = await fetch(`/api/business/finance?${query.toString()}`);
       const data = (await response.json()) as SeasonFinanceView | { error?: string };
       if (!response.ok || !("status" in data)) {
+        setErrorStatus(response.status);
         throw new Error("error" in data && data.error ? data.error : "Could not load season finance");
       }
       setView(data);
@@ -157,7 +162,44 @@ export default function SeasonFinanceClient({
         </div>
       ) : null}
 
-      {!view && !error ? <p className="app-muted">Loading season finance…</p> : null}
+      {!view ? (
+        error ? (
+          (() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: errorStatus,
+                message: error,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: error,
+              },
+            );
+            return (
+              <EmptyState title={copy.title} description={copy.description}>
+                <div className="season-finance-next">
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </div>
+              </EmptyState>
+            );
+          })()
+        ) : (
+          <p className="app-muted">Loading season finance…</p>
+        )
+      ) : null}
 
       {view?.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Funding, purchases, and sponsorships stay empty until this workspace can read the finance tables.">

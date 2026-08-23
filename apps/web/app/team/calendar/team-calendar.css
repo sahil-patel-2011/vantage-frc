@@ -492,6 +492,7 @@
   min-height: 36px;
   width: auto;
 }
+.tc-mode {
   display: inline-flex;
   padding: 3px;
   border-radius: 999px;

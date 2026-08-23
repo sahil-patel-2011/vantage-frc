@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
 import { SponsoredPromoBanner } from "../../../components/sponsored-promo-banner";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { hubHref } from "../../../lib/nav/hubs";
 import {
   AI_KEYS_RELATED_INCLUDE,
@@ -116,6 +117,43 @@ function ShellPanel({
   );
 }
 
+/**
+ * A load that failed for a reason Retry cannot fix (usually an expired session)
+ * gets the action that actually resolves it, in the same shell panel markup.
+ */
+function LoadFailurePanel({ status, message }: { status: number | null; message: string }) {
+  const online = typeof navigator === "undefined" ? true : navigator.onLine;
+  const kind = classifyLoadFailure({ status, message, online });
+  const copy = loadFailureCopy(kind, {
+    nextPath:
+      typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+    message,
+  });
+  return (
+    <section className="app-card soft-panel ai-keys-shell" role="status">
+      <span className="app-badge setup">
+        {kind === "auth"
+          ? "Signed out"
+          : kind === "forbidden"
+            ? "No access"
+            : kind === "offline"
+              ? "Offline"
+              : kind === "setup"
+                ? "Setup required"
+                : "Unavailable"}
+      </span>
+      <span className="eyebrow">COULD NOT LOAD</span>
+      <h2>{copy.title}</h2>
+      <p className="app-muted">{copy.description}</p>
+      {copy.primary ? (
+        <a className="app-button primary" href={copy.primary.href}>
+          {copy.primary.label}
+        </a>
+      ) : null}
+    </section>
+  );
+}
+
 function ProviderCard({
   meta,
   status,
@@ -205,6 +243,8 @@ function ProviderCard({
 export default function AiKeysClient({ orgId }: { orgId: string | null }) {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(Boolean(orgId));
   const [busyProvider, setBusyProvider] = useState<ByokProvider | null>(null);
   const [busyLocal, setBusyLocal] = useState(false);
@@ -234,9 +274,11 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const data = (await response.json()) as Payload & { error?: string };
       if (!response.ok) {
         setMessage(data.error ?? "Could not load AI keys");
+        setErrorStatus(response.status);
         setPayload(null);
       } else {
         setMessage("");
+        setErrorStatus(null);
         setPayload(data);
         if (data.localConnector?.baseUrl) {
           setLocalDraft((prev) => ({
@@ -258,6 +300,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       }
     } catch {
       setMessage("Could not load AI keys");
+      setErrorStatus(null);
       setPayload(null);
     } finally {
       setLoading(false);
@@ -485,8 +528,12 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         </div>
       ) : null}
 
-      {shell === "empty" || shell === "auth_required" || (shell === "error" && !payload) ? (
+      {shell === "empty" || shell === "auth_required" ? (
         <ShellPanel shell={shell} detail={message} orgId={orgId} />
+      ) : null}
+
+      {shell === "error" && !payload ? (
+        <LoadFailurePanel status={errorStatus} message={message} />
       ) : null}
 
       {payload?.setupRequired ? (

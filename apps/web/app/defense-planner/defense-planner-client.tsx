@@ -34,7 +34,7 @@ import {
   type DefensePlannerShellKind,
 } from "../../lib/defense-planner/defense-planner-related";
 import type { DrivetrainType } from "../../lib/defense-planner/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./defense-planner.css";
 
@@ -111,7 +111,7 @@ function DefenseShell({
 }) {
   const actions = defensePlannerNextActions({ orgId, shell });
   const copy = defensePlannerShellCopy(shell);
-  const competitionHref = hubHref("/competition", "defense-planner", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "defense-planner", orgId);
   const steps = shell === "setup" ? defensePlannerSetupSteps(orgId) : [];
 
   return (
@@ -245,7 +245,7 @@ export default function DefensePlannerClient() {
   const relatedLinks = defensePlannerRelatedLinks(orgId, {
     include: [...DEFENSE_PLANNER_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "defense-planner", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "defense-planner", orgId);
   const showTiles = shouldShowDefensePlannerSummaryTiles({ matchupCount, hasProfile });
 
   const mutate = useCallback(

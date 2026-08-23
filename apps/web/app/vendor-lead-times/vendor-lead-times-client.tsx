@@ -16,7 +16,7 @@ import {
   type VendorLeadTimesShellKind,
 } from "../../lib/vendor-lead-times/vendor-lead-times-related";
 import type { ReorderStatus, ReorderUrgency } from "../../lib/vendor-lead-times/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./vendor-lead-times.css";
 
@@ -90,7 +90,7 @@ function VendorLeadTimesShell({
 }) {
   const actions = vendorLeadTimesNextActions({ orgId, shell });
   const copy = vendorLeadTimesShellCopy(shell);
-  const businessHref = hubHref("/business", "vendor-lead-times", orgId);
+  const businessHref = hubWorkbenchHref("business", "vendor-lead-times", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
   const spareHref = hubHref("/build", "spare-forecast", orgId);
   const vendorsHref = withOrgHref("/vendors", orgId);
@@ -207,7 +207,7 @@ export default function VendorLeadTimesClient() {
   const relatedLinks = vendorLeadTimesRelatedLinks(orgId, {
     include: [...VENDOR_LEAD_TIMES_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "vendor-lead-times", orgId);
+  const businessHref = hubWorkbenchHref("business", "vendor-lead-times", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
   const spareHref = hubHref("/build", "spare-forecast", orgId);
   const vendorsHref = withOrgHref("/vendors", orgId);

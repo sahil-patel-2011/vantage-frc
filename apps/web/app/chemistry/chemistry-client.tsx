@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Icon } from "../../components/app-shell";
 import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import {
+  classifyLoadFailure,
+  loadFailureCopy,
+  type LoadFailureCopy,
+} from "../../lib/ui/load-failure";
 import type { ChemistryView } from "../../lib/chemistry/load-chemistry";
 import {
   CHEMISTRY_RELATED_INCLUDE,
@@ -70,12 +75,15 @@ function ChemistryShell({
   orgId,
   shell,
   error,
+  failure,
   onRetry,
   children,
 }: {
   orgId?: string | null;
   shell: ChemistryShellKind;
   error?: string;
+  /** Diagnosed load failure — replaces the generic error copy and Retry. */
+  failure?: LoadFailureCopy;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -111,11 +119,16 @@ function ChemistryShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && (failure == null || failure.showRetry) ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -174,6 +187,8 @@ export default function ChemistryClient({ embedded = false }: { embedded?: boole
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
@@ -203,6 +218,7 @@ export default function ChemistryClient({ embedded = false }: { embedded?: boole
       }
       setLoading(true);
       setFetchFailed(false);
+      setErrorStatus(null);
       const params = new URLSearchParams({ orgId: id });
       const list = (teams ?? draft).trim();
       if (list) params.set("teams", list);
@@ -211,6 +227,7 @@ export default function ChemistryClient({ embedded = false }: { embedded?: boole
         if (!response.ok) {
           const body = await response.json().catch(() => ({}));
           setError(body.error ?? "Could not load chemistry");
+          setErrorStatus(response.status);
           setView(null);
           setFetchFailed(true);
           setLoading(false);
@@ -264,10 +281,28 @@ export default function ChemistryClient({ embedded = false }: { embedded?: boole
 
   // Full Soft-UI shells when the surface cannot score yet (setup / error / initial empty without event).
   if (shell === "loading" || shell === "error" || shell === "setup") {
+    const failure =
+      shell === "error"
+        ? loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: error,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: error || "Could not load alliance chemistry.",
+            },
+          )
+        : undefined;
     return (
       <ChemistryShell
         orgId={view?.orgId ?? (orgId || null)}
         shell={shell}
+        failure={failure}
         error={
           shell === "error"
             ? error || "Could not load alliance chemistry."

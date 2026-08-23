@@ -17,7 +17,7 @@ import {
   type MediaKitShellKind,
 } from "../../lib/media-kit/media-kit-related";
 import type { MediaKitAssetKind, MediaKitReadinessTier } from "../../lib/media-kit/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./media-kit.css";
 
@@ -96,7 +96,7 @@ function MediaKitShell({
 }) {
   const actions = mediaKitNextActions({ orgId, shell });
   const copy = mediaKitShellCopy(shell);
-  const businessHref = hubHref("/business", "media-kit", orgId);
+  const businessHref = hubWorkbenchHref("business", "media-kit", orgId);
   const steps = shell === "setup" ? mediaKitSetupSteps(orgId) : [];
 
   return (
@@ -233,7 +233,7 @@ export default function MediaKitClient() {
   const relatedLinks = mediaKitRelatedLinks(orgId, {
     include: [...MEDIA_KIT_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "media-kit", orgId);
+  const businessHref = hubWorkbenchHref("business", "media-kit", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {

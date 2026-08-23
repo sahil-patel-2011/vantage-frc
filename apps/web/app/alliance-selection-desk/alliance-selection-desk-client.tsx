@@ -32,7 +32,7 @@ import {
   type AllianceSelectionDeskShellKind,
 } from "../../lib/alliance-selection-desk/alliance-selection-desk-related";
 import type { DeskAlliance, DeskExportSnapshot, DeskSlot } from "../../lib/alliance-selection-desk/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./alliance-selection-desk.css";
 
@@ -106,7 +106,7 @@ function DeskShell({
 }) {
   const actions = allianceSelectionDeskNextActions({ orgId, shell });
   const copy = allianceSelectionDeskShellCopy(shell);
-  const competitionHref = hubHref("/competition", "alliance-selection-desk", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "alliance-selection-desk", orgId);
   const steps = shell === "setup" ? allianceSelectionDeskSetupSteps(orgId) : [];
 
   return (
@@ -347,7 +347,7 @@ export default function AllianceSelectionDeskClient() {
   const relatedLinks = allianceSelectionDeskRelatedLinks(orgId, {
     include: [...ALLIANCE_SELECTION_DESK_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "alliance-selection-desk", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "alliance-selection-desk", orgId);
   const showTiles = shouldShowAllianceSelectionDeskSummaryTiles(sessionCount);
 
   const mutate = useCallback(

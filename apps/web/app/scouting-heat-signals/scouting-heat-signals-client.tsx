@@ -29,7 +29,7 @@ import {
   type ScoutingHeatSignalsNextAction,
   type ScoutingHeatSignalsShellKind,
 } from "../../lib/scouting-heat-signals/scouting-heat-signals-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./scouting-heat-signals.css";
 
@@ -109,7 +109,7 @@ function HeatShell({
 }) {
   const actions = scoutingHeatSignalsNextActions({ orgId, shell });
   const copy = scoutingHeatSignalsShellCopy(shell);
-  const competitionHref = hubHref("/competition", "scouting-heat-signals", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "scouting-heat-signals", orgId);
   const steps = shell === "setup" ? scoutingHeatSignalsSetupSteps(orgId) : [];
 
   return (
@@ -231,7 +231,7 @@ export default function ScoutingHeatSignalsClient() {
     entryCount,
     risingCount,
   });
-  const competitionHref = hubHref("/competition", "scouting-heat-signals", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "scouting-heat-signals", orgId);
   const showTiles = shouldShowScoutingHeatSignalsSummaryTiles(entryCount);
   const loaded = view?.status === "live";
 

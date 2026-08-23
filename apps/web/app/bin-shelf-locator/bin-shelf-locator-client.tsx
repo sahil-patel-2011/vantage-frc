@@ -33,7 +33,7 @@ import {
   type BinShelfLocatorNextAction,
   type BinShelfLocatorShellKind,
 } from "../../lib/bin-shelf-locator/bin-shelf-locator-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { cameraScanSupported, openRearCamera, renderQrDataUrl, scanQrFromCamera } from "../../lib/scouting/qr-camera";
 import "./bin-shelf-locator.css";
@@ -98,7 +98,7 @@ function LocatorShell({
 }) {
   const actions = binShelfLocatorNextActions({ orgId, shell });
   const copy = binShelfLocatorShellCopy(shell);
-  const buildHref = hubHref("/build", "bin-shelf-locator", orgId);
+  const buildHref = hubWorkbenchHref("build", "bin-shelf-locator", orgId);
   const steps = shell === "setup" ? binShelfLocatorSetupSteps(orgId) : [];
 
   return (
@@ -222,7 +222,7 @@ export default function BinShelfLocatorClient() {
   const relatedLinks = binShelfLocatorRelatedLinks(orgId, {
     include: [...BIN_SHELF_LOCATOR_RELATED_INCLUDE],
   });
-  const buildHref = hubHref("/build", "bin-shelf-locator", orgId);
+  const buildHref = hubWorkbenchHref("build", "bin-shelf-locator", orgId);
   const showTiles = shouldShowBinShelfLocatorSummaryTiles(locationCount);
 
   const mutate = useCallback(

@@ -25,7 +25,7 @@ import type {
   OutreachCategory,
   OutreachStatus,
 } from "../../lib/outreach-calendar/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./outreach-calendar.css";
 
@@ -125,7 +125,7 @@ function OutreachShell({
 }) {
   const actions = outreachCalendarNextActions({ orgId, shell });
   const copy = outreachCalendarShellCopy(shell);
-  const businessHref = hubHref("/business", "outreach-calendar", orgId);
+  const businessHref = hubWorkbenchHref("business", "outreach-calendar", orgId);
   const steps = shell === "setup" ? outreachCalendarSetupSteps(orgId) : [];
 
   return (
@@ -250,7 +250,7 @@ export default function OutreachCalendarClient() {
   const relatedLinks = outreachCalendarRelatedLinks(orgId, {
     include: [...OUTREACH_CALENDAR_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "outreach-calendar", orgId);
+  const businessHref = hubWorkbenchHref("business", "outreach-calendar", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {

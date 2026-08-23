@@ -104,7 +104,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "edit-home",
     slug: "edit-home",
     title: "Edit Home — drag, remove, add widgets",
-    summary: "Your Home layout is personal. Drag widgets like a Home Screen. Empty widgets stay empty until real data exists.",
+    summary: "Your Home layout is personal. Live widgets show on the board; empty cards stay hidden until Edit Home.",
     category: "Home",
     keywords: [
       "dashboard",
@@ -120,6 +120,13 @@ export const HELP_ARTICLES: HelpArticle[] = [
     ],
     relatedHref: "/dashboard?customize=1",
     sections: [
+      {
+        heading: "What you see",
+        body: [
+          "Home shows widgets that have real data — next match stays as the hero even when nothing is scheduled yet.",
+          "Empty Setup cards stay off the board so Home is not a wall of placeholders. Tap Edit Home to add widgets or see every card.",
+        ],
+      },
       {
         heading: "Enter edit mode",
         body: [
@@ -198,7 +205,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
     id: "byok-automode",
     slug: "byok-automode",
     title: "BYOK, AI keys, and Automode",
-    summary: "Owners/admins paste OpenAI, Anthropic, Google, or local OpenAI-compatible keys. Automode routes by task toughness.",
+    summary: "Anyone can paste personal OpenAI or Anthropic keys. Admins can set team-wide keys. Ollama and LM Studio use an OpenAI-compatible base URL.",
     category: "AI",
     keywords: [
       "byok",
@@ -208,6 +215,8 @@ export const HELP_ARTICLES: HelpArticle[] = [
       "openai",
       "anthropic",
       "google",
+      "ollama",
+      "lm studio",
       "local model",
       "routing",
       "bring your own key",
@@ -217,8 +226,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Add keys",
         body: [
-          "Go to AI API keys (/team/ai-keys). Owners and admins with Manage API keys can paste or remove secrets.",
-          "Supported providers: OpenAI, Anthropic, Google, and a local OpenAI-compatible server connector.",
+          "Go to AI keys (/team/ai-keys). Anyone on the team can save personal keys. Team-wide keys need Manage API keys (owner/admin).",
+          "OpenAI and Anthropic are on the main page. Optional OpenAI base URL points at Ollama (http://127.0.0.1:11434/v1) or LM Studio (http://127.0.0.1:1234/v1). Google and OpenRouter are under More. Your keys override the team's for your chats.",
+          "Cloud Vantage cannot reach localhost on your laptop unless you expose a reachable URL (tunnel or self-hosted gateway).",
         ],
       },
       {

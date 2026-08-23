@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { incidentContextLabel } from "../../lib/incident-heatmap";
 import { INCIDENT_CONTEXTS, type IncidentHeatmapView } from "../../lib/incident-heatmap/compute-incident-heatmap";
 import type { IncidentContext } from "../../lib/incident-heatmap/types";
@@ -19,6 +20,9 @@ export default function IncidentHeatmapClient() {
   const [view, setView] = useState<IncidentHeatmapView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -27,6 +31,8 @@ export default function IncidentHeatmapClient() {
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
+    setErrorStatus(null);
+    setErrorMessage("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
@@ -37,6 +43,8 @@ export default function IncidentHeatmapClient() {
       .then(async (response) => {
         const data = (await response.json()) as IncidentHeatmapView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setErrorMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -117,14 +125,39 @@ export default function IncidentHeatmapClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the Incident Heatmap"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: errorMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: errorMessage || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState
+              title={copy.title}
+              description={copy.description}
+            >
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

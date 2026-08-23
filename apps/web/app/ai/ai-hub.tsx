@@ -19,9 +19,12 @@ const AutonomousAgentPanel = dynamic(
   { ssr: false },
 );
 
+/** Tab ids rendered inline below. Anything else opens its own route directly. */
+const EMBEDDED_TABS = ["chat", "agent", "budgets", "writer", "code", "bugbot", "memory", "governance", "finance"] as const;
+
 export default function AiHub() {
   return (
-    <ProductHubShell hubId="ai" headerActions={<AiSponsorBranding />}>
+    <ProductHubShell hubId="ai" headerActions={<AiSponsorBranding />} embeddedTabs={EMBEDDED_TABS}>
       {({ tab, orgId }) => (
         <HubOrgGate orgId={orgId} label="AI">
           {(id) => {

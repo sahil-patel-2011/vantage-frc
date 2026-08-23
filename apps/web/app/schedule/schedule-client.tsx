@@ -6,6 +6,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { ScheduleRelated } from "../../components/schedule-related";
 import { EmptyState, Panel } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   SCHEDULE_RELATED_INCLUDE,
   scheduleNextActions,
@@ -124,6 +125,7 @@ function ScheduleShell({
   matchCount,
   fetchFailed,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -135,9 +137,29 @@ function ScheduleShell({
   matchCount?: number;
   fetchFailed?: boolean;
   error?: string;
+  /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
+  const failureCopy =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message:
+              error || "Check your connection and try again — nothing is filled with DEMO matches.",
+          },
+        )
+      : null;
   const actions = scheduleNextActions({
     orgId,
     shell,
@@ -170,16 +192,17 @@ function ScheduleShell({
         soft
         badge={shell === "setup" ? "Setup" : shell === "error" ? "Unavailable" : shell === "empty" ? "No matches yet" : undefined}
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
-        title={title}
-        description={
-          shell === "error"
-            ? error || "Check your connection and try again — nothing is filled with DEMO matches."
-            : description
-        }
+        title={failureCopy ? failureCopy.title : title}
+        description={failureCopy ? failureCopy.description : description}
         aria-busy={shell === "loading" || undefined}
       >
         <div className="sched-inline-actions">
-          {shell === "error" && onRetry ? (
+          {failureCopy?.primary ? (
+            <a className="app-button" href={failureCopy.primary.href}>
+              {failureCopy.primary.label}
+            </a>
+          ) : null}
+          {shell === "error" && onRetry && failureCopy?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={onRetry}>
               Retry
             </button>
@@ -204,6 +227,8 @@ export default function ScheduleClient() {
   const [view, setView] = useState<ScheduleView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [scope, setScope] = useState<"all" | "ours">("all");
   const [hidePlayed, setHidePlayed] = useState(false);
 
@@ -215,10 +240,12 @@ export default function ScheduleClient() {
       const data = (await response.json()) as ScheduleView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the match schedule.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setFetchFailed(false);
       setView(data);
     } catch {
@@ -240,12 +267,13 @@ export default function ScheduleClient() {
         title={fetchFailed ? "Could not load the match schedule" : "Loading match schedule…"}
         description={
           fetchFailed
-            ? "A network or server issue blocked the board. Retry — never DEMO match rows."
+            ? "The match board could not load. Nothing is ever filled in with DEMO matches."
             : "Pulling TBA matches for your active event…"
         }
         shell={fetchFailed ? "error" : "loading"}
         fetchFailed={fetchFailed}
         error={error}
+        errorStatus={errorStatus}
         onRetry={() => void load()}
       />
     );

@@ -807,8 +807,39 @@ export const orgLlmKeys = pgTable(
       .references(() => users.id),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     createdAt: timestamps.createdAt,
+    baseUrl: text("base_url"),
+    model: text("model"),
   },
   (table) => [index("org_llm_keys_org_idx").on(table.orgId)],
+);
+
+export const memberLlmKeys = pgTable(
+  "member_llm_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    label: text("label").notNull(),
+    keyCiphertext: text("key_ciphertext").notNull(),
+    keyNonce: text("key_nonce").notNull(),
+    keyAuthTag: text("key_auth_tag").notNull(),
+    encryptedDek: text("encrypted_dek").notNull(),
+    kmsKeyId: text("kms_key_id").notNull(),
+    baseUrl: text("base_url"),
+    model: text("model"),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamps.createdAt,
+    updatedAt: timestamps.updatedAt,
+  },
+  (table) => [
+    uniqueIndex("member_llm_keys_org_user_provider_idx").on(table.orgId, table.userId, table.provider),
+    index("member_llm_keys_user_idx").on(table.orgId, table.userId),
+  ],
 );
 
 export const orgByokRoutingPrefs = pgTable("org_byok_routing_prefs", {

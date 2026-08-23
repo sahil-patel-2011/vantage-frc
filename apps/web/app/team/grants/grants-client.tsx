@@ -5,6 +5,7 @@ import { BusinessRelated } from "../../../components/business-related";
 import { MeteredAiCutoffBanner } from "../../../components/metered-ai-cutoff-banner";
 import { resolveCutoffErrorCode } from "../../../components/usage-cutoff-banner";
 import { EmptyState } from "../../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { GRANTS_WRITING_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { grantsWritingNextActions } from "../../../lib/business/grants-writing-next-actions";
 import {
@@ -53,6 +54,9 @@ function businessGrantsHref(orgId: string | null | undefined): string {
 export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
   const [view, setView] = useState<GrantWritingView | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
+  const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -96,13 +100,21 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
         .then(async (response) => {
           const data = (await response.json()) as GrantWritingView | { error?: string };
           if (!response.ok || !("status" in data)) {
+            setLoadErrorStatus(response.status);
+            setLoadErrorMessage("error" in data && data.error ? data.error : "");
             setFetchFailed(true);
             return;
           }
+          setLoadErrorStatus(null);
+          setLoadErrorMessage("");
           setView(data);
           setSeason(data.seasonYear);
         })
-        .catch(() => setFetchFailed(true));
+        .catch(() => {
+          setLoadErrorStatus(null);
+          setLoadErrorMessage("");
+          setFetchFailed(true);
+        });
     },
     [orgIdProp],
   );
@@ -199,24 +211,53 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
   const readyCount = live?.drafts.filter((draft) => draft.status === "ready").length ?? 0;
 
   if (fetchFailed) {
+    const kind = classifyLoadFailure({
+      status: loadErrorStatus,
+      message: loadErrorMessage,
+      online: typeof navigator === "undefined" ? true : navigator.onLine,
+    });
+    const copy = loadFailureCopy(kind, {
+      nextPath:
+        typeof window === "undefined"
+          ? null
+          : `${window.location.pathname}${window.location.search}`,
+      message:
+        loadErrorMessage ||
+        "A network or server issue prevented loading. Award totals stay blank until real applications are recorded — nothing is fabricated.",
+    });
     return (
       <main className="module-page gwe-page">
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Business / Grants</span>
             <h1>Grant writing</h1>
-            <p className="app-muted">Could not load grant writing — check your connection and try again.</p>
+            <p className="app-muted">{copy.description}</p>
           </div>
         </header>
         <EmptyState
           soft
-          badge="Retry"
-          title="Grant writing unavailable"
-          description="A network or server issue prevented loading. Award totals stay blank until real applications are recorded — nothing is fabricated."
+          badge={
+            kind === "auth"
+              ? "Signed out"
+              : kind === "forbidden"
+                ? "No access"
+                : kind === "offline"
+                  ? "Offline"
+                  : "Retry"
+          }
+          title={copy.title}
+          description={copy.description}
         >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+          {copy.primary ? (
+            <a className="app-button" href={copy.primary.href}>
+              {copy.primary.label}
+            </a>
+          ) : null}
+          {copy.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
         </EmptyState>
       </main>
     );

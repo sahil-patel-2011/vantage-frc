@@ -26,7 +26,7 @@ import {
   type SpareRobotKitNextAction,
   type SpareRobotKitShellKind,
 } from "../../lib/spare-robot-kit/spare-robot-kit-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./spare-robot-kit.css";
 
@@ -101,7 +101,7 @@ function KitShell({
 }) {
   const actions = spareRobotKitNextActions({ orgId, shell });
   const copy = spareRobotKitShellCopy(shell);
-  const buildHref = hubHref("/build", "spare-robot-kit", orgId);
+  const buildHref = hubWorkbenchHref("build", "spare-robot-kit", orgId);
   const steps = shell === "setup" ? spareRobotKitSetupSteps(orgId) : [];
 
   return (
@@ -228,7 +228,7 @@ export default function SpareRobotKitClient() {
     candidateCount,
     checklistCount,
   });
-  const buildHref = hubHref("/build", "spare-robot-kit", orgId);
+  const buildHref = hubWorkbenchHref("build", "spare-robot-kit", orgId);
   const showTiles = shouldShowSpareRobotKitSummaryTiles(candidateCount, checklistCount);
   const loaded = view?.status === "live";
 

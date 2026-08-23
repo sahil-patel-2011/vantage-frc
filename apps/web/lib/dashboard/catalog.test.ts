@@ -8,6 +8,7 @@ import {
   dashboardRectsOverlap,
   findDashboardSlot,
   filterLayoutForRole,
+  homeViewLayout,
   inferWidgetSize,
   packDashboardLayout,
   scaleLayoutToCols,
@@ -21,6 +22,7 @@ describe("dashboard catalog persistence helpers", () => {
     expect(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type)).toEqual(
       expect.arrayContaining(["next_match", "competition_snapshot", "robot_readiness", "alerts"]),
     );
+    expect(DEFAULT_DASHBOARD_LAYOUT.some((item) => item.type === "onboarding_checklist")).toBe(false);
     const validated = validateDashboardLayout(DEFAULT_DASHBOARD_LAYOUT, "scout");
     expect(validated.ok).toBe(true);
   });
@@ -141,9 +143,9 @@ describe("dashboard tenant and role isolation rules", () => {
   it("scales a 12-column standard layout onto a 4-column phone grid", () => {
     const phone = scaleLayoutToCols(DEFAULT_DASHBOARD_LAYOUT, 12, 4);
     expect(phone.every((item) => item.x + item.w <= 4)).toBe(true);
-    expect(phone.find((item) => item.type === "onboarding_checklist")?.w).toBe(4);
+    expect(phone.find((item) => item.type === "next_match")?.w).toBe(4);
     const back = scaleLayoutToCols(phone, 4, 12);
-    expect(back.find((item) => item.type === "onboarding_checklist")?.w).toBe(12);
+    expect(back.find((item) => item.type === "next_match")?.w).toBe(12);
   });
 
   it("applies Apple-style S/M/L/XL sizes on the canonical 12-column board", () => {
@@ -153,5 +155,32 @@ describe("dashboard tenant and role isolation rules", () => {
     expect(inferWidgetSize(large)).toBe("l");
     expect(applyWidgetSize(base, "xl").w).toBe(12);
     expect(inferWidgetSize({ w: 3, h: 2 })).toBe("s");
+  });
+});
+
+describe("home view layout", () => {
+  it("hides empty widgets when the shell is ready, keeping next match as the hero", () => {
+    const viewed = homeViewLayout(DEFAULT_DASHBOARD_LAYOUT, {
+      editing: false,
+      shell: "ready",
+      widgets: {
+        next_match: { status: "empty" },
+        competition_snapshot: { status: "setup_required" },
+        robot_readiness: { status: "empty" },
+        alerts: { status: "live" },
+      },
+    });
+    expect(viewed.map((item) => item.type)).toEqual(["next_match", "alerts"]);
+    expect(viewed.find((item) => item.type === "next_match")?.w).toBe(12);
+    expect(viewed.some((item) => item.type === "onboarding_checklist")).toBe(false);
+  });
+
+  it("leaves the saved board untouched in edit mode", () => {
+    const viewed = homeViewLayout(DEFAULT_DASHBOARD_LAYOUT, {
+      editing: true,
+      shell: "ready",
+      widgets: {},
+    });
+    expect(viewed.map((item) => item.type)).toEqual(DEFAULT_DASHBOARD_LAYOUT.map((item) => item.type));
   });
 });

@@ -27,7 +27,7 @@ import {
   type MatchStrategyCardsShellKind,
 } from "../../lib/match-strategy-cards/match-strategy-cards-related";
 import type { MatchStrategyCard, MatchStrategyRoleAssignment } from "../../lib/match-strategy-cards/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./match-strategy-cards.css";
 
@@ -91,7 +91,7 @@ function CardsShell({
 }) {
   const actions = matchStrategyCardsNextActions({ orgId, shell });
   const copy = matchStrategyCardsShellCopy(shell);
-  const competitionHref = hubHref("/competition", "match-strategy-cards", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-strategy-cards", orgId);
   const steps = shell === "setup" ? matchStrategyCardsSetupSteps(orgId) : [];
 
   return (
@@ -245,7 +245,7 @@ export default function MatchStrategyCardsClient() {
   const relatedLinks = matchStrategyCardsRelatedLinks(orgId, {
     include: [...MATCH_STRATEGY_CARDS_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "match-strategy-cards", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-strategy-cards", orgId);
   const showTiles = shouldShowMatchStrategyCardsSummaryTiles(cardCount);
 
   const mutate = useCallback(

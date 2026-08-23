@@ -11,6 +11,7 @@ import {
   type RankedTeam,
   type RankingsView,
 } from "../../lib/rankings";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 function fmtEpa(value: number | null): string {
   return value == null ? "—" : value.toFixed(1);
@@ -96,6 +97,8 @@ export default function RankingsClient() {
   const [view, setView] = useState<RankingsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [tab, setTab] = useState<"rankings" | "playoffs">("rankings");
 
   const load = useCallback(async () => {
@@ -106,10 +109,12 @@ export default function RankingsClient() {
       const data = (await response.json()) as RankingsView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load event rankings.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setFetchFailed(false);
       setView(data);
     } catch {
@@ -136,13 +141,39 @@ export default function RankingsClient() {
         </header>
         <div className="app-card rank-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load event rankings</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
+            (() => {
+              // Retry cannot fix an expired session — offer the action that actually resolves it.
+              const copy = loadFailureCopy(
+                classifyLoadFailure({
+                  status: errorStatus,
+                  message: error,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message: error || "Check your connection and try again.",
+                },
+              );
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading event rankings…</p>
           )}

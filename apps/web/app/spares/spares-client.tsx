@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { consumableCategoryLabel, evaluateConsumable, statusLabel } from "../../lib/spares";
 import { CONSUMABLE_CATEGORIES, type SparesView } from "../../lib/spares/compute-spares";
 import type { Consumable, ConsumableCategory, ConsumableStatus } from "../../lib/spares/types";
@@ -14,6 +15,9 @@ export default function SparesClient() {
   const [view, setView] = useState<SparesView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadMessage, setLoadMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -27,12 +31,20 @@ export default function SparesClient() {
       .then(async (response) => {
         const data = (await response.json()) as SparesView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setLoadMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
+        setErrorStatus(null);
+        setLoadMessage("");
         setView(data);
       })
-      .catch(() => setFetchFailed(true));
+      .catch(() => {
+        setErrorStatus(null);
+        setLoadMessage("");
+        setFetchFailed(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -83,13 +95,38 @@ export default function SparesClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load consumables</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
-          <button type="button" className="app-button secondary" onClick={load}>
-            Retry
-          </button>
-        </section>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: loadMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadMessage || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <section className="app-card soft-panel">
+              <h2>{copy.title}</h2>
+              <p className="app-muted">{copy.description}</p>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={load}>
+                  Retry
+                </button>
+              ) : null}
+            </section>
+          );
+        })()
       ) : view == null ? (
         <section className="app-card soft-panel">
           <h2>Loading…</h2>

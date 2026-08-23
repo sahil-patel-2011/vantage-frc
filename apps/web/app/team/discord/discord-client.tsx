@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   CONNECTIONS_RELATED_INCLUDE,
   connectionsRelatedLinks,
@@ -130,6 +131,8 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   async function load() {
     setFetchFailed(false);
@@ -139,9 +142,11 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
       setOk(false);
       setStatus(data.error ?? "Unable to load Discord settings");
       setView(null);
+      setErrorStatus(response.status);
       setFetchFailed(true);
       return;
     }
+    setErrorStatus(null);
     setView(data as DiscordView);
     setForm({
       webhookUrl: "",
@@ -206,6 +211,22 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
   }
 
   if (fetchFailed || view == null) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: status,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: status,
+          },
+        )
+      : null;
     return (
       <main className="module-page team-discord-page">
         <PageHeader
@@ -216,15 +237,16 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         <TeamOpsNav orgId={orgId} active="admin" />
         <EmptyState
           soft
-          title={fetchFailed ? "Could not load Discord settings" : "Loading Discord…"}
-          description={
-            fetchFailed
-              ? "A network or server issue prevented loading. Try again."
-              : "Checking your workspace connection."
-          }
+          title={failure ? failure.title : "Loading Discord…"}
+          description={failure ? failure.description : "Checking your workspace connection."}
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {failure?.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={() => void load()}>
               Retry
             </button>

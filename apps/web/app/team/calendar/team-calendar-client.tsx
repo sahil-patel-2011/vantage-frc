@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { OfflineBanner } from "../../../components/offline-banner";
 import {
   googleCalendarSubscribeUrl,
@@ -1243,6 +1244,8 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   const [view, setView] = useState<SubteamCalendarView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -1282,10 +1285,12 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
       const data = (await response.json()) as SubteamCalendarView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the team calendar.");
+        setErrorStatus(response.status);
         if (!cached) setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -1420,20 +1425,35 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         <OfflineBanner feature="Calendar" fromCache={Boolean(view) && fromCache} cachedAt={cachedAt} />
         <div className="app-card tc-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load calendar</strong>
-              <p className="app-muted">
-                {error ||
-                  (!online
-                    ? "No cached calendar on this device yet."
-                    : "Check your connection and try again.")}
-              </p>
-              <div className="tc-guide-actions">
-                <button type="button" className="app-button secondary" onClick={() => void load()}>
-                  Retry
-                </button>
-              </div>
-            </>
+            (() => {
+              const kind = classifyLoadFailure({ status: errorStatus, message: error, online });
+              const copy = loadFailureCopy(kind, {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message:
+                  error || "No cached calendar on this device yet. Check your connection and try again.",
+              });
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  <div className="tc-guide-actions">
+                    {copy.primary ? (
+                      <a className="app-button" href={copy.primary.href}>
+                        {copy.primary.label}
+                      </a>
+                    ) : null}
+                    {copy.showRetry ? (
+                      <button type="button" className="app-button secondary" onClick={() => void load()}>
+                        Retry
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading team calendar…</p>
           )}

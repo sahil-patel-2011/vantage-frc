@@ -12,7 +12,6 @@ import {
 import {
   DASHBOARD_COLUMNS,
   DEFAULT_DASHBOARD_LAYOUT,
-  SECONDARY_WIDGET_TYPES,
   WIDGET_CATALOG,
   WIDGET_SIZE_KEYS,
   WIDGET_SIZE_LABEL,
@@ -20,6 +19,7 @@ import {
   canAccessWidget,
   catalogEntry,
   dashboardGridForWidth,
+  homeViewLayout,
   inferWidgetSize,
   packDashboardLayout,
   scaleLayoutToCols,
@@ -30,7 +30,6 @@ import {
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import {
   classifyDashboardShell,
-  dashboardHubLinks,
   dashboardNextActions,
   dashboardSetupBlurb,
   dashboardSetupSteps,
@@ -127,7 +126,6 @@ export default function DashboardClient() {
   const [role, setRole] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">("error");
-  const [moreOpen, setMoreOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [meLoaded, setMeLoaded] = useState(false);
@@ -246,14 +244,6 @@ export default function DashboardClient() {
   const availableCatalog = useMemo(
     () => WIDGET_CATALOG.filter((entry) => canAccessWidget(entry.type, role)),
     [role],
-  );
-
-  const secondaryTypes = useMemo(
-    () =>
-      SECONDARY_WIDGET_TYPES.filter(
-        (type) => canAccessWidget(type, role) && !layout.some((item) => item.type === type),
-      ),
-    [layout, role],
   );
 
   const addableCatalog = useMemo(
@@ -645,7 +635,6 @@ export default function DashboardClient() {
     setupRequired,
     tbaConfigured,
   });
-  const hubLinks = dashboardHubLinks(orgId || null);
   const nextActions = dashboardNextActions({
     orgId: orgId || null,
     shell: dashShell,
@@ -661,8 +650,9 @@ export default function DashboardClient() {
     hasAiProvider,
     role,
   });
+  const viewLayout = homeViewLayout(layout, { editing, shell: dashShell, widgets });
   const grid = dashboardGridForWidth(mounted ? width : 1280);
-  const displayLayout = scaleLayoutToCols(layout, DASHBOARD_COLUMNS, grid.cols);
+  const displayLayout = scaleLayoutToCols(viewLayout, DASHBOARD_COLUMNS, grid.cols);
   const gridLayout: Layout = displayLayout.map((item) => ({
     i: item.i,
     x: item.x,
@@ -693,37 +683,36 @@ export default function DashboardClient() {
         <div>
           <span className="breadcrumbs">
             {me.orgName ?? "Workspace"} {me.teamNumber ? `· ${me.teamNumber}` : ""}
-            {board ? (
+            {board && !board.isDefault ? (
               <span className="dash-scope-pill" data-scope={scope}>
-                {board.isDefault ? "Default" : scope === "org" ? "Team board" : "Personal board"}
+                {scope === "org" ? "Team board" : "Personal board"}
               </span>
             ) : null}
           </span>
           <h1>
             {greeting()}, {firstName}
           </h1>
-          {orgId && board && !(board.isDefault && switcherBoards.length <= 1) ? (
+          {orgId && board && !board.isDefault && switcherBoards.length > 1 ? (
             <p className="dash-board-current">
               <strong>{board.name}</strong>
-              <span>{boards.length ? `${boards.length} board${boards.length === 1 ? "" : "s"}` : "Home Screen"}</span>
             </p>
           ) : null}
           <p>
             {!meLoaded
               ? "Loading your workspace…"
               : !orgId
-                ? "Select a team workspace to load live data. No fabricated ranks, EPA, or match times."
+                ? "Select a team workspace to load live data."
                 : tbaConfigured === false
-                  ? "TBA not configured — connect The Blue Alliance for live match/rank sync."
+                  ? "Connect The Blue Alliance for live match and rank data."
                   : setupRequired
-                    ? "Select an active event to load live competition data."
+                    ? "Select an active event to load competition data."
                     : context.eventName
                       ? String(context.eventName)
-                      : "Next match and alerts when real TBA data exists — Edit Home to rearrange."}
+                      : "Home — widgets appear when live data exists."}
           </p>
         </div>
         <div className="dash-home-actions">
-          {nextMatchData && !editing ? (
+          {nextMatchData && !editing && !viewLayout.some((item) => item.type === "next_match") ? (
             <a className="dash-next-glance" href={withOrgHref("/intel", orgId || null)}>
               <span>Next</span>
               <strong>
@@ -752,7 +741,7 @@ export default function DashboardClient() {
           ) : null}
           {!editing ? (
             <button
-              className="app-button dash-edit-trigger"
+              className="app-button secondary dash-edit-trigger"
               type="button"
               data-testid="dash-customize"
               aria-label="Edit Home — rearrange, add, or remove widgets"
@@ -858,17 +847,6 @@ export default function DashboardClient() {
               +
             </button>
           </div>
-          <div className="dash-board-dots" aria-hidden="true">
-            {switcherBoards.map((item) => (
-              <button
-                key={`dot-${item.id}`}
-                type="button"
-                aria-current={board?.id === item.id ? "true" : undefined}
-                disabled={saving || editing}
-                onClick={() => void switchBoard(item.id)}
-              />
-            ))}
-          </div>
           <button
             type="button"
             className="dash-board-manage"
@@ -883,16 +861,6 @@ export default function DashboardClient() {
             Manage boards
           </button>
         </div>
-      ) : null}
-
-      {meLoaded && !editing && dashShell !== "ready" ? (
-        <nav className="dash-hub-rail" aria-label="Product hubs">
-          {hubLinks.map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
       ) : null}
 
       {meLoaded && dashShell !== "ready" ? (
@@ -928,28 +896,14 @@ export default function DashboardClient() {
         </section>
       ) : null}
 
-      {meLoaded && dashShell === "ready" && nextActions.length > 0 ? (
-        <section
-          className="dash-next-actions app-card soft-panel edc-next-actions"
-          aria-label="Next actions"
-        >
-          <header>
-            <h2>Next</h2>
-            <p>{nextActions[0]?.detail}</p>
-          </header>
-          <ol>
-            {nextActions.slice(0, 2).map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                </div>
-                <a className="app-button secondary" href={action.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
+      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !editing ? (
+        <p className="dash-ready-cue" role="status">
+          <span>
+            <strong>{nextActions[0]?.label}</strong>
+            {nextActions[0]?.detail ? ` — ${nextActions[0].detail}` : ""}
+          </span>
+          <a href={nextActions[0]?.href}>{nextActions[0]?.label}</a>
+        </p>
       ) : null}
 
       {meLoaded && orgId && tbaConfigured !== false ? (
@@ -1031,6 +985,11 @@ export default function DashboardClient() {
               <strong>Add widgets</strong>
               <span>Pick from the library to build your Home Screen</span>
             </button>
+          ) : viewLayout.length === 0 && !editing ? (
+            <div className="dash-quiet-home" role="status">
+              <strong>Nothing live yet</strong>
+              <span>Home stays quiet until match, scouting, or robot data exists. Edit Home to pin widgets anyway.</span>
+            </div>
           ) : (
             <GridLayout
               className="dash-grid"
@@ -1071,7 +1030,7 @@ export default function DashboardClient() {
               onResize={(_next, _old, item) => updateSnap("Resizing", item)}
               onResizeStop={() => { setDragging(false); setSnapFeedback(null); }}
             >
-              {layout.map((item) => (
+              {viewLayout.map((item) => (
                 <div
                   key={item.i}
                   className={`dash-grid-item${editing ? " jiggling" : ""}`}
@@ -1139,7 +1098,7 @@ export default function DashboardClient() {
           )
         ) : (
           <div className="dash-more-grid">
-            {layout.slice(0, 5).map((item) => (
+            {viewLayout.slice(0, 5).map((item) => (
               <DashboardWidgetView
                 key={item.i}
                 type={item.type}
@@ -1151,32 +1110,6 @@ export default function DashboardClient() {
           </div>
         )}
       </section>
-      ) : null}
-
-      {!editing && dashShell === "ready" && secondaryTypes.length > 0 ? (
-        <section className="dash-more">
-          <button
-            type="button"
-            className="dash-more-toggle"
-            aria-expanded={moreOpen}
-            onClick={() => setMoreOpen((value) => !value)}
-          >
-            {moreOpen ? "Hide secondary metrics" : "Show secondary metrics"}
-          </button>
-          {moreOpen ? (
-            <div className="dash-more-grid">
-              {secondaryTypes.map((type) => (
-                <DashboardWidgetView
-                  key={type}
-                  type={type}
-                  payload={widgets[type]}
-                  orgId={orgId}
-                  tbaConfigured={tbaConfigured}
-                />
-              ))}
-            </div>
-          ) : null}
-        </section>
       ) : null}
 
       {editing ? (

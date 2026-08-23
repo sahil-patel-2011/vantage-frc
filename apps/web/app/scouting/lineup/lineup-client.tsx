@@ -20,6 +20,7 @@ import {
 } from "../../../lib/scouting/lineup-related";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./lineup.css";
 
 type CoverageView =
@@ -106,6 +107,7 @@ function LineupShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -113,11 +115,30 @@ function LineupShell({
   orgId?: string | null;
   shell: LineupShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = lineupNextActions({ orgId, shell });
   const copy = lineupShellCopy(shell);
+  const failureCopy =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || copy.description,
+          },
+        )
+      : null;
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const steps = shell === "setup" ? lineupSetupSteps(orgId) : [];
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -152,11 +173,16 @@ function LineupShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failureCopy ? failureCopy.title : copy.title}
+        description={failureCopy ? failureCopy.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failureCopy?.primary ? (
+          <a className="app-button" href={failureCopy.primary.href}>
+            {failureCopy.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failureCopy?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -213,6 +239,8 @@ export default function LineupClient({ orgId }: { orgId: string }) {
   const [view, setView] = useState<CoverageView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [qualsOnly, setQualsOnly] = useState(true);
   const [focusMatch, setFocusMatch] = useState("");
   const [updatedAt, setUpdatedAt] = useState("");
@@ -226,12 +254,14 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       const data = (await response.json()) as CoverageView & { error?: string };
       if (!response.ok) {
         setFetchFailed(true);
+        setErrorStatus(response.status);
         setError(data.error ?? "Could not load coverage.");
         return;
       }
       setView(data);
       setUpdatedAt(data.generatedAt);
       setError("");
+      setErrorStatus(null);
       setFetchFailed(false);
       if (data.status === "live" && data.live.focusMatchKeys[0] && !focusMatch) {
         setFocusMatch(data.live.focusMatchKeys[0]!);
@@ -312,6 +342,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={errorStatus}
         onRetry={() => void load()}
       />
     );

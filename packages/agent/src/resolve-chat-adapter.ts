@@ -33,6 +33,12 @@ export class ChatProviderResolutionError extends Error {
 
 export type ResolveOrgChatAdapterInput = {
   orgId: string;
+  /**
+   * When set, that member's keys overlay the team's for the same provider
+   * (personal OpenAI/Anthropic, including an OpenAI-compatible base URL).
+   * Omit in tests and worker jobs that should use org keys only.
+   */
+  userId?: string;
   promptCachingEnabled: boolean;
   /** Feature tag for Automode (cad, coding, strategy, chat, …). */
   feature?: string;
@@ -72,6 +78,8 @@ type OrgProviderRow = EncryptedRow & {
 type OrgKeyRow = EncryptedRow & {
   id: string;
   provider: string;
+  baseUrl?: string | null;
+  model?: string | null;
 };
 
 type ManagedRow = EncryptedRow & {
@@ -283,6 +291,102 @@ async function loadRoutingPrefs(client: PoolClient, orgId: string): Promise<Rout
   }
 }
 
+async function loadOrgLlmKeys(client: PoolClient, orgId: string): Promise<OrgKeyRow[]> {
+  try {
+    const result = await client.query<OrgKeyRow>(
+      `SELECT id, provider,
+              base_url AS "baseUrl",
+              model,
+              key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
+              key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
+              kms_key_id AS "kmsKeyId"
+       FROM org_llm_keys
+       WHERE org_id = $1
+       ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
+      [orgId],
+    );
+    return result.rows;
+  } catch {
+    const result = await client.query<OrgKeyRow>(
+      `SELECT id, provider,
+              key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
+              key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
+              kms_key_id AS "kmsKeyId"
+       FROM org_llm_keys
+       WHERE org_id = $1
+       ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
+      [orgId],
+    );
+    return result.rows;
+  }
+}
+
+async function loadMemberLlmKeys(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+): Promise<OrgKeyRow[]> {
+  try {
+    const result = await client.query<OrgKeyRow>(
+      `SELECT id, provider,
+              base_url AS "baseUrl",
+              model,
+              key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
+              key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
+              kms_key_id AS "kmsKeyId"
+         FROM member_llm_keys
+        WHERE org_id = $1::uuid AND user_id = $2::uuid
+        ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
+      [orgId, userId],
+    );
+    return result.rows;
+  } catch {
+    // Table may not exist yet before migration.
+    return [];
+  }
+}
+
+function overlayMemberKeys(orgKeys: OrgKeyRow[], memberKeys: OrgKeyRow[]): OrgKeyRow[] {
+  if (!memberKeys.length) return orgKeys;
+  const personal = new Set(memberKeys.map((row) => row.provider.trim().toLowerCase()));
+  return [
+    ...memberKeys,
+    ...orgKeys.filter((row) => !personal.has(row.provider.trim().toLowerCase())),
+  ];
+}
+
+function httpAdapterFromLlmKey(
+  row: OrgKeyRow,
+  input: ResolveOrgChatAdapterInput,
+  apiKey: string,
+  model: string,
+  prices: PromptCachePrices,
+): HttpChatAdapter {
+  const baseUrl = row.baseUrl?.trim() || undefined;
+  const normalized = normalizeProvider(row.provider);
+  if (normalized === "openai" && baseUrl) {
+    return new HttpChatAdapter({
+      provider: "openai-compatible",
+      model: row.model?.trim() || model,
+      apiKey,
+      baseUrl,
+      promptCachingEnabled: input.promptCachingEnabled,
+      prices,
+      fetchImpl: input.fetchImpl,
+    });
+  }
+  const provider = normalized === "anthropic" || normalized === "openai" ? normalized : "openai";
+  return new HttpChatAdapter({
+    provider,
+    model: row.model?.trim() || model,
+    apiKey,
+    baseUrl,
+    promptCachingEnabled: input.promptCachingEnabled,
+    prices,
+    fetchImpl: input.fetchImpl,
+  });
+}
+
 function availableProvidersFrom(
   orgKeys: OrgKeyRow[],
   orgProviders: OrgProviderRow[],
@@ -291,8 +395,10 @@ function availableProvidersFrom(
   for (const row of orgKeys) {
     if (isGoogleByokProvider(row.provider)) set.add("google");
     else if (isOpenRouterByokProvider(row.provider)) set.add("openai-compatible");
-    else if (normalizeProvider(row.provider) === "openai") set.add("openai");
-    else if (normalizeProvider(row.provider) === "anthropic") set.add("anthropic");
+    else if (normalizeProvider(row.provider) === "openai") {
+      set.add("openai");
+      if (row.baseUrl?.trim()) set.add("openai-compatible");
+    } else if (normalizeProvider(row.provider) === "anthropic") set.add("anthropic");
   }
   for (const row of orgProviders) {
     if (row.localRelay) continue;
@@ -387,6 +493,9 @@ export async function resolveOrgChatAdapter(
     return resolveHostedPlatformChatAdapter(client, input);
   }
   const prefs = await loadRoutingPrefs(client, input.orgId);
+  const memberKeys = input.userId
+    ? await loadMemberLlmKeys(client, input.orgId, input.userId)
+    : [];
 
   const orgProviders = await client.query<OrgProviderRow>(
     `SELECT id, kind, label, base_url AS "baseUrl", local_relay AS "localRelay",
@@ -402,16 +511,9 @@ export async function resolveOrgChatAdapter(
     [input.orgId, LOCAL_OPENAI_COMPAT_LABEL],
   );
 
-  const orgKeys = await client.query<OrgKeyRow>(
-    `SELECT id, provider,
-            key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
-            key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
-            kms_key_id AS "kmsKeyId"
-     FROM org_llm_keys
-     WHERE org_id = $1
-     ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
-    [input.orgId],
-  );
+  const orgKeys = {
+    rows: overlayMemberKeys(await loadOrgLlmKeys(client, input.orgId), memberKeys),
+  };
 
   const available = availableProvidersFrom(orgKeys.rows, orgProviders.rows);
   const chosen = pickByokModelForFeature({
@@ -509,14 +611,7 @@ export async function resolveOrgChatAdapter(
       const row = orgKeys.rows.find((r) => normalizeProvider(r.provider) === chosen.provider);
       if (row) {
         const apiKey = await decryptRow(row, input.decrypt);
-        return new HttpChatAdapter({
-          provider: chosen.provider,
-          model: chosen.modelId,
-          apiKey,
-          promptCachingEnabled: input.promptCachingEnabled,
-          prices: pricesFromOption(chosen),
-          fetchImpl: input.fetchImpl,
-        });
+        return httpAdapterFromLlmKey(row, input, apiKey, chosen.modelId, pricesFromOption(chosen));
       }
     }
   }
@@ -583,17 +678,10 @@ export async function resolveOrgChatAdapter(
     }
     const provider = normalizeProvider(row.provider);
     if (provider !== "openai" && provider !== "anthropic") continue;
-    const model = DEFAULT_MODELS[provider];
+    const model = row.model?.trim() || DEFAULT_MODELS[provider];
     const apiKey = await decryptRow(row, input.decrypt);
     const prices = await catalogPrices(client, provider, model, DEFAULT_PRICES[provider]);
-    return new HttpChatAdapter({
-      provider,
-      model,
-      apiKey,
-      promptCachingEnabled: input.promptCachingEnabled,
-      prices,
-      fetchImpl: input.fetchImpl,
-    });
+    return httpAdapterFromLlmKey(row, input, apiKey, model, prices);
   }
 
   // Keyless local connector last chance.

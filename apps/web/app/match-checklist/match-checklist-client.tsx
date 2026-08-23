@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CompetitionHubRelated } from "../../components/competition-hub-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { checklistItemLabel, formatElapsed } from "../../lib/match-checklist";
 import type { MatchChecklistView } from "../../lib/match-checklist/compute-match-checklist";
 import {
@@ -21,6 +22,9 @@ export default function MatchChecklistClient({ embedded = false }: { embedded?: 
   const [view, setView] = useState<MatchChecklistView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [, forceTick] = useState(0);
 
@@ -29,6 +33,8 @@ export default function MatchChecklistClient({ embedded = false }: { embedded?: 
   const load = useCallback(() => {
     setFetchFailed(false);
     setError("");
+    setErrorStatus(null);
+    setErrorMessage("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
@@ -37,6 +43,8 @@ export default function MatchChecklistClient({ embedded = false }: { embedded?: 
       .then(async (response) => {
         const data = (await response.json()) as MatchChecklistView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setErrorMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -120,15 +128,40 @@ export default function MatchChecklistClient({ embedded = false }: { embedded?: 
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          soft
-          title="Could not load the checklist"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: errorMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: errorMessage || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState
+              soft
+              title={copy.title}
+              description={copy.description}
+            >
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState soft title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

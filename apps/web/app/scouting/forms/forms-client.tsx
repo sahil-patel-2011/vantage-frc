@@ -40,6 +40,7 @@ import {
 } from "../../../lib/scouting/form-builder";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 
 type SchemasPayload = {
   eventKey: string | null;
@@ -205,6 +206,7 @@ function FormBuilderShell({
   shell,
   entryType,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -212,11 +214,30 @@ function FormBuilderShell({
   shell: FormBuilderShellKind;
   entryType?: EntryType;
   error?: string;
+  /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = formBuilderNextActions({ orgId, shell, entryType });
   const copy = formBuilderShellCopy(shell, { entryType });
+  const failureCopy =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || copy.description,
+          },
+        )
+      : null;
   const steps = shell === "setup" ? formBuilderSetupSteps(orgId) : [];
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const commandHref = hubHref("/competition", "command", orgId);
@@ -244,11 +265,16 @@ function FormBuilderShell({
               : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failureCopy ? failureCopy.title : copy.title}
+        description={failureCopy ? failureCopy.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failureCopy?.primary ? (
+          <a className="app-button" href={failureCopy.primary.href}>
+            {failureCopy.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failureCopy?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -369,6 +395,8 @@ function PreviewField({ question }: { question: DraftQuestion }) {
 export default function FormsClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
   const [payload, setPayload] = useState<SchemasPayload | null>(null);
   const [loadError, setLoadError] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   const [type, setType] = useState<EntryType>("match");
   const [mode, setMode] = useState<Mode>("edit");
   const [title, setTitle] = useState("Match scouting");
@@ -395,6 +423,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
 
   const load = useCallback(async () => {
     setLoadError("");
+    setLoadErrorStatus(null);
     try {
       const response = await fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}`, {
         cache: "no-store",
@@ -402,6 +431,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       const body = (await response.json()) as SchemasPayload & { error?: string };
       if (!response.ok) {
         setLoadError(body.error ?? "Could not load scouting schemas.");
+        setLoadErrorStatus(response.status);
         return;
       }
       setPayload(body);
@@ -507,6 +537,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         shell="error"
         entryType={type}
         error={loadError}
+        errorStatus={loadErrorStatus}
         onRetry={() => void load()}
       />
     );

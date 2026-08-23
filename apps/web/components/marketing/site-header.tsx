@@ -20,33 +20,25 @@ export function BrandLink({ href = "/" }: { href?: string }) {
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const nav = (mobile = false) =>
-    links.map(([href, label]) => (
-      <a
-        aria-current={
-          pathname === href || (href === "/features" && pathname.startsWith("/features/"))
-            ? "page"
-            : undefined
-        }
-        href={href}
-        key={href}
-        onClick={
-          mobile
-            ? (event) =>
-                (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute(
-                  "open",
-                )
-            : undefined
-        }
-      >
-        {label}
-      </a>
-    ));
 
   return (
     <header className="nav">
       <BrandLink />
-      <nav aria-label="Primary navigation">{nav()}</nav>
+      <nav aria-label="Primary navigation">
+        {links.map(([href, label]) => (
+          <a
+            aria-current={
+              pathname === href || (href === "/features" && pathname.startsWith("/features/"))
+                ? "page"
+                : undefined
+            }
+            href={href}
+            key={href}
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
       <div className="nav-actions">
         <a className="sign-in-link" href="/signin">
           Sign in
@@ -55,19 +47,6 @@ export function SiteHeader() {
           Join waitlist
         </a>
       </div>
-      <details className="mobile-menu">
-        <summary aria-label="Open navigation">
-          <span />
-          <span />
-          <span />
-        </summary>
-        <nav aria-label="Mobile navigation">
-          {nav(true)}
-          <a href="/for-teams">For teams</a>
-          <a href="/signin">Sign in</a>
-          <a href="/#waitlist">Join waitlist</a>
-        </nav>
-      </details>
     </header>
   );
 }

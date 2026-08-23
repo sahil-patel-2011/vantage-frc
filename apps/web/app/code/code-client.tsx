@@ -540,7 +540,7 @@ export function CodeClient({
               AI Bugbot
             </a>
             <a className="app-button secondary" href={keysHref}>
-              AI API keys
+              AI keys
             </a>
           </div>
         </article>

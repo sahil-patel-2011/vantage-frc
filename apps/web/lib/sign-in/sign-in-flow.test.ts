@@ -21,9 +21,9 @@ describe("sign-in Soft-UI helpers", () => {
     expect(signInSetupCopy("email_otp").title).toMatch(/mail provider/i);
   });
 
-  it("clarifies Google vs email OTP in the subtitle", () => {
-    expect(signInSubtitle({ email2faEnforced: true, emailOtpAvailable: true })).toMatch(/authorized/i);
-    expect(signInSubtitle({ email2faEnforced: false, emailOtpAvailable: false })).toMatch(/authorized/i);
+  it("uses one shared sign-in for every team", () => {
+    expect(signInSubtitle({ email2faEnforced: true, emailOtpAvailable: true })).toMatch(/every team/i);
+    expect(signInSubtitle({ email2faEnforced: false, emailOtpAvailable: false })).toMatch(/every team/i);
     expect(googleReady({ googleSignInAvailable: false }, true)).toBe(true);
     expect(googleReady({ googleSignInAvailable: false }, false)).toBe(false);
   });

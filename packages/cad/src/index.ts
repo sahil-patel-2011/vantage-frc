@@ -32,6 +32,9 @@ export * from "./ai-plan";
 export * from "./onshape-api-keys";
 export * from "./onshape-features";
 export * from "./claude-cad";
+export type { ClaudeCadSession } from "./claude-session";
+export * from "./onshape-url";
+export * from "./cad-agent-action";
 export { runCadMcpStdio } from "./mcp-stdio";
 
 export type EngineeringBrief={summary:string;requirements:string[];constraints:string[];scoringTasks:string[];assumptions:Array<{name:string;value:string;needsConfirmation:boolean}>;risks:string[];acceptanceCriteria:string[];sourceRefs:Array<{type:string;id:string;classification:string}>;disclaimer:string};

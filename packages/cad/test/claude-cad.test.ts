@@ -60,6 +60,24 @@ describe("Claude CAD tools", () => {
     expect(result.instructions).toMatch(/Claude Code/);
   });
 
+  it("uses injected HTTP instead of env API keys", async () => {
+    const paths: string[] = [];
+    const http = async (path: string) => {
+      paths.push(path);
+      return new Response(JSON.stringify({ items: [] }), { status: 200, headers: { "content-type": "application/json" } });
+    };
+    const result = (await callClaudeCadTool("onshape_list_documents", { limit: 4 }, { http, hosted: true })) as {
+      documents: unknown[];
+    };
+    expect(result.documents).toEqual([]);
+    expect(paths[0]).toMatch(/documents\?/);
+  });
+
+  it("skips Fusion loopback when hosted", async () => {
+    const status = (await callClaudeCadTool("fusion_status", {}, { hosted: true })) as { setupRequired: boolean };
+    expect(status.setupRequired).toBe(true);
+  });
+
   it("refuses Onshape calls when API keys are missing", async () => {
     const saved = {
       ONSHAPE_ACCESS_KEY: process.env.ONSHAPE_ACCESS_KEY,

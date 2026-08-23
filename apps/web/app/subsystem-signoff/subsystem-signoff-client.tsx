@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
@@ -119,6 +120,9 @@ export default function SubsystemSignoffClient() {
   const [view, setView] = useState<SubsystemSignoffView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadMessage, setLoadMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -137,13 +141,21 @@ export default function SubsystemSignoffClient() {
       .then(async (response) => {
         const data = (await response.json()) as SubsystemSignoffView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setLoadMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
+        setErrorStatus(null);
+        setLoadMessage("");
         setView(data);
         setSeason(data.seasonYear);
       })
-      .catch(() => setFetchFailed(true));
+      .catch(() => {
+        setErrorStatus(null);
+        setLoadMessage("");
+        setFetchFailed(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -176,6 +188,22 @@ export default function SubsystemSignoffClient() {
   );
 
   if (fetchFailed || view == null) {
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadMessage,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadMessage || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page signoff-page">
         <PageHeader
@@ -185,15 +213,16 @@ export default function SubsystemSignoffClient() {
         />
         <EmptyState
           soft
-          title={fetchFailed ? "Could not load subsystem sign-offs" : "Loading subsystem sign-offs…"}
-          description={
-            fetchFailed
-              ? "A network or server issue prevented loading. Try again."
-              : "Checking your workspace."
-          }
+          title={copy ? copy.title : "Loading subsystem sign-offs…"}
+          description={copy ? copy.description : "Checking your workspace."}
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {copy?.primary ? (
+            <a className="app-button" href={copy.primary.href}>
+              {copy.primary.label}
+            </a>
+          ) : null}
+          {copy?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={() => load()}>
               Retry
             </button>

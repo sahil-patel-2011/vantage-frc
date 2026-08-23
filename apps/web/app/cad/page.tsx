@@ -14,7 +14,7 @@ export default async function CadPage({
           <div>
             <p className="breadcrumbs">Build / CAD</p>
             <h1>Select an organization</h1>
-            <p>Open CAD Builder from your team workspace so jobs stay scoped to the right org.</p>
+            <p>Open CAD from your team workspace so the Onshape agent stays scoped to the right org.</p>
           </div>
           <a className="app-button secondary" href="/workspace">
             Choose workspace

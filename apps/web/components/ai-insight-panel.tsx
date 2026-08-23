@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { InsightKind } from "../lib/ai-insights";
+import "./ai-insight-panel.css";
 
 type InsightResponse = {
   text?: string;
@@ -15,8 +16,8 @@ type InsightResponse = {
 /**
  * On-demand AI analysis panel. Runs through /api/ai-insights → AIOrchestrator,
  * so every generation is metered, provenance-recorded, and visible in the AI
- * runs ledger. Styling comes from the host feature's co-located CSS via the
- * shared .aii-* classes (each feature CSS defines them).
+ * runs ledger. Styling ships with the component (./ai-insight-panel.css), so a
+ * host feature does not need to redefine the .aii-* classes.
  */
 export function AiInsightPanel({
   orgId,

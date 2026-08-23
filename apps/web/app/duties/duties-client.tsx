@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DUTY_KIND_LABELS, type DutyAssignment, type DutyRosterView } from "../../lib/duty-roster-shared";
 import { withOrgHref } from "../../lib/nav/product-nav";
 
 export default function DutiesClient() {
   const [view, setView] = useState<DutyRosterView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead end.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -16,24 +19,50 @@ export default function DutiesClient() {
     void fetch(`/api/duties${qs}`)
       .then(async (response) => {
         const data = (await response.json()) as DutyRosterView & { error?: string };
-        if (!response.ok) throw new Error(data.error ?? "Could not load duties");
+        if (!response.ok) {
+          setErrorStatus(response.status);
+          throw new Error(data.error ?? "Could not load duties");
+        }
         setView(data);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Could not load duties"));
   }, []);
 
   if (error) {
+    // A signed-out roster needs sign-in, not a workspace picker behind the same wall.
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: error,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined"
+            ? null
+            : `${window.location.pathname}${window.location.search}`,
+        message: error,
+      },
+    );
     return (
       <main className="module-page duties-page">
         <PageHeader navPath="/duties" title="Duty roster" />
-        <EmptyState soft badge="Setup" badgeTone="setup" title="Could not load duty roster" description={error}>
+        <EmptyState soft badge="Setup" badgeTone="setup" title={copy.title} description={copy.description}>
           <div className="soft-btn-row">
-            <a className="app-button secondary" href="/workspace">
-              Choose workspace
-            </a>
-            <a className="app-button secondary" href="/docs">
-              App manual
-            </a>
+            {copy.primary ? (
+              <a className="app-button" href={copy.primary.href}>
+                {copy.primary.label}
+              </a>
+            ) : (
+              <>
+                <a className="app-button secondary" href="/workspace">
+                  Choose workspace
+                </a>
+                <a className="app-button secondary" href="/docs">
+                  App manual
+                </a>
+              </>
+            )}
           </div>
         </EmptyState>
       </main>

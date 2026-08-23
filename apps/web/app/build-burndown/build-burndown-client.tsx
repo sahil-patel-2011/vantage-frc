@@ -18,7 +18,7 @@ import {
   type BuildBurndownShellKind,
 } from "../../lib/build-burndown/build-burndown-related";
 import type { BuildTaskCategory, BuildTaskStatus } from "../../lib/build-burndown/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./build-burndown.css";
 
@@ -93,7 +93,7 @@ function BurndownShell({
 }) {
   const actions = buildBurndownNextActions({ orgId, shell });
   const copy = buildBurndownShellCopy(shell);
-  const teamHref = hubHref("/team", "build-burndown", orgId);
+  const teamHref = hubWorkbenchHref("team", "build-burndown", orgId);
   const steps = shell === "setup" ? buildBurndownSetupSteps(orgId) : [];
 
   return (
@@ -233,7 +233,7 @@ export default function BuildBurndownClient() {
   const relatedLinks = buildBurndownRelatedLinks(orgId, {
     include: [...BUILD_BURNDOWN_RELATED_INCLUDE],
   });
-  const teamHref = hubHref("/team", "build-burndown", orgId);
+  const teamHref = hubWorkbenchHref("team", "build-burndown", orgId);
   const showTiles = shouldShowBuildBurndownSummaryTiles({ taskCount, hasPlan });
 
   const mutate = useCallback(

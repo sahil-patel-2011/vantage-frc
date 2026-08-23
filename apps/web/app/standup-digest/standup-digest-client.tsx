@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { StandupDigestView } from "../../lib/standup-digest/compute-standup-digest";
 
 type LiveView = Extract<StandupDigestView, { status: "live" }>;
@@ -10,6 +11,9 @@ export default function StandupDigestClient() {
   const [view, setView] = useState<StandupDigestView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadMessage, setLoadMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [date, setDate] = useState<string | null>(null);
 
@@ -28,13 +32,21 @@ export default function StandupDigestClient() {
       .then(async (response) => {
         const data = (await response.json()) as StandupDigestView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setLoadMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
+        setErrorStatus(null);
+        setLoadMessage("");
         setView(data);
         setDate(data.digestDate);
       })
-      .catch(() => setFetchFailed(true));
+      .catch(() => {
+        setErrorStatus(null);
+        setLoadMessage("");
+        setFetchFailed(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -105,14 +117,36 @@ export default function StandupDigestClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the standup digest"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: loadMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadMessage || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

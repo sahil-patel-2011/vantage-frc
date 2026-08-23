@@ -8,6 +8,7 @@ import {
   githubShellCopy,
 } from "../../lib/github/github-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   TEAM_ADMIN_RELATED_INCLUDE,
   classifyTeamAdminShell,
@@ -124,6 +125,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [membersLoaded, setMembersLoaded] = useState(false);
   const [membershipLoading, setMembershipLoading] = useState(true);
   const [membershipFetchFailed, setMembershipFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [membershipErrorStatus, setMembershipErrorStatus] = useState<number | null>(null);
+  const [membershipErrorMessage, setMembershipErrorMessage] = useState("");
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("scout");
@@ -155,6 +159,8 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [githubBusy, setGithubBusy] = useState(false);
   const [githubLoading, setGithubLoading] = useState(true);
   const [githubFetchFailed, setGithubFetchFailed] = useState(false);
+  const [githubErrorStatus, setGithubErrorStatus] = useState<number | null>(null);
+  const [githubErrorMessage, setGithubErrorMessage] = useState("");
   const [defaultRepo, setDefaultRepo] = useState("");
 
   async function load() {
@@ -177,10 +183,14 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       if (membersData.adminTenure) setAdminTenure(membersData.adminTenure as AdminTenure);
       setMembersLoaded(true);
       setMembershipFetchFailed(false);
+      setMembershipErrorStatus(null);
+      setMembershipErrorMessage("");
     } else {
       setMembers([]);
       setMembersLoaded(true);
       setMembershipFetchFailed(true);
+      setMembershipErrorStatus(membersResponse.status);
+      setMembershipErrorMessage(membersData.error ?? "Could not load members");
       setMessage(membersData.error ?? "Could not load members");
     }
 
@@ -216,8 +226,12 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         setGithubRepos([]);
       }
       setGithubFetchFailed(false);
+      setGithubErrorStatus(null);
+      setGithubErrorMessage("");
     } else {
       setGithubFetchFailed(true);
+      setGithubErrorStatus(githubResponse.status);
+      setGithubErrorMessage(githubData.error ?? "Could not load GitHub context");
       setGithubConnection(null);
       setGithubRepos([]);
       setMessage(githubData.error ?? "Could not load GitHub context");
@@ -453,6 +467,16 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     connected: githubConnected,
   });
   const githubCopy = githubShellCopy(githubShell);
+  const nextPath =
+    typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`;
+  const online = typeof navigator === "undefined" ? true : navigator.onLine;
+  const githubFailure =
+    githubShell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({ status: githubErrorStatus, message: githubErrorMessage, online }),
+          { nextPath, message: githubErrorMessage || githubCopy.description },
+        )
+      : null;
 
   const pendingInvites = invites.filter((invite) => invite.status === "pending").length;
   const pendingAccess = accessRequests.filter((request) => request.status === "pending").length;
@@ -465,6 +489,17 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     memberCount: members.length,
   });
   const membershipCopy = teamAdminShellCopy(membershipShell);
+  const membershipFailure =
+    membershipShell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: membershipErrorStatus,
+            message: membershipErrorMessage,
+            online,
+          }),
+          { nextPath, message: membershipErrorMessage || membershipCopy.description },
+        )
+      : null;
   const membershipActions = teamAdminNextActions({
     orgId,
     shell: membershipShell,
@@ -589,11 +624,18 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
             soft
             badge={membershipShell === "error" ? "Unavailable" : undefined}
             badgeTone="setup"
-            title={membershipCopy.title}
-            description={membershipCopy.description}
+            title={membershipFailure ? membershipFailure.title : membershipCopy.title}
+            description={
+              membershipFailure ? membershipFailure.description : membershipCopy.description
+            }
             aria-busy={membershipShell === "loading"}
           >
-            {membershipShell === "error" ? (
+            {membershipFailure?.primary ? (
+              <a className="app-button" href={membershipFailure.primary.href}>
+                {membershipFailure.primary.label}
+              </a>
+            ) : null}
+            {membershipFailure?.showRetry ? (
               <button type="button" className="app-button secondary" onClick={() => void load()}>
                 Retry
               </button>
@@ -836,11 +878,16 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
             soft
             badge={githubShell === "error" ? "Unavailable" : undefined}
             badgeTone="setup"
-            title={githubCopy.title}
-            description={githubCopy.description}
+            title={githubFailure ? githubFailure.title : githubCopy.title}
+            description={githubFailure ? githubFailure.description : githubCopy.description}
             aria-busy={githubShell === "loading"}
           >
-            {githubShell === "error" ? (
+            {githubFailure?.primary ? (
+              <a className="app-button" href={githubFailure.primary.href}>
+                {githubFailure.primary.label}
+              </a>
+            ) : null}
+            {githubFailure?.showRetry ? (
               <button type="button" className="app-button secondary" onClick={() => void load()}>
                 Retry
               </button>

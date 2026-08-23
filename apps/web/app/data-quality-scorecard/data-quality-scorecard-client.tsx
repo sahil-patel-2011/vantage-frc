@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { DataQualityScorecardView } from "../../lib/data-quality-scorecard/compute-data-quality-scorecard";
 import type { DataQualityGrade } from "../../lib/data-quality-scorecard/types";
 
@@ -35,6 +36,9 @@ export default function DataQualityScorecardClient() {
   const [view, setView] = useState<DataQualityScorecardView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadStatus, setLoadStatus] = useState<number | null>(null);
+  const [loadMessage, setLoadMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -43,6 +47,8 @@ export default function DataQualityScorecardClient() {
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
+    setLoadStatus(null);
+    setLoadMessage("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
@@ -53,6 +59,8 @@ export default function DataQualityScorecardClient() {
       .then(async (response) => {
         const data = (await response.json()) as DataQualityScorecardView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadStatus(response.status);
+          setLoadMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -133,14 +141,37 @@ export default function DataQualityScorecardClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the Data Quality Scorecard"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          // Retry cannot fix an expired session — offer the action that can.
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: loadStatus,
+              message: loadMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadMessage || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

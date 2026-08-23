@@ -7,7 +7,7 @@ export default function QuickActions({ orgId }: { orgId: string }) {
     ["I","TEAM INTEL","Lookup or compare",`/intel?orgId=${orgId}`],
     ["D","TEAM DOSSIER","Season fact cards",`/dossier?orgId=${orgId}`],
     ["A","VANTAGE AGENT","Plan with context",`/chat?orgId=${orgId}`],
-    ["C","AI CAD BUILDER","Strategy to verified geometry",`/cad?orgId=${orgId}`],
+    ["C","CAD AGENT","Bind Onshape, then sketch live",`/cad?orgId=${orgId}`],
   ];
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

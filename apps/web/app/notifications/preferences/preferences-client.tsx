@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   NOTIFICATION_RELATED_INCLUDE,
   notificationRelatedLinks,
@@ -151,9 +152,15 @@ export default function NotificationPreferencesClient() {
   const [messageOk, setMessageOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Load failures are kept apart from save messages so an expired session can
+  // offer sign-in instead of a form full of defaults that will never save.
+  const [loadError, setLoadError] = useState("");
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
+    setLoadError("");
+    setLoadErrorStatus(null);
     const response = await fetch("/api/notifications/preferences");
     const data = (await response.json()) as {
       error?: string;
@@ -162,7 +169,9 @@ export default function NotificationPreferencesClient() {
       delivery?: Delivery;
     };
     if (!response.ok) {
-      setMessage(data.error ?? "Could not load preferences.");
+      setLoadError(data.error ?? "Could not load preferences.");
+      setLoadErrorStatus(response.status);
+      setMessage("");
       setMessageOk(false);
       setLoading(false);
       return;
@@ -183,14 +192,16 @@ export default function NotificationPreferencesClient() {
     setMessage("");
     setMessageOk(false);
     try {
-      const response = await fetch("/api/notifications/preferences", {
+      // `/api/account` is the single writer for notification_prefs — this page only reads
+      // from `/api/notifications/preferences`. It returns no delivery status, so the badge
+      // stays as loaded (it reflects deployment email config, not the saved prefs).
+      const response = await fetch("/api/account", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ notificationPrefs: inAppPrefs, emailPrefs }),
       });
       const data = (await response.json()) as {
         error?: string;
-        delivery?: Delivery;
         notificationPrefs?: InAppPrefs;
         emailPrefs?: EmailPrefs;
       };
@@ -200,7 +211,6 @@ export default function NotificationPreferencesClient() {
       }
       if (data.notificationPrefs) setInAppPrefs(data.notificationPrefs);
       if (data.emailPrefs) setEmailPrefs(data.emailPrefs);
-      if (data.delivery) setDelivery(data.delivery);
       setMessage("Preferences saved. Opted-out categories stay out of your inbox and email.");
       setMessageOk(true);
     } finally {
@@ -250,6 +260,39 @@ export default function NotificationPreferencesClient() {
 
       {loading ? (
         <EmptyState soft title="Loading preferences…" description="Pulling your inbox and email opt-ins." aria-busy />
+      ) : loadError ? (
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: loadErrorStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError,
+            },
+          );
+          return (
+            <EmptyState soft badge="Unavailable" badgeTone="setup" title={copy.title} description={copy.description}>
+              <div className="notif-header-actions">
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+                {copy.showRetry ? (
+                  <button type="button" className="app-button" onClick={() => void load()}>
+                    Retry
+                  </button>
+                ) : null}
+              </div>
+            </EmptyState>
+          );
+        })()
       ) : (
         <>
           <Panel className="account-panel">

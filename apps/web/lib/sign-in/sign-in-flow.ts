@@ -125,7 +125,7 @@ export function signInSetupCopy(
 
 /** One line under the title — buttons do the rest. */
 export function signInSubtitle(_status?: Pick<SignInAuthStatus, "email2faEnforced" | "emailOtpAvailable">) {
-  return "Authorized teams only.";
+  return "Same sign-in for every team.";
 }
 
 export function signInModeLabel(mode: SignInMode) {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { relayDeviceRoleLabel, relaySessionStatusLabel } from "../../lib/scout-p2p-relay";
 import type { ScoutP2pRelayView } from "../../lib/scout-p2p-relay/compute-scout-p2p-relay";
 import type { RelayDeviceRole, RelaySessionStatus } from "../../lib/scout-p2p-relay/types";
@@ -20,6 +21,9 @@ export default function ScoutP2pRelayClient() {
   const [view, setView] = useState<ScoutP2pRelayView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadStatus, setLoadStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -27,6 +31,8 @@ export default function ScoutP2pRelayClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setLoadStatus(null);
+    setLoadError("");
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -38,6 +44,8 @@ export default function ScoutP2pRelayClient() {
       .then(async (response) => {
         const data = (await response.json()) as ScoutP2pRelayView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -120,14 +128,36 @@ export default function ScoutP2pRelayClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load Scout P2P Relay"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: loadStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
