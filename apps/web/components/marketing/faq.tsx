@@ -50,7 +50,7 @@ export function FAQ() {
   };
 
   return (
-    <section className="faq-section" aria-labelledby="faq-title">
+    <section className="faq-section lux-faq" aria-labelledby="faq-title">
       <header className="lux-section-head">
         <p className="lux-eyebrow">Questions</p>
         <h2 id="faq-title">Questions teams actually ask</h2>
