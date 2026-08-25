@@ -29,12 +29,12 @@ export function ScrollReveal() {
           }
         }
       },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.06 },
+      { rootMargin: "80px 0px 0px 0px", threshold: 0.01 },
     );
     els.forEach((el) => {
       // Anything already in view on mount shows immediately (no pop-in).
       const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.92 && rect.bottom > 0) {
+      if (rect.top < window.innerHeight + 40 && rect.bottom > 0) {
         el.classList.add("is-in");
       } else {
         io.observe(el);

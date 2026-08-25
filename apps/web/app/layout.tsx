@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Source_Sans_3, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 import "./marketing.css";
+import "./marketing-v3.css";
 import "./soft-ui.css";
 import "./styles.css";
 import PwaRegister from "./pwa-register";

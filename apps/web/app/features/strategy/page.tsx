@@ -17,10 +17,12 @@ const assistantJobs = [
 ] as const;
 
 const scoutFeeds = [
-  { title: "Competition · Strategy", copy: "Factors from attributed scout facts—empty until scouted." },
-  { title: "Alliance Selection Desk", copy: "Shared alliance board with scout evidence attached." },
-  { title: "Command / My Day", copy: "Same event context on the Competition hub." },
-  { title: "FRC Assistant", copy: "Answers cite sources; no invented win %." },
+  { title: "Competition · Strategy", copy: "Private Edge and playbooks from attributed scout facts — empty until scouted." },
+  { title: "Alliance Selection Desk", copy: "Shared 8-alliance board with scout evidence attached. TBA conflict flags when cache exists." },
+  { title: "Pick clock & pairwise", copy: "Timed picks plus qualitative A-beats-B ranking. Empty until real taps." },
+  { title: "Drive-team tags", copy: "Defense, climb, partner-fit labels on event robots — blank until applied." },
+  { title: "Command / My Day", copy: "Same event context: next match, pit queue, bumper color from TBA lists." },
+  { title: "FRC Assistant", copy: "Answers cite TBA, Statbotics cache, and scout notes. No invented win %." },
 ] as const;
 
 export default function StrategyFeaturePage() {
@@ -29,9 +31,11 @@ export default function StrategyFeaturePage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
+          <p className="lux-kicker">Strategy</p>
           <h1>Strategy you can inspect.</h1>
           <p>
-            Competition Strategy tab, Alliance Selection Desk, Pick clock, and FRC Assistant—sourced facts only.
+            Competition Strategy, Alliance Selection Desk, pick clock, pairwise ranking, and FRC Assistant — sourced
+            from The Blue Alliance cache and your scout entries. Empty until those exist. No DEMO win rates.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">

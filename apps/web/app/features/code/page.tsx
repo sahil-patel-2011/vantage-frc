@@ -23,6 +23,7 @@ export default function CodeFeaturePage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
+          <p className="lux-kicker">Code Coach</p>
           <h1>Flag risk. Teach the fix.</h1>
           <p>
             Build hub Code Coach—local pattern review plus metered AI Bugbot. Human-approved diffs only. Never
