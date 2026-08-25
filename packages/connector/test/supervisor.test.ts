@@ -348,3 +348,19 @@ describe("combined heartbeat", () => {
     expect(cap.stops).toBeGreaterThan(0);
   });
 });
+
+describe("stop is idempotent", () => {
+  it("collapses concurrent stops into one shutdown pass", async () => {
+    // A revoked token makes the heartbeat loop stop the connector at the same moment the
+    // host reacts to the event; two passes must not stop every capability twice.
+    const cap = new FakeCapability("local-models");
+    const { supervisor } = makeSupervisor({ capabilities: [cap] });
+    supervisor.start();
+    await flushMicrotasks();
+    await Promise.all([supervisor.stop(), supervisor.stop()]);
+    expect(cap.stops).toBe(1);
+    // A later stop on an already-stopped supervisor is a no-op, not another pass.
+    await supervisor.stop();
+    expect(cap.stops).toBe(1);
+  });
+});

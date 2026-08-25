@@ -6,6 +6,9 @@
   "description": "Shared core of the Vantage connector: one pairing, one device identity, independently toggleable capabilities (ai-bridge, cad-relay, local-models, agent-sync, storage-node, mcp). Consumed by the Electron desktop host and the headless CLI host.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "vantage-connector": "./bin/vantage-connector.mjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,12 +17,20 @@
     "./node": {
       "types": "./dist/node/adapters.d.ts",
       "default": "./dist/node/adapters.js"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "default": "./dist/cli.js"
     }
   },
   "files": [
+    "bin",
     "dist",
     "src"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",

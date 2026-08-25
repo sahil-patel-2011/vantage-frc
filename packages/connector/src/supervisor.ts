@@ -109,6 +109,7 @@ export class ConnectorSupervisor {
   private rootController: AbortController | null = null;
   private heartbeatLoop: Promise<void> | null = null;
   private stopping = false;
+  private stopPromise: Promise<void> | null = null;
 
   constructor(private readonly options: ConnectorSupervisorOptions) {
     this.config = options.config;
@@ -142,10 +143,24 @@ export class ConnectorSupervisor {
     this.heartbeatLoop = this.runHeartbeats();
   }
 
+  /**
+   * Idempotent, including WHILE a stop is in flight: a revoked token makes the heartbeat
+   * loop stop the connector itself at the same moment the host reacts to the event, and
+   * two concurrent passes would abort twice and call every capability's stop() twice.
+   */
   async stop(): Promise<void> {
-    if (!this.rootController) return;
+    if (this.stopPromise) return this.stopPromise;
+    const rootController = this.rootController;
+    if (!rootController) return;
+    this.stopPromise = this.runStop(rootController).finally(() => {
+      this.stopPromise = null;
+    });
+    return this.stopPromise;
+  }
+
+  private async runStop(rootController: AbortController): Promise<void> {
     this.stopping = true;
-    this.rootController.abort();
+    rootController.abort();
     for (const runner of this.runners.values()) {
       runner.controller?.abort();
     }
