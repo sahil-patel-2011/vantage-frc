@@ -3,6 +3,7 @@ import {
   hubById,
   hubFeaturedMoreTabs,
   hubHref,
+  hubLegacyHref,
   hubMoreTabs,
   hubNestedTabs,
   hubPrimaryTabs,
@@ -62,6 +63,15 @@ describe("product hubs", () => {
       "impact",
     ]);
     expect(media.tabs.find((tab) => tab.id === "kit")?.legacyHref).toBe("/media-kit");
+    expect(media.tabs.find((tab) => tab.id === "media-library")?.legacyHref).toBe("/media-library");
+    const library = media.tabs.find((tab) => tab.id === "media-library");
+    expect(hubLegacyHref(library!, "org-1")).toBe("/media-library?orgId=org-1");
+  });
+
+  it("gives nested Media tools a standalone route so the hub can open them", () => {
+    for (const tab of hubById("media").tabs.filter((entry) => entry.group)) {
+      expect(tab.legacyHref, `media:${tab.id} nested without legacyHref`).toBeTruthy();
+    }
   });
 
   it("keeps Team workbenches to calendar, chat, people, work, and playbook", () => {

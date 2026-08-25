@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { SoftAccessDenied } from "../../components/hub-access-gate";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { AIAttribution, EmptyState, PageHeader, Panel, TabBar } from "../../components/ui";
+import { AIAttribution, EmptyState, PageHeader, Panel, TabBar, ToolStrip } from "../../components/ui";
 import {
   formatMediaMetric,
   isMediaReminderOverdue,
@@ -34,7 +34,7 @@ import {
   clientCanAccessHub,
   filterTabsByHubAccess,
 } from "../../lib/nav/hub-access-filter";
-import { hubById, hubPrimaryTabs, isHubTab } from "../../lib/nav/hubs";
+import { hubById, hubLegacyHref, hubNestedTabs, hubPrimaryTabs, isHubTab } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { useClientAccessProfile } from "../../lib/nav/use-client-access";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -679,9 +679,14 @@ function KitPanel({ view }: { view: LiveView }) {
       ) : (
         <p className="app-muted">Asset library is empty until you add real URLs.</p>
       )}
-      <a className="app-button" href={kitHref}>
-        Open Media Kit
-      </a>
+      <div className="media-kit-actions">
+        <a className="app-button" href={kitHref}>
+          Open Media Kit
+        </a>
+        <a className="app-button secondary" href={withOrgHref("/media-library", view.orgId)}>
+          Open Media library
+        </a>
+      </div>
     </Panel>
   );
 }
@@ -807,6 +812,21 @@ function LiveMediaWorkspace({
         tabs={tabs}
         className="product-hub-tabs"
       />
+      {tab === "kit" ? (
+        <ToolStrip
+          aria-label="Media kit tools"
+          value="kit"
+          onChange={(id) => {
+            if (id === "kit") onTab("kit");
+          }}
+          items={hubNestedTabs(MEDIA_HUB, "kit").map((entry) => ({
+            id: entry.id,
+            label: entry.label,
+            featured: entry.featured || !entry.group,
+            href: entry.group && entry.legacyHref ? hubLegacyHref(entry, orgId) : undefined,
+          }))}
+        />
+      ) : null}
 
       {error ? <p className="app-error">{error}</p> : null}
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
