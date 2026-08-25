@@ -1,21 +1,15 @@
 /**
- * Hero visual: a structure-only mock of the real product chrome — the hub rail,
- * the Competition tabs, a Command briefing card, and the Call Your Shot gate
- * (docs/AI_MENTOR_CONCEPT.md).
- *
- * Deliberately shows the honest empty state rather than invented numbers: the
- * briefing rows read "not connected" / "no entries yet", which is exactly what
- * the product renders before a team links an event. Nothing here is team data,
- * and there are no illustrative metrics to mistake for real ones.
+ * Hero visual: structure-only mock of Competition chrome.
+ * Honest empty states — never invented match lists, EPA, or win rates.
  */
 
 const rail = ["Home", "Competition", "Team", "Build", "Business", "AI"] as const;
-const tabs = ["Command", "Scouting", "Strategy"] as const;
+const tabs = ["Event day", "Scouting", "Strategy", "Pit"] as const;
 
 const briefing: readonly { label: string; value: string }[] = [
   { label: "Active event", value: "Not connected" },
-  { label: "Next match", value: "Waiting on a schedule" },
-  { label: "Scouting coverage", value: "No entries yet" },
+  { label: "Next match", value: "Waiting on TBA" },
+  { label: "Scouting", value: "No entries yet" },
 ] as const;
 
 export function HeroProductPanel() {
@@ -27,7 +21,7 @@ export function HeroProductPanel() {
           <i />
           <i />
         </span>
-        <strong>Competition · Command</strong>
+        <strong>Competition · Event day</strong>
         <b>Illustrative UI</b>
       </div>
 
@@ -43,7 +37,7 @@ export function HeroProductPanel() {
         <div className="mk-mock-main">
           <div className="mk-mock-tabs">
             {tabs.map((tab) => (
-              <span className={tab === "Command" ? "is-active" : undefined} key={tab}>
+              <span className={tab === "Event day" ? "is-active" : undefined} key={tab}>
                 {tab}
               </span>
             ))}
@@ -63,19 +57,18 @@ export function HeroProductPanel() {
               ))}
             </dl>
             <p className="mk-mock-empty">
-              Every surface stays empty until your team connects a real event. Vantage never fills these in with
-              sample numbers.
+              Event day, My Day, and checklists stay empty until this team’s TBA schedule is connected.
             </p>
           </article>
 
           <div className="hero-teach-shot mk-mock-shot">
-            <span className="hero-teach-shot-tag">Call your shot</span>
-            <p>Before the gearbox calculator reveals output RPM — which term dominates at this reduction?</p>
+            <span className="hero-teach-shot-tag">At the venue</span>
+            <p>Offline match and pit forms, QR handoff, and pit mesh — then sync when Wi-Fi returns.</p>
             <div className="hero-teach-chips">
-              <span>Free speed</span>
-              <span className="is-picked">Stage ratio</span>
+              <span>Offline forms</span>
+              <span className="is-picked">Alliance desk</span>
             </div>
-            <em>Prediction locked · the team&rsquo;s own math grades it, not the model&rsquo;s opinion.</em>
+            <em>Strategy tools stay blank until scout entries and the public cache exist. No DEMO EPA.</em>
           </div>
         </div>
       </div>
