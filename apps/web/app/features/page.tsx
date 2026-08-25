@@ -54,7 +54,7 @@ export default function FeaturesPage() {
             <div className="mk-menu-block">
               <header className="lux-section-head">
                 <h2>Also from the menu.</h2>
-                <p>These are product routes, not a seventh fake dashboard.</p>
+                <p>Logistics is a drawer pillar. Exports and Desktop are real routes too.</p>
               </header>
               <ul className="lux-feature-grid">
                 {MARKETING_MENU.map((item) => (

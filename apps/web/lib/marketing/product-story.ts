@@ -33,7 +33,7 @@ export const MARKETING_HUBS = [
       "Org-scoped team chat and DMs",
       "Hours, attendance, FMEA, and battery rotation",
       "Season wiki with a start-season playbook",
-      "Travel, packing lists, and visit invites from Logistics",
+      "Bring-your-season import for calendar, hours, and scout CSV",
     ],
   },
   {
@@ -43,7 +43,7 @@ export const MARKETING_HUBS = [
     href: "/features#business",
     route: "/business",
     promise: "Money, sponsors, grants, and outreach from recorded rows only.",
-    modules: ["Overview", "Money", "Sponsors", "Grants"],
+    modules: ["Overview", "Money", "Sponsors", "Grants", "Outreach"],
     tools: [
       "Funding sources and purchase log vs season budget",
       "Sponsor pipeline and packages (when sponsors are allowed)",
@@ -73,7 +73,7 @@ export const MARKETING_HUBS = [
     href: "/features#ai",
     route: "/ai",
     promise: "Metered FRC Assistant, writer, and agent — sourced or empty.",
-    modules: ["Chat", "Writer", "Agent", "Controls"],
+    modules: ["Chat", "Writer", "Agent", "Controls", "Notes"],
     tools: [
       "FRC Assistant with TBA, Statbotics cache, and scout facts",
       "Grant and sponsor writer from org profile",
@@ -88,7 +88,7 @@ export const MARKETING_HUBS = [
     href: "/features#media",
     route: "/media",
     promise: "Content calendar, drafts, reminders, and a media kit.",
-    modules: ["Calendar", "Drafts", "Reminders", "Kit"],
+    modules: ["Calendar", "Drafts", "Reminders", "Kit", "Impact"],
     tools: [
       "Draft captions with metered AI when you opt in",
       "Due reminders for posts you actually scheduled",
@@ -136,7 +136,7 @@ export const MARKETING_TRUST = [
 export const MARKETING_MENU = [
   {
     title: "Logistics",
-    copy: "Hotels, travel legs, packing lists, on-duty mentors, and shop-tour invites — empty until you add them.",
+    copy: "Its own drawer pillar: hotels, travel legs, packing lists, on-duty mentors, and shop-tour invites — empty until you add them.",
   },
   {
     title: "Exports",
