@@ -83,6 +83,7 @@ function DecisionsShell({
   error,
   onRetry,
   children,
+  embedded = false,
 }: {
   title: string;
   description: string;
@@ -91,25 +92,29 @@ function DecisionsShell({
   error?: string;
   onRetry?: () => void;
   children?: ReactNode;
+  embedded?: boolean;
 }) {
   const actions = decisionsNextActions({ orgId, shell });
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const aiHref = hubHref("/ai", "decisions", orgId);
+  const Root = embedded ? "div" : "main";
 
   return (
-    <main className="module-page decision-log-page soft-gate">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={aiHref}>AI</a>
-            {" / Decision Log"}
-          </>
-        }
-        title="Decision Log"
-        description={description}
-      >
-        <DecisionsRelatedStrip orgId={orgId} />
-      </PageHeader>
+    <Root className={`module-page decision-log-page soft-gate${embedded ? " is-embedded" : ""}`}>
+      {embedded ? null : (
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href={aiHref}>AI</a>
+              {" / Decision Log"}
+            </>
+          }
+          title="Decision Log"
+          description={description}
+        >
+          <DecisionsRelatedStrip orgId={orgId} />
+        </PageHeader>
+      )}
       {children}
       <EmptyState
         soft
@@ -146,8 +151,12 @@ function DecisionsShell({
         </p>
       ) : null}
       <DecisionsNextActionsPanel actions={actions} />
-    </main>
+    </Root>
   );
+}
+
+function isAiHubEmbed(): boolean {
+  return typeof window !== "undefined" && window.location.pathname === "/ai";
 }
 
 export default function DecisionsClient() {
@@ -231,6 +240,7 @@ export default function DecisionsClient() {
   const relatedLinks = decisionsRelatedLinks(orgId, {
     include: [...DECISIONS_RELATED_INCLUDE],
   });
+  const embedded = isAiHubEmbed();
 
   if (shell === "loading") {
     return (
@@ -239,6 +249,7 @@ export default function DecisionsClient() {
         description={shellCopy.description}
         orgId={orgId}
         shell="loading"
+        embedded={embedded}
       />
     );
   }
@@ -252,6 +263,7 @@ export default function DecisionsClient() {
         shell="error"
         error={error}
         onRetry={() => load()}
+        embedded={embedded}
       />
     );
   }
@@ -263,6 +275,7 @@ export default function DecisionsClient() {
         description={shellCopy.description}
         orgId={view.orgId}
         shell="setup"
+        embedded={embedded}
       >
         <ol className="strategy-setup-steps">
           {view.steps.map((step) => (
@@ -288,6 +301,7 @@ export default function DecisionsClient() {
         description={shellCopy.description}
         orgId={orgId}
         shell="setup"
+        embedded={embedded}
       />
     );
   }
@@ -299,49 +313,59 @@ export default function DecisionsClient() {
         description={shellCopy.description}
         orgId={orgId}
         shell="setup"
+        embedded={embedded}
       />
     );
   }
 
+  const Root = embedded ? "div" : "main";
+  const headerActions = (
+    <div className="decision-log-header-actions">
+      {relatedLinks.map((link) => (
+        <a key={link.id} className="app-button secondary" href={link.href}>
+          {link.label}
+        </a>
+      ))}
+      {view.seasons.length > 0 ? (
+        <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          Season
+          <select
+            value={season ?? view.seasonYear}
+            onChange={(event) => {
+              const next = Number(event.target.value);
+              setSeason(next);
+              load(next);
+            }}
+          >
+            {view.seasons.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+    </div>
+  );
+
   return (
-    <main className="module-page decision-log-page">
-      <PageHeader
-        breadcrumbs={
-          <>
-            <a href={aiHref}>AI</a>
-            {" / Decision Log"}
-          </>
-        }
-        title="Decision Log"
-        description="Record the calls that shape your season — context, options, what you chose, and why. Institutional memory for next year — never DEMO log entries."
-      >
-        <div className="decision-log-header-actions">
-          {relatedLinks.map((link) => (
-            <a key={link.id} className="app-button secondary" href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          {view.seasons.length > 0 ? (
-            <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              Season
-              <select
-                value={season ?? view.seasonYear}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setSeason(next);
-                  load(next);
-                }}
-              >
-                {view.seasons.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-        </div>
-      </PageHeader>
+    <Root className={`module-page decision-log-page${embedded ? " is-embedded" : ""}`}>
+      {embedded ? (
+        headerActions
+      ) : (
+        <PageHeader
+          breadcrumbs={
+            <>
+              <a href={aiHref}>AI</a>
+              {" / Decision Log"}
+            </>
+          }
+          title="Decision Log"
+          description="Record the calls that shape your season — context, options, what you chose, and why. Institutional memory for next year — never DEMO log entries."
+        >
+          {headerActions}
+        </PageHeader>
+      )}
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -371,7 +395,7 @@ export default function DecisionsClient() {
         <AddDecisionForm busy={busy} mutate={mutate} />
         <DecisionList view={view} busy={busy} mutate={mutate} />
       </div>
-    </main>
+    </Root>
   );
 }
 

@@ -178,11 +178,14 @@ export function CodeClient({
   orgId = "",
   related = "build",
   embedded = false,
+  focusBugbot = false,
 }: {
   orgId?: string;
   /** Soft-UI related strip: Build hub vs AI hub embedding. */
   related?: "build" | "ai";
   embedded?: boolean;
+  /** Scroll the Bugbot workbench into view when opened from the Bugbot hub tab. */
+  focusBugbot?: boolean;
 }) {
   const [path, setPath] = useState("src/main/java/frc/robot/subsystems/DriveSubsystem.java");
   const [content, setContent] = useState(CODE_COACH_SAMPLE);
@@ -261,6 +264,14 @@ export function CodeClient({
     [review, path],
   );
   const bugbotNarrations = useMemo(() => narrateCodeFindings(bugbot?.findings ?? []), [bugbot]);
+
+  useEffect(() => {
+    if (!focusBugbot) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById("bugbot")?.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusBugbot]);
 
   useEffect(() => {
     if (!orgId) return;

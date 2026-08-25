@@ -28,7 +28,7 @@ export default function BuildHub() {
         if (tab === "code" || tab === "bugbot") {
           return (
             <HubOrgGate orgId={orgId} label={tab === "bugbot" ? "AI Bugbot" : "Code"}>
-              {(id) => <CodeClient orgId={id} embedded />}
+              {(id) => <CodeClient orgId={id} embedded focusBugbot={tab === "bugbot"} />}
             </HubOrgGate>
           );
         }

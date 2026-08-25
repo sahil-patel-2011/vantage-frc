@@ -1,5 +1,7 @@
 /* Soft-UI Decision Log — .decision-log-* + shared Soft-UI tokens. Never DEMO entries. */
 .decision-log-page{display:grid;gap:16px}
+.decision-log-page.is-embedded{gap:12px}
+.decision-log-page.is-embedded .decision-log-header-actions{justify-content:flex-start;margin-bottom:4px}
 .decision-log-header-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end}
 .decision-log-related{display:flex;flex-wrap:wrap;gap:8px}
 .decision-log-next-actions{margin:0}
