@@ -239,12 +239,10 @@ export function PricingCatalog() {
       <section className="pricing-faq" aria-label="Pricing questions" id="faq">
         <h2>Questions teams ask</h2>
         {faqs.map((faq) => (
-          <details key={faq.q} style={{ borderTop: "1px solid var(--m-line)" }}>
-            {/* padding keeps the tap target comfortably >= 44px on phones */}
-            <summary style={{ padding: "14px 0", cursor: "pointer", fontWeight: 600 }}>{faq.q}</summary>
-            <p style={{ margin: "0 0 16px", maxWidth: "70ch", color: "var(--m-muted)", lineHeight: 1.6 }}>
-              {faq.a}
-            </p>
+          <details key={faq.q}>
+            {/* .pricing-faq summary keeps the tap target >= 44px on phones */}
+            <summary>{faq.q}</summary>
+            <p>{faq.a}</p>
           </details>
         ))}
       </section>

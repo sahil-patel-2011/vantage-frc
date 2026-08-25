@@ -11,9 +11,11 @@ const links = [
 ] as const;
 
 export function BrandLink({ href = "/" }: { href?: string }) {
+  // Both logo variants render; marketing.css shows the one the theme needs.
   return (
     <a className="wordmark" href={href} aria-label="Vantage home">
-      <Image src="/vantage-logo.svg" alt="Vantage" width={150} height={30} priority />
+      <Image className="wordmark-light" src="/vantage-logo.svg" alt="Vantage" width={150} height={30} priority />
+      <Image className="wordmark-dark" src="/vantage-logo-dark.svg" alt="" aria-hidden width={150} height={30} />
     </a>
   );
 }
