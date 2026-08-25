@@ -39,7 +39,7 @@
 .scout-disagreements-season select{
   min-height:40px;min-width:120px;padding:0 12px;
   border:1px solid var(--soft-line,#d5dde8);
-  border-radius:12px;background:#fff;color:var(--soft-ink,#132033);
+  border-radius:12px;background:#fff;color:var(--soft-ink,#14243a);
 }
 .scout-disagreements-kpis{
   display:grid;
@@ -61,7 +61,7 @@
 }
 .scout-disagreements-kpis strong{
   font-size:clamp(24px,3.6vw,32px);
-  letter-spacing:-.03em;color:var(--soft-ink,#132033);
+  letter-spacing:-.03em;color:var(--soft-ink,#14243a);
 }
 .scout-disagreements-panel{
   padding:16px 18px;
@@ -72,7 +72,7 @@
 }
 .scout-disagreements-panel header{margin-bottom:12px}
 .scout-disagreements-panel h2{
-  margin:0 0 4px;font-size:18px;letter-spacing:-.02em;color:var(--soft-ink,#132033);
+  margin:0 0 4px;font-size:18px;letter-spacing:-.02em;color:var(--soft-ink,#14243a);
 }
 .scout-disagreements-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .scout-disagreements-list li{
@@ -80,7 +80,7 @@
   padding:12px 14px;border-radius:12px;border:1px solid var(--soft-line,#d5dde8);
   background:#f8fafc;
 }
-.scout-disagreements-list strong{font-size:15px;color:var(--soft-ink,#132033)}
+.scout-disagreements-list strong{font-size:15px;color:var(--soft-ink,#14243a)}
 .scout-disagreements-list small{display:block;color:var(--soft-muted,#5a6578);font-size:12px;margin-top:2px}
 .scout-disagreements-row-head{
   display:flex;justify-content:space-between;gap:8px;align-items:flex-start;
@@ -92,7 +92,7 @@
 .scout-disagreements-actions input{
   min-height:40px;padding:0 12px;
   border:1px solid var(--soft-line,#d5dde8);
-  border-radius:12px;background:#fff;color:var(--soft-ink,#132033);
+  border-radius:12px;background:#fff;color:var(--soft-ink,#14243a);
 }
 .scout-disagreements-actions input{flex:1;min-width:160px}
 .scout-disagreements-form{display:grid;gap:10px}
