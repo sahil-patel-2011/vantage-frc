@@ -68,10 +68,10 @@ export function HeroProductPanel() {
             </p>
           </article>
 
-          <div className="hero-teach-shot mk-mock-shot">
-            <span className="hero-teach-shot-tag">Call your shot</span>
+          <div className="mk-mock-gate">
+            <span className="mk-mock-gate-tag">Call your shot</span>
             <p>Before the gearbox calculator reveals output RPM — which term dominates at this reduction?</p>
-            <div className="hero-teach-chips">
+            <div className="mk-mock-chips">
               <span>Free speed</span>
               <span className="is-picked">Stage ratio</span>
             </div>
