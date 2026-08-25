@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import {
   catalogDefaultsFootnote,
-  everyPlanValueLine,
   hostedApiSavingsCopy,
 } from "@vantage/billing/catalog";
 import { WaitlistForm } from "../../components/marketing/waitlist-form";
@@ -12,7 +11,7 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Pricing — Vantage",
   description:
-    "Every feature on every plan, including Free. Free $0 · Pro $20 · Pro+ $60 · Max $100. Bring any AI key or run local models on any plan; paid plans add hosted AI allowance. Hard cutoffs; no surprise overage.",
+    "Start free with your own AI keys or buy AI credits. Pro, Pro+, and Max add hosted AI. Credits go further than bringing your own keys. Hard cutoffs; no surprise overage.",
   path: "/pricing",
 });
 
@@ -25,19 +24,18 @@ export default function PricingPage() {
       <SiteHeader />
       <main className="pricing-page">
         <section className="lux-route-hero pricing-hero">
-          <h1>Every feature. Every plan. Even Free.</h1>
+          <p className="lux-kicker">Pricing</p>
+          <h1>Start free. Buy AI credits when you need them.</h1>
           <p>
-            {everyPlanValueLine()} Cost should never decide which teams get the teaching layer: Free runs the entire
-            product on your own AI keys or local models, plus a small hosted allowance on budget models. Pro, Pro+,
-            and Max only buy more hosted AI. Spend stops at a hard cutoff, so there is no surprise overage on a
-            booster club&rsquo;s card.
+            Free is scouting, event day, and season ops with your own keys — or platform Groq/OpenRouter when the host
+            has them. Pro, Pro+, and Max add hosted AI. Hard cutoffs. No surprise overage.
           </p>
           <div className="actions">
             <a className="button primary" href="#credits">
               Buy AI credits
             </a>
             <a className="button secondary" href="/#waitlist">
-              Request access
+              Join the waitlist
             </a>
           </div>
         </section>
@@ -50,23 +48,25 @@ export default function PricingPage() {
           </div>
           <div>
             <p>
-              <strong>{creditsLine}</strong> Hosted calls run inside scouting, strategy, Event Day, CAD and the
-              Assistant — not a generic API wallet.
+              <strong>{creditsLine}</strong> Hosted calls run inside scouting, strategy, Event Day, CAD, and Assistant—not
+              a generic API wallet.
             </p>
             <p>
-              Add keys at <a href="/team/ai-keys">/team/ai-keys</a> on any plan — BYOK and local endpoints are
-              unlimited by Vantage, you pay your provider directly. Hosted allowances are metered against an
-              append-only ledger you can read; when one runs out you buy credits or enable pay-as-you-go with an
-              explicit spend cap. Nothing overages silently.
+              Free teams add keys at <a href="/team/ai-keys">/team/ai-keys</a>, or buy credits for hosted usage. Paid
+              plans include hosted AI; when you need more, buy credits or enable PAYG with an explicit spend cap.
             </p>
             <p className="pricing-note">{catalogNote}</p>
+            <p className="pricing-footnote">
+              Free includes offline scouting, reference data, manual strategy, and pick lists. Assistant still needs a
+              real event connected.
+            </p>
           </div>
         </section>
 
         <section className="lux-waitlist pricing-waitlist" id="waitlist">
           <div>
-            <h2>Request access.</h2>
-            <p>Invite-only while Vantage is in closed beta. We email when your team is provisioned.</p>
+            <h2>Join the waitlist.</h2>
+            <p>Invite-only. We email when your team is provisioned.</p>
           </div>
           <WaitlistForm idPrefix="pricing" />
         </section>

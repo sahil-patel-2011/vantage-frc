@@ -38,6 +38,7 @@ export default function DesktopPage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
+          <p className="lux-kicker">Desktop</p>
           <h1>Vantage on the desktop.</h1>
           <p>
             A native Windows window around the live workspace — scouting, CAD, and Bugbot included. Not a separate
@@ -47,7 +48,7 @@ export default function DesktopPage() {
             <a className="button primary" href="/signin">
               Sign in on the web
             </a>
-            <a className="button secondary" href="https://github.com/sahiljpatel2011-wq/vantage-frc/releases">
+            <a className="button secondary" href="https://github.com/sahil-patel-2011/vantage-frc/releases">
               Windows downloads
             </a>
           </div>
@@ -60,7 +61,7 @@ export default function DesktopPage() {
               <p>
                 Tagged GitHub Releases (<code>desktop-v*</code>) publish unsigned NSIS and portable exes. From a
                 clone: <code>npm run desktop:dist</code> writes <code>apps/desktop/release/</code>. Details in{" "}
-                <a href="https://github.com/sahiljpatel2011-wq/vantage-frc/blob/main/docs/DESKTOP.md">docs/DESKTOP.md</a>.
+                <a href="https://github.com/sahil-patel-2011/vantage-frc/blob/main/docs/DESKTOP.md">docs/DESKTOP.md</a>.
               </p>
             </header>
             <ul className="lux-feature-grid">

@@ -36,11 +36,12 @@ export default function CadFeaturePage() {
       <SiteHeader />
       <main className="route-page">
         <header className="lux-route-hero">
+          <p className="lux-kicker">CAD agent</p>
           <h1>CAD starts with a brief.</h1>
           <p>
-            Build hub CAD agent: confirm a brief, then **AI plan from brief** (metered, allowlisted ops) or a no-model starter
-            plan. Onshape hosted jobs or a Fusion desktop relay execute approved steps—credentials required. No unreviewed
-            mutations.
+            On the Build hub, you confirm a brief first. Then a metered, allowlisted plan (or a no-model starter plan)
+            runs only after approval. Onshape uses hosted OAuth. Fusion uses a desktop relay. Credentials are required.
+            Nothing mutates CAD until a person checks the step.
           </p>
           <div className="actions">
             <a className="button primary" href="/#waitlist">

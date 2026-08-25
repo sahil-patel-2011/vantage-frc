@@ -140,6 +140,52 @@
   outline-offset: 2px;
 }
 
+/* Keep waitlist / footer actions out from under the dock while it is asking. */
+body:has(.consent-banner) {
+  padding-bottom: 168px;
+}
+
+@media (max-width: 759px) {
+  body:has(.consent-banner) {
+    padding-bottom: min(48vh, 340px);
+  }
+}
+
+/* Wide marketing fold: keep every honesty sentence, but sit as a short dock
+   so the product mock is not buried under four stacked paragraphs. */
+@media (min-width: 760px) {
+  .consent-banner-card {
+    width: min(980px, 100%);
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 240px);
+    align-items: center;
+    gap: 12px 22px;
+    padding: 14px 16px;
+  }
+
+  .consent-banner-text {
+    gap: 4px;
+  }
+
+  .consent-banner-detail {
+    font-size: 12.5px;
+  }
+
+  .consent-banner-actions {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .consent-banner-btn,
+  .consent-banner-link {
+    flex: 0 0 auto;
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
 @media (max-width: 420px) {
   .consent-banner {
     padding: 8px 8px calc(8px + var(--soft-safe-bottom, 0px));
