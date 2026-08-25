@@ -16,8 +16,8 @@ import {
 
 describe("hex validation", () => {
   it("canonicalizes the forms a human actually types", () => {
-    expect(normalizeHexColor("#1F4FD6")).toBe("#1f4fd6");
-    expect(normalizeHexColor("1f4fd6")).toBe("#1f4fd6");
+    expect(normalizeHexColor("#1457D9")).toBe("#1457d9");
+    expect(normalizeHexColor("1457d9")).toBe("#1457d9");
     expect(normalizeHexColor("  #ABC ")).toBe("#aabbcc");
     expect(normalizeHexColor("abc")).toBe("#aabbcc");
   });
@@ -30,12 +30,12 @@ describe("hex validation", () => {
       "rgb(1,2,3)",
       "red",
       "#gggggg",
-      "#1f4fd6;background:url(x)",
+      "#1457d9;background:url(x)",
       null,
       undefined,
       12345,
-      ["#1f4fd6"],
-      { hex: "#1f4fd6" },
+      ["#1457d9"],
+      { hex: "#1457d9" },
     ]) {
       expect(normalizeHexColor(bad)).toBeNull();
       expect(isValidHexColor(bad)).toBe(false);
@@ -56,7 +56,7 @@ describe("contrast maths", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 4);
     expect(contrastRatio("#ffffff", "#ffffff")).toBeCloseTo(1, 6);
     // Symmetric regardless of argument order.
-    expect(contrastRatio("#1f4fd6", "#ffffff")).toBeCloseTo(contrastRatio("#ffffff", "#1f4fd6"), 10);
+    expect(contrastRatio("#1457d9", "#ffffff")).toBeCloseTo(contrastRatio("#ffffff", "#1457d9"), 10);
   });
 
   it("agrees that the stock accents already pass on their own card", () => {
@@ -76,17 +76,17 @@ describe("contrast maths", () => {
   });
 
   it("picks readable ink for text sitting on the fill", () => {
-    expect(readableInkOn("#1f4fd6")).toBe("#ffffff");
+    expect(readableInkOn("#1457d9")).toBe("#ffffff");
     expect(readableInkOn("#ffeb3b")).toBe("#111827");
   });
 });
 
 describe("accent contrast guard", () => {
   it("leaves a compliant accent untouched", () => {
-    const guard = guardAccentForSurface("#1f4fd6", SOFT_CARD_SURFACE.light);
+    const guard = guardAccentForSurface("#1457d9", SOFT_CARD_SURFACE.light);
     expect(guard.chosenPasses).toBe(true);
     expect(guard.adjusted).toBe(false);
-    expect(guard.color).toBe("#1f4fd6");
+    expect(guard.color).toBe("#1457d9");
     expect(guard.ratio).toBeGreaterThanOrEqual(ACCENT_CONTRAST_TARGET);
   });
 
@@ -100,11 +100,11 @@ describe("accent contrast guard", () => {
   });
 
   it("lightens a too-dark accent on the dark card", () => {
-    const guard = guardAccentForSurface("#1f4fd6", SOFT_CARD_SURFACE.dark);
+    const guard = guardAccentForSurface("#1457d9", SOFT_CARD_SURFACE.dark);
     expect(guard.chosenPasses).toBe(false);
     expect(guard.meetsTarget).toBe(true);
     expect(guard.ratio).toBeGreaterThanOrEqual(ACCENT_CONTRAST_TARGET);
-    expect(relativeLuminance(guard.color)).toBeGreaterThan(relativeLuminance("#1f4fd6"));
+    expect(relativeLuminance(guard.color)).toBeGreaterThan(relativeLuminance("#1457d9"));
   });
 
   it("clears the target for every hue a team might pick, on both cards", () => {
@@ -147,11 +147,11 @@ describe("accent plan", () => {
   });
 
   it("emits inline custom properties per theme", () => {
-    const plan = buildAccentPlan("#1f4fd6")!;
+    const plan = buildAccentPlan("#1457d9")!;
     const light = accentCssVariables(plan, "light");
     const dark = accentCssVariables(plan, "dark");
-    expect(light["--soft-brand"]).toBe("#1f4fd6");
-    expect(dark["--soft-brand"]).toBe("#1f4fd6");
+    expect(light["--soft-brand"]).toBe("#1457d9");
+    expect(dark["--soft-brand"]).toBe("#1457d9");
     // Text accent differs by theme because the card underneath differs.
     expect(light["--soft-accent"]).not.toBe(dark["--soft-accent"]);
     expect(contrastRatio(light["--soft-accent"]!, SOFT_CARD_SURFACE.light)).toBeGreaterThanOrEqual(

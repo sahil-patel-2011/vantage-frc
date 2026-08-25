@@ -58,7 +58,7 @@
 }
 .dossier-kpis strong{
   font:700 22px/1.1 var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
-  color:var(--soft-ink,#132033);
+  color:var(--soft-ink,#14243a);
   letter-spacing:-.02em;
 }
 .dossier-kpis small{

@@ -524,7 +524,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
         <article className={`edc-card edc-next ${next ? "live" : "empty"}`}>
           <header>
             <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#1f4fd6", ["--tone-bg" as string]: "#e4ecfc" }}>
+              <span className="edc-icon" style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}>
                 <Icon name="swords" />
               </span>
               <div>
@@ -699,7 +699,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
         <article className="edc-card">
           <header>
             <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#1f4fd6", ["--tone-bg" as string]: "#e4ecfc" }}>
+              <span className="edc-icon" style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}>
                 <Icon name="bolt" />
               </span>
               <div>
@@ -888,7 +888,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
         <article className="edc-card">
           <header>
             <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#1f4fd6", ["--tone-bg" as string]: "#e4ecfc" }}>
+              <span className="edc-icon" style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}>
                 <Icon name="stats" />
               </span>
               <div>

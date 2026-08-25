@@ -25,7 +25,7 @@ export const SUBTEAM_EVENT_KIND_LABELS: Record<SubteamEventKind, string> = {
 
 /** Soft palette suggestions for the create-subteam color picker (not auto-seeded). */
 export const SUBTEAM_COLOR_SUGGESTIONS = [
-  "#1f4fd6",
+  "#1457d9",
   "#0f766e",
   "#2d6a4f",
   "#b08900",
@@ -826,7 +826,7 @@ export function parseSubteamCalendarAction(input: unknown): SubteamCalendarActio
         action,
         orgId,
         name: requiredText(body.name, "Subteam name", 80),
-        color: body.color == null || String(body.color).trim() === "" ? "#1f4fd6" : hexColor(body.color),
+        color: body.color == null || String(body.color).trim() === "" ? "#1457d9" : hexColor(body.color),
         description: optionalText(body.description, 500),
       };
 

@@ -8,16 +8,16 @@
   padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
   border: 0;
   cursor: pointer;
-  color: var(--soft-ink, #132033);
+  color: var(--soft-ink, #14243a);
   background:
-    radial-gradient(120% 90% at 18% -8%, color-mix(in srgb, var(--soft-accent, #1f4fd6) 16%, transparent), transparent 52%),
+    radial-gradient(120% 90% at 18% -8%, color-mix(in srgb, var(--soft-accent, #1457d9) 16%, transparent), transparent 52%),
     radial-gradient(80% 60% at 100% 8%, color-mix(in srgb, #0ea5a4 10%, transparent), transparent 48%),
     linear-gradient(165deg, var(--soft-bg, #eef2f7) 0%, color-mix(in srgb, var(--soft-bg, #eef2f7) 82%, #d7e0ec) 100%);
   animation: paid-splash-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .paid-splash:focus-visible {
-  outline: 2px solid var(--soft-accent, #1f4fd6);
+  outline: 2px solid var(--soft-accent, #1457d9);
   outline-offset: -4px;
 }
 
@@ -49,7 +49,7 @@
   margin: 0;
   font: 700 clamp(4.5rem, 18vw, 7.5rem)/0.9 var(--font-source-serif, Georgia, serif);
   letter-spacing: -0.04em;
-  color: var(--soft-ink, #132033);
+  color: var(--soft-ink, #14243a);
   opacity: 0;
   animation: paid-splash-number 0.7s 0.12s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -65,7 +65,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    color-mix(in srgb, var(--soft-accent, #1f4fd6) 75%, #0ea5a4),
+    color-mix(in srgb, var(--soft-accent, #1457d9) 75%, #0ea5a4),
     transparent
   );
   transform: scaleX(0.35);

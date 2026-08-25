@@ -1135,8 +1135,8 @@
   animation:lux-rise .85s .1s cubic-bezier(.22,.8,.2,1) both;
 }
 .marketing-lux .hero-soft-device{
-  --sp-bg:#eef2f7;--sp-card:#fff;--sp-ink:#132033;--sp-muted:#5a6578;
-  --sp-line:#d5dde8;--sp-accent:#1f4fd6;--sp-accent-soft:#e4ecfc;
+  --sp-bg:#eef2f7;--sp-card:#fff;--sp-ink:#14243a;--sp-muted:#5a6578;
+  --sp-line:#d5dde8;--sp-accent:#1457d9;--sp-accent-soft:#e4ecfc;
   position:relative;overflow:hidden;border-radius:22px;
   background:
     linear-gradient(165deg,rgba(255,255,255,.6),transparent 45%),

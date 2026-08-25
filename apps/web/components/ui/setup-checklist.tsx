@@ -32,7 +32,7 @@ export function SetupChecklist({ steps, className }: { steps: SetupStep[]; class
                 borderRadius: 999,
                 fontSize: 11,
                 fontWeight: 700,
-                color: step.done ? "#166534" : "var(--soft-accent, #1f4fd6)",
+                color: step.done ? "#166534" : "var(--soft-accent, #1457d9)",
                 background: step.done
                   ? "color-mix(in srgb, #dcfce7 70%, transparent)"
                   : "var(--soft-accent-soft, #e4ecfc)",

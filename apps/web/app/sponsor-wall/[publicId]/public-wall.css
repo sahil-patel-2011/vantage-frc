@@ -1,6 +1,6 @@
 /* Public sponsor thank-you wall — standalone page, no app chrome (like /support/[publicId]). */
 .public-wall{min-height:100vh;padding:0 0 60px;font-family:var(--font-inter,Arial,sans-serif)}
-.public-wall-light{color:#132033;background:#f4f6fa}
+.public-wall-light{color:#14243a;background:#f4f6fa}
 .public-wall-dark{color:#eef2f8;background:#0d1b2c}
 .public-wall-team{color:#f7faff;background:linear-gradient(160deg,#0a1727,#173a6b)}
 .public-wall-hero{max-width:1080px;margin:0 auto;padding:72px 24px 36px;text-align:center}

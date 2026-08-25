@@ -88,7 +88,7 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
   async function save() {
     if (!view?.canEdit) return;
     if (!draftHexValid) {
-      setNotice({ tone: "error", text: "Team colour must be a hex value like #1f4fd6." });
+      setNotice({ tone: "error", text: "Team colour must be a hex value like #1457d9." });
       return;
     }
     setBusy(true);
@@ -247,8 +247,8 @@ export function TeamBrandingPanel({ orgId }: { orgId: string }) {
               </div>
               <small id="brand-accent-help" className="app-muted">
                 {draftHexValid
-                  ? "Six-digit hex, e.g. #1f4fd6. Leave blank for the stock Vantage blue."
-                  : "That is not a hex colour — try #1f4fd6."}
+                  ? "Six-digit hex, e.g. #1457d9. Leave blank for the stock Vantage blue."
+                  : "That is not a hex colour — try #1457d9."}
               </small>
             </div>
 

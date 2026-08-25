@@ -30,7 +30,7 @@ type LiveView = Extract<CostsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
 
 const SOURCE_COLOR: Record<string, string> = {
-  season: "#1f4fd6",
+  season: "#1457d9",
   subscriptions: "#7a4fd6",
   api: "#1f7a3d",
 };

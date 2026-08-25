@@ -1,11 +1,11 @@
 /* Soft-UI personal onboarding path (CD #28). */
 
 .start-page {
-  --start-ink: var(--soft-ink, #132033);
+  --start-ink: var(--soft-ink, #14243a);
   --start-muted: var(--soft-muted, #5a6578);
   --start-line: var(--soft-line, #d5dde8);
   --start-card: var(--soft-card, #fff);
-  --start-accent: var(--soft-accent, #1f4fd6);
+  --start-accent: var(--soft-accent, #1457d9);
   --start-ok: #1f7a3d;
   max-width: 720px;
   margin: 0 auto;

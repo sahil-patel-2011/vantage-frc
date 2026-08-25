@@ -39,7 +39,7 @@
 .scout-crossval-event select{
   min-height:40px;min-width:160px;padding:0 12px;
   border:1px solid var(--soft-line,#d5dde8);
-  border-radius:12px;background:#fff;color:var(--soft-ink,#132033);
+  border-radius:12px;background:#fff;color:var(--soft-ink,#14243a);
 }
 .scout-crossval-kpis{
   display:grid;
@@ -61,7 +61,7 @@
 }
 .scout-crossval-kpis strong{
   font-size:clamp(24px,3.6vw,32px);
-  letter-spacing:-.03em;color:var(--soft-ink,#132033);
+  letter-spacing:-.03em;color:var(--soft-ink,#14243a);
 }
 .scout-crossval-panel{
   padding:16px 18px;
@@ -72,7 +72,7 @@
 }
 .scout-crossval-panel header{margin-bottom:12px}
 .scout-crossval-panel h2{
-  margin:0 0 4px;font-size:18px;letter-spacing:-.02em;color:var(--soft-ink,#132033);
+  margin:0 0 4px;font-size:18px;letter-spacing:-.02em;color:var(--soft-ink,#14243a);
 }
 .scout-crossval-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .scout-crossval-list > li{
@@ -83,7 +83,7 @@
 .scout-crossval-row-head{
   display:flex;justify-content:space-between;gap:8px;align-items:flex-start;
 }
-.scout-crossval-list strong{font-size:15px;color:var(--soft-ink,#132033)}
+.scout-crossval-list strong{font-size:15px;color:var(--soft-ink,#14243a)}
 .scout-crossval-list small{display:block;color:var(--soft-muted,#5a6578);font-size:12px;margin-top:2px}
 .scout-crossval-fields{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .scout-crossval-fields li{

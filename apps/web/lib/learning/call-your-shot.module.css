@@ -15,7 +15,7 @@
   border: 1px solid var(--app-line, #d5dde8);
   border-radius: var(--app-radius, 12px);
   background: var(--app-surface, #fff);
-  color: var(--app-ink, #132033);
+  color: var(--app-ink, #14243a);
 }
 
 .headRow {
@@ -52,20 +52,20 @@
   border: 1px solid var(--app-line, #d5dde8);
   border-radius: 999px;
   background: transparent;
-  color: var(--app-ink, #132033);
+  color: var(--app-ink, #14243a);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
 }
 .toggle:hover,
 .ghostButton:hover {
-  border-color: var(--app-accent, #1f4fd6);
-  color: var(--app-accent, #1f4fd6);
+  border-color: var(--app-accent, #1457d9);
+  color: var(--app-accent, #1457d9);
 }
 .toggle input {
   width: 18px;
   height: 18px;
-  accent-color: var(--app-accent, #1f4fd6);
+  accent-color: var(--app-accent, #1457d9);
 }
 
 .primaryButton {
@@ -73,7 +73,7 @@
   padding: 0 18px;
   border: 1px solid transparent;
   border-radius: var(--app-radius, 12px);
-  background: var(--app-accent, #1f4fd6);
+  background: var(--app-accent, #1457d9);
   color: var(--app-accent-ink, #fff);
   font: inherit;
   font-weight: 600;
@@ -129,7 +129,7 @@
   width: 100%;
 }
 .field input:focus-visible {
-  outline: 2px solid var(--app-accent, #1f4fd6);
+  outline: 2px solid var(--app-accent, #1457d9);
   outline-offset: 1px;
 }
 
@@ -166,7 +166,7 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.55;
-  color: var(--app-ink, #132033);
+  color: var(--app-ink, #14243a);
 }
 .note {
   color: var(--app-muted, #5a6578);
