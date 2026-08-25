@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { CAN_BUSES, DEVICE_TYPES, deviceTypeLabel, deviceUsesCan, type CanBus, type WiringConflict } from "../../lib/wiring";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Device = {
   id: string; name: string; deviceType: string; canId: number | null; canBus: CanBus;
@@ -21,12 +22,17 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/wiring?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load wiring map"); return; }
+    if (!response.ok) { setMessage(data.error ?? "Failed to load wiring map"); setErrorStatus(response.status); setLoadFailed(true); return; }
+    setErrorStatus(null);
+    setLoadFailed(false);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
@@ -48,7 +54,30 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
     if (view?.status === "ready") setForm({ ...EMPTY, deviceType: form.deviceType, canBus: form.canBus, subsystem: form.subsystem });
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading wiring map…"}</p></main>;
+  if (!view) {
+    if (!loadFailed) return <main className="intel-app"><p className="telemetry-status">Loading wiring map…</p></main>;
+    // Retry cannot revive an expired session — offer the action that actually fixes it.
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status" role="alert"><strong>{failure.title}</strong></p>
+        <p className="telemetry-status">{failure.description}</p>
+        {failure.primary ? <a className="app-button" href={failure.primary.href}>{failure.primary.label}</a> : null}
+        {failure.showRetry ? <button type="button" className="app-button secondary" onClick={() => void load()}>Retry</button> : null}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / WIRING</span><h1>Wiring map</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }

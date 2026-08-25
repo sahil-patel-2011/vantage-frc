@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { BUILD_PHASE_LABEL, BUILD_PHASES, type BuildPhase } from "../../lib/notebook";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Entry = {
   id: string; seasonYear: number; entryDate: string; phase: BuildPhase; subsystem: string;
@@ -18,6 +19,8 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead-end error line.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [subsystemFilter, setSubsystemFilter] = useState("");
   const [form, setForm] = useState({ title: "", entryDate: todayIso(), phase: "design", subsystem: "", tags: "", body: "" });
 
@@ -27,7 +30,8 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
     if (subsystemFilter) params.set("subsystem", subsystemFilter);
     const response = await fetch(`/api/notebook${params.toString() ? `?${params}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load notebook"); return; }
+    if (!response.ok) { setMessage(data.error ?? "Failed to load notebook"); setErrorStatus(response.status); return; }
+    setErrorStatus(null);
     setView(data);
   }, [orgId, subsystemFilter]);
   useEffect(() => { void load(); }, [load]);
@@ -49,7 +53,32 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
     if (view?.status === "ready") setForm({ title: "", entryDate: todayIso(), phase: "design", subsystem: "", tags: "", body: "" });
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading notebook…"}</p></main>;
+  if (!view) {
+    if (!message) return <main className="intel-app"><p className="telemetry-status">Loading notebook…</p></main>;
+    // The notebook never loaded: say why, and offer the action that actually fixes it.
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined"
+            ? null
+            : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status"><strong>{copy.title}</strong></p>
+        <p className="telemetry-status">{copy.description}</p>
+        {copy.primary ? <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a> : null}
+        {copy.showRetry ? <button type="button" className="primary-action" onClick={() => void load()}>Retry</button> : null}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / NOTEBOOK</span><h1>Engineering notebook</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }

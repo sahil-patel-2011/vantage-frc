@@ -75,18 +75,28 @@ const MAX: StrategyEnginePolicy = {
   scoutQualityEmphasis: true,
 };
 
-/** Commercial plan codes → engine policy. Unknown / missing → baseline. */
+/**
+ * Commercial plan codes → engine policy.
+ *
+ * Since the 0481 pricing ladder, EVERY plan — Free included — gets the full
+ * engine: plans differ only in hosted AI allowance, never in feature depth.
+ * Unknown/missing codes also get MAX so a plan-code typo can never silently
+ * degrade a team's strategy maths.
+ */
 const PLAN_ENGINE: Record<string, StrategyEnginePolicy> = {
-  free: BASELINE,
-  access: BASELINE,
-  individual_pro: PRO,
-  team_pro: PRO,
-  team_trial: PRO,
+  free: MAX,
+  pro: MAX,
+  pro_plus: MAX,
+  max: MAX,
+  team_trial: MAX,
+  // Legacy codes (aliased to the new ladder by packages/billing).
+  access: MAX,
+  individual_pro: MAX,
+  team_pro: MAX,
   individual_max: MAX,
   team_max: MAX,
-  // Legacy inactive showcase plans — keep baseline, do not invent depth.
-  managed_20: BASELINE,
-  managed_50: BASELINE,
+  managed_20: MAX,
+  managed_50: MAX,
 };
 
 export function normalizePlanCode(planCode: string | null | undefined): string {
@@ -98,7 +108,7 @@ export function selectStrategyEngine(
   planCode: string | null | undefined,
 ): StrategyEnginePolicy {
   const code = normalizePlanCode(planCode);
-  return PLAN_ENGINE[code] ?? BASELINE;
+  return PLAN_ENGINE[code] ?? MAX;
 }
 
 export function strategyEnginePolicyForId(

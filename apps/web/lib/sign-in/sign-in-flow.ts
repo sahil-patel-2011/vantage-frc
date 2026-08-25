@@ -125,7 +125,36 @@ export function signInSetupCopy(
 
 /** One line under the title — buttons do the rest. */
 export function signInSubtitle(_status?: Pick<SignInAuthStatus, "email2faEnforced" | "emailOtpAvailable">) {
-  return "Authorized teams only.";
+  return "Same sign-in for every team.";
+}
+
+/**
+ * The banner shown when a method cannot run — and, crucially, the harder case
+ * where *nothing* can run. "Use another enabled method" is a lie when Google is
+ * unconfigured too, so that combination gets its own copy naming the real
+ * situation: this deployment has no working sign-in yet.
+ */
+export function signInUnavailableCopy(input: {
+  google: boolean;
+  email: boolean;
+}): SignInSetupCopy | null {
+  if (input.email) return null;
+  if (input.google) {
+    return {
+      kind: "email_otp",
+      badge: "setup_required",
+      title: "Email codes are off right now",
+      description:
+        "The mail provider isn’t reachable, so no code can be sent. Continue with Google instead.",
+    };
+  }
+  return {
+    kind: "email_otp",
+    badge: "setup_required",
+    title: "Sign-in isn’t configured on this deployment",
+    description:
+      "Neither email codes nor Google are available, so no one can sign in yet. Nothing you type here would be sent. Ask whoever set up this Vantage deployment to finish auth configuration.",
+  };
 }
 
 export function signInModeLabel(mode: SignInMode) {

@@ -567,7 +567,6 @@ export async function POST(request: Request) {
           if (!updated.rowCount) {
             // Still clear the due date so the reminder queue advances.
           }
-          entityId = sponsorId;
           await audit(client, { orgId, userId: session.user.id, action, entityType: "sponsor", entityId: sponsorId });
           break;
         }

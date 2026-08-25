@@ -1,5 +1,12 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { AIOrchestrator, type ChatAdapter } from "@vantage/agent";
+import {
+  AIOrchestrator,
+  getOrgPromptCachingEnabled,
+  resolveOrgChatAdapterWithProvenance,
+  type ChatAdapter,
+  type ResolvedModelProvenance,
+} from "@vantage/agent";
+import { createBridgeTransport } from "../../../lib/ai-bridge/transport";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -29,6 +36,19 @@ import type { Milestone } from "../../../lib/season-calendar";
 import type { VideoNote, VideoReview } from "../../../lib/video-review";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
 
+/**
+ * mode "ai" can reach a real upstream model. A bridged turn (a paired device with
+ * coverage 'everything') holds the request open for the bridge poll budget
+ * (BRIDGE_HEAVY_POLL_TOTAL_BUDGET_MS, 240s), so this function declares 300s to keep
+ * headroom above it; the adapter's own timeout still fires first and returns a
+ * classified error instead of the platform killing the function mid-request.
+ *
+ * 300s is only honored where the hosting plan's Node function cap reaches it. Below
+ * that cap set VANTAGE_BRIDGE_MAX_WAIT_MS so the turn falls through to the team's own
+ * keys instead of 504-ing — see docs/AI_BRIDGE.md "Function duration".
+ */
+export const maxDuration = 300;
+
 class HttpError extends Error {
   constructor(
     readonly status: number,
@@ -52,11 +72,12 @@ function fail(error: unknown) {
 }
 
 /**
- * Deterministic local provider (dev + zero-config default), mirroring
+ * Deterministic local provider (the default, zero-config path), mirroring
  * LocalSummaryProvider: the analysis text is derived entirely from org data by
  * the pure builders; the orchestrator still meters, records provenance, and
- * writes the ai_runs ledger. Swapping in a routed platform model only changes
- * this adapter.
+ * writes the ai_runs ledger. The UI labels this output "Computed from your
+ * data" — the AI badge is reserved for mode "ai", which swaps in a real
+ * resolved model adapter over the same grounded sources.
  */
 function localInsightAdapter(built: BuiltInsight): ChatAdapter {
   return {
@@ -369,6 +390,27 @@ export async function POST(request: Request) {
       if (!membership.rowCount) throw new HttpError(403, "Organization membership required");
 
       const built = await loadInsight(client, parsed);
+
+      // Default is the deterministic local analysis (labeled "Computed from
+      // your data" in the panel). mode "ai" is the opt-in "Expand with AI"
+      // path: the same grounded sources through a real resolved model. A
+      // resolution failure surfaces as setup_required (503) — the panel keeps
+      // the computed text on screen.
+      let adapter: ChatAdapter;
+      let provenance: ResolvedModelProvenance | null = null;
+      if (parsed.mode === "ai") {
+        ({ adapter, provenance } = await resolveOrgChatAdapterWithProvenance(client, {
+          orgId: parsed.orgId,
+          userId,
+          promptCachingEnabled: await getOrgPromptCachingEnabled(client, parsed.orgId),
+          feature: "ai_insights",
+          bridgeTransport: createBridgeTransport(),
+        }));
+      } else {
+        // Deterministic branch keeps no provenance — nothing external answered.
+        adapter = localInsightAdapter(built);
+      }
+
       const run = await new AIOrchestrator(client).run({
         orgId: parsed.orgId,
         userId,
@@ -376,7 +418,7 @@ export async function POST(request: Request) {
         capability: INSIGHT_CAPABILITY[parsed.kind],
         privacyScope: "team",
         message: built.message,
-        adapter: localInsightAdapter(built),
+        adapter,
         contextSources: built.sources,
       });
       return {
@@ -384,7 +426,13 @@ export async function POST(request: Request) {
         runId: run.runId,
         provider: run.provider,
         model: run.model,
+        baseUrlOrigin: provenance?.baseUrlOrigin ?? null,
+        // Which key paid for the model call — distinct from `source` below,
+        // which says whether the text is computed or AI-expanded.
+        keySource: provenance?.source ?? null,
         sourceCount: run.contextSources.length,
+        source: parsed.mode === "ai" ? ("ai" as const) : ("computed" as const),
+        generatedAt: new Date().toISOString(),
       };
     });
 

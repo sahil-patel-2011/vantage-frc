@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-3401",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev", "--port", "3401"],
+      "cwd": "apps/web",
+      "port": 3401
+    }
+  ]
+}

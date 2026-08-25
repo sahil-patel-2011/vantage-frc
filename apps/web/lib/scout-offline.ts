@@ -12,12 +12,21 @@ import {
   type OfflineMergeResult,
   type ScoutQrRecord,
 } from "@vantage/scouting/qr-handoff";
+import {
+  exceedsMediaCap,
+  formatByteSize,
+  mediaKindLabel,
+  oversizeMediaReason,
+} from "./scouting/media-downscale";
 import { withSyncBackoff } from "./scouting/sync-backoff";
 
 const DB_NAME = "vantage-scouting";
-const DB_VERSION = 2;
+// v3 adds the quarantine stores for entries/media the server permanently rejected.
+const DB_VERSION = 3;
 const OUTBOX = "entry-outbox";
 const MEDIA = "media-outbox";
+const ENTRY_QUARANTINE = "entry-quarantine";
+const MEDIA_QUARANTINE = "media-quarantine";
 const CACHE = "event-cache";
 const META = "meta";
 const LAST_ORG_KEY = "lastOrgId";
@@ -29,6 +38,12 @@ function openDatabase(): Promise<IDBDatabase> {
       const db = request.result;
       if (!db.objectStoreNames.contains(OUTBOX)) db.createObjectStore(OUTBOX, { keyPath: "clientId" });
       if (!db.objectStoreNames.contains(MEDIA)) db.createObjectStore(MEDIA, { keyPath: "clientId" });
+      if (!db.objectStoreNames.contains(ENTRY_QUARANTINE)) {
+        db.createObjectStore(ENTRY_QUARANTINE, { keyPath: "clientId" });
+      }
+      if (!db.objectStoreNames.contains(MEDIA_QUARANTINE)) {
+        db.createObjectStore(MEDIA_QUARANTINE, { keyPath: "clientId" });
+      }
       if (!db.objectStoreNames.contains(CACHE)) db.createObjectStore(CACHE, { keyPath: "orgId" });
       if (!db.objectStoreNames.contains(META)) db.createObjectStore(META, { keyPath: "key" });
     };
@@ -144,16 +159,24 @@ export async function getCachedEvent<T>(orgId: string): Promise<T | null> {
   return cached?.data ?? null;
 }
 
-export async function pendingCounts(): Promise<{ entries: number; media: number }> {
-  const [entryStore, mediaStore] = await Promise.all([
+export async function pendingCounts(): Promise<{
+  entries: number;
+  media: number;
+  quarantined: number;
+}> {
+  const [entryStore, mediaStore, entryQuarantine, mediaQuarantine] = await Promise.all([
     store("readonly", OUTBOX),
     store("readonly", MEDIA),
+    store("readonly", ENTRY_QUARANTINE),
+    store("readonly", MEDIA_QUARANTINE),
   ]);
-  const [entries, media] = await Promise.all([
+  const [entries, media, quarantinedEntries, quarantinedMedia] = await Promise.all([
     requestValue(entryStore.count()),
     requestValue(mediaStore.count()),
+    requestValue(entryQuarantine.count()),
+    requestValue(mediaQuarantine.count()),
   ]);
-  return { entries, media };
+  return { entries, media, quarantined: quarantinedEntries + quarantinedMedia };
 }
 
 export async function listPendingEntries(): Promise<SyncEntry[]> {
@@ -264,34 +287,224 @@ export type SyncOutboxResult = {
   count: number;
   validations: SyncValidation[];
   attempts: number;
+  /** Entries the server permanently rejected this pass — moved to quarantine. */
+  quarantined: number;
 };
 
-async function syncOutboxOnce(orgId: string): Promise<Omit<SyncOutboxResult, "attempts">> {
-  const objectStore = await store("readwrite", OUTBOX);
-  const all = await requestValue<SyncEntry[]>(objectStore.getAll());
-  const { allowed: entries } = partitionByOrgId(all, orgId);
-  if (!entries.length) return { count: 0, validations: [] };
+type MediaOutboxItem = {
+  clientId: string;
+  orgId?: string;
+  metadata: Record<string, unknown>;
+  blob: Blob;
+};
+
+export type QuarantinedEntry = {
+  kind: "entry";
+  clientId: string;
+  orgId: string | null;
+  reason: string;
+  quarantinedAt: string;
+  entry: SyncEntry;
+};
+
+export type QuarantinedMedia = {
+  kind: "media";
+  clientId: string;
+  orgId: string | null;
+  reason: string;
+  quarantinedAt: string;
+  metadata: Record<string, unknown>;
+  blob: Blob;
+};
+
+export type QuarantinedItem = QuarantinedEntry | QuarantinedMedia;
+
+/**
+ * Move a permanently rejected entry out of the sync loop so the rest of the
+ * outbox keeps flowing. Nothing is deleted — the scout decides Retry/Discard.
+ */
+export async function quarantineEntry(entry: SyncEntry, reason: string): Promise<void> {
+  const quarantineStore = await store("readwrite", ENTRY_QUARANTINE);
+  await requestValue(
+    quarantineStore.put({
+      kind: "entry",
+      clientId: entry.clientId,
+      orgId: entry.orgId ?? null,
+      reason,
+      quarantinedAt: new Date().toISOString(),
+      entry,
+    } satisfies QuarantinedEntry),
+  );
+  const outbox = await store("readwrite", OUTBOX);
+  await requestValue(outbox.delete(entry.clientId));
+}
+
+export async function quarantineMedia(item: MediaOutboxItem, reason: string): Promise<void> {
+  const quarantineStore = await store("readwrite", MEDIA_QUARANTINE);
+  await requestValue(
+    quarantineStore.put({
+      kind: "media",
+      clientId: item.clientId,
+      orgId: item.orgId ?? ((item.metadata.orgId as string | undefined) ?? null),
+      reason,
+      quarantinedAt: new Date().toISOString(),
+      metadata: item.metadata,
+      blob: item.blob,
+    } satisfies QuarantinedMedia),
+  );
+  const mediaStore = await store("readwrite", MEDIA);
+  await requestValue(mediaStore.delete(item.clientId));
+}
+
+/** Everything needing attention, oldest first. Scoped to one org when given. */
+export async function listQuarantine(orgId?: string): Promise<QuarantinedItem[]> {
+  const [entryStore, mediaStore] = await Promise.all([
+    store("readonly", ENTRY_QUARANTINE),
+    store("readonly", MEDIA_QUARANTINE),
+  ]);
+  const [entries, media] = await Promise.all([
+    requestValue<QuarantinedEntry[]>(entryStore.getAll()),
+    requestValue<QuarantinedMedia[]>(mediaStore.getAll()),
+  ]);
+  const all: QuarantinedItem[] = [...entries, ...media];
+  const scoped = orgId ? all.filter((item) => item.orgId === orgId) : all;
+  return scoped.sort((a, b) => a.quarantinedAt.localeCompare(b.quarantinedAt));
+}
+
+/** Put a quarantined item back into its outbox for the next sync pass. */
+export async function retryQuarantined(clientId: string): Promise<boolean> {
+  const entryStore = await store("readonly", ENTRY_QUARANTINE);
+  const entryRow = await requestValue<QuarantinedEntry | undefined>(entryStore.get(clientId));
+  if (entryRow) {
+    const outbox = await store("readwrite", OUTBOX);
+    await requestValue(outbox.put(entryRow.entry));
+    const cleanup = await store("readwrite", ENTRY_QUARANTINE);
+    await requestValue(cleanup.delete(clientId));
+    return true;
+  }
+  const mediaStore = await store("readonly", MEDIA_QUARANTINE);
+  const mediaRow = await requestValue<QuarantinedMedia | undefined>(mediaStore.get(clientId));
+  if (mediaRow) {
+    const media = await store("readwrite", MEDIA);
+    await requestValue(
+      media.put({
+        clientId: mediaRow.clientId,
+        orgId: mediaRow.orgId ?? undefined,
+        metadata: mediaRow.metadata,
+        blob: mediaRow.blob,
+      }),
+    );
+    const cleanup = await store("readwrite", MEDIA_QUARANTINE);
+    await requestValue(cleanup.delete(clientId));
+    return true;
+  }
+  return false;
+}
+
+/** Drop a quarantined item for good — explicit scout decision only. */
+export async function discardQuarantined(clientId: string): Promise<void> {
+  const entryStore = await store("readwrite", ENTRY_QUARANTINE);
+  await requestValue(entryStore.delete(clientId));
+  const mediaStore = await store("readwrite", MEDIA_QUARANTINE);
+  await requestValue(mediaStore.delete(clientId));
+}
+
+/**
+ * Read a queued (or quarantined) media blob so the UI can preview photos
+ * offline via URL.createObjectURL before they ever reach the server.
+ */
+export async function getQueuedMediaBlob(clientId: string): Promise<Blob | null> {
+  const mediaStore = await store("readonly", MEDIA);
+  const row = await requestValue<MediaOutboxItem | undefined>(mediaStore.get(clientId));
+  if (row?.blob) return row.blob;
+  const quarantineStore = await store("readonly", MEDIA_QUARANTINE);
+  const quarantined = await requestValue<QuarantinedMedia | undefined>(
+    quarantineStore.get(clientId),
+  );
+  return quarantined?.blob ?? null;
+}
+
+/** A weekend outbox syncs in slices this size so no batch trips server caps. */
+export const SYNC_BATCH_SIZE = 50;
+
+/** Pure batching helper (tested): slices preserve order, last may be short. */
+export function sliceIntoBatches<T>(items: T[], size: number = SYNC_BATCH_SIZE): T[][] {
+  if (!Number.isFinite(size) || size < 1) size = SYNC_BATCH_SIZE;
+  const batches: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    batches.push(items.slice(index, index + size));
+  }
+  return batches;
+}
+
+export type SyncBatchOutcome = {
+  acknowledgements: Array<{ clientId: string; validations?: SyncValidation[] }>;
+  rejected: Array<{ clientId: string; reason: string }>;
+};
+
+/**
+ * Pure response parser (tested). Feature-detects servers: per-entry servers
+ * return { acknowledgements, rejected }; an older deployment returns only
+ * { acknowledgements } and rejections simply stay queued for a later pass.
+ */
+export function parseSyncResponseBody(body: unknown): SyncBatchOutcome {
+  const record = (body ?? {}) as {
+    acknowledgements?: Array<{ clientId?: unknown; validations?: SyncValidation[] }>;
+    rejected?: Array<{ clientId?: unknown; reason?: unknown }>;
+  };
+  const acknowledgements = (Array.isArray(record.acknowledgements) ? record.acknowledgements : [])
+    .filter((ack): ack is { clientId: string; validations?: SyncValidation[] } =>
+      typeof ack?.clientId === "string" && ack.clientId.length > 0,
+    );
+  const rejected = (Array.isArray(record.rejected) ? record.rejected : [])
+    .filter((row) => typeof row?.clientId === "string" && row.clientId.length > 0)
+    .map((row) => ({
+      clientId: row.clientId as string,
+      reason:
+        typeof row.reason === "string" && row.reason.trim()
+          ? row.reason
+          : "Server rejected this entry",
+    }));
+  return { acknowledgements, rejected };
+}
+
+async function pushEntryBatch(orgId: string, batch: SyncEntry[]): Promise<SyncBatchOutcome> {
   const response = await fetch("/api/scouting/sync", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ orgId, entries }),
+    body: JSON.stringify({ orgId, entries: batch, resultsMode: "per-entry" }),
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error ?? `Sync failed (${response.status})`);
   }
-  const result = (await response.json()) as {
-    acknowledgements: Array<{
-      clientId: string;
-      validations?: SyncValidation[];
-    }>;
-  };
-  const validations = result.acknowledgements.flatMap((ack) => ack.validations ?? []);
-  for (const acknowledgement of result.acknowledgements) {
-    const deleteStore = await store("readwrite", OUTBOX);
-    await requestValue(deleteStore.delete(acknowledgement.clientId));
+  return parseSyncResponseBody(await response.json().catch(() => ({})));
+}
+
+async function syncOutboxOnce(orgId: string): Promise<Omit<SyncOutboxResult, "attempts">> {
+  const objectStore = await store("readonly", OUTBOX);
+  const all = await requestValue<SyncEntry[]>(objectStore.getAll());
+  const { allowed: entries } = partitionByOrgId(all, orgId);
+  if (!entries.length) return { count: 0, validations: [], quarantined: 0 };
+  let count = 0;
+  let quarantined = 0;
+  const validations: SyncValidation[] = [];
+  for (const batch of sliceIntoBatches(entries)) {
+    const outcome = await pushEntryBatch(orgId, batch);
+    for (const acknowledgement of outcome.acknowledgements) {
+      validations.push(...(acknowledgement.validations ?? []));
+      const deleteStore = await store("readwrite", OUTBOX);
+      await requestValue(deleteStore.delete(acknowledgement.clientId));
+      count += 1;
+    }
+    for (const rejection of outcome.rejected) {
+      const entry = batch.find((candidate) => candidate.clientId === rejection.clientId);
+      if (!entry) continue;
+      await quarantineEntry(entry, rejection.reason);
+      quarantined += 1;
+    }
   }
-  return { count: result.acknowledgements.length, validations };
+  return { count, validations, quarantined };
 }
 
 /**
@@ -302,7 +515,7 @@ export async function syncOutbox(
   orgId: string,
   options?: { signal?: AbortSignal; maxAttempts?: number; onRetry?: (n: number, delayMs: number) => void },
 ): Promise<SyncOutboxResult> {
-  if (!navigator.onLine) return { count: 0, validations: [], attempts: 0 };
+  if (!navigator.onLine) return { count: 0, validations: [], attempts: 0, quarantined: 0 };
   let attempts = 0;
   const result = await withSyncBackoff(
     async () => {
@@ -318,10 +531,19 @@ export async function syncOutbox(
   return { ...result, attempts };
 }
 
-async function syncOneMedia(
-  orgId: string,
-  item: { clientId: string; orgId?: string; metadata: Record<string, unknown>; blob: Blob },
-): Promise<boolean> {
+/** A server 4xx that will never succeed on retry — quarantine, don't loop. */
+class PermanentMediaRejection extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PermanentMediaRejection";
+  }
+}
+
+function isPermanentMediaStatus(status: number): boolean {
+  return status === 400 || status === 413 || status === 422;
+}
+
+async function syncOneMedia(orgId: string, item: MediaOutboxItem): Promise<boolean> {
   if (wouldCrossOrgLeak(item.orgId ?? (item.metadata.orgId as string | undefined), orgId)) {
     throw new Error("Organization access denied");
   }
@@ -330,40 +552,86 @@ async function syncOneMedia(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...item.metadata, orgId, clientId: item.clientId }),
   });
-  if (!metadataResponse.ok) throw new Error("Media metadata upload failed");
+  if (!metadataResponse.ok) {
+    const body = (await metadataResponse.json().catch(() => ({}))) as { error?: string };
+    const message = body.error ?? `Media metadata upload failed (${metadataResponse.status})`;
+    if (isPermanentMediaStatus(metadataResponse.status)) {
+      throw new PermanentMediaRejection(message);
+    }
+    throw new Error(message);
+  }
   const { uploadUrl } = (await metadataResponse.json()) as { uploadUrl: string };
   const upload = await fetch(uploadUrl, { method: "PUT", body: item.blob });
-  if (!upload.ok) throw new Error("Media blob upload failed");
+  if (!upload.ok) {
+    const body = (await upload.json().catch(() => ({}))) as { error?: string };
+    const message =
+      body.error ??
+      `Media blob upload failed (${upload.status}, file is ${formatByteSize(item.blob.size)})`;
+    if (isPermanentMediaStatus(upload.status)) throw new PermanentMediaRejection(message);
+    throw new Error(message);
+  }
   const deleteStore = await store("readwrite", MEDIA);
   await requestValue(deleteStore.delete(item.clientId));
   return true;
 }
 
-/** Upload queued pit media with per-item backoff; leaves failures queued. */
+export type SyncMediaResult = { synced: number; quarantined: number };
+
+/**
+ * Upload queued pit media with per-item backoff. Transient failures stay
+ * queued for the next reconnect; over-cap files and permanent server
+ * rejections move to quarantine so the pending count actually drains.
+ */
 export async function syncMediaOutbox(
   orgId: string,
   options?: { signal?: AbortSignal; maxAttempts?: number },
-): Promise<number> {
-  if (!navigator.onLine) return 0;
+): Promise<SyncMediaResult> {
+  if (!navigator.onLine) return { synced: 0, quarantined: 0 };
   const objectStore = await store("readonly", MEDIA);
-  const items = await requestValue<
-    Array<{ clientId: string; orgId?: string; metadata: Record<string, unknown>; blob: Blob }>
-  >(objectStore.getAll());
+  const items = await requestValue<MediaOutboxItem[]>(objectStore.getAll());
   const scoped = items.filter(
     (item) => !wouldCrossOrgLeak(item.orgId ?? (item.metadata.orgId as string | undefined), orgId),
   );
   let synced = 0;
+  let quarantined = 0;
   for (const item of scoped) {
     if (!navigator.onLine || options?.signal?.aborted) break;
+    if (exceedsMediaCap(item.blob.size)) {
+      await quarantineMedia(
+        item,
+        oversizeMediaReason(item.blob.size, mediaKindLabel(item.metadata.kind)),
+      );
+      quarantined += 1;
+      continue;
+    }
+    let permanent: PermanentMediaRejection | null = null;
     try {
-      await withSyncBackoff(() => syncOneMedia(orgId, item), {
-        maxAttempts: options?.maxAttempts ?? 3,
-        signal: options?.signal,
-      });
+      await withSyncBackoff(
+        async () => {
+          try {
+            return await syncOneMedia(orgId, item);
+          } catch (error) {
+            if (error instanceof PermanentMediaRejection) {
+              // Abort the backoff loop immediately — retrying a 4xx cannot help.
+              permanent = error;
+              throw new DOMException("Aborted", "AbortError");
+            }
+            throw error;
+          }
+        },
+        {
+          maxAttempts: options?.maxAttempts ?? 3,
+          signal: options?.signal,
+        },
+      );
       synced += 1;
     } catch {
-      /* leave item queued for a later reconnect */
+      if (permanent !== null) {
+        await quarantineMedia(item, (permanent as PermanentMediaRejection).message);
+        quarantined += 1;
+      }
+      /* transient failure — leave item queued for a later reconnect */
     }
   }
-  return synced;
+  return { synced, quarantined };
 }

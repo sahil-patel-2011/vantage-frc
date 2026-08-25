@@ -20,7 +20,7 @@ export function parseYouTubeEmbed(raw: string): { videoId: string; embedUrl: str
   if (url.protocol !== "https:") return null;
   if (!ALLOWED_HOSTS.has(url.hostname)) return null;
 
-  let videoId = "";
+  let videoId: string;
   if (url.hostname.includes("youtu.be")) videoId = url.pathname.replace(/^\//, "").split("/")[0] ?? "";
   else if (url.pathname.startsWith("/embed/")) videoId = url.pathname.split("/")[2] ?? "";
   else videoId = url.searchParams.get("v") ?? "";

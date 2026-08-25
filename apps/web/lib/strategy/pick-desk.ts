@@ -10,6 +10,13 @@ import {
   type PickTier,
 } from "@vantage/prediction-strategy";
 import { observationsForStrategyTrust } from "@vantage/scouting/trust";
+import type { SchemaDefinition } from "@vantage/scouting";
+import { loadScoutFieldRoles } from "./scout-field-roles";
+import {
+  findFieldPositionFields,
+  readFieldPositionHeatmap,
+  type FieldPositionHeatmap,
+} from "../scouting/heatmap";
 import {
   buildEpaDriftCallouts,
   loadRecentAllianceShares,
@@ -52,6 +59,13 @@ export type PickDeskView = {
   epaDrifts: PickAssistDrift[];
   /** Top-accurate scouts rotated into today's pick-desk conversation. */
   strategySeats: PickDeskStrategySeat[];
+  /**
+   * Where each team was scouted, per field_position question on the published
+   * form, keyed by teamKey. Absent entirely when the form has no field_position
+   * question; present-but-empty when the question exists and nobody tapped a
+   * cell yet, so the team detail can say so honestly instead of inventing heat.
+   */
+  positionHeatByTeam?: Record<string, FieldPositionHeatmap[]>;
   /** TBA/Statbotics ingest health — pick desk keeps using Neon last-good when degraded. */
   dataSourceHealth?: import("../reference-health").DataSourceHealthView;
 };
@@ -194,6 +208,9 @@ export async function loadPickDesk(
       ),
   );
 
+  // Published-schema role map so custom form-builder fields reach pick capabilities.
+  const fieldRoles = await loadScoutFieldRoles(client, row.orgId, row.eventKey);
+
   const byTeam = new Map<
     string,
     Array<{ payload: Record<string, unknown>; confidence: "high" | "normal" | "low" }>
@@ -213,7 +230,9 @@ export async function loadPickDesk(
     const trusted = observationsForStrategyTrust(observations);
     const reliability = trusted.length ? deriveReliability(trusted) : null;
     const foulRisk = trusted.length ? deriveFoulRisk(trusted) : null;
-    const capabilities = trusted.length ? deriveScoutCapabilities(trusted) : null;
+    const capabilities = trusted.length
+      ? deriveScoutCapabilities(trusted, { roles: fieldRoles })
+      : null;
     const pepaRow = blendPrivateEpa({
       teamKey: metric.teamKey,
       publicEpa: metric.epaTotal,
@@ -300,6 +319,8 @@ export async function loadPickDesk(
 
   const baseSources = [...new Set(metrics.rows.map((item) => item.source).filter(Boolean))];
 
+  const positionHeatByTeam = await loadPositionHeatByTeam(client, row.orgId, row.eventKey, byTeam);
+
   return {
     orgId: row.orgId,
     eventKey: row.eventKey,
@@ -321,6 +342,7 @@ export async function loadPickDesk(
       ...seat,
       isMe: seat.userId === input.userId,
     })),
+    ...(positionHeatByTeam ? { positionHeatByTeam } : {}),
   };
 }
 
@@ -384,4 +406,54 @@ export function normalizeAllianceBoardState(
     pickListId: typeof value.pickListId === "string" ? value.pickListId : null,
     notes: typeof value.notes === "string" ? value.notes : null,
   };
+}
+
+/**
+ * Per-team field-position heat for the pick-desk team detail.
+ *
+ * Reads only what the published match form actually declares: if no
+ * field_position question exists, this returns undefined and the panel never
+ * renders. If the question exists but nobody has tapped a cell, every team gets
+ * an empty heatmap so the desk shows an honest "no positions recorded yet"
+ * rather than a smoothed-out placeholder.
+ *
+ * Degrades to undefined on any lookup failure — a pick desk must never hard-fail
+ * because an optional heat panel could not be built.
+ */
+async function loadPositionHeatByTeam(
+  client: PoolClient,
+  orgId: string,
+  eventKey: string | null,
+  byTeam: Map<string, Array<{ payload: Record<string, unknown> }>>,
+): Promise<Record<string, FieldPositionHeatmap[]> | undefined> {
+  if (!byTeam.size) return undefined;
+  let definition: SchemaDefinition | null;
+  try {
+    const result = await client.query<{ schema: unknown }>(
+      `SELECT schema
+         FROM scout_schemas
+        WHERE org_id = $1::uuid AND type = 'match'
+        ORDER BY
+          (year = (SELECT year FROM events_ref WHERE event_key = $2::text)) DESC NULLS LAST,
+          year DESC, version DESC
+        LIMIT 1`,
+      [orgId, eventKey],
+    );
+    const raw = result.rows[0]?.schema;
+    definition = raw && typeof raw === "object" ? (raw as SchemaDefinition) : null;
+  } catch {
+    return undefined;
+  }
+  const positionFields = findFieldPositionFields(definition);
+  if (!positionFields.length) return undefined;
+
+  const heatByTeam: Record<string, FieldPositionHeatmap[]> = {};
+  for (const [teamKey, observations] of byTeam) {
+    heatByTeam[teamKey] = positionFields.map((field) =>
+      readFieldPositionHeatmap(observations, field.key, field.config, {
+        fieldLabel: field.label,
+      }),
+    );
+  }
+  return heatByTeam;
 }

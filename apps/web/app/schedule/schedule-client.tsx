@@ -5,7 +5,9 @@ import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { OfflineBanner } from "../../components/offline-banner";
 import { ScheduleRelated } from "../../components/schedule-related";
 import { EmptyState, Panel } from "../../components/ui";
+import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   SCHEDULE_RELATED_INCLUDE,
   scheduleNextActions,
@@ -26,6 +28,57 @@ import {
   type ScheduleMatch,
   type ScheduleView,
 } from "../../lib/schedule-board";
+
+/**
+ * CSV shape of the match board. One row per match with the alliances flattened into
+ * six team columns, because that is the shape a strategy spreadsheet pivots on.
+ * `teamKey` is threaded through so "our alliance" / "our result" are filled in for
+ * the workspace's own team and left blank when no team number is set.
+ */
+function scheduleCsvColumns(teamKey: string | null): CsvColumn<ScheduleMatch>[] {
+  const slot = (side: "red" | "blue", index: number): CsvColumn<ScheduleMatch> => ({
+    key: `${side}${index + 1}`,
+    header: `${side === "red" ? "Red" : "Blue"} ${index + 1}`,
+    value: (match) => {
+      const key = match[side][index];
+      return key ? stripFrc(key) : null;
+    },
+  });
+  return [
+    {
+      key: "match",
+      header: "Match",
+      hint: "Level and number as shown on the board",
+      value: (match) => `${compLevelLabel(match.compLevel)} ${match.matchNumber}`,
+    },
+    { key: "compLevel", header: "Comp level", hint: "Raw TBA level (qm/qf/sf/f)", value: (match) => match.compLevel },
+    { key: "matchNumber", header: "Match number", value: (match) => match.matchNumber },
+    {
+      key: "scheduledTime",
+      header: "Scheduled time",
+      hint: "ISO-8601 UTC — sortable, not a locale string",
+      value: (match) => match.scheduledTime,
+    },
+    ...[0, 1, 2].map((index) => slot("red", index)),
+    ...[0, 1, 2].map((index) => slot("blue", index)),
+    { key: "redScore", header: "Red score", value: (match) => match.redScore },
+    { key: "blueScore", header: "Blue score", value: (match) => match.blueScore },
+    { key: "winner", header: "Winner", hint: "Blank until the match is scored", value: (match) => match.winningAlliance },
+    {
+      key: "ourAlliance",
+      header: "Our alliance",
+      hint: "Blank when the match is not ours",
+      value: (match) => (teamKey ? allianceOf(match, teamKey) : null),
+    },
+    {
+      key: "ourResult",
+      header: "Our result",
+      hint: "W / L / T once scored",
+      value: (match) => (teamKey ? (matchResult(match, teamKey)?.result ?? null) : null),
+    },
+    { key: "scoutCount", header: "Scout entries", hint: "Submitted scouting rows for this match", value: (match) => match.scoutCount },
+  ];
+}
 
 function AllianceTeams({
   keys,
@@ -124,6 +177,7 @@ function ScheduleShell({
   matchCount,
   fetchFailed,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -135,6 +189,8 @@ function ScheduleShell({
   matchCount?: number;
   fetchFailed?: boolean;
   error?: string;
+  /** HTTP status of the failed load, so an expired session can offer sign-in. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -145,13 +201,32 @@ function ScheduleShell({
     matchCount,
   });
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus ?? null,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message:
+              error ||
+              "Check your connection and try again — nothing is filled with DEMO matches.",
+          },
+        )
+      : null;
 
   return (
     <main className="module-page sched-page">
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Competition / Schedule</span>
-          <h1>Match Schedule</h1>
+          <h1>Match schedule</h1>
           <p>{description}</p>
         </div>
         <ScheduleRelated orgId={orgId} include={[...SCHEDULE_RELATED_INCLUDE]} />
@@ -170,16 +245,17 @@ function ScheduleShell({
         soft
         badge={shell === "setup" ? "Setup" : shell === "error" ? "Unavailable" : shell === "empty" ? "No matches yet" : undefined}
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
-        title={title}
-        description={
-          shell === "error"
-            ? error || "Check your connection and try again — nothing is filled with DEMO matches."
-            : description
-        }
+        title={failure ? failure.title : title}
+        description={failure ? failure.description : description}
         aria-busy={shell === "loading" || undefined}
       >
         <div className="sched-inline-actions">
-          {shell === "error" && onRetry ? (
+          {failure?.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure?.showRetry && onRetry ? (
             <button type="button" className="app-button secondary" onClick={onRetry}>
               Retry
             </button>
@@ -204,6 +280,8 @@ export default function ScheduleClient() {
   const [view, setView] = useState<ScheduleView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [scope, setScope] = useState<"all" | "ours">("all");
   const [hidePlayed, setHidePlayed] = useState(false);
 
@@ -215,10 +293,12 @@ export default function ScheduleClient() {
       const data = (await response.json()) as ScheduleView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the match schedule.");
+        setFailureStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setFailureStatus(null);
       setFetchFailed(false);
       setView(data);
     } catch {
@@ -246,6 +326,7 @@ export default function ScheduleClient() {
         shell={fetchFailed ? "error" : "loading"}
         fetchFailed={fetchFailed}
         error={error}
+        errorStatus={failureStatus}
         onRetry={() => void load()}
       />
     );
@@ -292,7 +373,7 @@ export default function ScheduleClient() {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Competition / Schedule</span>
-          <h1>Match Schedule</h1>
+          <h1>Match schedule</h1>
           <p>
             {eventLabel}
             {view.context.teamNumber ? ` — Team ${view.context.teamNumber}` : ""} · {view.matches.length}{" "}
@@ -383,6 +464,17 @@ export default function ScheduleClient() {
               <input type="checkbox" checked={hidePlayed} onChange={(event) => setHidePlayed(event.target.checked)} />
               Hide played
             </label>
+            <ExportButton
+              rows={visible}
+              columns={scheduleCsvColumns(teamKey)}
+              feature="Match schedule"
+              orgLabel={view.context.orgName}
+              orgId={orgId}
+              size="sm"
+              provenance={`${eventLabel} — ${scope === "ours" ? "our matches" : "all matches"}${
+                hidePlayed ? ", unplayed only" : ""
+              }. Cached TBA schedule.`}
+            />
           </div>
 
           {visible.length === 0 ? (

@@ -71,6 +71,171 @@
   color: inherit;
 }
 
+/* One container height for identity + code, so the card never jumps. */
+.signin-step {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-height: 236px;
+}
+
+.signin-last-used {
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid #d2d2d7;
+  background: #fafafa;
+  color: #6e6e73;
+  font: 600 10px var(--font-source-sans), ui-sans-serif;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.signin-link-block {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  text-align: center;
+}
+
+.signin-remembered {
+  display: block;
+  margin-top: 6px;
+  color: #6e6e73;
+  font-size: 12px;
+}
+
+.signin-code-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d2d2d7;
+  border-radius: 14px;
+  background: #fafafa;
+}
+
+.signin-code-target strong {
+  overflow-wrap: anywhere;
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
+}
+
+/* Six visible slots, one real input beneath them for paste + one-time-code. */
+.signin-code {
+  position: relative;
+  display: block;
+  margin: 4px 0 0;
+  cursor: text;
+}
+
+.signin-code.disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.signin-code-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px; /* iOS refuses to zoom at >=16px */
+  letter-spacing: 2em;
+  text-indent: -9999px;
+  opacity: 0.01;
+}
+
+.signin-code-input:focus {
+  outline: none;
+}
+
+.signin-code-boxes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.signin-code-box {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 52px;
+  border: 1px solid #d2d2d7;
+  border-radius: 12px;
+  background: #fff;
+  color: #1d1d1f;
+  font: 600 22px var(--font-ibm-mono), ui-monospace, monospace;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.signin-code-box.caret {
+  border-color: #1d1d1f;
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.09);
+}
+
+.signin-code.invalid .signin-code-box {
+  border-color: #c2483c;
+}
+
+.signin-invite {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid #a8bee4;
+  border-radius: 14px;
+  background: #f2f6fd;
+  text-align: left;
+}
+
+.signin-invite > span {
+  justify-self: start;
+  color: #3a5a8a;
+  font: 700 10px var(--font-ibm-mono), monospace;
+  letter-spacing: 0.08em;
+}
+
+.signin-invite strong {
+  color: #1d3557;
+  font-size: 15px;
+}
+
+.signin-invite p {
+  margin: 0;
+  color: #46618a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* The shared `.signin-status` is an amber notice; a failure must not read as one. */
+.signin-status.error {
+  border-color: #eec2bb;
+  background: #fdf3f1;
+  color: #8f2f25;
+}
+
+/* Comfortable tap targets for the secondary actions inside the flow. */
+.signin-footer-modes .signin-link,
+.signin-code-target .signin-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+}
+
+.signin-footer-modes .signin-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .signin-method-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -289,6 +454,16 @@
     padding: 18px 10px;
   }
 
+  .signin-code-boxes {
+    gap: 6px;
+  }
+
+  .signin-code-box {
+    min-height: 48px;
+    border-radius: 10px;
+    font-size: 19px;
+  }
+
   .signin-card {
     padding: 24px 17px;
     border-radius: 18px;
@@ -304,8 +479,20 @@
   }
 }
 
+@media (max-width: 360px) {
+  .signin-code-boxes {
+    gap: 4px;
+  }
+
+  .signin-code-box {
+    min-height: 44px;
+    font-size: 17px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .signin-google,
+  .signin-code-box,
   .signin-method-tabs button {
     transition: none;
   }
@@ -336,6 +523,59 @@ html[data-theme="dark"] .signin-method-tabs button[aria-pressed="true"] {
   background: #1a2740;
   border-color: #6e9bff;
   color: #9bbcff;
+}
+
+html[data-theme="dark"] .signin-code-box {
+  background: #0f141a;
+  border-color: #334155;
+  color: #edf2f7;
+}
+
+html[data-theme="dark"] .signin-code-box.caret {
+  border-color: #6e9bff;
+  box-shadow: 0 0 0 3px rgba(110, 155, 255, 0.22);
+}
+
+html[data-theme="dark"] .signin-code.invalid .signin-code-box {
+  border-color: #e08276;
+}
+
+html[data-theme="dark"] .signin-code-target,
+html[data-theme="dark"] .signin-last-used {
+  background: #0f141a;
+  border-color: #334155;
+  color: #b7c4d6;
+}
+
+html[data-theme="dark"] .signin-code-target strong {
+  color: #edf2f7;
+}
+
+html[data-theme="dark"] .signin-remembered {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .signin-invite {
+  border-color: #2f4a7a;
+  background: #131c2c;
+}
+
+html[data-theme="dark"] .signin-invite > span {
+  color: #9bbcff;
+}
+
+html[data-theme="dark"] .signin-invite strong {
+  color: #dbe7ff;
+}
+
+html[data-theme="dark"] .signin-invite p {
+  color: #a8bad6;
+}
+
+html[data-theme="dark"] .signin-status.error {
+  border-color: #6b332b;
+  background: #2a1512;
+  color: #f0a99f;
 }
 
 html[data-theme="dark"] .signin-setup-shell {

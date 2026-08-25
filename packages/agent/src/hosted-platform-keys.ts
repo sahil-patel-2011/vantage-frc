@@ -8,8 +8,21 @@ export const HOSTED_ANTHROPIC_SONNET = "claude-sonnet-4-20250514";
 export const HOSTED_ANTHROPIC_OPUS = "claude-opus-4-20250514";
 
 const OPENROUTER_PRICES = { inputPerMillionUsd: 0, outputPerMillionUsd: 0 };
-const ANTHROPIC_SONNET_PRICES = { inputPerMillionUsd: 3, outputPerMillionUsd: 15 };
-const ANTHROPIC_OPUS_PRICES = { inputPerMillionUsd: 15, outputPerMillionUsd: 75 };
+// Anthropic published cache rates: 5m cache write = 1.25x input, cache read =
+// 0.1x input. With these present, computeCacheAwareCost meters actual savings
+// on hosted-key turns instead of falling back to full input list price.
+const ANTHROPIC_SONNET_PRICES = {
+  inputPerMillionUsd: 3,
+  outputPerMillionUsd: 15,
+  cacheReadPerMillionUsd: 0.3,
+  cacheWritePerMillionUsd: 3.75,
+};
+const ANTHROPIC_OPUS_PRICES = {
+  inputPerMillionUsd: 15,
+  outputPerMillionUsd: 75,
+  cacheReadPerMillionUsd: 1.5,
+  cacheWritePerMillionUsd: 18.75,
+};
 
 export function readOpenRouterApiKey(env: NodeJS.ProcessEnv = process.env): string | null {
   const key = env.OPENROUTER_API_KEY?.trim();
@@ -55,7 +68,7 @@ export function tryCreateOpenRouterFreeAdapter(input?: {
     model: openRouterFreeModel(env),
     apiKey,
     baseUrl: OPENROUTER_BASE_URL,
-    promptCachingEnabled: input?.promptCachingEnabled ?? false,
+    promptCachingEnabled: input?.promptCachingEnabled ?? true,
     prices: OPENROUTER_PRICES,
     fetchImpl: input?.fetchImpl,
     providerLabel: "openrouter",
@@ -79,7 +92,7 @@ export function tryCreateHostedAnthropicAdapter(input?: {
     provider: "anthropic",
     model,
     apiKey,
-    promptCachingEnabled: input?.promptCachingEnabled ?? false,
+    promptCachingEnabled: input?.promptCachingEnabled ?? true,
     prices,
     fetchImpl: input?.fetchImpl,
     providerLabel: "anthropic-hosted",

@@ -11,25 +11,35 @@ export function configuredPlatformOwnerEmail() {
 
 export function isDatabaseConfigured() {
   return ["DATABASE_AUTH_URL", "DATABASE_URL", "DATABASE_ADMIN_URL", "POSTGRES_URL"].some((name) =>
-    Boolean(process.env[name]?.trim()),
+    Boolean(runtimeEnv(name)),
   );
 }
 
 /** Avoid Next.js build-time inlining of `process.env.NAME` so Sensitive Vercel secrets remain runtime-readable. */
 export function runtimeEnv(name: string) {
-  return process.env[name]?.trim() || "";
+  const value = process.env[name]?.trim() || "";
+  if (!value || value === "[SENSITIVE]") return "";
+  return value;
 }
 
+/** Local OTP can use the in-memory mailbox. Production delivery needs Resend. */
 export function isEmailProviderConfigured() {
   if (process.env.NODE_ENV !== "production") return true;
+  return isEmailDeliveryConfigured();
+}
+
+/** Real outbound email (Resend). Password sign-in must not wait on this. */
+export function isEmailDeliveryConfigured() {
   return Boolean(runtimeEnv("RESEND_API_KEY") && runtimeEnv("AUTH_EMAIL_FROM"));
 }
 
 export function isGoogleAuthConfigured() {
-  return Boolean(runtimeEnv("GOOGLE_CLIENT_ID") && runtimeEnv("GOOGLE_CLIENT_SECRET"));
+  const clientId = runtimeEnv("GOOGLE_CLIENT_ID");
+  const clientSecret = runtimeEnv("GOOGLE_CLIENT_SECRET");
+  return Boolean(clientId && clientSecret && clientId.endsWith(".apps.googleusercontent.com"));
 }
 
-export type SessionAuthMethod = "email_otp" | "password" | "google" | "unknown";
+export type SessionAuthMethod = "email_otp" | "password" | "google" | "desktop_link" | "unknown";
 
 /** Map Better Auth request paths onto the session auth_method we persist. */
 export function resolveSessionAuthMethod(path: string): SessionAuthMethod {
@@ -37,13 +47,20 @@ export function resolveSessionAuthMethod(path: string): SessionAuthMethod {
   if (value.includes("email-otp")) return "email_otp";
   if (value.includes("/sign-in/email") || value.includes("/sign-up/email")) return "password";
   if (value.includes("google") || value.includes("sign-in/social")) return "google";
+  // Server-only mint for the desktop shell (desktop-link-plugin.ts).
+  if (value.includes("desktop-link")) return "desktop_link";
   return "unknown";
 }
 
-/** Google already proved the mailbox. Password still needs the email code when 2FA is on. */
+/**
+ * Google already proved the mailbox. Password still needs the email code when 2FA is on.
+ * A desktop_link session can only be minted after a signed-in user — whose own session
+ * already passed this gate in proxy.ts — explicitly approved the machine's code, so the
+ * second factor was verified in the flow that authorized it.
+ */
 export function email2faSatisfiedByAuthMethod(method: SessionAuthMethod, enforced: boolean) {
   if (!enforced) return true;
-  return method === "email_otp" || method === "google";
+  return method === "email_otp" || method === "google" || method === "desktop_link";
 }
 
 /** Resolve the public auth origin for Better Auth callbacks (never use bare VERCEL_URL alone when BETTER_AUTH_URL is set). */
@@ -155,7 +172,7 @@ export function getAuthCapabilities(): AuthCapabilityReport {
   const ownerEmail = configuredPlatformOwnerEmail();
   const google = getGoogleAuthEnvDiagnostics();
   const bypass = runtimeEnv("ENABLE_EMAIL_2FA_BYPASS") === "true";
-  const email2faEnforced = emailOtpAvailable && !bypass;
+  const email2faEnforced = databaseConfigured && isEmailDeliveryConfigured() && !bypass;
   return {
     waitlistOnly: true,
     publicSignup: false,

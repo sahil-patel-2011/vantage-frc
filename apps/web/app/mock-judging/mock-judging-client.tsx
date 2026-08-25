@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   MOCK_JUDGING_AWARD_CATEGORIES,
   mockJudgingAwardCategoryLabel,
@@ -26,6 +27,8 @@ export default function MockJudgingClient() {
   const [view, setView] = useState<MockJudgingView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -33,6 +36,7 @@ export default function MockJudgingClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setErrorStatus(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -44,6 +48,7 @@ export default function MockJudgingClient() {
       .then(async (response) => {
         const data = (await response.json()) as MockJudgingView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
@@ -94,7 +99,7 @@ export default function MockJudgingClient() {
           </>
         }
         title="Mock Judging"
-        description="Run practice judging sessions with an AI judge — get rubric-scored feedback on substance, specificity, evidence grounding, clarity, and confidence before you're in front of real judges."
+        description="Run practice judging sessions with a rubric judge computed from your own prep notes — feedback on substance, specificity, evidence grounding, clarity, and confidence before you're in front of real judges."
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
           {view?.status === "live" && view.seasons.length > 0 ? (
@@ -126,14 +131,34 @@ export default function MockJudgingClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load Mock Judging"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const kind = classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          });
+          const copy = loadFailureCopy(kind, {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          });
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
@@ -231,7 +256,7 @@ function RunSessionForm({
       <h2 style={{ margin: 0 }}>Run a mock judging round</h2>
       <p className="app-muted" style={{ margin: 0 }}>
         Leave the question blank to get one picked for you from the award category, then answer it like you would in
-        front of judges. The AI judge rubric-scores your answer and grounds feedback in your logged prep notes.
+        front of judges. The rubric judge scores your answer deterministically and grounds feedback in your logged prep notes.
       </p>
       <FormGrid min={160}>
         <FormRow label="Award category">
@@ -432,7 +457,7 @@ function PrepNotesList({
         badge="No prep notes yet"
         badgeTone="setup"
         title="Log your first prep note"
-        description="Without logged notes, the AI judge can't ground evidence-grounding scores in anything specific."
+        description="Without logged notes, the rubric judge can't ground evidence-grounding scores in anything specific."
       />
     );
   }

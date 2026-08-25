@@ -33,7 +33,7 @@ import {
   type DriveTeamSignalsNextAction,
   type DriveTeamSignalsShellKind,
 } from "../../lib/drive-team-signals/drive-team-signals-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./drive-team-signals.css";
 
@@ -101,7 +101,7 @@ function SignalsShell({
 }) {
   const actions = driveTeamSignalsNextActions({ orgId, shell });
   const copy = driveTeamSignalsShellCopy(shell);
-  const competitionHref = hubHref("/competition", "drive-team-signals", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "drive-team-signals", orgId);
   const steps = shell === "setup" ? driveTeamSignalsSetupSteps(orgId) : [];
 
   return (
@@ -222,7 +222,7 @@ export default function DriveTeamSignalsClient() {
     sheetCount,
     signalCount,
   });
-  const competitionHref = hubHref("/competition", "drive-team-signals", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "drive-team-signals", orgId);
   const showTiles = shouldShowDriveTeamSignalsSummaryTiles(sheetCount, signalCount);
   const loaded = view?.status === "live";
 

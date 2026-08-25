@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import PartnerPlacement from "../../components/partner-placement";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   PIT_RELATED_INCLUDE,
   classifyPitShell,
@@ -165,6 +166,7 @@ function PitShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -172,11 +174,31 @@ function PitShell({
   orgId?: string | null;
   shell: PitShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = pitNextActions({ orgId, shell });
   const copy = pitShellCopy(shell);
+  // A failed load names its own recovery — Retry cannot fix an expired session.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || copy.description,
+          },
+        )
+      : null;
   const competitionHref = withOrgHref("/competition", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const checklistHref = hubHref("/competition", "match-checklist", orgId);
@@ -188,10 +210,10 @@ function PitShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pit Command"}
+            {" / Pit command"}
           </>
         }
-        title="Pit Command"
+        title="Pit command"
         description={description}
       >
         <PitRelatedStrip orgId={orgId} />
@@ -209,11 +231,16 @@ function PitShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failure?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -254,6 +281,8 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -261,15 +290,18 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
       const body = (await r.json()) as Data | { error?: string };
       if (!r.ok || !("gate" in body)) {
         setFetchFailed(true);
-        setError("error" in body && body.error ? body.error : "Could not load Pit Command");
+        setErrorStatus(r.status);
+        setError("error" in body && body.error ? body.error : "Could not load Pit command");
         return;
       }
       setData(body);
       setFetchFailed(false);
+      setErrorStatus(null);
       setError("");
     } catch (e) {
       setFetchFailed(true);
-      setError(e instanceof Error ? e.message : "Could not load Pit Command");
+      setErrorStatus(null);
+      setError(e instanceof Error ? e.message : "Could not load Pit command");
     } finally {
       setLoading(false);
     }
@@ -370,6 +402,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={errorStatus}
         onRetry={() => {
           setLoading(true);
           void load();
@@ -385,6 +418,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={errorStatus}
         onRetry={() => {
           setLoading(true);
           void load();
@@ -399,7 +433,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pit Command"}
+            {" / Pit command"}
             {data.organization.teamNumber != null ? ` · Team ${data.organization.teamNumber}` : ""}
           </>
         }
@@ -846,7 +880,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         </nav>
       ) : null}
 
-      <PartnerPlacement orgId={orgId} surface="pit_footer" title="Pit Command partners" />
+      <PartnerPlacement orgId={orgId} surface="pit_footer" title="Pit command partners" />
       <footer className="pit-foot">
         <span>Last calculated {new Date(data.updatedAt).toLocaleTimeString()}</span>
         <span>

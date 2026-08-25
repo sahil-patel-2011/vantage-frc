@@ -1,0 +1,30 @@
+/* Event Readiness — the dated countdown BEFORE an event. Tokens only; light
+   and dark come from the shared app theme variables. */
+.evr-page{display:grid;gap:16px}
+.evr-filter{display:flex;gap:6px;align-items:center}
+.evr-filter select{min-height:44px}
+.evr-panel{display:grid;gap:12px}
+.evr-panel-title{margin:0}
+.evr-tip{margin:0}
+.evr-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.evr-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.evr-sources{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.evr-source{display:grid;gap:8px;align-content:start}
+.evr-source header{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.evr-source .app-button{justify-self:start;min-height:44px;display:inline-flex;align-items:center}
+.evr-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px}
+.evr-group-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.evr-item-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.evr-item{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.evr-item-main{display:grid;gap:4px;min-width:0}
+.evr-item-badges{display:flex;gap:6px;flex-wrap:wrap}
+.evr-item-title{overflow-wrap:anywhere}
+.evr-item-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.evr-item-actions .app-button{min-height:44px;display:inline-flex;align-items:center}
+.evr-status-select{min-height:44px}
+.evr-item.flag-done .evr-item-title{text-decoration:line-through;opacity:.7}
+@media(max-width:640px){
+  .evr-item{flex-direction:column;align-items:stretch}
+  .evr-item-actions{justify-content:flex-start}
+  .evr-setup-steps li{flex-direction:column;align-items:stretch}
+}

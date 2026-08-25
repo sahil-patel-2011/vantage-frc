@@ -1,4 +1,4 @@
-import { HELP_ARTICLES, helpArticleHref, type HelpArticle } from "./articles";
+import { HELP_ARTICLES, helpArticleHref, helpCategoryLabel, type HelpArticle } from "./articles";
 
 export type HelpSearchHit = {
   id: string;
@@ -14,6 +14,7 @@ function haystack(article: HelpArticle): string {
     article.title,
     article.summary,
     article.category,
+    helpCategoryLabel(article.category),
     ...article.keywords,
     ...article.sections.flatMap((section) => [section.heading, ...section.body]),
   ]

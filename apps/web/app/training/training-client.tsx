@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { trainingCategoryLabel } from "../../lib/training";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   TRAINING_CATEGORIES,
   type TrainingView,
@@ -31,6 +32,9 @@ export default function TrainingClient() {
   const [view, setView] = useState<TrainingView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -38,6 +42,8 @@ export default function TrainingClient() {
   const load = useCallback(() => {
     setFetchFailed(false);
     setError("");
+    setErrorStatus(null);
+    setLoadErrorMessage("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const query = new URLSearchParams();
@@ -46,6 +52,8 @@ export default function TrainingClient() {
       .then(async (response) => {
         const data = (await response.json()) as TrainingView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadErrorMessage("error" in data && data.error ? data.error : "");
+          setErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
@@ -84,6 +92,24 @@ export default function TrainingClient() {
     [orgId, busy],
   );
 
+  const failure = fetchFailed
+    ? loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message: loadErrorMessage,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message:
+            loadErrorMessage || "A network or server issue prevented loading. Try again.",
+        },
+      )
+    : null;
+
   return (
     <main className="module-page">
       <PageHeader
@@ -103,14 +129,18 @@ export default function TrainingClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the Training Matrix"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+      {failure ? (
+        <EmptyState title={failure.title} description={failure.description}>
+          {failure.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
         </EmptyState>
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />

@@ -16,7 +16,7 @@ import {
   type CounterBookShellKind,
 } from "../../lib/counter-book/counter-book-related";
 import type { CounterBookReport } from "../../lib/counter-book/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./counter-book.css";
 
@@ -87,7 +87,7 @@ function CounterShell({
 }) {
   const actions = counterBookNextActions({ orgId, shell });
   const copy = counterBookShellCopy(shell);
-  const competitionHref = hubHref("/competition", "counter-book", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "counter-book", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
 
@@ -195,7 +195,7 @@ export default function CounterBookClient() {
   const relatedLinks = counterBookRelatedLinks(orgId, {
     include: [...COUNTER_BOOK_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "counter-book", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "counter-book", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
 

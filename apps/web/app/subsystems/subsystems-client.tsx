@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { MOTORS, SUBSYSTEM_CATEGORIES, computeFreeSpeedFps, motorFreeRpm, motorLabel, type SubsystemCategory } from "../../lib/subsystems";
 
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+
 type Subsystem = {
   id: string; name: string; category: SubsystemCategory; motorType: string; motorCount: number | null;
   gearReduction: number | null; wheelDiameterIn: number | null; notes: string; byName: string | null; freeSpeedFps: number | null;
@@ -16,12 +18,15 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead end.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/subsystems?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load subsystems"); return; }
+    if (!response.ok) { setErrorStatus(response.status); setMessage(data.error ?? "Failed to load subsystems"); return; }
+    setErrorStatus(null);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
@@ -43,7 +48,26 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
     if (view?.status === "ready") setForm({ ...EMPTY });
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading subsystems…"}</p></main>;
+  if (!view) {
+    if (!message) return <main className="intel-app"><p className="telemetry-status">Loading subsystems…</p></main>;
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath: typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status"><strong>{copy.title}</strong> — {copy.description}</p>
+        {copy.primary ? <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a> : null}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / SUBSYSTEMS</span><h1>Subsystem specs</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }

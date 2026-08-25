@@ -33,7 +33,7 @@ export type ScoutVoiceUserPrefs = {
 };
 
 export type ScoutVoiceProviders = {
-  /** Platform or org OpenAI-compatible key available for Whisper-style STT. */
+  /** Platform, org, member, or local OpenAI-compatible endpoint available for Whisper-style STT. */
   cloudConfigured: boolean;
-  cloudProvider: "openai" | null;
+  cloudProvider: "openai" | "openai-compatible" | null;
 };

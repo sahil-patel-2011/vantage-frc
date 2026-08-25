@@ -68,7 +68,7 @@
   padding: 10px 12px;
   border-radius: var(--app-radius);
   border: 1px solid var(--app-line);
-  background: var(--app-bg, #fff);
+  background: var(--app-bg);
   color: inherit;
   font: inherit;
 }
@@ -192,7 +192,7 @@
   max-height: 160px;
   white-space: pre-wrap;
   word-break: break-word;
-  background: color-mix(in srgb, var(--app-surface) 80%, #000 4%);
+  background: var(--app-soft);
   border-radius: 4px;
 }
 .aa-answer {

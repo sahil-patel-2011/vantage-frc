@@ -1,6 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { CallYourShot } from "../../lib/learning/call-your-shot";
+import { buildShooterCall } from "../../lib/learning/surfaces";
 import { interpolateShot } from "../../lib/shooter-table";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Point = { id: string; tableName: string; distanceFt: number; rpm: number | null; hoodAngle: number | null; notes: string };
 type View =
@@ -13,13 +16,16 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead end.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
   const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/shooter-table?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load shooter table"); return; }
+    if (!response.ok) { setErrorStatus(response.status); setMessage(data.error ?? "Failed to load shooter table"); return; }
+    setErrorStatus(null);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
@@ -41,15 +47,39 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
     if (view?.status === "ready") setForm({ ...EMPTY });
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading shooter table…"}</p></main>;
+  if (!view) {
+    if (!message) return <main className="intel-app"><p className="telemetry-status">Loading shooter table…</p></main>;
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath: typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status"><strong>{copy.title}</strong> — {copy.description}</p>
+        {copy.primary ? <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a> : null}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / SHOOTER</span><h1>Shooter table</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }
 
   const queryFt = Number(query);
-  const shot = query !== "" && Number.isFinite(queryFt)
-    ? interpolateShot(view.points.map((p) => ({ distanceFt: p.distanceFt, rpm: p.rpm, hoodAngle: p.hoodAngle })), queryFt)
-    : null;
+  const callPoints = view.points.map((p) => ({ distanceFt: p.distanceFt, rpm: p.rpm, hoodAngle: p.hoodAngle }));
+  const shot = query !== "" && Number.isFinite(queryFt) ? interpolateShot(callPoints, queryFt) : null;
+  // A new distance is a new shot to call; so is any change to the calibration.
+  const callSignature = JSON.stringify({
+    distanceFt: queryFt,
+    points: callPoints.map((p) => [p.distanceFt, p.rpm, p.hoodAngle]),
+  });
+  const callFieldSet = buildShooterCall({ points: callPoints, distanceFt: queryFt });
 
   return (
     <main className="intel-app">
@@ -69,10 +99,20 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
           <span className="eyebrow">LOOK UP A SHOT</span>
           <label>Distance (ft)<input type="number" min="0" step="0.1" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="12.5" /></label>
           {shot && (
-            <p className="telemetry-status success">
-              At {queryFt} ft → {shot.rpm != null ? `${shot.rpm} RPM` : "no RPM data"}{shot.hoodAngle != null ? ` · ${shot.hoodAngle}° hood` : ""}
-              {shot.extrapolated ? " (extrapolated — outside calibrated range)" : ""}
-            </p>
+            <CallYourShot
+              surface="shooter_table"
+              orgId={view.context.orgId}
+              role={view.context.role}
+              fieldSet={callFieldSet}
+              inputs={{ distanceFt: queryFt, points: callPoints }}
+              inputSummary={`${view.summary.count} calibrated point${view.summary.count === 1 ? "" : "s"}, reading ${queryFt} ft`}
+              signature={callSignature}
+            >
+              <p className="telemetry-status success">
+                At {queryFt} ft → {shot.rpm != null ? `${shot.rpm} RPM` : "no RPM data"}{shot.hoodAngle != null ? ` · ${shot.hoodAngle}° hood` : ""}
+                {shot.extrapolated ? " (extrapolated — outside calibrated range)" : ""}
+              </p>
+            </CallYourShot>
           )}
           <p><small>Values are linearly interpolated between your calibrated points. Add more points to tighten accuracy across the field.</small></p>
         </section>

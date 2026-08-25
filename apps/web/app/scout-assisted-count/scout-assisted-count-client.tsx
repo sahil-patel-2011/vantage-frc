@@ -30,7 +30,7 @@ import {
   type ScoutAssistedCountNextAction,
   type ScoutAssistedCountShellKind,
 } from "../../lib/scout-assisted-count/scout-assisted-count-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./scout-assisted-count.css";
 
@@ -94,7 +94,7 @@ function CountShell({
 }) {
   const actions = scoutAssistedCountNextActions({ orgId, shell });
   const copy = scoutAssistedCountShellCopy(shell);
-  const competitionHref = hubHref("/competition", "scout-assisted-count", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "scout-assisted-count", orgId);
   const steps = shell === "setup" ? scoutAssistedCountSetupSteps(orgId) : [];
 
   return (
@@ -212,7 +212,7 @@ export default function ScoutAssistedCountClient() {
     sessionCount,
     openSessions,
   });
-  const competitionHref = hubHref("/competition", "scout-assisted-count", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "scout-assisted-count", orgId);
   const showTiles = shouldShowScoutAssistedCountSummaryTiles(sessionCount, tapCount);
   const loaded = view?.status === "live";
 

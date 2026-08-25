@@ -2,6 +2,7 @@ import { getOrgPromptCachingEnabled, resolveOrgChatAdapter } from "@vantage/agen
 import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { createBridgeTransport } from "../../../lib/ai-bridge/transport";
 import { headers } from "next/headers";
 import {
   loadEditorContextItems,
@@ -17,6 +18,13 @@ async function current() {
 }
 const fail = (error: unknown) => failMeteredAi(error, "Agent request failed");
 
+/**
+ * Chat calls a real upstream model: give the function a 60s budget so the
+ * adapter's own 50s timeout fires first and returns a classified error
+ * instead of the platform killing the function mid-request.
+ */
+export const maxDuration = 60;
+
 export async function GET(request: Request) {
   try {
     const session = await current();
@@ -27,7 +35,7 @@ export async function GET(request: Request) {
       const repository = new AgentRepository(client);
       const promptCachingEnabled = orgId
           ? await getOrgPromptCachingEnabled(client, orgId)
-          : false;
+          : true; // platform default since 0448 — personal chats cache too
       return {
         threads: await repository.listThreads(),
         memories: await repository.listUserMemories(session.user.id),
@@ -74,6 +82,9 @@ export async function POST(request: Request) {
         orgId,
         promptCachingEnabled,
         feature: "chat",
+        // Prefer a paired subscription bridge (Claude Code / Codex on the
+        // team's own machine) when one is online; falls through to keys.
+        bridgeTransport: createBridgeTransport(),
       });
 
       const bridgeContext = [

@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   briefingChecklist,
   matchLabel,
   winProbabilityFor,
   type BriefingChecklistRow,
-  type BriefingView,
 } from "../../lib/briefing";
+import { capabilityLabel } from "../../lib/briefing/plan-sections";
+import type { BriefingScoutedTeam, FullBriefingView } from "../../lib/briefing/types";
+import type { MatchCopilotTeam } from "../../lib/match-copilot/types";
 import { fmtMatchTime, stripFrc } from "../../lib/schedule-board";
 import { fmtTimestamp } from "../../lib/video-review";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 /** Where each checklist row sends the coach to fix the gap. */
 const CHECKLIST_HREFS: Record<string, string> = {
@@ -36,6 +39,10 @@ function fmtRate(value: number | null): string {
   return value == null ? "—" : `${value}%`;
 }
 
+function fmtEpa(value: number | null): string {
+  return value == null ? "—" : value.toFixed(1);
+}
+
 /** Inline "not available — do X" hint reused by the checklist and each empty section. */
 function MissingHint({ row, orgId }: { row: BriefingChecklistRow | undefined; orgId: string | null }) {
   if (!row) return null;
@@ -47,6 +54,43 @@ function MissingHint({ row, orgId }: { row: BriefingChecklistRow | undefined; or
       </span>
       Not available — <a href={withOrg(href, orgId)}>{row.hint}</a>
     </p>
+  );
+}
+
+/** Honest empty state for a consolidated section, with the exact setup step. */
+function EmptyHint({ children }: { children: ReactNode }) {
+  return (
+    <p className="brief-missing">
+      <span className="brief-mark no" aria-hidden="true">
+        ✗
+      </span>
+      {children}
+    </p>
+  );
+}
+
+/** Collapsible section — one scrollable card the coach reads top-to-bottom.
+ * Everything defaults open; collapsing is for skipping past on a phone. */
+function Section({
+  title,
+  badge,
+  children,
+}: {
+  title: string;
+  badge?: string | null;
+  children: ReactNode;
+}) {
+  return (
+    <details className="app-card brief-section" open>
+      <summary>
+        <h2>{title}</h2>
+        {badge ? <span className="brief-chip">{badge}</span> : null}
+        <span className="brief-section-caret" aria-hidden="true">
+          ▾
+        </span>
+      </summary>
+      <div className="brief-section-body">{children}</div>
+    </details>
   );
 }
 
@@ -75,10 +119,62 @@ function ChecklistCard({ rows, orgId }: { rows: BriefingChecklistRow[]; orgId: s
   );
 }
 
+/** One scouted-capability row: "254 · 7 entries · auto strong · endgame developing". */
+function ScoutedRow({ row }: { row: BriefingScoutedTeam }) {
+  const caps: Array<[string, number | null]> = [
+    ["auto", row.autoCapability],
+    ["teleop", row.teleopCapability],
+    ["endgame", row.endgameCapability],
+  ];
+  return (
+    <li>
+      <p className="brief-review-head">
+        <b>{stripFrc(row.teamKey)}</b>
+        <span className="brief-chip">
+          {row.scoutSample} {row.scoutSample === 1 ? "entry" : "entries"}
+        </span>
+        {caps.map(([name, value]) => {
+          const label = capabilityLabel(value);
+          return label && label !== "not shown" ? (
+            <span key={name} className={`brief-chip ${label === "strong" ? "positive" : ""}`}>
+              {name} {label}
+            </span>
+          ) : null;
+        })}
+        {row.defenseLikely ? <span className="brief-chip critical">plays defense</span> : null}
+        {row.foulRate != null && row.foulRate >= 0.5 ? (
+          <span className="brief-chip critical">fouls {row.foulRate.toFixed(1)}/match</span>
+        ) : null}
+      </p>
+      {row.pitNotes.length > 0 ? <p className="app-muted brief-no-notes">{row.pitNotes.join(" · ")}</p> : null}
+    </li>
+  );
+}
+
+/** EPA line for a lineup, rendered only when a team has any real metric. */
+function EpaList({ teams }: { teams: MatchCopilotTeam[] }) {
+  const withData = teams.filter((team) => team.epaTotal != null || team.rank != null);
+  if (!withData.length) return null;
+  return (
+    <ul className="brief-epa-list">
+      {withData.map((team) => (
+        <li key={team.teamKey}>
+          <b>{team.teamNumber || stripFrc(team.teamKey)}</b>
+          {team.nickname ? <span className="brief-epa-nick">{team.nickname}</span> : null}
+          <span className="brief-chip">EPA {fmtEpa(team.epaTotal)}</span>
+          {team.rank != null ? <span className="brief-chip">rank {team.rank}</span> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function BriefingClient() {
-  const [view, setView] = useState<BriefingView | null>(null);
+  const [view, setView] = useState<FullBriefingView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const selectedRef = useRef<string | null>(null);
 
   const load = useCallback(async (matchKey: string | null) => {
@@ -91,23 +187,27 @@ export default function BriefingClient() {
     const suffix = query.toString();
     try {
       const response = await fetch(`/api/briefing${suffix ? `?${suffix}` : ""}`);
-      const data = (await response.json()) as BriefingView | { error?: string };
+      const data = (await response.json()) as FullBriefingView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the pre-match briefing.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setFetchFailed(false);
       setView(data);
     } catch {
+      setErrorStatus(null);
       setFetchFailed(true);
     }
   }, []);
 
   useEffect(() => {
     const pageParams = new URLSearchParams(window.location.search);
-    selectedRef.current = pageParams.get("matchKey");
+    // Canonical param is matchKey; redirected pre-match pages may pass ?match=.
+    selectedRef.current = pageParams.get("matchKey") ?? pageParams.get("match");
     void load(selectedRef.current);
     const timer = window.setInterval(() => {
       void load(selectedRef.current);
@@ -121,18 +221,43 @@ export default function BriefingClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Competition / Briefing</span>
-            <h1>Pre-Match Briefing</h1>
+            <h1>Pre-match briefing</h1>
           </div>
         </header>
         <div className="app-card brief-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load the pre-match briefing</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current)}>
-                Retry
-              </button>
-            </>
+            (() => {
+              const copy = loadFailureCopy(
+                classifyLoadFailure({
+                  status: errorStatus,
+                  message: error,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message: error || "Check your connection and try again.",
+                },
+              );
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current)}>
+                      Retry
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading pre-match briefing…</p>
           )}
@@ -147,8 +272,8 @@ export default function BriefingClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Competition / Briefing</span>
-            <h1>Pre-Match Briefing</h1>
-            <p>Prediction, game plan, linked play, practice readiness, and opponent film for one match.</p>
+            <h1>Pre-match briefing</h1>
+            <p>One briefing per match — prediction, plan, opponent notes, scouted tendencies, and film.</p>
           </div>
         </header>
         <div className="app-card brief-empty">
@@ -180,12 +305,22 @@ export default function BriefingClient() {
   });
   const rowFor = (label: string) => checklist.find((row) => row.label === label);
 
+  const batteryCritical = view.batteries.filter((battery) => battery.flag === "critical");
+  const batteryWatch = view.batteries.filter((battery) => battery.flag === "watch");
+  const hasOpponentNotes =
+    view.opponentsScouted.length > 0 ||
+    view.tendencies.length > 0 ||
+    view.watchNotes.length > 0 ||
+    view.defensePlans.length > 0 ||
+    view.opponentTeams.some((team) => team.epaTotal != null || team.rank != null);
+  const hasRobotHealth = view.pitReports.length > 0 || view.openRisks.length > 0 || view.batteries.length > 0;
+
   return (
     <main className="module-page brief-page">
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Competition / Briefing</span>
-          <h1>Pre-Match Briefing</h1>
+          <h1>Pre-match briefing</h1>
           <p>
             {view.context.eventName ?? view.context.eventKey}
             {view.context.teamNumber != null ? ` — Team ${view.context.teamNumber}` : ""}
@@ -204,6 +339,9 @@ export default function BriefingClient() {
           </label>
           <button type="button" className="app-button secondary" onClick={() => void load(selectedRef.current)}>
             Refresh
+          </button>
+          <button type="button" className="app-button secondary" onClick={() => window.print()}>
+            Print
           </button>
         </div>
       </header>
@@ -230,6 +368,7 @@ export default function BriefingClient() {
                 ? `${view.scoutCount} ${view.scoutCount === 1 ? "scout" : "scouts"} assigned`
                 : "No scouts assigned"}
             </span>
+            {view.ourEpaTotal != null ? <span className="brief-chip">our EPA {fmtEpa(view.ourEpaTotal)}</span> : null}
           </div>
         </div>
         {prob != null && view.prediction ? (
@@ -248,6 +387,20 @@ export default function BriefingClient() {
           </div>
         )}
       </section>
+
+      {view.callouts.length > 0 ? (
+        <section className="app-card brief-callouts">
+          <h2>Do this next</h2>
+          <ol>
+            {view.callouts.map((callout) => (
+              <li key={`${callout.priority}-${callout.headline}`}>
+                <b>{callout.headline}</b>
+                {callout.detail ? <span> — {callout.detail}</span> : null}
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
       {view.prediction && (view.prediction.keyFactors.length > 0 || view.prediction.caveats.length > 0) ? (
         <section className="app-card brief-why">
@@ -270,8 +423,57 @@ export default function BriefingClient() {
       <ChecklistCard rows={checklist} orgId={orgId} />
 
       <div className="brief-grid">
-        <section className="app-card brief-section">
-          <h2>Game plan</h2>
+        <Section title="Match card" badge={view.card?.updatedAt ? "saved" : null}>
+          {view.card ? (
+            <>
+              {view.card.gamePlan ? <p className="brief-plan-title">{view.card.gamePlan}</p> : null}
+              <dl className="brief-card-fields">
+                {view.card.autoAssignment ? (
+                  <div>
+                    <dt>Auto</dt>
+                    <dd>{view.card.autoAssignment}</dd>
+                  </div>
+                ) : null}
+                {view.card.defenseFocus ? (
+                  <div>
+                    <dt>Defense</dt>
+                    <dd>{view.card.defenseFocus}</dd>
+                  </div>
+                ) : null}
+                {view.card.keyThreats ? (
+                  <div>
+                    <dt>Threats</dt>
+                    <dd>{view.card.keyThreats}</dd>
+                  </div>
+                ) : null}
+                {view.card.driverNotes ? (
+                  <div>
+                    <dt>Driver notes</dt>
+                    <dd>{view.card.driverNotes}</dd>
+                  </div>
+                ) : null}
+              </dl>
+              {view.card.roleAssignments.length > 0 ? (
+                <div className="brief-chip-row">
+                  <span className="brief-chip-label">Roles</span>
+                  {view.card.roleAssignments.map((entry, index) => (
+                    <span key={`${index}-${entry.role}`} className="brief-chip">
+                      {entry.role ? `${entry.role}: ` : ""}
+                      {entry.assignee}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <a href={withOrg("/match-strategy-cards", orgId)}>Edit in Match cards</a>
+            </>
+          ) : (
+            <EmptyHint>
+              No card for this match — <a href={withOrg("/match-strategy-cards", orgId)}>write one in Match cards</a>
+            </EmptyHint>
+          )}
+        </Section>
+
+        <Section title="Game plan">
           {view.plan ? (
             <>
               {view.plan.title ? <p className="brief-plan-title">{view.plan.title}</p> : null}
@@ -316,10 +518,113 @@ export default function BriefingClient() {
           ) : (
             <MissingHint row={rowFor("Strategy plan")} orgId={orgId} />
           )}
-        </section>
+        </Section>
 
-        <section className="app-card brief-section">
-          <h2>Linked whiteboard play</h2>
+        <Section
+          title="Our alliance — scouted"
+          badge={view.alliesScouted.length ? `${view.alliesScouted.length} robots` : null}
+        >
+          {view.alliesScouted.length > 0 || view.allyTeams.some((team) => team.epaTotal != null || team.rank != null) ? (
+            <>
+              <EpaList teams={view.allyTeams} />
+              {view.alliesScouted.length > 0 ? (
+                <ul className="brief-reviews">
+                  {view.alliesScouted.map((row) => (
+                    <ScoutedRow key={row.teamKey} row={row} />
+                  ))}
+                </ul>
+              ) : (
+                <EmptyHint>
+                  No scout entries for our alliance yet —{" "}
+                  <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a>
+                </EmptyHint>
+              )}
+            </>
+          ) : (
+            <EmptyHint>
+              No partner data yet — <a href={withOrg("/scouting", orgId)}>scout partners in Scouting</a> or sync EPA in{" "}
+              <a href={withOrg("/team/data", orgId)}>Team → Data</a>
+            </EmptyHint>
+          )}
+        </Section>
+
+        <Section title="Opponents" badge={opponents.length ? opponents.join(" · ") : null}>
+          {hasOpponentNotes ? (
+            <>
+              <EpaList teams={view.opponentTeams} />
+              {view.opponentsScouted.length > 0 ? (
+                <ul className="brief-reviews">
+                  {view.opponentsScouted.map((row) => (
+                    <ScoutedRow key={row.teamKey} row={row} />
+                  ))}
+                </ul>
+              ) : null}
+              {view.tendencies.length > 0 ? (
+                <ul className="brief-tendencies">
+                  {view.tendencies.map((tendency) => (
+                    <li key={tendency.teamKey}>
+                      <p className="brief-review-head">
+                        <b>{stripFrc(tendency.teamKey)}</b>
+                        {tendency.labels.map((label) => (
+                          <span key={label} className="brief-chip">
+                            {label}
+                          </span>
+                        ))}
+                      </p>
+                      {tendency.evidence.length > 0 ? (
+                        <p className="app-muted brief-no-notes">{tendency.evidence.join(" ")}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {view.watchNotes.length > 0 ? (
+                <div className="brief-subblock">
+                  <h3>Watchlist notes</h3>
+                  <ul className="brief-notes">
+                    {view.watchNotes.map((note, index) => (
+                      <li key={`${note.teamKey}-${index}`}>
+                        <i className="brief-tag">{note.teamNumber ?? stripFrc(note.teamKey)}</i>
+                        <span className="brief-note-body">{note.note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {view.defensePlans.length > 0 ? (
+                <div className="brief-subblock">
+                  <h3>Defense plan</h3>
+                  <ul className="brief-notes">
+                    {view.defensePlans.map((plan) => (
+                      <li key={plan.opponentTeamNumber}>
+                        <i className="brief-tag">{plan.opponentTeamNumber}</i>
+                        <span className="brief-note-body">
+                          <b>
+                            {plan.recommendation === "play_defense"
+                              ? "Play defense"
+                              : plan.recommendation === "stay_offense"
+                                ? "Stay offense"
+                                : "Situational"}
+                          </b>
+                          {plan.assignedDefender === "us" ? " (we defend)" : ""}
+                          {plan.rationale ? ` — ${plan.rationale}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <EmptyHint>
+              Nothing on these opponents yet — <a href={withOrg("/scouting", orgId)}>scout them</a>, add{" "}
+              <a href={withOrg("/opponent-watchlist", orgId)}>watchlist notes</a>, or plan defense in{" "}
+              <a href={withOrg("/defense-planner", orgId)}>Defense</a>
+            </EmptyHint>
+          )}
+        </Section>
+
+        <Section title="Linked whiteboard play">
           {view.play ? (
             <>
               <p className="brief-play-title">{view.play.title}</p>
@@ -334,10 +639,9 @@ export default function BriefingClient() {
           ) : (
             <MissingHint row={rowFor("Whiteboard play")} orgId={orgId} />
           )}
-        </section>
+        </Section>
 
-        <section className="app-card brief-section">
-          <h2>Drive-team readiness</h2>
+        <Section title="Drive-team readiness">
           {view.practice.reps > 0 ? (
             <>
               <div className="brief-stats">
@@ -384,10 +688,9 @@ export default function BriefingClient() {
           ) : (
             <MissingHint row={rowFor("Practice data")} orgId={orgId} />
           )}
-        </section>
+        </Section>
 
-        <section className="app-card brief-section">
-          <h2>Opponent film</h2>
+        <Section title="Opponent film">
           {view.opponentIntel.length > 0 ? (
             <ul className="brief-reviews">
               {view.opponentIntel.map((intel, index) => (
@@ -416,7 +719,80 @@ export default function BriefingClient() {
             <MissingHint row={rowFor("Opponent video")} orgId={orgId} />
           )}
           {view.opponentIntel.length > 0 ? <a href={withOrg("/video", orgId)}>Open Video Review</a> : null}
-        </section>
+        </Section>
+
+        <Section
+          title="Our robot"
+          badge={
+            view.pitReports.length > 0
+              ? `${view.pitReports.length} open ${view.pitReports.length === 1 ? "repair" : "repairs"}`
+              : batteryCritical.length > 0
+                ? `${batteryCritical.length} critical ${batteryCritical.length === 1 ? "battery" : "batteries"}`
+                : null
+          }
+        >
+          {hasRobotHealth ? (
+            <>
+              {view.pitReports.length > 0 ? (
+                <div className="brief-subblock">
+                  <h3>Pit repairs</h3>
+                  <ul className="brief-notes">
+                    {view.pitReports.map((report) => (
+                      <li key={report.id}>
+                        <i className="brief-tag">{report.status}</i>
+                        <span className="brief-note-body">
+                          <b>{report.subsystemName}</b> — {report.title} ({report.decision}
+                          {report.prestageRecommended ? ", pre-stage spare" : ""})
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <a href={withOrg("/pit-repair-triage", orgId)}>Open Repair triage</a>
+                </div>
+              ) : null}
+              {view.openRisks.length > 0 ? (
+                <div className="brief-subblock">
+                  <h3>Open FMEA risks</h3>
+                  <ul className="brief-notes">
+                    {view.openRisks.slice(0, 4).map((risk) => (
+                      <li key={risk.id}>
+                        <i className="brief-tag">RPN {risk.rpn}</i>
+                        <span className="brief-note-body">
+                          <b>{risk.subsystemName}</b> — {risk.title}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <a href={withOrg("/fmea", orgId)}>Open FMEA</a>
+                </div>
+              ) : null}
+              {view.batteries.length > 0 ? (
+                <div className="brief-subblock">
+                  <h3>Batteries</h3>
+                  <p className="brief-chip-row">
+                    <span className="brief-chip positive">
+                      {view.batteries.length - batteryWatch.length - batteryCritical.length} healthy
+                    </span>
+                    {batteryWatch.length > 0 ? <span className="brief-chip">{batteryWatch.length} watch</span> : null}
+                    {batteryCritical.length > 0 ? (
+                      <span className="brief-chip critical">
+                        {batteryCritical.length} critical: {batteryCritical.map((battery) => battery.label).join(", ")}
+                      </span>
+                    ) : null}
+                  </p>
+                  <a href={withOrg("/battery-rotation", orgId)}>Open Charge plan</a>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <EmptyHint>
+              No robot-health data yet — log repairs in{" "}
+              <a href={withOrg("/pit-repair-triage", orgId)}>Repair triage</a>, risks in{" "}
+              <a href={withOrg("/fmea", orgId)}>FMEA</a>, or batteries in{" "}
+              <a href={withOrg("/batteries", orgId)}>Batteries</a>
+            </EmptyHint>
+          )}
+        </Section>
       </div>
     </main>
   );

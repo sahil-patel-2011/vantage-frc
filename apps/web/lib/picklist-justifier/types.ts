@@ -48,6 +48,16 @@ export type ComputedJustification = {
   contradiction: PicklistContradiction;
 };
 
+/**
+ * Where this pick-list row actually sits on the draft board. Populated from the unified spine
+ * (pick_list_entries.drafted_*) so the rationale is attached to the team that is really on the
+ * board, not to a parallel copy of the list.
+ */
+export type PickBoardSlot = {
+  allianceSeed: number;
+  pickSlot: "captain" | "first" | "second";
+};
+
 export type JustifiedEntry = {
   id: string;
   teamKey: string;
@@ -61,6 +71,8 @@ export type JustifiedEntry = {
   sources: PicklistSourceRef[];
   contradiction: PicklistContradiction | null;
   generatedAt: string | null;
+  /** Null until the alliance-selection desk actually drafts this team. */
+  boardSlot: PickBoardSlot | null;
 };
 
 export type PickListSummary = {

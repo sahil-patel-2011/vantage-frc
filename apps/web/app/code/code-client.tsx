@@ -6,6 +6,8 @@ import { buildDiffProposal, reviewFrcCode } from "@vantage/agent/coding-assistan
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { EmptyState } from "../../components/ui";
+import { WhyPanel } from "../../components/why-panel";
+import { CODE_RULE_LESSONS, narrateCodeFindings } from "../../lib/agent-narration/narration";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import {
   resolveCutoffErrorCode,
@@ -14,6 +16,12 @@ import {
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { githubConnectionHref } from "../../lib/github/github-related";
+import { resolveBugbotTarget, type BugbotScanTarget } from "../../lib/bugbot/grounding";
+import {
+  describeBugbotCoverage,
+  mergeBugbotScanRun,
+  type BugbotChunkOutcome,
+} from "../../lib/code/scan-run";
 import {
   CODE_COACH_RELATED_INCLUDE,
   CODE_COACH_SAMPLE,
@@ -22,39 +30,8 @@ import {
   groundedCodeCoachProposal,
 } from "../../lib/code/code-related";
 
-/** Teach-not-do lessons keyed by coding-assistant pattern ids — only shown when a rule matched. */
-const COACH_LESSONS: Record<string, { flag: string; explain: string; habit: string }> = {
-  "blocking-robot-loop": {
-    flag: "Blocking call inside the robot loop",
-    explain: "Timer.delay / Thread.sleep stalls command scheduling, sensor reads, and safety feeds for the entire delay.",
-    habit: "Use timestamps or stateful commands so the loop keeps running while work advances on a schedule.",
-  },
-  "hardcoded-can-id": {
-    flag: "Hard-coded CAN device construction",
-    explain: "Inline IDs collide when two subsystems claim the same bus address or a map drifts from the wiring sheet.",
-    habit: "Keep one reviewed hardware map (constants / generated config) and construct devices from that map only.",
-  },
-  "unbounded-motor-output": {
-    flag: "Motor output outside a normalized range",
-    explain: "Raw set() values beyond ±1 (or vendor limits) can demand unsafe current or saturate control unexpectedly.",
-    habit: "Clamp demands or use typed control requests (DutyCycleOut, VoltageOut) with explicit units and soft limits.",
-  },
-  "missing-unit-signal": {
-    flag: "Physical value without a unit signal",
-    explain: "Bare numbers for distance/velocity/angle invite inch/meter mix-ups under match pressure.",
-    habit: "Use WPILib units or encode the unit in the name (metersPerSecond, degrees) so reviews catch scale errors.",
-  },
-  "disabled-state-mutation": {
-    flag: "Actuator write in a disabled callback",
-    explain: "Output during disabledInit/Periodic can move mechanisms when the robot should be safe.",
-    habit: "Keep disabled paths read-only unless a mentor-reviewed safety procedure explicitly allows a hold/brake.",
-  },
-  "missing-supply-current-limit": {
-    flag: "Motor constructed without a supply current limit",
-    explain: "Uncapped swerve and mechanisms brown out the RIO and trip the main breaker. Supply limits protect the battery; stator limits protect the motor.",
-    habit: "Set supply current limits on every motor in the same file that constructs the controller — never deploy without them.",
-  },
-};
+/** Teach-not-do lessons live in the shared narration catalog so the WhyPanel and this list agree. */
+const COACH_LESSONS = CODE_RULE_LESSONS;
 
 type Review = ReturnType<typeof reviewFrcCode>;
 type Proposal = ReturnType<typeof buildDiffProposal>;
@@ -67,6 +44,9 @@ type BugbotFinding = {
   evidence: string;
   source: "local_rule" | "model";
   pattern?: string;
+  filePath?: string;
+  fingerprint?: string;
+  delta?: "new" | "known" | "fixed";
 };
 
 type BugbotReview = {
@@ -93,6 +73,96 @@ type BugbotHistoryRow = {
   githubRepo?: string | null;
   chargeUsd?: string;
   filesScanned?: number;
+  newFindingCount?: number;
+  knownFindingCount?: number;
+  fixedFindingCount?: number;
+  chunkIndex?: number;
+  chunkCount?: number;
+  partial?: boolean;
+  partialReason?: string | null;
+  githubSha?: string | null;
+};
+
+type SkipRecord = { path: string; reason: string };
+type SkipCount = { reason: string; label: string; count: number };
+
+type ScanCoverage = {
+  reviewedFiles: string[];
+  skipped: SkipRecord[];
+  skipCounts: SkipCount[];
+  chunkIndex: number;
+  chunkCount: number;
+  candidateCount: number;
+  deferredCount: number;
+  treeTruncated: boolean;
+  skippedListTruncated: boolean;
+  partial?: boolean;
+  partialReason?: string | null;
+};
+
+type ScanPlan = {
+  repo: string;
+  ref: string;
+  sha: string | null;
+  chunkCount: number;
+  chunkFiles: number;
+  reviewed: Array<{ path: string; role: string; chunk: number }>;
+  skipped: SkipRecord[];
+  skipCounts: SkipCount[];
+  skippedListTruncated: boolean;
+  candidateCount: number;
+  deferredCount: number;
+  treeTruncated: boolean;
+  cost: { perChunkUsd: number; totalUsd: number; chunkCount: number };
+};
+
+type ScanProgress = {
+  chunkIndex: number;
+  chunkCount: number;
+  spentUsd: number;
+  running: boolean;
+  partial: boolean;
+  partialReason: string | null;
+};
+
+type Dismissal = { fingerprint: string; reason: string; filePath: string | null; createdAt: string };
+
+type FixedFinding = { fingerprint: string; filePath: string; rule: string; finding: string };
+
+/** One /api/code bugbot response, narrowed to what this client reads. */
+type BugbotResponse = {
+  error?: string;
+  code?: string;
+  reason?: string;
+  hardCutoff?: boolean;
+  review?: BugbotReview;
+  provider?: string;
+  model?: string;
+  mode?: BugbotMode;
+  phase?: BugbotPhase;
+  chargeUsd?: number;
+  proposedDiff?: string | null;
+  filesScanned?: number;
+  fixDropped?: boolean;
+  githubRepo?: string | null;
+  githubRef?: string | null;
+  githubSha?: string | null;
+  branchMoved?: boolean;
+  coverage?: ScanCoverage;
+  delta?: { new: number; known: number; fixed: number; fixedFindings?: FixedFinding[] };
+  dismissals?: Dismissal[];
+};
+
+const EMPTY_COVERAGE: ScanCoverage = {
+  reviewedFiles: [],
+  skipped: [],
+  skipCounts: [],
+  chunkIndex: 0,
+  chunkCount: 1,
+  candidateCount: 0,
+  deferredCount: 0,
+  treeTruncated: false,
+  skippedListTruncated: false,
 };
 
 type GitHubRepoOption = {
@@ -127,7 +197,12 @@ export function CodeClient({
     chargeUsd?: number;
     proposedDiff?: string | null;
     filesScanned?: number;
+    githubRepo?: string | null;
+    githubSha?: string | null;
+    branchMoved?: boolean;
   } | null>(null);
+  /** What the last Bugbot scan actually ran against — a paid fix must target the same source. */
+  const [lastScan, setLastScan] = useState<BugbotScanTarget | null>(null);
   const [history, setHistory] = useState<BugbotHistoryRow[]>([]);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -141,6 +216,18 @@ export function CodeClient({
   const [repoFiles, setRepoFiles] = useState<string[]>([]);
   const [treeTruncated, setTreeTruncated] = useState(false);
   const [githubEmptyReason, setGithubEmptyReason] = useState<string | null>(null);
+  /** What a repo scan WOULD read, and what it costs — loaded before any model call. */
+  const [scanPlan, setScanPlan] = useState<ScanPlan | null>(null);
+  const [scanPlanReason, setScanPlanReason] = useState<string | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [coverage, setCoverage] = useState<ScanCoverage | null>(null);
+  const [progress, setProgress] = useState<ScanProgress | null>(null);
+  const [delta, setDelta] = useState<{ new: number; known: number; fixed: number } | null>(null);
+  const [fixedFindings, setFixedFindings] = useState<FixedFinding[]>([]);
+  const [dismissals, setDismissals] = useState<Dismissal[]>([]);
+  const [dismissTarget, setDismissTarget] = useState<BugbotFinding | null>(null);
+  const [dismissReason, setDismissReason] = useState("");
+  const [showCoverage, setShowCoverage] = useState(false);
 
   const hasSource = Boolean(content.trim());
   const showMeteredBanner = Boolean(orgId) && related === "ai";
@@ -156,6 +243,25 @@ export function CodeClient({
   const githubHref = orgId ? githubConnectionHref(orgId) : "/team/admin#github-connection";
   const robotFiles = useMemo(() => repoFiles.filter((file) => isBugbotScanPath(file)).slice(0, 80), [repoFiles]);
 
+  /**
+   * Show-your-work narration. Derived from findings that actually matched evidence in the source —
+   * an empty review narrates nothing rather than explaining a risk that was never found.
+   */
+  const coachNarrations = useMemo(
+    () =>
+      narrateCodeFindings(
+        (review?.risks ?? []).map((risk) => ({
+          severity: risk.severity,
+          pattern: risk.pattern,
+          message: risk.message,
+          evidence: risk.evidence,
+          location: path,
+        })),
+      ),
+    [review, path],
+  );
+  const bugbotNarrations = useMemo(() => narrateCodeFindings(bugbot?.findings ?? []), [bugbot]);
+
   useEffect(() => {
     if (!orgId) return;
     void fetch(`/api/code?orgId=${encodeURIComponent(orgId)}`)
@@ -163,6 +269,7 @@ export function CodeClient({
         if (!response.ok) return;
         const data = (await response.json()) as {
           reviews?: BugbotHistoryRow[];
+          dismissals?: Dismissal[];
           github?: {
             connected?: boolean;
             login?: string | null;
@@ -171,6 +278,7 @@ export function CodeClient({
           };
         };
         setHistory(data.reviews ?? []);
+        setDismissals(data.dismissals ?? []);
         if (data.github?.connected) {
           setGithubConnected(true);
           setGithubLogin(data.github.login ?? null);
@@ -232,6 +340,56 @@ export function CodeClient({
       .catch(() => undefined);
   }, [orgId, githubConnected, selectedRepo, selectedRef]);
 
+  /**
+   * Free scan plan: what the repo scan will read, what it skips and why, how many
+   * metered chunks it takes, and therefore its cost — all before the button.
+   */
+  useEffect(() => {
+    if (!orgId || !githubConnected || !selectedRepo) {
+      setScanPlan(null);
+      setScanPlanReason(null);
+      return;
+    }
+    let cancelled = false;
+    setPlanLoading(true);
+    const params = new URLSearchParams({
+      orgId,
+      plan: "1",
+      repo: selectedRepo,
+      ref: selectedRef || "main",
+      tier: bugbotMode,
+    });
+    void fetch(`/api/code?${params}`)
+      .then(async (response) => {
+        const data = (await response.json()) as
+          | ({ empty?: false } & ScanPlan)
+          | { empty: true; emptyReason: string }
+          | { error?: string };
+        if (cancelled) return;
+        if (!response.ok || "error" in data) {
+          setScanPlan(null);
+          setScanPlanReason(("error" in data && data.error) || "Could not plan a scan for this repo.");
+          return;
+        }
+        if ("empty" in data && data.empty) {
+          setScanPlan(null);
+          setScanPlanReason(data.emptyReason);
+          return;
+        }
+        setScanPlan(data as ScanPlan);
+        setScanPlanReason(null);
+      })
+      .catch(() => {
+        if (!cancelled) setScanPlanReason("Could not reach GitHub to plan this scan.");
+      })
+      .finally(() => {
+        if (!cancelled) setPlanLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId, githubConnected, selectedRepo, selectedRef, bugbotMode]);
+
   async function loadGithubFile(filePath: string) {
     if (!orgId || !selectedRepo || !filePath) return;
     setBusy(true);
@@ -259,6 +417,7 @@ export function CodeClient({
       setReview(null);
       setProposal(null);
       setBugbot(null);
+      setLastScan(null);
       setMessage(`Loaded ${selectedRepo}:${data.file.path} (read-only).`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to load GitHub file");
@@ -267,11 +426,112 @@ export function CodeClient({
     }
   }
 
+  /** Pull the server's own view of history, open findings, and dismissals. */
+  async function refreshBugbotState() {
+    if (!orgId) return;
+    const params = new URLSearchParams({ orgId });
+    if (selectedRepo) params.set("repo", selectedRepo);
+    try {
+      const response = await fetch(`/api/code?${params}`);
+      if (!response.ok) return;
+      const data = (await response.json()) as { reviews?: BugbotHistoryRow[]; dismissals?: Dismissal[] };
+      setHistory(data.reviews ?? []);
+      setDismissals(data.dismissals ?? []);
+    } catch {
+      // History is a convenience; a failed refresh must never mask the scan result.
+    }
+  }
+
+  /** "We looked at this and it is deliberate" — persists per fingerprint across commits. */
+  async function submitDismissal() {
+    const target = dismissTarget;
+    const reason = dismissReason.trim();
+    if (!target?.fingerprint || !orgId) return;
+    if (reason.length < 3) {
+      setMessage("Give a reason (at least 3 characters) so the next scan explains itself.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch("/api/code", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "dismiss",
+          orgId,
+          path,
+          githubRepo: lastScan?.repo ?? selectedRepo ?? undefined,
+          fingerprint: target.fingerprint,
+          reason,
+          filePath: target.filePath ?? target.location.split(":")[0],
+          rule: target.pattern ?? target.source,
+        }),
+      });
+      const data = (await response.json()) as { dismissals?: Dismissal[]; error?: string };
+      if (!response.ok) {
+        setMessage(typeof data.error === "string" ? data.error : "Could not dismiss that finding.");
+        return;
+      }
+      setDismissals(data.dismissals ?? []);
+      setBugbot((prev) =>
+        prev
+          ? { ...prev, findings: prev.findings.filter((item) => item.fingerprint !== target.fingerprint) }
+          : prev,
+      );
+      setDismissTarget(null);
+      setDismissReason("");
+      setMessage("Dismissed. Future scans of this repo will stay quiet about that finding until you restore it.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not dismiss that finding.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function restoreDismissal(fingerprint: string) {
+    if (!orgId) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/code", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "restore",
+          orgId,
+          path,
+          githubRepo: lastScan?.repo ?? selectedRepo ?? undefined,
+          fingerprint,
+        }),
+      });
+      const data = (await response.json()) as { dismissals?: Dismissal[]; error?: string };
+      if (!response.ok) {
+        setMessage(typeof data.error === "string" ? data.error : "Could not restore that finding.");
+        return;
+      }
+      setDismissals(data.dismissals ?? []);
+      setMessage("Restored — the next scan will report that finding again if it is still in the source.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not restore that finding.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function runBugbot(options?: { mode?: BugbotMode; phase?: BugbotPhase; scanRepo?: boolean }) {
     const mode = options?.mode ?? bugbotMode;
     const phase = options?.phase ?? "scan";
-    const scanRepo = Boolean(options?.scanRepo);
-    if (!scanRepo && !content.trim()) {
+    // Fix/recheck after a repo scan must target the scanned repo (fix pinned to
+    // the scanned commit sha) — never the editor buffer, which may hold
+    // unrelated source. Editor-paste scans keep buffer behaviour.
+    const target = resolveBugbotTarget({
+      phase,
+      scanRepoRequested: Boolean(options?.scanRepo),
+      lastScan,
+    });
+    const useRepo = target.useRepo;
+    const targetRepo = (useRepo ? target.repo || selectedRepo : selectedRepo) || undefined;
+    const targetRef = (useRepo ? target.ref || selectedRef : selectedRef) || undefined;
+    if (!useRepo && !content.trim()) {
       setMessage("Paste robot source, load a GitHub file, or scan the connected repo.");
       return;
     }
@@ -279,107 +539,244 @@ export function CodeClient({
       setMessage("Choose a workspace before running Bugbot.");
       return;
     }
-    if (scanRepo && !githubConnected) {
+    if (useRepo && !githubConnected) {
       setMessage("Connect GitHub in Team admin before scanning a repo.");
       return;
     }
+    // A repo pass is one metered call PER PLANNED CHUNK. Running them here (rather
+    // than reading only chunk 0) is the difference between "we reviewed your repo"
+    // and "we reviewed the first eight files and did not mention it". A recheck
+    // chunks too: a recheck that only re-read chunk 0 would report the rest of the
+    // repo as unchanged without having looked at it.
+    const isRepoScan = useRepo && (phase === "scan" || phase === "recheck");
+    const plannedChunks = isRepoScan ? Math.max(1, scanPlan?.chunkCount ?? 1) : 1;
+
     setBusy(true);
     setCutoffCode(null);
     setMessage(null);
-    try {
-      const response = await fetch("/api/code", {
+    if (isRepoScan) {
+      setCoverage(null);
+      setDelta(null);
+      setFixedFindings([]);
+      setProgress({
+        chunkIndex: 0,
+        chunkCount: plannedChunks,
+        spentUsd: 0,
+        running: true,
+        partial: false,
+        partialReason: null,
+      });
+    }
+
+    const outcomes: BugbotChunkOutcome[] = [];
+    let stoppedReason: string | null = null;
+
+    function postChunk(chunkIndex: number, spentUsd: number) {
+      return fetch("/api/code", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           action: "bugbot",
           path,
-          content: scanRepo ? undefined : content,
+          content: useRepo ? undefined : content,
           orgId,
           mode,
           phase,
-          scanRepo,
-          githubRepo: selectedRepo || undefined,
-          githubRef: selectedRef || undefined,
-          githubPath: !scanRepo && path && githubConnected ? path : undefined,
+          scanRepo: useRepo,
+          githubRepo: targetRepo,
+          githubRef: targetRef,
+          githubSha: target.pinnedSha ?? undefined,
+          githubPath: !useRepo && path && githubConnected ? path : undefined,
           findings: bugbot?.findings,
+          chunkIndex,
+          spentUsd,
           parentReviewId: history[0]?.id && history[0].id !== "latest" ? history[0].id : undefined,
         }),
       });
-      const data = (await response.json()) as {
-        error?: string;
-        code?: string;
-        reason?: string;
-        hardCutoff?: boolean;
-        review?: BugbotReview;
-        provider?: string;
-        model?: string;
-        mode?: BugbotMode;
-        phase?: BugbotPhase;
-        chargeUsd?: number;
-        proposedDiff?: string | null;
-        filesScanned?: number;
-        fixDropped?: boolean;
-      };
-      if (!response.ok) {
-        const cutoff = resolveCutoffErrorCode(response.status, {
-          code: data.code,
-          reason: data.reason,
-          error: data.error,
-          hardCutoff: data.hardCutoff,
+    }
+
+    function applyMeta(data: BugbotResponse) {
+      setBugbotMeta({
+        provider: data.provider,
+        model: data.model,
+        mode: data.mode ?? mode,
+        phase: data.phase ?? phase,
+        chargeUsd: data.chargeUsd,
+        proposedDiff: data.proposedDiff,
+        filesScanned: data.filesScanned,
+        githubRepo: data.githubRepo ?? (useRepo ? targetRepo ?? null : null),
+        githubSha: data.githubSha ?? null,
+        branchMoved: Boolean(data.branchMoved),
+      });
+      setLastScan(
+        useRepo
+          ? {
+              scanRepo: true,
+              repo: data.githubRepo ?? targetRepo ?? null,
+              ref: data.githubRef ?? targetRef ?? null,
+              sha: data.githubSha ?? null,
+            }
+          : { scanRepo: false, repo: null, ref: null, sha: null },
+      );
+      if (data.dismissals) setDismissals(data.dismissals);
+    }
+
+    function billedNote(chargeUsd: number | undefined, modeUsed: BugbotMode | undefined): string {
+      return modeUsed === "ultra" && chargeUsd
+        ? ` Charged $${Number(chargeUsd).toFixed(2)} Bugbot Ultra.`
+        : " Uses your subscription / BYO key.";
+    }
+
+    try {
+      for (let chunkIndex = 0; chunkIndex < plannedChunks; chunkIndex += 1) {
+        const spentSoFar = outcomes.reduce((sum, item) => sum + item.chargeUsd, 0);
+        const response = await postChunk(chunkIndex, spentSoFar);
+        const data = (await response.json()) as BugbotResponse;
+
+        if (!response.ok) {
+          const cutoff = resolveCutoffErrorCode(response.status, {
+            code: data.code,
+            reason: data.reason,
+            error: data.error,
+            hardCutoff: data.hardCutoff,
+          });
+          if (cutoff) setCutoffCode(cutoff);
+          const reason = typeof data.error === "string" ? data.error : "AI Bugbot failed.";
+          // Nothing succeeded: this is a plain failure, not a partial scan.
+          if (!outcomes.length) {
+            setMessage(reason);
+            return;
+          }
+          // Some chunks were paid for and did produce findings — keep them and say
+          // plainly that coverage stopped here rather than discarding the spend.
+          stoppedReason = `stopped after chunk ${outcomes.length} of ${plannedChunks}: ${reason}`;
+          break;
+        }
+        if (!data.review) break;
+
+        applyMeta(data);
+
+        if (!isRepoScan) {
+          // Single-call phases (file scan, fix, buffer recheck) render directly.
+          setBugbot(data.review);
+          setProgress(null);
+          setCoverage(data.coverage ?? null);
+          setDelta(data.delta ? { new: data.delta.new, known: data.delta.known, fixed: data.delta.fixed } : null);
+          setFixedFindings(data.delta?.fixedFindings ?? []);
+          const billed = billedNote(data.chargeUsd, data.mode);
+          const shaShort = data.githubSha ? data.githubSha.slice(0, 7) : null;
+          const grounded =
+            useRepo && shaShort ? ` Source: ${data.githubRepo ?? targetRepo ?? "repo"}@${shaShort}.` : "";
+          const moved = data.branchMoved ? " Branch moved since that scan — rescan recommended." : "";
+          if (phase === "fix") {
+            setMessage(
+              data.proposedDiff
+                ? `Grounded fix ready — human approval required. Never pushed to GitHub.${grounded}${moved}${billed}`
+                : `No grounded diff (unquoted removals dropped). Nothing was pushed.${grounded}${moved}${billed}`,
+            );
+          } else {
+            setMessage(
+              data.review.findings.length
+                ? `Bugbot ${phase}: ${data.review.findings.length} grounded finding${data.review.findings.length === 1 ? "" : "s"} (${data.review.localRiskCount} local · ${data.review.modelFindingCount} model). Ungrounded claims dropped: ${data.review.droppedUngrounded}.${grounded}${moved}${billed} Never deploys.`
+                : `Bugbot ${phase} complete — no grounded findings.${grounded}${moved}${billed} Empty is not certification.`,
+            );
+          }
+          await refreshBugbotState();
+          return;
+        }
+
+        const cover = data.coverage;
+        outcomes.push({
+          chunkIndex,
+          path: data.review.path,
+          findings: data.review.findings,
+          droppedUngrounded: data.review.droppedUngrounded,
+          chargeUsd: Number(data.chargeUsd ?? 0),
+          reviewedFiles: cover?.reviewedFiles ?? [],
+          skipped: cover?.skipped ?? [],
+          skipCounts: cover?.skipCounts ?? [],
+          candidateCount: cover?.candidateCount ?? 0,
+          deferredCount: cover?.deferredCount ?? 0,
+          treeTruncated: Boolean(cover?.treeTruncated),
+          skippedListTruncated: Boolean(cover?.skippedListTruncated),
+          newCount: data.delta?.new ?? 0,
+          knownCount: data.delta?.known ?? 0,
+          fixedCount: data.delta?.fixed ?? 0,
+          fixedFindings: data.delta?.fixedFindings ?? [],
         });
-        if (cutoff) setCutoffCode(cutoff);
-        setMessage(typeof data.error === "string" ? data.error : "AI Bugbot failed.");
-        return;
+
+        const run = mergeBugbotScanRun(outcomes, { plannedChunks, stoppedReason: null });
+        // Stream the partial result so a long scan shows its work as it goes.
+        setBugbot({
+          path: run.path,
+          riskLevel: run.riskLevel,
+          findings: run.findings,
+          localRiskCount: run.localRiskCount,
+          modelFindingCount: run.modelFindingCount,
+          droppedUngrounded: run.droppedUngrounded,
+        });
+        setProgress({
+          chunkIndex: chunkIndex + 1,
+          chunkCount: plannedChunks,
+          spentUsd: run.spentUsd,
+          running: chunkIndex + 1 < plannedChunks,
+          partial: false,
+          partialReason: null,
+        });
       }
-      if (data.review) {
-        setBugbot(data.review);
-        setBugbotMeta({
-          provider: data.provider,
-          model: data.model,
-          mode: data.mode ?? mode,
-          phase: data.phase ?? phase,
-          chargeUsd: data.chargeUsd,
-          proposedDiff: data.proposedDiff,
-          filesScanned: data.filesScanned,
+
+      if (isRepoScan) {
+        if (!outcomes.length) {
+          setProgress(null);
+          if (!stoppedReason) setMessage("No chunk of this repo scan returned a result.");
+          return;
+        }
+        const run = mergeBugbotScanRun(outcomes, { plannedChunks, stoppedReason });
+        setBugbot({
+          path: run.path,
+          riskLevel: run.riskLevel,
+          findings: run.findings,
+          localRiskCount: run.localRiskCount,
+          modelFindingCount: run.modelFindingCount,
+          droppedUngrounded: run.droppedUngrounded,
+        });
+        setCoverage({
+          ...EMPTY_COVERAGE,
+          reviewedFiles: run.reviewedFiles,
+          skipped: run.skipped,
+          skipCounts: run.skipCounts,
+          chunkIndex: run.chunksRun - 1,
+          chunkCount: run.chunkCount,
+          candidateCount: run.candidateCount,
+          deferredCount: run.deferredCount,
+          treeTruncated: run.treeTruncated,
+          skippedListTruncated: run.skippedListTruncated,
+          partial: run.partial,
+          partialReason: run.partialReason,
+        });
+        setDelta({ new: run.newCount, known: run.knownCount, fixed: run.fixedCount });
+        setFixedFindings(run.fixedFindings);
+        setProgress({
+          chunkIndex: run.chunksRun,
+          chunkCount: run.chunkCount,
+          spentUsd: run.spentUsd,
+          running: false,
+          partial: run.partial,
+          partialReason: run.partialReason,
         });
         const billed =
-          data.mode === "ultra" && data.chargeUsd
-            ? ` Charged $${Number(data.chargeUsd).toFixed(2)} Bugbot Ultra.`
+          mode === "ultra"
+            ? ` Charged $${run.spentUsd.toFixed(2)} Bugbot Ultra across ${run.chunksRun} chunk${run.chunksRun === 1 ? "" : "s"}.`
             : " Uses your subscription / BYO key.";
-        if (phase === "fix") {
-          setMessage(
-            data.proposedDiff
-              ? `Grounded fix ready — human approval required. Never pushed to GitHub.${billed}`
-              : `No grounded diff (unquoted removals dropped). Nothing was pushed.${billed}`,
-          );
-        } else {
-          setMessage(
-            data.review.findings.length
-              ? `Bugbot ${phase}: ${data.review.findings.length} grounded finding${data.review.findings.length === 1 ? "" : "s"} (${data.review.localRiskCount} local · ${data.review.modelFindingCount} model). Ungrounded claims dropped: ${data.review.droppedUngrounded}.${billed} Never deploys.`
-              : `Bugbot ${phase} complete — no grounded findings.${billed} Empty is not certification.`,
-          );
-        }
-        setHistory((prev) => [
-          {
-            id: "latest",
-            path: data.review!.path,
-            riskLevel: data.review!.riskLevel,
-            localRiskCount: data.review!.localRiskCount,
-            modelFindingCount: data.review!.modelFindingCount,
-            droppedUngrounded: data.review!.droppedUngrounded,
-            provider: data.provider ?? null,
-            model: data.model ?? null,
-            createdAt: new Date().toISOString(),
-            tier: data.mode,
-            phase: data.phase,
-            filesScanned: data.filesScanned,
-            chargeUsd: data.chargeUsd != null ? String(data.chargeUsd) : undefined,
-          },
-          ...prev.filter((row) => row.id !== "latest"),
-        ].slice(0, 12));
+        const found = run.findings.length
+          ? `${run.findings.length} grounded finding${run.findings.length === 1 ? "" : "s"} (${run.newCount} new · ${run.knownCount} known · ${run.fixedCount} fixed)`
+          : "no grounded findings";
+        setMessage(`Bugbot repo ${phase}: ${found}. ${describeBugbotCoverage(run)}${billed} Never deploys.`);
+        await refreshBugbotState();
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "AI Bugbot failed");
+      setProgress((prev) => (prev ? { ...prev, running: false } : prev));
     } finally {
       setBusy(false);
     }
@@ -540,7 +937,7 @@ export function CodeClient({
               AI Bugbot
             </a>
             <a className="app-button secondary" href={keysHref}>
-              AI API keys
+              AI keys
             </a>
           </div>
         </article>
@@ -754,6 +1151,15 @@ export function CodeClient({
                 description="Paste robot code or use the sample, then run a review. Findings appear only when a local rule matches — never invented AI diagnoses. Vantage never deploys to a robot."
               />
             )}
+
+            {coachNarrations.length ? (
+              <WhyPanel
+                narrations={coachNarrations}
+                orgId={orgId || undefined}
+                title="Why each line was flagged"
+                subtitle={`${coachNarrations.length} matched rule${coachNarrations.length === 1 ? "" : "s"} · reason and habit come from the rule that fired`}
+              />
+            ) : null}
           </article>
 
           <article className="cdc-panel">
@@ -910,6 +1316,97 @@ export function CodeClient({
             </div>
           )}
 
+          {/*
+            The scan plan is free: it answers "what will you read, what will you
+            skip, and what does it cost" BEFORE any metered call. A team should
+            never discover the price or the coverage after the fact.
+          */}
+          {githubConnected && selectedRepo ? (
+            <section className="cdc-scan-plan" aria-label="Scan plan">
+              {planLoading ? (
+                <p className="app-muted" style={{ margin: 0 }}>
+                  Planning a scan of {selectedRepo}…
+                </p>
+              ) : scanPlan ? (
+                <>
+                  <header className="cdc-scan-plan-head">
+                    <strong>
+                      Scan plan · {scanPlan.repo}@{scanPlan.sha ? scanPlan.sha.slice(0, 7) : scanPlan.ref}
+                    </strong>
+                    <span className={`cdc-scan-cost ${bugbotMode === "ultra" ? "paid" : "included"}`}>
+                      {bugbotMode === "ultra"
+                        ? `$${scanPlan.cost.totalUsd.toFixed(2)} · $${scanPlan.cost.perChunkUsd.toFixed(2)} × ${scanPlan.chunkCount} chunk${scanPlan.chunkCount === 1 ? "" : "s"}`
+                        : `${scanPlan.chunkCount} metered call${scanPlan.chunkCount === 1 ? "" : "s"} on your subscription / BYO key`}
+                    </span>
+                  </header>
+                  <p className="app-muted" style={{ margin: 0 }}>
+                    Will read {scanPlan.reviewed.length} robot-code file
+                    {scanPlan.reviewed.length === 1 ? "" : "s"} of {scanPlan.candidateCount} found, {scanPlan.chunkFiles} per
+                    chunk, entry points first.
+                    {scanPlan.deferredCount > 0
+                      ? ` ${scanPlan.deferredCount} file${scanPlan.deferredCount === 1 ? "" : "s"} will NOT be reached by this scan's chunk budget.`
+                      : ""}
+                    {scanPlan.treeTruncated ? " GitHub truncated the tree listing for this repo." : ""}
+                  </p>
+                  {scanPlan.skipCounts.length ? (
+                    <ul className="cdc-skip-list" aria-label="Files this scan will skip">
+                      {scanPlan.skipCounts.map((item) => (
+                        <li key={item.reason}>
+                          <strong>{item.count}</strong> {item.label}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="app-button ghost cdc-coverage-toggle"
+                    aria-expanded={showCoverage}
+                    onClick={() => setShowCoverage((prev) => !prev)}
+                  >
+                    {showCoverage ? "Hide the file list" : "Show exactly which files"}
+                  </button>
+                  {showCoverage ? (
+                    <div className="cdc-coverage-detail">
+                      <div>
+                        <h4>Reviewed</h4>
+                        <ol>
+                          {scanPlan.reviewed.map((item) => (
+                            <li key={item.path}>
+                              <code>{item.path}</code>
+                              <small className="app-muted">
+                                {item.role.replace(/_/g, " ")} · chunk {item.chunk + 1}
+                              </small>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                      <div>
+                        <h4>Skipped</h4>
+                        <ol>
+                          {scanPlan.skipped.slice(0, 60).map((item) => (
+                            <li key={item.path}>
+                              <code>{item.path}</code>
+                              <small className="app-muted">{item.reason.replace(/_/g, " ")}</small>
+                            </li>
+                          ))}
+                        </ol>
+                        {scanPlan.skipped.length > 60 || scanPlan.skippedListTruncated ? (
+                          <p className="app-muted">
+                            Listing the first 60 skipped paths — the counts above cover every file in the tree.
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              ) : scanPlanReason ? (
+                <p className="app-muted" style={{ margin: 0 }}>
+                  {scanPlanReason}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
           <footer className="cdc-bugbot-actions">
             <button
               type="button"
@@ -925,12 +1422,16 @@ export function CodeClient({
               disabled={busy || !orgId || !githubConnected || !selectedRepo}
               onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: true })}
             >
-              {bugbotMode === "ultra" ? `Scan repo · $${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)}` : "Scan connected repo"}
+              {bugbotMode === "ultra"
+                ? `Scan repo · $${(scanPlan?.cost.totalUsd ?? BUGBOT_ULTRA_PRICES_USD.scan).toFixed(2)}`
+                : scanPlan
+                  ? `Scan connected repo · ${scanPlan.chunkCount} chunk${scanPlan.chunkCount === 1 ? "" : "s"}`
+                  : "Scan connected repo"}
             </button>
             <button
               type="button"
               className="app-button secondary"
-              disabled={busy || !orgId || !hasSource}
+              disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)}
               onClick={() => void runBugbot({ mode: bugbotMode, phase: "fix", scanRepo: false })}
             >
               {bugbotMode === "ultra" ? `Propose fix · $${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)}` : "Propose fix"}
@@ -938,17 +1439,128 @@ export function CodeClient({
             <button
               type="button"
               className="app-button secondary"
-              disabled={busy || !orgId || !hasSource}
+              disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)}
               onClick={() => void runBugbot({ mode: bugbotMode, phase: "recheck", scanRepo: false })}
             >
               {bugbotMode === "ultra" ? `Recheck · $${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)}` : "Recheck"}
             </button>
           </footer>
+          {lastScan?.scanRepo ? (
+            <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
+              Fix and recheck target the scanned repo{lastScan.repo ? ` ${lastScan.repo}` : ""}
+              {lastScan.sha ? ` (fix pinned to ${lastScan.sha.slice(0, 7)})` : ""} — not the editor buffer.
+            </p>
+          ) : null}
+
+          {/* Running cost and coverage while a chunked scan is in flight. */}
+          {progress ? (
+            <section
+              className={`cdc-scan-progress${progress.partial ? " partial" : ""}`}
+              aria-label="Scan progress"
+              aria-live="polite"
+            >
+              <div
+                className="cdc-scan-bar"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={progress.chunkCount}
+                aria-valuenow={progress.chunkIndex}
+                aria-valuetext={`chunk ${progress.chunkIndex} of ${progress.chunkCount}`}
+              >
+                <span
+                  style={{
+                    width: `${Math.round((progress.chunkIndex / Math.max(1, progress.chunkCount)) * 100)}%`,
+                  }}
+                />
+              </div>
+              <p style={{ margin: 0 }}>
+                {progress.running ? "Scanning" : "Scan finished"} · chunk {progress.chunkIndex} of{" "}
+                {progress.chunkCount}
+                {bugbotMode === "ultra" ? ` · $${progress.spentUsd.toFixed(2)} spent so far` : ""}
+              </p>
+              {progress.partial && progress.partialReason ? (
+                <p className="cdc-partial-note" style={{ margin: 0 }}>
+                  <strong>Partial coverage.</strong> {progress.partialReason}. Findings below cover only the files
+                  that were actually read — this is not a clean bill of health for the repo.
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {/* What the finished pass read, and the NEW / KNOWN / FIXED delta. */}
+          {coverage && coverage.reviewedFiles.length ? (
+            <section className="cdc-coverage" aria-label="Scan coverage">
+              <p style={{ margin: 0 }}>
+                Reviewed {coverage.reviewedFiles.length} file
+                {coverage.reviewedFiles.length === 1 ? "" : "s"}
+                {coverage.candidateCount > coverage.reviewedFiles.length
+                  ? ` of ${coverage.candidateCount} robot-code files`
+                  : ""}
+                .
+              </p>
+              {delta ? (
+                <p className="cdc-delta" style={{ margin: 0 }}>
+                  <span className="cdc-delta-chip new">{delta.new} new</span>
+                  <span className="cdc-delta-chip known">{delta.known} known</span>
+                  <span className="cdc-delta-chip fixed">{delta.fixed} fixed</span>
+                </p>
+              ) : null}
+              {fixedFindings.length ? (
+                <details>
+                  <summary>
+                    Fixed since the last scan ({fixedFindings.length})
+                  </summary>
+                  <ul>
+                    {fixedFindings.map((item) => (
+                      <li key={item.fingerprint}>
+                        <code>{item.filePath}</code> — {item.finding}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+              <details>
+                <summary>Files read this pass ({coverage.reviewedFiles.length})</summary>
+                <ol>
+                  {coverage.reviewedFiles.map((file) => (
+                    <li key={file}>
+                      <code>{file}</code>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+              {coverage.skipCounts.length ? (
+                <details>
+                  <summary>
+                    Skipped, and why ({coverage.skipCounts.reduce((sum, item) => sum + item.count, 0)})
+                  </summary>
+                  <ul>
+                    {coverage.skipCounts.map((item) => (
+                      <li key={item.reason}>
+                        <strong>{item.count}</strong> {item.label}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+            </section>
+          ) : null}
 
           {bugbotMeta?.proposedDiff ? (
             <div className="cdc-proposal">
               <span>Proposed fix · human approval required</span>
-              <strong>Never pushed to GitHub · never deployed</strong>
+              <strong>
+                Never pushed to GitHub · never deployed
+                {bugbotMeta.githubSha
+                  ? ` · fixed against ${bugbotMeta.githubRepo ? `${bugbotMeta.githubRepo}@` : ""}${bugbotMeta.githubSha.slice(0, 7)}`
+                  : ""}
+              </strong>
+              {bugbotMeta.branchMoved ? (
+                <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
+                  Branch moved since that scan — this diff targets the scanned commit. Rescan recommended before
+                  applying.
+                </p>
+              ) : null}
               <pre aria-label="Bugbot unified diff">{bugbotMeta.proposedDiff}</pre>
             </div>
           ) : null}
@@ -971,26 +1583,87 @@ export function CodeClient({
                       <th>Severity</th>
                       <th>Location</th>
                       <th>Finding</th>
+                      <th>Triage</th>
                     </tr>
                   </thead>
                   <tbody>
                     {bugbot.findings.map((item, index) => (
-                      <tr key={`${item.location}-${index}`}>
+                      <tr key={item.fingerprint ?? `${item.location}-${index}`}>
                         <td>
                           <span className={`cdc-severity ${item.severity}`}>{item.severity}</span>
                           <small className="app-muted">{item.source === "model" ? "model" : "local"}</small>
                         </td>
                         <td>
                           <code>{item.location}</code>
+                          {item.delta ? (
+                            <small className={`cdc-delta-chip ${item.delta}`}>{item.delta}</small>
+                          ) : null}
                         </td>
                         <td>
                           <p style={{ margin: 0 }}>{item.finding}</p>
                           <code>{item.evidence}</code>
                         </td>
+                        <td>
+                          {item.fingerprint ? (
+                            <button
+                              type="button"
+                              className="app-button ghost"
+                              disabled={busy}
+                              onClick={() => {
+                                setDismissTarget(item);
+                                setDismissReason("");
+                              }}
+                            >
+                              Dismiss
+                            </button>
+                          ) : null}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                {dismissTarget ? (
+                  <form
+                    className="cdc-dismiss-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void submitDismissal();
+                    }}
+                  >
+                    <p style={{ margin: 0 }}>
+                      Dismiss <code>{dismissTarget.location}</code> — why is this one fine?
+                    </p>
+                    <label>
+                      <span className="visually-hidden">Dismissal reason</span>
+                      <input
+                        value={dismissReason}
+                        onChange={(event) => setDismissReason(event.target.value)}
+                        placeholder="e.g. deliberate — the limit is set in Constants.java"
+                        maxLength={500}
+                        aria-label="Dismissal reason"
+                      />
+                    </label>
+                    <div className="cdc-dismiss-actions">
+                      <button type="submit" className="primary-action" disabled={busy || dismissReason.trim().length < 3}>
+                        Dismiss this finding
+                      </button>
+                      <button
+                        type="button"
+                        className="app-button ghost"
+                        onClick={() => {
+                          setDismissTarget(null);
+                          setDismissReason("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
+                      Kept against this finding&apos;s fingerprint, so it stays dismissed across commits even when
+                      the line moves. Restore it any time.
+                    </p>
+                  </form>
+                ) : null}
                 {bugbot.droppedUngrounded > 0 ? (
                   <p className="app-muted">
                     Dropped {bugbot.droppedUngrounded} ungrounded model claim{bugbot.droppedUngrounded === 1 ? "" : "s"} that
@@ -1012,6 +1685,41 @@ export function CodeClient({
               </a>
             </EmptyState>
           ) : null}
+          {bugbotNarrations.length ? (
+            <WhyPanel
+              narrations={bugbotNarrations}
+              orgId={orgId || undefined}
+              title="Why Bugbot flagged this"
+              subtitle={`${bugbotNarrations.length} grounded finding${bugbotNarrations.length === 1 ? "" : "s"} · every quote comes from your own source`}
+            />
+          ) : null}
+          {dismissals.length ? (
+            <details className="cdc-dismissals">
+              <summary>Dismissed findings ({dismissals.length})</summary>
+              <ul>
+                {dismissals.map((item) => (
+                  <li key={item.fingerprint}>
+                    <div>
+                      <code>{item.filePath ?? "—"}</code>
+                      <span className="app-muted"> — {item.reason}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="app-button ghost"
+                      disabled={busy}
+                      onClick={() => void restoreDismissal(item.fingerprint)}
+                    >
+                      Restore
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="app-muted">
+                Dismissals are kept per finding fingerprint, so they survive new commits and moved lines.
+              </p>
+            </details>
+          ) : null}
+
           {history.length ? (
             <ol className="cdc-bugbot-history" aria-label="Recent Bugbot runs">
               {history.slice(0, 6).map((row) => (
@@ -1020,9 +1728,19 @@ export function CodeClient({
                   <span>
                     {row.tier ?? "subscription"} · {row.phase ?? "scan"} · {row.riskLevel} · {row.localRiskCount} local ·{" "}
                     {row.modelFindingCount} model
+                    {row.newFindingCount != null || row.knownFindingCount != null || row.fixedFindingCount != null
+                      ? ` · ${row.newFindingCount ?? 0} new / ${row.knownFindingCount ?? 0} known / ${row.fixedFindingCount ?? 0} fixed`
+                      : ""}
+                    {(row.chunkCount ?? 1) > 1 ? ` · chunk ${(row.chunkIndex ?? 0) + 1}/${row.chunkCount}` : ""}
+                    {row.githubSha ? ` · ${row.githubSha.slice(0, 7)}` : ""}
                     {row.chargeUsd && Number(row.chargeUsd) > 0 ? ` · $${Number(row.chargeUsd).toFixed(2)}` : ""}
                     {row.model ? ` · ${row.model}` : ""}
                   </span>
+                  {row.partial ? (
+                    <span className="cdc-partial-tag" title={row.partialReason ?? undefined}>
+                      partial coverage
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ol>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { hubHref } from "../../lib/nav/hubs";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   actionBreakdown,
   sessionStats,
@@ -396,18 +397,22 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
   const [view, setView] = useState<DriverPracticeView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
 
   const load = useCallback(async () => {
     setFetchFailed(false);
+    setErrorStatus(null);
     const orgId = new URLSearchParams(window.location.search).get("orgId");
     try {
       const response = await fetch(`/api/practice${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`);
       const data = (await response.json()) as DriverPracticeView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load practice planner.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
@@ -458,11 +463,38 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
         </header>
         <div className="practice-panel practice-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load practice planner</strong>
-              <p className="practice-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button" onClick={() => void load()}>Retry</button>
-            </>
+            (() => {
+              const copy = loadFailureCopy(
+                classifyLoadFailure({
+                  status: errorStatus,
+                  message: error,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message: error || "Check your connection and try again.",
+                },
+              );
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="practice-muted">{copy.description}</p>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()
           ) : (
             <p className="practice-muted">Loading practice planner…</p>
           )}

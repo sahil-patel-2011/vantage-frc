@@ -125,7 +125,6 @@ function OutreachShell({
 }) {
   const actions = outreachCalendarNextActions({ orgId, shell });
   const copy = outreachCalendarShellCopy(shell);
-  const businessHref = hubHref("/business", "outreach-calendar", orgId);
   const steps = shell === "setup" ? outreachCalendarSetupSteps(orgId) : [];
 
   return (
@@ -250,7 +249,6 @@ export default function OutreachCalendarClient() {
   const relatedLinks = outreachCalendarRelatedLinks(orgId, {
     include: [...OUTREACH_CALENDAR_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "outreach-calendar", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {

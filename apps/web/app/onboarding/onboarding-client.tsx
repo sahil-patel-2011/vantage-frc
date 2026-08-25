@@ -1,26 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { VantageLogo } from "../../components/brand";
 import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
 import {
+  buildOnboardingLanding,
+  buildOnboardingPendingPlan,
   buildOnboardingStepMeta,
+  defaultFocusForRole,
+  emptyOnboardingDraft,
+  isAdultRole,
+  lookupTeamNumber,
+  onboardingAdvance,
   onboardingCanSubmit,
-  onboardingFundingReady,
+  onboardingGoBack,
+  onboardingLegalRequired,
   onboardingLoadCopy,
   onboardingMembershipNote,
   onboardingProgressLabel,
-  onboardingTermsRequired,
+  sanitizeTeamNumberInput,
+  submittedTeamNumber,
+  type OnboardingCrew,
+  type OnboardingDraft,
   type OnboardingFlowStep,
+  type OnboardingFocus,
+  type OnboardingGender,
+  type OnboardingRole,
+  type OnboardingStepContext,
   type TeamAffiliationOption,
 } from "../../lib/onboarding";
 import { PENDING_INVITE_KEY } from "../invite/invite-client";
+import { legalConsentMessage } from "../../lib/legal";
 import { safeAppPath } from "../../lib/security/safe-navigation";
 import "./onboarding-flow.css";
 
-type PrimaryFocus = "competition" | "build" | "business" | "leadership";
-type AccessStatus = "approved" | "invited" | "pending" | "declined" | "none";
+type AccessStatus = "approved" | "invited" | "pending" | "declined" | "withdrawn" | "none";
 
 type OnboardingState = {
   complete: boolean;
@@ -32,7 +47,7 @@ type OnboardingState = {
   teamRole: string | null;
   crewRole: string | null;
   roleDescription: string | null;
-  primaryFocus: PrimaryFocus;
+  primaryFocus: OnboardingFocus;
   displayName: string | null;
   themePreference: "light" | "dark";
   lockedTeamNumber: number | null;
@@ -53,39 +68,40 @@ type OnboardingState = {
   orgOutsideGrants: boolean | null;
   orgSponsorsAllowed: boolean | null;
   termsAcceptedAt: string | null;
+  privacyAcceptedAt: string | null;
   currentStep: "profile" | "team" | "preferences" | "complete";
   startedAt: string | null;
   savedAt: string | null;
 };
 
-const GENDERS = [
+const GENDERS: Array<{ value: OnboardingGender; label: string }> = [
   { value: "prefer_not_to_say", label: "Prefer not to say" },
   { value: "female", label: "Female" },
   { value: "male", label: "Male" },
   { value: "non_binary", label: "Non-binary" },
   { value: "other", label: "Other" },
-] as const;
+];
 
-const ROLES = [
-  { value: "student", label: "Student" },
-  { value: "mentor", label: "Mentor" },
-  { value: "coach", label: "Coach" },
-  { value: "parent", label: "Parent / guardian" },
-  { value: "other", label: "Other" },
-] as const;
+const ROLES: Array<{ value: OnboardingRole; label: string; detail: string; glyph: string }> = [
+  { value: "student", label: "Student", detail: "On the team, in the shop", glyph: "🎒" },
+  { value: "mentor", label: "Mentor", detail: "Adult who coaches a subteam", glyph: "🔧" },
+  { value: "coach", label: "Coach", detail: "Runs the team and the season", glyph: "📋" },
+  { value: "parent", label: "Parent", detail: "Guardian supporting the team", glyph: "🚗" },
+  { value: "other", label: "Something else", detail: "Alum, volunteer, sponsor", glyph: "✳️" },
+];
 
-const CREW_ROLES = [
-  { value: "scout", label: "Scout" },
-  { value: "driver", label: "Driver" },
-  { value: "operator", label: "Operator" },
-  { value: "mechanical", label: "Mechanical" },
-  { value: "electrical", label: "Electrical" },
-  { value: "programming", label: "Programming" },
-  { value: "cad", label: "CAD" },
-  { value: "pit", label: "Pit crew" },
-  { value: "business", label: "Business" },
-  { value: "other", label: "Other crew" },
-] as const;
+const CREW_ROLES: Array<{ value: OnboardingCrew; label: string; detail: string }> = [
+  { value: "scout", label: "Scout", detail: "Stand data and picks" },
+  { value: "driver", label: "Driver", detail: "Drive team" },
+  { value: "operator", label: "Operator", detail: "Drive team" },
+  { value: "mechanical", label: "Mechanical", detail: "Build and fabricate" },
+  { value: "electrical", label: "Electrical", detail: "Wiring and power" },
+  { value: "programming", label: "Programming", detail: "Robot code" },
+  { value: "cad", label: "CAD", detail: "Design the robot" },
+  { value: "pit", label: "Pit crew", detail: "Repairs at events" },
+  { value: "business", label: "Business", detail: "Sponsors and awards" },
+  { value: "other", label: "Not sure yet", detail: "Decide later" },
+];
 
 const AFFILIATIONS: Array<{ value: TeamAffiliationOption; label: string }> = [
   { value: "private_school", label: "Private school" },
@@ -93,16 +109,11 @@ const AFFILIATIONS: Array<{ value: TeamAffiliationOption; label: string }> = [
   { value: "community", label: "Community team" },
 ];
 
-const FOCUS_OPTIONS: Array<{
-  value: PrimaryFocus;
-  index: string;
-  label: string;
-  description: string;
-}> = [
-  { value: "competition", index: "01", label: "Competition", description: "Scouting, match strategy, drive team, and event operations" },
-  { value: "build", index: "02", label: "Build & code", description: "Robot readiness, CAD, programming, and technical work" },
-  { value: "business", index: "03", label: "Business", description: "Sponsors, grants, budgets, awards, and outreach" },
-  { value: "leadership", index: "04", label: "Leadership", description: "Team coordination, safety, access, and season planning" },
+const FOCUS_OPTIONS: Array<{ value: OnboardingFocus; label: string; description: string }> = [
+  { value: "competition", label: "Competition", description: "Scouting, match strategy, drive team, event ops" },
+  { value: "build", label: "Build & code", description: "Robot readiness, CAD, programming" },
+  { value: "business", label: "Business", description: "Sponsors, grants, budgets, awards" },
+  { value: "leadership", label: "Leadership", description: "Coordination, safety, season planning" },
 ];
 
 function pendingInviteDestination() {
@@ -114,46 +125,35 @@ function pendingInviteDestination() {
   }
 }
 
-function approvedDestination(state: OnboardingState, nextParam: string | null) {
-  if (nextParam) return safeAppPath(nextParam, "/workspace");
-  // Build & code focus → deep-link Team GitHub connection for robot-code AI context.
-  if (state.workspaceOrgId && state.primaryFocus === "build") {
-    return `/team/admin?orgId=${encodeURIComponent(state.workspaceOrgId)}#github-connection`;
-  }
-  // Role / subteam Soft-UI path (CD #28) after profile approval.
-  if (state.workspaceOrgId) return `/start?orgId=${encodeURIComponent(state.workspaceOrgId)}`;
-  return state.platformAdmin ? "/admin" : "/workspace";
-}
-
 function githubConnectionHref(orgId: string | null | undefined) {
   if (!orgId) return "/team/admin#github-connection";
   return `/team/admin?orgId=${encodeURIComponent(orgId)}#github-connection`;
 }
 
+function isRole(value: string | null | undefined): value is OnboardingRole {
+  return ROLES.some((role) => role.value === value);
+}
+
+function isCrew(value: string | null | undefined): value is OnboardingCrew {
+  return CREW_ROLES.some((crew) => crew.value === value);
+}
+
+function isGender(value: string | null | undefined): value is OnboardingGender {
+  return GENDERS.some((option) => option.value === value);
+}
+
 function FundingFields({
-  teamAffiliation,
-  setTeamAffiliation,
-  schoolFunded,
-  setSchoolFunded,
-  outsideGrants,
-  setOutsideGrants,
-  sponsorsAllowed,
-  setSponsorsAllowed,
+  draft,
+  patch,
 }: {
-  teamAffiliation: TeamAffiliationOption | "";
-  setTeamAffiliation: (value: TeamAffiliationOption | "") => void;
-  schoolFunded: boolean;
-  setSchoolFunded: (value: boolean) => void;
-  outsideGrants: boolean;
-  setOutsideGrants: (value: boolean) => void;
-  sponsorsAllowed: boolean;
-  setSponsorsAllowed: (value: boolean) => void;
+  draft: OnboardingDraft;
+  patch: (next: Partial<OnboardingDraft>) => void;
 }) {
   return (
     <fieldset className="onboarding-team-profile onboarding-funding-profile">
       <legend>Team affiliation &amp; funding</legend>
       <p className="onboarding-team-profile-hint">
-        Required for owners and admins. Shapes Business Soft-UI — for example, teams that disallow sponsors hide sponsor tools.
+        Required for owners and admins. Shapes the Business tools — teams that disallow sponsors hide sponsor features.
       </p>
       <fieldset className="onboarding-affiliation">
         <legend>Affiliation</legend>
@@ -163,31 +163,32 @@ function FundingFields({
               type="radio"
               name="teamAffiliation"
               value={option.value}
-              checked={teamAffiliation === option.value}
-              onChange={() => setTeamAffiliation(option.value)}
-              required
+              checked={draft.teamAffiliation === option.value}
+              onChange={() => patch({ teamAffiliation: option.value })}
             />
             {option.label}
           </label>
         ))}
       </fieldset>
-      {teamAffiliation === "private_school" ? (
+      {draft.teamAffiliation === "private_school" ? (
         <p className="onboarding-funding-note">
           Many private schools self-fund and disallow outside sponsors. Uncheck Sponsors allowed if that matches your school.
         </p>
       ) : null}
       <fieldset className="onboarding-funding-paths">
-        <legend>Funding paths <small>Select at least one</small></legend>
+        <legend>
+          Funding paths <small>Select at least one</small>
+        </legend>
         <label className="check-field">
-          <input type="checkbox" checked={schoolFunded} onChange={(event) => setSchoolFunded(event.target.checked)} />
+          <input type="checkbox" checked={draft.schoolFunded} onChange={(event) => patch({ schoolFunded: event.target.checked })} />
           School funds
         </label>
         <label className="check-field">
-          <input type="checkbox" checked={outsideGrants} onChange={(event) => setOutsideGrants(event.target.checked)} />
+          <input type="checkbox" checked={draft.outsideGrants} onChange={(event) => patch({ outsideGrants: event.target.checked })} />
           Outside grants
         </label>
         <label className="check-field">
-          <input type="checkbox" checked={sponsorsAllowed} onChange={(event) => setSponsorsAllowed(event.target.checked)} />
+          <input type="checkbox" checked={draft.sponsorsAllowed} onChange={(event) => patch({ sponsorsAllowed: event.target.checked })} />
           Sponsors allowed
         </label>
       </fieldset>
@@ -199,72 +200,85 @@ export default function OnboardingClient() {
   const searchParams = useSearchParams();
   const [state, setState] = useState<OnboardingState | null>(null);
   const [step, setStep] = useState<OnboardingFlowStep>("profile");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [gender, setGender] = useState("prefer_not_to_say");
-  const [teamNumber, setTeamNumber] = useState("");
-  const [noTeam, setNoTeam] = useState(false);
-  const [teamRole, setTeamRole] = useState("student");
-  const [crewRole, setCrewRole] = useState("");
-  const [roleDescription, setRoleDescription] = useState("");
-  const [primaryFocus, setPrimaryFocus] = useState<PrimaryFocus>("competition");
-  const [displayName, setDisplayName] = useState("");
-  const [themePreference, setThemePreference] = useState<"light" | "dark">("light");
-  const [orgCity, setOrgCity] = useState("");
-  const [orgStateProv, setOrgStateProv] = useState("");
-  const [orgDescription, setOrgDescription] = useState("");
-  const [teamAffiliation, setTeamAffiliation] = useState<TeamAffiliationOption | "">("");
-  const [schoolFunded, setSchoolFunded] = useState(false);
-  const [outsideGrants, setOutsideGrants] = useState(false);
-  const [sponsorsAllowed, setSponsorsAllowed] = useState(true);
+  const [draft, setDraft] = useState<OnboardingDraft>(() => emptyOnboardingDraft());
+  /** True once the person picked a focus themselves — stops the role default overriding them. */
+  const focusTouched = useRef(false);
   const [message, setMessage] = useState("");
+  const [errorField, setErrorField] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [legalError, setLegalError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadStatus, setLoadStatus] = useState<"loading" | "ready" | "error" | "setup_required">("loading");
 
-  function hydrate(data: OnboardingState) {
-    setState(data);
-    setFirstName(data.firstName ?? "");
-    setLastName(data.lastName ?? "");
-    setDateOfBirth(data.dateOfBirth ?? "");
-    setGender(data.gender ?? "prefer_not_to_say");
-    setTeamNumber(String(data.lockedTeamNumber ?? data.preferredTeamNumber ?? ""));
-    setNoTeam(Boolean(data.complete && !data.lockedTeamNumber && data.preferredTeamNumber == null));
-    setTeamRole(data.teamRole ?? "student");
-    setCrewRole(data.crewRole ?? "");
-    setRoleDescription(data.roleDescription ?? "");
-    setPrimaryFocus(data.primaryFocus ?? "competition");
-    setDisplayName(data.displayName ?? "");
-    setThemePreference(data.themePreference ?? "light");
-    setOrgCity(data.orgCity ?? "");
-    setOrgStateProv(data.orgStateProv ?? "");
-    setOrgDescription(data.orgDescription ?? "");
-    setTeamAffiliation(data.orgTeamAffiliation ?? "");
-    setSchoolFunded(Boolean(data.orgSchoolFunded));
-    setOutsideGrants(Boolean(data.orgOutsideGrants));
-    setSponsorsAllowed(data.orgSponsorsAllowed == null ? true : Boolean(data.orgSponsorsAllowed));
-    if (data.termsAcceptedAt) setTermsAccepted(true);
-  }
+  const patch = useCallback((next: Partial<OnboardingDraft>) => {
+    setDraft((current) => ({ ...current, ...next }));
+  }, []);
 
-  function routeCompleteState(data: OnboardingState) {
-    if (data.accessStatus === "approved") {
-      window.location.assign(approvedDestination(data, searchParams.get("next")));
-      return;
-    }
-    if (data.accessStatus === "invited") {
-      const inviteDestination = pendingInviteDestination();
-      if (inviteDestination) {
-        window.location.assign(inviteDestination);
+  const hydrate = useCallback((data: OnboardingState) => {
+    setState(data);
+    setDraft((current) => ({
+      ...current,
+      firstName: data.firstName ?? current.firstName,
+      lastName: data.lastName ?? current.lastName,
+      dateOfBirth: data.dateOfBirth ?? current.dateOfBirth,
+      gender: isGender(data.gender) ? data.gender : current.gender,
+      teamRole: isRole(data.teamRole) ? data.teamRole : current.teamRole,
+      crewRole: isCrew(data.crewRole) ? data.crewRole : current.crewRole,
+      roleDescription: data.roleDescription ?? current.roleDescription,
+      teamNumber: String(data.lockedTeamNumber ?? data.preferredTeamNumber ?? current.teamNumber ?? ""),
+      noTeam: data.complete && !data.lockedTeamNumber && data.preferredTeamNumber == null ? true : current.noTeam,
+      primaryFocus: data.primaryFocus ?? current.primaryFocus,
+      displayName: data.displayName ?? current.displayName,
+      themePreference: data.themePreference ?? current.themePreference,
+      orgCity: data.orgCity ?? current.orgCity,
+      orgStateProv: data.orgStateProv ?? current.orgStateProv,
+      orgDescription: data.orgDescription ?? current.orgDescription,
+      teamAffiliation: data.orgTeamAffiliation ?? current.teamAffiliation,
+      schoolFunded: data.orgSchoolFunded ?? current.schoolFunded,
+      outsideGrants: data.orgOutsideGrants ?? current.outsideGrants,
+      sponsorsAllowed: data.orgSponsorsAllowed ?? current.sponsorsAllowed,
+      termsAccepted: data.termsAcceptedAt ? true : current.termsAccepted,
+      privacyAccepted: data.privacyAcceptedAt ? true : current.privacyAccepted,
+    }));
+    if (data.primaryFocus) focusTouched.current = true;
+  }, []);
+
+  const approvedDestination = useCallback(
+    (data: OnboardingState) => {
+      const nextParam = searchParams.get("next");
+      if (nextParam) return safeAppPath(nextParam, "/workspace");
+      if (data.workspaceOrgId) return `/start?orgId=${encodeURIComponent(data.workspaceOrgId)}`;
+      return data.platformAdmin ? "/admin" : "/workspace";
+    },
+    [searchParams],
+  );
+
+  /** On load, an already-complete profile goes straight through — the landing
+   *  screen is for the moment you finish, not every later visit. */
+  const routeCompleteState = useCallback(
+    (data: OnboardingState, justFinished: boolean) => {
+      if (data.accessStatus === "approved") {
+        if (justFinished) {
+          setStep("done");
+          return;
+        }
+        window.location.assign(approvedDestination(data));
         return;
       }
-    }
-    setStep("pending");
-  }
+      if (data.accessStatus === "invited") {
+        const inviteDestination = pendingInviteDestination();
+        if (inviteDestination) {
+          window.location.assign(inviteDestination);
+          return;
+        }
+      }
+      setStep("pending");
+    },
+    [approvedDestination],
+  );
 
-  function loadSession() {
+  const loadSession = useCallback(() => {
     setLoadStatus("loading");
     setLoadError(null);
     void fetch("/api/onboarding", { cache: "no-store" })
@@ -288,7 +302,7 @@ export default function OnboardingClient() {
         if (!data) return;
         hydrate(data);
         setLoadStatus("ready");
-        if (data.complete) routeCompleteState(data);
+        if (data.complete) routeCompleteState(data, false);
         else if (data.currentStep === "team" || data.currentStep === "preferences") setStep(data.currentStep);
         else setStep("profile");
       })
@@ -297,7 +311,7 @@ export default function OnboardingClient() {
         setLoadError("Could not load onboarding. Check your connection and try again.");
         setState(null);
       });
-  }
+  }, [hydrate, routeCompleteState]);
 
   useEffect(() => {
     loadSession();
@@ -305,42 +319,106 @@ export default function OnboardingClient() {
   }, []);
 
   const locked = state?.lockedTeamNumber != null;
-  const termsNeeded = onboardingTermsRequired(state?.termsAcceptedAt);
-  const fundingReady = onboardingFundingReady({
-    isTeamHead: Boolean(state?.isTeamHead),
-    teamAffiliation: teamAffiliation || null,
-    schoolFunded,
-    outsideGrants,
-    sponsorsAllowed,
-  });
-  const canSubmit = onboardingCanSubmit({
-    termsAccepted,
+  const legalNeeded = onboardingLegalRequired({
     termsAcceptedAt: state?.termsAcceptedAt,
+    privacyAcceptedAt: state?.privacyAcceptedAt,
+  });
+
+  const context: OnboardingStepContext = useMemo(
+    () => ({
+      isTeamHead: Boolean(state?.isTeamHead),
+      legalNeeded,
+      locked,
+      lockedTeamNumber: state?.lockedTeamNumber ?? null,
+      lockedOrgName: state?.lockedOrgName ?? null,
+      accessStatus: state?.accessStatus ?? null,
+      knownTeamNumber: state?.preferredTeamNumber ?? null,
+    }),
+    [state, legalNeeded, locked],
+  );
+
+  const adult = isAdultRole(draft.teamRole);
+  const lookup = useMemo(
+    () =>
+      lookupTeamNumber({
+        raw: draft.teamNumber,
+        noTeam: draft.noTeam,
+        locked,
+        lockedTeamNumber: state?.lockedTeamNumber ?? null,
+        lockedOrgName: state?.lockedOrgName ?? null,
+        accessStatus: state?.accessStatus ?? null,
+        knownTeamNumber: state?.preferredTeamNumber ?? null,
+        adult,
+      }),
+    [draft.teamNumber, draft.noTeam, locked, state, adult],
+  );
+
+  const canSubmit = onboardingCanSubmit({
+    termsAccepted: draft.termsAccepted,
+    privacyAccepted: draft.privacyAccepted,
+    termsAcceptedAt: state?.termsAcceptedAt,
+    privacyAcceptedAt: state?.privacyAcceptedAt,
   });
   const stepMeta = useMemo(() => buildOnboardingStepMeta(step), [step]);
   const progressLabel = onboardingProgressLabel(step);
   const membershipNote = onboardingMembershipNote(state?.accessStatus ?? "none", {
-    preferredTeamNumber: state?.preferredTeamNumber ?? (noTeam || !teamNumber.trim() ? null : Number(teamNumber)),
+    preferredTeamNumber: state?.preferredTeamNumber ?? lookup.teamNumber,
   });
 
-  async function saveProgress(completedStep: "profile" | "team") {
-    setBusy(true);
+  function pickRole(value: OnboardingRole) {
+    const nextFocus = focusTouched.current ? draft.primaryFocus : defaultFocusForRole(value, draft.crewRole);
+    patch({ teamRole: value, primaryFocus: nextFocus });
+    setErrorField(null);
+  }
+
+  function pickCrew(value: OnboardingCrew) {
+    const next = draft.crewRole === value ? "" : value;
+    const nextFocus = focusTouched.current ? draft.primaryFocus : defaultFocusForRole(draft.teamRole, next);
+    patch({ crewRole: next, primaryFocus: nextFocus });
+  }
+
+  function goBack() {
+    const back = onboardingGoBack({ step, draft, error: null, errorField: null });
+    setStep(back.step);
     setMessage("");
-    if (completedStep === "team" && state?.isTeamHead && !fundingReady) {
-      setMessage("Select affiliation and at least one funding path (school funds, grants, or sponsors).");
-      setBusy(false);
+    setErrorField(null);
+  }
+
+  /** Runs the shared gate, then persists the draft for that step. */
+  async function advance() {
+    const result = onboardingAdvance({ step, draft, error: null, errorField: null }, context);
+    if (result.error) {
+      setMessage(result.error);
+      setErrorField(result.errorField);
       return;
     }
-    const body = completedStep === "profile"
-      ? { step: "profile" as const, firstName, lastName, dateOfBirth, gender }
-      : {
-          step: "team" as const,
-          preferredTeamNumber: locked || (!noTeam && teamNumber.trim()) ? Number(teamNumber) : null,
-          teamRole,
-          crewRole: crewRole || null,
-          roleDescription: roleDescription.trim() || null,
-          primaryFocus,
-        };
+    setErrorField(null);
+    if (result.submit) {
+      await finish();
+      return;
+    }
+    const completedStep = step as "profile" | "team";
+    setBusy(true);
+    setMessage("");
+    // Payload shape is the server's, unchanged: `step: "profile"` is strict and
+    // takes only these four fields, so role/crew ride along with the team step.
+    const body =
+      completedStep === "profile"
+        ? {
+            step: "profile" as const,
+            firstName: draft.firstName.trim(),
+            lastName: draft.lastName.trim(),
+            dateOfBirth: draft.dateOfBirth,
+            gender: draft.gender,
+          }
+        : {
+            step: "team" as const,
+            preferredTeamNumber: submittedTeamNumber(draft, context),
+            teamRole: draft.teamRole,
+            crewRole: draft.crewRole || null,
+            roleDescription: draft.roleDescription.trim() || null,
+            primaryFocus: draft.primaryFocus,
+          };
     try {
       const response = await fetch("/api/onboarding", {
         method: "PATCH",
@@ -353,8 +431,7 @@ export default function OnboardingClient() {
         return;
       }
       hydrate(data);
-      setStep(completedStep === "profile" ? "team" : "preferences");
-      setMessage("Progress saved securely. You can return on another device and continue here.");
+      setStep(result.step);
     } catch {
       setMessage("Could not save your progress. Check your connection and try again.");
     } finally {
@@ -367,44 +444,40 @@ export default function OnboardingClient() {
     setMessage("");
     try {
       if (!canSubmit) {
-        setMessage("Please agree to the Terms of Service and Privacy Policy to submit your request.");
-        setBusy(false);
+        const consentMessage =
+          legalConsentMessage({ terms: draft.termsAccepted, privacy: draft.privacyAccepted }) ??
+          "Agree to the Terms of Service and the Privacy Policy to submit your request.";
+        setLegalError(consentMessage);
+        setMessage(consentMessage);
+        setErrorField("legal");
         return;
       }
       const isTeamHead = Boolean(state?.isTeamHead);
-      if (isTeamHead && (!orgCity.trim() || !orgStateProv.trim())) {
-        setMessage("Add your team's city and state so sponsors and partners know where you compete from.");
-        setBusy(false);
-        return;
-      }
-      if (isTeamHead && !fundingReady) {
-        setMessage("Select affiliation and at least one funding path (school funds, grants, or sponsors).");
-        setBusy(false);
-        return;
-      }
+      // Payload is byte-for-byte the contract `POST /api/onboarding` already validates.
       const response = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          firstName,
-          lastName,
-          dateOfBirth,
-          gender,
-          preferredTeamNumber: isTeamHead || (!noTeam && teamNumber.trim()) ? Number(teamNumber) : null,
-          teamRole,
-          crewRole: crewRole || null,
-          roleDescription: roleDescription.trim() || null,
-          primaryFocus,
-          displayName: displayName.trim() || undefined,
-          themePreference,
+          firstName: draft.firstName.trim(),
+          lastName: draft.lastName.trim(),
+          dateOfBirth: draft.dateOfBirth,
+          gender: draft.gender,
+          preferredTeamNumber: submittedTeamNumber(draft, context),
+          teamRole: draft.teamRole,
+          crewRole: draft.crewRole || null,
+          roleDescription: draft.roleDescription.trim() || null,
+          primaryFocus: draft.primaryFocus,
+          displayName: draft.displayName.trim() || undefined,
+          themePreference: draft.themePreference,
           termsAccepted: true,
-          city: isTeamHead ? orgCity.trim() || null : undefined,
-          stateProv: isTeamHead ? orgStateProv.trim() || null : undefined,
-          description: isTeamHead ? orgDescription.trim() || null : undefined,
-          teamAffiliation: isTeamHead ? teamAffiliation || null : undefined,
-          schoolFunded: isTeamHead ? schoolFunded : undefined,
-          outsideGrants: isTeamHead ? outsideGrants : undefined,
-          sponsorsAllowed: isTeamHead ? sponsorsAllowed : undefined,
+          privacyAccepted: true,
+          city: isTeamHead ? draft.orgCity.trim() || null : undefined,
+          stateProv: isTeamHead ? draft.orgStateProv.trim() || null : undefined,
+          description: isTeamHead ? draft.orgDescription.trim() || null : undefined,
+          teamAffiliation: isTeamHead ? draft.teamAffiliation || null : undefined,
+          schoolFunded: isTeamHead ? draft.schoolFunded : undefined,
+          outsideGrants: isTeamHead ? draft.outsideGrants : undefined,
+          sponsorsAllowed: isTeamHead ? draft.sponsorsAllowed : undefined,
         }),
       });
       const data = (await response.json()) as OnboardingState & { error?: string };
@@ -413,7 +486,7 @@ export default function OnboardingClient() {
         return;
       }
       hydrate(data);
-      routeCompleteState(data);
+      routeCompleteState(data, true);
     } finally {
       setBusy(false);
     }
@@ -435,7 +508,7 @@ export default function OnboardingClient() {
       }
       hydrate(data);
       if (data.accessStatus === "approved") {
-        setMessage("Approved. Your team access email is on its way—use its sign-in link to enter the workspace.");
+        setMessage("Approved. Your team access email is on its way — use its sign-in link to enter the workspace.");
       } else if (data.accessStatus === "invited") {
         setMessage("Your team sent an invitation. Open the invitation email to finish joining.");
       } else if (data.accessStatus === "declined") {
@@ -494,32 +567,38 @@ export default function OnboardingClient() {
     );
   }
 
+  const setupStep = step === "pending" || step === "done" ? null : step;
+  const headerCopy =
+    step === "done"
+      ? { eyebrow: "SETUP COMPLETE", title: "You're in.", sub: "Here's the shortest path to being useful this week." }
+      : step === "pending"
+        ? {
+            eyebrow: "SECURE ACCESS REQUEST",
+            title: "Your profile is ready. Team access is next.",
+            sub: "A team number never grants access by itself. A team owner or administrator must approve this verified account.",
+          }
+        : {
+            eyebrow: "WELCOME TO VANTAGE",
+            title: "Set up Vantage around your role.",
+            sub: "Three short steps. Nothing is shared with a team until they approve you.",
+          };
+
   return (
     <main className="onboarding-page onboarding-flow-page">
-      <section className={`onboarding-card onboarding-flow-card${step === "pending" ? " pending" : ""}`} aria-labelledby="onboarding-title">
+      <section className={`onboarding-card onboarding-flow-card${step === "pending" || step === "done" ? " pending" : ""}`} aria-labelledby="onboarding-title">
         <header className="onboarding-flow-header">
           <div className="onboarding-brand"><VantageLogo /></div>
-          <span>{step === "pending" ? "SECURE ACCESS REQUEST" : "WELCOME TO VANTAGE"}</span>
-          <h1 id="onboarding-title">
-            {step === "pending" ? "Your profile is ready. Team access is next." : "Set up Vantage around your role."}
-          </h1>
-          <p className="onboarding-sub">
-            {step === "pending"
-              ? "A team number never grants access by itself. A team owner or administrator must approve this verified account."
-              : "Three short steps personalize your starting workspace. Nothing is shared with a team until they approve you."}
-          </p>
+          <span>{headerCopy.eyebrow}</span>
+          <h1 id="onboarding-title">{headerCopy.title}</h1>
+          <p className="onboarding-sub">{headerCopy.sub}</p>
         </header>
 
-        {step !== "pending" ? (
+        {setupStep ? (
           <div className="onboarding-progress-block">
             <p className="onboarding-progress-label" aria-live="polite">{progressLabel}</p>
             <ol className="onboarding-steps onboarding-steps-simple" aria-label="Onboarding progress">
               {stepMeta.map((item) => (
-                <li
-                  key={item.id}
-                  className={item.phase}
-                  aria-current={item.phase === "current" ? "step" : undefined}
-                >
+                <li key={item.id} className={item.phase} aria-current={item.phase === "current" ? "step" : undefined}>
                   <b aria-hidden="true">{item.phase === "done" ? "✓" : item.index + 1}</b>
                   <span>{item.label}</span>
                 </li>
@@ -529,287 +608,463 @@ export default function OnboardingClient() {
           </div>
         ) : null}
 
-        {message ? <p className="onboarding-message" role="status">{message}</p> : null}
-        {state.savedAt && step !== "pending" ? (
+        {message ? (
+          <p className={`onboarding-message${errorField ? " invalid" : ""}`} role="status">{message}</p>
+        ) : null}
+        {state.savedAt && setupStep ? (
           <p className="onboarding-resume-note">
             <b>Progress restored</b>
-            <span>Securely saved {new Date(state.savedAt).toLocaleString()}. Finish from here—your earlier steps are already set.</span>
+            <span>Securely saved {new Date(state.savedAt).toLocaleString()}. Your earlier answers are already filled in.</span>
           </p>
         ) : null}
 
         {step === "profile" ? (
-          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void saveProgress("profile"); }}>
+          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void advance(); }}>
             <div className="onboarding-row">
-              <label>First name<input required maxLength={60} value={firstName} onChange={(event) => setFirstName(event.target.value)} autoComplete="given-name" /></label>
-              <label>Last name<input required maxLength={60} value={lastName} onChange={(event) => setLastName(event.target.value)} autoComplete="family-name" /></label>
+              <label>
+                First name
+                <input
+                  required
+                  maxLength={60}
+                  value={draft.firstName}
+                  onChange={(event) => patch({ firstName: event.target.value })}
+                  autoComplete="given-name"
+                  autoCapitalize="words"
+                  aria-invalid={errorField === "firstName" || undefined}
+                />
+              </label>
+              <label>
+                Last name
+                <input
+                  required
+                  maxLength={60}
+                  value={draft.lastName}
+                  onChange={(event) => patch({ lastName: event.target.value })}
+                  autoComplete="family-name"
+                  autoCapitalize="words"
+                  aria-invalid={errorField === "lastName" || undefined}
+                />
+              </label>
             </div>
-            <label>
-              Date of birth
-              <input required type="date" value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} autoComplete="bday" />
-              <small>Used only for youth-safe account records. Team members never see it.</small>
-            </label>
-            <label>
-              Gender
-              <select required value={gender} onChange={(event) => setGender(event.target.value)}>
-                {GENDERS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <button className="signin-submit" type="submit" disabled={busy}>{busy ? "Saving…" : "Save and continue to team"}</button>
+
+            <fieldset className="onboarding-cards onboarding-cards-role">
+              <legend>What are you on the team?</legend>
+              {ROLES.map((option) => (
+                <label key={option.value} className={draft.teamRole === option.value ? "selected" : undefined}>
+                  <input
+                    type="radio"
+                    name="teamRole"
+                    value={option.value}
+                    checked={draft.teamRole === option.value}
+                    onChange={() => pickRole(option.value)}
+                  />
+                  <i aria-hidden="true">{option.glyph}</i>
+                  <strong>{option.label}</strong>
+                  <span>{option.detail}</span>
+                </label>
+              ))}
+            </fieldset>
+
+            <fieldset className="onboarding-cards onboarding-cards-crew">
+              <legend>
+                What do you actually do? <small>Optional — tap again to clear</small>
+              </legend>
+              {CREW_ROLES.map((option) => (
+                <label key={option.value} className={draft.crewRole === option.value ? "selected" : undefined}>
+                  <input
+                    type="checkbox"
+                    name="crewRole"
+                    value={option.value}
+                    checked={draft.crewRole === option.value}
+                    onChange={() => pickCrew(option.value)}
+                  />
+                  <strong>{option.label}</strong>
+                  <span>{option.detail}</span>
+                </label>
+              ))}
+            </fieldset>
+
+            <fieldset className="onboarding-account-fields">
+              <legend>Account record</legend>
+              <p className="onboarding-team-profile-hint">
+                Vantage requires these two for youth-safe account records before it will create your account. Teammates and team leaders never see them.
+              </p>
+              <label>
+                Date of birth
+                <input
+                  required
+                  type="date"
+                  value={draft.dateOfBirth}
+                  onChange={(event) => patch({ dateOfBirth: event.target.value })}
+                  autoComplete="bday"
+                  aria-invalid={errorField === "dateOfBirth" || undefined}
+                />
+              </label>
+              <label>
+                Gender
+                <select required value={draft.gender} onChange={(event) => patch({ gender: event.target.value as OnboardingGender })}>
+                  {GENDERS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            </fieldset>
+
+            <div className="onboarding-actions">
+              <span />
+              <button className="signin-submit" type="submit" disabled={busy}>
+                {busy ? "Saving…" : "Continue"}
+              </button>
+            </div>
           </form>
         ) : null}
 
         {step === "team" ? (
-          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void saveProgress("team"); }}>
+          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void advance(); }}>
             <div className={`onboarding-team-lock${locked ? " locked" : ""}`}>
               <label>
                 FRC team number <small>{locked ? "" : "Optional"}</small>
                 <input
-                  required={locked || !noTeam}
                   inputMode="numeric"
-                  min={1}
-                  max={99999}
-                  value={teamNumber}
-                  disabled={locked || noTeam}
-                  onChange={(event) => setTeamNumber(event.target.value.replace(/\D/g, "").slice(0, 5))}
+                  pattern="[0-9]*"
+                  autoComplete="off"
+                  enterKeyHint="done"
+                  placeholder="1234"
+                  value={draft.teamNumber}
+                  disabled={locked || draft.noTeam}
+                  aria-invalid={lookup.ok ? undefined : true}
+                  aria-describedby="onboarding-team-lookup"
+                  onChange={(event) => patch({ teamNumber: sanitizeTeamNumberInput(event.target.value) })}
                 />
               </label>
-              {locked ? (
-                <p>{`${state.lockedOrgName ?? "Your team"} is already tied to this invitation or request.`}</p>
-              ) : (
-                <>
-                  <label className="check-field">
-                    <input
-                      type="checkbox"
-                      checked={noTeam}
-                      onChange={(event) => {
-                        setNoTeam(event.target.checked);
-                        if (event.target.checked) setTeamNumber("");
-                      }}
-                    />
-                    I don&apos;t have a team number yet
-                  </label>
-                  <p>
-                    {noTeam
-                      ? "You can finish without joining anyone. If you later enter a number for a team that already uses Vantage, that team must approve you."
-                      : "A number only requests that team's approval. You cannot join an existing workspace automatically."}
-                  </p>
-                </>
+              <p id="onboarding-team-lookup" className={`onboarding-lookup ${lookup.tone}`} role="status" aria-live="polite">
+                <strong>{lookup.title}</strong>
+                <span>{lookup.body}</span>
+                {lookup.action ? <a href={lookup.action.href}>{lookup.action.label} →</a> : null}
+              </p>
+              {locked ? null : (
+                <label className="check-field">
+                  <input
+                    type="checkbox"
+                    checked={draft.noTeam}
+                    onChange={(event) => patch({ noTeam: event.target.checked, teamNumber: event.target.checked ? "" : draft.teamNumber })}
+                  />
+                  I don&apos;t have a team number yet
+                </label>
               )}
             </div>
-            <label>
-              Your role
-              <select value={teamRole} onChange={(event) => setTeamRole(event.target.value)}>
-                {ROLES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <label>
-              Crew / what you do
-              <select value={crewRole} onChange={(event) => setCrewRole(event.target.value)}>
-                <option value="">Select a crew role</option>
-                {CREW_ROLES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
+
+            <fieldset className="onboarding-focus-grid">
+              <legend>What should Vantage put first?</legend>
+              {FOCUS_OPTIONS.map((option, index) => (
+                <label key={option.value} className={draft.primaryFocus === option.value ? "selected" : undefined}>
+                  <input
+                    type="radio"
+                    name="primaryFocus"
+                    value={option.value}
+                    checked={draft.primaryFocus === option.value}
+                    onChange={() => {
+                      focusTouched.current = true;
+                      patch({ primaryFocus: option.value });
+                    }}
+                  />
+                  <i aria-hidden="true">{String(index + 1).padStart(2, "0")}</i>
+                  <strong>{option.label}</strong>
+                  <span>{option.description}</span>
+                </label>
+              ))}
+            </fieldset>
+
             <label>
               Describe your role <small>Optional, 280 characters</small>
               <textarea
                 maxLength={280}
                 rows={3}
-                value={roleDescription}
-                onChange={(event) => setRoleDescription(event.target.value)}
+                value={draft.roleDescription}
+                onChange={(event) => patch({ roleDescription: event.target.value })}
                 placeholder="Scout stand, drive team operator, CAD lead, pit repair, business outreach…"
               />
             </label>
-            {state.isTeamHead ? (
-              <>
-                <fieldset className="onboarding-team-profile">
-                  <legend>Team location</legend>
-                  <p className="onboarding-team-profile-hint">
-                    Required for owners and admins. Used in sponsorship one-pagers and grant proposals — this workspace only.
-                  </p>
-                  <div className="onboarding-row">
-                    <label>
-                      City
-                      <input required maxLength={120} value={orgCity} onChange={(event) => setOrgCity(event.target.value)} autoComplete="address-level2" placeholder="Portland" />
-                    </label>
-                    <label>
-                      State / province
-                      <input required maxLength={80} value={orgStateProv} onChange={(event) => setOrgStateProv(event.target.value)} autoComplete="address-level1" placeholder="OR" />
-                    </label>
-                  </div>
-                  <label>
-                    Describe your FRC team <small>Optional</small>
-                    <textarea maxLength={2000} rows={3} value={orgDescription} onChange={(event) => setOrgDescription(event.target.value)} placeholder="A short blurb about who you are — students served, focus areas, community." />
-                  </label>
-                </fieldset>
-                <FundingFields
-                  teamAffiliation={teamAffiliation}
-                  setTeamAffiliation={setTeamAffiliation}
-                  schoolFunded={schoolFunded}
-                  setSchoolFunded={setSchoolFunded}
-                  outsideGrants={outsideGrants}
-                  setOutsideGrants={setOutsideGrants}
-                  sponsorsAllowed={sponsorsAllowed}
-                  setSponsorsAllowed={setSponsorsAllowed}
-                />
-              </>
-            ) : null}
-            <fieldset className="onboarding-focus-grid">
-              <legend>What should Vantage prioritize for you?</legend>
-              {FOCUS_OPTIONS.map((option) => (
-                <label key={option.value} className={primaryFocus === option.value ? "selected" : undefined}>
-                  <input type="radio" name="primaryFocus" value={option.value} checked={primaryFocus === option.value} onChange={() => setPrimaryFocus(option.value)} />
-                  <i>{option.index}</i><strong>{option.label}</strong><span>{option.description}</span>
-                </label>
-              ))}
-            </fieldset>
+
+            {state.isTeamHead ? <FundingFields draft={draft} patch={patch} /> : null}
+
             <div className="onboarding-actions">
-              <button type="button" className="signin-link" onClick={() => setStep("profile")}>Back</button>
-              <button className="signin-submit" type="submit" disabled={busy || (state.isTeamHead && !fundingReady)}>
-                {busy ? "Saving…" : "Save and review request"}
+              <button type="button" className="signin-link" onClick={goBack}>Back</button>
+              <button className="signin-submit" type="submit" disabled={busy}>
+                {busy ? "Saving…" : "Continue"}
               </button>
             </div>
           </form>
         ) : null}
 
         {step === "preferences" ? (
-          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void finish(); }}>
+          <form className="onboarding-form" onSubmit={(event) => { event.preventDefault(); void advance(); }}>
             <section className="onboarding-review-card" aria-label="Access request summary">
-              <div><span>TEAM</span><strong>{noTeam || !teamNumber.trim() ? "None yet" : `FRC ${teamNumber}`}</strong></div>
-              <div><span>ROLE</span><strong>{ROLES.find((option) => option.value === teamRole)?.label ?? teamRole}</strong></div>
-              <div><span>CREW</span><strong>{CREW_ROLES.find((option) => option.value === crewRole)?.label ?? "Not specified"}</strong></div>
-              <div><span>STARTING VIEW</span><strong>{FOCUS_OPTIONS.find((option) => option.value === primaryFocus)?.label}</strong></div>
-              {roleDescription.trim() ? (
-                <div><span>HOW YOU HELP</span><strong>{roleDescription.trim()}</strong></div>
+              <div><span>TEAM</span><strong>{lookup.teamNumber ? `FRC ${lookup.teamNumber}` : "None yet"}</strong></div>
+              <div><span>ROLE</span><strong>{ROLES.find((option) => option.value === draft.teamRole)?.label ?? draft.teamRole}</strong></div>
+              <div><span>CREW</span><strong>{CREW_ROLES.find((option) => option.value === draft.crewRole)?.label ?? "Not specified"}</strong></div>
+              <div><span>STARTING VIEW</span><strong>{FOCUS_OPTIONS.find((option) => option.value === draft.primaryFocus)?.label}</strong></div>
+              {draft.roleDescription.trim() ? (
+                <div><span>HOW YOU HELP</span><strong>{draft.roleDescription.trim()}</strong></div>
               ) : null}
             </section>
+
             {state.isTeamHead ? (
-              <FundingFields
-                teamAffiliation={teamAffiliation}
-                setTeamAffiliation={setTeamAffiliation}
-                schoolFunded={schoolFunded}
-                setSchoolFunded={setSchoolFunded}
-                outsideGrants={outsideGrants}
-                setOutsideGrants={setOutsideGrants}
-                sponsorsAllowed={sponsorsAllowed}
-                setSponsorsAllowed={setSponsorsAllowed}
-              />
+              <fieldset className="onboarding-team-profile">
+                <legend>Team location</legend>
+                <p className="onboarding-team-profile-hint">
+                  Required for owners and admins. Used in sponsorship one-pagers and grant proposals — this workspace only.
+                </p>
+                <div className="onboarding-row">
+                  <label>
+                    City
+                    <input
+                      required
+                      maxLength={120}
+                      value={draft.orgCity}
+                      onChange={(event) => patch({ orgCity: event.target.value })}
+                      autoComplete="address-level2"
+                      placeholder="Portland"
+                      aria-invalid={errorField === "orgCity" || undefined}
+                    />
+                  </label>
+                  <label>
+                    State / province
+                    <input
+                      required
+                      maxLength={80}
+                      value={draft.orgStateProv}
+                      onChange={(event) => patch({ orgStateProv: event.target.value })}
+                      autoComplete="address-level1"
+                      placeholder="OR"
+                    />
+                  </label>
+                </div>
+                <label>
+                  Describe your FRC team <small>Optional</small>
+                  <textarea
+                    maxLength={2000}
+                    rows={3}
+                    value={draft.orgDescription}
+                    onChange={(event) => patch({ orgDescription: event.target.value })}
+                    placeholder="A short blurb about who you are — students served, focus areas, community."
+                  />
+                </label>
+              </fieldset>
             ) : null}
-            {primaryFocus === "build" ? (
+
+            {draft.primaryFocus === "build" ? (
               <div className="onboarding-security-note" style={{ marginTop: 0 }}>
                 <b aria-hidden="true">↳</b>
                 <p>
                   <strong>After approval: connect GitHub for AI code context.</strong>
                   <span>
-                    {" "}
-                    Owners/admins link the robot-code repo under{" "}
+                    {" "}Owners/admins link the robot-code repo under{" "}
                     <a href={githubConnectionHref(state.workspaceOrgId)}>Team → GitHub</a> (OAuth or encrypted PAT).
                   </span>
                 </p>
               </div>
             ) : null}
-            <label>
-              Display name <small>Optional</small>
-              <input maxLength={80} placeholder={`${firstName} ${lastName}`.trim()} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
-            </label>
-            <fieldset className="onboarding-theme">
-              <legend>Appearance</legend>
-              <label className="check-field"><input type="radio" name="theme" checked={themePreference === "light"} onChange={() => setThemePreference("light")} /> Light</label>
-              <label className="check-field"><input type="radio" name="theme" checked={themePreference === "dark"} onChange={() => setThemePreference("dark")} /> Dark</label>
-            </fieldset>
-            {termsNeeded ? (
+
+            <details className="onboarding-optional">
+              <summary>Display name and appearance <small>Optional — change any time in Account</small></summary>
+              <label>
+                Display name
+                <input
+                  maxLength={80}
+                  placeholder={`${draft.firstName} ${draft.lastName}`.trim()}
+                  value={draft.displayName}
+                  onChange={(event) => patch({ displayName: event.target.value })}
+                />
+              </label>
+              <fieldset className="onboarding-theme">
+                <legend>Appearance</legend>
+                <label className="check-field">
+                  <input type="radio" name="theme" checked={draft.themePreference === "light"} onChange={() => patch({ themePreference: "light" })} /> Light
+                </label>
+                <label className="check-field">
+                  <input type="radio" name="theme" checked={draft.themePreference === "dark"} onChange={() => patch({ themePreference: "dark" })} /> Dark
+                </label>
+              </fieldset>
+            </details>
+
+            {legalNeeded ? (
               <div className="onboarding-terms-block">
                 <LegalAgreementCheckbox
-                  id="onboarding-terms"
-                  checked={termsAccepted}
-                  onChange={setTermsAccepted}
+                  id="onboarding-legal"
+                  terms={draft.termsAccepted}
+                  privacy={draft.privacyAccepted}
+                  onChange={(next) => {
+                    patch({ termsAccepted: next.terms, privacyAccepted: next.privacy });
+                    setLegalError(legalConsentMessage({ terms: next.terms, privacy: next.privacy }));
+                  }}
                   className="onboarding-legal-accept"
                   required
+                  error={legalError}
                 />
               </div>
             ) : null}
+
             <div className="onboarding-security-note">
               <b aria-hidden="true">✓</b>
               <p>
-                <strong>{noTeam || !teamNumber.trim() ? "Finish without a team" : "Submit sends a request—not access."}</strong>
+                <strong>{lookup.teamNumber ? "Submit sends a request — not access." : "Finish without a team"}</strong>
                 <span>
-                  {noTeam || !teamNumber.trim()
-                    ? " You are not joining anyone. An invite or a later team-number request still needs that team's approval."
-                    : " That team's owners must approve. You cannot join an existing workspace just by knowing the number."}
+                  {lookup.teamNumber
+                    ? " That team's owners must approve. You cannot join an existing workspace just by knowing the number."
+                    : " You are not joining anyone. An invite or a later team-number request still needs that team's approval."}
                 </span>
               </p>
             </div>
+
             <div className="onboarding-actions">
-              <button type="button" className="signin-link" onClick={() => setStep("team")}>Back</button>
-              <button className="signin-submit" type="submit" disabled={busy || !canSubmit || (state.isTeamHead && !fundingReady)}>
-                {busy ? "Submitting…" : noTeam || !teamNumber.trim() ? "Finish without a team" : "Submit access request"}
+              <button type="button" className="signin-link" onClick={goBack}>Back</button>
+              <button className="signin-submit" type="submit" disabled={busy || !canSubmit}>
+                {busy ? "Submitting…" : lookup.teamNumber ? "Submit access request" : "Finish without a team"}
               </button>
             </div>
           </form>
         ) : null}
 
         {step === "pending" ? (
-          <div className="onboarding-pending-panel">
-            <div className={`onboarding-request-status ${state.accessStatus}`}>
-              <i aria-hidden="true" />
-              <div>
-                <span>
-                  {state.accessStatus === "declined"
-                    ? "REQUEST NEEDS ATTENTION"
-                    : state.accessStatus === "invited"
-                      ? "INVITATION READY"
-                      : state.accessStatus === "pending"
-                        ? "AWAITING THAT TEAM'S APPROVAL"
-                        : "PROFILE COMPLETE"}
-                </span>
-                <strong>
-                  {state.workspaceOrgName
-                    ?? (state.preferredTeamNumber ? `FRC Team ${state.preferredTeamNumber}` : "No team selected")}
-                </strong>
-              </div>
-            </div>
-
-            {state.accessStatus === "none" && !state.preferredTeamNumber ? (
-              <ol className="onboarding-approval-path">
-                <li className="done"><b>1</b><div><strong>Profile submitted</strong><span>Your identity, role, and how you help the team are saved privately.</span></div></li>
-                <li className="current"><b>2</b><div><strong>Join a team when ready</strong><span>Use an invite, or enter a team number so that team's owners can approve you. You cannot join someone else's workspace automatically.</span></div></li>
-                <li><b>3</b><div><strong>Team-specific approval</strong><span>If that team already has Vantage, only they can let you in.</span></div></li>
-              </ol>
-            ) : (
-              <ol className="onboarding-approval-path">
-                <li className="done"><b>1</b><div><strong>Profile submitted</strong><span>Your identity, role description, and preferences are saved privately.</span></div></li>
-                <li className={state.accessStatus === "invited" ? "done" : "current"}><b>2</b><div><strong>That team's review</strong><span>An owner or administrator of that workspace confirms you belong there.</span></div></li>
-                <li><b>3</b><div><strong>Secure email handoff</strong><span>Approval ends this onboarding session and sends a link to sign in again.</span></div></li>
-              </ol>
-            )}
-
-            <p className="onboarding-pending-help">
-              {state.accessStatus === "declined"
-                ? "If you selected the wrong team, update the request and submit it again."
-                : state.accessStatus === "none" && !state.preferredTeamNumber
-                  ? "You can close this page. Nothing opens a team workspace until that team invites or approves you."
-                  : "You can close this page. We will not open any team data while the request is pending."}
-            </p>
-            <div className="onboarding-security-note">
-              <b aria-hidden="true">✓</b>
-              <p><strong>Your private profile stays private.</strong><span>Team leaders review your verified email, requested role, crew, and how you described your job. They do not receive your birth date or gender.</span></p>
-            </div>
-            <div className="onboarding-pending-actions">
-              {state.accessStatus === "declined" || (state.accessStatus === "none" && !state.preferredTeamNumber) ? (
-                <button type="button" className="signin-submit" onClick={() => { setMessage(""); setStep("team"); }}>
-                  {state.accessStatus === "declined" ? "Update request" : "Add a team number"}
-                </button>
-              ) : (
-                <button type="button" className="signin-submit" disabled={checking} onClick={() => void refreshApproval()}>
-                  {checking ? "Checking…" : "Check approval status"}
-                </button>
-              )}
-              <a className="signin-link" href="/invite">Have an invite?</a>
-              <a className="signin-link" href="/claim">Claim a team</a>
-              <button type="button" className="signin-link" disabled={busy} onClick={() => void signOut()}>Sign out</button>
-            </div>
-          </div>
+          <PendingPanel
+            state={state}
+            adult={adult}
+            checking={checking}
+            busy={busy}
+            onCheck={() => void refreshApproval()}
+            onEdit={() => { setMessage(""); setStep("team"); }}
+            onSignOut={() => void signOut()}
+          />
         ) : null}
+
+        {step === "done" ? <LandingPanel state={state} draft={draft} /> : null}
       </section>
     </main>
+  );
+}
+
+function PendingPanel({
+  state,
+  adult,
+  checking,
+  busy,
+  onCheck,
+  onEdit,
+  onSignOut,
+}: {
+  state: OnboardingState;
+  adult: boolean;
+  checking: boolean;
+  busy: boolean;
+  onCheck: () => void;
+  onEdit: () => void;
+  onSignOut: () => void;
+}) {
+  const plan = buildOnboardingPendingPlan({
+    accessStatus: state.accessStatus,
+    teamNumber: state.preferredTeamNumber ?? state.lockedTeamNumber ?? null,
+    orgName: state.workspaceOrgName ?? state.lockedOrgName ?? null,
+    adult,
+  });
+
+  return (
+    <div className="onboarding-pending-panel">
+      <div className={`onboarding-request-status ${state.accessStatus}`}>
+        <i aria-hidden="true" />
+        <div>
+          <span>{plan.eyebrow}</span>
+          <strong>{plan.headline}</strong>
+        </div>
+      </div>
+
+      <ol className="onboarding-approval-path">
+        {plan.stages.map((stage, index) => (
+          <li key={stage.key} className={stage.phase === "upcoming" ? undefined : stage.phase}>
+            <b>{stage.phase === "done" ? "✓" : index + 1}</b>
+            <div>
+              <strong>{stage.title}</strong>
+              <span>{stage.detail}</span>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      {plan.notified ? (
+        <div className="onboarding-security-note">
+          <b aria-hidden="true">✓</b>
+          <p>
+            <strong>Who was notified</strong>
+            <span> {plan.notified} They do not receive your birth date or gender.</span>
+          </p>
+        </div>
+      ) : null}
+
+      <section className="onboarding-meanwhile" aria-labelledby="onboarding-meanwhile-title">
+        <h2 id="onboarding-meanwhile-title">While you wait</h2>
+        <ul>
+          {plan.meanwhile.map((link) => (
+            <li key={link.href}>
+              <a href={link.href}>
+                <strong>{link.label}</strong>
+                <span>{link.detail}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="onboarding-pending-actions">
+        {plan.primaryAction.kind === "check" ? (
+          <button type="button" className="signin-submit" disabled={checking} onClick={onCheck}>
+            {checking ? "Checking…" : plan.primaryAction.label}
+          </button>
+        ) : plan.primaryAction.kind === "invite" ? (
+          <a className="signin-submit" href="/invite">{plan.primaryAction.label}</a>
+        ) : plan.primaryAction.kind === "claim" ? (
+          <a className="signin-submit" href="/claim">{plan.primaryAction.label}</a>
+        ) : (
+          <button type="button" className="signin-submit" onClick={onEdit}>{plan.primaryAction.label}</button>
+        )}
+        <a className="signin-link" href="/invite">Have an invite?</a>
+        <button type="button" className="signin-link" disabled={busy} onClick={onSignOut}>Sign out</button>
+      </div>
+    </div>
+  );
+}
+
+function LandingPanel({ state, draft }: { state: OnboardingState; draft: OnboardingDraft }) {
+  const landing = buildOnboardingLanding({
+    teamRole: draft.teamRole,
+    crewRole: draft.crewRole || null,
+    roleDescription: draft.roleDescription || null,
+    primaryFocus: draft.primaryFocus,
+    orgId: state.workspaceOrgId,
+    orgName: state.workspaceOrgName,
+    platformAdmin: state.platformAdmin,
+  });
+
+  return (
+    <div className="onboarding-landing">
+      <p className="onboarding-landing-summary">{landing.summary}</p>
+      <ol className="onboarding-landing-list">
+        {landing.firstFiveMinutes.map((link, index) => (
+          <li key={link.key}>
+            <a href={link.href}>
+              <b aria-hidden="true">{index + 1}</b>
+              <div>
+                <strong>{link.label}</strong>
+                <span>{link.detail}</span>
+                <em>{link.reason}</em>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ol>
+      <div className="onboarding-pending-actions">
+        <a className="signin-submit" href={landing.primary.href}>{landing.primary.label}</a>
+        {landing.secondary ? <a className="signin-link" href={landing.secondary.href}>{landing.secondary.label}</a> : null}
+      </div>
+    </div>
   );
 }

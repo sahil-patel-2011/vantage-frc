@@ -179,7 +179,9 @@ describe("generatePicklistJustifications", () => {
           rowCount: 1,
         };
       }
-      if (sql.includes("SELECT pick_list_entry_id")) {
+      // Justifications now live on the pick-list row, with the legacy sidecar LEFT JOINed
+      // as a one-release fallback (migration 0454).
+      if (sql.includes("LEFT JOIN picklist_justifier_justifications j")) {
         return {
           rows: [
             {
@@ -207,6 +209,8 @@ describe("generatePicklistJustifications", () => {
     }
     expect(queries.some((q) => q.includes("INSERT INTO ai_usage_events"))).toBe(true);
     expect(queries.some((q) => q.includes("INSERT INTO picklist_justifier_justifications"))).toBe(true);
+    // ...and the same rationale is written onto the unified pick-list row the board reads.
+    expect(queries.some((q) => q.includes("SET justification = $4::text"))).toBe(true);
   });
 
   it("throws instead of fabricating a justification when the pick list has no entries", async () => {

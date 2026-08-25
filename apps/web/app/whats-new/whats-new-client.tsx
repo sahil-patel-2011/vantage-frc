@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   WHATS_NEW_RELATED_INCLUDE,
   enabledReleaseFlags,
@@ -34,6 +35,100 @@ function WhatsNewRelated() {
         </a>
       ))}
     </nav>
+  );
+}
+
+type BetaState =
+  | { kind: "loading" }
+  | { kind: "error" }
+  | { kind: "ready"; enrolled: boolean; enrolledAt: string | null };
+
+function BetaProgramCard() {
+  const [state, setState] = useState<BetaState>({ kind: "loading" });
+  const [busy, setBusy] = useState(false);
+
+  const loadBeta = useCallback(async () => {
+    setState({ kind: "loading" });
+    try {
+      const response = await fetch("/api/feedback/beta");
+      const data = (await response.json()) as { enrolled?: boolean; enrolledAt?: string | null };
+      if (!response.ok) {
+        setState({ kind: "error" });
+        return;
+      }
+      setState({ kind: "ready", enrolled: Boolean(data.enrolled), enrolledAt: data.enrolledAt ?? null });
+    } catch {
+      setState({ kind: "error" });
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadBeta();
+  }, [loadBeta]);
+
+  async function toggle(join: boolean) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/feedback/beta", {
+        method: join ? "POST" : "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = (await response.json()) as { enrolled?: boolean; enrolledAt?: string | null };
+      if (response.ok) {
+        setState({ kind: "ready", enrolled: Boolean(data.enrolled), enrolledAt: data.enrolledAt ?? null });
+      } else {
+        setState({ kind: "error" });
+      }
+    } catch {
+      setState({ kind: "error" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="app-card soft-panel whats-new-beta" aria-label="Beta program">
+      <div className="whats-new-beta-copy">
+        <h2>Join the beta</h2>
+        <p>
+          Get features early, tell us what breaks. Beta members see releases first —{" "}
+          <a href="/report-bug">reporting a bug</a> takes one box.
+        </p>
+        {state.kind === "ready" && state.enrolled ? (
+          <p className="whats-new-beta-status" role="status">
+            You&rsquo;re in
+            {state.enrolledAt
+              ? ` — enrolled ${new Date(state.enrolledAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
+              : ""}
+            .
+          </p>
+        ) : null}
+        {state.kind === "error" ? (
+          <p className="whats-new-beta-status">Couldn&rsquo;t load your beta status.</p>
+        ) : null}
+      </div>
+      <div className="whats-new-beta-actions">
+        {state.kind === "loading" ? (
+          <span className="whats-new-beta-status" aria-busy>
+            Checking…
+          </span>
+        ) : state.kind === "error" ? (
+          <button type="button" className="app-button secondary" onClick={() => void loadBeta()}>
+            Retry
+          </button>
+        ) : state.enrolled ? (
+          <button type="button" className="app-button secondary" disabled={busy} onClick={() => void toggle(false)}>
+            {busy ? "Leaving…" : "Leave the beta"}
+          </button>
+        ) : (
+          <button type="button" className="app-button" disabled={busy} onClick={() => void toggle(true)}>
+            {busy ? "Joining…" : "Join the beta"}
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -106,15 +201,19 @@ export default function WhatsNewClient() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setFetchFailed(false);
+    setErrorStatus(null);
     try {
       const response = await fetch("/api/whats-new");
       const data = (await response.json()) as { releases?: Release[]; error?: string };
       if (!response.ok) {
         setMessage(data.error ?? "Could not load What’s new.");
+        setErrorStatus(response.status);
         setReleases([]);
         setFetchFailed(true);
         return;
@@ -148,6 +247,24 @@ export default function WhatsNewClient() {
 
   const unreadCount = useMemo(() => releases.filter((r) => !r.seenAt).length, [releases]);
 
+  const failure = fetchFailed
+    ? loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message:
+            message || "Try again, or open Support if published notes keep failing to load.",
+        },
+      )
+    : null;
+
   return (
     <main className="module-page whats-new-page">
       <PageHeader
@@ -167,22 +284,31 @@ export default function WhatsNewClient() {
 
       <WhatsNewRelated />
 
-      {message ? <p className="admin-plans-message">{message}</p> : null}
+      <BetaProgramCard />
+
+      {message && !failure ? <p className="admin-plans-message">{message}</p> : null}
 
       {loading ? (
         <EmptyState soft title="Loading releases…" description="Checking published notes for your plan." aria-busy />
-      ) : fetchFailed ? (
+      ) : failure ? (
         <>
           <EmptyState
-            title="Couldn’t load What’s new"
-            description="Try again, or open Support if published notes keep failing to load."
+            title={failure.title}
+            description={failure.description}
             badge="Unavailable"
             badgeTone="setup"
           >
             <div className="whats-new-empty-actions">
-              <button type="button" className="app-button" onClick={() => void load()}>
-                Retry
-              </button>
+              {failure.primary ? (
+                <a className="app-button" href={failure.primary.href}>
+                  {failure.primary.label}
+                </a>
+              ) : null}
+              {failure.showRetry ? (
+                <button type="button" className="app-button" onClick={() => void load()}>
+                  Retry
+                </button>
+              ) : null}
               <a className="app-button secondary" href="/support">
                 Help & Support
               </a>

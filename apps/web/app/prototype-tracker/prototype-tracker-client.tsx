@@ -17,6 +17,7 @@ import {
 } from "../../lib/prototype-tracker/prototype-related";
 import type { DecisionRecommendation, DecisionStatus, TestOutcome } from "../../lib/prototype-tracker/types";
 import { hubHref } from "../../lib/nav/hubs";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./prototype-tracker.css";
 
 type LiveView = Extract<PrototypeTrackerView, { status: "live" }>;
@@ -64,7 +65,7 @@ function NextActionsPanel({
   });
   if (!actions.length) return null;
   return (
-    <section className="prt-next-actions app-card soft-panel" aria-label="Next actions">
+    <section className="ptk-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
         <p>Test → decision → CAD / FMEA. Metrics and confidence only from what you record — never DEMO.</p>
@@ -97,9 +98,9 @@ function StatusTiles({ view }: { view: LiveView }) {
     successCount,
   });
   return (
-    <div className="prt-summary" aria-label="Prototype status">
+    <div className="ptk-summary" aria-label="Prototype status">
       {tiles.map((tile) => (
-        <div key={tile.id} className={["prt-summary-tile", tile.tone].filter(Boolean).join(" ")}>
+        <div key={tile.id} className={["ptk-summary-tile", tile.tone].filter(Boolean).join(" ")}>
           <strong>{tile.value}</strong>
           <span>{tile.label}</span>
         </div>
@@ -108,11 +109,14 @@ function StatusTiles({ view }: { view: LiveView }) {
   );
 }
 
-export default function PrototypeTrackerClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function PrototypeTrackerClient(_props: { embedded?: boolean } = {}) {
   const embed = useHubEmbed();
   const [view, setView] = useState<PrototypeTrackerView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -126,6 +130,8 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setErrorStatus(null);
+    setLoadError("");
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -137,6 +143,8 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
       .then(async (response) => {
         const data = (await response.json()) as PrototypeTrackerView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -178,8 +186,24 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
   );
 
   if (fetchFailed || view == null) {
+    const copy = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
     return (
-      <main className="module-page prt-page">
+      <main className="module-page ptk-page">
         <PageHeader
           breadcrumbs={crumbs}
           title="Prototype-to-Decision Tracker"
@@ -187,15 +211,16 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
         />
         <EmptyState
           soft
-          title={fetchFailed ? "Could not load the prototype tracker" : "Loading prototype tracker…"}
-          description={
-            fetchFailed
-              ? "A network or server issue prevented loading. Try again."
-              : "Checking your workspace."
-          }
+          title={copy ? copy.title : "Loading prototype tracker…"}
+          description={copy ? copy.description : "Checking your workspace."}
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {copy?.primary ? (
+            <a className="app-button" href={copy.primary.href}>
+              {copy.primary.label}
+            </a>
+          ) : null}
+          {copy?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={() => load()}>
               Retry
             </button>
@@ -207,14 +232,14 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
 
   if (view.status === "setup_required") {
     return (
-      <main className="module-page prt-page">
+      <main className="module-page ptk-page">
         <PageHeader
           breadcrumbs={crumbs}
           title="Prototype-to-Decision Tracker"
           description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
         />
         <EmptyState soft badge="Setup required" badgeTone="setup" title={view.message}>
-          <ol className="prt-setup-steps">
+          <ol className="ptk-setup-steps">
             {view.steps.map((step) => (
               <li key={step.id}>
                 <div>
@@ -246,13 +271,13 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
   const hasTests = view.tests.length > 0;
 
   return (
-    <main className="module-page prt-page">
+    <main className="module-page ptk-page">
       <PageHeader
         breadcrumbs={crumbs}
         title="Prototype-to-Decision Tracker"
         description="Log a prototype test — hypothesis, outcome, metric vs. target — then draft the design decision and notebook entry it informs, grounded only in what you recorded."
       >
-        <div className="prt-header-actions">
+        <div className="ptk-header-actions">
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season
@@ -294,7 +319,7 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
       ) : null}
 
       {error ? (
-        <p className="prt-alert" role="alert">
+        <p className="ptk-alert" role="alert">
           {error}
         </p>
       ) : null}
@@ -310,7 +335,7 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
 
       <StatusTiles view={view} />
 
-      <div className="prt-stack">
+      <div className="ptk-stack">
         <LogTestForm busy={busy} mutate={mutate} />
 
         {!hasTests ? (
@@ -321,7 +346,7 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
             title="Log your first prototype test"
             description="Outcomes, metrics, and decision confidence stay blank until you record a real test — nothing is pre-filled."
           >
-            <div className="prt-empty-links">
+            <div className="ptk-empty-links">
               <a href={hubHref("/build", "fmea", orgId)}>FMEA →</a>
               <a href={hubHref("/build", "cad", orgId)}>CAD →</a>
               <a href={hubHref("/build", "kickoff", orgId)}>Kickoff →</a>
@@ -347,24 +372,24 @@ function TestsList({
   mutate: Mutate;
 }) {
   return (
-    <Panel className="prt-panel">
+    <Panel className="ptk-panel">
       <h2>Prototype tests</h2>
       <p className="lead app-muted">
         Outcomes and metrics from logged shop tests only — never DEMO placeholders.
       </p>
-      <ul className="prt-list">
+      <ul className="ptk-list">
         {view.tests.map((test) => {
           const metric = formatMetricEvidence(test);
           const tone = outcomeBadgeTone(test.outcome);
           return (
-            <li key={test.id} className="prt-card">
-              <header className="prt-card-top">
-                <div className="prt-card-title">
-                  <div className="prt-badges">
+            <li key={test.id} className="ptk-card">
+              <header className="ptk-card-top">
+                <div className="ptk-card-title">
+                  <div className="ptk-badges">
                     <span className={badgeClass(tone)}>{testOutcomeLabel(test.outcome)}</span>
                   </div>
                   <strong>{test.title}</strong>
-                  <span className="prt-card-meta">
+                  <span className="ptk-card-meta">
                     {test.subsystemName} · {test.testDate}
                   </span>
                 </div>
@@ -382,12 +407,12 @@ function TestsList({
                 </button>
               </header>
               {test.hypothesis ? (
-                <p className="prt-hypothesis">
+                <p className="ptk-hypothesis">
                   <strong>Hypothesis:</strong> {test.hypothesis}
                 </p>
               ) : null}
-              {test.resultSummary ? <p className="prt-result">{test.resultSummary}</p> : null}
-              {metric ? <span className="prt-metric">{metric}</span> : null}
+              {test.resultSummary ? <p className="ptk-result">{test.resultSummary}</p> : null}
+              {metric ? <span className="ptk-metric">{metric}</span> : null}
               <DraftDecisionForm test={test} busy={busy} mutate={mutate} />
             </li>
           );
@@ -409,7 +434,7 @@ function DraftDecisionForm({
   const [decisionTitle, setDecisionTitle] = useState(`Decide on ${test.title}`);
   return (
     <form
-      className="prt-draft-form"
+      className="ptk-draft-form"
       onSubmit={(event) => {
         event.preventDefault();
         if (!decisionTitle.trim()) return;
@@ -446,7 +471,7 @@ function DecisionsList({
         title="No decision records drafted yet"
         description="Draft a decision from any logged test above. Recommendation and confidence come only from that test’s recorded outcome and metric."
       >
-        <div className="prt-empty-links">
+        <div className="ptk-empty-links">
           <a href={hubHref("/build", "cad", view.orgId)}>CAD →</a>
           <a href={hubHref("/build", "fmea", view.orgId)}>FMEA →</a>
         </div>
@@ -455,21 +480,21 @@ function DecisionsList({
   }
   const testTitleById = new Map(view.tests.map((test) => [test.id, test.title]));
   return (
-    <Panel className="prt-panel">
+    <Panel className="ptk-panel">
       <h2>Decision records</h2>
       <p className="lead app-muted">
         Drafted from linked tests — confidence percentages are from recorded outcomes, not invented.
       </p>
-      <ul className="prt-list">
+      <ul className="ptk-list">
         {view.decisions.map((decision) => {
           const recTone = recommendationBadgeTone(decision.recommendation);
           const status = decision.status as DecisionStatus;
           const recommendation = decision.recommendation as DecisionRecommendation;
           return (
-            <li key={decision.id} className="prt-card">
-              <header className="prt-card-top">
-                <div className="prt-card-title">
-                  <div className="prt-badges">
+            <li key={decision.id} className="ptk-card">
+              <header className="ptk-card-top">
+                <div className="ptk-card-title">
+                  <div className="ptk-badges">
                     <span className={badgeClass(recTone)}>
                       {decisionRecommendationLabel(recommendation)}
                     </span>
@@ -478,7 +503,7 @@ function DecisionsList({
                     </span>
                   </div>
                   <strong>{decision.decisionTitle}</strong>
-                  <span className="prt-card-meta">
+                  <span className="ptk-card-meta">
                     {testTitleById.get(decision.testId) ?? "Linked test"} · confidence{" "}
                     {pct(decision.confidence)}
                   </span>
@@ -496,10 +521,10 @@ function DecisionsList({
                   Delete
                 </button>
               </header>
-              <p className="prt-result">{decision.decisionRecord}</p>
+              <p className="ptk-result">{decision.decisionRecord}</p>
               <details>
                 <summary className="app-muted">Notebook entry</summary>
-                <pre className="prt-notebook">{decision.notebookEntry}</pre>
+                <pre className="ptk-notebook">{decision.notebookEntry}</pre>
               </details>
               {status === "draft" ? (
                 <div>
@@ -555,7 +580,7 @@ function LogTestForm({
   return (
     <Panel
       as="form"
-      className="prt-panel"
+      className="ptk-panel"
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.subsystemName.trim() || !form.title.trim() || !form.testDate) return;

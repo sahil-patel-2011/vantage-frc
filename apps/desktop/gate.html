@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vantage — sign in</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f6f2;
+        --panel: #ffffff;
+        --ink: #17150f;
+        --muted: #5c574b;
+        --line: #e4e1d7;
+        --primary: #1f4fd6;
+        --primary-ink: #ffffff;
+        --mark: #14243a;
+        --mark-accent: #1457d9;
+        --code-bg: #f2f0ea;
+        --danger: #a3341f;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #14130f;
+          --panel: #1d1b16;
+          --ink: #f2f0e9;
+          --muted: #a9a494;
+          --line: #2c2a23;
+          --primary: #6e9bff;
+          --primary-ink: #071014;
+          --mark: #e8ecf5;
+          --mark-accent: #6f9bff;
+          --code-bg: #26241e;
+          --danger: #ff9d87;
+        }
+      }
+      * { box-sizing: border-box; margin: 0; }
+      html, body { height: 100%; }
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .shell {
+        width: min(26rem, 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .brand { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 26px; }
+      .brand svg { width: 64px; height: 64px; }
+      .brand .mark-v { fill: var(--mark); }
+      .brand .mark-accent { fill: var(--mark-accent); }
+      .wordmark {
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.34em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .card {
+        width: 100%;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 30px 26px;
+      }
+      h1 { font-size: 1.3rem; font-weight: 600; margin-bottom: 10px; }
+      p { color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
+      .state { display: none; }
+      .state.active { display: block; }
+      button, .linkish {
+        font: inherit;
+        cursor: pointer;
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        padding: 0 22px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--ink);
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+      .button.primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-ink);
+      }
+      .button:disabled { opacity: 0.6; cursor: default; }
+      .button:focus-visible, .linkish:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+      .actions { display: flex; flex-direction: column; gap: 12px; margin-top: 22px; }
+      .linkish {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 12px;
+        border: 0;
+        background: none;
+        color: var(--muted);
+        font-size: 0.86rem;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .code-label {
+        margin-top: 4px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .code {
+        margin: 10px 0 4px;
+        padding: 14px 10px;
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        background: var(--code-bg);
+        font-family: Consolas, "Cascadia Mono", ui-monospace, monospace;
+        font-size: 1.7rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        -webkit-user-select: all;
+        user-select: all;
+      }
+      .waiting-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .pulse {
+        width: 9px; height: 9px; border-radius: 50%;
+        background: var(--primary);
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+      .countdown { margin-top: 6px; font-size: 0.82rem; color: var(--muted); }
+      .error-text { color: var(--danger); font-size: 0.92rem; line-height: 1.5; }
+      .fine { margin-top: 18px; font-size: 0.82rem; }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="brand" aria-hidden="true">
+        <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+          <path class="mark-v" d="M12 18h13l39 72 39-72h13L64 114z" />
+          <path class="mark-accent" d="M12 45h13l39 45-7 13zM12 72h13l32 31-7 13z" />
+          <rect class="mark-accent" x="58" y="87" width="12" height="12" />
+        </svg>
+        <div class="wordmark">Vantage</div>
+      </div>
+
+      <section class="card" aria-live="polite">
+        <!-- Idle -->
+        <div class="state active" id="state-idle">
+          <h1>Sign in to Vantage</h1>
+          <p>
+            Your browser opens to approve this computer. You sign in there — with Google or your email
+            code — and this app takes it from there. Your password never touches the desktop app.
+          </p>
+          <div class="actions">
+            <button class="button primary" id="start" type="button">Sign in with your browser</button>
+            <button class="linkish" id="open-browser" type="button">
+              Having trouble? Open Vantage in your browser
+            </button>
+          </div>
+          <p class="fine">You stay signed in between launches on this machine.</p>
+        </div>
+
+        <!-- Starting -->
+        <div class="state" id="state-starting">
+          <h1>Contacting Vantage…</h1>
+          <p>Getting an approval code for this computer.</p>
+          <div class="waiting-row"><span class="pulse"></span><span>One moment</span></div>
+        </div>
+
+        <!-- Waiting for approval -->
+        <div class="state" id="state-waiting">
+          <h1>Approve in your browser</h1>
+          <p>Confirm the code in your browser matches this one before approving:</p>
+          <div class="code-label">Approval code</div>
+          <div class="code" id="user-code">····-····</div>
+          <div class="countdown" id="countdown"></div>
+          <div class="waiting-row"><span class="pulse"></span><span>Waiting for approval…</span></div>
+          <div class="actions">
+            <button class="linkish" id="reopen" type="button">Browser didn’t open? Open the approval page again</button>
+            <button class="button" id="cancel" type="button">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Exchanging / finishing -->
+        <div class="state" id="state-exchanging">
+          <h1>Approved — signing you in…</h1>
+          <p>Finishing up on this computer.</p>
+          <div class="waiting-row"><span class="pulse"></span><span>Almost there</span></div>
+        </div>
+
+        <!-- Success -->
+        <div class="state" id="state-success">
+          <h1>You’re signed in</h1>
+          <p>Opening your workspace…</p>
+        </div>
+
+        <!-- Error -->
+        <div class="state" id="state-error">
+          <h1>Sign-in didn’t finish</h1>
+          <p class="error-text" id="error-message">Something went wrong.</p>
+          <div class="actions">
+            <button class="button primary" id="retry" type="button">Try again</button>
+            <button class="linkish" id="error-open-browser" type="button">Open Vantage in your browser instead</button>
+          </div>
+        </div>
+
+        <!-- Bridge missing (very old shell build) -->
+        <div class="state" id="state-unsupported">
+          <h1>Update needed</h1>
+          <p>This installation is missing its sign-in bridge. Reinstall the Vantage desktop app.</p>
+        </div>
+      </section>
+    </main>
+    <script>
+      (function () {
+        var bridge = window.vantageDesktop && window.vantageDesktop.link;
+        var states = ["idle", "starting", "waiting", "exchanging", "success", "error", "unsupported"];
+        var countdownTimer = null;
+        var expiresAt = 0;
+
+        function show(name) {
+          for (var i = 0; i < states.length; i++) {
+            var el = document.getElementById("state-" + states[i]);
+            if (el) el.classList.toggle("active", states[i] === name);
+          }
+        }
+
+        function stopCountdown() {
+          if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+        }
+
+        function renderCountdown() {
+          var el = document.getElementById("countdown");
+          var remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+          var minutes = Math.floor(remaining / 60);
+          var seconds = String(remaining % 60);
+          if (seconds.length < 2) seconds = "0" + seconds;
+          el.textContent = remaining > 0 ? "Code expires in " + minutes + ":" + seconds : "Code expired";
+          if (remaining <= 0) stopCountdown();
+        }
+
+        function onState(state) {
+          if (!state || !state.phase) return;
+          if (state.phase === "waiting") {
+            document.getElementById("user-code").textContent = state.userCode || "";
+            expiresAt = state.expiresAt || 0;
+            stopCountdown();
+            renderCountdown();
+            countdownTimer = setInterval(renderCountdown, 500);
+            show("waiting");
+            return;
+          }
+          stopCountdown();
+          if (state.phase === "starting") show("starting");
+          else if (state.phase === "exchanging") show("exchanging");
+          else if (state.phase === "success") show("success");
+          else if (state.phase === "cancelled" || state.phase === "idle") show("idle");
+          else if (state.phase === "error") {
+            document.getElementById("error-message").textContent =
+              state.message || "Something went wrong. Try again.";
+            show("error");
+          }
+        }
+
+        function wire(id, handler) {
+          var el = document.getElementById(id);
+          if (el) el.addEventListener("click", handler);
+        }
+
+        if (!bridge) {
+          show("unsupported");
+          return;
+        }
+
+        bridge.onState(onState);
+        wire("start", function () { bridge.start(); });
+        wire("retry", function () { bridge.start(); });
+        wire("reopen", function () { bridge.reopenApproval(); });
+        wire("cancel", function () { bridge.cancel(); });
+        wire("open-browser", function () { bridge.openInBrowser(); });
+        wire("error-open-browser", function () { bridge.openInBrowser(); });
+      })();
+    </script>
+  </body>
+</html>

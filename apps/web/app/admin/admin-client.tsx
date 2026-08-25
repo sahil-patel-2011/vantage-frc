@@ -13,6 +13,10 @@ import {
   formatAdminOrgLabel,
   type AdminShellKind,
 } from "../../lib/admin";
+import {
+  confirmationLines,
+  type ProvisionConfirmation,
+} from "../../lib/admin-analytics/provisioning";
 import "./admin-flow.css";
 
 type Organization = {
@@ -20,7 +24,9 @@ type Organization = {
   name: string;
   slug: string;
   teamNumber: number;
-  ownerEmail: string;
+  ownerEmail: string | null;
+  pendingOwnerEmail: string | null;
+  pendingOwnerInviteExpiresAt: string | null;
 };
 
 function AdminRelated({ active }: { active?: "teams" }) {
@@ -70,6 +76,8 @@ function AdminClientInner() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [form, setForm] = useState({ name: "", slug: "", teamNumber: "", ownerEmail: "" });
   const [message, setMessage] = useState("");
+  const [confirmation, setConfirmation] = useState<ProvisionConfirmation | null>(null);
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -124,11 +132,24 @@ function AdminClientInner() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ ...form, teamNumber: Number(form.teamNumber) }),
     });
-    const data = (await response.json()) as { error?: string };
-    setMessage(response.ok ? "Team workspace created and owner seeded." : (data.error ?? "Create failed."));
-    if (response.ok) {
-      setForm({ name: "", slug: "", teamNumber: "", ownerEmail: "" });
-      await load();
+    const data = (await response.json()) as ProvisionConfirmation & { error?: string };
+    if (!response.ok) {
+      setMessage(data.error ?? "Create failed.");
+      return;
+    }
+    setMessage("");
+    setCopied(false);
+    setConfirmation(data);
+    setForm({ name: "", slug: "", teamNumber: "", ownerEmail: "" });
+    await load();
+  }
+
+  async function copyInviteLink(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+    } catch {
+      setCopied(false);
     }
   }
 
@@ -192,6 +213,43 @@ function AdminClientInner() {
         </article>
       </div>
 
+      {confirmation ? (
+        <Panel className="admin-provision-confirmation" aria-label="Workspace created">
+          <span className="eyebrow">Workspace created</span>
+          <h2>
+            #{confirmation.teamNumber} {confirmation.name}
+          </h2>
+          <ul>
+            {confirmationLines(confirmation).map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          {confirmation.owner.mode === "invited" && confirmation.owner.inviteUrl ? (
+            <div className="admin-invite-link">
+              <label>
+                One-time owner invite link (shown once — it is not stored)
+                <input readOnly value={confirmation.owner.inviteUrl} onFocus={(event) => event.target.select()} />
+              </label>
+              <button
+                type="button"
+                className="app-button secondary"
+                onClick={() => void copyInviteLink(confirmation.owner.inviteUrl!)}
+              >
+                {copied ? "Copied" : "Copy link"}
+              </button>
+            </div>
+          ) : null}
+          <div className="admin-confirmation-actions">
+            <button type="button" className="app-button" onClick={() => setConfirmation(null)}>
+              Provision another team
+            </button>
+            <a className="app-button secondary" href="/admin/analytics">
+              Open platform analytics
+            </a>
+          </div>
+        </Panel>
+      ) : null}
+
       <section className="admin-grid">
         <Panel as="form" onSubmit={create}>
           <span className="eyebrow">Create workspace</span>
@@ -249,7 +307,11 @@ function AdminClientInner() {
                   <strong>{org.name}</strong>
                   <small>
                     {org.slug}
-                    {org.ownerEmail ? ` · ${org.ownerEmail}` : ""}
+                    {org.ownerEmail
+                      ? ` · ${org.ownerEmail}`
+                      : org.pendingOwnerEmail
+                        ? ` · owner invite pending: ${org.pendingOwnerEmail}`
+                        : " · no owner yet"}
                   </small>
                 </div>
               </article>

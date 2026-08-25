@@ -4,7 +4,6 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   DISPLAY_PRESETS,
-  DISPLAY_WIDGET_TYPES,
   isDisplayPreset,
   isDisplayWidgetType,
 } from "../../../../lib/display";

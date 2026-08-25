@@ -19,7 +19,56 @@ import {
   type PickDeskShellKind,
 } from "../../lib/strategy/pick-desk-related";
 import type { PickDeskEntry, PickDeskList, PickDeskView } from "../../lib/strategy/pick-desk";
+import {
+  heatmapCellGrid,
+  heatmapCellIntensity,
+  heatmapSummaryLine,
+  type FieldPositionHeatmap,
+} from "../../lib/scouting/heatmap";
 import "./pick-desk.css";
+
+/**
+ * Where a team scored from, per field_position question on the published form.
+ * Data comes precomputed from the desk view; an all-zero grid renders with its
+ * honest "no positions recorded" line rather than being hidden.
+ */
+function PositionHeatPanel({ heatmaps }: { heatmaps: FieldPositionHeatmap[] }) {
+  return (
+    <div className="pick-heat-panel">
+      {heatmaps.map((heatmap) => (
+        <figure key={heatmap.fieldKey} className="pick-heat-figure">
+          {heatmap.fieldLabel ? <figcaption>{heatmap.fieldLabel}</figcaption> : null}
+          <div
+            className="pick-heat-grid"
+            role="img"
+            aria-label={heatmapSummaryLine(heatmap)}
+            style={{ gridTemplateColumns: `repeat(${heatmap.grid.cols}, minmax(14px, 1fr))` }}
+          >
+            {heatmapCellGrid(heatmap).map((cell) => {
+              const intensity = heatmapCellIntensity(cell, heatmap);
+              return (
+                <span
+                  key={cell.cell}
+                  className="pick-heat-cell"
+                  title={cell.count ? `${cell.label}: ${cell.count}` : cell.label}
+                  style={{
+                    background:
+                      intensity > 0
+                        ? `color-mix(in srgb, var(--soft-accent, var(--app-accent)) ${Math.round(
+                            15 + intensity * 85,
+                          )}%, transparent)`
+                        : undefined,
+                  }}
+                />
+              );
+            })}
+          </div>
+          <small className="app-muted">{heatmapSummaryLine(heatmap)}</small>
+        </figure>
+      ))}
+    </div>
+  );
+}
 
 const TIERS: Array<{ id: PickTier; label: string; hint: string }> = [
   { id: "first", label: "First picks", hint: "Alliance anchors / top partners" },
@@ -222,6 +271,7 @@ export function PickListWorkbench({
   const [draftName, setDraftName] = useState("Alliance picks");
   const [entries, setEntries] = useState<PickDeskEntry[]>([]);
   const [status, setStatus] = useState("");
+  const [heatOpenFor, setHeatOpenFor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [seating, setSeating] = useState(false);
   const [filter, setFilter] = useState("");
@@ -659,7 +709,23 @@ export function PickListWorkbench({
                       <button type="button" onClick={() => removeEntry(entry.teamKey)}>
                         Remove
                       </button>
+                      {desk.positionHeatByTeam?.[entry.teamKey]?.length ? (
+                        <button
+                          type="button"
+                          aria-expanded={heatOpenFor === entry.teamKey}
+                          onClick={() =>
+                            setHeatOpenFor((current) =>
+                              current === entry.teamKey ? null : entry.teamKey,
+                            )
+                          }
+                        >
+                          {heatOpenFor === entry.teamKey ? "Hide heat" : "Heat"}
+                        </button>
+                      ) : null}
                     </div>
+                    {heatOpenFor === entry.teamKey && desk.positionHeatByTeam?.[entry.teamKey] ? (
+                      <PositionHeatPanel heatmaps={desk.positionHeatByTeam[entry.teamKey]!} />
+                    ) : null}
                   </li>
                 );
               })}

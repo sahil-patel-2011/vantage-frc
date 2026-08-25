@@ -1,0 +1,30 @@
+# Vantage storage node — systemd unit for a Raspberry Pi or any Linux always-on computer.
+# Install steps: docs/STORAGE_NODE.md in the Vantage repo.
+#
+#   sudo cp vantage-storage-node.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now vantage-storage-node
+#
+# Adjust User=, the server.mjs path, and VANTAGE_STORAGE_DIR for your machine. Pair BEFORE
+# enabling the service:  node server.mjs --setup --cloud https://your-vantage-host
+
+[Unit]
+Description=Vantage self-hosted storage node
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Environment=VANTAGE_STORAGE_DIR=/var/lib/vantage-storage
+ExecStart=/usr/bin/node /home/pi/vantage-storage-node/server.mjs
+Restart=always
+RestartSec=5
+# The config file holds this node's token; keep the service's files private.
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/vantage-storage
+
+[Install]
+WantedBy=multi-user.target

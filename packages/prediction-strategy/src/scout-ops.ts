@@ -96,6 +96,47 @@ export type BuiltOperationalSignal = {
   videoReviewIds?: string[];
 };
 
+/**
+ * Explicit strategy mapping a form-builder question can declare (persisted as
+ * `field.config.role` on published scout schemas). Resolution ladder per signal:
+ *   1. payload keys whose schema field declares the matching role,
+ *   2. the legacy camelCase convention keys (exact),
+ *   3. a case/underscore-insensitive normalization of the same names
+ *      (autoScore == auto_score == "Auto Score" slug).
+ * `"none"` opts a field out of convention fallbacks entirely.
+ */
+export const STRATEGY_FIELD_ROLES = [
+  "none",
+  "auto_score",
+  "teleop_score",
+  "endgame",
+  "defense",
+  "fouls",
+  "notes",
+] as const;
+
+export type StrategyFieldRole = (typeof STRATEGY_FIELD_ROLES)[number];
+
+/** Payload/schema field key → declared strategy role. */
+export type ScoutFieldRoleMap = Record<string, StrategyFieldRole>;
+
+export type ScoutSignalOptions = {
+  /** From the org's published scout schemas — see fieldRolesFromSchemaDefinitions. */
+  roles?: ScoutFieldRoleMap;
+};
+
+export function isStrategyFieldRole(value: unknown): value is StrategyFieldRole {
+  return (
+    typeof value === "string" &&
+    (STRATEGY_FIELD_ROLES as readonly string[]).includes(value)
+  );
+}
+
+/** Compare payload keys ignoring case and separators: autoScore == auto_score. */
+export function normalizeSignalKey(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 const SCORE_KEYS = ["totalPoints", "score", "cycles", "gamePieces", "teleopCycles"] as const;
 const FOUL_KEYS = ["fouls", "foulCount", "penalties"] as const;
 const AUTO_KEYS = [
@@ -123,16 +164,156 @@ const NOTE_KEYS = ["notes", "note", "comments", "pitNotes", "observations", "sum
 const finite = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
-function firstFinite(payload: Record<string, unknown>, keys: readonly string[]) {
-  for (const key of keys) {
-    const value = payload[key];
-    if (finite(value)) return value;
-    if (typeof value === "boolean") return value ? 1 : 0;
-    if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
-      return Number(value);
+/**
+ * Infer a default role from a schema field key so the DEFAULT match/pit schemas
+ * (auto_score, teleop_fuel, endgame, notes, …) reach strategy without any
+ * builder configuration. Explicit `config.role` always wins over this.
+ */
+export function inferRoleForFieldKey(key: string): StrategyFieldRole {
+  const norm = normalizeSignalKey(key);
+  if (!norm) return "none";
+  if (norm.startsWith("auto")) return "auto_score";
+  if (norm.startsWith("teleop")) return "teleop_score";
+  if (norm.includes("endgame") || norm.includes("climb") || norm === "park") return "endgame";
+  if (norm.includes("defense") || norm.includes("defence")) return "defense";
+  if (norm.includes("foul") || norm.includes("penalt")) return "fouls";
+  if (norm.includes("note") || norm.includes("comment") || norm.includes("observation")) {
+    return "notes";
+  }
+  return "none";
+}
+
+type LooseSchemaDefinition =
+  | { fields?: Array<{ key?: unknown; config?: unknown } | null> | null }
+  | null
+  | undefined;
+
+/**
+ * Build the payload-key → role map from published schema definitions
+ * (match first, then pit). Explicit `config.role` wins — including an explicit
+ * `"none"` opt-out; fields without one fall back to key inference so stored
+ * schemas published before roles existed keep working.
+ */
+export function fieldRolesFromSchemaDefinitions(
+  definitions: LooseSchemaDefinition[],
+): ScoutFieldRoleMap {
+  const roles: ScoutFieldRoleMap = {};
+  for (const definition of definitions) {
+    for (const field of definition?.fields ?? []) {
+      if (!field || typeof field.key !== "string" || !field.key) continue;
+      if (field.key in roles) continue;
+      const configured = (field.config as { role?: unknown } | null | undefined)?.role;
+      const role = isStrategyFieldRole(configured)
+        ? configured
+        : inferRoleForFieldKey(field.key);
+      if (role !== "none" || configured === "none") roles[field.key] = role;
+    }
+  }
+  return roles;
+}
+
+/** Generic endgame answer words (default schema options) → 0..1 signal. */
+const ENDGAME_TEXT_SIGNALS: Record<string, number> = {
+  none: 0,
+  no: 0,
+  fail: 0,
+  failed: 0,
+  partial: 0.5,
+  park: 0.5,
+  parked: 0.5,
+  attempt: 0.5,
+  attempted: 0.5,
+  full: 1,
+  climb: 1,
+  climbed: 1,
+  hang: 1,
+  hung: 1,
+  success: 1,
+  yes: 1,
+};
+
+function coerceSignalValue(value: unknown, categorical: boolean): number | null {
+  if (finite(value)) return value;
+  if (typeof value === "boolean") return value ? 1 : 0;
+  if (typeof value === "string" && value.trim() !== "") {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+    if (categorical) {
+      const mapped = ENDGAME_TEXT_SIGNALS[value.trim().toLowerCase()];
+      if (mapped != null) return mapped;
     }
   }
   return null;
+}
+
+/**
+ * Resolution ladder: schema role → legacy exact camelCase keys →
+ * normalized (snake_case / case-insensitive) match of the same names.
+ * Fields explicitly opted out (role "none") never feed convention fallbacks.
+ */
+function resolveSignal(
+  payload: Record<string, unknown>,
+  legacyKeys: readonly string[],
+  role: StrategyFieldRole | null,
+  roles: ScoutFieldRoleMap | undefined,
+  categorical = false,
+): number | null {
+  if (role && roles) {
+    for (const [key, mapped] of Object.entries(roles)) {
+      if (mapped !== role || !(key in payload)) continue;
+      const value = coerceSignalValue(payload[key], categorical);
+      if (value != null) return value;
+    }
+  }
+  const optedOut = (key: string) => roles?.[key] === "none";
+  for (const key of legacyKeys) {
+    if (optedOut(key)) continue;
+    const value = coerceSignalValue(payload[key], categorical);
+    if (value != null) return value;
+  }
+  const normalized = new Map<string, unknown>();
+  for (const key of Object.keys(payload)) {
+    if (optedOut(key)) continue;
+    const norm = normalizeSignalKey(key);
+    if (!normalized.has(norm)) normalized.set(norm, payload[key]);
+  }
+  for (const key of legacyKeys) {
+    const value = coerceSignalValue(normalized.get(normalizeSignalKey(key)), categorical);
+    if (value != null) return value;
+  }
+  return null;
+}
+
+function truthySignal(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value === "number") return value > 0;
+  if (typeof value === "string") {
+    const norm = value.trim().toLowerCase();
+    return norm !== "" && !["no", "false", "none", "0", "n/a"].includes(norm);
+  }
+  return false;
+}
+
+/** Robot-failure flag across exact and normalized key spellings (noShow == no_show). */
+function anyFailureFlag(payload: Record<string, unknown>, roles?: ScoutFieldRoleMap): boolean {
+  const failureNorms = new Set(["disabled", "breakdown", "noshow", "brokedown"]);
+  for (const [key, value] of Object.entries(payload)) {
+    if (roles?.[key] === "none") continue;
+    if (failureNorms.has(normalizeSignalKey(key)) && truthySignal(value)) return true;
+  }
+  return false;
+}
+
+/** Defense signal: declared role first, then defense-named keys, then payload text. */
+function defenseSignal(payload: Record<string, unknown>, roles?: ScoutFieldRoleMap): boolean {
+  for (const [key, value] of Object.entries(payload)) {
+    if (roles?.[key] === "none") continue;
+    if (!truthySignal(value)) continue;
+    if (roles?.[key] === "defense") return true;
+    if (/defen[cs]e/.test(normalizeSignalKey(key))) return true;
+  }
+  const text = JSON.stringify(payload).toLowerCase();
+  return /\bdefen[cs]e\b/.test(text) || payload.defense === true || payload.playedDefense === true;
 }
 
 function confidenceBaseWeight(confidence: ScoutEntryRecord["confidence"]) {
@@ -157,12 +338,34 @@ function shortId(id: string) {
 }
 
 /** Extract free-text pit / match notes from flexible schema payloads. */
-export function extractNotes(payload: Record<string, unknown>): string[] {
+export function extractNotes(
+  payload: Record<string, unknown>,
+  roles?: ScoutFieldRoleMap,
+): string[] {
   const notes: string[] = [];
+  const seen = new Set<string>();
+  const push = (value: unknown) => {
+    if (typeof value !== "string" || value.trim().length < 3) return;
+    const trimmed = value.trim().slice(0, 280);
+    if (seen.has(trimmed)) return;
+    seen.add(trimmed);
+    notes.push(trimmed);
+  };
+  if (roles) {
+    for (const [key, role] of Object.entries(roles)) {
+      if (role === "notes" && key in payload) push(payload[key]);
+    }
+  }
   for (const key of NOTE_KEYS) {
-    const value = payload[key];
-    if (typeof value === "string" && value.trim().length >= 3) {
-      notes.push(value.trim().slice(0, 280));
+    if (roles?.[key] === "none") continue;
+    push(payload[key]);
+  }
+  const noteNorms = new Set(NOTE_KEYS.map(normalizeSignalKey));
+  for (const [key, value] of Object.entries(payload)) {
+    if (roles?.[key]) continue; // role-mapped or opted out above
+    const norm = normalizeSignalKey(key);
+    if (noteNorms.has(norm) || norm.endsWith("notes") || norm.endsWith("comments")) {
+      push(value);
     }
   }
   return notes;
@@ -170,6 +373,7 @@ export function extractNotes(payload: Record<string, unknown>): string[] {
 
 export function deriveScoutCapabilities(
   observations: Array<{ payload: Record<string, unknown>; weight?: number }>,
+  options?: ScoutSignalOptions,
 ): ScoutCapabilityProfile {
   if (!observations.length) {
     return {
@@ -182,11 +386,16 @@ export function deriveScoutCapabilities(
     };
   }
 
-  const weightedMean = (keys: readonly string[]) => {
+  const roles = options?.roles;
+  const weightedMean = (
+    keys: readonly string[],
+    role: StrategyFieldRole | null,
+    categorical = false,
+  ) => {
     let sum = 0;
     let weightSum = 0;
     for (const obs of observations) {
-      const value = firstFinite(obs.payload, keys);
+      const value = resolveSignal(obs.payload, keys, role, roles, categorical);
       if (value == null) continue;
       const w = obs.weight ?? 1;
       sum += value * w;
@@ -198,13 +407,10 @@ export function deriveScoutCapabilities(
     return clamp(mean > 1 ? mean / 12 : mean, 0, 1);
   };
 
-  const autoRate = weightedMean(AUTO_KEYS);
-  const teleopRate = weightedMean(TELEOP_KEYS);
-  const endgameRate = weightedMean(ENDGAME_KEYS);
-  const defenseLikely = observations.some(({ payload }) => {
-    const text = JSON.stringify(payload).toLowerCase();
-    return /\bdefen[cs]e\b/.test(text) || payload.defense === true || payload.playedDefense === true;
-  });
+  const autoRate = weightedMean(AUTO_KEYS, "auto_score");
+  const teleopRate = weightedMean(TELEOP_KEYS, "teleop_score");
+  const endgameRate = weightedMean(ENDGAME_KEYS, "endgame", true);
+  const defenseLikely = observations.some(({ payload }) => defenseSignal(payload, roles));
 
   const evidence: string[] = [];
   if (autoRate != null) evidence.push(`scout auto capability ~${Math.round(autoRate * 100)}%`);
@@ -226,12 +432,15 @@ export function deriveScoutCapabilities(
  * Downweight inconsistent scouts vs team median scoring, with confidence floors.
  * Transparent: every downweighted scout gets a reason string.
  */
-export function computeScoutQuality(entries: ScoutEntryRecord[]): ScoutQualityReport {
+export function computeScoutQuality(
+  entries: ScoutEntryRecord[],
+  options?: ScoutSignalOptions,
+): ScoutQualityReport {
   const matchEntries = entries.filter((entry) => entry.entryType === "match");
   const scored = matchEntries
     .map((entry) => ({
       entry,
-      score: firstFinite(entry.payload, SCORE_KEYS),
+      score: resolveSignal(entry.payload, SCORE_KEYS, null, options?.roles),
     }))
     .filter((row): row is { entry: ScoutEntryRecord; score: number } => row.score != null);
 
@@ -362,12 +571,14 @@ function weightedRate(
   weights: Record<string, number>,
   keys: readonly string[],
   minSamples = 3,
+  role: StrategyFieldRole | null = null,
+  roles?: ScoutFieldRoleMap,
 ) {
   let sum = 0;
   let wSum = 0;
   let count = 0;
   for (const obs of observations) {
-    const value = firstFinite(obs.payload, keys);
+    const value = resolveSignal(obs.payload, keys, role, roles);
     if (value == null) continue;
     const w = weights[obs.id] ?? 1;
     sum += value * w;
@@ -378,15 +589,18 @@ function weightedRate(
   return sum / wSum;
 }
 
-function weightedReliability(observations: ScoutEntryRecord[], weights: Record<string, number>) {
+function weightedReliability(
+  observations: ScoutEntryRecord[],
+  weights: Record<string, number>,
+  roles?: ScoutFieldRoleMap,
+) {
   if (!observations.length) return null;
   let failureWeight = 0;
   let totalWeight = 0;
   for (const obs of observations) {
     const w = weights[obs.id] ?? 1;
     totalWeight += w;
-    const failed = [obs.payload.disabled, obs.payload.breakdown, obs.payload.noShow].some(Boolean);
-    if (failed) failureWeight += w;
+    if (anyFailureFlag(obs.payload, roles)) failureWeight += w;
   }
   if (!totalWeight) return null;
   return clamp((1 - failureWeight / totalWeight) * 100, 0, 100);
@@ -399,31 +613,34 @@ function weightedReliability(observations: ScoutEntryRecord[], weights: Record<s
 export function buildTeamOperationalSignal(
   teamKey: string,
   entries: ScoutEntryRecord[],
+  options?: ScoutSignalOptions,
 ): BuiltOperationalSignal | null {
   const teamEntries = entries.filter((entry) => entry.teamKey === teamKey);
   if (!teamEntries.length) return null;
 
-  const quality = computeScoutQuality(teamEntries);
+  const roles = options?.roles;
+  const quality = computeScoutQuality(teamEntries, options);
   const matchEntries = teamEntries.filter((entry) => entry.entryType === "match");
   const pitEntries = teamEntries.filter((entry) => entry.entryType === "pit");
 
   const usableMatch = matchEntries.filter((entry) => entry.confidence !== "low");
   const excludedLow = matchEntries.filter((entry) => entry.confidence === "low");
 
-  const reliability = weightedReliability(usableMatch, quality.byEntryId);
-  const foulRate = weightedRate(usableMatch, quality.byEntryId, FOUL_KEYS, 3);
+  const reliability = weightedReliability(usableMatch, quality.byEntryId, roles);
+  const foulRate = weightedRate(usableMatch, quality.byEntryId, FOUL_KEYS, 3, "fouls", roles);
   const capabilities = deriveScoutCapabilities(
     [...usableMatch, ...pitEntries.filter((entry) => entry.confidence !== "low")].map((entry) => ({
       payload: entry.payload,
       weight: quality.byEntryId[entry.id] ?? 1,
     })),
+    options,
   );
 
-  const pitNotes = pitEntries.flatMap((entry) => extractNotes(entry.payload)).slice(0, 6);
+  const pitNotes = pitEntries.flatMap((entry) => extractNotes(entry.payload, roles)).slice(0, 6);
   // Fall back to match notes when pit is empty
   const matchNotes =
     pitNotes.length === 0
-      ? usableMatch.flatMap((entry) => extractNotes(entry.payload)).slice(0, 4)
+      ? usableMatch.flatMap((entry) => extractNotes(entry.payload, roles)).slice(0, 4)
       : [];
   const notes = [...pitNotes, ...matchNotes];
 
@@ -454,21 +671,25 @@ export function buildTeamOperationalSignal(
 
   for (const entry of usableMatch) {
     if (reliability != null) pushProv(entry, "reliability");
-    if (foulRate != null && firstFinite(entry.payload, FOUL_KEYS) != null) {
+    if (foulRate != null && resolveSignal(entry.payload, FOUL_KEYS, "fouls", roles) != null) {
       pushProv(entry, "foul_rate");
     }
-    if (firstFinite(entry.payload, AUTO_KEYS) != null) pushProv(entry, "auto_capability");
-    if (firstFinite(entry.payload, TELEOP_KEYS) != null) pushProv(entry, "teleop_capability");
-    if (firstFinite(entry.payload, ENDGAME_KEYS) != null) pushProv(entry, "endgame_capability");
-    const text = JSON.stringify(entry.payload).toLowerCase();
-    if (/\bdefen[cs]e\b/.test(text) || entry.payload.defense === true) {
+    if (resolveSignal(entry.payload, AUTO_KEYS, "auto_score", roles) != null) {
+      pushProv(entry, "auto_capability");
+    }
+    if (resolveSignal(entry.payload, TELEOP_KEYS, "teleop_score", roles) != null) {
+      pushProv(entry, "teleop_capability");
+    }
+    if (resolveSignal(entry.payload, ENDGAME_KEYS, "endgame", roles, true) != null) {
+      pushProv(entry, "endgame_capability");
+    }
+    if (defenseSignal(entry.payload, roles)) {
       pushProv(entry, "defense");
     }
   }
   for (const entry of pitEntries) {
-    if (extractNotes(entry.payload).length) pushProv(entry, "pit_note");
-    const text = JSON.stringify(entry.payload).toLowerCase();
-    if (/\bdefen[cs]e\b/.test(text) || entry.payload.defense === true) {
+    if (extractNotes(entry.payload, roles).length) pushProv(entry, "pit_note");
+    if (defenseSignal(entry.payload, roles)) {
       pushProv(entry, "defense");
     }
   }
@@ -509,11 +730,14 @@ export function buildTeamOperationalSignal(
   };
 }
 
-export function buildOperationsFromScoutEntries(entries: ScoutEntryRecord[]) {
+export function buildOperationsFromScoutEntries(
+  entries: ScoutEntryRecord[],
+  options?: ScoutSignalOptions,
+) {
   const teamKeys = [...new Set(entries.map((entry) => entry.teamKey))];
   const operations: BuiltOperationalSignal[] = [];
   for (const teamKey of teamKeys) {
-    const built = buildTeamOperationalSignal(teamKey, entries);
+    const built = buildTeamOperationalSignal(teamKey, entries, options);
     if (built) operations.push(built);
   }
   return operations;

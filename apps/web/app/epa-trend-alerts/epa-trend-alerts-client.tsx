@@ -15,7 +15,7 @@ import {
   type EpaTrendAlertsNextAction,
   type EpaTrendAlertsShellKind,
 } from "../../lib/epa-trend-alerts/epa-trend-alerts-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./epa-trend-alerts.css";
 
@@ -91,7 +91,7 @@ function EpaShell({
 }) {
   const actions = epaTrendAlertsNextActions({ orgId, shell });
   const copy = epaTrendAlertsShellCopy(shell);
-  const competitionHref = hubHref("/competition", "epa-trend-alerts", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "epa-trend-alerts", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const watchlistHref = hubHref("/competition", "opponent-watchlist", orgId);
 
@@ -208,7 +208,7 @@ export default function EpaTrendAlertsClient() {
   const relatedLinks = epaTrendAlertsRelatedLinks(orgId, {
     include: [...EPA_TREND_ALERTS_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "epa-trend-alerts", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "epa-trend-alerts", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const watchlistHref = hubHref("/competition", "opponent-watchlist", orgId);
 

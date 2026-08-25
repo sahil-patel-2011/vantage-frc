@@ -225,6 +225,7 @@
   background: color-mix(in srgb, #ffedd5 70%, var(--soft-card, #fff));
 }
 .errorGlyph svg { width: 18px; height: 18px; }
+.errorActions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .errorMessage {
   margin: 0;
   color: var(--soft-muted, #5a6578);
@@ -280,6 +281,12 @@
 .progressStatus { font-size: 12px; color: var(--soft-muted, #5a6578); }
 
 /* --- DataTable --- */
+/* Export bar sits above the scroll container so the button never scrolls out of reach. */
+.tableExportBar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
 .tableScroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -395,6 +402,19 @@
   letter-spacing: .01em;
 }
 .aiChip svg { width: 12px; height: 12px; }
+/* Honest label for deterministic output — same shape as .aiChip, neutral tone. */
+.computedChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--soft-line, #d5dde8) 45%, transparent);
+  color: var(--soft-muted, #5a6578);
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+.computedChip svg { width: 12px; height: 12px; }
 .regenBtn {
   border: 0;
   background: none;
@@ -556,3 +576,33 @@
 @media (pointer: coarse) {
   .btnIcon { min-width: 44px; min-height: 44px; }
 }
+
+/* --- Dark theme --------------------------------------------------------
+ * Everything above that is token-driven inherits dark automatically. These
+ * few status colours are hardcoded light-theme values: they either sit
+ * directly on a card that becomes #151b24 in dark, or are mixed against it
+ * from a pale tint, and land at 2.3-3.5:1. Restate them as lighter variants
+ * (all >= 6.8:1 against their own dark background). The dark selector wins on
+ * specificity, so the !important border overrides have to be repeated.
+ */
+:global(html[data-theme="dark"]) .toneDanger {
+  color: #ff9a91;
+  background: color-mix(in srgb, #ef4444 20%, var(--soft-card, #151b24));
+  border-color: color-mix(in srgb, #ef4444 42%, var(--soft-line, #273140)) !important;
+}
+:global(html[data-theme="dark"]) .toneError {
+  color: #fdba74;
+  background: color-mix(in srgb, #f97316 18%, var(--soft-card, #151b24));
+  border-color: color-mix(in srgb, #f97316 40%, var(--soft-line, #273140)) !important;
+}
+:global(html[data-theme="dark"]) .errorGlyph {
+  color: #fdba74;
+  background: color-mix(in srgb, #f97316 22%, var(--soft-card, #151b24));
+}
+:global(html[data-theme="dark"]) .deltaUp { color: #4ade80; }
+:global(html[data-theme="dark"]) .deltaDown { color: #ff8f85; }
+:global(html[data-theme="dark"]) .freshStale { color: #fdba74; }
+:global(html[data-theme="dark"]) .provOk,
+:global(html[data-theme="dark"]) .healthOk { background: #22c55e; }
+:global(html[data-theme="dark"]) .provDegraded,
+:global(html[data-theme="dark"]) .healthDegraded { background: #fb923c; }

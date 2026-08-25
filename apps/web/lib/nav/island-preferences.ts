@@ -19,3 +19,35 @@ export function resolveIslandTabs(value: unknown): IslandTabDefinition[] {
 export function defaultIslandHrefs(): string[] {
   return PRIMARY_TABS.map((item) => item.href);
 }
+
+/** True when this member is still on the stock Home / Compete / Team / Business four. */
+export function isDefaultIslandSelection(value: unknown): boolean {
+  const defaults = defaultIslandHrefs();
+  if (!isValidIslandSelection(value)) return true;
+  return value.every((href, index) => href === defaults[index]);
+}
+
+export type IslandDraftResult = {
+  draft: string[];
+  /** Set when the tap was refused, so the editor can say why. */
+  error: string | null;
+};
+
+/**
+ * Tap-to-add / tap-to-remove used by both island editors (the long-press sheet in
+ * the shell and the Account → Appearance copy). Order of taps is slot order.
+ */
+export function toggleIslandDraft(draft: readonly string[], href: string): IslandDraftResult {
+  if (draft.includes(href)) {
+    return { draft: draft.filter((item) => item !== href), error: null };
+  }
+  if (draft.length >= ISLAND_SLOT_COUNT) {
+    return {
+      draft: [...draft],
+      error: `The island holds ${ISLAND_SLOT_COUNT} apps. Remove one first.`,
+    };
+  }
+  const allowed = new Set(ISLAND_TAB_CATALOG.map((item) => item.href));
+  if (!allowed.has(href)) return { draft: [...draft], error: "That app is not on the island catalog." };
+  return { draft: [...draft, href], error: null };
+}

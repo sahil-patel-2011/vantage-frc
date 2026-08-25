@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { recordMoney, removeMoney } from "../finance/ledger";
 import { budgetInsights, combineAllCosts, summarizeCosts, summarizeSubscriptions } from ".";
 import type {
   AllCostsSummary,
@@ -231,6 +232,45 @@ export async function computeCostsView(
 
 // ---- write helpers (run inside the caller's withRls transaction) ----
 
+/**
+ * Mirror a season cost onto the unified money ledger (0461_money_unify.sql).
+ * Only PAID rows are money out; a planned row (or one flipped back to planned)
+ * removes its mirror. Runs in the caller's transaction so the ledger can never
+ * drift from season_costs; the (org, 'season_cost', cost id) upsert key keeps
+ * repeat calls idempotent. createdBy is left to current_app_user_id() because
+ * update/delete callers do not carry the acting user.
+ */
+async function mirrorSeasonCost(
+  client: PoolClient,
+  cost: {
+    orgId: string;
+    costId: string;
+    seasonYear: number;
+    label: string;
+    amountUsd: number;
+    vendor: string | null;
+    incurredOn: string;
+    status: CostStatus;
+    userId?: string;
+  },
+): Promise<void> {
+  if (cost.status === "paid" && cost.amountUsd > 0) {
+    await recordMoney(client, {
+      orgId: cost.orgId,
+      source: "season_cost",
+      sourceId: cost.costId,
+      direction: "out",
+      amountUsd: cost.amountUsd,
+      seasonYear: cost.seasonYear,
+      label: `Season cost — ${cost.label}${cost.vendor ? ` (${cost.vendor})` : ""}`,
+      occurredAt: cost.incurredOn,
+      createdBy: cost.userId ?? null,
+    });
+  } else {
+    await removeMoney(client, { orgId: cost.orgId, source: "season_cost", sourceId: cost.costId });
+  }
+}
+
 export async function setBudget(
   client: PoolClient,
   input: {
@@ -269,9 +309,10 @@ export async function addCost(
     notes: string | null;
   },
 ): Promise<void> {
-  await client.query(
+  const inserted = await client.query<{ id: string }>(
     `INSERT INTO season_costs (org_id, season_year, label, category, amount_usd, vendor, incurred_on, status, notes, created_by)
-     VALUES ($1,$2,$3,$4,$5::numeric,$6,$7::date,$8,$9,$10)`,
+     VALUES ($1,$2,$3,$4,$5::numeric,$6,$7::date,$8,$9,$10)
+     RETURNING id`,
     [
       input.orgId,
       input.seasonYear,
@@ -285,6 +326,20 @@ export async function addCost(
       input.userId,
     ],
   );
+  const costId = inserted.rows[0]?.id;
+  if (costId && input.status === "paid") {
+    await mirrorSeasonCost(client, {
+      orgId: input.orgId,
+      costId,
+      seasonYear: input.seasonYear,
+      label: input.label,
+      amountUsd: Math.max(0, input.amountUsd),
+      vendor: input.vendor,
+      incurredOn: input.incurredOn,
+      status: input.status,
+      userId: input.userId,
+    });
+  }
 }
 
 export async function updateCost(
@@ -301,7 +356,14 @@ export async function updateCost(
     notes?: string | null;
   },
 ): Promise<void> {
-  await client.query(
+  const updated = await client.query<{
+    seasonYear: number;
+    label: string;
+    amountUsd: string;
+    vendor: string | null;
+    incurredOn: string;
+    status: CostStatus;
+  }>(
     `UPDATE season_costs SET
        label = COALESCE($3, label),
        category = COALESCE($4, category),
@@ -311,7 +373,9 @@ export async function updateCost(
        status = COALESCE($9, status),
        notes = CASE WHEN $10::boolean THEN $11 ELSE notes END,
        updated_at = now()
-     WHERE id = $1 AND org_id = $2`,
+     WHERE id = $1 AND org_id = $2
+     RETURNING season_year AS "seasonYear", label, amount_usd::text AS "amountUsd", vendor,
+               incurred_on::text AS "incurredOn", status`,
     [
       input.costId,
       input.orgId,
@@ -326,6 +390,21 @@ export async function updateCost(
       input.notes ?? null,
     ],
   );
+  const row = updated.rows[0];
+  if (row) {
+    // Re-mirror from the row the DB actually holds — paid rows upsert their
+    // ledger entry, planned rows drop it (see mirrorSeasonCost).
+    await mirrorSeasonCost(client, {
+      orgId: input.orgId,
+      costId: input.costId,
+      seasonYear: row.seasonYear,
+      label: row.label,
+      amountUsd: num(row.amountUsd),
+      vendor: row.vendor,
+      incurredOn: row.incurredOn,
+      status: row.status,
+    });
+  }
 }
 
 export async function deleteCost(
@@ -333,6 +412,8 @@ export async function deleteCost(
   input: { orgId: string; costId: string },
 ): Promise<void> {
   await client.query(`DELETE FROM season_costs WHERE id = $1 AND org_id = $2`, [input.costId, input.orgId]);
+  // Deleting the cost deletes its money — drop the unified-ledger mirror too.
+  await removeMoney(client, { orgId: input.orgId, source: "season_cost", sourceId: input.costId });
 }
 
 export async function addSubscription(

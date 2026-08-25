@@ -80,7 +80,7 @@ export function summarizeJson(value: unknown, max = MAX_SUMMARY_CHARS): string |
 export function sanitizeErrorMessage(message: string): string {
   return truncateField(
     message
-      .replace(/Bearer\s+[A-Za-z0-9._\-]+/gi, "Bearer [redacted]")
+      .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [redacted]")
       .replace(/api[_-]?key[=:]\s*\S+/gi, "api_key=[redacted]")
       .replace(/sk-[A-Za-z0-9]{10,}/g, "[redacted-key]"),
     MAX_ERROR_CHARS,

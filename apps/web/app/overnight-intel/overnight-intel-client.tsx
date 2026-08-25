@@ -15,7 +15,7 @@ import {
   type OvernightIntelNextAction,
   type OvernightIntelShellKind,
 } from "../../lib/overnight-intel/overnight-intel-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./overnight-intel.css";
 
@@ -98,7 +98,7 @@ function IntelShell({
 }) {
   const actions = overnightIntelNextActions({ orgId, shell, needsActiveEvent });
   const copy = overnightIntelShellCopy(shell);
-  const competitionHref = hubHref("/competition", "overnight-intel", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "overnight-intel", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
 
@@ -225,7 +225,7 @@ export default function OvernightIntelClient() {
   const relatedLinks = overnightIntelRelatedLinks(orgId, {
     include: [...OVERNIGHT_INTEL_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "overnight-intel", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "overnight-intel", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);

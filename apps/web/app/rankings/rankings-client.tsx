@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   epaBarWidth,
   fmtRankTime,
@@ -15,6 +17,22 @@ import {
 function fmtEpa(value: number | null): string {
   return value == null ? "—" : value.toFixed(1);
 }
+
+/**
+ * CSV shape of the rankings board. Raw numbers only — the on-screen "—" and the
+ * one-decimal EPA rounding are display choices, and a spreadsheet wants the value.
+ */
+const RANKINGS_CSV_COLUMNS: CsvColumn<RankedTeam>[] = [
+  { key: "rank", header: "Rank", hint: "Official event rank", value: (team) => team.rank },
+  { key: "team", header: "Team", hint: "Team number", value: (team) => team.teamNumber || null },
+  { key: "nickname", header: "Nickname", value: (team) => team.nickname },
+  { key: "record", header: "Record", hint: "Wins-losses-ties", value: (team) => team.record },
+  { key: "epaTotal", header: "EPA total", hint: "Unrounded — screen shows 1 decimal", value: (team) => team.epaTotal },
+  { key: "epaAuto", header: "EPA auto", value: (team) => team.epaAuto },
+  { key: "epaTeleop", header: "EPA teleop", value: (team) => team.epaTeleop },
+  { key: "epaEndgame", header: "EPA endgame", value: (team) => team.epaEndgame },
+  { key: "source", header: "Source", hint: "Where the metric came from", value: (team) => team.source },
+];
 
 function TeamRow({ team, maxEpa, isUs }: { team: RankedTeam; maxEpa: number; isUs: boolean }) {
   return (
@@ -96,6 +114,8 @@ export default function RankingsClient() {
   const [view, setView] = useState<RankingsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [tab, setTab] = useState<"rankings" | "playoffs">("rankings");
 
   const load = useCallback(async () => {
@@ -106,10 +126,12 @@ export default function RankingsClient() {
       const data = (await response.json()) as RankingsView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load event rankings.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setFetchFailed(false);
       setView(data);
     } catch {
@@ -131,18 +153,43 @@ export default function RankingsClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Competition / Rankings</span>
-            <h1>Rankings & Playoffs</h1>
+            <h1>Rankings & playoffs</h1>
           </div>
         </header>
         <div className="app-card rank-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load event rankings</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
+            (() => {
+              const copy = loadFailureCopy(
+                classifyLoadFailure({
+                  status: errorStatus,
+                  message: error,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message: error || "Check your connection and try again.",
+                },
+              );
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading event rankings…</p>
           )}
@@ -157,7 +204,7 @@ export default function RankingsClient() {
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs">Competition / Rankings</span>
-            <h1>Rankings & Playoffs</h1>
+            <h1>Rankings & playoffs</h1>
             <p>Every team at your active event ranked, plus the elimination bracket as it unfolds.</p>
           </div>
         </header>
@@ -186,7 +233,7 @@ export default function RankingsClient() {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Competition / Rankings</span>
-          <h1>Rankings & Playoffs</h1>
+          <h1>Rankings & playoffs</h1>
           <p>
             {view.context.eventName ?? view.context.eventKey}
             {view.context.teamNumber != null ? ` — Team ${view.context.teamNumber}` : ""}
@@ -230,18 +277,33 @@ export default function RankingsClient() {
             </a>
           </div>
         ) : (
-          <ul className="rank-list">
-            <li className="rank-row rank-head" aria-hidden="true">
-              <span className="rank-pos">#</span>
-              <span className="rank-team">Team</span>
-              <span className="rank-record">Record</span>
-              <span className="rank-epa">EPA total · auto / teleop / endgame</span>
-              <span className="rank-source-label">Source</span>
-            </li>
-            {view.teams.map((entry) => (
-              <TeamRow key={entry.teamKey} team={entry} maxEpa={maxEpa} isUs={teamKey === entry.teamKey} />
-            ))}
-          </ul>
+          <>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+              <ExportButton
+                rows={view.teams}
+                columns={RANKINGS_CSV_COLUMNS}
+                feature="Rankings"
+                orgLabel={view.context.orgName}
+                orgId={view.context.orgId}
+                size="sm"
+                provenance={`${view.context.eventName ?? view.context.eventKey ?? "Active event"} — cached TBA/Statbotics metrics${
+                  syncedLabel ? `, synced ${syncedLabel}` : ""
+                }.`}
+              />
+            </div>
+            <ul className="rank-list">
+              <li className="rank-row rank-head" aria-hidden="true">
+                <span className="rank-pos">#</span>
+                <span className="rank-team">Team</span>
+                <span className="rank-record">Record</span>
+                <span className="rank-epa">EPA total · auto / teleop / endgame</span>
+                <span className="rank-source-label">Source</span>
+              </li>
+              {view.teams.map((entry) => (
+                <TeamRow key={entry.teamKey} team={entry} maxEpa={maxEpa} isUs={teamKey === entry.teamKey} />
+              ))}
+            </ul>
+          </>
         )
       ) : groups.length === 0 ? (
         <div className="app-card rank-empty">

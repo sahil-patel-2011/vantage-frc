@@ -27,7 +27,7 @@ import {
   type KnowledgeGapNextAction,
   type KnowledgeGapShellKind,
 } from "../../lib/knowledge-gap/knowledge-gap-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./knowledge-gap.css";
 
@@ -109,7 +109,7 @@ function GapShell({
 }) {
   const actions = knowledgeGapNextActions({ orgId, shell });
   const copy = knowledgeGapShellCopy(shell);
-  const teamHref = hubHref("/team", "knowledge-gap", orgId);
+  const teamHref = hubWorkbenchHref("team", "knowledge-gap", orgId);
   const steps = shell === "setup" ? knowledgeGapSetupSteps(orgId) : [];
 
   return (
@@ -238,7 +238,7 @@ export default function KnowledgeGapClient() {
     hasScan,
     itemCount,
   });
-  const teamHref = hubHref("/team", "knowledge-gap", orgId);
+  const teamHref = hubWorkbenchHref("team", "knowledge-gap", orgId);
   const showTiles = shouldShowKnowledgeGapSummaryTiles(itemCount, hasScan);
   const loaded = view?.status === "live";
 

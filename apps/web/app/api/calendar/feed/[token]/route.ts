@@ -1,5 +1,8 @@
 import { requestPool } from "@vantage/db";
-import { buildCalendar, type CalendarIcsFeed } from "../../../../../lib/calendar-ics";
+import {
+  buildRecurringCalendar,
+  type RecurringIcsFeed,
+} from "../../../../../lib/calendar/ics-recurrence";
 
 /**
  * Public, unauthenticated calendar subscription feed (.ics).
@@ -7,6 +10,12 @@ import { buildCalendar, type CalendarIcsFeed } from "../../../../../lib/calendar
  * (see isPublicCalendarFeed in proxy.ts). get_calendar_feed only returns
  * rows allowed by that token's scope, and NULL for unknown tokens —
  * there is no unauthenticated dump of org calendars.
+ *
+ * Series rows come back with `rrule` / `exdates` / `timeZone` (migration 0456)
+ * and are emitted as real RRULE + EXDATE lines so Google and Apple expand a
+ * build season themselves and hold 6pm at 6pm across the DST change. When the
+ * migration is not applied those keys are simply absent and every row falls
+ * through to the original UTC-stamp shape — the feed keeps working unchanged.
  */
 export const dynamic = "force-dynamic";
 
@@ -22,7 +31,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   if (!/^[A-Za-z0-9_-]{16,100}$/.test(token)) return notFound();
 
   try {
-    const result = await requestPool.query<{ feed: CalendarIcsFeed | null }>(
+    const result = await requestPool.query<{ feed: RecurringIcsFeed | null }>(
       "SELECT get_calendar_feed($1) AS feed",
       [token],
     );
@@ -37,7 +46,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
       }
     })();
 
-    const ics = buildCalendar(feed, { domain: host });
+    const ics = buildRecurringCalendar(feed, { domain: host, now: new Date() });
     return new Response(ics, {
       status: 200,
       headers: {

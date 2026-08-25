@@ -763,7 +763,15 @@ function uuid(value: unknown, label: string) {
   return text;
 }
 
-export type InsightRequest = { orgId: string; kind: InsightKind; robotLabel: string };
+/**
+ * mode "computed" (default): deterministic local analysis — free, always
+ * available, labeled "Computed from your data". mode "ai": the opt-in
+ * "Expand with AI" path — the same grounded context sources run through a real
+ * resolved model adapter; failure degrades to the computed text.
+ */
+export type InsightMode = "computed" | "ai";
+
+export type InsightRequest = { orgId: string; kind: InsightKind; robotLabel: string; mode: InsightMode };
 
 export function parseInsightRequest(input: unknown): InsightRequest {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Invalid insight request");
@@ -772,5 +780,12 @@ export function parseInsightRequest(input: unknown): InsightRequest {
   if (!INSIGHT_KINDS.includes(kind)) throw new Error("Unknown insight kind");
   const robotLabelRaw = body.robotLabel == null ? "" : String(body.robotLabel).trim();
   if (robotLabelRaw.length > 40) throw new Error("Robot label must be 40 characters or fewer");
-  return { orgId: uuid(body.orgId, "Organization"), kind, robotLabel: robotLabelRaw || "competition" };
+  const modeRaw = body.mode == null ? "computed" : String(body.mode);
+  if (modeRaw !== "computed" && modeRaw !== "ai") throw new Error("Unknown insight mode");
+  return {
+    orgId: uuid(body.orgId, "Organization"),
+    kind,
+    robotLabel: robotLabelRaw || "competition",
+    mode: modeRaw,
+  };
 }

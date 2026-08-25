@@ -106,7 +106,9 @@ export async function POST(request: Request) {
           kill_switch=excluded.kill_switch,prompt_caching_enabled=excluded.prompt_caching_enabled,
           updated_by=excluded.updated_by,updated_at=now()`,
           [orgId,...limits(body),thresholds,body.enforceByoTokenLimits !== false,Boolean(body.modelAllowlistEnabled),
-            Boolean(body.providerAllowlistEnabled),Boolean(body.killSwitch),Boolean(body.promptCachingEnabled),current.user.id]);
+            // Prompt caching is default-ON (migration 0448): an omitted field keeps
+            // it on; only an explicit false turns it off.
+            Boolean(body.providerAllowlistEnabled),Boolean(body.killSwitch),body.promptCachingEnabled !== false,current.user.id]);
       } else {
         const tables = { member: ["org_api_member_limits","user_id"], feature: ["org_api_feature_limits","feature"], model: ["org_api_model_limits","provider,model"] } as const;
         const config = tables[body.scope as keyof typeof tables];

@@ -27,7 +27,7 @@ import {
   type HoursSelfViewNextAction,
   type HoursSelfViewShellKind,
 } from "../../lib/hours-self-view/hours-self-view-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./hours-self-view.css";
 
@@ -101,7 +101,7 @@ function HoursShell({
 }) {
   const actions = hoursSelfViewNextActions({ orgId, shell });
   const copy = hoursSelfViewShellCopy(shell);
-  const teamHref = hubHref("/team", "hours-self-view", orgId);
+  const teamHref = hubWorkbenchHref("team", "hours-self-view", orgId);
   const steps = shell === "setup" ? hoursSelfViewSetupSteps(orgId) : [];
 
   return (
@@ -223,7 +223,7 @@ export default function HoursSelfViewClient() {
     entryCount,
     kioskCount,
   });
-  const teamHref = hubHref("/team", "hours-self-view", orgId);
+  const teamHref = hubWorkbenchHref("team", "hours-self-view", orgId);
   const showTiles = shouldShowHoursSelfViewSummaryTiles(entryCount);
   const loaded = view?.status === "live";
 

@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { CopyShareLink } from "../../../components/copy-share-link";
 import type { CoverageGapSlot, CoverageGapSummary } from "@vantage/scouting/coverage";
 import {
+  LINEUP_POLL_MS,
   LINEUP_RELATED_INCLUDE,
   classifyLineupShell,
   formatLineupCoverage,
@@ -14,6 +16,7 @@ import {
   lineupScoutNowHref,
   lineupSetupSteps,
   lineupShellCopy,
+  shouldPollLineup,
   shouldShowLineupSummaryTiles,
   type LineupNextAction,
   type LineupShellKind,
@@ -43,8 +46,6 @@ type CoverageView =
       };
       slots: CoverageGapSlot[];
     };
-
-const POLL_MS = 8000;
 
 function teamLabel(slot: CoverageGapSlot): string {
   return slot.teamNumber != null ? String(slot.teamNumber) : slot.teamKey.replace(/^frc/i, "");
@@ -106,6 +107,7 @@ function LineupShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -113,6 +115,8 @@ function LineupShell({
   orgId?: string | null;
   shell: LineupShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session can offer sign-in. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -120,6 +124,23 @@ function LineupShell({
   const copy = lineupShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const steps = shell === "setup" ? lineupSetupSteps(orgId) : [];
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus ?? null,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error ?? null,
+          },
+        )
+      : null;
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const formsHref = hubHref("/competition", "forms", orgId);
@@ -131,10 +152,10 @@ function LineupShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Lineup & Coverage"}
+            {" / Lineup & coverage"}
           </>
         }
-        title="Lineup & Coverage"
+        title="Lineup & coverage"
         description={description}
       >
         <LineupRelatedStrip orgId={orgId} />
@@ -152,11 +173,16 @@ function LineupShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : (error ?? copy.description)}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {failure?.showRetry && onRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -213,6 +239,8 @@ export default function LineupClient({ orgId }: { orgId: string }) {
   const [view, setView] = useState<CoverageView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [qualsOnly, setQualsOnly] = useState(true);
   const [focusMatch, setFocusMatch] = useState("");
   const [updatedAt, setUpdatedAt] = useState("");
@@ -226,12 +254,14 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       const data = (await response.json()) as CoverageView & { error?: string };
       if (!response.ok) {
         setFetchFailed(true);
+        setFailureStatus(response.status);
         setError(data.error ?? "Could not load coverage.");
         return;
       }
       setView(data);
       setUpdatedAt(data.generatedAt);
       setError("");
+      setFailureStatus(null);
       setFetchFailed(false);
       if (data.status === "live" && data.live.focusMatchKeys[0] && !focusMatch) {
         setFocusMatch(data.live.focusMatchKeys[0]!);
@@ -244,8 +274,18 @@ export default function LineupClient({ orgId }: { orgId: string }) {
 
   useEffect(() => {
     void load();
-    const timer = window.setInterval(() => void load(), POLL_MS);
-    return () => window.clearInterval(timer);
+    // Battery-safe polling: >=15s cadence, paused while the tab is hidden.
+    const timer = window.setInterval(() => {
+      if (shouldPollLineup(document.visibilityState)) void load();
+    }, LINEUP_POLL_MS);
+    const onVisibility = () => {
+      if (shouldPollLineup(document.visibilityState)) void load();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [load]);
 
   const matchOptions = useMemo(() => {
@@ -312,6 +352,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={failureStatus}
         onRetry={() => void load()}
       />
     );
@@ -341,15 +382,15 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Lineup & Coverage"}
+            {" / Lineup & coverage"}
           </>
         }
-        title="Lineup & Coverage"
+        title="Lineup & coverage"
         description="Double-scouted vs unscouted robots for the live quals window. Attribution uses membership IDs — never typed scout names. Rates never invent DEMO %."
       >
         <div className="lineup-header-meta">
           <span className="lineup-live-pill" aria-live="polite">
-            Live · refresh {POLL_MS / 1000}s
+            Live · refresh {LINEUP_POLL_MS / 1000}s
             {updatedAt ? ` · ${new Date(updatedAt).toLocaleTimeString()}` : ""}
           </span>
           <LineupRelatedStrip orgId={orgId} />

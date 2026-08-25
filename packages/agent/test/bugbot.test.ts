@@ -73,7 +73,8 @@ describe("Bugbot Ultra scan pick + fix grounding", () => {
     ]);
     expect(picked[0]).toBe("src/main/java/frc/robot/Robot.java");
     expect(picked).toContain("src/main/java/frc/robot/subsystems/Drive.java");
-    expect(picked).toContain("vendordeps/Phoenix6.json");
+    // vendordeps are vendor-published manifests, not this team's robot code.
+    expect(picked).not.toContain("vendordeps/Phoenix6.json");
     expect(picked.some((path) => path.includes("node_modules") || path.includes("build/"))).toBe(false);
   });
 

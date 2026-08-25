@@ -13,6 +13,9 @@ export type CadOperation =
   | "create_pattern"
   | "set_variable"
   | "create_assembly"
+  | "create_hole"
+  | "create_mirror"
+  | "delete_feature"
   | "feature_script"
   | "verify_topology"
   | "render_views"
@@ -44,6 +47,9 @@ export const DESTRUCTIVE_CAD_OPERATIONS = new Set<CadOperation>([
   "create_pattern",
   "set_variable",
   "create_assembly",
+  "create_hole",
+  "create_mirror",
+  "delete_feature",
   "feature_script",
   "rollback_checkpoint",
 ]);
@@ -67,6 +73,9 @@ const ALLOWLISTED: readonly CadOperation[] = [
   "create_pattern",
   "set_variable",
   "create_assembly",
+  "create_hole",
+  "create_mirror",
+  "delete_feature",
   "feature_script",
   "verify_topology",
   "render_views",
@@ -158,6 +167,9 @@ export function buildAdaptiveCadContext(
 
 export function sanitizeUntrustedCadText(input: string, maxLength = 8_000): string {
   const cleaned = input
+    // Stripping NUL is the point: it is the classic way to truncate a prompt
+    // boundary, so the control character in this pattern is intentional.
+    // eslint-disable-next-line no-control-regex
     .replace(/\u0000/g, "")
     .replace(/```[\s\S]*?```/g, "[code block omitted]")
     .slice(0, maxLength);

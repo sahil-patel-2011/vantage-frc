@@ -4,21 +4,26 @@ import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "../../components/ui/page-header";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { RoleOnboardingView, StartTrackView } from "../../lib/role-onboarding";
 
 export default function StartClient({ orgId }: { orgId: string | null }) {
   const [view, setView] = useState<RoleOnboardingView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead end.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+    setErrorStatus(null);
     try {
       const response = await fetch(`/api/role-onboarding${qs}`);
       const data = (await response.json()) as RoleOnboardingView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load your path.");
+        setErrorStatus(response.status);
         return;
       }
       setError("");
@@ -61,6 +66,42 @@ export default function StartClient({ orgId }: { orgId: string | null }) {
     return (
       <main className="module-page start-page">
         <PageHeader navPath="/start" title="Your path" description="Loading onboarding checklists…" />
+      </main>
+    );
+  }
+
+  if (!view && error) {
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: error,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined"
+            ? null
+            : `${window.location.pathname}${window.location.search}`,
+        message: error,
+      },
+    );
+    return (
+      <main className="module-page start-page">
+        <PageHeader navPath="/start" title="Your path" description={copy.title} />
+        <TeamOpsNav orgId={orgId} active="start" />
+        <div className="start-empty">
+          <p>{copy.description}</p>
+          {copy.primary ? (
+            <a className="start-btn primary" href={copy.primary.href}>
+              {copy.primary.label}
+            </a>
+          ) : null}
+          {copy.showRetry ? (
+            <button type="button" className="start-btn primary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </div>
       </main>
     );
   }

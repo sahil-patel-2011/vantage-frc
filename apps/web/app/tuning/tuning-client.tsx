@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { TUNING_CATEGORIES, TUNING_CATEGORY_LABEL, currentLimitTuningCue, type TuningCategory } from "../../lib/tuning";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Constant = { id: string; subsystem: string; name: string; value: string; unit: string; category: TuningCategory; notes: string; byName: string | null; updatedAt: string };
 type View =
@@ -13,12 +14,17 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/tuning?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load tuning constants"); return; }
+    if (!response.ok) { setMessage(data.error ?? "Failed to load tuning constants"); setErrorStatus(response.status); setLoadFailed(true); return; }
+    setErrorStatus(null);
+    setLoadFailed(false);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
@@ -40,7 +46,30 @@ export default function TuningClient({ orgId }: { orgId: string | null }) {
     if (view?.status === "ready") setForm({ ...EMPTY, subsystem: form.subsystem, category: form.category });
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading tuning constants…"}</p></main>;
+  if (!view) {
+    if (!loadFailed) return <main className="intel-app"><p className="telemetry-status">Loading tuning constants…</p></main>;
+    // Retry cannot revive an expired session — offer the action that actually fixes it.
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status" role="alert"><strong>{failure.title}</strong></p>
+        <p className="telemetry-status">{failure.description}</p>
+        {failure.primary ? <a className="app-button" href={failure.primary.href}>{failure.primary.label}</a> : null}
+        {failure.showRetry ? <button type="button" className="app-button secondary" onClick={() => void load()}>Retry</button> : null}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / TUNING</span><h1>Tuning constants</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }

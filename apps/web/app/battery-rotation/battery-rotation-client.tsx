@@ -108,10 +108,10 @@ function BatteryRotationShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Battery Rotation"}
+            {" / Battery rotation"}
           </>
         }
-        title="Battery Rotation & Charge Planner"
+        title="Battery rotation & charge planner"
         description={description}
       >
         <BatteryRotationRelatedStrip orgId={orgId} />
@@ -152,7 +152,7 @@ function BatteryRotationShell({
               Open Health Forecast
             </a>
             <a className="app-button secondary" href={pitHref}>
-              Open Pit Command
+              Open Pit command
             </a>
           </>
         ) : null}
@@ -294,10 +294,10 @@ export default function BatteryRotationClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Battery Rotation"}
+            {" / Battery rotation"}
           </>
         }
-        title="Battery Rotation & Charge Planner"
+        title="Battery rotation & charge planner"
         description="Schedule which pack runs which match from internal-resistance trends vs. match cadence and charge time — never DEMO IR or charge metrics."
       >
         <div className="battery-rotation-header-actions">
@@ -334,7 +334,7 @@ export default function BatteryRotationClient() {
             Open Health Forecast
           </a>
           <a className="app-button secondary" href={pitHref}>
-            Open Pit Command
+            Open Pit command
           </a>
         </EmptyState>
       ) : null}
@@ -354,7 +354,7 @@ export default function BatteryRotationClient() {
           <p className="app-muted" style={{ marginTop: 8 }}>
             Log IR on <a href={batteriesHref}>Batteries</a>, project retirement in{" "}
             <a href={forecastHref}>Health Forecast</a>, and check event-day rack status in{" "}
-            <a href={pitHref}>Pit Command</a> — never invent DEMO resistance or charge plans.
+            <a href={pitHref}>Pit command</a> — never invent DEMO resistance or charge plans.
           </p>
         </Panel>
       </div>

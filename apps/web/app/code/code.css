@@ -59,10 +59,10 @@
   margin-top: 4px;
 }
 .cdc-billing-local {
-  border-color: color-mix(in srgb, var(--app-good, #15803d) 28%, var(--app-line));
+  border-color: color-mix(in srgb, var(--app-positive) 28%, var(--app-line));
 }
 .cdc-billing-ultra {
-  border-color: color-mix(in srgb, var(--app-accent, #2563eb) 28%, var(--app-line));
+  border-color: color-mix(in srgb, var(--app-accent) 28%, var(--app-line));
 }
 .cdc-bugbot-modes {
   display: grid;
@@ -81,8 +81,8 @@
   color: inherit;
 }
 .cdc-bugbot-modes button.is-active {
-  border-color: color-mix(in srgb, var(--app-accent, #2563eb) 45%, var(--app-line));
-  background: color-mix(in srgb, var(--app-accent, #2563eb) 8%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
 }
 .cdc-bugbot-modes strong {
   font-size: 13px;
@@ -218,7 +218,7 @@
 }
 .cdc-panel input,
 .cdc-panel textarea {
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 10px;
   color: var(--app-ink);
   background: var(--app-bg);
@@ -269,7 +269,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: var(--app-soft, #f3f4f6);
+  background: var(--app-soft);
   color: var(--app-muted);
 }
 .cdc-severity.high {
@@ -277,8 +277,8 @@
   color: var(--app-critical);
 }
 .cdc-severity.medium {
-  background: color-mix(in srgb, #d97706 14%, var(--app-surface));
-  color: #92400e;
+  background: color-mix(in srgb, var(--app-warning) 14%, var(--app-surface));
+  color: var(--app-warning);
 }
 .cdc-lesson {
   display: grid;
@@ -397,6 +397,213 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+/* ---- Scan plan: cost and coverage BEFORE the metered call ---- */
+.cdc-scan-plan {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius, 12px);
+  background: var(--app-surface);
+}
+.cdc-scan-plan-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cdc-scan-cost {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--app-soft);
+  color: var(--app-muted);
+}
+.cdc-scan-cost.paid {
+  background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
+  color: var(--app-accent);
+}
+.cdc-skip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+.cdc-coverage-toggle {
+  justify-self: start;
+  min-height: 44px;
+}
+.cdc-coverage-detail {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.cdc-coverage-detail h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-muted);
+}
+.cdc-coverage-detail ol {
+  margin: 0;
+  padding: 0 0 0 18px;
+  max-height: 260px;
+  overflow-y: auto;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+}
+.cdc-coverage-detail small {
+  display: block;
+}
+
+/* ---- Chunked scan progress and honest partial state ---- */
+.cdc-scan-progress {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius, 12px);
+  background: var(--app-surface);
+  font-size: 13px;
+}
+.cdc-scan-progress.partial {
+  border-color: color-mix(in srgb, var(--app-critical) 45%, var(--app-line));
+}
+.cdc-scan-bar {
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--app-soft);
+}
+.cdc-scan-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--app-accent);
+  transition: width 200ms ease;
+}
+.cdc-partial-note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-critical);
+}
+.cdc-partial-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--app-critical) 14%, var(--app-surface));
+  color: var(--app-critical);
+}
+
+/* ---- Coverage report and NEW / KNOWN / FIXED delta ---- */
+.cdc-coverage {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius, 12px);
+  background: var(--app-surface);
+  font-size: 13px;
+}
+.cdc-coverage ol,
+.cdc-coverage ul {
+  margin: 6px 0 0;
+  padding: 0 0 0 18px;
+  max-height: 240px;
+  overflow-y: auto;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+.cdc-coverage summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.cdc-delta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cdc-delta-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--app-soft);
+  color: var(--app-muted);
+}
+.cdc-delta-chip.new {
+  background: color-mix(in srgb, var(--app-critical) 14%, var(--app-surface));
+  color: var(--app-critical);
+}
+.cdc-delta-chip.fixed {
+  background: color-mix(in srgb, var(--app-good) 16%, var(--app-surface));
+  color: var(--app-good);
+}
+
+/* ---- Dismissals ---- */
+.cdc-dismiss-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px dashed var(--app-line);
+  border-radius: var(--app-radius, 12px);
+  background: var(--app-surface);
+}
+.cdc-dismiss-form input {
+  width: 100%;
+  min-height: 44px;
+}
+.cdc-dismiss-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cdc-dismiss-actions button {
+  min-height: 44px;
+}
+.cdc-dismissals ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.cdc-dismissals li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.cdc-dismissals summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.cdc-dismissals button {
+  min-height: 44px;
+}
+.cdc-bugbot-table td button {
+  min-height: 44px;
+}
+
 .cdc-page .visually-hidden {
   position: absolute;
   width: 1px;
@@ -417,6 +624,9 @@
   }
 }
 @media (max-width: 900px) {
+  .cdc-coverage-detail {
+    grid-template-columns: 1fr;
+  }
   .cdc-billing {
     grid-template-columns: 1fr;
   }

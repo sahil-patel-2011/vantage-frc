@@ -1,0 +1,235 @@
+/* Grant calendar. Design tokens only, so light and dark both follow the app theme.
+   Every control is >=44px tall for a mentor tapping this on a phone at a competition. */
+
+.grant-cal-page {
+  display: grid;
+  gap: 14px;
+}
+
+.grant-cal-page input,
+.grant-cal-page select,
+.grant-cal-page textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--app-ink);
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font: inherit;
+}
+.grant-cal-page textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+.grant-cal-page .app-button {
+  min-height: 44px;
+}
+
+/* ---- Why we can't answer yet ---------------------------------------------------------- */
+.grant-cal-gaps {
+  display: grid;
+  gap: 8px;
+}
+.grant-cal-gaps h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.grant-cal-gaps ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+.grant-cal-facts-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  align-items: end;
+  margin-top: 4px;
+}
+.grant-cal-facts-form label {
+  display: grid;
+  gap: 5px;
+}
+.grant-cal-facts-form label span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--app-muted);
+}
+
+/* ---- Filters --------------------------------------------------------------------------- */
+.grant-cal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.grant-cal-filter {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--app-line);
+  border-radius: 999px;
+  background: var(--app-surface);
+  color: var(--app-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.grant-cal-filter.is-active {
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 1px var(--app-accent) inset;
+}
+
+/* ---- Grant rows ------------------------------------------------------------------------ */
+.grant-cal-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.grant-cal-row {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  /* The urgency stripe is a redundant channel — the Badge always carries the words too. */
+  border-left-width: 4px;
+}
+.grant-cal-row.urgency-closing-3,
+.grant-cal-row.urgency-closing-14 {
+  border-left-color: var(--biz-red, var(--app-accent));
+}
+.grant-cal-row.urgency-closing-30 {
+  border-left-color: var(--biz-gold, var(--app-accent));
+}
+.grant-cal-row.urgency-open {
+  border-left-color: var(--biz-mint, var(--app-accent));
+}
+.grant-cal-row.urgency-closed {
+  opacity: 0.72;
+}
+
+.grant-cal-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.grant-cal-row-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.grant-cal-row-head h3 a {
+  color: inherit;
+}
+.grant-cal-row-head p {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+.grant-cal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.grant-cal-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.grant-cal-facts div {
+  display: grid;
+  gap: 2px;
+}
+.grant-cal-facts dt {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+.grant-cal-facts dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.grant-cal-reasons {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 3px;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+.grant-cal-reasons.is-unknown {
+  color: var(--app-ink);
+}
+.grant-cal-notes {
+  margin: 0;
+  font-size: 13px;
+  color: var(--app-muted);
+}
+
+.grant-cal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---- Add form -------------------------------------------------------------------------- */
+.grant-cal-add {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.grant-cal-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.grant-cal-form label {
+  display: grid;
+  gap: 5px;
+}
+.grant-cal-form label span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--app-muted);
+}
+.grant-cal-form-wide {
+  grid-column: 1 / -1;
+}
+.grant-cal-form button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+/* ---- 360px ----------------------------------------------------------------------------- */
+@media (max-width: 560px) {
+  .grant-cal-row-head {
+    flex-direction: column;
+  }
+  .grant-cal-actions {
+    display: grid;
+  }
+  .grant-cal-actions .app-button {
+    width: 100%;
+    justify-content: center;
+  }
+  .grant-cal-form,
+  .grant-cal-facts-form {
+    grid-template-columns: 1fr;
+  }
+  .grant-cal-form button {
+    justify-self: stretch;
+    width: 100%;
+  }
+}

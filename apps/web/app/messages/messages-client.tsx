@@ -17,6 +17,7 @@ import {
   OBJECT_TYPE_OPTIONS,
   type MessageObjectLink,
 } from "../../lib/messages/object-links";
+import { earliestCursor, prependEarlier } from "../../lib/messages/history";
 import {
   LONG_POLL_MAX_MS,
   mergeMessages,
@@ -25,6 +26,9 @@ import {
   totalUnread,
 } from "../../lib/messages/sync";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import ChatSafetyPanel from "./chat-safety-panel";
+import "./youth-protection.css";
 
 type Conversation = {
   id: string;
@@ -184,9 +188,21 @@ export default function MessagesClient({
   const [linkQuery, setLinkQuery] = useState("");
   const [linkTargets, setLinkTargets] = useState<LinkTarget[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasEarlier, setHasEarlier] = useState(false);
+  const [loadingEarlier, setLoadingEarlier] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
+  // Youth protection: who else is in this private chat, and why. Deliberately not dismissible —
+  // both parties must be able to see the second adult for the whole time the room exists.
+  const [supervisionNotice, setSupervisionNotice] = useState("");
+  const [safetyOpen, setSafetyOpen] = useState(false);
   const [live, setLive] = useState(true);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const messagesRef = useRef<HTMLDivElement | null>(null);
+  // Set just before an older page is prepended so the scroll position can be
+  // restored relative to the previously-visible messages.
+  const scrollAnchorRef = useRef<{ height: number; top: number } | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const sinceRef = useRef<string | null>(null);
   const activeIdRef = useRef<string | null>(activeId);
@@ -258,10 +274,12 @@ export default function MessagesClient({
     if (!response.ok) {
       const message = data.error || "Could not load conversations.";
       setLoadError(message);
+      setLoadErrorStatus(response.status);
       setStatus(message);
       return null;
     }
     setLoadError(null);
+    setLoadErrorStatus(null);
     applyInbox(data.conversations ?? []);
     if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
     return data.conversations as Conversation[];
@@ -285,6 +303,11 @@ export default function MessagesClient({
       }
       applyInbox(data.conversations ?? []);
       if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
+      // Refreshed on every poll, not just the initial load: a supervisor added to an existing
+      // thread (policy tightened after the fact) has to show up without a manual reload.
+      if (Array.isArray(data.supervisors)) {
+        setSupervisionNotice(String(data.supervisionNotice ?? ""));
+      }
 
       const incoming = (data.messages ?? []) as Message[];
       if (opts?.since) {
@@ -308,6 +331,7 @@ export default function MessagesClient({
       } else {
         setMessages(incoming);
         setPinned((data.pinned ?? []) as Message[]);
+        setHasEarlier(Boolean(data.hasEarlier));
         sinceRef.current = nextWatermark(incoming, null);
       }
       return incoming.length > 0;
@@ -318,6 +342,7 @@ export default function MessagesClient({
   async function reloadMessages() {
     setLoading(true);
     setLoadError(null);
+    setLoadErrorStatus(null);
     setStatus("");
     const list = await loadInbox();
     const preferred =
@@ -396,8 +421,51 @@ export default function MessagesClient({
   }, [activeId, loadThread]);
 
   useEffect(() => {
+    const anchor = scrollAnchorRef.current;
+    if (anchor) {
+      // An older page was just prepended: keep the previously-visible
+      // messages where they were instead of snapping to the bottom.
+      scrollAnchorRef.current = null;
+      const node = messagesRef.current;
+      if (node) node.scrollTop = node.scrollHeight - anchor.height + anchor.top;
+      return;
+    }
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  const loadEarlier = useCallback(async () => {
+    if (!activeId || loadingEarlier) return;
+    const cursor = earliestCursor(messages);
+    if (!cursor) return;
+    setLoadingEarlier(true);
+    try {
+      const params = new URLSearchParams({
+        orgId,
+        conversationId: activeId,
+        before: cursor.before,
+        beforeId: cursor.beforeId,
+      });
+      const response = await fetch(`/api/messages?${params}`, {
+        signal: AbortSignal.timeout(12000),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setStatus(data.error || "Could not load earlier messages.");
+        return;
+      }
+      if (activeIdRef.current !== activeId) return;
+      const earlier = (data.messages ?? []) as Message[];
+      stickToBottomRef.current = false;
+      const node = messagesRef.current;
+      scrollAnchorRef.current = node ? { height: node.scrollHeight, top: node.scrollTop } : null;
+      setMessages((prev) => prependEarlier(prev, earlier));
+      setHasEarlier(Boolean(data.hasEarlier));
+    } catch {
+      setStatus("Could not load earlier messages.");
+    } finally {
+      setLoadingEarlier(false);
+    }
+  }, [activeId, loadingEarlier, messages, orgId]);
 
   const ensureMembers = useCallback(async () => {
     if (membersLoadedRef.current && members.length > 0) return members;
@@ -432,7 +500,11 @@ export default function MessagesClient({
   async function selectConversation(id: string) {
     setActiveId(id);
     setPickerOpen(false);
+    setSafetyOpen(false);
     setStatus("");
+    setHasEarlier(false);
+    // Clear the previous thread's banner so it can never be shown against the wrong room.
+    setSupervisionNotice("");
     sinceRef.current = null;
     stickToBottomRef.current = true;
     const url = new URL(window.location.href);
@@ -602,40 +674,62 @@ export default function MessagesClient({
             {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
           </span>
         </PageHeader>
-      ) : (
+      ) : inboxUnread > 0 ? (
         <div className="messages-embed-status" aria-live="polite">
-          <span className={`messages-live ${live ? "on" : "off"}`}>
-            <i aria-hidden="true" />
-            {live ? "Live" : "Paused"}
-            {inboxUnread > 0 ? ` · ${inboxUnread} unread` : ""}
+          <span className="messages-live on">
+            {inboxUnread} unread
           </span>
         </div>
-      )}
+      ) : null}
 
       {loading ? (
         <EmptyState soft title="Loading…" aria-busy />
       ) : loadError ? (
-        <EmptyState
-          title="Could not load messages"
-          description={loadError}
-          badge="Setup"
-          badgeTone="setup"
-        >
-          <button type="button" className="app-button secondary" onClick={() => void reloadMessages()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: loadErrorStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError,
+            },
+          );
+          return (
+            <EmptyState
+              title={copy.title}
+              description={copy.description}
+              badge="Setup"
+              badgeTone="setup"
+            >
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => void reloadMessages()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : (
         <div className="messages-layout">
           <aside className="chat-sidebar">
-            <span className="eyebrow">Inbox</span>
             <button
               type="button"
               className="messages-new-dm"
               onClick={() => void openMemberPicker()}
               disabled={sending}
             >
-              + Private message
+              New Message
             </button>
             {conversations.map((item) => (
               <button
@@ -661,17 +755,29 @@ export default function MessagesClient({
               <EmptyState
                 soft
                 title="No conversations yet"
-                description="Your team channel opens with this workspace. Private chats appear after you message a teammate in this org."
+                description="Your team channel opens with this workspace."
               />
             ) : null}
+            {/* Visible to every member, not just admins: the people the rule applies to are the
+                ones who most need to be able to read it. */}
+            <button
+              type="button"
+              className="chat-safety-toggle"
+              onClick={() => setSafetyOpen((open) => !open)}
+              aria-expanded={safetyOpen}
+            >
+              {safetyOpen ? "Hide message settings" : "Message settings"}
+            </button>
           </aside>
 
           <section className="chat-main">
-            {!active ? (
+            {safetyOpen ? (
+              <ChatSafetyPanel orgId={orgId} />
+            ) : !active ? (
               <EmptyState
                 soft
                 title="Team messages"
-                description="Use the org team channel for shared updates, or message a teammate privately. Conversations stay organization-scoped — never shared across teams."
+                description="The team channel, or a private message."
               >
                 <button type="button" className="app-button" onClick={() => void openMemberPicker()}>
                   Message a teammate
@@ -688,6 +794,19 @@ export default function MessagesClient({
                     <strong className="shared-warning">Visible to all org members</strong>
                   ) : null}
                 </header>
+
+                {active.kind === "dm" && supervisionNotice ? (
+                  // No dismiss control by design: the two-adult rule is only meaningful if both
+                  // people can see, at all times, who else can read what they write.
+                  <div className="chat-supervision-banner" role="note" aria-live="polite">
+                    <span>Second adult in this chat</span>
+                    {supervisionNotice}
+                    <small>
+                      Required by your team&rsquo;s chat safety policy. It cannot be turned off from
+                      inside this conversation.
+                    </small>
+                  </div>
+                ) : null}
 
                 {active.kind === "team" && pinned.length > 0 ? (
                   <div className="messages-pins" aria-label="Pinned match-day notes">
@@ -712,11 +831,22 @@ export default function MessagesClient({
 
                 <div
                   className="messages"
+                  ref={messagesRef}
                   onScroll={(event) => {
                     const node = event.currentTarget;
                     stickToBottomRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 80;
                   }}
                 >
+                  {hasEarlier && messages.length > 0 ? (
+                    <button
+                      type="button"
+                      className="app-button secondary messages-load-earlier"
+                      onClick={() => void loadEarlier()}
+                      disabled={loadingEarlier}
+                    >
+                      {loadingEarlier ? "Loading earlier messages…" : "Show earlier messages"}
+                    </button>
+                  ) : null}
                   {messages.length === 0 ? (
                     <EmptyState
                       soft
@@ -966,6 +1096,13 @@ export default function MessagesClient({
           </button>
           <span className="eyebrow">Team members</span>
           <p>Pick someone to message.</p>
+          {/* A DM refused by the org's chat safety policy fails here, with the picker still open
+              and no conversation to render into. Without this the refusal was silent. */}
+          {status ? (
+            <p className="chat-safety-note" role="status">
+              {status}
+            </p>
+          ) : null}
           {members.length === 0 ? (
             <EmptyState
               soft

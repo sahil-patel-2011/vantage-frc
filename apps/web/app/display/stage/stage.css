@@ -1,0 +1,532 @@
+/* PIT DISPLAY V2 — 10-foot board.
+ *
+ * Every size is derived from --stage-scale (the on-screen text-size toggle)
+ * multiplied into a clamp(), so the whole board grows together instead of one
+ * heading escaping its row. Colors are local tokens with a dark default (a pit
+ * TV lives in a dark hall) and an explicit light set so the signed-in preview
+ * on a laptop is readable too. Controls are 48px targets — competition day is
+ * gloves-and-hurry.
+ */
+
+.display-stage {
+  --stage-scale: 1;
+  --stage-bg: #050608;
+  --stage-ink: #f4f6f8;
+  --stage-muted: rgba(244, 246, 248, 0.66);
+  --stage-line: rgba(255, 255, 255, 0.14);
+  --stage-panel: rgba(255, 255, 255, 0.05);
+  --stage-red: #ff5b6b;
+  --stage-blue: #5aa9ff;
+  --stage-urgent: #ff3b30;
+  --stage-ok: #35d07f;
+  --stage-accent: #ffd166;
+
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: calc(0.75rem * var(--stage-scale));
+  min-height: 100dvh;
+  padding: clamp(0.75rem, 2vw, 2rem);
+  background: var(--stage-bg);
+  color: var(--stage-ink);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: calc(clamp(1rem, 1.4vw, 1.35rem) * var(--stage-scale));
+  overflow-x: hidden;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .display-stage {
+    --stage-bg: #f7f8fa;
+    --stage-ink: #0d1117;
+    --stage-muted: rgba(13, 17, 23, 0.62);
+    --stage-line: rgba(13, 17, 23, 0.14);
+    --stage-panel: rgba(13, 17, 23, 0.04);
+    --stage-red: #c62b3c;
+    --stage-blue: #1c62c9;
+    --stage-urgent: #c81e14;
+    --stage-ok: #12794a;
+    --stage-accent: #8a5a00;
+  }
+}
+
+:root[data-theme="light"] .display-stage {
+  --stage-bg: #f7f8fa;
+  --stage-ink: #0d1117;
+  --stage-muted: rgba(13, 17, 23, 0.62);
+  --stage-line: rgba(13, 17, 23, 0.14);
+  --stage-panel: rgba(13, 17, 23, 0.04);
+  --stage-red: #c62b3c;
+  --stage-blue: #1c62c9;
+  --stage-urgent: #c81e14;
+  --stage-ok: #12794a;
+  --stage-accent: #8a5a00;
+}
+
+.display-stage.loading,
+.display-stage.error {
+  grid-template-rows: none;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+
+.display-stage.loading h1,
+.display-stage.error h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 3rem);
+}
+
+.display-stage.error h1 {
+  color: var(--stage-urgent);
+}
+
+.display-stage p {
+  margin: 0;
+  color: var(--stage-muted);
+  line-height: 1.45;
+}
+
+/* ---------- header ---------- */
+
+.stage-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--stage-line);
+}
+
+.stage-brand {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.stage-brand span {
+  font-size: 0.8em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
+}
+
+.stage-brand strong {
+  font-size: calc(clamp(1.1rem, 2.4vw, 2rem) * var(--stage-scale));
+  line-height: 1.1;
+}
+
+.stage-phase {
+  display: grid;
+  gap: 0.15rem;
+  text-align: right;
+}
+
+.stage-phase span {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stage-phase .is-online {
+  color: var(--stage-ok);
+}
+
+.stage-phase .is-offline {
+  color: var(--stage-urgent);
+}
+
+.stage-phase time {
+  font-size: 0.8em;
+  color: var(--stage-muted);
+}
+
+.stage-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.display-stage.is-chrome .stage-controls,
+.display-stage.loading .stage-controls,
+.display-stage.error .stage-controls {
+  opacity: 1;
+}
+
+.stage-btn {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 1rem;
+  border: 1px solid var(--stage-line);
+  border-radius: 10px;
+  background: var(--stage-panel);
+  color: var(--stage-ink);
+  font: inherit;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.stage-btn:hover,
+.stage-btn:focus-visible {
+  border-color: var(--stage-accent);
+}
+
+/* ---------- screen frame ---------- */
+
+.stage-screen {
+  display: grid;
+  align-content: start;
+  gap: calc(0.6rem * var(--stage-scale));
+  min-width: 0;
+}
+
+.stage-screen-title {
+  margin: 0;
+  font-size: calc(clamp(0.85rem, 1.4vw, 1.15rem) * var(--stage-scale));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
+}
+
+.stage-empty {
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  max-width: 40ch;
+  margin: 0 auto;
+}
+
+.stage-empty h1 {
+  margin: 0;
+  font-size: calc(clamp(1.4rem, 3.4vw, 2.6rem) * var(--stage-scale));
+}
+
+.stage-note {
+  color: var(--stage-muted);
+  font-size: calc(clamp(1rem, 1.7vw, 1.5rem) * var(--stage-scale));
+}
+
+.stage-note-inline {
+  font-size: 0.85em;
+}
+
+.stage-error {
+  color: var(--stage-urgent);
+  font-size: 0.85em;
+}
+
+/* ---------- big numbers ---------- */
+
+.stage-clock {
+  display: block;
+  font-size: calc(clamp(3rem, 13vw, 11rem) * var(--stage-scale));
+  font-variant-numeric: tabular-nums;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.stage-kicker {
+  font-size: calc(clamp(1rem, 2.2vw, 2rem) * var(--stage-scale));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
+}
+
+.stage-queue,
+.stage-next,
+.stage-thanks {
+  display: grid;
+  gap: calc(0.5rem * var(--stage-scale));
+  min-width: 0;
+}
+
+.stage-countdown.is-urgent .stage-clock,
+.stage-countdown.is-urgent .stage-cue {
+  color: var(--stage-urgent);
+}
+
+.stage-cue {
+  display: inline-block;
+  font-style: normal;
+  font-weight: 800;
+  font-size: calc(clamp(1.5rem, 4.5vw, 3.5rem) * var(--stage-scale));
+  letter-spacing: 0.08em;
+}
+
+.stage-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stage-stages li {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--stage-line);
+  border-radius: 999px;
+  color: var(--stage-muted);
+  font-size: 0.85em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stage-stages li.is-current {
+  border-color: var(--stage-accent);
+  color: var(--stage-ink);
+  font-weight: 700;
+}
+
+.stage-block {
+  display: grid;
+  gap: 0.3rem;
+  padding: calc(0.6rem * var(--stage-scale));
+  border-radius: 12px;
+  background: var(--stage-panel);
+}
+
+.stage-block h2 {
+  margin: 0;
+  font-size: 0.85em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
+}
+
+.stage-block ul {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+}
+
+.stage-block li.is-near {
+  color: var(--stage-accent);
+  font-weight: 700;
+}
+
+/* ---------- alliances, tables, bracket ---------- */
+
+.stage-alliance {
+  margin: 0;
+  font-size: calc(clamp(1.1rem, 2.6vw, 2.4rem) * var(--stage-scale));
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.stage-alliance.is-red,
+.stage-table .is-red {
+  color: var(--stage-red);
+}
+
+.stage-alliance.is-blue,
+.stage-table .is-blue {
+  color: var(--stage-blue);
+}
+
+.stage-alliance.is-winner {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.stage-table-wrap {
+  overflow-x: auto;
+}
+
+.stage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(clamp(0.95rem, 1.8vw, 1.9rem) * var(--stage-scale));
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-table th,
+.stage-table td {
+  padding: 0.35em 0.6em;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--stage-line);
+}
+
+.stage-table thead th {
+  font-size: 0.6em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--stage-muted);
+}
+
+.stage-table tbody tr.is-ours {
+  background: var(--stage-panel);
+}
+
+.stage-table tbody tr.is-ours th {
+  color: var(--stage-accent);
+}
+
+.stage-bracket {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: calc(0.75rem * var(--stage-scale));
+}
+
+.stage-bracket h2 {
+  margin: 0 0 0.3rem;
+  font-size: 0.9em;
+  letter-spacing: 0.14em;
+  color: var(--stage-muted);
+}
+
+.stage-bracket ul {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stage-bracket li {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  background: var(--stage-panel);
+}
+
+.stage-bracket li .stage-alliance {
+  font-size: calc(clamp(0.95rem, 1.6vw, 1.5rem) * var(--stage-scale));
+}
+
+.stage-bracket small {
+  color: var(--stage-muted);
+  font-size: 0.7em;
+}
+
+/* ---------- venue map ---------- */
+
+.stage-map {
+  display: grid;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.stage-map svg {
+  width: 100%;
+  max-height: 62dvh;
+  height: auto;
+}
+
+.stage-shape {
+  fill: var(--stage-panel);
+  stroke: var(--stage-line);
+  stroke-width: 1;
+}
+
+.stage-shape.kind-area {
+  fill: transparent;
+  stroke-dasharray: 4 3;
+}
+
+.stage-shape.is-requester {
+  stroke: var(--stage-accent);
+  stroke-width: 2.5;
+}
+
+.stage-shape.is-ours {
+  fill: var(--stage-accent);
+  stroke: var(--stage-ink);
+  stroke-width: 3;
+}
+
+.stage-shape-label {
+  fill: var(--stage-ink);
+  font-size: 7px;
+  font-weight: 700;
+}
+
+/* ---------- rotation dots + sponsor scroll ---------- */
+
+.stage-dots {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  justify-content: center;
+}
+
+.stage-dots li {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--stage-line);
+}
+
+.stage-dots li.is-current {
+  background: var(--stage-accent);
+}
+
+.stage-sponsors {
+  overflow: hidden;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--stage-line);
+}
+
+.stage-sponsor-track {
+  display: flex;
+  gap: 3rem;
+  width: max-content;
+  color: var(--stage-muted);
+  font-size: calc(clamp(0.85rem, 1.3vw, 1.3rem) * var(--stage-scale));
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  animation: stage-marquee 45s linear infinite;
+}
+
+@keyframes stage-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-sponsor-track {
+    animation: none;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stage-sponsor-track span[aria-hidden="true"] {
+    display: none;
+  }
+}
+
+.stage-sponsor-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--stage-muted);
+  font-size: calc(clamp(0.95rem, 1.6vw, 1.6rem) * var(--stage-scale));
+}
+
+@media (max-width: 480px) {
+  .stage-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .stage-phase {
+    text-align: left;
+  }
+  .stage-controls {
+    opacity: 1;
+  }
+}

@@ -15,7 +15,7 @@ import {
   type PicklistJustifierNextAction,
   type PicklistJustifierShellKind,
 } from "../../lib/picklist-justifier/picklist-justifier-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./picklist-justifier.css";
 
@@ -82,7 +82,7 @@ function JustifierShell({
 }) {
   const actions = picklistJustifierNextActions({ orgId, shell });
   const copy = picklistJustifierShellCopy(shell);
-  const competitionHref = hubHref("/competition", "picklist-justifier", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "picklist-justifier", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const collabHref = hubHref("/competition", "picklist-collab", orgId);
 
@@ -196,7 +196,7 @@ export default function PicklistJustifierClient() {
   const relatedLinks = picklistJustifierRelatedLinks(orgId, {
     include: [...PICKLIST_JUSTIFIER_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "picklist-justifier", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "picklist-justifier", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const collabHref = hubHref("/competition", "picklist-collab", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);

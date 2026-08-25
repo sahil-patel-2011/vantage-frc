@@ -141,7 +141,7 @@ export const SETTINGS_DEEP_LINKS: ProductNavItem[] = [
   { href: "/security", label: "Security", icon: "gear" },
   { href: "/team/admin", label: "Team admin", icon: "gear" },
   { href: "/team/data", label: "Team data", icon: "stats" },
-  { href: "/team/ai-keys", label: "AI API keys", icon: "gear" },
+  { href: "/team/ai-keys", label: "AI keys", icon: "gear" },
   { href: "/schedule", label: "Schedule", icon: "calendar" },
   { href: "/inventory", label: "Inventory", icon: "grid" },
 ];
@@ -195,7 +195,7 @@ export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: Produc
 export const FEATURED_SOFT_UI_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
   { href: "/alliance-selection-desk", label: "Alliance desk", icon: "swords" },
   { href: "/season-planning-workspace", label: "Season planning", icon: "calendar" },
-  { href: "/team/ai-keys", label: "AI API keys", icon: "gear" },
+  { href: "/team/ai-keys", label: "AI keys", icon: "gear" },
   { href: "/writer", label: "Writer", icon: "bolt" },
 ];
 

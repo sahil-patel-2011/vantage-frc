@@ -78,6 +78,23 @@ export function inviteSignInHref(token?: string | null): string {
   return `/signin?next=${encodeURIComponent(inviteReturn)}`;
 }
 
+/**
+ * Headline shown while a person is still authenticating: the sign-in card keeps
+ * the invite in view the whole way so nobody wonders what they are joining.
+ * Blank-safe — an unloaded preview never invents a team number.
+ */
+export function inviteJoiningHeadline(
+  preview: Pick<InvitePreview, "orgName" | "teamNumber"> | null | undefined,
+): string {
+  const teamNumber = preview?.teamNumber;
+  if (teamNumber != null && Number.isFinite(teamNumber)) {
+    return `You’re joining Team ${teamNumber}`;
+  }
+  const name = preview?.orgName?.trim();
+  if (name) return `You’re joining ${name}`;
+  return "You’re joining a team";
+}
+
 /** Clear team identity line: Team N · Org name · Role. */
 export function formatInviteTeamIdentity(
   preview: Pick<InvitePreview, "orgName" | "teamNumber" | "role">,
@@ -92,18 +109,27 @@ export function formatInviteTeamIdentity(
   return parts.length > 0 ? parts.join(" · ") : "Team workspace";
 }
 
-/** Terms checkbox required unless this login already accepted. */
-export function inviteTermsRequired(termsAcceptedAt: string | null | undefined): boolean {
-  return !termsAcceptedAt?.trim();
+/**
+ * Both consent checkboxes are shown unless this login has already accepted BOTH
+ * documents. Migration 0460 backfills nothing, so a profile holding only the old
+ * combined 0163 terms timestamp is asked again.
+ */
+export function inviteLegalRequired(input: {
+  termsAcceptedAt?: string | null;
+  privacyAcceptedAt?: string | null;
+}): boolean {
+  return !input.termsAcceptedAt?.trim() || !input.privacyAcceptedAt?.trim();
 }
+
 
 export function inviteCanAccept(input: {
   termsAccepted: boolean;
-  termsRequired: boolean;
+  privacyAccepted: boolean;
+  legalRequired: boolean;
   status?: string | null;
 }): boolean {
   if (normalizeInviteStatus(input.status) !== "pending") return false;
-  if (input.termsRequired && !input.termsAccepted) return false;
+  if (input.legalRequired && !(input.termsAccepted && input.privacyAccepted)) return false;
   return true;
 }
 
@@ -116,8 +142,10 @@ export function classifyInviteFlow(input: {
   preview: InvitePreview | null | undefined;
   error?: string | null;
 }): InviteFlowKind {
-  if (!input.token.trim()) return "missing_token";
+  // Loading is checked first: a bare `/invite` may still be recovering the
+  // stashed token, and flashing "link incomplete" at that moment is a lie.
   if (input.loading) return "loading";
+  if (!input.token.trim()) return "missing_token";
   if (input.preview) {
     const status = normalizeInviteStatus(input.preview.status);
     if (status === "pending") {

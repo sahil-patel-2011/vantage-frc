@@ -86,7 +86,7 @@ export async function resolveReferenceAccess(
     );
     credentialAvailable = Boolean(credentials.rows[0]?.ok);
   } catch {
-    credentialAvailable = false;
+    // stays false
   }
   // sync_cursors is worker-private; infer cache from readable reference tables.
   const cache = await client.query<{ ok: boolean }>(
@@ -109,8 +109,7 @@ export async function resolveReferenceAccess(
     eventMetricRows = Number(statCounts.rows[0]?.eventMetricRows ?? 0);
     yearMetricRows = Number(statCounts.rows[0]?.yearMetricRows ?? 0);
   } catch {
-    eventMetricRows = 0;
-    yearMetricRows = 0;
+    // both stay 0
   }
 
   return {
@@ -225,6 +224,10 @@ async function loadScoutOperations(
 }> {
   if (!teamKeys.length) return { operations: [], opponentFoulRisk: "unknown", provenance: [] };
 
+  // Published-schema role map so custom form-builder fields reach strategy.
+  const { loadScoutFieldRoles } = await import("./scout-field-roles");
+  const fieldRoles = await loadScoutFieldRoles(client, orgId, eventKey);
+
   const [matchRows, pitRows] = await Promise.all([
     client.query<{
       id: string;
@@ -321,7 +324,7 @@ async function loadScoutOperations(
     })),
   ];
 
-  const built = buildOperationsFromScoutEntries(entries);
+  const built = buildOperationsFromScoutEntries(entries, { roles: fieldRoles });
   const operations: TeamOperationalSignal[] = built.map((row) => ({
     teamKey: row.teamKey,
     scoutSample: row.scoutSample,

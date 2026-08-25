@@ -99,7 +99,7 @@ export function SponsoredPromoBanner({
       {expired ? (
         <div style={{ marginTop: "0.45rem" }}>
           <a className="app-button secondary" href={`/team/ai-keys?orgId=${encodeURIComponent(orgId)}`}>
-            Add AI API keys
+            Add AI keys
           </a>
         </div>
       ) : null}

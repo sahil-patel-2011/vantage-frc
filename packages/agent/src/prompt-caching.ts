@@ -29,21 +29,46 @@ export type AnthropicContentBlock =
   | { type: "text"; text: string; cache_control?: { type: "ephemeral" } }
   | Record<string, unknown>;
 
+/**
+ * Anthropic prompt caching is a prefix match: a `cache_control` breakpoint on a
+ * block caches everything up to AND INCLUDING that block. Per the docs the
+ * breakpoint therefore goes on the LAST block of the stable prefix — never on
+ * every block (the API rejects requests with more than 4 breakpoints).
+ *
+ * Placement here:
+ * - last block: caches the full system array for repeat turns on the same
+ *   thread (same context re-sent each turn);
+ * - first block (when there is more than one): the frozen Vantage system
+ *   prompt still hits even when the volatile context blocks after it change.
+ *
+ * That is at most 2 breakpoints, always within the 4-breakpoint API limit.
+ */
 export function applyAnthropicCacheControl(
   blocks: Array<{ type: string; text: string }>,
   enabled: boolean,
 ): AnthropicContentBlock[] {
   if (!enabled || blocks.length === 0) return blocks;
+  const last = blocks.length - 1;
   return blocks.map((block, index) => {
-    if (index === blocks.length - 1) return block;
-    return { ...block, cache_control: { type: "ephemeral" as const } };
+    if (index === last || (index === 0 && blocks.length > 1)) {
+      return { ...block, cache_control: { type: "ephemeral" as const } };
+    }
+    return block;
   });
 }
 
-export function openAiPromptCachePreference(enabled: boolean): {
-  promptCachingEnabled: boolean;
-} {
-  return { promptCachingEnabled: enabled };
+/**
+ * OpenAI-style Chat Completions APIs cache automatically (>=1024-token
+ * prefixes) and report hits via `usage.prompt_tokens_details.cached_tokens`;
+ * there is no standard request field to opt in. Strict upstreams
+ * (api.openai.com) reject unknown top-level body fields, so this deliberately
+ * returns NO wire fields regardless of the flag — upstreams that don't cache
+ * simply bill normally, nothing can fail because of an unsupported field. The
+ * org toggle only drives Anthropic `cache_control` placement and metering
+ * metadata.
+ */
+export function openAiPromptCachePreference(_enabled: boolean): Record<string, never> {
+  return {};
 }
 
 export function parseAnthropicUsage(usage: {

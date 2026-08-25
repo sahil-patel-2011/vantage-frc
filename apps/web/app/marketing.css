@@ -45,13 +45,13 @@
 @media(max-width:900px){.hero,.workflow-story,.waitlist{grid-template-columns:1fr}.hero-waitlist{max-width:620px}.decision-grid{grid-template-columns:1fr 1fr}.proof-grid{grid-template-columns:1fr}.proof-grid article,.proof-grid article+article{padding:28px 0;border-right:0;border-bottom:1px solid var(--m-line)}.pricing-grid{grid-template-columns:1fr}.pricing-grid article{min-height:auto}.payg{grid-template-columns:1fr;gap:20px}}
 @media(max-width:700px){.nav{padding-inline:16px}.nav nav{display:none}.waitlist-nav{display:none}.hero{padding-top:54px}.marketing-site h1{font-size:clamp(43px,13vw,62px)}.actions{align-items:flex-start;flex-direction:column}.product-preview>header{grid-template-columns:1fr}.product-preview>header b{display:none}.preview-body{grid-template-columns:1fr}.preview-body aside{border-right:0;border-bottom:1px solid var(--m-line)}.section-heading{grid-template-columns:1fr;gap:15px}.decision-grid{grid-template-columns:1fr}.decision-grid article{min-height:auto}.decision-grid h3{margin-top:30px}.marketing-footer{align-items:flex-start;flex-direction:column}.marketing-footer p{margin:0}.pricing-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
-.wordmark img{display:block;width:150px;height:auto}.nav nav a[aria-current="page"]{color:var(--m-ink);box-shadow:inset 0 -1px var(--m-ink)}.mobile-menu{display:none}
+.wordmark img{display:block;width:150px;height:auto}.nav nav a[aria-current="page"]{color:var(--m-ink);box-shadow:inset 0 -1px var(--m-ink)}
 .route-page{min-height:80vh}.route-hero{padding:clamp(70px,9vw,125px) clamp(20px,8vw,128px) clamp(55px,7vw,90px);border-bottom:1px solid var(--m-line)}.route-hero h1{max-width:970px;margin:20px 0;font-size:clamp(48px,6.4vw,88px)}.route-hero>p,.route-hero>div>p{max-width:800px;color:var(--m-muted);font-size:18px;line-height:1.65}.feature-state-grid{display:grid;grid-template-columns:repeat(3,1fr);padding:0 clamp(20px,8vw,128px) 100px}.feature-state-grid article{min-height:300px;padding:30px;border:1px solid var(--m-line);background:#fff}.feature-state-grid h2{margin:38px 0 12px;font-size:25px}.feature-state-grid p,.cad-paths p{color:var(--m-muted);line-height:1.62}.status-badge{display:inline-flex;align-items:center;padding:5px 9px;border:1px solid var(--m-line);border-radius:980px;color:var(--m-muted);background:var(--m-soft);font:600 10px var(--m-sans);letter-spacing:.02em}.status-badge.available{border-color:#c7d7cc;color:#3d5c45;background:#f0f5f1}.status-badge.shipping{border-color:#d2d2d7;color:#6e6e73;background:#f5f5f7}.status-badge.setup{border-color:#e4d9c5;color:#6b5a3a;background:#faf6ef}
 .real-screen{display:grid;grid-template-columns:.7fr 1.3fr;gap:60px;padding:90px clamp(20px,8vw,128px);background:#ecece8}.real-screen>div:first-child h2{margin:18px 0;font-size:clamp(34px,4vw,54px)}.real-screen>div:first-child p{color:var(--m-muted);line-height:1.65}.screen-frame{border:1px solid #bfc6c4;background:#fff;box-shadow:0 18px 45px rgba(23,39,44,.08)}.screen-frame>header{display:flex;gap:16px;padding:13px 16px;border-bottom:1px solid var(--m-line);font:600 10px "JetBrains Mono"}.screen-frame>header span{margin-left:auto;color:var(--m-accent-dark)}.screen-frame>header b{color:#38604f}.screen-frame>div{display:grid;grid-template-columns:180px 1fr}.screen-frame aside{display:grid;align-content:start;gap:10px;padding:22px;background:#f1f2ef;border-right:1px solid var(--m-line)}.screen-frame aside span,.screen-frame aside small{font:10px "JetBrains Mono";color:var(--m-muted)}.screen-frame aside strong{font-size:24px}.screen-frame section{display:grid;gap:14px;padding:22px}.screen-frame label{display:grid;gap:7px;color:#47555b;font:600 10px "JetBrains Mono"}.screen-frame input,.screen-frame select{width:100%;padding:11px;color:#172126;background:#fff;border:1px solid #aeb8b6}.screen-frame button{min-height:42px;color:#fff;background:var(--m-accent);border:0;font-weight:700}
 .flow-map{max-width:1050px;margin:auto;padding:80px 24px}.flow-map>article{display:grid;grid-template-columns:70px 1fr;gap:30px}.flow-map>article>div{display:flex;align-items:center;flex-direction:column}.flow-map>article>div b{display:grid;place-items:center;width:38px;height:38px;color:#fff;background:var(--m-accent);font:600 12px "JetBrains Mono"}.flow-map>article>div i{width:1px;min-height:130px;flex:1;background:#bcc4c2}.flow-map section{padding:0 0 48px}.flow-map h2{margin:14px 0 8px;font-size:30px}.flow-map p{max-width:700px;color:var(--m-muted);line-height:1.6}.workflow-principles{display:grid;grid-template-columns:repeat(3,1fr);padding:85px clamp(20px,8vw,128px);background:#ecece8}.workflow-principles article{padding:0 32px;border-right:1px solid #cbd0ce}.workflow-principles article:first-child{padding-left:0}.workflow-principles article:last-child{border-right:0}.workflow-principles h2{margin:20px 0 12px;font-size:26px}.workflow-principles p{color:var(--m-muted);line-height:1.65}
 .split-hero{display:grid;grid-template-columns:1fr minmax(360px,.75fr);gap:clamp(36px,5vw,72px);align-items:start}.split-hero h1{font-size:clamp(40px,4.8vw,64px);line-height:1.05;max-width:18ch}.split-hero .button{margin-top:18px}.code-route-hero{padding-block:clamp(48px,6vw,88px) clamp(40px,5vw,72px)}.code-route-hero>div>p{max-width:34rem}.code-route-hero .product-demo{min-width:0;max-width:560px;justify-self:end;width:100%}.cad-screen{border:1px solid #bfc6c4;background:#fff;box-shadow:0 20px 50px rgba(23,39,44,.09)}.cad-screen>header{display:flex;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--m-line);font:600 10px "JetBrains Mono"}.cad-screen>header span{color:var(--m-accent-dark)}.cad-screen>header b{color:#38604f}.cad-screen>section{padding:28px}.cad-screen small{color:var(--m-accent-dark);font:600 9px "JetBrains Mono"}.cad-screen h2{margin:11px 0;font-size:29px}.cad-screen p{color:var(--m-muted);line-height:1.55}.cad-screen ol{margin:22px 0 0;padding:0;list-style:none}.cad-screen li{display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:12px 0;border-top:1px solid var(--m-line);font-size:12px}.cad-screen li b{color:var(--m-accent-dark);font-family:"JetBrains Mono"}.cad-screen li span{color:var(--m-muted);font:9px "JetBrains Mono"}.cad-paths{display:grid;grid-template-columns:repeat(3,1fr);padding:90px clamp(20px,8vw,128px)}.cad-paths article{padding:28px;border:1px solid var(--m-line)}.cad-paths h2{margin:34px 0 12px;font-size:25px}.technical-note{max-width:1100px;margin:0 auto 100px;padding:45px;border-left:3px solid var(--m-accent);background:#ecece8}.technical-note h2{margin:16px 0;font-size:34px}.technical-note p{color:var(--m-muted);line-height:1.65}
 @media(max-width:900px){.feature-state-grid{grid-template-columns:1fr 1fr}.real-screen,.split-hero{grid-template-columns:1fr}.workflow-principles,.cad-paths{grid-template-columns:1fr}.workflow-principles article{padding:28px 0;border-right:0;border-bottom:1px solid #cbd0ce}.cad-paths article{min-height:auto}}
-@media(max-width:700px){.nav>.nav-actions{display:none}.nav{gap:16px}.mobile-menu{display:block;margin-left:auto}.mobile-menu summary{display:grid;gap:4px;width:44px;height:44px;place-content:center;cursor:pointer;list-style:none}.mobile-menu summary::-webkit-details-marker{display:none}.mobile-menu summary span{width:20px;height:2px;background:var(--m-ink)}.mobile-menu nav{position:absolute;top:72px;right:0;left:0;display:grid!important;gap:0;padding:10px 16px 18px;border-bottom:1px solid var(--m-line);background:var(--m-paper)}.mobile-menu nav a{min-height:46px;padding:13px 4px;box-shadow:none!important}.feature-state-grid{grid-template-columns:1fr;padding-bottom:65px}.feature-state-grid article{min-height:auto}.real-screen{gap:35px;padding-block:65px}.screen-frame>div{grid-template-columns:1fr}.screen-frame aside{border-right:0;border-bottom:1px solid var(--m-line)}.workflow-principles{padding-block:55px}.cad-paths{padding-block:55px}.technical-note{margin:0 20px 70px;padding:28px}.wordmark img{width:132px}}
+@media(max-width:700px){.nav{gap:16px}.feature-state-grid{grid-template-columns:1fr;padding-bottom:65px}.feature-state-grid article{min-height:auto}.real-screen{gap:35px;padding-block:65px}.screen-frame>div{grid-template-columns:1fr}.screen-frame aside{border-right:0;border-bottom:1px solid var(--m-line)}.workflow-principles{padding-block:55px}.cad-paths{padding-block:55px}.technical-note{margin:0 20px 70px;padding:28px}.wordmark img{width:132px}}
 .marketing-site .eyebrow,.marketing-site .section-id,.product-preview span,.product-preview>header b,.decision-grid article>span,.field label,.confirmation .signal,.pricing-grid article>span,.pricing-grid article>div strong,.status-badge,.screen-frame>header,.screen-frame aside span,.screen-frame aside small,.screen-frame label,.flow-map>article>div b,.cad-screen>header,.cad-screen small,.cad-screen li b,.cad-screen li span{font-family:var(--m-mono)}.field input{font-family:var(--m-sans)}.auth-card .brand-logo{display:flex;width:max-content;margin-bottom:18px}.auth-card>.eyebrow{display:block}
 
 /* Signature-led marketing redesign — quiet light system. */
@@ -75,7 +75,7 @@
 .brand-hero-plane,.brand-hero-grid,.brand-hero-field,.brand-hero-mark{display:none!important}
 .brand-hero-copy{position:relative;z-index:1;max-width:640px}
 .brand-hero-wordmark{
-  margin:0 0 20px;font:700 clamp(52px,9vw,96px)/.88 var(--m-sans);
+  margin:0 0 20px;font-weight:700;font-size:clamp(52px,9vw,96px);line-height:.88;font-family:var(--m-sans);
   letter-spacing:-.045em;text-transform:none;color:var(--m-ink);
   animation:brand-copy-rise .7s cubic-bezier(.2,.7,.2,1) both;
 }
@@ -720,7 +720,7 @@
 .hero-operating-body{display:grid;grid-template-columns:1.08fr .92fr;gap:1px;background:rgba(169,193,224,.15)}
 .hero-operating-body>section{min-width:0;padding:clamp(20px,2.5vw,30px);background:rgba(13,25,43,.88)}
 .hero-operating-body small{color:#7f94b2;font:600 8px var(--m-mono);letter-spacing:.11em}
-.hero-next-decision>div{display:flex;align-items:end;gap:12px;margin:14px 0 10px}.hero-next-decision>div strong{font:600 clamp(48px,5vw,70px)/.85 var(--m-serif);letter-spacing:-.05em}.hero-next-decision>div span{padding-bottom:4px;color:#7dd3fc;font:600 10px var(--m-mono)}
+.hero-next-decision>div{display:flex;align-items:end;gap:12px;margin:14px 0 10px}.hero-next-decision>div strong{font-weight:600;font-size:clamp(48px,5vw,70px);line-height:.85;font-family:var(--m-serif);letter-spacing:-.05em}.hero-next-decision>div span{padding-bottom:4px;color:#7dd3fc;font:600 10px var(--m-mono)}
 .hero-next-decision>p{min-height:46px;margin:20px 0;color:#c7d2e2;font-size:12px;line-height:1.5}.hero-next-decision>footer{display:flex;flex-wrap:wrap;gap:7px}.hero-next-decision>footer span{padding:5px 7px;border:1px solid rgba(169,193,224,.18);border-radius:5px;color:#95a8c1;font:500 8px var(--m-mono)}
 .hero-readiness-preview>div:first-child{display:flex;align-items:end;justify-content:space-between;gap:12px}.hero-readiness-preview>div strong{font:600 30px var(--m-serif)}
 .hero-ready-track{height:5px;margin:18px 0;background:rgba(169,193,224,.13)}.hero-ready-track i{display:block;width:82%;height:100%;background:linear-gradient(90deg,#38bdf8,#4ade80)}
@@ -1008,7 +1008,6 @@
   border-color:var(--m-ink);
   box-shadow:0 0 0 3px rgba(0,0,0,.08);
 }
-.mobile-menu nav{top:56px!important;background:var(--m-white)!important}
 @media(max-width:700px){
   .nav{height:56px}
 }
@@ -1021,8 +1020,15 @@
   --m-ink:#1d1d1f;
   --m-muted:#515154;
   --m-line:rgba(0,0,0,.09);
-  --m-paper:#f5f5f7;
+  /* Warm canvas + white surfaces, per apps/web/BRAND.md. */
+  --m-paper:#f4f2ec;
   --m-white:#ffffff;
+  --m-canvas:#faf9f6;
+  --m-surface:#ffffff;
+  --m-surface-2:#f8f6f1;
+  --m-line-soft:rgba(0,0,0,.08);
+  --m-line-strong:rgba(0,0,0,.22);
+  --m-on-accent:#ffffff;
   --m-accent:#1d1d1f;
   --m-accent-dark:#000;
   --m-blue:#0071e3;
@@ -1031,14 +1037,14 @@
   --m-section-gap:clamp(48px,6vw,72px);
   --m-content:1120px;
   color:var(--m-ink);
-  background:var(--m-white);
+  background:var(--m-canvas);
   font-family:var(--m-sans);
 }
 .marketing-lux .nav{
   height:58px;
   padding-inline:var(--m-pad-x);
-  border-bottom:1px solid rgba(0,0,0,.08);
-  background:#fff;
+  border-bottom:1px solid var(--m-line-soft);
+  background:var(--m-surface);
 }
 .marketing-lux .nav nav{gap:28px}
 .marketing-lux .nav nav a,
@@ -1063,12 +1069,12 @@
   font:600 14px/1.2 var(--m-sans);letter-spacing:-.015em;
   transition:opacity .2s ease,background .2s ease,border-color .2s ease,transform .2s ease;
 }
-.marketing-lux .button.primary{background:var(--m-ink);color:#fff;border-color:transparent}
+.marketing-lux .button.primary{background:var(--m-ink);color:var(--m-on-accent);border-color:transparent}
 .marketing-lux .button.primary:hover{background:#000;opacity:.92}
 .marketing-lux .button.secondary{
-  background:transparent;color:var(--m-ink);border:1px solid rgba(0,0,0,.2);
+  background:transparent;color:var(--m-ink);border:1px solid var(--m-line-strong);
 }
-.marketing-lux .button.secondary:hover{border-color:var(--m-ink);background:rgba(0,0,0,.03)}
+.marketing-lux .button.secondary:hover{border-color:var(--m-ink);background:color-mix(in srgb,var(--m-ink) 5%,transparent)}
 .marketing-lux .button.compact{min-height:34px;padding:7px 15px;font-size:13px;font-weight:600}
 
 
@@ -1096,12 +1102,12 @@
 .marketing-lux .lux-hero-copy{max-width:480px}
 .marketing-lux .lux-kicker{
   margin:0 0 10px;color:var(--m-muted);
-  font:650 12px/1.2 var(--m-sans);letter-spacing:.12em;text-transform:uppercase;
+  font:600 12px/1.2 var(--m-sans);letter-spacing:.12em;text-transform:uppercase;
   animation:lux-rise .75s .02s cubic-bezier(.22,.8,.2,1) both;
 }
 .marketing-lux .lux-hero h1{
   max-width:16ch;margin:0 0 14px;
-  font:600 clamp(32px,4vw,48px)/1.08 var(--m-sans);
+  font-weight:600;font-size:clamp(32px,4vw,48px);line-height:1.08;font-family:var(--m-sans);
   letter-spacing:-.038em;color:var(--m-ink);
   animation:lux-rise .75s .04s cubic-bezier(.22,.8,.2,1) both;
 }
@@ -1185,7 +1191,7 @@
 }
 .marketing-lux .hero-soft-tabs span{
   flex:none;padding:6px 9px;border-radius:8px;
-  color:var(--sp-muted);background:transparent;font:650 10.5px/1 ui-sans-serif;white-space:nowrap;
+  color:var(--sp-muted);background:transparent;font:600 10.5px/1 ui-sans-serif;white-space:nowrap;
 }
 .marketing-lux .hero-soft-tabs span.is-active{
   color:var(--sp-ink);background:var(--sp-card);
@@ -1229,9 +1235,9 @@
   display:grid;gap:5px;margin:0;padding:0;list-style:none;
 }
 .marketing-lux .hero-soft-alliance li{
-  padding:6px 8px;border-radius:8px;background:#fff;
+  padding:6px 8px;border-radius:8px;background:var(--m-surface);
   border:1px solid color-mix(in srgb,var(--sp-line) 75%,transparent);
-  font:650 11px/1.2 var(--font-source-sans),ui-sans-serif;color:var(--sp-ink);
+  font:600 11px/1.2 var(--font-source-sans),ui-sans-serif;color:var(--sp-ink);
 }
 .marketing-lux .hero-soft-alliance.is-red li.is-you{
   color:#fff;background:#c2413a;border-color:#c2413a;
@@ -1260,7 +1266,7 @@
 }
 .marketing-lux .hero-soft-island span{
   flex:1;text-align:center;padding:7px 4px;border-radius:10px;
-  color:var(--sp-muted);font:650 11px/1 ui-sans-serif;
+  color:var(--sp-muted);font:600 11px/1 ui-sans-serif;
 }
 .marketing-lux .hero-soft-island span.is-active{color:var(--sp-accent);background:var(--sp-accent-soft)}
 .marketing-lux .hero-soft-island-more{color:var(--sp-ink)!important}
@@ -1268,7 +1274,7 @@
 
 .marketing-lux .lux-section-head{max-width:560px;margin:0 0 clamp(28px,3.5vw,40px)}
 .marketing-lux .lux-section-head h2{
-  margin:0 0 10px;font:600 clamp(24px,2.8vw,32px)/1.18 var(--m-sans);
+  margin:0 0 10px;font-weight:600;font-size:clamp(24px,2.8vw,32px);line-height:1.18;font-family:var(--m-sans);
   letter-spacing:-.028em;
 }
 .marketing-lux .lux-section-head p{margin:0;color:var(--m-muted);font-size:15px;line-height:1.5}
@@ -1283,7 +1289,7 @@
 .marketing-lux .product-glances-hubs{
   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
   gap:0;border-top:1px solid var(--m-line);
-  background:#fff;border-radius:16px;overflow:hidden;
+  background:var(--m-surface);border-radius:16px;overflow:hidden;
   border:1px solid var(--m-line);
 }
 .marketing-lux .product-glance{
@@ -1319,7 +1325,7 @@
 }
 .marketing-lux .lux-thesis h2{
   max-width:18ch;margin:0 0 clamp(24px,3vw,32px);
-  font:600 clamp(24px,2.8vw,32px)/1.18 var(--m-sans);
+  font-weight:600;font-size:clamp(24px,2.8vw,32px);line-height:1.18;font-family:var(--m-sans);
   letter-spacing:-.028em;
 }
 .marketing-lux .lux-thesis p{
@@ -1363,7 +1369,7 @@
 .marketing-lux .lux-pricing h2,
 .marketing-lux .pricing-preview h2{
   max-width:20ch;margin:0 0 10px;
-  font:600 clamp(24px,2.8vw,32px)/1.18 var(--m-sans);
+  font-weight:600;font-size:clamp(24px,2.8vw,32px);line-height:1.18;font-family:var(--m-sans);
   letter-spacing:-.028em;
 }
 .marketing-lux .lux-pricing p,
@@ -1381,7 +1387,7 @@
 .marketing-lux .pricing-price-strip{margin-top:28px;gap:12px}
 .marketing-lux .pricing-price-strip li{
   min-width:140px;padding:16px 18px;border-radius:14px;
-  border:1px solid rgba(0,0,0,.08);background:#fff;box-shadow:none;
+  border:1px solid var(--m-line-soft);background:var(--m-surface);box-shadow:none;
 }
 .marketing-lux .pricing-price-strip span{
   font:600 11px/1.2 var(--m-sans);letter-spacing:.04em;text-transform:uppercase;color:var(--m-muted);
@@ -1416,7 +1422,7 @@
 }
 .marketing-lux .lux-waitlist h2,
 .marketing-lux .waitlist h2{
-  margin:0 0 10px;font:600 clamp(26px,3vw,36px)/1.15 var(--m-sans);letter-spacing:-.028em;
+  margin:0 0 10px;font-weight:600;font-size:clamp(26px,3vw,36px);line-height:1.15;font-family:var(--m-sans);letter-spacing:-.028em;
 }
 .marketing-lux .lux-waitlist>div>p:not(.lux-wordmark),
 .marketing-lux .waitlist>div>p:not(.lux-wordmark){
@@ -1424,19 +1430,22 @@
 }
 .marketing-lux .soft-waitlist-form,
 .marketing-lux .waitlist-form{
-  padding:22px;border-radius:16px;border:1px solid rgba(0,0,0,.08);
-  background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.03);
+  padding:22px;border-radius:16px;border:1px solid var(--m-line-soft);
+  background:var(--m-surface);box-shadow:0 1px 2px rgba(0,0,0,.03);
 }
 .marketing-lux .field label{
   font:600 11px/1.2 var(--m-sans);letter-spacing:.04em;text-transform:uppercase;color:var(--m-muted);
 }
+.marketing-lux .consent,
+.marketing-lux .form-note,
+.marketing-lux .field label span{color:var(--m-muted)}
 .marketing-lux .field input{
-  border-radius:12px;border:1px solid rgba(0,0,0,.12);
-  background:#fafafa;padding:13px 14px;font:16px var(--m-sans);
+  border-radius:12px;border:1px solid var(--m-line-strong);
+  background:var(--m-surface-2);padding:13px 14px;font:16px var(--m-sans);
 }
 .marketing-lux .field input:focus{
   border-color:var(--m-ink);outline:none;
-  box-shadow:0 0 0 3px rgba(0,0,0,.08);background:#fff;
+  box-shadow:0 0 0 3px rgba(0,0,0,.08);background:var(--m-surface);
 }
 
 .marketing-lux .lux-route-hero,
@@ -1448,7 +1457,7 @@
 .marketing-lux .route-hero h1,
 .marketing-lux .pricing-hero h1{
   max-width:16ch;margin:0 0 14px;
-  font:600 clamp(30px,3.6vw,42px)/1.12 var(--m-sans);
+  font-weight:600;font-size:clamp(30px,3.6vw,42px);line-height:1.12;font-family:var(--m-sans);
   letter-spacing:-.032em;
 }
 .marketing-lux .lux-route-hero>p:not(.lux-wordmark),
@@ -1469,7 +1478,7 @@
   background:var(--m-paper);border:0;
 }
 .marketing-lux .pricing-page .payg h2{
-  font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);letter-spacing:-.03em;
+  font-weight:600;font-size:clamp(28px,3.4vw,40px);line-height:1.12;font-family:var(--m-sans);letter-spacing:-.03em;
 }
 
 /* Tight Individual/Team ↔ cards rhythm (was a huge empty gap from dual section pads). */
@@ -1496,7 +1505,7 @@
 }
 .marketing-lux .pricing-credits > h2{
   max-width:720px;margin:0 0 8px;
-  font:600 clamp(24px,3vw,34px)/1.15 var(--m-sans);letter-spacing:-.02em;
+  font-weight:600;font-size:clamp(24px,3vw,34px);line-height:1.15;font-family:var(--m-sans);letter-spacing:-.02em;
 }
 .marketing-lux .pricing-credits > p{
   max-width:680px;margin:0 0 22px;color:var(--m-muted);font-size:15px;line-height:1.55;
@@ -1527,7 +1536,7 @@
 }
 .marketing-lux .pricing-toggle button:hover{color:var(--m-ink)}
 .marketing-lux .pricing-toggle button.active{
-  background:var(--m-ink);border-color:var(--m-ink);color:#fff;
+  background:var(--m-ink);border-color:var(--m-ink);color:var(--m-on-accent);
 }
 .marketing-lux .pricing-savings-callout{
   flex:1 1 240px;max-width:42rem;margin:0;
@@ -1544,7 +1553,7 @@
 }
 .marketing-lux .pricing-grid article{
   border-radius:16px;border:1px solid rgba(0,0,0,.08);
-  box-shadow:none;background:#fff;padding:24px 24px 22px;
+  box-shadow:none;background:var(--m-surface);padding:24px 24px 22px;
   min-height:0;display:flex;flex-direction:column;
 }
 .marketing-lux .pricing-grid article.featured{
@@ -1554,7 +1563,7 @@
 .marketing-lux .pricing-grid .plan-flag{
   display:inline-block;align-self:flex-start;
   margin:0 0 10px;padding:4px 10px;
-  border-radius:999px;background:var(--m-ink);color:#fff;
+  border-radius:999px;background:var(--m-ink);color:var(--m-on-accent);
   font:600 11px/1.2 var(--m-sans)!important;letter-spacing:.02em;
   font-style:normal;
 }
@@ -1612,7 +1621,7 @@
 .marketing-lux .scout-integration>header h2,
 .marketing-lux .supporting-gallery>header h2{
   grid-column:1;max-width:18ch;margin:0;
-  font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);
+  font-weight:600;font-size:clamp(28px,3.4vw,40px);line-height:1.12;font-family:var(--m-sans);
   letter-spacing:-.03em;
 }
 .marketing-lux .assistant-story>header p,
@@ -1634,7 +1643,7 @@
   display:flex;flex-direction:column;gap:8px;
   min-height:132px;padding:22px 22px 20px;
   border-radius:14px;border:1px solid rgba(0,0,0,.12);
-  box-shadow:none;background:#fff;
+  box-shadow:none;background:var(--m-surface);
 }
 .marketing-lux .assistant-job-grid b,
 .marketing-lux .integration-steps b{
@@ -1690,12 +1699,12 @@
   border:1px solid var(--m-line);
   border-radius:14px;
   overflow:hidden;
-  background:#fff;
+  background:var(--m-surface);
 }
 .marketing-lux .lux-feature-grid li{
   display:flex;flex-direction:column;gap:8px;
   min-height:0;padding:18px 16px;
-  border:1px solid rgba(0,0,0,.1);border-radius:14px;background:#fff;
+  border:1px solid var(--m-line);border-radius:14px;background:var(--m-surface);
 }
 .marketing-lux .lux-hub-strip li{
   gap:6px;padding:18px 14px 20px;
@@ -1746,7 +1755,7 @@
 .marketing-lux .lux-season-steps{
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
   gap:0;margin:0;padding:0;list-style:none;
-  border:1px solid var(--m-line);border-radius:14px;overflow:hidden;background:#fff;
+  border:1px solid var(--m-line);border-radius:14px;overflow:hidden;background:var(--m-surface);
 }
 .marketing-lux .lux-season-steps-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .marketing-lux .lux-season-steps li{
@@ -1776,11 +1785,11 @@
 .marketing-lux .lux-deep-link-grid a{
   display:flex;flex-direction:column;gap:8px;
   min-height:112px;padding:22px;
-  border:1px solid rgba(0,0,0,.1);border-radius:16px;background:#fff;
+  border:1px solid var(--m-line);border-radius:16px;background:var(--m-surface);
   text-decoration:none;transition:border-color .2s ease,background .2s ease;
 }
 .marketing-lux .lux-deep-link-grid a:hover{
-  border-color:rgba(0,0,0,.22);background:#fafafa;
+  border-color:var(--m-line-strong);background:var(--m-surface-2);
 }
 .marketing-lux .lux-deep-link-grid strong{
   font:600 16px/1.25 var(--m-sans);letter-spacing:-.02em;
@@ -1809,7 +1818,7 @@
 }
 .marketing-lux .product-glance-dots i{
   display:block;width:7px;height:7px;border-radius:50%;
-  background:rgba(0,0,0,.12);
+  background:var(--m-line-strong);
 }
 .marketing-lux .hero-product-screen>header,
 .marketing-lux .product-glance-frame>header{
@@ -1823,7 +1832,7 @@
 .marketing-lux .product-glance-frame>header b{margin-left:auto}
 .marketing-lux .product-glance-frame{
   border-radius:16px;
-  background:linear-gradient(180deg,#fff,#f7f7f8);
+  background:linear-gradient(180deg,var(--m-surface),var(--m-surface-2));
   box-shadow:0 1px 2px rgba(0,0,0,.03);
 }
 .marketing-lux .flow-map.lux-content{max-width:var(--m-content);padding-inline:0}
@@ -1837,7 +1846,7 @@
 .marketing-lux .pricing-page .pricing-alternates h2,
 .marketing-lux .pricing-page .pricing-trial h2{
   max-width:18ch;margin:10px 0 12px;
-  font:600 clamp(28px,3.4vw,40px)/1.12 var(--m-sans);letter-spacing:-.03em;
+  font-weight:600;font-size:clamp(28px,3.4vw,40px);line-height:1.12;font-family:var(--m-sans);letter-spacing:-.03em;
 }
 .marketing-lux .pricing-page .pricing-alternates>p,
 .marketing-lux .pricing-page .pricing-trial>p{
@@ -1948,3 +1957,816 @@
   .marketing-lux .hero-soft-shell{animation:none!important}
 }
 
+
+/* ── Landing page: problem → Call Your Shot → what it runs → how FRC works → memory ── */
+.marketing-lux .lux-hero-note{
+  margin:16px 0 0!important;
+  max-width:34rem;
+  color:var(--m-muted);
+  font-size:13px!important;line-height:1.5!important;
+}
+.marketing-lux .lux-problem,
+.marketing-lux .lux-runs,
+.marketing-lux .lux-fit{
+  padding:var(--m-section-gap) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:transparent;
+}
+.marketing-lux .lux-loop,
+.marketing-lux .lux-memory{
+  padding:var(--m-section-gap) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+  background:var(--m-paper);
+}
+.marketing-lux .lux-lede{
+  max-width:44rem;margin:0 0 clamp(28px,3.5vw,40px);
+  color:var(--m-ink);font-size:clamp(16px,1.4vw,18px);line-height:1.55;
+  letter-spacing:-.012em;
+}
+.marketing-lux .lux-closer{
+  max-width:44rem;margin:clamp(24px,3vw,32px) 0 0;
+  color:var(--m-muted);font-size:15px;line-height:1.6;
+}
+
+/* Numbered teaching-loop cards */
+.marketing-lux .lux-loop-steps{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;margin:0;padding:0;list-style:none;
+  max-width:var(--m-content);
+}
+.marketing-lux .lux-loop-steps li{
+  display:flex;flex-direction:column;gap:10px;
+  padding:22px 20px 24px;
+  border:1px solid var(--m-line);border-radius:16px;
+  background:var(--m-surface);
+}
+.marketing-lux .lux-loop-steps>li>b{
+  display:inline-grid;place-items:center;
+  width:26px;height:26px;border-radius:999px;
+  background:var(--m-ink);color:var(--m-on-accent);
+  font:600 12px/1 var(--m-sans);
+}
+.marketing-lux .lux-loop-steps strong{
+  font:600 17px/1.25 var(--m-sans);letter-spacing:-.022em;
+}
+.marketing-lux .lux-loop-steps span{
+  color:var(--m-muted);font-size:14px;line-height:1.5;
+}
+
+/* Product-principle rules */
+.marketing-lux .lux-rules{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:0 32px;margin:clamp(28px,3.5vw,40px) 0 0;padding:0;list-style:none;
+  max-width:var(--m-content);
+  border-top:1px solid var(--m-line);
+}
+.marketing-lux .lux-rules li{
+  padding:16px 0;border-bottom:1px solid var(--m-line);
+  color:var(--m-muted);font-size:14.5px;line-height:1.5;
+}
+.marketing-lux .lux-rules li b{color:var(--m-ink);font-weight:600}
+
+/* "What it runs" — one honest line each */
+.marketing-lux .lux-runs-list{
+  margin:0;padding:0;max-width:var(--m-content);
+  border-top:1px solid var(--m-line);
+}
+.marketing-lux .lux-runs-list>div{
+  display:grid;grid-template-columns:minmax(180px,.32fr) minmax(0,1fr);
+  gap:8px 32px;align-items:baseline;
+  padding:20px 0;border-bottom:1px solid var(--m-line);
+}
+.marketing-lux .lux-runs-list dt{
+  margin:0;font:600 16px/1.3 var(--m-sans);letter-spacing:-.022em;color:var(--m-ink);
+}
+.marketing-lux .lux-runs-list dd{
+  margin:0;color:var(--m-muted);font-size:15px;line-height:1.55;
+}
+
+/* Capability statement used instead of social proof */
+.marketing-lux .lux-callout{
+  max-width:var(--m-content);
+  margin:clamp(28px,3.5vw,40px) 0 0;
+  padding:22px 24px;
+  border:1px solid var(--m-line);border-radius:16px;
+  background:var(--m-surface);
+}
+.marketing-lux .lux-callout p{
+  margin:0;color:var(--m-muted);font-size:15px;line-height:1.6;
+}
+.marketing-lux .lux-callout p+p{margin-top:10px}
+.marketing-lux .lux-callout b{color:var(--m-ink);font-weight:600}
+.marketing-lux .lux-callout q{color:var(--m-ink);font-style:italic}
+
+@media(max-width:900px){
+  .marketing-lux .lux-loop-steps{grid-template-columns:1fr}
+  .marketing-lux .lux-rules{grid-template-columns:1fr;gap:0}
+  .marketing-lux .lux-runs-list>div{grid-template-columns:1fr;gap:6px;padding:18px 0}
+}
+@media(max-width:680px){
+  .marketing-lux .lux-callout{padding:18px}
+  .marketing-lux .lux-runs-list dt{font-size:15px}
+}
+
+/* ── Dark theme. Marketing renders light by default; an explicit dark
+      preference is honoured through the same --m-* tokens. ── */
+html[data-theme="dark"] .marketing-lux{
+  --m-ink:#f2f3f5;
+  --m-muted:#a3a8b2;
+  --m-line:rgba(255,255,255,.12);
+  --m-line-soft:rgba(255,255,255,.09);
+  --m-line-strong:rgba(255,255,255,.24);
+  --m-paper:#14161a;
+  --m-canvas:#0e1013;
+  --m-surface:#181b20;
+  --m-surface-2:#1f232a;
+  --m-white:#181b20;
+  --m-accent:#f2f3f5;
+  --m-accent-dark:#ffffff;
+  --m-on-accent:#0e1013;
+  --m-blue:#7fb2ff;
+  color-scheme:dark;
+}
+html[data-theme="dark"] .marketing-lux .nav nav a,
+html[data-theme="dark"] .marketing-lux .marketing-footer a{color:var(--m-muted)}
+html[data-theme="dark"] .marketing-lux .button.primary,
+html[data-theme="dark"] .marketing-lux .button.compact{background:var(--m-ink);color:var(--m-on-accent)}
+html[data-theme="dark"] .marketing-lux .button.primary:hover,
+html[data-theme="dark"] .marketing-lux .button.compact:hover{background:#ffffff;color:var(--m-on-accent)}
+/* The wordmark SVG is navy-on-transparent; flip lightness, keep the hue. */
+html[data-theme="dark"] .marketing-lux .wordmark img{filter:invert(1) hue-rotate(180deg) brightness(1.08)}
+html[data-theme="dark"] .marketing-lux .button.secondary:hover{
+  background:color-mix(in srgb,var(--m-ink) 12%,transparent);
+}
+html[data-theme="dark"] .marketing-lux .soft-waitlist-form,
+html[data-theme="dark"] .marketing-lux .waitlist-form{box-shadow:none}
+html[data-theme="dark"] .marketing-lux .field input:focus{
+  box-shadow:0 0 0 3px rgba(255,255,255,.14);
+}
+
+/* /for-teams role cards — same surface as the loop cards, four across. */
+.marketing-lux .lux-role-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;margin:0;padding:0;list-style:none;
+  max-width:var(--m-content);
+}
+.marketing-lux .lux-role-grid li{
+  display:flex;flex-direction:column;gap:10px;
+  padding:22px 20px 24px;
+  border:1px solid var(--m-line);border-radius:16px;
+  background:var(--m-surface);
+}
+.marketing-lux .lux-role-grid strong{
+  font:600 16px/1.25 var(--m-sans);letter-spacing:-.022em;
+}
+.marketing-lux .lux-role-grid p{
+  margin:0;color:var(--m-muted);font-size:14px;line-height:1.5;
+}
+.marketing-lux .lux-role-grid .lux-role-learn{
+  margin-top:auto;padding-top:12px;border-top:1px solid var(--m-line);
+}
+.marketing-lux .lux-role-grid .lux-role-learn b{
+  color:var(--m-ink);font-weight:600;
+}
+@media(max-width:1100px){
+  .marketing-lux .lux-role-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:680px){
+  .marketing-lux .lux-role-grid{grid-template-columns:1fr}
+}
+
+/* Landing cards carry more copy than the compact hub strips do. */
+.marketing-lux .lux-problem .lux-feature-grid li,
+.marketing-lux .lux-fit .lux-feature-grid li{
+  gap:10px;padding:22px 20px 24px;border-radius:16px;
+}
+.marketing-lux .lux-problem .lux-feature-grid strong,
+.marketing-lux .lux-fit .lux-feature-grid strong{
+  font-size:16px;letter-spacing:-.022em;
+}
+.marketing-lux .lux-problem .lux-feature-grid span,
+.marketing-lux .lux-fit .lux-feature-grid span{
+  font-size:14px;line-height:1.5;
+}
+.marketing-lux .lux-loop-steps>li>b{flex:none}
+.marketing-lux .lux-hero h1{max-width:19ch}
+@media(pointer:coarse){
+  .marketing-lux .button.compact{min-height:44px;padding:11px 16px}
+}
+
+/* ============================================================
+   Marketing v3 — "engineered warmth" visual redesign.
+   Confident, technical, warm. Layers over .marketing-lux:
+   fluid type tokens, blueprint hero backdrop, one card recipe,
+   eyebrow + headline + lede rhythm, tasteful reveal motion,
+   full light/dark support through the same --m-* tokens.
+   ============================================================ */
+.marketing-lux{
+  /* Fluid type scale (body >= 16px, display tight) */
+  --m-step--1:clamp(13px,.78rem + .1vw,14px);
+  --m-step-0:clamp(16px,.97rem + .15vw,17px);
+  --m-step-1:clamp(17px,1rem + .35vw,20px);
+  --m-step-2:clamp(20px,1.1rem + .8vw,26px);
+  --m-step-3:clamp(26px,1.35rem + 1.5vw,38px);
+  --m-step-4:clamp(32px,1.6rem + 2.4vw,52px);
+  --m-step-5:clamp(38px,2rem + 2.9vw,64px);
+  /* Warm technical accent (copper) */
+  --m-warm:#b4540a;
+  --m-warm-soft:rgba(180,84,10,.09);
+  --m-warm-line:rgba(180,84,10,.28);
+  /* Blueprint grid lines */
+  --m-grid-line:rgba(29,29,31,.05);
+  --m-grid-line-strong:rgba(29,29,31,.085);
+  /* One card recipe */
+  --m-card-radius:16px;
+  --m-card-shadow:0 1px 2px rgba(15,18,20,.04),0 8px 24px rgba(15,18,20,.05);
+  --m-card-shadow-lg:0 2px 4px rgba(15,18,20,.05),0 18px 44px rgba(15,18,20,.09);
+  --m-section-pad:clamp(64px,8vw,112px);
+}
+html[data-theme="dark"] .marketing-lux{
+  --m-warm:#f0a35c;
+  --m-warm-soft:rgba(240,163,92,.11);
+  --m-warm-line:rgba(240,163,92,.34);
+  --m-grid-line:rgba(255,255,255,.045);
+  --m-grid-line-strong:rgba(255,255,255,.08);
+  --m-card-shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.28);
+  --m-card-shadow-lg:0 2px 4px rgba(0,0,0,.45),0 18px 44px rgba(0,0,0,.4);
+}
+
+/* Anchored sections land below the sticky header */
+.marketing-lux [id]{scroll-margin-top:76px}
+
+/* ── Header: quiet glass over the canvas ── */
+.marketing-lux .nav{
+  background:color-mix(in srgb,var(--m-canvas) 82%,transparent);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--m-line-soft);
+}
+
+/* ── Hero: full-bleed blueprint field ── */
+.marketing-lux .lux-hero{
+  position:relative;isolation:isolate;overflow:clip;
+  display:block;max-width:none;margin:0;padding:0;min-height:0;
+}
+.marketing-lux .lux-hero-backdrop{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(to right,var(--m-grid-line) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--m-grid-line) 1px,transparent 1px),
+    linear-gradient(to right,var(--m-grid-line-strong) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--m-grid-line-strong) 1px,transparent 1px);
+  background-size:28px 28px,28px 28px,140px 140px,140px 140px;
+  -webkit-mask-image:radial-gradient(130% 105% at 68% 0%,#000 32%,transparent 76%);
+  mask-image:radial-gradient(130% 105% at 68% 0%,#000 32%,transparent 76%);
+}
+.marketing-lux .lux-hero-backdrop::before{
+  content:"";position:absolute;top:-22%;right:-8%;width:58%;height:130%;
+  background:radial-gradient(closest-side,var(--m-warm-soft),transparent 72%);
+}
+.marketing-lux .lux-hero-inner{
+  position:relative;z-index:1;
+  display:grid;grid-template-columns:minmax(0,1.04fr) minmax(340px,.96fr);
+  gap:clamp(32px,5vw,72px);align-items:center;
+  max-width:1240px;margin:0 auto;
+  min-height:min(calc(100svh - 58px),780px);
+  padding:clamp(56px,8vw,104px) var(--m-pad-x) clamp(56px,7vw,96px);
+}
+.marketing-lux .lux-hero-copy{max-width:600px}
+.marketing-lux .lux-kicker{
+  color:var(--m-warm);
+  font:600 12px/1.2 var(--m-mono);letter-spacing:.14em;text-transform:uppercase;
+}
+.marketing-lux .lux-hero h1{
+  max-width:17ch;margin:14px 0 18px;
+  font-weight:650;font-size:var(--m-step-5);line-height:1.03;font-family:var(--m-sans);
+  letter-spacing:-.042em;
+}
+.marketing-lux .lux-hero-copy>p:not(.lux-wordmark):not(.lux-kicker){
+  max-width:34rem;font-size:var(--m-step-1);line-height:1.55;
+}
+.marketing-lux .lux-hero .actions{margin-top:30px;gap:14px}
+.marketing-lux .lux-hero-note{font-size:13px!important;max-width:36rem}
+
+/* ── Hero visual: the agent-teaching panel ── */
+.marketing-lux .hero-teach{
+  position:relative;z-index:1;justify-self:end;width:min(100%,478px);
+  border:1px solid var(--m-line);border-radius:20px;overflow:hidden;
+  background:var(--m-surface);box-shadow:var(--m-card-shadow-lg);
+  animation:lux-rise .85s .12s cubic-bezier(.22,.8,.2,1) both;
+}
+.marketing-lux .hero-teach-chrome{
+  display:flex;align-items:center;gap:10px;padding:12px 16px;
+  border-bottom:1px solid var(--m-line-soft);background:var(--m-surface-2);
+}
+.marketing-lux .hero-teach-dots{display:inline-flex;gap:5px}
+.marketing-lux .hero-teach-dots i{width:8px;height:8px;border-radius:50%;background:var(--m-line-strong)}
+.marketing-lux .hero-teach-chrome strong{font:600 12.5px/1.2 var(--m-sans);letter-spacing:-.01em}
+.marketing-lux .hero-teach-chrome b{
+  margin-left:auto;padding:5px 9px;border:1px solid var(--m-line);border-radius:999px;
+  color:var(--m-muted);font:600 9.5px/1 var(--m-mono);letter-spacing:.09em;text-transform:uppercase;
+  white-space:nowrap;
+}
+.marketing-lux .hero-teach-body{display:grid;gap:12px;padding:16px}
+.marketing-lux .hero-teach-msg{max-width:94%}
+.marketing-lux .hero-teach-who{
+  display:block;margin:0 0 5px;color:var(--m-muted);
+  font:600 9.5px/1 var(--m-mono);letter-spacing:.09em;text-transform:uppercase;
+}
+.marketing-lux .hero-teach-msg p{
+  margin:0;padding:10px 13px;
+  border:1px solid var(--m-line-soft);border-radius:13px;border-top-left-radius:4px;
+  background:var(--m-surface-2);color:var(--m-ink);
+  font-size:13.5px;line-height:1.5;
+}
+.marketing-lux .hero-teach-shot{
+  padding:13px 15px 14px;border-radius:14px;
+  border:1px solid var(--m-warm-line);background:var(--m-warm-soft);
+}
+.marketing-lux .hero-teach-shot-tag{
+  display:inline-block;color:var(--m-warm);
+  font:700 10px/1 var(--m-mono);letter-spacing:.12em;text-transform:uppercase;
+}
+.marketing-lux .hero-teach-shot p{
+  margin:7px 0 11px;color:var(--m-ink);
+  font:600 13.5px/1.45 var(--m-sans);letter-spacing:-.012em;
+}
+.marketing-lux .hero-teach-chips{display:flex;flex-wrap:wrap;gap:8px}
+.marketing-lux .hero-teach-chips span{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 13px;
+  border:1px solid var(--m-line-strong);border-radius:999px;
+  background:var(--m-surface);color:var(--m-muted);
+  font:600 12px/1.2 var(--m-sans);
+}
+.marketing-lux .hero-teach-chips .is-picked{
+  border-color:var(--m-warm);color:var(--m-warm);
+  box-shadow:0 0 0 1px var(--m-warm) inset;
+}
+.marketing-lux .hero-teach-chips .is-picked::before{
+  content:"";width:6px;height:6px;border-radius:50%;background:var(--m-warm);
+}
+.marketing-lux .hero-teach-shot em{
+  display:block;margin-top:10px;color:var(--m-muted);
+  font-style:normal;font-size:11.5px;line-height:1.4;
+}
+.marketing-lux .hero-teach-note{
+  padding:10px 16px 12px;border-top:1px solid var(--m-line-soft);
+  color:var(--m-muted);font-size:11px;line-height:1.4;
+}
+
+/* ── Section rhythm: eyebrow + headline + lede, alternate quiet/loud ── */
+.marketing-lux .lux-problem,
+.marketing-lux .lux-runs,
+.marketing-lux .lux-fit,
+.marketing-lux .lux-loop,
+.marketing-lux .lux-memory{
+  padding:var(--m-section-pad) var(--m-pad-x);
+}
+.marketing-lux .lux-loop,
+.marketing-lux .lux-fit{
+  background:
+    linear-gradient(to right,var(--m-grid-line) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--m-grid-line) 1px,transparent 1px),
+    var(--m-paper);
+  background-size:28px 28px,28px 28px,auto;
+}
+.marketing-lux .lux-memory{background:transparent}
+.marketing-lux .lux-eyebrow{
+  margin:0 0 12px;color:var(--m-warm);
+  font:600 11.5px/1.2 var(--m-mono);letter-spacing:.14em;text-transform:uppercase;
+}
+.marketing-lux .lux-eyebrow::before{
+  content:"";display:inline-block;width:18px;height:2px;
+  margin-right:10px;vertical-align:middle;background:var(--m-warm);
+}
+.marketing-lux .lux-section-head{max-width:680px;margin-bottom:clamp(32px,4vw,48px)}
+.marketing-lux .lux-section-head h2{
+  margin:0 0 12px;
+  font-weight:640;font-size:var(--m-step-3);line-height:1.12;font-family:var(--m-sans);letter-spacing:-.032em;
+}
+.marketing-lux .lux-section-head>p:not(.lux-eyebrow){
+  margin:0;max-width:58ch;color:var(--m-muted);
+  font-size:var(--m-step-0);line-height:1.55;
+}
+.marketing-lux .lux-lede{
+  max-width:62ch;font-size:var(--m-step-1);line-height:1.6;
+}
+.marketing-lux .lux-closer{max-width:62ch;font-size:var(--m-step-0);line-height:1.6}
+
+/* ── One card recipe, reused everywhere ── */
+.marketing-lux .lux-feature-grid li,
+.marketing-lux .lux-loop-steps li,
+.marketing-lux .lux-role-grid li,
+.marketing-lux .lux-deep-link-grid a,
+.marketing-lux .lux-callout,
+.marketing-lux .soft-waitlist-form,
+.marketing-lux .waitlist-form,
+.marketing-lux .pricing-grid article{
+  border-radius:var(--m-card-radius);
+  border:1px solid var(--m-line);
+  background:var(--m-surface);
+  box-shadow:var(--m-card-shadow);
+}
+.marketing-lux .lux-feature-grid li,
+.marketing-lux .lux-loop-steps li,
+.marketing-lux .lux-role-grid li,
+.marketing-lux .lux-deep-link-grid a,
+.marketing-lux .pricing-grid article{
+  transition:transform .28s cubic-bezier(.2,.7,.2,1),box-shadow .28s ease,border-color .28s ease;
+}
+.marketing-lux .lux-feature-grid li:hover,
+.marketing-lux .lux-loop-steps li:hover,
+.marketing-lux .lux-role-grid li:hover,
+.marketing-lux .lux-deep-link-grid a:hover,
+.marketing-lux .pricing-grid article:hover{
+  transform:translateY(-3px);
+  border-color:var(--m-line-strong);
+  box-shadow:var(--m-card-shadow-lg);
+}
+.marketing-lux .lux-feature-grid li:focus-within,
+.marketing-lux .lux-loop-steps li:focus-within,
+.marketing-lux .lux-deep-link-grid a:focus-visible{
+  outline:2px solid var(--m-blue);outline-offset:3px;
+}
+.marketing-lux .lux-feature-grid{gap:14px}
+.marketing-lux .lux-feature-grid li{gap:8px;padding:22px 20px 24px}
+
+/* Card iconography — stroke icons matching the app's Icon set */
+.marketing-lux .lux-card-icon{
+  display:grid;place-items:center;flex:none;
+  width:37px;height:37px;margin:0 0 6px;
+  border-radius:11px;color:var(--m-warm);
+  background:var(--m-warm-soft);border:1px solid var(--m-warm-line);
+}
+.marketing-lux .lux-feature-grid .lux-card-icon{margin-top:0}
+.marketing-lux .lux-loop-steps>li>b{
+  width:28px;height:28px;
+  background:var(--m-warm-soft);color:var(--m-warm);
+  border:1px solid var(--m-warm-line);
+  font:600 12.5px/1 var(--m-mono);
+}
+.marketing-lux .lux-rules li b{color:var(--m-ink)}
+
+/* Runs list: icon + term + one honest line */
+.marketing-lux .lux-runs-list>div{align-items:start}
+.marketing-lux .lux-runs-list dt{
+  display:flex;align-items:center;gap:12px;
+  font-size:var(--m-step-1);letter-spacing:-.022em;
+}
+.marketing-lux .lux-dt-icon{
+  display:grid;place-items:center;flex:none;
+  width:34px;height:34px;border-radius:10px;
+  color:var(--m-warm);background:var(--m-warm-soft);
+  border:1px solid var(--m-warm-line);
+}
+.marketing-lux .lux-runs-list dd{max-width:62ch}
+.marketing-lux .lux-runs-list>div:hover dt{color:var(--m-warm)}
+@media(hover:none){.marketing-lux .lux-runs-list>div:hover dt{color:var(--m-ink)}}
+
+/* Memory callout: quoted cross-feature question gets the warm spine */
+.marketing-lux .lux-callout{
+  padding:24px 26px;border-left:3px solid var(--m-warm);
+  border-top-left-radius:6px;border-bottom-left-radius:6px;
+}
+.marketing-lux .lux-callout q{color:var(--m-ink)}
+
+/* FAQ: warm plus marker, roomier summary */
+.marketing-lux .faq-item summary i::before,
+.marketing-lux .faq-item summary i::after{background:var(--m-warm)}
+.marketing-lux .faq-item summary{min-height:44px}
+
+/* Waitlist band: loud blueprint closing */
+.marketing-lux .lux-waitlist{
+  padding:var(--m-section-pad) var(--m-pad-x);
+  background:
+    linear-gradient(to right,var(--m-grid-line) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--m-grid-line) 1px,transparent 1px),
+    var(--m-paper);
+  background-size:28px 28px,28px 28px,auto;
+}
+.marketing-lux .lux-waitlist h2,
+.marketing-lux .waitlist h2{
+  font-weight:640;font-size:var(--m-step-3);line-height:1.12;font-family:var(--m-sans);letter-spacing:-.032em;
+}
+.marketing-lux .lux-waitlist .lux-eyebrow{margin-bottom:12px}
+.marketing-lux .soft-waitlist-form,
+.marketing-lux .waitlist-form{padding:26px;border-radius:18px}
+.marketing-lux .field input{border-radius:12px}
+.marketing-lux .field input:focus{
+  border-color:var(--m-warm);
+  box-shadow:0 0 0 3px var(--m-warm-soft);
+}
+
+/* Buttons: micro-lift */
+.marketing-lux .button.primary:hover{transform:translateY(-1px)}
+.marketing-lux .button.secondary:hover{transform:translateY(-1px)}
+
+/* Route heroes (for-teams, pricing, features) share the scale */
+.marketing-lux .lux-route-hero h1,
+.marketing-lux .route-hero h1,
+.marketing-lux .pricing-hero h1{
+  font-weight:650;font-size:var(--m-step-4);line-height:1.08;font-family:var(--m-sans);letter-spacing:-.038em;
+}
+.marketing-lux .lux-route-hero>p:not(.lux-wordmark),
+.marketing-lux .route-hero>p:not(.lux-wordmark),
+.marketing-lux .pricing-hero>p:not(.lux-wordmark){
+  font-size:var(--m-step-0);line-height:1.55;max-width:58ch;
+}
+.marketing-lux .pricing-grid article.featured{
+  border-color:var(--m-warm);
+  box-shadow:0 0 0 1px var(--m-warm),var(--m-card-shadow);
+}
+.marketing-lux .pricing-grid article.featured:hover{
+  box-shadow:0 0 0 1px var(--m-warm),var(--m-card-shadow-lg);
+}
+.marketing-lux .pricing-grid .plan-flag{background:var(--m-warm);color:#fff}
+html[data-theme="dark"] .marketing-lux .pricing-grid .plan-flag{color:#1a1206}
+/* Pricing surfaces that carry hardcoded light inks/backgrounds */
+html[data-theme="dark"] .marketing-lux .pricing-grid ul{color:var(--m-muted)}
+html[data-theme="dark"] .marketing-lux .pricing-note{
+  background:var(--m-surface-2);color:var(--m-ink);border-left-color:var(--m-warm);
+}
+html[data-theme="dark"] .marketing-lux .pricing-footnote{color:var(--m-muted)}
+html[data-theme="dark"] .marketing-lux .payg{background:var(--m-paper)}
+html[data-theme="dark"] .marketing-lux .payg>div:last-child{color:var(--m-muted)}
+
+/* ── Footer: brand + three clean columns ── */
+.marketing-lux .marketing-footer{
+  display:grid;grid-template-columns:minmax(220px,1fr) auto;
+  gap:36px 64px;align-items:start;
+  padding:clamp(44px,6vw,72px) var(--m-pad-x) clamp(40px,5vw,56px);
+  border-top:1px solid var(--m-line);
+}
+.marketing-lux .marketing-footer .marketing-footer-cols{
+  display:grid;grid-template-columns:repeat(3,minmax(120px,auto));
+  gap:28px clamp(28px,4vw,64px);justify-content:end;max-width:none;
+}
+.marketing-lux .marketing-footer-col{display:grid;gap:10px;align-content:start;justify-items:start}
+.marketing-lux .marketing-footer-col b{
+  margin-bottom:4px;color:var(--m-muted);
+  font:600 11px/1 var(--m-mono);letter-spacing:.12em;text-transform:uppercase;
+}
+.marketing-lux .marketing-footer-col a{
+  color:var(--m-ink);font-size:13.5px;font-weight:500;text-decoration:none;
+  min-height:24px;display:inline-flex;align-items:center;
+}
+.marketing-lux .marketing-footer-col a:hover{color:var(--m-warm)!important}
+
+/* ── Reveal-on-scroll (armed by ScrollReveal; reduced-motion never arms) ── */
+html.reveal-armed .marketing-lux [data-reveal]{
+  opacity:0;transform:translateY(18px);
+  transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1);
+}
+html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
+
+/* ── Responsive ── */
+@media(max-width:980px){
+  .marketing-lux .lux-hero-inner{
+    grid-template-columns:1fr;min-height:0;align-items:start;
+    padding-top:clamp(40px,7vw,64px);gap:clamp(32px,6vw,44px);
+  }
+  .marketing-lux .hero-teach{justify-self:stretch;width:100%;max-width:520px}
+  .marketing-lux .marketing-footer{grid-template-columns:1fr}
+  .marketing-lux .marketing-footer .marketing-footer-cols{justify-content:start}
+}
+@media(max-width:680px){
+  .marketing-lux .lux-hero-inner{padding-top:36px;padding-bottom:44px}
+  .marketing-lux .lux-hero h1{font-size:clamp(32px,9vw,40px)}
+  .marketing-lux .hero-teach{max-width:none}
+  .marketing-lux .hero-teach-chrome b{display:none}
+  .marketing-lux .marketing-footer .marketing-footer-cols{
+    grid-template-columns:repeat(2,minmax(120px,1fr));width:100%;
+  }
+  .marketing-lux .lux-callout{padding:18px 18px 18px 20px}
+}
+@media(prefers-reduced-motion:reduce){
+  .marketing-lux .hero-teach{animation:none!important}
+  .marketing-lux .lux-feature-grid li:hover,
+  .marketing-lux .lux-loop-steps li:hover,
+  .marketing-lux .lux-role-grid li:hover,
+  .marketing-lux .lux-deep-link-grid a:hover,
+  .marketing-lux .pricing-grid article:hover,
+  .marketing-lux .button.primary:hover,
+  .marketing-lux .button.secondary:hover{transform:none}
+}
+
+/* ============================================================
+   Marketing v4 — landing + /for-teams professional pass.
+   Additive layer over the v3 tokens (--m-step-*, --m-warm,
+   --m-card-*, --m-line*). No new colours: light and dark both
+   come from the same --m-* tokens, so nothing is hardcoded.
+   ============================================================ */
+
+/* -- Hero visual: a structure-only mock of the real product chrome -- */
+.marketing-lux .mk-mock{
+  position:relative;z-index:1;justify-self:end;width:min(100%,500px);
+  border:1px solid var(--m-line);border-radius:20px;overflow:hidden;
+  background:var(--m-surface);box-shadow:var(--m-card-shadow-lg);
+  animation:lux-rise .85s .12s cubic-bezier(.22,.8,.2,1) both;
+}
+.marketing-lux .mk-mock-chrome{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;
+  border-bottom:1px solid var(--m-line-soft);background:var(--m-surface-2);
+}
+.marketing-lux .mk-mock-dots{display:inline-flex;gap:5px;flex:none}
+.marketing-lux .mk-mock-dots i{width:8px;height:8px;border-radius:50%;background:var(--m-line-strong)}
+.marketing-lux .mk-mock-chrome strong{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font:600 12.5px/1.2 var(--m-sans);letter-spacing:-.01em;
+}
+.marketing-lux .mk-mock-chrome b{
+  margin-left:auto;flex:none;padding:5px 9px;
+  border:1px solid var(--m-line);border-radius:999px;
+  color:var(--m-muted);font:600 9.5px/1 var(--m-mono);
+  letter-spacing:.09em;text-transform:uppercase;white-space:nowrap;
+}
+.marketing-lux .mk-mock-body{display:grid;grid-template-columns:118px minmax(0,1fr)}
+.marketing-lux .mk-mock-rail{
+  display:grid;align-content:start;gap:2px;padding:12px 10px;
+  border-right:1px solid var(--m-line-soft);background:var(--m-surface-2);
+}
+.marketing-lux .mk-mock-rail span{
+  padding:7px 9px;border-radius:9px;
+  color:var(--m-muted);font:600 11.5px/1.2 var(--m-sans);letter-spacing:-.01em;
+}
+.marketing-lux .mk-mock-rail span.is-active{color:var(--m-warm);background:var(--m-warm-soft)}
+.marketing-lux .mk-mock-main{display:grid;align-content:start;gap:12px;min-width:0;padding:14px}
+.marketing-lux .mk-mock-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.marketing-lux .mk-mock-tabs span{
+  padding:5px 10px;border-radius:999px;border:1px solid var(--m-line-soft);
+  color:var(--m-muted);font:600 11px/1.2 var(--m-sans);
+}
+.marketing-lux .mk-mock-tabs span.is-active{
+  color:var(--m-ink);border-color:var(--m-line-strong);background:var(--m-surface-2);
+}
+.marketing-lux .mk-mock-card{
+  border:1px solid var(--m-line-soft);border-radius:14px;background:var(--m-surface);
+}
+.marketing-lux .mk-mock-card>header{
+  display:flex;align-items:center;gap:10px;padding:11px 13px;
+  border-bottom:1px solid var(--m-line-soft);
+}
+.marketing-lux .mk-mock-card>header strong{font:600 12.5px/1.2 var(--m-sans);letter-spacing:-.015em}
+.marketing-lux .mk-mock-card>header span{
+  margin-left:auto;padding:4px 8px;border-radius:999px;
+  border:1px solid var(--m-warm-line);background:var(--m-warm-soft);color:var(--m-warm);
+  font:700 9px/1 var(--m-mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;
+}
+.marketing-lux .mk-mock-rows{margin:0;padding:4px 13px}
+.marketing-lux .mk-mock-rows>div{
+  display:flex;align-items:baseline;gap:10px;
+  padding:8px 0;border-bottom:1px dashed var(--m-line-soft);
+}
+.marketing-lux .mk-mock-rows>div:last-child{border-bottom:0}
+.marketing-lux .mk-mock-rows dt{margin:0;color:var(--m-ink);font:600 11.5px/1.3 var(--m-sans)}
+.marketing-lux .mk-mock-rows dd{
+  margin:0 0 0 auto;color:var(--m-muted);
+  font:500 11.5px/1.3 var(--m-mono);text-align:right;
+}
+.marketing-lux .mk-mock-empty{
+  margin:0;padding:0 13px 12px;color:var(--m-muted);font-size:11px;line-height:1.45;
+}
+.marketing-lux .mk-mock-shot{padding:12px 13px 13px}
+.marketing-lux .mk-mock-note{
+  padding:10px 14px 12px;border-top:1px solid var(--m-line-soft);
+  color:var(--m-muted);font-size:11px;line-height:1.4;
+}
+
+/* -- Small mono tag used for hub / audience labels -- */
+.marketing-lux .mk-tag{
+  align-self:start;padding:4px 9px;border-radius:999px;
+  border:1px solid var(--m-line);background:var(--m-surface-2);
+  color:var(--m-muted);font:600 9.5px/1 var(--m-mono);
+  letter-spacing:.11em;text-transform:uppercase;
+}
+
+/* -- Six pillars, one per real hub -- */
+.marketing-lux .mk-pillars{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;margin:0;padding:0;list-style:none;max-width:var(--m-content);
+}
+.marketing-lux .mk-pillars li{
+  display:flex;flex-direction:column;align-items:flex-start;gap:9px;
+  padding:22px 20px 24px;
+  border:1px solid var(--m-line);border-radius:var(--m-card-radius);
+  background:var(--m-surface);box-shadow:var(--m-card-shadow);
+  transition:transform .28s cubic-bezier(.2,.7,.2,1),box-shadow .28s ease,border-color .28s ease;
+}
+.marketing-lux .mk-pillars li:hover{
+  transform:translateY(-3px);border-color:var(--m-line-strong);box-shadow:var(--m-card-shadow-lg);
+}
+.marketing-lux .mk-pillars strong{font:600 16px/1.25 var(--m-sans);letter-spacing:-.022em}
+.marketing-lux .mk-pillars .mk-pillar-copy{color:var(--m-muted);font-size:14px;line-height:1.5}
+.marketing-lux .mk-pillars .lux-card-icon{margin:0}
+
+/* -- The rules band inside "how it works" -- */
+.marketing-lux .mk-rules{margin-top:clamp(28px,3.5vw,40px);max-width:var(--m-content)}
+.marketing-lux .mk-rules h3{
+  margin:0;color:var(--m-muted);
+  font:600 11.5px/1.2 var(--m-mono);letter-spacing:.14em;text-transform:uppercase;
+}
+.marketing-lux .mk-rules .lux-rules{margin-top:16px}
+
+/* -- Honest footnote under the trust strip -- */
+.marketing-lux .mk-footnote{
+  max-width:70ch;margin:clamp(22px,3vw,30px) 0 0;padding:16px 18px;
+  border:1px solid var(--m-line);border-left:3px solid var(--m-warm);
+  border-radius:6px var(--m-card-radius) var(--m-card-radius) 6px;
+  background:var(--m-surface);
+  color:var(--m-muted);font-size:14px;line-height:1.55;
+}
+.marketing-lux .mk-footnote b{color:var(--m-ink);font-weight:600}
+.marketing-lux .mk-footnote a{color:var(--m-warm);font-weight:600;text-decoration:none}
+.marketing-lux .mk-footnote a:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* -- Pricing teaser: figures come from the billing catalog -- */
+.marketing-lux .mk-price{
+  padding:var(--m-section-pad) var(--m-pad-x);
+  border-top:1px solid var(--m-line);
+}
+.marketing-lux .mk-price-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;margin:0;padding:0;list-style:none;max-width:var(--m-content);
+}
+.marketing-lux .mk-price-grid li{
+  display:flex;flex-direction:column;gap:8px;padding:24px 20px 26px;
+  border:1px solid var(--m-line);border-radius:var(--m-card-radius);
+  background:var(--m-surface);box-shadow:var(--m-card-shadow);
+}
+.marketing-lux .mk-price-label{
+  color:var(--m-muted);font:600 10.5px/1 var(--m-mono);
+  letter-spacing:.13em;text-transform:uppercase;
+}
+.marketing-lux .mk-price-figure{
+  font:650 var(--m-step-2)/1.05 var(--m-sans);letter-spacing:-.03em;color:var(--m-ink);
+}
+.marketing-lux .mk-price-figure small{
+  margin-left:3px;color:var(--m-muted);font:500 12px/1 var(--m-sans);letter-spacing:0;
+}
+.marketing-lux .mk-price-blurb{color:var(--m-muted);font-size:14px;line-height:1.5}
+.marketing-lux .mk-price-foot{
+  display:flex;flex-wrap:wrap;align-items:center;gap:16px 24px;
+  max-width:var(--m-content);margin-top:clamp(20px,2.6vw,28px);
+}
+.marketing-lux .mk-price-foot p{
+  flex:1 1 22rem;max-width:62ch;margin:0;
+  color:var(--m-muted);font-size:14px;line-height:1.55;
+}
+.marketing-lux .mk-price-foot a:not(.button){
+  color:var(--m-ink);font-weight:600;text-decoration:underline;text-underline-offset:3px;
+}
+
+/* -- /for-teams closing actions sit where the waitlist form does -- */
+.marketing-lux .mk-waitlist-links{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
+
+/* -- Touch: every footer route is a real target on a phone -- */
+@media(pointer:coarse){
+  .marketing-lux .marketing-footer-col a,
+  .marketing-lux .marketing-footer-brand .wordmark,
+  .marketing-lux .nav .wordmark,
+  .marketing-lux .nav .sign-in-link{
+    min-height:44px;display:inline-flex;align-items:center;
+  }
+  .marketing-lux .nav nav a{min-height:44px;display:inline-flex;align-items:center}
+}
+
+/* -- Responsive -- */
+@media(max-width:1100px){
+  .marketing-lux .mk-pillars{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:980px){
+  .marketing-lux .mk-mock{justify-self:stretch;width:100%;max-width:520px}
+}
+@media(max-width:1000px){
+  .marketing-lux .mk-price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+  .marketing-lux .mk-price-grid{grid-template-columns:1fr}
+}
+@media(max-width:680px){
+  /* Headline, sub and both CTAs clear the fold on a 360x640 phone, with the
+     product mock just peeking in so the page reads as scrollable. */
+  .marketing-lux .lux-hero-inner{padding-top:30px;gap:26px}
+  .marketing-lux .mk-mock{max-width:none}
+  .marketing-lux .mk-mock-chrome b{display:none}
+  .marketing-lux .mk-mock-body{grid-template-columns:1fr}
+  .marketing-lux .mk-mock-rail{
+    display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;
+    border-right:0;border-bottom:1px solid var(--m-line-soft);
+  }
+  .marketing-lux .mk-mock-rail span{padding:5px 9px;border-radius:999px}
+  .marketing-lux .mk-pillars{grid-template-columns:1fr}
+  .marketing-lux .mk-price-foot .button{width:100%}
+}
+@media(max-width:440px){
+  .marketing-lux .lux-hero .actions{flex-direction:column;align-items:stretch;gap:10px}
+  .marketing-lux .lux-hero .actions .button{width:100%}
+  .marketing-lux .lux-route-hero .actions .button{width:100%}
+  .marketing-lux .mk-waitlist-links .button{width:100%}
+  .marketing-lux .mk-mock-rows>div{flex-wrap:wrap;gap:2px}
+  .marketing-lux .mk-mock-rows dd{margin-left:0;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){
+  .marketing-lux .mk-mock{animation:none!important}
+  .marketing-lux .mk-pillars li:hover{transform:none}
+}

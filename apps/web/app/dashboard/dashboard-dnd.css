@@ -7,8 +7,8 @@
 }
 .dash-board-switcher{
   display:inline-flex;align-items:center;gap:2px;min-height:40px;padding:3px;
-  border-radius:14px;background:color-mix(in srgb,var(--soft-card) 88%,var(--soft-bg));
-  border:1px solid var(--soft-line);box-shadow:0 1px 0 rgba(255,255,255,.4) inset;
+  border-radius:var(--soft-radius-sm);background:color-mix(in srgb,var(--soft-card) 88%,var(--soft-bg));
+  border:1px solid var(--soft-line);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--soft-card) 60%,transparent);
 }
 .dash-board-switcher button{
   appearance:none;border:0;background:transparent;color:var(--soft-muted);
@@ -45,7 +45,9 @@
   position:fixed;z-index:96;left:50%;bottom:0;transform:translateX(-50%);
   width:min(520px,100vw);max-height:min(78vh,640px);padding:18px 18px calc(20px + var(--soft-safe-bottom));
   border-radius:22px 22px 0 0;background:var(--soft-card);border:1px solid var(--soft-line);border-bottom:0;
-  box-shadow:0 -16px 48px rgba(12,17,24,.22);overflow:auto;animation:dash-sheet-up .28s ease;
+  /* Bottom sheet: the shadow must throw UPWARD, so this one stays directional
+     rather than taking --soft-shadow-pop. Depth matched to the pop token. */
+  box-shadow:0 -16px 40px rgba(12,17,24,.26);overflow:auto;animation:dash-sheet-up .28s ease;
 }
 .dash-boards-sheet header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .dash-boards-sheet h2{margin:0;font-size:20px;letter-spacing:-.02em}
@@ -97,11 +99,24 @@
 .dash-widget-palette button{
   display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;width:100%;
   padding:10px;border-radius:14px;border:1px solid var(--soft-line);background:var(--soft-card);
-  color:inherit;text-align:left;cursor:grab;user-select:none;touch-action:none;
+  min-height:56px;color:inherit;text-align:left;cursor:grab;user-select:none;
+  /* Long-press starts the drag, so the palette itself must still scroll. */
+  touch-action:manipulation;
   transition:border-color .15s ease,transform .12s ease,box-shadow .15s ease;
 }
-.dash-widget-palette button:hover{border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));transform:translateY(-1px);box-shadow:0 8px 18px rgba(19,32,51,.08)}
+.dash-widget-palette button:hover:not(:disabled){border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));transform:translateY(-1px);box-shadow:var(--soft-shadow)}
 .dash-widget-palette button.dragging{opacity:.7;cursor:grabbing;border-color:var(--soft-accent)}
+.dash-widget-palette button.is-unavailable{
+  cursor:default;opacity:.62;background:color-mix(in srgb,var(--soft-bg) 70%,var(--soft-card));
+  border-style:dashed;
+}
+.dash-widget-palette button[data-status="placed"] em{
+  color:var(--soft-accent);background:var(--soft-accent-soft);padding:3px 7px;border-radius:999px;
+}
+.dash-widget-palette button[data-status="locked"] em{
+  color:var(--soft-muted);border:1px solid var(--soft-line);padding:3px 7px;border-radius:999px;
+}
+.dash-widget-palette button[data-status="placed"] i{background:var(--soft-bg);color:var(--soft-muted)}
 .dash-widget-palette i{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:var(--soft-accent-soft);color:var(--soft-accent)}
 .dash-widget-palette span{display:grid;gap:2px;min-width:0}
 .dash-widget-palette strong{font-size:13px;letter-spacing:-.01em}
@@ -122,30 +137,230 @@
 .dash-snap-hud strong,.dash-drop-coach strong{font-size:11px}
 .dash-snap-hud b{font:700 11px ui-monospace,monospace;color:#93c5fd}
 .dash-grid-wrap.receiving-widget{outline:2px dashed color-mix(in srgb,var(--soft-accent) 55%,transparent);outline-offset:4px}
+.dash-dock-tidy span{margin-right:4px;opacity:.8}
+/* Device presets stay a step softer than the card, but track the radius token
+   so compact density and any future radius change carry through. */
+.dash-home[data-grid="phone"] .dash-grid-item,.dash-home[data-grid="tablet"] .dash-grid-item{
+  border-radius:calc(var(--soft-radius) + 4px);
+}
+.dash-home[data-grid="tv"] .dash-grid-item{border-radius:calc(var(--soft-radius) + 8px)}
+
+/* ================================================================
+   Pointer-event board (mouse + touch + pen) — replaces HTML5 DnD.
+   Cards are absolutely placed from lib/dashboard/grid-drag cellBox()
+   so reflow can animate with a transform instead of snapping.
+   ================================================================ */
+
+.dash-live-region{
+  position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
+}
+
+/* Anchors the snap HUD over the board rather than over the whole page. */
+.dash-home .dash-grid-wrap{position:relative}
+
+.dash-home .dash-pgrid{
+  position:relative;width:100%;
+  --dash-cols:12;--dash-row-h:72px;--dash-gap:12px;
+  --dash-guide:color-mix(in srgb,var(--soft-accent) 16%,transparent);
+}
+
+/* Accurate cell guides for whatever column count this screen is using.
+   Overrides the fixed 12-column gradient painted by soft-ui.css. */
+.dash-home .dash-grid-wrap.editing{background-image:none}
+.dash-home .dash-pgrid[data-editing="true"]{
+  --dash-col-stride:calc((100% + var(--dash-gap)) / var(--dash-cols));
+  --dash-row-stride:calc(var(--dash-row-h) + var(--dash-gap));
+  border-radius:18px;
+  background-image:
+    repeating-linear-gradient(90deg,
+      var(--dash-guide) 0,var(--dash-guide) 1px,
+      transparent 1px,transparent var(--dash-col-stride)),
+    repeating-linear-gradient(180deg,
+      var(--dash-guide) 0,var(--dash-guide) 1px,
+      transparent 1px,transparent var(--dash-row-stride));
+}
+
+.dash-home .dash-pgrid>.dash-grid-item{
+  position:absolute;top:0;left:0;box-sizing:border-box;will-change:transform;
+}
+/* Lifted, outlined, and grabbable — never a transform animation, because the
+   card's transform is its grid position. */
+.dash-home .dash-pgrid>.dash-grid-item.is-editing{
+  box-shadow:var(--soft-shadow-lift);
+  outline:1px solid color-mix(in srgb,var(--soft-accent) 22%,transparent);
+  outline-offset:0;border-radius:var(--soft-radius);
+  touch-action:pan-y;cursor:grab;
+}
+/* Content is inert in edit mode so the card body can be the long-press
+   surface; the reserved strip keeps the size chips off the content. */
+.dash-home .dash-pgrid>.dash-grid-item.is-editing .dash-widget-hit{
+  pointer-events:none;box-sizing:border-box;padding-bottom:52px;
+}
+.dash-home .dash-pgrid>.dash-grid-item.is-editing .dash-widget,
+.dash-home .dash-pgrid>.dash-grid-item.is-editing .app-card{overflow:hidden}
+
+/* The live drop target: the dragged card's slot, emptied out. Children are
+   hidden rather than the card faded, so the dashed gap stays visible. */
+.dash-home .dash-pgrid>.dash-grid-item.is-dragging{
+  pointer-events:none;box-shadow:none;outline:none;
+  border:2px dashed color-mix(in srgb,var(--soft-accent) 70%,transparent);
+  background:color-mix(in srgb,var(--soft-accent) 12%,transparent);
+}
+.dash-home .dash-pgrid>.dash-grid-item.is-dragging>*{visibility:hidden}
+.dash-home .dash-pgrid>.dash-grid-item.is-grabbed{
+  outline:2px solid var(--soft-accent);
+  box-shadow:0 18px 40px color-mix(in srgb,var(--soft-accent) 26%,transparent);
+}
+
+/* Where a palette widget will land. */
+.dash-drop-slot{
+  position:absolute;top:0;left:0;z-index:2;display:grid;place-items:center;
+  border-radius:18px;pointer-events:none;
+  border:2px dashed color-mix(in srgb,var(--soft-accent) 70%,transparent);
+  background:color-mix(in srgb,var(--soft-accent) 12%,transparent);
+}
+.dash-drop-slot span{
+  padding:4px 10px;border-radius:999px;background:var(--soft-accent);color:#fff;
+  font:700 11px var(--font-source-sans),ui-sans-serif;
+}
+
+/* The card that follows the finger. */
+.dash-drag-proxy{
+  position:fixed;z-index:120;top:0;left:0;opacity:0;pointer-events:none;
+  display:grid;grid-template-columns:40px 1fr;grid-auto-rows:min-content;gap:2px 12px;
+  align-content:center;padding:14px 16px;box-sizing:border-box;
+  border-radius:18px;background:var(--soft-card);color:var(--soft-ink);
+  border:1px solid color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));
+  box-shadow:0 26px 60px rgba(12,17,24,.34);
+}
+.dash-drag-proxy i{
+  grid-row:1 / span 3;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;
+  background:var(--soft-accent-soft);color:var(--soft-accent);
+}
+.dash-drag-proxy strong{font:700 14px var(--font-source-sans),ui-sans-serif;letter-spacing:-.01em}
+.dash-drag-proxy span{color:var(--soft-muted);font:600 12px ui-monospace,monospace}
+.dash-drag-proxy small{color:var(--soft-accent);font:700 11px var(--font-source-sans),ui-sans-serif}
+
+/* ---- Edit-mode toolbar strip ---- */
+.dash-edit-strip{
+  position:sticky;z-index:6;top:calc(56px + 8px);
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  margin:-4px -4px 2px;padding:8px 12px;border-radius:var(--soft-radius-sm);
+  background:color-mix(in srgb,var(--soft-card) 94%,var(--soft-accent-soft));
+  border:1px solid color-mix(in srgb,var(--soft-accent) 26%,var(--soft-line));
+  box-shadow:var(--soft-shadow);
+}
+.dash-edit-flag{
+  display:inline-flex;align-items:center;gap:8px;
+  color:var(--soft-accent);font:800 12px var(--font-source-sans),ui-sans-serif;
+  letter-spacing:.04em;text-transform:uppercase;
+}
+.dash-edit-flag i{width:9px;height:9px;border-radius:999px;background:var(--soft-accent)}
+.dash-edit-meta{color:var(--soft-muted);font-size:12px}
+.dash-edit-strip-actions{display:inline-flex;flex-wrap:wrap;gap:8px;margin-left:auto}
+.dash-edit-strip-actions button{
+  min-height:44px;padding:0 14px;border-radius:12px;cursor:pointer;
+  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-ink);
+  font:700 12px var(--font-source-sans),ui-sans-serif;
+}
+.dash-edit-strip-actions button:hover:not(:disabled){border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line))}
+.dash-edit-strip-actions button[aria-pressed="true"]{
+  border-color:var(--soft-accent);background:var(--soft-accent-soft);color:var(--soft-accent);
+}
+.dash-edit-strip-actions button.is-primary{
+  background:var(--soft-accent);border-color:var(--soft-accent);color:#fff;
+}
+
+/* ---- 44px controls on every card ---- */
+.dash-home .dash-item-tools{top:10px;left:10px;right:10px}
+.dash-home .dash-remove-btn{
+  min-width:44px;min-height:44px;height:44px;padding:0 12px;border-radius:14px;
+}
+.dash-home .dash-remove-btn svg{width:16px;height:16px}
+.dash-home .dash-drag-handle{
+  min-width:44px;min-height:44px;height:44px;padding:0 12px;border:0;border-radius:14px;cursor:grab;
+  /* The ONE surface that owns the gesture outright. */
+  touch-action:none;
+}
+.dash-home .dash-drag-handle:focus-visible{outline:2px solid var(--soft-ring);outline-offset:2px}
+.dash-home .dash-drag-handle[aria-pressed="true"]{background:var(--soft-accent);color:#fff}
+.dash-home .dash-drag-handle[aria-pressed="true"] .dash-drag-dots{
+  background:
+    radial-gradient(circle,#fff 1.2px,transparent 1.3px) 0 0 / 6px 5px,
+    radial-gradient(circle,#fff 1.2px,transparent 1.3px) 3px 5px / 6px 5px;
+}
+
+.dash-item-sizes{
+  position:absolute;z-index:3;right:10px;bottom:10px;left:10px;
+  display:flex;align-items:center;justify-content:flex-end;gap:8px;pointer-events:none;
+}
+.dash-item-sizes>span{
+  margin-right:auto;color:var(--soft-muted);
+  font:700 10px var(--font-source-sans),ui-sans-serif;letter-spacing:.06em;text-transform:uppercase;
+}
 .dash-size-chips{
-  display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:11px;
-  background:color-mix(in srgb,var(--soft-card) 82%,transparent);
-  box-shadow:0 2px 8px rgba(19,32,51,.12);backdrop-filter:blur(8px);
+  display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:14px;pointer-events:auto;
+  background:color-mix(in srgb,var(--soft-card) 92%,transparent);
+  border:1px solid var(--soft-line);
+  box-shadow:var(--soft-shadow);backdrop-filter:blur(8px);
 }
 .dash-size-btn{
-  min-height:26px;min-width:26px;padding:0 7px;border:0;border-radius:8px;cursor:pointer;
+  min-height:44px;min-width:44px;padding:0 8px;border:0;border-radius:11px;cursor:pointer;
   background:transparent;color:var(--soft-muted);
-  font:700 10px ui-sans-serif,system-ui;letter-spacing:.02em;
+  font:700 12px var(--font-source-sans),ui-sans-serif;letter-spacing:.02em;
 }
+.dash-size-btn:focus-visible{outline:2px solid var(--soft-ring);outline-offset:-2px}
 .dash-size-btn[data-active="true"],.dash-size-btn[aria-pressed="true"]{
-  background:var(--soft-card);color:var(--soft-ink);box-shadow:0 1px 4px rgba(19,32,51,.12);
+  background:var(--soft-accent);color:#fff;box-shadow:0 2px 8px color-mix(in srgb,var(--soft-accent) 34%,transparent);
 }
-.dash-dock-tidy span{margin-right:4px;opacity:.8}
-.dash-home[data-grid="phone"] .dash-grid-item,.dash-home[data-grid="tablet"] .dash-grid-item{
-  border-radius:22px;
+
+/* Narrow boards cannot hold four 44px chips plus a label — drop the label. */
+.dash-home[data-cols="1"] .dash-item-sizes>span,
+.dash-home[data-cols="4"] .dash-item-sizes>span{display:none}
+
+/* ---- Reflow motion, opt-in only ---- */
+@media (prefers-reduced-motion:no-preference){
+  /* Only once the canvas has been measured — otherwise every card animates out
+     from the server-render fallback width on first paint. */
+  .dash-home .dash-pgrid[data-measured="true"]>.dash-grid-item{
+    transition:transform .2s cubic-bezier(.2,.8,.2,1),width .2s cubic-bezier(.2,.8,.2,1),height .2s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease;
+  }
+  .dash-home .dash-grid-wrap.dragging .dash-pgrid>.dash-grid-item.is-dragging{transition:none}
+  .dash-drop-slot{transition:transform .12s linear,width .12s linear,height .12s linear}
 }
-.dash-home[data-grid="tv"] .dash-grid-item{border-radius:28px}
-.dash-home[data-grid="phone"] .dash-drag-handle{min-height:44px;min-width:44px;touch-action:none}
-.dash-home[data-grid="phone"] .dash-size-chips{transform:scale(1.05);transform-origin:right center}
+@media (prefers-reduced-motion:reduce){
+  .dash-home .dash-pgrid>.dash-grid-item,.dash-drop-slot{transition:none}
+  .dash-home .dash-grid-item.jiggling{animation:none}
+}
+
+html[data-theme="dark"] .dash-drag-proxy{box-shadow:0 26px 60px rgba(0,0,0,.6)}
+/* The dark lift for the grabbed card now rides --soft-shadow-lift, which dark
+   already redefines — no separate override needed here. */
+html[data-theme="dark"] .dash-widget-palette button.is-unavailable{
+  background:color-mix(in srgb,var(--soft-bg) 80%,var(--soft-card));
+}
+html[data-theme="dark"] .dash-snap-hud{background:rgba(8,12,18,.92)}
 
 @media (max-width:640px){
   .dash-board-switcher{max-width:100%;overflow-x:auto}
   .dash-widget-palette{grid-template-columns:1fr}
   .dash-item-tools{gap:8px}
   .dash-grid-guide{flex-wrap:wrap}
+  .dash-edit-strip{top:calc(56px + 4px);gap:8px}
+  .dash-edit-strip-actions{width:100%;margin-left:0}
+  .dash-edit-strip-actions button{flex:1 1 auto}
+  .dash-drag-proxy{max-width:calc(100vw - 24px)}
 }
+
+/* Per-widget "back to the shape the catalog designed" chip. Sits after the S/M/L/XL
+   run and is disabled (not hidden) when the widget is already at its default. */
+.dash-size-btn.dash-size-reset{
+  margin-left:2px;padding:0 10px;
+  border-left:1px solid var(--soft-line);border-radius:0 11px 11px 0;
+  font-size:11px;letter-spacing:.02em;
+}
+.dash-size-btn.dash-size-reset:disabled{opacity:.4;cursor:default}
+/* Narrow boards: five chips will not fit next to the label. */
+.dash-home[data-cols="1"] .dash-size-btn.dash-size-reset,
+.dash-home[data-cols="4"] .dash-size-btn.dash-size-reset{padding:0 8px}

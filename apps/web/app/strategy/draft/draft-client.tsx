@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   DRAFT_RELATED_INCLUDE,
   classifyDraftShell,
@@ -144,12 +145,18 @@ function DraftShell({
   orgId,
   shell,
   error,
+  title,
+  primary,
   onRetry,
   children,
 }: {
   orgId?: string | null;
   shell: DraftShellKind;
   error?: string;
+  /** Overrides the canned shell heading — used when a failure was diagnosed. */
+  title?: string;
+  /** The action that actually resolves the failure, when one exists. */
+  primary?: { label: string; href: string };
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -185,10 +192,15 @@ function DraftShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
+        title={title ?? copy.title}
         description={error ?? copy.description}
         aria-busy={shell === "loading"}
       >
+        {primary ? (
+          <a className="app-button" href={primary.href}>
+            {primary.label}
+          </a>
+        ) : null}
         {shell === "error" && onRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
@@ -250,6 +262,9 @@ export default function DraftClient() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [setupMessage, setSetupMessage] = useState("");
   const [setupOrgId, setSetupOrgId] = useState<string | null>(null);
   const [setupEventKey, setSetupEventKey] = useState<string | null>(null);
@@ -263,9 +278,22 @@ export default function DraftClient() {
     const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
     setLoading(true);
     setFetchFailed(false);
+    setErrorStatus(null);
+    setErrorMessage(null);
     void fetch(`/api/strategy/draft${qs}`)
       .then(async (response) => {
         const payload = await response.json();
+        // A rejected request (expired session, no access) used to fall through as
+        // an empty board; keep the status so the shell can say what happened.
+        if (!response.ok) {
+          setData(null);
+          setState(null);
+          setSetupMessage("");
+          setErrorStatus(response.status);
+          setErrorMessage(typeof payload?.error === "string" ? payload.error : null);
+          setFetchFailed(true);
+          return;
+        }
         if (payload.status === "setup_required") {
           setData(null);
           setState(null);
@@ -415,20 +443,39 @@ export default function DraftClient() {
   }
 
   if (shell !== "ready") {
+    const failure =
+      shell === "error"
+        ? loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: errorMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: errorMessage,
+            },
+          )
+        : null;
     return (
       <DraftShell
         orgId={data?.orgId ?? setupOrgId ?? orgId}
         shell={shell}
+        title={failure?.title}
+        primary={failure?.primary}
         error={
-          shell === "error"
-            ? "Could not load draft board."
+          failure
+            ? failure.description
             : shell === "setup" && setupMessage
               ? `${setupMessage} Alliance slots stay empty until real event metrics exist — never DEMO boards.`
               : shell === "empty" && data?.message
                 ? `${data.message} Cross-check Strategy, Pick desk, and Scouting — never DEMO boards.`
                 : undefined
         }
-        onRetry={shell === "error" ? () => load() : undefined}
+        onRetry={failure?.showRetry ? () => load() : undefined}
       />
     );
   }

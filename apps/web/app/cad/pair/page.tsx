@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import PairClient from "./pair-client";
 import "../cad-setup.css";
 
+// Session-gated server page: never prerendered, so a credential-free build works.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Pair CAD desktop · Vantage",
   description: "Approve a vantage-cad pairing code for Onshape or Fusion — password never enters the terminal.",

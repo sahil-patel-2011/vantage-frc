@@ -11,6 +11,8 @@ import {
   type KnowledgeWikiView,
 } from "../../../lib/knowledge";
 import { EmptyState } from "../../../components/ui";
+import { ActionMenu, type ActionSpec } from "../../../components/ui/action-menu";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./knowledge.css";
 
 type Tab = "wiki" | "search" | "templates" | "ai";
@@ -41,6 +43,8 @@ function filterPages(pages: KnowledgePageSummary[], q: string): KnowledgePageSum
 export default function KnowledgeClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<KnowledgeWikiView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("wiki");
@@ -119,15 +123,18 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
         const data = (await response.json()) as KnowledgeWikiView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setError("error" in data && data.error ? data.error : "Could not load knowledge base.");
+          setErrorStatus(response.status);
           return;
         }
         setError("");
+        setErrorStatus(null);
         setView(data);
         if (data.status === "ready" && data.selected && !opts?.q) {
           hydrateFromSelected(data);
         }
       } catch {
         setError("Network error loading knowledge base.");
+        setErrorStatus(null);
       }
     },
     [hydrateFromSelected],
@@ -251,6 +258,47 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
     return (
       <main className="module-page kb-page">
         <EmptyState soft title="Loading…" aria-busy />
+      </main>
+    );
+  }
+
+  // Nothing loaded at all — say why, and offer the action that actually fixes it.
+  if (!view && error) {
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: error,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined"
+            ? null
+            : `${window.location.pathname}${window.location.search}`,
+        message: error,
+      },
+    );
+    return (
+      <main className={`module-page kb-page${embedded ? " is-embedded" : ""}`}>
+        {!embedded ? (
+          <header className="kb-hero">
+            <div>
+              <h1>Playbook</h1>
+            </div>
+          </header>
+        ) : null}
+        <EmptyState soft title={copy.title} description={copy.description}>
+          {copy.primary ? (
+            <a className="app-button" href={copy.primary.href}>
+              {copy.primary.label}
+            </a>
+          ) : null}
+          {copy.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }
@@ -388,15 +436,33 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                 Include in assistant prompts
               </label>
               <div className="kb-actions">
-                <button type="button" className="button primary" disabled={busy} onClick={() => void saveAi()}>
-                  Save assistant summary
-                </button>
+                <ActionMenu
+                  label="Assistant summary"
+                  maxSecondary={0}
+                  actions={[
+                    {
+                      id: "save-ai",
+                      label: "Save assistant summary",
+                      intent: "primary",
+                      disabled: busy,
+                      onClick: () => void saveAi(),
+                    },
+                    {
+                      id: "history",
+                      label: "Change history",
+                      hint: "Who edited the team wiki, and when",
+                      href: `/team/knowledge/history?orgId=${orgId}`,
+                    },
+                  ]}
+                />
               </div>
             </>
           ) : null}
-          <div className="kb-ai-links">
-            <a href={`/team/knowledge/history?orgId=${orgId}`}>History</a>
-          </div>
+          {canEditAi ? null : (
+            <div className="kb-ai-links">
+              <a href={`/team/knowledge/history?orgId=${orgId}`}>History</a>
+            </div>
+          )}
         </section>
       ) : null}
 
@@ -499,36 +565,21 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                 </div>
 
                 <div className="kb-editor-toolbar" role="toolbar" aria-label="Editor shortcuts">
-                  <button type="button" className="kb-chip" disabled={busy} onClick={() => insertMarkdown("## Heading\n")}>
-                    Heading
-                  </button>
-                  <button type="button" className="kb-chip" disabled={busy} onClick={() => insertMarkdown("- \n")}>
-                    Bullet
-                  </button>
-                  <button
-                    type="button"
-                    className="kb-chip"
-                    disabled={busy}
-                    onClick={() => insertMarkdown("1. \n")}
-                  >
-                    Numbered
-                  </button>
-                  <button
-                    type="button"
-                    className="kb-chip"
-                    disabled={busy}
-                    onClick={() => insertMarkdown("**bold** ")}
-                  >
-                    Bold
-                  </button>
-                  <button
-                    type="button"
-                    className="kb-chip"
-                    disabled={busy}
-                    onClick={() => insertMarkdown("`code` ")}
-                  >
-                    Code
-                  </button>
+                  {/* Five equally-loud markdown chips became three controls: the two students
+                      reach for, plus the rest one keystroke away. Every insert still works. */}
+                  <ActionMenu
+                    tone="row"
+                    label="Markdown insert"
+                    overflowLabel="More formats"
+                    maxSecondary={1}
+                    actions={[
+                      { id: "heading", label: "Heading", intent: "primary", disabled: busy, onClick: () => insertMarkdown("## Heading\n") },
+                      { id: "bullet", label: "Bullet", disabled: busy, onClick: () => insertMarkdown("- \n") },
+                      { id: "bold", label: "Bold", disabled: busy, hint: "Wraps text in **", onClick: () => insertMarkdown("**bold** ") },
+                      { id: "numbered", label: "Numbered", disabled: busy, hint: "Starts an ordered list", onClick: () => insertMarkdown("1. \n") },
+                      { id: "code", label: "Code", disabled: busy, hint: "Inline `code` span", onClick: () => insertMarkdown("`code` ") },
+                    ]}
+                  />
                   <span className="kb-charcount" aria-live="polite">
                     {draftBody.length.toLocaleString()} / {MAX_BODY.toLocaleString()}
                     {bodyRemaining < 2000 ? ` · ${bodyRemaining.toLocaleString()} left` : ""}
@@ -588,44 +639,46 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                   />
                 </label>
                 <div className="kb-actions">
-                  {creating ? (
-                    <button type="button" className="button secondary" disabled={busy} onClick={cancelCreate}>
-                      Cancel
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="button primary"
-                    disabled={busy || !draftTitle.trim() || (!creating && !dirty)}
-                    onClick={() =>
-                      void run({
-                        action: "upsert_page",
-                        id: creating ? null : ready.selected?.id,
-                        title: draftTitle,
-                        body: draftBody,
-                        templateKind: draftTemplate,
-                        seasonYear: draftSeason || null,
-                        tags: draftTags,
-                        pinned: draftPinned,
-                      })
-                    }
-                  >
-                    {busy ? "Saving…" : creating ? "Create page" : "Save page"}
-                  </button>
-                  {!creating && ready.selected ? (
-                    <button
-                      type="button"
-                      className="kb-link danger"
-                      disabled={busy}
-                      onClick={() => {
-                        if (window.confirm("Delete this wiki page?")) {
-                          void run({ action: "delete_page", id: ready.selected!.id });
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
-                  ) : null}
+                  {/* Save is the one loud control. Cancel sits beside it while drafting;
+                      Delete is always behind the overflow with a confirm step (no window.confirm). */}
+                  <ActionMenu
+                    label="Page"
+                    maxSecondary={1}
+                    actions={[
+                      {
+                        id: "save",
+                        label: busy ? "Saving…" : creating ? "Create page" : "Save page",
+                        intent: "primary",
+                        disabled: busy || !draftTitle.trim() || (!creating && !dirty),
+                        onClick: () =>
+                          void run({
+                            action: "upsert_page",
+                            id: creating ? null : ready.selected?.id,
+                            title: draftTitle,
+                            body: draftBody,
+                            templateKind: draftTemplate,
+                            seasonYear: draftSeason || null,
+                            tags: draftTags,
+                            pinned: draftPinned,
+                          }),
+                      },
+                      ...(creating
+                        ? [{ id: "cancel", label: "Cancel", disabled: busy, onClick: cancelCreate } satisfies ActionSpec]
+                        : []),
+                      ...(!creating && ready.selected
+                        ? [
+                            {
+                              id: "delete",
+                              label: "Delete page",
+                              intent: "destructive",
+                              disabled: busy,
+                              hint: "Removes the page and its links for the whole team",
+                              onClick: () => void run({ action: "delete_page", id: ready.selected!.id }),
+                            } satisfies ActionSpec,
+                          ]
+                        : []),
+                    ]}
+                  />
                 </div>
 
                 {!creating && ready.selected ? (

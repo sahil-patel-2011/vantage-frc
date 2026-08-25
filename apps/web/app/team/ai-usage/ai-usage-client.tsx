@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./ai-usage.css";
 
 type Payload = {
@@ -49,6 +50,8 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(Boolean(orgId));
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   useEffect(() => {
     if (!orgId) {
@@ -67,14 +70,17 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
         if (cancelled) return;
         if (!response.ok) {
           setError(data.error ?? "Could not load BYOK usage");
+          setErrorStatus(response.status);
           setPayload(null);
         } else {
           setError("");
+          setErrorStatus(null);
           setPayload(data);
         }
       } catch {
         if (!cancelled) {
           setError("Could not load BYOK usage");
+          setErrorStatus(null);
           setPayload(null);
         }
       } finally {
@@ -130,12 +136,44 @@ export default function AiUsageClient({ orgId }: { orgId: string | null }) {
         </div>
       ) : null}
 
-      {error ? (
-        <section className="app-card soft-panel" role="alert">
-          <h2>Could not load</h2>
-          <p className="app-muted">{error}</p>
-        </section>
-      ) : null}
+      {error
+        ? (() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: errorStatus,
+                message: error,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: error,
+              },
+            );
+            return (
+              <section className="app-card soft-panel" role="alert">
+                <h2>{copy.title}</h2>
+                <p className="app-muted">{copy.description}</p>
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+                {copy.showRetry ? (
+                  <button
+                    type="button"
+                    className="app-button secondary"
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry
+                  </button>
+                ) : null}
+              </section>
+            );
+          })()
+        : null}
 
       {payload && !loading ? (
         <>

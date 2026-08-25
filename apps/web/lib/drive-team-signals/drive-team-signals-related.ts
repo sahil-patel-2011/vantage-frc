@@ -5,7 +5,8 @@ import { withOrgHref } from "../nav/product-nav";
 export const DRIVE_TEAM_SIGNALS_RELATED_LINKS = [
   { id: "match-checklist", label: "Match Checklist", tab: "match-checklist" },
   { id: "match-strategy-cards", label: "Strategy Cards", tab: "match-strategy-cards" },
-  { id: "match-copilot", label: "Match Copilot", tab: "match-copilot" },
+  // Match Copilot was consolidated into the one Pre-Match Briefing.
+  { id: "briefing", label: "Pre-Match Briefing", tab: "briefing" },
   { id: "field-reset-timer", label: "Field Reset Timer", hub: "/team" as const, tab: "field-reset-timer" },
 ] as const;
 
@@ -20,7 +21,7 @@ export type DriveTeamSignalsRelatedLink = {
 export const DRIVE_TEAM_SIGNALS_RELATED_INCLUDE: DriveTeamSignalsRelatedId[] = [
   "match-checklist",
   "match-strategy-cards",
-  "match-copilot",
+  "briefing",
 ];
 
 export function driveTeamSignalsRelatedLinks(
@@ -225,10 +226,10 @@ export function driveTeamSignalsNextActions(input: {
         href: hubHref("/competition", "match-checklist", orgId),
       },
       {
-        id: "copilot",
-        label: "Open Match Copilot",
-        detail: "Copilot stays available while the board reloads.",
-        href: hubHref("/competition", "match-copilot", orgId),
+        id: "briefing",
+        label: "Open Pre-Match Briefing",
+        detail: "The briefing stays available while the board reloads.",
+        href: hubHref("/competition", "briefing", orgId),
       },
     ];
   }

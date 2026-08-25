@@ -1,0 +1,307 @@
+/*
+ * WhyPanel — reusable "show your work" disclosure (.why-* contract).
+ * Design tokens only, so light and dark both come out right; 44px minimum targets for the pit.
+ */
+.why-panel {
+  display: grid;
+  gap: 0;
+  margin-top: 16px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius, 10px);
+  overflow: hidden;
+}
+
+.why-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  color: var(--app-ink);
+  background: var(--app-soft);
+  border: 0;
+  border-bottom: 1px solid transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.why-toggle[aria-expanded="true"] {
+  border-bottom-color: var(--app-line);
+}
+
+.why-toggle:hover {
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-soft));
+}
+
+.why-toggle-caret {
+  width: 16px;
+  color: var(--app-accent);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.why-toggle-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.why-toggle-text strong {
+  font-size: 13px;
+}
+
+.why-toggle-text small {
+  color: var(--app-muted);
+  font-size: 11px;
+}
+
+.why-toggle-hint {
+  margin-left: auto;
+  color: var(--app-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.why-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.why-step {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-top: 1px solid var(--app-line);
+}
+
+.why-step:first-child {
+  border-top: 0;
+}
+
+.why-step-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.why-step-index {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--app-accent-ink, #fff);
+  background: var(--app-accent);
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.why-action {
+  flex: 1 1 220px;
+  margin: 0;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.why-status {
+  padding: 4px 7px;
+  border: 1px solid var(--app-line);
+  border-radius: 5px;
+  color: var(--app-muted);
+  background: var(--app-soft);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.why-status--error {
+  color: var(--app-critical);
+  border-color: color-mix(in srgb, var(--app-critical) 45%, var(--app-line));
+}
+
+.why-status--setup_required {
+  color: var(--app-warning);
+  border-color: color-mix(in srgb, var(--app-warning) 45%, var(--app-line));
+}
+
+.why-outcome {
+  margin: 0 0 0 32px;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.why-reason,
+.why-principle {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 0 32px;
+  padding: 10px 12px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-left: 3px solid var(--app-accent);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.why-reason > span,
+.why-principle > span {
+  color: var(--app-accent);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.why-reason--missing {
+  color: var(--app-muted);
+  border-left-color: var(--app-line);
+  font-style: italic;
+}
+
+.why-reason--missing > span {
+  color: var(--app-muted);
+}
+
+.why-principle {
+  border-left-color: var(--app-positive);
+}
+
+.why-principle > span {
+  color: var(--app-positive);
+}
+
+.why-sources {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 0 32px;
+  padding: 0;
+  list-style: none;
+}
+
+.why-sources li {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.why-sources a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--app-accent);
+  font-weight: 700;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.why-sources span {
+  color: var(--app-muted);
+  font-weight: 700;
+}
+
+.why-sources code {
+  display: block;
+  padding: 8px 10px;
+  color: var(--app-ink);
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 6px;
+  font: 11px/1.6 ui-monospace, monospace;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.why-explain {
+  display: grid;
+  gap: 8px;
+  margin: 2px 0 0 32px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--app-line);
+}
+
+.why-explain-label {
+  color: var(--app-muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.why-explain-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.why-explain-button {
+  min-height: 44px;
+  padding: 10px 14px;
+  color: var(--app-ink);
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.why-explain-button:hover:not(:disabled) {
+  border-color: var(--app-accent);
+  color: var(--app-accent);
+}
+
+.why-explain-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.why-explain-text {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.why-explain-error {
+  margin: 0;
+  color: var(--app-critical);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.why-panel :focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .why-outcome,
+  .why-reason,
+  .why-principle,
+  .why-sources,
+  .why-explain {
+    margin-left: 0;
+  }
+
+  .why-explain-button {
+    flex: 1 1 140px;
+  }
+}

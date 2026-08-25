@@ -241,7 +241,7 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
   const ctas: CutoffCta[] = [];
 
   if (alert.reason === "sponsored_promo_expired") {
-    ctas.push({ id: "ai-keys", label: "Add AI API keys", href: aiKeysHref });
+    ctas.push({ id: "ai-keys", label: "Add AI keys", href: aiKeysHref });
     ctas.push({ id: "pricing", label: "Upgrade for hosted AI", href: pricingHref });
     return ctas;
   }
@@ -282,7 +282,7 @@ export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] 
       id: "upgrade",
       label: "Upgrade plan",
       checkoutAction: "subscription",
-      planCode: "team_pro",
+      planCode: "pro",
       href: pricingHref,
     });
   }
@@ -354,7 +354,7 @@ export function messageForCutoffError(
     ? cutoffCtas(alert, org)
     : reason === "sponsored_promo_expired"
       ? [
-          { id: "ai-keys" as const, label: "Add AI API keys", href: cutoffAiKeysHref(null) },
+          { id: "ai-keys" as const, label: "Add AI keys", href: cutoffAiKeysHref(null) },
           { id: "pricing" as const, label: "Upgrade for hosted AI", href: pricingHref },
         ]
       : [

@@ -1,21 +1,28 @@
 import { expect, test } from "@playwright/test";
 
-test("pricing clearly separates plans and hosted AI value", async ({ page }) => {
+test("pricing leads with every-feature-every-plan and the hosted AI ladder", async ({ page }) => {
   await page.goto("/pricing");
-  await expect(page.getByRole("heading", { name: "Plans for private work or the whole team." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Individual Pro" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Individual Max" })).toBeVisible();
-  await expect(page.getByText(/Hosted AI included/i).first()).toBeVisible();
-  await expect(page.getByText(/Cheaper than your own keys/i).first()).toBeVisible();
-  await expect(page.getByText(/built in natively/i).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Every feature. Every plan. Even Free." })).toBeVisible();
+  await expect(page.getByText(/Everything is included on every plan/i).first()).toBeVisible();
+
+  // The four-plan ladder: Free $0 · Pro $20 · Pro+ $60 · Max $100.
+  await expect(page.getByRole("heading", { name: "Free", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pro", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pro+", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Max", exact: true })).toBeVisible();
+  await expect(page.getByText("$20", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("$60", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("$100", { exact: true }).first()).toBeVisible();
+
+  // Feature list appears once, not per column, and the BYOK/local story is explicit.
+  await expect(page.getByRole("heading", { name: /Everything below is on every plan/i })).toBeVisible();
+  await expect(page.getByText(/Ollama, LM Studio/).first()).toBeVisible();
+  await expect(page.getByText(/unlimited by Vantage/i).first()).toBeVisible();
+
+  // Honest allowance comparison + no-silent-overage promise + trial + FAQ.
+  await expect(page.getByText(/budget models/i).first()).toBeVisible();
   await expect(page.getByText(/hard (cut-?off|stop)/i).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Team" })).toBeVisible();
-  await page.getByRole("button", { name: "Team" }).click();
-  await expect(page.getByRole("heading", { name: "Team Pro" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Team Max" })).toBeVisible();
-  await expect(page.getByText(/Native features \+ hosted models/i).first()).toBeVisible();
-  await expect(page.getByLabel(/Team Max subscription or higher credit packs/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Access + PAYG" })).toBeVisible();
-  await expect(page.getByText(/Week team trial/i).first()).toBeVisible();
-  await expect(page.getByText(/Checkout opens when Stripe/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Try team hosted AI for 7 days/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Buy AI credits" })).toBeVisible();
+  await expect(page.getByText("Is anything locked behind a paid plan?")).toBeVisible();
 });

@@ -67,6 +67,103 @@
   margin: 0.75rem 0 0;
 }
 
+.help-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+/* Category filter chips — real buttons, ≥44px touch targets. */
+.help-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+}
+
+.help-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--soft-line, rgba(30, 40, 60, 0.16));
+  background: var(--soft-panel, #fff);
+  color: inherit;
+  font: 600 0.85rem/1.2 var(--font-source-sans, ui-sans-serif, system-ui);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.help-cat-chip i {
+  font-style: normal;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--soft-accent, #1f4fd6) 12%, transparent);
+  color: var(--soft-accent, #1f4fd6);
+}
+
+.help-cat-chip:hover,
+.help-cat-chip:focus-visible {
+  border-color: color-mix(in srgb, var(--soft-accent, #1f4fd6) 45%, var(--soft-line, #ccd));
+}
+
+.help-cat-chip:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--soft-accent, #1f4fd6) 55%, transparent);
+  outline-offset: 1px;
+}
+
+.help-cat-chip[aria-pressed="true"] {
+  border-color: var(--soft-accent, #1f4fd6);
+  background: color-mix(in srgb, var(--soft-accent, #1f4fd6) 10%, var(--soft-panel, #fff));
+  color: var(--soft-accent, #1f4fd6);
+}
+
+/* Category groups on the index. */
+.help-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.help-group header {
+  margin: 0 0 0.6rem;
+}
+
+.help-group h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.help-group header p {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+}
+
+/* Cross-link card between /help (articles) and /docs (section guide). */
+.help-crosslink {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-top: 1.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px dashed color-mix(in srgb, var(--soft-accent, #1f4fd6) 35%, var(--soft-line, #ccd));
+  background: color-mix(in srgb, var(--soft-accent, #1f4fd6) 5%, var(--soft-panel, #fff));
+}
+
+.help-crosslink p {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+  max-width: 34rem;
+}
+
 .help-article-actions {
   display: flex;
   flex-wrap: wrap;

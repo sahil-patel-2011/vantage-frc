@@ -1,7 +1,7 @@
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 
 const E164 = /^\+[1-9][0-9]{7,14}$/;
-const EMAIL = /^[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}$/i;
+const EMAIL = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
 export function normalizeRecoveryEmail(value: string | null | undefined): string | null {
   const trimmed = value?.trim().toLowerCase() ?? "";

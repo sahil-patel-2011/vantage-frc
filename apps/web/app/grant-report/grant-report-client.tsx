@@ -16,7 +16,7 @@ import {
   type GrantReportNextAction,
   type GrantReportShellKind,
 } from "../../lib/grant-report/grant-report-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./grant-report.css";
 
@@ -83,7 +83,7 @@ function GrantReportShell({
 }) {
   const actions = grantReportNextActions({ orgId, shell });
   const copy = grantReportShellCopy(shell);
-  const businessHref = hubHref("/business", "grant-report", orgId);
+  const businessHref = hubWorkbenchHref("business", "grant-report", orgId);
   const steps = shell === "setup" ? grantReportSetupSteps(orgId) : [];
 
   return (
@@ -214,7 +214,7 @@ export default function GrantReportClient() {
   const relatedLinks = grantReportRelatedLinks(orgId, {
     include: [...GRANT_REPORT_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "grant-report", orgId);
+  const businessHref = hubWorkbenchHref("business", "grant-report", orgId);
   const grantsHref = hubHref("/business", "grants", orgId);
   const impactHref = hubHref("/business", "impact", orgId);
   const workbenchHref = withOrgHref("/team/grants", orgId);
@@ -458,8 +458,9 @@ function Reports({
                 <strong>{report.grantName}</strong>
                 <small className="app-muted" style={{ display: "block" }}>
                   {report.funder ? `${report.funder} · ` : ""}
-                  {report.seasonYear} · Awarded ${report.amountAwardedUsd.toLocaleString()} · Spend $
-                  {report.totalSpendUsd.toLocaleString()} · {report.outreachCount} outreach message(s)
+                  {report.seasonYear} · Awarded ${report.amountAwardedUsd.toLocaleString()} · Season expenses
+                  (org-wide, not grant-attributed) ${report.totalSpendUsd.toLocaleString()} ·{" "}
+                  {report.outreachCount} outreach message(s)
                 </small>
               </div>
               <button

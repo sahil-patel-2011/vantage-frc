@@ -1,6 +1,15 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { AIAttribution } from "../../components/ui";
+import {
+  AI_EXPAND_IDLE,
+  expandedDisplay,
+  expandFailureState,
+  expandSuccessState,
+  type AiExpandState,
+} from "../../lib/ai-expand";
 import { MATCH_RESULTS, type Alliance, type MatchResult } from "../../lib/match-debrief";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Debrief = {
   id: string; seasonYear: number; eventKey: string; matchLabel: string; alliance: Alliance; result: MatchResult;
@@ -9,7 +18,7 @@ type Debrief = {
 };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; debriefs: Debrief[]; summary: { total: number; wins: number; losses: number; ties: number; record: string; avgPoints: number | null; openActionItems: number } };
+  | { status: "ready"; context: { orgId: string; role: string }; seasonYear: number; debriefs: Debrief[]; summary: { total: number; wins: number; losses: number; ties: number; record: string; avgPoints: number | null; openActionItems: number }; takeaways: string };
 
 const RESULT_LABEL: Record<MatchResult, string> = { win: "Win", loss: "Loss", tie: "Tie", unknown: "—" };
 const EMPTY = { matchLabel: "", eventKey: "", alliance: "unknown", result: "unknown", pointsScored: "", cycleCount: "", drivetrainOk: true, mechanismsOk: true, autoOk: true, whatWorked: "", whatBroke: "", actionItems: "" };
@@ -18,12 +27,18 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead-end error line.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
+  // Optional metered AI coach over the computed takeaways; the computed text
+  // always renders and a missing model degrades to it with a setup note.
+  const [coach, setCoach] = useState<AiExpandState>(AI_EXPAND_IDLE);
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/match-debrief?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load match log"); return; }
+    if (!response.ok) { setMessage(data.error ?? "Failed to load match log"); setErrorStatus(response.status); return; }
+    setErrorStatus(null);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
@@ -45,12 +60,65 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
     if (view?.status === "ready") setForm({ ...EMPTY });
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading match log…"}</p></main>;
+  if (!view) {
+    if (!message) return <main className="intel-app"><p className="telemetry-status">Loading match log…</p></main>;
+    // The match log never loaded: say why, and offer the action that actually fixes it.
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined"
+            ? null
+            : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status"><strong>{copy.title}</strong></p>
+        <p className="telemetry-status">{copy.description}</p>
+        {copy.primary ? <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a> : null}
+        {copy.showRetry ? <button type="button" className="primary-action" onClick={() => void load()}>Retry</button> : null}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / MATCH LOG</span><h1>Match debrief</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }
 
   const flag = (ok: boolean, label: string) => (ok ? "" : ` · ${label} issue`);
+
+  const askCoach = async () => {
+    if (view.status !== "ready") return;
+    setCoach({ status: "loading" });
+    try {
+      const response = await fetch("/api/match-debrief", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "coach", orgId: view.context.orgId, seasonYear }),
+      });
+      const data = (await response.json()) as Record<string, unknown>;
+      if (!response.ok) {
+        setCoach(
+          expandFailureState({
+            httpStatus: response.status,
+            code: typeof data.code === "string" ? data.code : null,
+            error: typeof data.error === "string" ? data.error : null,
+          }),
+        );
+        return;
+      }
+      setCoach(expandSuccessState(data));
+    } catch {
+      setCoach(expandFailureState({ httpStatus: 0, error: "network error" }));
+    }
+  };
+
+  const takeawaysDisplay = expandedDisplay(view.takeaways ?? "", coach);
 
   return (
     <main className="intel-app">
@@ -66,6 +134,36 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
         <article><span>Matches logged</span><strong>{view.summary.total}</strong></article>
         <article><span>Avg points</span><strong>{view.summary.avgPoints ?? "—"}</strong></article>
         <article><span>Matches with action items</span><strong>{view.summary.openActionItems}</strong></article>
+      </section>
+
+      <section className="intel-panel" aria-label="Between-matches takeaways">
+        <span className="eyebrow">TAKEAWAYS</span>
+        <p style={{ margin: "6px 0 0" }}>{takeawaysDisplay.text}</p>
+        <AIAttribution kind="computed" feature="match_debrief" generatedAt={new Date().toISOString()} />
+        {coach.status === "ready" && takeawaysDisplay.aiText ? (
+          <>
+            <p style={{ margin: "6px 0 0" }}>{takeawaysDisplay.aiText}</p>
+            <AIAttribution
+              kind="ai"
+              feature="match_debrief"
+              generatedAt={coach.expansion.generatedAt}
+              onRegenerate={() => void askCoach()}
+            />
+          </>
+        ) : (
+          <div style={{ display: "grid", gap: 6, justifyItems: "start", marginTop: 8 }}>
+            <button
+              type="button"
+              className="primary-action"
+              style={{ minHeight: 44 }}
+              disabled={coach.status === "loading" || view.summary.total === 0}
+              onClick={() => void askCoach()}
+            >
+              {coach.status === "loading" ? "Expanding…" : "Expand with AI"}
+            </button>
+            {takeawaysDisplay.note ? <small>{takeawaysDisplay.note}</small> : null}
+          </div>
+        )}
       </section>
 
       <section className="admin-grid">

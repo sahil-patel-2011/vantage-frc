@@ -21,6 +21,8 @@ export type SponsorWallView =
       orgId: string;
       teamNumber: number | null;
       settings: SponsorWallSettings;
+      /** Token for the public read-only page at /sponsor-wall/{publicId}; null until settings are saved. */
+      publicId: string | null;
       entries: SponsorWallEntry[];
       summary: SponsorWallSummary;
       computedAt: string;
@@ -43,6 +45,7 @@ type SettingsRow = {
   subtitle: string | null;
   theme: SponsorWallTheme;
   published: boolean;
+  publicId: string;
 };
 
 const DEFAULT_SETTINGS: SponsorWallSettings = {
@@ -111,20 +114,30 @@ export async function computeSponsorWallView(
       [org.orgId],
     ),
     client.query<SettingsRow>(
-      `SELECT headline, subtitle, theme, published FROM sponsor_wall_settings WHERE org_id = $1`,
+      `SELECT headline, subtitle, theme, published, public_id AS "publicId"
+       FROM sponsor_wall_settings WHERE org_id = $1`,
       [org.orgId],
     ),
   ]);
 
   const entries = sortWallEntries(entriesResult.rows.map(mapEntry));
   const summary = summarizeWall(entries);
-  const settings: SponsorWallSettings = settingsResult.rows[0] ?? DEFAULT_SETTINGS;
+  const settingsRow = settingsResult.rows[0] ?? null;
+  const settings: SponsorWallSettings = settingsRow
+    ? {
+        headline: settingsRow.headline,
+        subtitle: settingsRow.subtitle,
+        theme: settingsRow.theme,
+        published: settingsRow.published,
+      }
+    : DEFAULT_SETTINGS;
 
   return {
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
     settings,
+    publicId: settingsRow?.publicId ?? null,
     entries,
     summary,
     computedAt: new Date().toISOString(),

@@ -1,5 +1,6 @@
 import type { OpponentTendency, MatchPrediction, AllianceMatchup } from "@vantage/prediction-strategy";
 import type { DataSourceHealthView } from "../reference-health";
+import type { NexusQueueSnapshot } from "./nexus-queue";
 import type { StrategyPlaybookView, TbaAccessInfo } from "../strategy/types";
 
 export type CommandMatchAlliance = {
@@ -65,6 +66,10 @@ export type CommandNexus = {
   pitCount: number;
   syncedAt: string | null;
   attributionHref: string;
+  /** False when no Nexus API key is configured — the panel shows setup guidance. */
+  configured: boolean;
+  /** Queue countdown, announcements, and parts requests. Null until a payload is cached. */
+  queue: NexusQueueSnapshot | null;
 };
 
 export type CommandSnapshot = {

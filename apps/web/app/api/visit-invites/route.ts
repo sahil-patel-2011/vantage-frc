@@ -17,7 +17,6 @@ import {
   type VisitKind,
   type VisitRsvp,
   type VisitStatus,
-  type RsvpResponse,
 } from "../../../lib/visit-invites";
 
 class HttpError extends Error {

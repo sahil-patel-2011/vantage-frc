@@ -52,3 +52,169 @@
   align-items: center;
   margin-top: 4px;
 }
+
+/* --- Team journal (nightly dreaming) ------------------------------------ */
+
+.dream-journal {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.dream-journal-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dream-journal-header > div {
+  display: grid;
+  gap: 4px;
+  min-width: min(100%, 240px);
+}
+
+.dream-journal-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.dream-journal-header p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.dream-journal .dream-run-now,
+.dream-journal .dream-more,
+.dream-journal-error .app-button {
+  min-height: 44px;
+  padding: 0 16px;
+}
+
+.dream-retention {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.dream-status {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.dream-journal-error {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.dream-entries {
+  display: grid;
+  gap: 10px;
+}
+
+.dream-entry {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-line) 85%, transparent);
+  border-radius: var(--app-radius, 12px);
+  background: var(--app-soft, transparent);
+}
+
+.dream-entry.weekly {
+  border-color: color-mix(in srgb, var(--app-accent) 45%, transparent);
+}
+
+.dream-entry > header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dream-entry h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  color: var(--app-ink, inherit);
+}
+
+.dream-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dream-chips li {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
+  background: var(--app-surface, transparent);
+  color: var(--app-muted, inherit);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.dream-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--app-ink, inherit);
+}
+
+.dream-error-streak {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  border-color: color-mix(in srgb, var(--app-accent) 40%, transparent);
+}
+
+.dream-error-streak h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.dream-error-streak p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.dream-error-streak ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--app-muted, inherit);
+}
+
+@media (max-width: 420px) {
+  .dream-journal-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dream-journal .dream-run-now,
+  .dream-journal .dream-more {
+    width: 100%;
+  }
+
+  .dream-chips li {
+    white-space: normal;
+  }
+}

@@ -1,21 +1,42 @@
 "use client";
 
 import { useState } from "react";
+import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
 import { EmptyState, FormGrid, FormRow, PageHeader } from "../../components/ui";
+import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
 
 export default function ClaimWorkspaceClient() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [teamNumber, setTeamNumber] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [legalError, setLegalError] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [orgId, setOrgId] = useState("");
 
+  const consentComplete = legalConsentComplete({ terms: termsAccepted, privacy: privacyAccepted });
+
   async function submit() {
     setError("");
+    if (!consentComplete) {
+      // Shown once, next to the box that is still unticked.
+      setLegalError(
+        legalConsentMessage({ terms: termsAccepted, privacy: privacyAccepted }) ??
+          "Agree to the Terms of Service and the Privacy Policy to continue.",
+      );
+      return;
+    }
     const response = await fetch("/api/organizations/claim", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, slug, teamNumber: Number(teamNumber) }),
+      body: JSON.stringify({
+        name,
+        slug,
+        teamNumber: Number(teamNumber),
+        termsAccepted,
+        privacyAccepted,
+      }),
     });
     const data = (await response.json()) as { id?: string; error?: string };
     if (!response.ok || !data.id) {
@@ -51,8 +72,25 @@ export default function ClaimWorkspaceClient() {
           <FormRow label="FRC team number">
             <input value={teamNumber} onChange={(event) => setTeamNumber(event.target.value)} inputMode="numeric" />
           </FormRow>
+          <LegalAgreementCheckbox
+            id="claim-legal"
+            terms={termsAccepted}
+            privacy={privacyAccepted}
+            onChange={(next) => {
+              setTermsAccepted(next.terms);
+              setPrivacyAccepted(next.privacy);
+              setLegalError(legalConsentMessage({ terms: next.terms, privacy: next.privacy }));
+            }}
+            error={legalError}
+            required
+          />
           {error ? <p className="app-muted">{error}</p> : null}
-          <button type="button" className="app-button" onClick={() => void submit()}>
+          <button
+            type="button"
+            className="app-button"
+            disabled={!consentComplete}
+            onClick={() => void submit()}
+          >
             Claim team
           </button>
         </FormGrid>

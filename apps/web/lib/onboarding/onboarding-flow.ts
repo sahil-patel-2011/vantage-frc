@@ -1,8 +1,14 @@
 /** Soft-UI helpers for first-login `/onboarding` — closed membership, no DEMO access. */
 
+/**
+ * Step ids are the server's contract (`PATCH /api/onboarding` draft steps and the
+ * resumable `currentStep` column), so they stay `profile | team | preferences`
+ * even though the screens were rebuilt as You → Your team → Finish.
+ */
 export const ONBOARDING_SETUP_STEPS = ["profile", "team", "preferences"] as const;
 export type OnboardingSetupStep = (typeof ONBOARDING_SETUP_STEPS)[number];
-export type OnboardingFlowStep = OnboardingSetupStep | "pending";
+/** `pending` = submitted, waiting on a team. `done` = submitted and already in. */
+export type OnboardingFlowStep = OnboardingSetupStep | "pending" | "done";
 
 export type OnboardingStepPhase = "done" | "current" | "upcoming";
 
@@ -22,17 +28,17 @@ export const ONBOARDING_STEP_COPY: Record<
   profile: {
     label: "You",
     shortLabel: "You",
-    description: "Name and youth-safe profile details stay private until review.",
+    description: "Your name and what you do on the team. Nothing here is shared until a team approves you.",
   },
   team: {
-    label: "Team & role",
+    label: "Your team",
     shortLabel: "Team",
-    description: "Team number is optional. An existing team's number only requests that team's approval — it never auto-joins you.",
+    description: "Team number is optional. Entering one requests that team's approval — it never joins you.",
   },
   preferences: {
-    label: "Review",
-    shortLabel: "Review",
-    description: "Confirm focus, accept terms if needed, then request closed membership.",
+    label: "Finish",
+    shortLabel: "Finish",
+    description: "Agree to both documents, then submit. You can change everything later in Account.",
   },
 };
 
@@ -46,9 +52,9 @@ export type OnboardingLoadCopy = {
   badge?: string;
 };
 
-/** Progress index for the 3 setup steps; pending reads as complete. */
+/** Progress index for the 3 setup steps; pending/done read as complete. */
 export function onboardingStepIndex(step: OnboardingFlowStep): number {
-  if (step === "pending") return ONBOARDING_SETUP_STEPS.length;
+  if (step === "pending" || step === "done") return ONBOARDING_SETUP_STEPS.length;
   return Math.max(0, ONBOARDING_SETUP_STEPS.indexOf(step));
 }
 
@@ -56,7 +62,7 @@ export function onboardingStepPhase(
   stepId: OnboardingSetupStep,
   current: OnboardingFlowStep,
 ): OnboardingStepPhase {
-  if (current === "pending") return "done";
+  if (current === "pending" || current === "done") return "done";
   const currentIndex = onboardingStepIndex(current);
   const stepIndex = ONBOARDING_SETUP_STEPS.indexOf(stepId);
   if (stepIndex < currentIndex) return "done";
@@ -76,6 +82,9 @@ export function buildOnboardingStepMeta(current: OnboardingFlowStep): Onboarding
 
 /** One-line progress for screen readers and Soft-UI clarity. */
 export function onboardingProgressLabel(current: OnboardingFlowStep): string {
+  if (current === "done") {
+    return "All three steps done — your workspace is open";
+  }
   if (current === "pending") {
     return "Profile submitted — waiting for team approval";
   }
@@ -86,19 +95,31 @@ export function onboardingProgressLabel(current: OnboardingFlowStep): string {
 }
 
 /**
- * Terms checkbox is required on submit unless this profile already accepted.
- * API still expects `termsAccepted: true` on complete — UI may skip re-check when prior acceptance exists.
+ * Terms and Privacy are two separate consents. Both checkboxes are shown unless
+ * this profile has already accepted BOTH documents. Migration 0460 backfills no
+ * privacy_accepted_at, so a profile carrying only the old combined 0163 terms
+ * timestamp is still asked — the old checkbox is not evidence of privacy consent.
  */
-export function onboardingTermsRequired(termsAcceptedAt: string | null | undefined): boolean {
-  return !termsAcceptedAt?.trim();
+export function onboardingLegalRequired(input: {
+  termsAcceptedAt?: string | null;
+  privacyAcceptedAt?: string | null;
+}): boolean {
+  return !input.termsAcceptedAt?.trim() || !input.privacyAcceptedAt?.trim();
 }
 
+
+/**
+ * Submit is blocked until BOTH boxes are ticked. The API re-validates; a client
+ * checkbox is not consent.
+ */
 export function onboardingCanSubmit(input: {
   termsAccepted: boolean;
+  privacyAccepted: boolean;
   termsAcceptedAt?: string | null;
+  privacyAcceptedAt?: string | null;
 }): boolean {
-  if (!onboardingTermsRequired(input.termsAcceptedAt)) return true;
-  return input.termsAccepted === true;
+  if (!onboardingLegalRequired(input)) return true;
+  return input.termsAccepted === true && input.privacyAccepted === true;
 }
 
 export type TeamAffiliationOption = "private_school" | "public_school" | "community";

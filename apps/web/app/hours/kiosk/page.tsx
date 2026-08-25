@@ -1,9 +1,11 @@
 import KioskClient from "./kiosk-client";
 import "../hours.css";
+import "./kiosk.css";
 
 export const metadata = {
-  title: "Shop Kiosk · Vantage",
-  description: "Tap-to-clock-in kiosk for the shop door — big buttons, live elapsed timers.",
+  title: "Scan-in Kiosk · Vantage",
+  description:
+    "Barcode / student-ID scan-in kiosk for the shop door — one big autofocused field, offline queueing when the Wi-Fi dies, and forgot-to-sign-out flags.",
 };
 
 export default function HoursKioskPage() {

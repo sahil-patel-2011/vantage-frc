@@ -5,6 +5,7 @@ import { AiHubRelated } from "../../components/ai-hub-related";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
+import { ModelProvenance } from "../../components/ui";
 import {
   AI_CHAT_RELATED_INCLUDE,
   AI_CHAT_SCOPE_CARDS,
@@ -367,6 +368,10 @@ export default function ChatClient({
     hasActiveThread: Boolean(thread),
   });
   const shellCopy = aiChatShellCopy(shell);
+  /** Newest reply that actually reported a model — the thread's current endpoint. */
+  const lastAssistant = [...messages]
+    .reverse()
+    .find((item) => item.role === "assistant" && Boolean(item.model));
   const blocked = shell === "auth_required" || shell === "error";
   const showStatusShell =
     shell === "setup" || shell === "loading" || shell === "auth_required" || shell === "error";
@@ -594,10 +599,18 @@ export default function ChatClient({
                         </ul>
                       ) : null}
                       {item.model ? (
-                        <small>
-                          {item.provider} / {item.model}
-                          {item.tokenCount != null ? ` · ~${item.tokenCount} ctx tokens` : ""}
-                        </small>
+                        <>
+                          {/* Per-turn label only. The quality notice is rendered once
+                              below the transcript — repeating it on every message
+                              would nag rather than inform. */}
+                          <ModelProvenance
+                            meta={{ provider: item.provider, modelId: item.model }}
+                            notice={null}
+                          />
+                          {item.tokenCount != null ? (
+                            <small>~{item.tokenCount} ctx tokens</small>
+                          ) : null}
+                        </>
                       ) : null}
                       {item.role === "user" && thread.scope === "private" ? (
                         <button type="button" className="ch-promote" onClick={() => void promote(item.id)}>
@@ -608,6 +621,13 @@ export default function ChatClient({
                   );
                 })}
               </div>
+
+              {/* One quality notice for the thread, driven by the newest reply. */}
+              {lastAssistant ? (
+                <ModelProvenance
+                  meta={{ provider: lastAssistant.provider, modelId: lastAssistant.model }}
+                />
+              ) : null}
 
               {lastTools.length > 0 ? (
                 <div className="ch-last-tools" aria-live="polite">
