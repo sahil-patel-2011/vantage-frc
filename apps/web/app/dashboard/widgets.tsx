@@ -15,20 +15,20 @@ type EmptyHint = {
 };
 
 const WIDGET_ICON: Record<string, { icon: IconName; tone: string; toneBg: string }> = {
-  next_match: { icon: "swords", tone: "#1f4fd6", toneBg: "#e4ecfc" },
-  recent_result: { icon: "stats", tone: "#1f4fd6", toneBg: "#e4ecfc" },
-  competition_snapshot: { icon: "target", tone: "#1f4fd6", toneBg: "#e4ecfc" },
+  next_match: { icon: "swords", tone: "#1457d9", toneBg: "#e4ecfc" },
+  recent_result: { icon: "stats", tone: "#1457d9", toneBg: "#e4ecfc" },
+  competition_snapshot: { icon: "target", tone: "#1457d9", toneBg: "#e4ecfc" },
   scouting_coverage: { icon: "clipboard", tone: "#15803d", toneBg: "#dcfce7" },
-  prediction_summary: { icon: "bolt", tone: "#1f4fd6", toneBg: "#e4ecfc" },
+  prediction_summary: { icon: "bolt", tone: "#1457d9", toneBg: "#e4ecfc" },
   robot_readiness: { icon: "cube", tone: "#0f766e", toneBg: "#ccfbf1" },
-  pit_youtube: { icon: "display", tone: "#1f4fd6", toneBg: "#e4ecfc" },
+  pit_youtube: { icon: "display", tone: "#1457d9", toneBg: "#e4ecfc" },
   sync_status: { icon: "gear", tone: "#0f766e", toneBg: "#ccfbf1" },
-  ai_usage: { icon: "bolt", tone: "#1f4fd6", toneBg: "#e4ecfc" },
-  quick_actions: { icon: "grid", tone: "#1f4fd6", toneBg: "#e4ecfc" },
-  notifications: { icon: "bell", tone: "#1f4fd6", toneBg: "#e4ecfc" },
+  ai_usage: { icon: "bolt", tone: "#1457d9", toneBg: "#e4ecfc" },
+  quick_actions: { icon: "grid", tone: "#1457d9", toneBg: "#e4ecfc" },
+  notifications: { icon: "bell", tone: "#1457d9", toneBg: "#e4ecfc" },
   alerts: { icon: "bell", tone: "#b91c1c", toneBg: "#fee2e2" },
-  onboarding_checklist: { icon: "pin", tone: "#1f4fd6", toneBg: "#e4ecfc" },
-  team_todos: { icon: "clipboard", tone: "#1f4fd6", toneBg: "#e4ecfc" },
+  onboarding_checklist: { icon: "pin", tone: "#1457d9", toneBg: "#e4ecfc" },
+  team_todos: { icon: "clipboard", tone: "#1457d9", toneBg: "#e4ecfc" },
   subteam_upcoming: { icon: "calendar", tone: "#0f766e", toneBg: "#ccfbf1" },
 };
 

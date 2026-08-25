@@ -391,7 +391,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
           <div className="edc-card-title">
             <span
               className="edc-icon"
-              style={{ ["--tone" as string]: "#1f4fd6", ["--tone-bg" as string]: "#e4ecfc" }}
+              style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}
             >
               <Icon name="users" />
             </span>
@@ -427,7 +427,7 @@ export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
               <div className="edc-card-title">
                 <span
                   className="edc-icon"
-                  style={{ ["--tone" as string]: "#1f4fd6", ["--tone-bg" as string]: "#e4ecfc" }}
+                  style={{ ["--tone" as string]: "#1457d9", ["--tone-bg" as string]: "#e4ecfc" }}
                 >
                   <Icon name="bolt" />
                 </span>

@@ -10,7 +10,7 @@
   --mk-tone-overdue: #b42318;
   --mk-tone-due: #b54708;
   --mk-tone-done: #067647;
-  --mk-tone-info: var(--soft-accent, #1f4fd6);
+  --mk-tone-info: var(--soft-accent, #1457d9);
   --mk-tone-neutral: var(--soft-muted, #5a6578);
 }
 
@@ -76,7 +76,7 @@ html[data-theme="dark"] .mk-page {
 
 .mk-section.emphasis {
   box-shadow: var(--soft-shadow-lift, 0 8px 24px rgba(15, 23, 42, 0.1));
-  border-color: var(--soft-accent, #1f4fd6);
+  border-color: var(--soft-accent, #1457d9);
 }
 
 .mk-section-head {
@@ -123,11 +123,11 @@ html[data-theme="dark"] .mk-page {
 
 .mk-row:hover,
 .mk-row:focus-visible {
-  border-color: var(--soft-accent, #1f4fd6);
+  border-color: var(--soft-accent, #1457d9);
 }
 
 .mk-row:focus-visible {
-  outline: 2px solid var(--soft-ring, #1f4fd6);
+  outline: 2px solid var(--soft-ring, #1457d9);
   outline-offset: 2px;
 }
 

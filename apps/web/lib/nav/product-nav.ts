@@ -53,7 +53,7 @@ export type ProductNavIcon =
   | "pin"
   | "back";
 
-const TONE = { tone: "#1f4fd6", toneBg: "#e8eefc" } as const;
+const TONE = { tone: "#1457d9", toneBg: "#e8eefc" } as const;
 
 /** Routes that never append ?orgId= (account / platform chrome). */
 export const ORG_EXEMPT_HREFS = new Set([
