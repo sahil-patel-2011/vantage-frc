@@ -49,7 +49,78 @@ export * from "./onshape-url";
 export * from "./cad-agent-action";
 export * from "./cad-agent-steps";
 export * from "./agent-modes";
-export { runCadMcpStdio } from "./mcp-stdio";
+export {
+  runCadMcpStdio,
+  dispatchCadMcp,
+  callCadPartTool,
+  cadMcpToolList,
+  isCadPartTool,
+  resetCadPartPipeline,
+} from "./mcp-stdio";
+export type { CadMcpHooks, CadPartRuntime } from "./mcp-stdio";
+/** The Onshape annual-allowance ledger. Pure data + arithmetic; no network, no credentials. */
+export * from "./call-budget";
+/**
+ * Offline design-for-manufacturing pass. Named rather than star-exported: `./dfm`
+ * exports a `PartDefinition` (the flat DFM description) and so does
+ * `./featurescript` (the buildable geometry, reached through ./onshape-features).
+ * They are different types, so the DFM one is renamed here rather than being
+ * silently dropped as an ambiguous star export.
+ */
+export {
+  applyDfmCompensation,
+  bedFit,
+  checkPart,
+  clearanceHoleMm,
+  coarsePitchMm,
+  compensateHoleDiameter,
+  compensateHoleFeature,
+  compensationIsCalibrated,
+  defaultInsertIdForThread,
+  describeDfmReport,
+  describeModelledPart,
+  extrusionWidthMm,
+  findInsert,
+  findMaterial,
+  findPrinter,
+  HEAT_SET_INSERTS,
+  insertsForThread,
+  isMetricThread,
+  majorDiameterMm,
+  MATERIAL_PROFILES,
+  METRIC_THREADS,
+  minimumWallMm,
+  nominalHoleDiameterMm,
+  optimumBossWallMm,
+  PRINTER_PROFILES,
+  recommendedWallMm,
+  requiredBoreDepthMm,
+  requiredBossWallMm,
+  requireInsert,
+  requireMaterial,
+  requirePrinter,
+  tapDrillMm,
+  usableHeightMm,
+  worstSeverity,
+} from "./dfm";
+export type {
+  BedFitResult,
+  CheckFinding,
+  CheckId,
+  CheckPartInput,
+  ClearanceFit,
+  CompensatedHole,
+  DfmReport,
+  HeatSetInsert,
+  HoleKind,
+  MaterialProfile,
+  MetricThread,
+  ModelledDimension,
+  ModelledPart,
+  PrinterProfile,
+  Severity,
+  PartDefinition as DfmPartDescription,
+} from "./dfm";
 
 export type EngineeringBrief={summary:string;requirements:string[];constraints:string[];scoringTasks:string[];assumptions:Array<{name:string;value:string;needsConfirmation:boolean}>;risks:string[];acceptanceCriteria:string[];sourceRefs:Array<{type:string;id:string;classification:string}>;disclaimer:string};
 export const CAD_OPERATIONS=["create_sketch","create_extrude","create_fillet","create_chamfer","create_shell","create_pattern","set_variable","create_assembly","create_hole","create_mirror","delete_feature","feature_script","verify_topology","render_views","create_checkpoint","rollback_checkpoint","export_step","export_stl","export_gltf"] as const;

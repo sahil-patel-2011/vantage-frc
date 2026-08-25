@@ -553,3 +553,543 @@ export function cadToolSupportMatrix() {
     mutating: tool.mutating,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// The part pipeline: local checks first, then ONE FeatureScript feature
+// ---------------------------------------------------------------------------
+
+/**
+ * A second catalog, deliberately not more rows in CAD_TOOL_CATALOG.
+ *
+ * The tools above are one-REST-call-per-operation primitives, and
+ * `hostedCadToolNames()` feeds the hosted /cad agent's allowlist straight from
+ * that array. The pipeline below is dispatched by `mcp-stdio.ts` against the
+ * terminal's own auth + on-disk session, not by `claude-cad.ts`, so listing it
+ * in the same array would advertise tools the hosted agent cannot execute.
+ *
+ * The pipeline exists because Onshape's API allowance is ANNUAL and small
+ * (2,500-10,000 calls/year depending on plan,
+ * https://onshape-public.github.io/docs/auth/limits/, verified 2026-08-25), and a
+ * naive sketch -> extrude -> describe -> render loop spends one call per
+ * operation. Two facts shape every tool here:
+ *
+ *  1. Calls made with a signed-in browser session are NOT counted against that
+ *     allowance (same page). `vantage-cad login` is what puts one on disk.
+ *  2. One FeatureScript custom feature builds the whole solid, so the cost of a
+ *     part does not grow with its hole count.
+ *
+ * `needs` is the canonical order, declared as data. `mcp-stdio.ts` enforces it
+ * at runtime and names the tool that supplies whatever is missing, so an agent
+ * cannot spend calls by pushing something it never checked.
+ */
+
+/** State a tool requires before it will spend anything. */
+export type CadPartToolPrecondition = "auth" | "binding" | "check" | "preview" | "push";
+
+export type CadPartToolStage = "auth" | "document" | "inspect" | "local" | "build" | "verify";
+
+export type CadPartToolSpec = {
+  name: string;
+  /** Short human label for a status line or a docs table. */
+  label: string;
+  stage: CadPartToolStage;
+  /** What a coding agent reads to decide whether to call this. Says the call cost out loud. */
+  description: string;
+  needs: readonly CadPartToolPrecondition[];
+  /**
+   * Onshape calls one successful run spends. Both bounds are real paths through
+   * the tool, not padding — the per-tool comment says what moves it.
+   */
+  onshapeCalls: { min: number; max: number };
+  /** True when the tool changes the Onshape document. */
+  mutating: boolean;
+  /** Full JSON Schema for tools/list. Hand-written: the part definition nests too deep for a param list. */
+  inputSchema: Record<string, unknown>;
+};
+
+const numberField = (description: string) => ({ type: "number" as const, description });
+const stringField = (description: string) => ({ type: "string" as const, description });
+const boolField = (description: string) => ({ type: "boolean" as const, description });
+
+const POINT_2MM_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: { xMm: numberField("X in mm."), yMm: numberField("Y in mm.") },
+  required: ["xMm", "yMm"],
+} as const;
+
+/**
+ * Hole placement. One `kind` selects which of the other fields are read; the
+ * generator rejects a pattern whose fields do not match its kind rather than
+ * filling one in.
+ */
+const HOLE_PATTERN_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  description:
+    "Where the holes go. grid/corners/linear/circular stay editable as parameters later; explicit point lists are baked into the FeatureScript source and can only be changed by a rebuild.",
+  properties: {
+    kind: {
+      type: "string",
+      enum: ["grid", "corners", "linear", "circular", "explicit"],
+      description:
+        "grid: countX x countY on pitchXMm/pitchYMm, centred on the part origin. corners: the four footprint corners, inset insetXMm/insetYMm from each edge (plate or box only). linear: count points stepping from startXMm/startYMm by stepXMm/stepYMm. circular: count points on a bolt circle. explicit: literal points.",
+    },
+    countX: numberField("grid: columns."),
+    countY: numberField("grid: rows."),
+    pitchXMm: numberField("grid: column spacing in mm."),
+    pitchYMm: numberField("grid: row spacing in mm."),
+    insetXMm: numberField("corners: distance from each X edge to the hole centre, in mm."),
+    insetYMm: numberField("corners: distance from each Y edge to the hole centre, in mm."),
+    count: numberField("linear/circular: number of holes."),
+    startXMm: numberField("linear: first hole centre X in mm."),
+    startYMm: numberField("linear: first hole centre Y in mm."),
+    stepXMm: numberField("linear: X step between holes in mm."),
+    stepYMm: numberField("linear: Y step between holes in mm."),
+    centerXMm: numberField("circular: bolt-circle centre X in mm."),
+    centerYMm: numberField("circular: bolt-circle centre Y in mm."),
+    boltCircleDiameterMm: numberField("circular: bolt-circle diameter in mm."),
+    startAngleDeg: numberField("circular: angle of the first hole, measured from +X toward +Y (default 0)."),
+    points: {
+      type: "array",
+      description: "explicit: the hole centres, in mm, in the part frame.",
+      items: POINT_2MM_SCHEMA,
+    },
+  },
+  required: ["kind"],
+} as const;
+
+/**
+ * `thread` + `holeType` is the form that keeps a hole checkable: it names the
+ * INTENT, and the diameter is then looked up (ISO 273 clearance, major-minus-
+ * pitch tap drill, or the heat-set insert's installation hole) rather than
+ * typed in. A bare `diameterMm` is accepted but the tool cannot then tell a
+ * bolt clearance hole from a tapped one, so it cannot check the fit.
+ */
+const HOLE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    id: stringField("Stable token for this hole group, e.g. \"m3Corner\". Becomes the FeatureScript parameter prefix."),
+    diameterMm: numberField(
+      "Nominal diameter in mm — the size the PRINTED hole should end up. Omit it when thread + holeType are given. Never pre-compensate here; cad_part_check does that.",
+    ),
+    thread: {
+      type: "string",
+      enum: ["M2", "M2.5", "M3", "M4", "M5", "M6", "M8"],
+      description: "Fastener size the hole is for. With holeType this replaces diameterMm.",
+    },
+    holeType: {
+      type: "string",
+      enum: ["clearance", "tapped", "heat-set"],
+      description:
+        "clearance: a bolt passes through (ISO 273). tapped: a thread is cut into the plastic (tap drill = major diameter - pitch). heat-set: a brass insert is melted in (the insert's installation-hole diameter). These are three different diameters for the same M3, so the tool asks rather than picking one.",
+    },
+    fit: {
+      type: "string",
+      enum: ["close", "normal", "loose"],
+      description: "Clearance series for holeType=clearance. Defaults to ISO 273 normal (M3 -> 3.4 mm) and the result says so.",
+    },
+    insert: stringField(
+      "Heat-set insert id for holeType=heat-set, e.g. \"M3x5.7\". Defaults to the longest tabulated body in that thread size, and the result says which.",
+    ),
+    through: boolField("True (default) cuts all the way through. False needs depthMm."),
+    depthMm: numberField("Blind-hole depth in mm, measured down from the top face."),
+    counterbore: {
+      type: "object",
+      additionalProperties: false,
+      description: "Optional counterbore for a socket-head cap screw.",
+      properties: {
+        diameterMm: numberField("Counterbore diameter in mm."),
+        depthMm: numberField("Counterbore depth in mm, from the top face."),
+      },
+      required: ["diameterMm", "depthMm"],
+    },
+    pattern: HOLE_PATTERN_SCHEMA,
+  },
+  required: ["id", "pattern"],
+} as const;
+
+/**
+ * The buildable part. Origin is the CENTRE of the base footprint, +Z is up, the
+ * base sits on Z = 0 — every coordinate below is in that frame, in millimetres.
+ */
+const PART_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  description:
+    "One printable part. Origin is the centre of the base footprint, +Z is up, the base sits on Z = 0. All dimensions in mm.",
+  properties: {
+    name: stringField("Part name. Becomes the Onshape feature name, so make it recognisable in the feature tree."),
+    base: {
+      type: "object",
+      additionalProperties: false,
+      description: "The starting solid. `kind` selects which fields are read.",
+      properties: {
+        kind: {
+          type: "string",
+          enum: ["plate", "box", "bracket"],
+          description:
+            "plate: widthMm x depthMm x thicknessMm flat stock. box: widthMm x depthMm x heightMm, hollowed when wallMm is given. bracket: an L — a flat leg legAMm long in +Y and an upright legBMm tall in +Z, both thicknessMm thick and widthMm wide.",
+        },
+        widthMm: numberField("X size in mm (all kinds)."),
+        depthMm: numberField("Y size in mm (plate, box)."),
+        thicknessMm: numberField("Z thickness in mm (plate), or wall thickness of both legs (bracket)."),
+        heightMm: numberField("Z height in mm (box)."),
+        wallMm: numberField("box: side wall thickness in mm. Omit for a solid block."),
+        floorMm: numberField("box: floor thickness in mm (defaults to wallMm)."),
+        openTop: boolField("box: leave the +Z face open (default true)."),
+        legAMm: numberField("bracket: length of the flat leg in +Y, in mm."),
+        legBMm: numberField("bracket: height of the upright leg in +Z, in mm."),
+      },
+      required: ["kind"],
+    },
+    holes: { type: "array", description: "Hole groups. One group covers every hole in its pattern.", items: HOLE_SCHEMA },
+    pockets: {
+      type: "array",
+      description: "Rectangular pockets cut down from the top face.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          id: stringField("Stable token for this pocket."),
+          centerXMm: numberField("Pocket centre X in mm."),
+          centerYMm: numberField("Pocket centre Y in mm."),
+          widthMm: numberField("Pocket X size in mm."),
+          depthMm: numberField("Pocket Y size in mm (this is a footprint size, not how deep it cuts)."),
+          cutDepthMm: numberField("How far down from the top face the pocket is cut, in mm."),
+          cornerRadiusMm: numberField("Vertical corner radius in mm. Optional."),
+        },
+        required: ["id", "centerXMm", "centerYMm", "widthMm", "depthMm", "cutDepthMm"],
+      },
+    },
+    ribs: {
+      type: "array",
+      description: "Axis-aligned stiffening ribs standing on the top face. Diagonal ribs are rejected, not approximated.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          id: stringField("Stable token for this rib."),
+          fromXMm: numberField("Rib start X in mm."),
+          fromYMm: numberField("Rib start Y in mm."),
+          toXMm: numberField("Rib end X in mm. Either X or Y must match the start."),
+          toYMm: numberField("Rib end Y in mm."),
+          thicknessMm: numberField("Rib thickness in mm."),
+          heightMm: numberField("Rib height above the top face in mm."),
+        },
+        required: ["id", "fromXMm", "fromYMm", "toXMm", "toYMm", "thicknessMm", "heightMm"],
+      },
+    },
+    bosses: {
+      type: "array",
+      description:
+        "Heat-set insert bosses: a cylinder on the top face with the insert bore drilled into it. Model an insert as a boss rather than a hole — the bore-depth and boss-wall rules only apply here.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          id: stringField("Stable token for this boss."),
+          centerXMm: numberField("Boss centre X in mm."),
+          centerYMm: numberField("Boss centre Y in mm."),
+          outerDiameterMm: numberField("Boss outer diameter in mm."),
+          heightMm: numberField("Boss height above the top face in mm."),
+          insertDiameterMm: numberField("Insert bore diameter in mm — the insert's installation hole, from its datasheet."),
+          insertDepthMm: numberField("Bore depth in mm."),
+        },
+        required: ["id", "centerXMm", "centerYMm", "outerDiameterMm", "heightMm", "insertDiameterMm", "insertDepthMm"],
+      },
+    },
+    edges: {
+      type: "array",
+      description: "Fillets and chamfers applied to the finished body.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          id: stringField("Stable token for this edge treatment."),
+          kind: { type: "string", enum: ["fillet", "chamfer"], description: "Round or bevel." },
+          selection: {
+            type: "string",
+            enum: ["corners", "all"],
+            description:
+              "corners: the vertical (Z-parallel) corner edges only. all: every edge of the body — note this reaches the bottom perimeter, which prints as an overhang.",
+          },
+          sizeMm: numberField("Fillet radius or chamfer leg length in mm."),
+        },
+        required: ["id", "kind", "selection", "sizeMm"],
+      },
+    },
+  },
+  required: ["name", "base"],
+} as const;
+
+const PRINTER_FIELD = stringField(
+  "Printer profile id from cad_part_check's error list, e.g. \"bambu-x1c\", \"bambu-p1s\", \"bambu-p2s\", \"bambu-h2d\", \"bambu-h2s\", \"snapmaker-u1\". Required: bed size, nozzle material and bead width all change the answer, so it is asked for rather than assumed.",
+);
+
+const MATERIAL_FIELD = stringField(
+  "Material profile id: \"pla\", \"petg\", \"abs\", \"asa\", or \"pa-cf\". Required: enclosure, abrasion and shrinkage all follow from it.",
+);
+
+export const CAD_PART_TOOL_CATALOG: readonly CadPartToolSpec[] = [
+  {
+    name: "cad_auth_status",
+    label: "Onshape sign-in",
+    stage: "auth",
+    needs: [],
+    // 0 by default: the saved session file answers this offline. verify=true
+    // spends exactly one /users/current call to prove the credential still works.
+    onshapeCalls: { min: 0, max: 1 },
+    mutating: false,
+    description:
+      "Which Onshape credential this terminal will use and whether it is deducted from your Onshape annual API allowance. Resolution order is saved browser session (`vantage-cad login` — NOT counted against the allowance), then OAuth, then API keys (both counted). Costs 0 Onshape calls; pass verify=true to spend exactly 1 call proving the credential still authenticates. Start here when anything Onshape-related fails.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        verify: boolField("Spend 1 Onshape call on /users/current to prove the saved credential still works (default false)."),
+      },
+    },
+  },
+  {
+    name: "cad_open_document",
+    label: "Open Part Studio",
+    stage: "document",
+    needs: ["auth"],
+    // Exactly one: the element list. That single response carries the Part
+    // Studio, its name, and any Feature Studio, so nothing else has to be asked
+    // for. A URL with no /w/ workspace comes back as a question, not a lookup.
+    onshapeCalls: { min: 1, max: 1 },
+    mutating: false,
+    description:
+      "Bind (or resume) the Part Studio every later tool edits, from a pasted Onshape URL or explicit ids. Also records which Feature Studio in that document holds Vantage's generated FeatureScript, so a later push does not have to go looking for it. Costs exactly 1 Onshape call. Re-binding the same Part Studio resumes its feature history and parameters; binding a different one starts clean. Use a disposable document — never the competition robot.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        url: stringField("Onshape URL: https://cad.onshape.com/documents/<did>/w/<wid>/e/<eid>. Paste the Part Studio tab's link."),
+        documentId: stringField("Document id, if you are not passing a url."),
+        workspaceId: stringField("Workspace id, if you are not passing a url."),
+        elementId: stringField("Part Studio element id, if you are not passing a url."),
+        featureStudioElementId: stringField(
+          "Element id of the Feature Studio to write generated FeatureScript into. Optional: one named \"Vantage\" (or the only one in the document) is found from the same element list at no extra cost.",
+        ),
+      },
+    },
+  },
+  {
+    name: "cad_part_studio_contents",
+    label: "Part Studio contents",
+    stage: "inspect",
+    needs: ["auth", "binding"],
+    onshapeCalls: { min: 1, max: 1 },
+    mutating: false,
+    description:
+      "List what is already in the bound Part Studio: every feature, which ones Vantage created, and any generated part feature cad_part_edit could change. Costs 1 Onshape call. Read this before pushing into a document you did not just create, so you never add a second copy of a part that is already there.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+  },
+  {
+    name: "cad_part_check",
+    label: "Local DFM check",
+    stage: "local",
+    needs: [],
+    onshapeCalls: { min: 0, max: 0 },
+    mutating: false,
+    description:
+      "Run every local design-for-manufacturing rule against the part and return the diameters to actually MODEL. Costs 0 Onshape calls — this is the stage that catches a hole a bolt will not fit through, a wall thinner than two extrusions, an insert boss that is too shallow, or a part that will not fit the bed, before one API call is spent. Needs printerId and materialId. A hole given thread + holeType is resolved from the ISO 273 / tap-drill / heat-set tables instead of being guessed. Returns a checkToken that cad_part_preview and cad_part_push require.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        part: PART_SCHEMA,
+        printerId: PRINTER_FIELD,
+        materialId: MATERIAL_FIELD,
+        inserts: {
+          type: "object",
+          additionalProperties: { type: "string" },
+          description:
+            "Boss id -> heat-set insert id, when a bore diameter matches more than one tabulated insert or none. e.g. {\"mount\": \"M3x5.7\"}.",
+        },
+        overhangs: {
+          type: "array",
+          description:
+            "Sloped faces this prismatic schema cannot express, so the overhang rule can still see them. angleFromVerticalDeg: 0 is a vertical wall, 90 a horizontal roof.",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              id: stringField("What the face is."),
+              angleFromVerticalDeg: numberField("Face angle from vertical, in degrees."),
+              spanMm: numberField("Unsupported span in mm. Optional."),
+            },
+            required: ["id", "angleFromVerticalDeg"],
+          },
+        },
+        smallFeatures: {
+          type: "array",
+          description: "Engraving, pins and other fine detail the schema does not model, so the bead-width rule can see them.",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              id: stringField("What the feature is."),
+              minDimensionMm: numberField("Smallest in-plane dimension in mm."),
+              kind: { type: "string", enum: ["rib", "pin", "emboss", "engrave", "other"], description: "Optional." },
+            },
+            required: ["id", "minDimensionMm"],
+          },
+        },
+      },
+      required: ["part", "printerId", "materialId"],
+    },
+  },
+  {
+    name: "cad_part_preview",
+    label: "Preview the feature",
+    stage: "local",
+    needs: [],
+    onshapeCalls: { min: 0, max: 0 },
+    mutating: false,
+    description:
+      "Generate the ONE FeatureScript custom feature that builds the whole part, and show what it would produce: predicted bounding box, every hole centre, every editable parameter with its bounds, the generated source, and the exact Onshape call cost of pushing it. Costs 0 Onshape calls. Pass the checkToken from cad_part_check to preview the print-compensated part — that is the only form cad_part_push accepts. Returns a previewToken.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        checkToken: stringField("checkToken from cad_part_check. Previews the compensated part, and is what makes the result pushable."),
+        part: PART_SCHEMA,
+        includeSource: boolField("Include the full generated FeatureScript source in the result (default false — the summary already reports its size)."),
+        featureScriptVersion: numberField(
+          "Onshape FeatureScript language version to pin. Defaults to 2144. Old versions keep working by design; pass your account's own number if you have it.",
+        ),
+      },
+    },
+  },
+  {
+    name: "cad_part_push",
+    label: "Push one feature",
+    stage: "build",
+    needs: ["auth", "binding", "check", "preview"],
+    // 2 = write the Feature Studio contents + insert the feature (the write
+    // response carries the microversion). 3 when Onshape does not return it and
+    // it has to be read back. 4 when the Feature Studio has to be created first.
+    onshapeCalls: { min: 2, max: 4 },
+    mutating: true,
+    description:
+      "Write the generated FeatureScript into the document's Feature Studio and insert it into the bound Part Studio as ONE custom feature. Costs 2-4 Onshape calls no matter how many holes, ribs and fillets the part has. Requires a previewToken from cad_part_preview whose DFM check passed. Refuses to push the same part twice — change a dimension with cad_part_edit (1 call) instead of rebuilding it.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        previewToken: stringField("previewToken from cad_part_preview. Required."),
+        name: stringField("Feature name in the Onshape tree. Defaults to the part name."),
+        featureStudioElementId: stringField("Override the Feature Studio recorded by cad_open_document."),
+        allowCreateFeatureStudio: boolField(
+          "Create a Feature Studio when the document has none (1 extra call). Onshape does not publish this endpoint, so it is opt-in and the result says the endpoint is unverified. Default false: the tool tells you to add the tab yourself.",
+        ),
+        acknowledgeDfmFail: boolField(
+          "Push even though the DFM check returned status=fail. Requires acknowledgedChecks to name every failing rule, and the result records that the part was pushed knowingly.",
+        ),
+        acknowledgedChecks: {
+          type: "array",
+          description: "The failing check ids you are accepting, e.g. [\"min-wall\"]. Must cover every fail.",
+          items: { type: "string" },
+        },
+      },
+      required: ["previewToken"],
+    },
+  },
+  {
+    name: "cad_part_edit",
+    label: "Edit parameters",
+    stage: "build",
+    needs: ["auth", "binding", "push"],
+    // 1 for a real change. 0 when every requested value is already the one the
+    // feature holds, which is otherwise the easiest way to spend the allowance
+    // a call at a time.
+    onshapeCalls: { min: 0, max: 1 },
+    mutating: true,
+    description:
+      "Change dimensions on the part feature that is ALREADY in the Part Studio, by feature id. This is what \"make the plate 8 mm instead of 6\" costs: exactly 1 Onshape call updating the existing feature's parameters. Nothing is regenerated, nothing is re-inserted, no Feature Studio is rewritten, so downstream references survive. Costs 0 calls when every parameter in the edit already holds the requested value — re-asserting a dimension never spends anything. Values outside a parameter's published min/max, or a structural change (a new hole group, a different pattern kind, moving an explicit point list), are reported as rebuild-required rather than attempted.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        edits: {
+          type: "array",
+          description: "The parameter changes. Ids and bounds come from cad_part_preview or cad_part_studio_contents.",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              parameterId: stringField("FeatureScript parameter id, e.g. \"baseThickness\" or \"m3CornerDiameter\"."),
+              value: numberField("New value: mm for a length, degrees for an angle, a whole number for a count."),
+            },
+            required: ["parameterId", "value"],
+          },
+        },
+        featureId: stringField("Feature to edit. Defaults to the last part feature this session pushed."),
+        recheck: boolField(
+          "Re-run the local DFM check on the edited part before spending the call, using the printer and material from the original check (default true when they are known). 0 extra Onshape calls.",
+        ),
+      },
+      required: ["edits"],
+    },
+  },
+  {
+    name: "cad_part_verify",
+    label: "Verify what was built",
+    stage: "verify",
+    needs: ["auth", "binding", "push"],
+    // Exactly two: one FeatureScript bounding-box readback, one iso shaded view.
+    // 0 when nothing has changed since this session already verified it.
+    onshapeCalls: { min: 0, max: 2 },
+    mutating: false,
+    description:
+      "The single verification pull: one FeatureScript bounding-box readback and one iso shaded view — 2 Onshape calls total — compared against what the preview predicted. Costs 0 calls when nothing has changed since this session last verified the same feature; it returns the previous readback instead of paying twice for the same answer. The rendered view is written to a file and the path is returned, so it does not flood the transcript.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        featureId: stringField("Feature to measure. Defaults to the last part feature this session pushed."),
+        image: {
+          type: "string",
+          enum: ["path", "base64", "none"],
+          description:
+            "path (default): write the PNG next to the session file and return its path. base64: return the image inline — large. none: skip the view and spend only the 1 bounding-box call.",
+        },
+        widthPx: numberField("Rendered width in pixels, 32-2000 (default 700)."),
+        heightPx: numberField("Rendered height in pixels, 32-2000 (default 700)."),
+      },
+    },
+  },
+];
+
+export function cadPartToolSpec(name: string): CadPartToolSpec | undefined {
+  return CAD_PART_TOOL_CATALOG.find((tool) => tool.name === name);
+}
+
+export function cadPartToolNames(): string[] {
+  return CAD_PART_TOOL_CATALOG.map((tool) => tool.name);
+}
+
+/**
+ * tools/list entries. The call cost is appended to every description because it
+ * is the single fact that most changes what an agent should do next, and MCP
+ * gives us nowhere else to put it.
+ */
+export function cadPartToolListEntries() {
+  return CAD_PART_TOOL_CATALOG.map((tool) => ({
+    name: tool.name,
+    description: `${tool.description}${
+      tool.needs.length ? ` Requires: ${tool.needs.join(", ")}.` : ""
+    } Onshape calls: ${tool.onshapeCalls.min === tool.onshapeCalls.max ? tool.onshapeCalls.min : `${tool.onshapeCalls.min}-${tool.onshapeCalls.max}`}.`,
+    inputSchema: tool.inputSchema,
+  }));
+}
+
+/** The canonical order, for a status surface or the docs. */
+export function cadPartPipelineOrder(): string[] {
+  return CAD_PART_TOOL_CATALOG.map((tool) => tool.name);
+}

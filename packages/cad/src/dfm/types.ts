@@ -244,6 +244,24 @@ export type CompensatedHole = {
   calibrated: boolean;
 };
 
+/**
+ * One number to change in the part definition before it is built.
+ *
+ * `path` is a `setDefinitionPath` path into the featurescript `PartDefinition`,
+ * so `applyDfmCompensation` can write the whole set back without knowing what any
+ * individual dimension means.
+ */
+export type ModelledDimension = {
+  /** e.g. "holes.0.diameterMm" or "bosses.1.insertDiameterMm". */
+  path: string;
+  label: string;
+  /** What the designer asked for, and what the printed part should measure. */
+  nominalMm: number;
+  /** What to model instead, so the printed part lands on nominal. */
+  modelMm: number;
+  reason: string;
+};
+
 export type DfmReport = {
   part: string;
   printerId: string;
@@ -252,6 +270,8 @@ export type DfmReport = {
   extrusionWidthMm: number;
   /** Worst severity across every finding. */
   status: Severity;
+  /** One or two sentences a student can read without opening the findings list. */
+  summary: string;
   findings: readonly CheckFinding[];
   bedFit: BedFitResult;
   /** The dimensions to actually model, once compensation is applied. */
@@ -263,6 +283,13 @@ export type DfmReport = {
     compensatedBoreMm: number;
     requiredDepthMm: number;
   }[];
+  /** Every compensated dimension, addressed by where it lives in the part definition. */
+  modelledDimensions: readonly ModelledDimension[];
+  /**
+   * Rules with nothing to check on this part — a part with no holes has no
+   * hole-to-edge distance. Listed so "no finding" is never mistaken for "passed".
+   */
+  notApplicable: readonly CheckId[];
   /** True when a profile in play is not fully manufacturer-verified. */
   usesUnverifiedProfile: boolean;
 };

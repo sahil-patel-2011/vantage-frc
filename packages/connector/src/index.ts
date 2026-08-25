@@ -68,6 +68,17 @@ export {
 } from "./config.js";
 
 export {
+  RUNTIME_STATE_FILENAME,
+  parseRuntimeState,
+  readRuntimeState,
+  runtimeStatePath,
+  snapshotFromStatus,
+  writeRuntimeState,
+  type ConnectorRuntimeState,
+  type RuntimeCapabilitySnapshot,
+} from "./runtime-state.js";
+
+export {
   PairingFlow,
   configFromPairing,
   type ApprovedPairing,
