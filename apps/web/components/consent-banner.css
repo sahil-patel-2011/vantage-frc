@@ -140,6 +140,17 @@
   outline-offset: 2px;
 }
 
+/* Keep waitlist / footer actions out from under the dock while it is asking. */
+body:has(.consent-banner) {
+  padding-bottom: 168px;
+}
+
+@media (max-width: 759px) {
+  body:has(.consent-banner) {
+    padding-bottom: min(48vh, 340px);
+  }
+}
+
 /* Wide marketing fold: keep every honesty sentence, but sit as a short dock
    so the product mock is not buried under four stacked paragraphs. */
 @media (min-width: 760px) {

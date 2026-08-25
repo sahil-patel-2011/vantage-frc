@@ -3,7 +3,7 @@
  * Honest empty states — never invented match lists, EPA, or win rates.
  */
 
-const rail = ["Home", "Competition", "Team", "Build", "Business", "AI"] as const;
+const rail = ["Home", "Compete", "Team", "Business"] as const;
 const tabs = ["Event day", "Scouting", "Strategy", "Pit"] as const;
 
 const briefing: readonly { label: string; value: string }[] = [
@@ -26,14 +26,6 @@ export function HeroProductPanel() {
       </div>
 
       <div className="mk-mock-body">
-        <aside className="mk-mock-rail">
-          {rail.map((item) => (
-            <span className={item === "Competition" ? "is-active" : undefined} key={item}>
-              {item}
-            </span>
-          ))}
-        </aside>
-
         <div className="mk-mock-main">
           <div className="mk-mock-tabs">
             {tabs.map((tab) => (
@@ -45,7 +37,7 @@ export function HeroProductPanel() {
 
           <article className="mk-mock-card">
             <header>
-              <strong>Match briefing</strong>
+              <strong>Pre-match briefing</strong>
               <span>Setup required</span>
             </header>
             <dl className="mk-mock-rows">
@@ -70,6 +62,14 @@ export function HeroProductPanel() {
             </div>
             <em>Strategy tools stay blank until scout entries and the public cache exist. No DEMO EPA.</em>
           </div>
+        </div>
+
+        <div className="mk-mock-rail">
+          {rail.map((item) => (
+            <span className={item === "Compete" ? "is-active" : undefined} key={item}>
+              {item}
+            </span>
+          ))}
         </div>
       </div>
 

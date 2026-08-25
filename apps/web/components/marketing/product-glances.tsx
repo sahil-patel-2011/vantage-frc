@@ -48,7 +48,7 @@ export function ProductHubCatalog() {
 }
 
 const islandApps = ["Home", "Compete", "Team", "Business"] as const;
-const drawerPillars = ["Competition", "Team", "Logistics", "Business", "Build", "AI"] as const;
+const drawerPillars = ["Competition", "Team", "Logistics", "Business", "Media", "Build", "AI"] as const;
 const competitionTabs = ["Event day", "Scouting", "Strategy", "Pit"] as const;
 
 /** Hero chrome — labeled product areas, no invented match or scores. */

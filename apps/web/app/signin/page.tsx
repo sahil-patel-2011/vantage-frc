@@ -6,7 +6,9 @@ import { safeAppPath } from "../../lib/security/safe-navigation";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Sign in · Vantage",
+  // Root layout templates "%s — Vantage"; absolute keeps this from becoming
+  // "Sign in · Vantage — Vantage".
+  title: { absolute: "Sign in · Vantage" },
   description: "Sign in with Google or email. Invite-only — no public signup.",
 };
 

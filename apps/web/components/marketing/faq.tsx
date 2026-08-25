@@ -1,5 +1,12 @@
 /** Landing-page FAQ — short answers + FAQPage JSON-LD. */
 
+function faqAnchor(question: string) {
+  return `faq-${question
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")}`;
+}
+
 const faqs = [
   {
     q: "What is Vantage?",
@@ -7,7 +14,7 @@ const faqs = [
   },
   {
     q: "What do we open first?",
-    a: "Competition: Event day, Scouting, Strategy, and Pit. Team for calendar, chat, and playbook. Build for CAD and Code. AI for Assistant. Everything else is under those hubs or All tools.",
+    a: "Competition: Event day, Scouting, Strategy, and Pit. Team for calendar, chat, and playbook. Build for CAD and Code. AI for Assistant. Media, Logistics, and the rest live in the menu or search.",
   },
   {
     q: "Does scouting work offline?",
@@ -23,7 +30,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: "Free with your own AI keys, or platform Groq/OpenRouter when the host has keys. Individual and Team add hosted AI. Full prices are on the pricing page. Hard cutoffs — no surprise overage.",
+    a: "Free with your own AI keys, or platform Groq/OpenRouter when the host has keys. Pro, Pro+, and Max add hosted AI. Full prices are on the pricing page. Hard cutoffs — no surprise overage.",
   },
   {
     q: "Is team data private?",
@@ -50,7 +57,7 @@ export function FAQ() {
       </header>
       <div className="faq-list">
         {faqs.map((f) => (
-          <details key={f.q} className="faq-item">
+          <details key={f.q} className="faq-item" id={faqAnchor(f.q)}>
             <summary>
               <span>{f.q}</span>
               <i aria-hidden="true" />

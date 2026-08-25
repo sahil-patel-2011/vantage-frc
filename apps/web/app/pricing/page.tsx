@@ -11,7 +11,7 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Pricing — Vantage",
   description:
-    "Start free with your own AI keys or buy AI credits. Individual and Team plans add hosted AI in the product. Credits go further than bringing your own keys. Hard cutoffs; no surprise overage.",
+    "Start free with your own AI keys or buy AI credits. Pro, Pro+, and Max add hosted AI. Credits go further than bringing your own keys. Hard cutoffs; no surprise overage.",
   path: "/pricing",
 });
 
@@ -28,7 +28,7 @@ export default function PricingPage() {
           <h1>Start free. Buy AI credits when you need them.</h1>
           <p>
             Free is scouting, event day, and season ops with your own keys — or platform Groq/OpenRouter when the host
-            has them. Individual and Team add hosted AI. Hard cutoffs. No surprise overage.
+            has them. Pro, Pro+, and Max add hosted AI. Hard cutoffs. No surprise overage.
           </p>
           <div className="actions">
             <a className="button primary" href="#credits">
