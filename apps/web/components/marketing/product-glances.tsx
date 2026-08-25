@@ -1,56 +1,20 @@
 /**
- * Marketing Soft-UI hero preview + optional hub directory for /features.
- * Hub names match Soft-UI pillars. No DEMO metrics or status chips.
+ * Marketing Soft-UI hero preview + hub directory.
+ * Hub names match product pillars. No DEMO metrics or status chips.
  */
 
-const hubs = [
-  {
-    id: "competition",
-    title: "Competition",
-    href: "/features",
-    modules: ["Command", "Scouting", "Strategy"],
-  },
-  {
-    id: "team",
-    title: "Team",
-    href: "/for-teams",
-    modules: ["Calendar", "Team chat", "Todos"],
-  },
-  {
-    id: "business",
-    title: "Business",
-    href: "/pricing",
-    modules: ["Budget", "Sponsors", "Orders"],
-  },
-  {
-    id: "build",
-    title: "Build",
-    href: "/features/cad",
-    modules: ["Kickoff", "CAD", "Code"],
-  },
-  {
-    id: "ai",
-    title: "AI",
-    href: "/pricing",
-    modules: ["Chat", "Writer", "API keys"],
-  },
-  {
-    id: "media",
-    title: "Media",
-    href: "/for-teams",
-    modules: ["Calendar", "Drafts", "Media kit"],
-  },
-] as const;
+import { MARKETING_HUBS } from "../../lib/marketing/product-story";
 
-/** Hub directory used on /features — not on the homepage (homepage uses a quieter strip). */
+/** Hub directory used on /features. */
 export function ProductGlances() {
   return (
     <div className="product-glances product-glances-hubs" aria-label="Product hubs">
-      {hubs.map((hub) => (
-        <article className="product-glance" key={hub.id}>
+      {MARKETING_HUBS.map((hub) => (
+        <article className="product-glance" key={hub.id} id={hub.id}>
           <h3>
-            <a href={hub.href}>{hub.title}</a>
+            <a href={`#${hub.id}-detail`}>{hub.title}</a>
           </h3>
+          <p>{hub.promise}</p>
           <ul className="product-glance-modules">
             {hub.modules.map((mod) => (
               <li key={mod}>{mod}</li>
@@ -62,9 +26,30 @@ export function ProductGlances() {
   );
 }
 
+export function ProductHubCatalog() {
+  return (
+    <div className="mk-hub-catalog">
+      {MARKETING_HUBS.map((hub) => (
+        <article className="mk-hub-detail" id={`${hub.id}-detail`} key={hub.id}>
+          <header>
+            <p className="lux-kicker">{hub.route}</p>
+            <h3 id={hub.id}>{hub.title}</h3>
+            <p>{hub.promise}</p>
+          </header>
+          <ul>
+            {hub.tools.map((tool) => (
+              <li key={tool}>{tool}</li>
+            ))}
+          </ul>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 const islandApps = ["Home", "Compete", "Team", "Business"] as const;
 const drawerPillars = ["Competition", "Team", "Logistics", "Business", "Build", "AI"] as const;
-const competitionTabs = ["Command", "Scouting", "Strategy"] as const;
+const competitionTabs = ["Event day", "Scouting", "Strategy", "Pit"] as const;
 
 /** Hero chrome — labeled product areas, no invented match or scores. */
 export function HeroProductVisual() {
@@ -79,7 +64,7 @@ export function HeroProductVisual() {
           </span>
           <div className="hero-soft-topbar-title">
             <strong>Competition</strong>
-            <small>Your team</small>
+            <small>Active event from TBA</small>
           </div>
           <span className="hero-soft-avatar">V</span>
         </header>
@@ -105,7 +90,7 @@ export function HeroProductVisual() {
           <div className="hero-soft-main">
             <div className="hero-soft-tabs">
               {competitionTabs.map((tab) => (
-                <span key={tab} className={tab === "Command" ? "is-active" : undefined}>
+                <span key={tab} className={tab === "Event day" ? "is-active" : undefined}>
                   {tab}
                 </span>
               ))}
@@ -113,16 +98,20 @@ export function HeroProductVisual() {
             <div className="hero-soft-panel hero-soft-board">
               <ul className="hero-soft-cues">
                 <li>
-                  <b>Scout</b>
-                  <span>Match and pit forms · offline</span>
+                  <b>Event day</b>
+                  <span>Next match · pit queue · checklist</span>
                 </li>
                 <li>
-                  <b>Event day</b>
-                  <span>Next match and pit cues</span>
+                  <b>Scouting</b>
+                  <span>Offline forms · QR · pit mesh</span>
                 </li>
                 <li>
                   <b>Strategy</b>
-                  <span>Picks from your scout data</span>
+                  <span>Alliance desk · pick clock</span>
+                </li>
+                <li>
+                  <b>Pit</b>
+                  <span>Repair triage · batteries</span>
                 </li>
               </ul>
             </div>
@@ -131,7 +120,7 @@ export function HeroProductVisual() {
 
         <nav className="hero-soft-island">
           {islandApps.map((app) => (
-            <span key={app} className={app === "Home" ? "is-active" : undefined}>
+            <span key={app} className={app === "Compete" ? "is-active" : undefined}>
               {app}
             </span>
           ))}
