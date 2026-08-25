@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { EmptyState } from "../../components/ui";
 import { HubLegacyRedirect, HubOrgGate, ProductHubShell } from "../../components/product-hub";
 import { parseComposerLinkFromSearch, type MessageObjectLink } from "../../lib/messages/object-links";
 import "../product-hub.css";
@@ -33,7 +34,17 @@ function MessagesTab({ orgId }: { orgId: string }) {
     setReady(true);
   }, [orgId]);
 
-  if (!ready) return null;
+  if (!ready) {
+    return (
+      <EmptyState
+        soft
+        aria-busy
+        badge="Loading"
+        title="Opening team chat"
+        description="Loading conversations for this workspace."
+      />
+    );
+  }
   return (
     <MessagesClient
       orgId={orgId}

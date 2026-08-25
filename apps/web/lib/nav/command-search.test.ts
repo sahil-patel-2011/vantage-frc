@@ -28,6 +28,12 @@ describe("commandCatalog", () => {
     expect(coverage?.context).toBe("Competition › Scouting");
   });
 
+  it("lists Media library so search opens a real destination", () => {
+    const library = catalog.find((entry) => entry.id === "media:media-library");
+    expect(library?.href).toBe("/media?tab=media-library");
+    expect(hrefs("media library")).toContain("/media?tab=media-library");
+  });
+
   it("keeps every entry pointing at a real in-app path", () => {
     for (const entry of catalog) {
       expect(entry.href.startsWith("/")).toBe(true);
