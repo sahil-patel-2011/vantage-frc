@@ -697,3 +697,42 @@ html.reveal-armed .marketing-lux [data-reveal].is-in{opacity:1;transform:none}
   .marketing-lux .lux-hero h1{font-size:clamp(34px,9vw,42px);max-width:14ch}
   .marketing-lux .mk-hero-proof{gap:6px 14px}
 }
+
+/* Mobile header: desktop links hide at 700px, so the details menu has to
+   actually work. On desktop it must not leak a 15px disclosure into the bar. */
+.marketing-lux .mobile-menu{display:none}
+@media(max-width:700px){
+  .marketing-lux .nav{gap:10px}
+  .marketing-lux .nav>nav{display:none}
+  .marketing-lux .nav-actions{margin-left:auto}
+  .marketing-lux .waitlist-nav{display:none}
+  .marketing-lux .mobile-menu{
+    display:block;position:relative;flex:none;margin-left:4px;
+  }
+  .marketing-lux .mobile-menu summary{
+    list-style:none;display:grid;place-content:center;gap:5px;
+    width:44px;height:44px;border-radius:10px;cursor:pointer;
+  }
+  .marketing-lux .mobile-menu summary::-webkit-details-marker,
+  .marketing-lux .mobile-menu summary::marker{display:none}
+  .marketing-lux .mobile-menu summary span{
+    display:block;width:18px;height:2px;border-radius:1px;background:var(--m-ink);
+  }
+  .marketing-lux .mobile-menu[open] summary{background:color-mix(in srgb,var(--m-ink) 6%,transparent)}
+  .marketing-lux .mobile-menu nav{
+    display:flex;flex-direction:column;gap:2px;
+    position:absolute;right:0;top:calc(100% + 6px);z-index:90;
+    width:min(280px,calc(100vw - 24px));padding:8px;
+    border:1px solid var(--m-line);border-radius:14px;
+    background:var(--m-surface,#fff);box-shadow:var(--m-card-shadow-lg);
+  }
+  .marketing-lux .mobile-menu nav a{
+    display:flex;align-items:center;min-height:44px;padding:0 12px;
+    border-radius:10px;color:var(--m-ink);text-decoration:none;
+    font:600 15px/1.2 var(--m-sans);
+  }
+  .marketing-lux .mobile-menu nav a:hover,
+  .marketing-lux .mobile-menu nav a[aria-current="page"]{
+    background:var(--m-surface-2,#f5f5f7);
+  }
+}
