@@ -13,6 +13,7 @@
     "@vantage/db": "*",
     "better-auth": "latest",
     "drizzle-orm": "latest",
+    "jose": "^6.2.10",
     "zod": "latest"
   }
 }
