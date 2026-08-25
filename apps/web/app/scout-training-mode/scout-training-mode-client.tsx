@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { trainingWinnerLabel } from "../../lib/scout-training-mode";
 import type { ScoutTrainingView } from "../../lib/scout-training-mode/compute-scout-training-mode";
 import type { PracticeMatch, TrainingWinner } from "../../lib/scout-training-mode/types";
@@ -24,12 +25,17 @@ export default function ScoutTrainingModeClient() {
   const [view, setView] = useState<ScoutTrainingView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
+    setFailureStatus(null);
+    setFailureMessage("");
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -39,6 +45,8 @@ export default function ScoutTrainingModeClient() {
       .then(async (response) => {
         const data = (await response.json()) as ScoutTrainingView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setFailureStatus(response.status);
+          setFailureMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -103,14 +111,37 @@ export default function ScoutTrainingModeClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load scout training mode"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: failureStatus,
+              message: failureMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message:
+                failureMessage || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

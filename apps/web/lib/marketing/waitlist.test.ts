@@ -3,7 +3,7 @@ import { MemoryWaitlistStore, waitlistSchema } from "./waitlist";
 
 describe("waitlist validation", () => {
   it("normalizes valid input", () => {
-    const result = waitlistSchema.parse({ termsAccepted: true,
+    const result = waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true,
       email: "  Drive@Example.COM ",
       teamNumber: "254",
       phone: "+12025550123",
@@ -31,14 +31,26 @@ describe("waitlist validation", () => {
       email: "ok@example.com",
       teamNumber: 254,
       termsAccepted: false,
+      privacyAccepted: true,
     });
     expect(denied.success).toBe(false);
     const accepted = waitlistSchema.safeParse({
       email: "ok@example.com",
       teamNumber: 254,
       termsAccepted: true,
+      privacyAccepted: true,
     });
     expect(accepted.success).toBe(true);
+  });
+
+  it("requires privacyAccepted true", () => {
+    const denied = waitlistSchema.safeParse({
+      email: "ok@example.com",
+      teamNumber: 254,
+      termsAccepted: true,
+      privacyAccepted: false,
+    });
+    expect(denied.success).toBe(false);
   });
 });
 
@@ -47,8 +59,8 @@ describe("duplicate-safe persistence", () => {
   beforeEach(() => store.clear());
 
   it("updates an existing email without disclosing a duplicate", async () => {
-    await store.upsert(waitlistSchema.parse({ termsAccepted: true, email: "a@example.com", teamNumber: 1 }));
-    await expect(store.upsert(waitlistSchema.parse({ termsAccepted: true,
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true, email: "a@example.com", teamNumber: 1 }));
+    await expect(store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true,
       email: "A@example.com",
       teamNumber: 999,
       phone: "+12025550123",
@@ -64,8 +76,8 @@ describe("admin waitlist tools", () => {
   beforeEach(() => store.clear());
 
   it("lists, filters, and marks entries without assuming sort order for equal timestamps", async () => {
-    await store.upsert(waitlistSchema.parse({ termsAccepted: true, email: "alpha@example.com", teamNumber: 254 }));
-    await store.upsert(waitlistSchema.parse({ termsAccepted: true, email: "beta@example.com", teamNumber: 9999 }));
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true, email: "alpha@example.com", teamNumber: 254 }));
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true, email: "beta@example.com", teamNumber: 9999 }));
 
     const filtered = await store.list({ q: "9999" });
     expect(filtered.map((row) => row.email)).toEqual(["beta@example.com"]);

@@ -26,7 +26,7 @@ import {
   type MatchDeltaWatcherNextAction,
   type MatchDeltaWatcherShellKind,
 } from "../../lib/match-delta-watcher/match-delta-watcher-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./match-delta-watcher.css";
 
@@ -96,7 +96,7 @@ function WatcherShell({
 }) {
   const actions = matchDeltaWatcherNextActions({ orgId, shell });
   const copy = matchDeltaWatcherShellCopy(shell);
-  const competitionHref = hubHref("/competition", "match-delta-watcher", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-delta-watcher", orgId);
   const steps = shell === "setup" ? matchDeltaWatcherSetupSteps(orgId) : [];
 
   return (
@@ -222,7 +222,7 @@ export default function MatchDeltaWatcherClient() {
     watchedCount,
     unacknowledgedCount,
   });
-  const competitionHref = hubHref("/competition", "match-delta-watcher", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "match-delta-watcher", orgId);
   const showTiles = shouldShowMatchDeltaWatcherSummaryTiles(watchedCount);
   const loaded = view?.status === "live";
 

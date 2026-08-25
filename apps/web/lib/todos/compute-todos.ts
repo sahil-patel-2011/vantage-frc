@@ -9,7 +9,6 @@ import { asOfUtcDate, computeMetrics, sortTodos, withFlags } from "./evaluate";
 import type {
   TeamTodo,
   TodoMember,
-  TodoMetrics,
   TodoStatus,
   TodoSubteam,
   TodosView,

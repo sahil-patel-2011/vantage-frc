@@ -96,7 +96,6 @@ function MediaKitShell({
 }) {
   const actions = mediaKitNextActions({ orgId, shell });
   const copy = mediaKitShellCopy(shell);
-  const businessHref = hubHref("/business", "media-kit", orgId);
   const steps = shell === "setup" ? mediaKitSetupSteps(orgId) : [];
 
   return (
@@ -233,7 +232,6 @@ export default function MediaKitClient() {
   const relatedLinks = mediaKitRelatedLinks(orgId, {
     include: [...MEDIA_KIT_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "media-kit", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {

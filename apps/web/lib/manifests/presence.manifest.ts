@@ -1,0 +1,22 @@
+export const manifest = {
+  slug: "presence",
+  title: "Presence",
+  route: "/presence",
+  apiRoute: "/api/presence",
+  hub: "Team",
+  navGroup: "Team",
+  metered: false,
+  tables: [
+    "presence_records",
+    "subteam_calendar_events",
+    "subteam_calendar_rsvps",
+    "calendar_event_exceptions",
+    "attendance_events",
+    "attendance_entries",
+    "hour_logs",
+    "hour_policies",
+  ],
+  aiTools: [],
+  exportAdapters: [],
+  placeholderRoute: false,
+} as const;

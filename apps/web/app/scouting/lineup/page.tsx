@@ -24,8 +24,8 @@ export default async function ScoutingLineupPage({
     return (
       <main className="module-page lineup-page soft-gate">
         <PageHeader
-          breadcrumbs="Competition / Lineup & Coverage"
-          title="Lineup & Coverage"
+          breadcrumbs="Competition / Lineup & coverage"
+          title="Lineup & coverage"
           description={copy.description}
         >
           <nav className="product-hub-related lineup-related" aria-label="Related competition tools">

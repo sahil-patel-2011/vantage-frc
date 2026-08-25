@@ -1,10 +1,12 @@
 /* Robot Blueprint — co-located so styling survives independently of the shared
    global stylesheet. All selectors are .robot-* prefixed and theme-aware. */
-.robot-page input,.robot-page select{min-height:36px;padding:7px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.robot-page input,.robot-page select{min-height:44px;padding:7px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
 .robot-header-actions{display:flex;align-items:center;gap:10px}
-.app-button.sm{min-height:30px;padding:4px 10px;font-size:11px}
-.robot-empty{display:grid;gap:12px;justify-items:start;padding:26px}
-.robot-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer;text-align:left}
+/* Scoped: an unscoped `.app-button.sm` here leaks to every page once this stylesheet loads. */
+.robot-page .app-button.sm{min-height:44px;padding:4px 10px;font-size:11px}
+/* Scoped so it reliably beats the shared .soft-panel EmptyState shell regardless of import order. */
+.robot-page .robot-empty{display:grid;gap:12px;justify-items:start;padding:26px;text-align:left}
+.robot-link{display:inline-flex;align-items:center;min-height:44px;padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer;text-align:left}
 .robot-link.danger{color:var(--app-critical)}
 .robot-rollup{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:16px}
 .robot-rollup-main{display:grid;gap:6px;flex:1;min-width:240px}
@@ -30,12 +32,12 @@
 .robot-domain{display:grid;grid-template-columns:64px 1fr;align-items:center;gap:8px}
 .robot-domain-label{color:var(--app-muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
 .robot-domain-value{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
-.robot-cad-btn{display:inline-flex;align-items:center;padding:6px 11px;border-radius:8px;background:var(--app-accent);color:var(--app-accent-ink);font-size:11px;font-weight:800;text-decoration:none}
+.robot-cad-btn{display:inline-flex;align-items:center;min-height:44px;padding:6px 11px;border-radius:8px;background:var(--app-accent);color:var(--app-accent-ink);font-size:11px;font-weight:800;text-decoration:none}
 .robot-code{padding:4px 8px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:6px;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .robot-inline-form{display:flex;gap:6px;flex-wrap:wrap;flex:1}
-.robot-inline-form input{flex:1;min-width:160px;min-height:32px}
+.robot-inline-form input{flex:1;min-width:160px;min-height:44px}
 .robot-ops{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--app-line)}
-.robot-chip{padding:5px 9px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:999px;color:var(--app-muted);font-size:11px;font-weight:700;text-decoration:none}
+.robot-chip{display:inline-flex;align-items:center;min-height:44px;padding:5px 9px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:999px;color:var(--app-muted);font-size:11px;font-weight:700;text-decoration:none}
 .robot-chip.warn{color:var(--app-critical);border-color:var(--app-warning)}
 .robot-ops .robot-link.danger{margin-left:auto}
 .robot-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px}

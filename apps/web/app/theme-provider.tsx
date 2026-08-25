@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppShell from "../components/app-shell";
 import PaidSessionSplash from "../components/paid-session-splash";
+import AppearanceRuntime from "../lib/branding/appearance-runtime";
 
 /** Resolved color scheme applied to the document. */
 export type Theme = "light" | "dark";
@@ -180,6 +181,8 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   return (
     <>
       <div id="main-content">{children}</div>
+      {/* Team accent + personal density/motion, applied on <html> next to the theme. */}
+      {productRoute && <AppearanceRuntime />}
       {productRoute && <AppShell />}
       {productRoute && <PaidSessionSplash />}
     </>

@@ -24,7 +24,7 @@ import {
   type AwardTrackerShellKind,
 } from "../../lib/award-tracker/award-tracker-related";
 import type { AwardSubmission, AwardSubmissionStatus, AwardType } from "../../lib/award-tracker/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./award-tracker.css";
 
@@ -110,7 +110,7 @@ function AwardTrackerShell({
 }) {
   const actions = awardTrackerNextActions({ orgId, shell });
   const copy = awardTrackerShellCopy(shell);
-  const businessHref = hubHref("/business", "award-tracker", orgId);
+  const businessHref = hubWorkbenchHref("business", "award-tracker", orgId);
   const steps = shell === "setup" ? awardTrackerSetupSteps(orgId) : [];
 
   return (
@@ -244,7 +244,7 @@ export default function AwardTrackerClient() {
   const relatedLinks = awardTrackerRelatedLinks(orgId, {
     include: [...AWARD_TRACKER_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "award-tracker", orgId);
+  const businessHref = hubWorkbenchHref("business", "award-tracker", orgId);
   const evidenceHref = hubHref("/business", "evidence", orgId);
   const awardsHref = withOrgHref("/team/awards", orgId);
   const essayHref = hubHref("/business", "impact-essay", orgId);

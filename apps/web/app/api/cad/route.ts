@@ -21,6 +21,8 @@ import {
   listOnshapeElements,
   listOnshapeFeatures,
   explainFeatureTreeForStudents,
+  FUSION_RELAY_IMPLEMENTED_OPERATIONS,
+  fusionRelayImplements,
   type CadAction,
   type CadBrainMode,
   type EngineeringBrief,
@@ -32,6 +34,7 @@ import {
   resolveOrgChatAdapter,
   type ContextSource,
 } from "@vantage/agent";
+import { createBridgeTransport } from "../../../lib/ai-bridge/transport";
 import { createKms, decryptSecret, encryptSecret, meteredAI, type EncryptedSecret } from "@vantage/billing";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
@@ -78,6 +81,19 @@ async function loadOnshapeTokens(
   }
   return { connectionId: row.id, tokens };
 }
+
+/**
+ * CAD planning can reach a real upstream model (BYOK/hosted adapter). A bridged turn (a paired device with
+ * coverage 'everything') holds the request open for the bridge poll budget
+ * (BRIDGE_HEAVY_POLL_TOTAL_BUDGET_MS, 240s), so this function declares 300s to keep
+ * headroom above it; the adapter's own timeout still fires first and returns a
+ * classified error instead of the platform killing the function mid-request.
+ *
+ * 300s is only honored where the hosting plan's Node function cap reaches it. Below
+ * that cap set VANTAGE_BRIDGE_MAX_WAIT_MS so the turn falls through to the team's own
+ * keys instead of 504-ing — see docs/AI_BRIDGE.md "Function duration".
+ */
+export const maxDuration = 300;
 
 export async function GET(request: Request) {
   try {
@@ -370,6 +386,7 @@ export async function POST(request: Request) {
           orgId,
           promptCachingEnabled,
           feature: "cad",
+          bridgeTransport: createBridgeTransport(),
         });
         const requestId = randomUUID();
         const message = cadAiPlanUserMessage(job.brief, {
@@ -434,25 +451,14 @@ export async function POST(request: Request) {
           )
         ).rows[0];
         if (!job) throw new Error("CAD job not found");
-        const fusionImplemented = new Set([
-          "create_sketch",
-          "create_extrude",
-          "create_fillet",
-          "create_chamfer",
-          "create_shell",
-          "create_pattern",
-          "set_variable",
-          "create_assembly",
-          "verify_topology",
-          "render_views",
-          "create_checkpoint",
-          "rollback_checkpoint",
-          "export_step",
-          "export_stl",
-          "export_gltf",
-        ]);
-        if (job.platform === "fusion360" && !fusionImplemented.has(operation)) {
-          throw new Error(`${operation} is not implemented by the Fusion desktop add-in yet`);
+        // Single source of truth: FUSION_RELAY_IMPLEMENTED_OPERATIONS in
+        // packages/cad/src/fusion-relay.ts, kept in lockstep with the add-in's own
+        // IMPLEMENTED set. A local list here drifted once already and let steps be
+        // planned for operations the add-in refuses at execution time.
+        if (job.platform === "fusion360" && !fusionRelayImplements(operation)) {
+          throw new Error(
+            `${operation} is not implemented by the Fusion desktop add-in. Fusion runs: ${FUSION_RELAY_IMPLEMENTED_OPERATIONS.join(", ")}. Use an Onshape job for anything else.`,
+          );
         }
         const parameters = body.parameters && typeof body.parameters === "object" && !Array.isArray(body.parameters)
           ? (body.parameters as Record<string, unknown>)

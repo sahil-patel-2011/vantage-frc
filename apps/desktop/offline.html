@@ -4,22 +4,106 @@
     <meta charset="utf-8" />
     <title>Vantage — offline</title>
     <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f6f2;
+        --panel: #ffffff;
+        --ink: #17150f;
+        --muted: #5c574b;
+        --line: #e4e1d7;
+        --accent: #17150f;
+        --accent-ink: #f7f6f2;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #14130f;
+          --panel: #1d1b16;
+          --ink: #f2f0e9;
+          --muted: #a9a494;
+          --line: #2c2a23;
+          --accent: #f2f0e9;
+          --accent-ink: #14130f;
+        }
+      }
+      * { box-sizing: border-box; margin: 0; }
       body {
-        font-family: "Segoe UI", sans-serif;
-        background: #f7f6f2;
-        color: #111;
-        padding: 48px;
-        max-width: 40rem;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
       }
+      .card {
+        width: min(30rem, 100%);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 40px 36px;
+      }
+      .word {
+        font-size: 0.8rem;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 20px;
+      }
+      h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 12px; }
+      p { color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
       code {
-        background: #eceae4;
+        background: color-mix(in srgb, var(--line) 55%, transparent);
+        border-radius: 4px;
         padding: 0.1em 0.35em;
+        font-size: 0.9em;
       }
+      .actions { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 12px; }
+      a.button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0 22px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-decoration: none;
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: 1px solid var(--accent);
+      }
+      .fine { margin-top: 22px; font-size: 0.85rem; }
     </style>
   </head>
   <body>
-    <h1>Vantage could not load</h1>
-    <p>The desktop shell could not reach the hosted app. Check the network, then use View → Reload.</p>
-    <p>Production is <code>https://vantage-frc-web.vercel.app</code>. Local dev uses <code>http://localhost:3001</code>.</p>
+    <main class="card">
+      <div class="word">Vantage</div>
+      <h1>Can’t reach Vantage</h1>
+      <p>The desktop shell couldn’t load the hosted workspace. Check your connection, then retry.</p>
+      <div class="actions">
+        <a class="button" id="retry" href="#">Retry</a>
+      </div>
+      <p class="fine">Trying <code id="target">https://vantage-frc-web.vercel.app</code>. View → Reload works too.</p>
+    </main>
+    <script>
+      (function () {
+        var fallback = "https://vantage-frc-web.vercel.app";
+        var origin = fallback;
+        try {
+          var raw = new URLSearchParams(location.search).get("origin") || fallback;
+          var u = new URL(raw);
+          var loopback = ["localhost", "127.0.0.1", "[::1]"];
+          if (
+            (u.protocol === "https:" && u.hostname === "vantage-frc-web.vercel.app") ||
+            ((u.protocol === "http:" || u.protocol === "https:") && loopback.indexOf(u.hostname) !== -1)
+          ) {
+            origin = u.origin;
+          }
+        } catch (e) {}
+        document.getElementById("retry").href = origin + "/";
+        document.getElementById("target").textContent = origin;
+      })();
+    </script>
   </body>
 </html>

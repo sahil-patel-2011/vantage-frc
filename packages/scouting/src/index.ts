@@ -16,7 +16,20 @@ export type FormBuilderFieldType =
   | "long_text"
   | "number"
   | "drivetrain_type"
-  | "robot_image";
+  | "robot_image"
+  /**
+   * Scouting input studio types — the tap-first inputs real scouts asked for.
+   * These live purely in the versioned jsonb schema definition, so they need no
+   * migration and no new value on the scout_form_field_type DB enum.
+   */
+  | "counter"
+  | "multi_counter"
+  | "timer"
+  | "rating"
+  | "multi_select"
+  | "slider"
+  | "section_header"
+  | "field_position";
 
 /** Runtime + builder field types. Legacy boolean/text/select remain supported. */
 export type FieldType =
@@ -68,7 +81,15 @@ export type FieldWidget =
   | "number"
   | "yesno"
   | "drivetrain"
-  | "robot_image";
+  | "robot_image"
+  | "counter"
+  | "multi_counter"
+  | "timer"
+  | "rating"
+  | "multi_select"
+  | "slider"
+  | "section"
+  | "field_position";
 
 export type FieldDefinition = {
   key: string;
@@ -84,6 +105,413 @@ export type FieldDefinition = {
 };
 
 export type SchemaDefinition = { title: string; fields: FieldDefinition[] };
+
+/* ------------------------------------------------------------------------- *
+ * Scouting input studio — config readers, math, and shape guards.
+ *
+ * Every reader is total: it takes whatever survived a jsonb round-trip and
+ * returns a usable config, so an old or hand-edited schema never crashes entry.
+ * Client renderers and server validation both go through these, which is what
+ * keeps "the tablet accepted it" and "the server accepted it" the same rule.
+ * ------------------------------------------------------------------------- */
+
+/** Field types that carry no answer at all — layout only. */
+export const LAYOUT_ONLY_FIELD_TYPES: readonly FieldType[] = ["section_header"];
+
+export function isLayoutOnlyField(field: Pick<FieldDefinition, "type">): boolean {
+  return LAYOUT_ONLY_FIELD_TYPES.includes(field.type);
+}
+
+/** Fields that hold a real answer — what the accuracy budget should count. */
+export function answerableFields(definition: SchemaDefinition): FieldDefinition[] {
+  return definition.fields.filter((field) => !isLayoutOnlyField(field));
+}
+
+type ConfigBag = Record<string, unknown>;
+
+function configOf(field: Pick<FieldDefinition, "config">): ConfigBag {
+  return field.config && typeof field.config === "object" ? (field.config as ConfigBag) : {};
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function wholeNumber(value: unknown): number | null {
+  const numeric = finiteNumber(value);
+  return numeric != null && Number.isInteger(numeric) ? numeric : null;
+}
+
+function clampInt(value: number, low: number, high: number): number {
+  return Math.min(high, Math.max(low, Math.round(value)));
+}
+
+/* ----------------------------- counter ----------------------------------- */
+
+/** CD ask: "+1 plus a bulk button" — tally cycles by tapping, never by typing. */
+export const DEFAULT_COUNTER_STEPS = [1, 5, 10] as const;
+
+export type CounterConfig = {
+  /** Ascending, de-duplicated positive step sizes; the first is the primary tap. */
+  steps: number[];
+  allowNegative: boolean;
+  /** Lower bound; 0 unless the field explicitly allows negatives. */
+  min: number;
+  /** Upper bound, or null for unbounded. */
+  max: number | null;
+};
+
+export function counterConfig(field: Pick<FieldDefinition, "config">): CounterConfig {
+  const raw = configOf(field);
+  const steps = Array.isArray(raw.steps)
+    ? raw.steps
+        .map((step) => wholeNumber(step))
+        .filter((step): step is number => step != null && step > 0)
+    : [];
+  const allowNegative = raw.allowNegative === true;
+  const max = wholeNumber(raw.max);
+  const explicitMin = wholeNumber(raw.min);
+  const min = explicitMin != null ? explicitMin : allowNegative ? Number.NEGATIVE_INFINITY : 0;
+  const unique = [...new Set(steps)].sort((a, b) => a - b);
+  return {
+    steps: unique.length ? unique : [...DEFAULT_COUNTER_STEPS],
+    allowNegative,
+    min,
+    max: max != null && max >= (Number.isFinite(min) ? min : max) ? max : null,
+  };
+}
+
+export function clampCounterValue(value: number, config: CounterConfig): number {
+  let next = Math.round(value);
+  if (config.max != null && next > config.max) next = config.max;
+  if (next < config.min) next = Number.isFinite(config.min) ? config.min : next;
+  return next;
+}
+
+export function counterValueOf(value: unknown): number {
+  return wholeNumber(value) ?? 0;
+}
+
+/**
+ * One counter tap. `delta` may be any configured step (or its negative for the
+ * undo/minus tap); the result is always clamped back inside the field's range.
+ */
+export function applyCounterStep(
+  current: unknown,
+  delta: number,
+  config: CounterConfig,
+): number {
+  return clampCounterValue(counterValueOf(current) + Math.round(delta), config);
+}
+
+/* -------------------------- multi counter -------------------------------- */
+
+export type MultiCounterEntry = { key: string; label: string };
+export type MultiCounterConfig = CounterConfig & { counters: MultiCounterEntry[] };
+
+export function multiCounterKey(label: string, index: number): string {
+  const slug = label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "")
+    .slice(0, 32);
+  return slug || `counter_${index + 1}`;
+}
+
+export function multiCounterConfig(field: Pick<FieldDefinition, "config">): MultiCounterConfig {
+  const raw = configOf(field);
+  const base = counterConfig(field);
+  const source = Array.isArray(raw.counters) ? raw.counters : [];
+  const seen = new Set<string>();
+  const counters: MultiCounterEntry[] = [];
+  source.forEach((item, index) => {
+    const label =
+      typeof item === "string"
+        ? item
+        : isPlainObject(item) && typeof item.label === "string"
+          ? item.label
+          : "";
+    const declaredKey =
+      isPlainObject(item) && typeof item.key === "string" && item.key.trim()
+        ? item.key.trim()
+        : multiCounterKey(label, index);
+    if (!label.trim() && !declaredKey) return;
+    let key = declaredKey;
+    let suffix = 2;
+    while (seen.has(key)) {
+      key = `${declaredKey}_${suffix}`;
+      suffix += 1;
+    }
+    seen.add(key);
+    counters.push({ key, label: label.trim() || key });
+  });
+  return { ...base, counters };
+}
+
+export function multiCounterValueOf(
+  value: unknown,
+  config: MultiCounterConfig,
+): Record<string, number> {
+  const bag = isPlainObject(value) ? value : {};
+  const next: Record<string, number> = {};
+  for (const counter of config.counters) {
+    next[counter.key] = wholeNumber(bag[counter.key]) ?? 0;
+  }
+  return next;
+}
+
+export function applyMultiCounterStep(
+  current: unknown,
+  counterKey: string,
+  delta: number,
+  config: MultiCounterConfig,
+): Record<string, number> {
+  const next = multiCounterValueOf(current, config);
+  if (!(counterKey in next)) return next;
+  next[counterKey] = clampCounterValue((next[counterKey] ?? 0) + Math.round(delta), config);
+  return next;
+}
+
+export function multiCounterTotal(value: unknown, config: MultiCounterConfig): number {
+  return Object.values(multiCounterValueOf(value, config)).reduce((sum, item) => sum + item, 0);
+}
+
+/* ------------------------------- timer ----------------------------------- */
+
+export type TimerMode = "total" | "lap";
+export type TimerConfig = { mode: TimerMode; maxSeconds: number | null };
+
+export function timerConfig(field: Pick<FieldDefinition, "config">): TimerConfig {
+  const raw = configOf(field);
+  const mode: TimerMode = raw.mode === "lap" ? "lap" : "total";
+  const maxSeconds = finiteNumber(raw.maxSeconds);
+  return { mode, maxSeconds: maxSeconds != null && maxSeconds > 0 ? maxSeconds : null };
+}
+
+/** Trim float noise so a stopwatch never stores 4.300000000000001 seconds. */
+export function roundSeconds(seconds: number): number {
+  return Math.round(seconds * 1000) / 1000;
+}
+
+export function normalizeTimerLaps(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((lap) => finiteNumber(lap))
+    .filter((lap): lap is number => lap != null && lap >= 0)
+    .map(roundSeconds);
+}
+
+/** Lap mode total — the number a cycle-time column actually wants. */
+export function accumulateTimerLaps(laps: readonly number[]): number {
+  return roundSeconds(laps.reduce((sum, lap) => sum + (Number.isFinite(lap) ? lap : 0), 0));
+}
+
+export function timerTotalSeconds(value: unknown, config: TimerConfig): number {
+  if (config.mode === "lap") return accumulateTimerLaps(normalizeTimerLaps(value));
+  return roundSeconds(Math.max(0, finiteNumber(value) ?? 0));
+}
+
+export function timerAverageLapSeconds(value: unknown): number | null {
+  const laps = normalizeTimerLaps(value);
+  if (!laps.length) return null;
+  return roundSeconds(accumulateTimerLaps(laps) / laps.length);
+}
+
+export function formatTimerSeconds(seconds: number): string {
+  const safe = Math.max(0, roundSeconds(seconds));
+  const minutes = Math.floor(safe / 60);
+  const rest = safe - minutes * 60;
+  const restText = rest.toFixed(1).padStart(4, "0");
+  return minutes > 0 ? `${minutes}:${restText}` : `${restText}s`;
+}
+
+/* ------------------------------- rating ---------------------------------- */
+
+export type RatingConfig = { max: number };
+export const RATING_MIN_STARS = 2;
+export const RATING_MAX_STARS = 10;
+
+export function ratingConfig(field: Pick<FieldDefinition, "config">): RatingConfig {
+  const raw = configOf(field);
+  const max = wholeNumber(raw.max);
+  return { max: max != null ? clampInt(max, RATING_MIN_STARS, RATING_MAX_STARS) : 5 };
+}
+
+/** Tapping the star you already selected clears the rating (no "stuck at 1"). */
+export function toggleRatingValue(current: unknown, star: number, config: RatingConfig): number | undefined {
+  const next = clampInt(star, 1, config.max);
+  return wholeNumber(current) === next ? undefined : next;
+}
+
+/* ------------------------------- slider ---------------------------------- */
+
+export type SliderConfig = {
+  min: number;
+  max: number;
+  step: number;
+  minLabel: string | null;
+  maxLabel: string | null;
+};
+
+export function sliderConfig(field: Pick<FieldDefinition, "config">): SliderConfig {
+  const raw = configOf(field);
+  const min = finiteNumber(raw.min) ?? 0;
+  const maxRaw = finiteNumber(raw.max);
+  const max = maxRaw != null && maxRaw > min ? maxRaw : min + 10;
+  const stepRaw = finiteNumber(raw.step);
+  const step = stepRaw != null && stepRaw > 0 && stepRaw <= max - min ? stepRaw : 1;
+  const labels = isPlainObject(raw.labels) ? raw.labels : {};
+  const minLabel = typeof labels.min === "string" && labels.min.trim() ? labels.min.trim() : null;
+  const maxLabel = typeof labels.max === "string" && labels.max.trim() ? labels.max.trim() : null;
+  return { min, max, step, minLabel, maxLabel };
+}
+
+export function isSliderValueAligned(value: number, config: SliderConfig): boolean {
+  const offset = (value - config.min) / config.step;
+  return Math.abs(offset - Math.round(offset)) < 1e-6;
+}
+
+export function snapSliderValue(value: number, config: SliderConfig): number {
+  const steps = Math.round((value - config.min) / config.step);
+  const snapped = config.min + steps * config.step;
+  const bounded = Math.min(config.max, Math.max(config.min, snapped));
+  return Math.round(bounded * 1e6) / 1e6;
+}
+
+/* --------------------------- field position ------------------------------ */
+
+export type FieldPositionConfig = {
+  gridCols: number;
+  gridRows: number;
+  /** Optional whitelist of tappable cell indices; null means every cell. */
+  allowedCells: number[] | null;
+};
+
+export const FIELD_POSITION_MIN_GRID = 2;
+export const FIELD_POSITION_MAX_GRID = 12;
+
+export function fieldPositionConfig(field: Pick<FieldDefinition, "config">): FieldPositionConfig {
+  const raw = configOf(field);
+  const cols = wholeNumber(raw.gridCols);
+  const rows = wholeNumber(raw.gridRows);
+  const gridCols = cols != null ? clampInt(cols, FIELD_POSITION_MIN_GRID, FIELD_POSITION_MAX_GRID) : 6;
+  const gridRows = rows != null ? clampInt(rows, FIELD_POSITION_MIN_GRID, FIELD_POSITION_MAX_GRID) : 3;
+  const cellCount = gridCols * gridRows;
+  const allowed = Array.isArray(raw.allowedCells)
+    ? [
+        ...new Set(
+          raw.allowedCells
+            .map((cell) => wholeNumber(cell))
+            .filter((cell): cell is number => cell != null && cell >= 0 && cell < cellCount),
+        ),
+      ].sort((a, b) => a - b)
+    : null;
+  return { gridCols, gridRows, allowedCells: allowed && allowed.length ? allowed : null };
+}
+
+export function fieldPositionCellCount(config: Pick<FieldPositionConfig, "gridCols" | "gridRows">): number {
+  return config.gridCols * config.gridRows;
+}
+
+export function isFieldPositionCellAllowed(cell: number, config: FieldPositionConfig): boolean {
+  if (!Number.isInteger(cell) || cell < 0 || cell >= fieldPositionCellCount(config)) return false;
+  return config.allowedCells ? config.allowedCells.includes(cell) : true;
+}
+
+/**
+ * Season-proof grid label: column letter + row number ("C2"). No game art and
+ * no field-element names, so a published form survives the next game reveal.
+ */
+export function fieldPositionCellLabel(
+  cell: number,
+  config: Pick<FieldPositionConfig, "gridCols" | "gridRows">,
+): string {
+  if (!Number.isInteger(cell) || cell < 0 || cell >= fieldPositionCellCount(config)) return "";
+  const col = cell % config.gridCols;
+  const row = Math.floor(cell / config.gridCols);
+  return `${String.fromCharCode(65 + col)}${row + 1}`;
+}
+
+export function normalizeFieldPositionCells(value: unknown, config: FieldPositionConfig): number[] {
+  if (!Array.isArray(value)) return [];
+  return [
+    ...new Set(
+      value
+        .map((cell) => wholeNumber(cell))
+        .filter((cell): cell is number => cell != null && isFieldPositionCellAllowed(cell, config)),
+    ),
+  ].sort((a, b) => a - b);
+}
+
+export function toggleFieldPositionCell(
+  value: unknown,
+  cell: number,
+  config: FieldPositionConfig,
+): number[] {
+  const current = normalizeFieldPositionCells(value, config);
+  if (!isFieldPositionCellAllowed(cell, config)) return current;
+  return current.includes(cell)
+    ? current.filter((item) => item !== cell)
+    : [...current, cell].sort((a, b) => a - b);
+}
+
+/* ----------------------- form reset behavior ----------------------------- */
+
+/**
+ * What happens to a field's answer after a save. CD ask: keep the constants
+ * (scouting station, alliance colour) and step the match number, so a scout
+ * taps straight into the next match instead of retyping the same three boxes.
+ */
+export type FormResetBehavior = "preserve" | "reset" | "increment";
+
+export function fieldResetBehavior(field: Pick<FieldDefinition, "config">): FormResetBehavior {
+  const raw = configOf(field).resetBehavior;
+  return raw === "preserve" || raw === "increment" ? raw : "reset";
+}
+
+/** Increment a number, or the trailing digits of a string ("qm12" → "qm13"). */
+export function incrementValue(value: unknown): unknown {
+  const numeric = finiteNumber(value);
+  if (numeric != null) return numeric + 1;
+  if (typeof value === "string") {
+    const match = /^(.*?)(\d+)(\D*)$/.exec(value);
+    if (match) {
+      const [, prefix = "", digits = "", suffix = ""] = match;
+      const next = String(Number(digits) + 1);
+      return `${prefix}${next.padStart(digits.length, "0")}${suffix}`;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Payload for the next entry after a save. Fields set to reset (the default)
+ * drop out entirely; preserve keeps the answer; increment steps it.
+ */
+export function applyFormResetBehavior(
+  schema: SchemaDefinition,
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  const next: Record<string, unknown> = {};
+  for (const field of schema.fields) {
+    if (isLayoutOnlyField(field)) continue;
+    const value = payload[field.key];
+    if (value === undefined || value === null) continue;
+    const behavior = fieldResetBehavior(field);
+    if (behavior === "preserve") {
+      next[field.key] = value;
+    } else if (behavior === "increment") {
+      const stepped = incrementValue(value);
+      if (stepped !== undefined) next[field.key] = stepped;
+    }
+  }
+  return next;
+}
 
 function gameFieldToDefinition(field: GameField): FieldDefinition {
   const widget: FieldWidget | undefined =
@@ -201,6 +629,178 @@ export type FormulaExpression =
       args: FormulaExpression[];
     };
 
+const STUDIO_FIELD_TYPES: ReadonlySet<string> = new Set([
+  "counter",
+  "multi_counter",
+  "timer",
+  "rating",
+  "multi_select",
+  "slider",
+  "field_position",
+]);
+
+/**
+ * Server-side mirror of what the studio entry renderers can produce.
+ *
+ * Returns null when `field` is not a studio type (the caller falls through to
+ * the legacy chain), otherwise the list of range/shape errors — empty when the
+ * value is good. Anything a tablet cannot produce is rejected here too, so a
+ * hand-crafted sync POST cannot smuggle out-of-range values past the UI.
+ */
+function validateStudioFieldValue(field: FieldDefinition, value: unknown): string[] | null {
+  if (!STUDIO_FIELD_TYPES.has(field.type)) return null;
+  const errors: string[] = [];
+  const label = field.label;
+
+  if (field.type === "counter") {
+    const config = counterConfig(field);
+    const numeric = wholeNumber(value);
+    if (numeric == null) {
+      errors.push(`${label} must be a whole number`);
+    } else {
+      if (!config.allowNegative && numeric < 0) {
+        errors.push(`${label} cannot go below zero`);
+      } else if (Number.isFinite(config.min) && numeric < config.min) {
+        errors.push(`${label} must be at least ${config.min}`);
+      }
+      if (config.max != null && numeric > config.max) {
+        errors.push(`${label} must be at most ${config.max}`);
+      }
+    }
+    return errors;
+  }
+
+  if (field.type === "multi_counter") {
+    const config = multiCounterConfig(field);
+    if (!isPlainObject(value)) {
+      errors.push(`${label} must be a set of named counts`);
+      return errors;
+    }
+    const known = new Set(config.counters.map((counter) => counter.key));
+    for (const [key, raw] of Object.entries(value)) {
+      if (!known.has(key)) {
+        errors.push(`${label} has an unknown counter: ${key}`);
+        continue;
+      }
+      const numeric = wholeNumber(raw);
+      if (numeric == null) {
+        errors.push(`${label} · ${key} must be a whole number`);
+        continue;
+      }
+      if (!config.allowNegative && numeric < 0) {
+        errors.push(`${label} · ${key} cannot go below zero`);
+      } else if (Number.isFinite(config.min) && numeric < config.min) {
+        errors.push(`${label} · ${key} must be at least ${config.min}`);
+      }
+      if (config.max != null && numeric > config.max) {
+        errors.push(`${label} · ${key} must be at most ${config.max}`);
+      }
+    }
+    return errors;
+  }
+
+  if (field.type === "timer") {
+    const config = timerConfig(field);
+    if (config.mode === "lap") {
+      if (!Array.isArray(value)) {
+        errors.push(`${label} must be a list of lap times in seconds`);
+        return errors;
+      }
+      for (const lap of value) {
+        const numeric = finiteNumber(lap);
+        if (numeric == null || numeric < 0) {
+          errors.push(`${label} has a lap that is not a number of seconds`);
+          break;
+        }
+      }
+      if (!errors.length && config.maxSeconds != null) {
+        const total = accumulateTimerLaps(normalizeTimerLaps(value));
+        if (total > config.maxSeconds) {
+          errors.push(`${label} totals more than ${config.maxSeconds}s`);
+        }
+      }
+      return errors;
+    }
+    const numeric = finiteNumber(value);
+    if (numeric == null) {
+      errors.push(`${label} must be a number of seconds`);
+    } else if (numeric < 0) {
+      errors.push(`${label} cannot be negative`);
+    } else if (config.maxSeconds != null && numeric > config.maxSeconds) {
+      errors.push(`${label} must be at most ${config.maxSeconds}s`);
+    }
+    return errors;
+  }
+
+  if (field.type === "rating") {
+    const config = ratingConfig(field);
+    const numeric = wholeNumber(value);
+    if (numeric == null) {
+      errors.push(`${label} must be a whole-number rating`);
+    } else if (numeric < 1 || numeric > config.max) {
+      errors.push(`${label} must be between 1 and ${config.max}`);
+    }
+    return errors;
+  }
+
+  if (field.type === "multi_select") {
+    if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+      errors.push(`${label} must be a list of options`);
+      return errors;
+    }
+    const picks = value as string[];
+    if (new Set(picks).size !== picks.length) {
+      errors.push(`${label} has a duplicate option`);
+    }
+    const options = field.options ?? [];
+    if (!options.length) {
+      errors.push(`${label} has no options defined`);
+    } else if (picks.some((pick) => !options.includes(pick))) {
+      errors.push(`${label} has an invalid option`);
+    }
+    return errors;
+  }
+
+  if (field.type === "slider") {
+    const config = sliderConfig(field);
+    const numeric = finiteNumber(value);
+    if (numeric == null) {
+      errors.push(`${label} must be a number`);
+    } else if (numeric < config.min || numeric > config.max) {
+      errors.push(`${label} must be between ${config.min} and ${config.max}`);
+    } else if (!isSliderValueAligned(numeric, config)) {
+      errors.push(`${label} must land on a step of ${config.step}`);
+    }
+    return errors;
+  }
+
+  // field_position — indices only. Never store coordinates, images, or labels.
+  const config = fieldPositionConfig(field);
+  if (!Array.isArray(value)) {
+    errors.push(`${label} must be a list of grid cells`);
+    return errors;
+  }
+  const cellCount = fieldPositionCellCount(config);
+  const seen = new Set<number>();
+  for (const cell of value) {
+    const numeric = wholeNumber(cell);
+    if (numeric == null || numeric < 0 || numeric >= cellCount) {
+      errors.push(`${label} has a cell outside the ${config.gridCols}×${config.gridRows} grid`);
+      break;
+    }
+    if (seen.has(numeric)) {
+      errors.push(`${label} has a duplicate cell`);
+      break;
+    }
+    seen.add(numeric);
+    if (config.allowedCells && !config.allowedCells.includes(numeric)) {
+      errors.push(`${label} has a cell that is not selectable on this form`);
+      break;
+    }
+  }
+  return errors;
+}
+
 export function validatePayload(
   schema: SchemaDefinition,
   payload: Record<string, unknown>,
@@ -212,16 +812,30 @@ export function validatePayload(
   }
   for (const field of schema.fields) {
     const value = payload[field.key];
+    // Section headers group Auto | Teleop | Endgame — they carry no answer, and
+    // "required" is meaningless on them, so they never gate a save.
+    if (isLayoutOnlyField(field)) {
+      if (value !== undefined && value !== null && value !== "") {
+        errors.push(`${field.label} is a section header and stores no answer`);
+      }
+      continue;
+    }
     const empty =
       value === undefined ||
       value === null ||
       value === "" ||
-      (Array.isArray(value) && value.length === 0);
+      (Array.isArray(value) && value.length === 0) ||
+      (field.type === "multi_counter" && isPlainObject(value) && Object.keys(value).length === 0);
     if (field.required && empty) {
       errors.push(`${field.label} is required`);
       continue;
     }
     if (empty) continue;
+    const studioErrors = validateStudioFieldValue(field, value);
+    if (studioErrors) {
+      errors.push(...studioErrors);
+      continue;
+    }
     if (field.type === "number" && (typeof value !== "number" || !Number.isFinite(value))) {
       errors.push(`${field.label} must be a number`);
     } else if (field.type === "boolean" && typeof value !== "boolean") {
@@ -319,18 +933,40 @@ export function detectDisagreements(
   if (eligible.length < 2) return [];
   const disagreements: Disagreement[] = [];
   for (const field of schema.fields) {
-    // Attachment refs are not comparable categorical answers.
-    if (field.type === "robot_image") continue;
+    // Attachment refs are not comparable categorical answers; section headers
+    // hold nothing; stopwatch and tap-a-cell answers differ between two honest
+    // scouts by nature, so flagging them would be noise, not disagreement.
+    if (
+      field.type === "robot_image" ||
+      field.type === "section_header" ||
+      field.type === "timer" ||
+      field.type === "field_position"
+    ) {
+      continue;
+    }
     const observed = eligible
       .map((entry) => ({ id: entry.id, value: entry.payload[field.key] }))
       .filter(({ value }) => value !== undefined && value !== null);
     if (observed.length < 2) continue;
     const values = observed.map(({ value }) => value);
-    const diverges =
-      field.type === "number"
-        ? Math.max(...values.map(Number)) - Math.min(...values.map(Number)) >
-          (field.disagreementThreshold ?? 0)
-        : new Set(values.map((value) => JSON.stringify(value))).size > 1;
+    const numericLike =
+      field.type === "number" ||
+      field.type === "counter" ||
+      field.type === "rating" ||
+      field.type === "slider";
+    const diverges = numericLike
+      ? Math.max(...values.map(Number)) - Math.min(...values.map(Number)) >
+        (field.disagreementThreshold ?? 0)
+      : new Set(
+          values.map((value) =>
+            // Multi-select order is a UI artifact, not a disagreement.
+            JSON.stringify(
+              field.type === "multi_select" && Array.isArray(value)
+                ? [...value].map(String).sort()
+                : value,
+            ),
+          ),
+        ).size > 1;
     if (diverges) {
       disagreements.push({
         fieldKey: field.key,

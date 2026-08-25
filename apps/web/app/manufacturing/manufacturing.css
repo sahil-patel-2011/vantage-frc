@@ -1,0 +1,37 @@
+/* Part Manufacturing kanban — design tokens only, light and dark via the app palette. */
+.mfg-page{display:grid;gap:16px}
+.mfg-panel{display:grid;gap:12px}
+.mfg-panel h2{margin:0}
+.mfg-tip,.mfg-block{margin:0;display:block}
+.mfg-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+
+/* >=44px touch targets on every interactive control. */
+.mfg-page button,.mfg-page select,.mfg-page input:not([type="checkbox"]),.mfg-page textarea,.mfg-page a.app-button{min-height:44px}
+.mfg-page input[type="checkbox"]{width:24px;height:24px;flex-shrink:0}
+
+/* Board: one column per state, horizontal scroll inside its own container so the
+   page never scrolls sideways — usable down to 360px. */
+.mfg-board-wrap{overflow-x:auto;padding-bottom:4px}
+.mfg-board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,260px);gap:12px;align-items:start}
+.mfg-column{display:grid;gap:8px;border:1px solid var(--app-line);border-radius:12px;padding:10px;background:var(--app-surface)}
+.mfg-column-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mfg-column-head h2{margin:0;font-size:0.95rem}
+.mfg-cards{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.mfg-card{display:grid;gap:6px;border:1px solid var(--app-line);border-radius:10px;padding:10px;background:var(--app-bg)}
+.mfg-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.mfg-card-actions{display:flex;flex-wrap:wrap;gap:6px}
+.mfg-past-due{color:var(--app-critical);font-weight:600}
+.mfg-assign{display:grid;gap:4px}
+
+.mfg-risk-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.mfg-risk-list li{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+
+.mfg-seed-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:320px;overflow-y:auto}
+.mfg-seed-row{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:4px 0;cursor:pointer}
+
+.mfg-coverage{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.mfg-coverage li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media(max-width:640px){
+  .mfg-board{grid-auto-columns:minmax(220px,80vw)}
+}

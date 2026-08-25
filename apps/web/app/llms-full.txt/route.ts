@@ -45,10 +45,9 @@ ${hostedApiEconomicsSoftLine()}
 | --- | --- | --- |
 | Free | 0 | Start here — own keys, local models, or buy AI credits |
 | Access | ${c.access.monthlyUsd} | Light managed routing; credits/PAYG optional |
-| Individual Pro | ${c.individual_pro.monthlyUsd} | Hosted AI in the product |
-| Individual Max | ${c.individual_max.monthlyUsd} | Higher hosted capacity |
-| Team Pro | ${c.team_pro.monthlyUsd} | Org Soft-UI + hosted AI |
-| Team Max | ${c.team_max.monthlyUsd} | Higher org capacity |
+| Pro | ${c.pro.monthlyUsd} | Hosted AI allowance on top of BYOK |
+| Pro+ | ${c.pro_plus.monthlyUsd} | Larger hosted allowance |
+| Max | ${c.max.monthlyUsd} | Largest hosted allowance |
 | Week team trial | — | ${TEAM_TRIAL_DAYS} days; no surprise auto-charge |
 
 Public framing: Free → Individual → Team; AI credits top up hosted usage. Exact included API-dollar allotments are not plan-card copy.

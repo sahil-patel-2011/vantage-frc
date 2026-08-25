@@ -17,9 +17,14 @@ export type ProductReleaseStatus = (typeof PRODUCT_RELEASE_STATUSES)[number];
 /** Plan rank for min_plan gates (individual/team tracks share ranks). */
 export const PRODUCT_PLAN_RANK: Record<string, number> = {
   free: 0,
-  access: 10,
+  // 0481 pricing ladder.
+  pro: 20,
+  pro_plus: 25,
+  max: 30,
+  // Legacy codes, ranked where their alias lands (packages/billing maps them).
+  access: 20,
   individual_pro: 20,
-  team_pro: 20,
+  team_pro: 25,
   team_trial: 20,
   managed_20: 20,
   individual_max: 30,

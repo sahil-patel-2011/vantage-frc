@@ -9,6 +9,7 @@ import {
   PRESET_WIDGETS,
   displayKioskHref,
   pitChromiumKioskCommand,
+  type DisplayKioskMode,
   type DisplayWidget,
 } from "../../lib/display";
 import {
@@ -18,6 +19,7 @@ import {
 } from "../../lib/display/display-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Board = {
   id: string;
@@ -54,12 +56,17 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   const [messageOk, setMessageOk] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadError, setLoadError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [minted, setMinted] = useState<MintedToken | null>(null);
   const [pairBoardId, setPairBoardId] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     setFetchFailed(false);
+    setLoadError("");
+    setErrorStatus(null);
     try {
       const r = await fetch(`/api/display/boards?orgId=${encodeURIComponent(orgId)}`);
       const d = (await r.json()) as {
@@ -72,6 +79,8 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         setMessage(d.error ?? "Failed to load display boards");
         setMessageOk(false);
         setFetchFailed(true);
+        setErrorStatus(r.status);
+        setLoadError(d.error ?? "");
         return;
       }
       setBoards(d.boards ?? []);
@@ -81,6 +90,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     } catch {
       setFetchFailed(true);
       setMessage("Network error — could not load display boards.");
+      setLoadError("Network error — could not load display boards.");
       setMessageOk(false);
     } finally {
       setLoading(false);
@@ -201,11 +211,17 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     }
   }
 
-  function copyMintedLink(mode: "kiosk" | "pit" = "pit") {
+  const MINTED_LINK_COPY: Record<DisplayKioskMode, string> = {
+    pit: "Pit / Pi display link copied.",
+    kiosk: "Kiosk link copied to clipboard.",
+    stage: "Event display link copied — the board follows the event phase on its own.",
+  };
+
+  function copyMintedLink(mode: DisplayKioskMode = "pit") {
     if (!minted) return;
     const url = displayKioskHref(location.origin, minted.token, mode);
     void navigator.clipboard.writeText(url);
-    setMessage(mode === "pit" ? "Pit / Pi display link copied." : "Kiosk link copied to clipboard.");
+    setMessage(MINTED_LINK_COPY[mode]);
     setMessageOk(true);
   }
 
@@ -221,6 +237,26 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       }),
     [orgId, boards.length, activeTokenCount, loading, activeEventKey],
   );
+
+  // Retry cannot fix an expired session, so the failure decides its own action.
+  const failure = fetchFailed
+    ? loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message: loadError,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message:
+            loadError ||
+            "A network or server issue prevented loading. Try again — nothing was filled with DEMO layouts.",
+        },
+      )
+    : null;
 
   return (
     <main className="module-page display-setup">
@@ -245,15 +281,18 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          soft
-          title="Could not load display boards"
-          description="A network or server issue prevented loading. Try again — nothing was filled with DEMO layouts."
-        >
-          <button type="button" className="app-button secondary" onClick={() => void load()}>
-            Retry
-          </button>
+      {failure ? (
+        <EmptyState soft title={failure.title} description={failure.description}>
+          {failure.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
         </EmptyState>
       ) : (
         <div className="disp-stack">
@@ -451,9 +490,17 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                   Raspberry Pi / Chromium kiosk:{" "}
                   <code>{pitChromiumKioskCommand(displayKioskHref(location.origin, minted.token, "pit"))}</code>
                 </p>
+                <p>
+                  Event display (auto-advances through pre-event, quals, alliance selection,
+                  playoffs, and thanks):{" "}
+                  <code>{displayKioskHref(location.origin, minted.token, "stage")}</code>
+                </p>
                 <div className="display-actions">
                   <button type="button" className="app-button" onClick={() => copyMintedLink("pit")}>
                     Copy pit / Pi link
+                  </button>
+                  <button type="button" className="app-button secondary" onClick={() => copyMintedLink("stage")}>
+                    Copy event display link
                   </button>
                   <button type="button" className="app-button secondary" onClick={() => copyMintedLink("kiosk")}>
                     Copy standard kiosk link

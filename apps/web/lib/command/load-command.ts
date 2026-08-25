@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { deriveReliability } from "@vantage/intel-research";
-import { nexusAttributionHref, parseNexusLive } from "@vantage/reference";
+import { nexusAttributionHref, parseNexusEvent, parseNexusLive } from "@vantage/reference";
 import { batteryPitFlags } from "../battery-reliability";
 import { loadRepeatFailureAlerts } from "../fmea/repeat-failures";
 import { loadBatteryFleet } from "../load-battery-fleet";
@@ -11,6 +11,7 @@ import { withOrgHref } from "../nav/product-nav";
 import { computeStrategyView, resolveTbaAccess } from "../strategy/compute-strategy";
 import { emptyCommandCoverage } from "./empty-coverage";
 import { buildCoverageBoard, summarizeCoverageBoard } from "./match-coverage";
+import { buildNexusQueueSnapshot } from "./nexus-queue";
 import { maybeNotifyCoverageGaps } from "./notify-coverage-gaps";
 import { buildScoutQueue, teamNumberFromKey, withScoutFormHrefs } from "./scout-queue";
 import type {
@@ -21,6 +22,11 @@ import type {
   DriveCoachBrief,
   PitFlag,
 } from "./types";
+
+/** Nexus is setup-required by design — no key means the panel shows guidance, not blanks. */
+function nexusKeyConfigured(): boolean {
+  return Boolean(process.env.NEXUS_API_KEY?.trim() || process.env.NEXUS_AUTH_KEY?.trim());
+}
 
 function allianceKeys(alliance: unknown): string[] {
   if (!alliance || typeof alliance !== "object") return [];
@@ -696,15 +702,25 @@ export async function loadEventDayCommand(
     [eventKey],
   );
   const snapshot = nexusRow.rows[0];
+  const nexusConfigured = nexusKeyConfigured();
+  const nexusPits =
+    snapshot?.pits && typeof snapshot.pits === "object"
+      ? (snapshot.pits as Record<string, string>)
+      : {};
   const nexus: CommandNexus | null = snapshot
     ? {
         ...parseNexusLive(snapshot.live, eventKey, snapshot.syncedAt ?? computedAt),
-        pitCount:
-          snapshot.pits && typeof snapshot.pits === "object"
-            ? Object.keys(snapshot.pits as Record<string, unknown>).length
-            : 0,
+        pitCount: Object.keys(nexusPits).length,
         syncedAt: snapshot.syncedAt,
         attributionHref: nexusAttributionHref(),
+        configured: nexusConfigured,
+        // The cached `live` body is the full Nexus event payload — matches[],
+        // announcements[], partsRequests[] and the server clock all come from it.
+        queue: buildNexusQueueSnapshot({
+          event: parseNexusEvent(snapshot.live, eventKey, snapshot.syncedAt ?? computedAt),
+          pits: nexusPits,
+          teamNumber: row.teamNumber ?? null,
+        }),
       }
     : null;
 

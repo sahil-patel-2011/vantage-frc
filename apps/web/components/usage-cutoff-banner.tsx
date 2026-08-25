@@ -125,7 +125,6 @@ export function UsageCutoffBanner({ orgId, snapshot, errorCode, className, compa
   let alert: UsageCutoffAlert | null = null;
   if (errorCode) {
     const mapped = messageForCutoffError(errorCode, orgId);
-    alert = { level: "at", reason: "allowance", title: mapped.title, body: mapped.body, percent: null };
     return (
       <BannerShell
         level="at"

@@ -19,6 +19,7 @@ export const waitlistSchema = z.object({
   ),
   smsConsent: z.boolean().optional().default(false),
   termsAccepted: z.literal(true),
+  privacyAccepted: z.literal(true),
   website: z.string().max(0).optional().default(""),
 }).superRefine((value, context) => {
   if (value.phone && !value.smsConsent) {

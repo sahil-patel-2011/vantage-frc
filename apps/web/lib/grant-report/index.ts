@@ -84,6 +84,11 @@ export function buildGrantReportSections(input: {
     });
   }
 
+  // Honesty guard: Finance transactions carry no per-grant linkage (no grant tag/category link
+  // exists in the schema), so per-grant spend cannot be computed. Say so explicitly and present
+  // season totals only as clearly-labeled org-wide context — never as this grant's spend.
+  const linkageNote =
+    "Spend linkage is not configured — Finance expenses are not tagged to individual grants, so spend attributable to this specific grant cannot be reported.";
   const totalSpendUsd = input.spendByCategory.reduce((sum, line) => sum + line.totalUsd, 0);
   if (totalSpendUsd > 0) {
     const parts = input.spendByCategory
@@ -91,14 +96,14 @@ export function buildGrantReportSections(input: {
       .map((line) => `${line.category}: $${line.totalUsd.toLocaleString()} (${line.count} txn)`);
     sections.push({
       id: "spend",
-      title: "Recorded fund usage",
-      body: `The team recorded $${totalSpendUsd.toLocaleString()} in expenses during ${input.seasonYear}, by category — ${parts.join("; ")}.`,
+      title: "Season spending context (not grant-attributed)",
+      body: `${linkageNote} For context only, the team recorded $${totalSpendUsd.toLocaleString()} in total ${input.seasonYear} season expenses across all funding sources, by category — ${parts.join("; ")}.`,
     });
   } else {
     sections.push({
       id: "spend",
-      title: "Recorded fund usage",
-      body: `No expense transactions have been recorded for the ${input.seasonYear} season yet — log purchases in Finance to substantiate fund usage in this report.`,
+      title: "Season spending context (not grant-attributed)",
+      body: `${linkageNote} No expense transactions have been recorded for the ${input.seasonYear} season yet — log purchases in Finance for season-wide context.`,
     });
   }
 

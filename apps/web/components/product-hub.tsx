@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { HelpTip } from "./help-tip";
 import { HubTabForbidden } from "./hub-access-gate";
-import { EmptyState, PageHeader, TabBar } from "./ui";
+import { EmptyState, PageHeader, TabBar, ToolStrip } from "./ui";
+import { sectionHelpFor } from "../lib/help/section-help";
 import {
   clientCanAccessHub,
   filterTabsByHubAccess,
@@ -26,6 +28,13 @@ type ProductHubShellProps = {
   breadcrumbs?: ReactNode;
   children: (ctx: { tab: string; orgId: string | null; selectTab: (tab: string) => void }) => ReactNode;
   headerActions?: ReactNode;
+  /**
+   * Tab ids this hub renders inline. Tools not listed live on their own route,
+   * so their chips link straight there instead of switching the tab and then
+   * redirecting. An omitted or stale id degrades to the old redirect, never to
+   * a dead end.
+   */
+  embeddedTabs?: readonly string[];
 };
 
 function readOrgId(): string | null {
@@ -108,7 +117,13 @@ export function HubLegacyOpen({ label, href }: { label: string; href: string }) 
   );
 }
 
-export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }: ProductHubShellProps) {
+export function ProductHubShell({
+  hubId,
+  breadcrumbs,
+  children,
+  headerActions,
+  embeddedTabs,
+}: ProductHubShellProps) {
   const hub = hubById(hubId);
   const access = useClientAccessProfile();
   const accessHubId = hubId as ClientHubId;
@@ -124,9 +139,6 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
   const nestedTabs = useMemo(() => {
     const all = hubNestedTabs(hub, workbenchId);
     if (all.length <= 1) return [];
-    if (hub.id === "team" && (workbenchId === "calendar" || workbenchId === "messages" || workbenchId === "knowledge")) {
-      return [];
-    }
     if (primaryTabs.some((entry) => entry.id === workbenchId)) return all;
     return filterTabsByHubAccess(all, access.hubAccess, accessHubId);
   }, [access.hubAccess, accessHubId, hub, primaryTabs, workbenchId]);
@@ -212,18 +224,27 @@ export function ProductHubShell({ hubId, breadcrumbs, children, headerActions }:
         onChange={selectTab}
         tabs={primaryTabs.map((entry) => ({ id: entry.id, label: entry.label }))}
         className="product-hub-tabs"
-      />
+      >
+        {/* How / why / when for whatever is open. Prefers the leaf tool's entry
+            and falls back to its workbench; renders nothing when neither has one. */}
+        <HelpTip entry={sectionHelpFor(hub.id, tab) ?? sectionHelpFor(hub.id, workbenchId)} />
+      </TabBar>
       {nestedTabs.length > 1 ? (
-        <label className="product-hub-tools">
-          <span>In this section</span>
-          <select value={tab} onChange={(event) => selectTab(event.target.value)} aria-label={`${hub.label} tools`}>
-            {nestedTabs.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ToolStrip
+          aria-label={`${hub.label} tools`}
+          value={tab}
+          onChange={selectTab}
+          items={nestedTabs.map((entry) => ({
+            id: entry.id,
+            label: entry.label,
+            // The workbench root and its pinned tools stay on screen.
+            featured: entry.featured || !entry.group,
+            href:
+              embeddedTabs && !embeddedTabs.includes(entry.id) && entry.legacyHref
+                ? hubLegacyHref(entry, orgId)
+                : undefined,
+          }))}
+        />
       ) : null}
       <div className="product-hub-panel" data-hub-tab={tab}>
         {(() => {

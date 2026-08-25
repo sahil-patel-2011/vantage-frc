@@ -1,5 +1,28 @@
+// Collaborative pick-list view — now a PROJECTION of the ONE pick list.
+//
+// This module used to own picklist_collab_lists/_entries/_votes, which meant the list a team
+// built together was not the list the alliance-selection desk read on Saturday. It now reads and
+// writes pick_lists / pick_list_entries / pick_list_entry_votes through lib/picklist/store.ts
+// (migration 0454), so a reorder here moves the draft board and Pick Clock too. The view shape is
+// unchanged so the collaborative UI keeps working exactly as before.
+
 import type { PoolClient } from "@neondatabase/serverless";
-import { averageRankSuggestion, classifyEpaRole, fieldEpaBenchmarks, sortEntriesForDisplay, summarizePicklistCollab, weightedScore } from ".";
+import {
+  ensurePickList,
+  listPickList,
+  listPickLists,
+  recordVote,
+  removeVote as removeVoteFromSpine,
+  reorderEntry,
+  setListStatus,
+  upsertEntry,
+  deleteEntry as deleteSpineEntry,
+  teamNumberFromKey,
+  type PickBucket,
+  type PickListEntry,
+  type PickListSnapshot,
+} from "../picklist";
+import { classifyEpaRole, fieldEpaBenchmarks, sortEntriesForDisplay, summarizePicklistCollab } from ".";
 import type {
   PicklistCollabEntry,
   PicklistCollabList,
@@ -38,58 +61,32 @@ export function currentSeasonYear(now: Date = new Date()): number {
   return now.getUTCFullYear();
 }
 
-type ListRow = {
-  id: string;
-  eventKey: string;
-  name: string;
-  seasonYear: number;
-  status: PicklistCollabListStatus;
-  createdBy: string;
-  updatedAt: string;
-};
-
-function mapList(row: ListRow): PicklistCollabList {
-  return {
-    id: row.id,
-    eventKey: row.eventKey,
-    name: row.name,
-    seasonYear: row.seasonYear,
-    status: row.status,
-    createdBy: row.createdBy,
-    updatedAt: row.updatedAt,
-  };
+/**
+ * The collab tool's tier vocabulary IS the spine's bucket vocabulary (that was the point of the
+ * unification) — these two casts document the intent rather than translating anything.
+ */
+function tierFromBucket(bucket: PickBucket): PicklistCollabTier {
+  return bucket;
 }
-
-type EntryRow = {
-  id: string;
-  teamNumber: number;
-  teamName: string | null;
-  tier: PicklistCollabTier;
-  position: number;
-  note: string | null;
-  addedBy: string;
-};
-
-type VoteRow = {
-  id: string;
-  entryId: string;
-  voterId: string;
-  weight: string | number;
-  rankSuggestion: number | null;
-  comment: string | null;
-  updatedAt: string;
-};
+function bucketFromTier(tier: PicklistCollabTier): PickBucket {
+  return tier;
+}
 
 async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; eventKey: string | null } | null> {
+  const membership = await client.query<{
+    orgId: string;
+    teamNumber: number | null;
+    eventKey: string | null;
+  }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", c.active_event_key AS "eventKey"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
-     WHERE m.user_id = $1
+     LEFT JOIN org_active_context c ON c.org_id = o.id
+     WHERE m.user_id = $1::uuid
        AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
      ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
      LIMIT 1`,
@@ -109,123 +106,103 @@ function setupRequired(orgId: string | null): PicklistCollabView {
   };
 }
 
-export async function computePicklistCollabView(
+function toCollabList(record: {
+  id: string;
+  eventKey: string;
+  name: string;
+  seasonYear: number | null;
+  status: PicklistCollabListStatus | string;
+  createdBy: string;
+  updatedAt: string;
+}): PicklistCollabList {
+  const status = (["open", "locked", "archived"] as string[]).includes(record.status)
+    ? (record.status as PicklistCollabListStatus)
+    : "open";
+  return {
+    id: record.id,
+    eventKey: record.eventKey,
+    name: record.name,
+    seasonYear: record.seasonYear ?? currentSeasonYear(),
+    status,
+    createdBy: record.createdBy,
+    updatedAt: record.updatedAt,
+  };
+}
+
+function toCollabVote(vote: PickListEntry["votes"][number]): PicklistCollabVote {
+  return {
+    id: vote.id,
+    voterId: vote.voterId,
+    weight: vote.weight,
+    rankSuggestion: vote.rankSuggestion,
+    comment: vote.comment,
+    updatedAt: vote.updatedAt,
+  };
+}
+
+/** Cached Statbotics/TBA EPA for the event field — never fabricated when a row is missing. */
+async function loadEventEpa(
   client: PoolClient,
-  input: { userId: string; requestedOrg: string | null; listId?: string | null },
-): Promise<PicklistCollabView> {
-  const org = await resolveOrg(client, input.userId, input.requestedOrg);
-  if (!org) return setupRequired(null);
-
-  const listResult = await client.query<ListRow>(
-    `SELECT id, event_key AS "eventKey", name, season_year AS "seasonYear", status,
-            created_by AS "createdBy", updated_at::text AS "updatedAt"
-     FROM picklist_collab_lists
-     WHERE org_id = $1
-     ORDER BY updated_at DESC`,
-    [org.orgId],
+  eventKey: string,
+): Promise<{
+  byTeam: Map<number, { epaTotal: number | null; epaAuto: number | null; epaTeleop: number | null }>;
+  bench: { median: number; p75: number } | null;
+}> {
+  const result = await client.query<{
+    teamKey: string;
+    epaTotal: number | null;
+    epaAuto: number | null;
+    epaTeleop: number | null;
+  }>(
+    `SELECT DISTINCT ON (m.team_key)
+        m.team_key AS "teamKey",
+        m.epa_total AS "epaTotal",
+        m.epa_auto AS "epaAuto",
+        m.epa_teleop AS "epaTeleop"
+     FROM team_event_metrics m
+     WHERE m.event_key = $1::text
+     ORDER BY m.team_key,
+       CASE m.source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+       m.synced_at DESC NULLS LAST`,
+    [eventKey],
   );
-  const lists = listResult.rows.map(mapList);
 
-  if (lists.length === 0) {
-    return {
-      status: "setup_required",
-      message: "Create your first collaborative pick list for an upcoming event.",
-      steps: [
-        {
-          id: "create-list",
-          label: "Create a pick list",
-          detail: "Name it after your next event so the team can start ranking and voting",
-          href: "/picklist-collab",
-        },
-      ],
-      orgId: org.orgId,
-    };
-  }
-
-  const activeList: PicklistCollabList =
-    (input.listId ? lists.find((l) => l.id === input.listId) : undefined) ?? lists[0]!;
-
-  const [entryResult, voteResult, metricResult] = await Promise.all([
-    client.query<EntryRow>(
-      `SELECT id, team_number AS "teamNumber", team_name AS "teamName", tier, position, note,
-              added_by AS "addedBy"
-       FROM picklist_collab_entries
-       WHERE org_id = $1 AND list_id = $2
-       ORDER BY tier, position, team_number`,
-      [org.orgId, activeList.id],
-    ),
-    client.query<VoteRow>(
-      `SELECT v.id, v.entry_id AS "entryId", v.voter_id AS "voterId", v.weight,
-              v.rank_suggestion AS "rankSuggestion", v.comment, v.updated_at::text AS "updatedAt"
-       FROM picklist_collab_votes v
-       JOIN picklist_collab_entries e ON e.id = v.entry_id
-       WHERE v.org_id = $1 AND e.list_id = $2`,
-      [org.orgId, activeList.id],
-    ),
-    client.query<{
-      teamKey: string;
-      epaTotal: number | null;
-      epaAuto: number | null;
-      epaTeleop: number | null;
-    }>(
-      `SELECT DISTINCT ON (m.team_key)
-          m.team_key AS "teamKey",
-          m.epa_total AS "epaTotal",
-          m.epa_auto AS "epaAuto",
-          m.epa_teleop AS "epaTeleop"
-       FROM team_event_metrics m
-       WHERE m.event_key = $1
-       ORDER BY m.team_key,
-         CASE m.source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
-         m.synced_at DESC NULLS LAST`,
-      [activeList.eventKey],
-    ),
-  ]);
-
-  const votesByEntry = new Map<string, PicklistCollabVote[]>();
-  for (const row of voteResult.rows) {
-    const vote: PicklistCollabVote = {
-      id: row.id,
-      voterId: row.voterId,
-      weight: Number(row.weight) || 0,
-      rankSuggestion: row.rankSuggestion == null ? null : Number(row.rankSuggestion),
-      comment: row.comment,
-      updatedAt: row.updatedAt,
-    };
-    const list = votesByEntry.get(row.entryId) ?? [];
-    list.push(vote);
-    votesByEntry.set(row.entryId, list);
-  }
-
-  const metricsByTeam = new Map<number, { epaTotal: number | null; epaAuto: number | null; epaTeleop: number | null }>();
+  const byTeam = new Map<number, { epaTotal: number | null; epaAuto: number | null; epaTeleop: number | null }>();
   const fieldTotals: number[] = [];
-  for (const row of metricResult.rows) {
-    const match = /^frc(\d{1,5})$/i.exec(row.teamKey);
-    const teamNumber = match ? Number(match[1]) : null;
+  for (const row of result.rows) {
     if (row.epaTotal != null && Number.isFinite(row.epaTotal)) fieldTotals.push(row.epaTotal);
+    const teamNumber = teamNumberFromKey(row.teamKey);
     if (teamNumber == null) continue;
-    metricsByTeam.set(teamNumber, {
+    byTeam.set(teamNumber, {
       epaTotal: row.epaTotal,
       epaAuto: row.epaAuto,
       epaTeleop: row.epaTeleop,
     });
   }
-  const bench = fieldEpaBenchmarks(fieldTotals);
+  return { byTeam, bench: fieldEpaBenchmarks(fieldTotals) };
+}
 
-  const entries: PicklistCollabEntry[] = entryResult.rows.map((row) => {
-    const votes = votesByEntry.get(row.id) ?? [];
-    const metrics = metricsByTeam.get(row.teamNumber) ?? null;
-    return {
-      id: row.id,
-      teamNumber: row.teamNumber,
-      teamName: row.teamName,
-      tier: row.tier,
-      position: row.position,
-      note: row.note,
-      addedBy: row.addedBy,
+function projectEntries(
+  snapshot: PickListSnapshot,
+  epa: Awaited<ReturnType<typeof loadEventEpa>>,
+): PicklistCollabEntry[] {
+  const entries: PicklistCollabEntry[] = [];
+  for (const entry of snapshot.entries) {
+    const teamNumber = entry.teamNumber ?? teamNumberFromKey(entry.teamKey);
+    if (teamNumber == null) continue;
+    const metrics = epa.byTeam.get(teamNumber) ?? null;
+    const votes = entry.votes.map(toCollabVote);
+    entries.push({
+      id: entry.id,
+      teamNumber,
+      teamName: entry.nickname,
+      tier: tierFromBucket(entry.bucket),
+      position: entry.rank,
+      note: entry.notes,
+      addedBy: entry.addedBy ?? snapshot.list.createdBy,
       votes,
-      weightedScore: weightedScore(votes),
-      averageRankSuggestion: averageRankSuggestion(votes),
+      weightedScore: entry.weightedScore,
+      averageRankSuggestion: entry.averageRankSuggestion,
       epaTotal: metrics?.epaTotal ?? null,
       epaAuto: metrics?.epaAuto ?? null,
       epaTeleop: metrics?.epaTeleop ?? null,
@@ -233,14 +210,49 @@ export async function computePicklistCollabView(
         epaTotal: metrics?.epaTotal ?? null,
         epaAuto: metrics?.epaAuto ?? null,
         epaTeleop: metrics?.epaTeleop ?? null,
-        fieldMedian: bench?.median ?? null,
-        fieldP75: bench?.p75 ?? null,
+        fieldMedian: epa.bench?.median ?? null,
+        fieldP75: epa.bench?.p75 ?? null,
       }),
-    };
-  });
+    });
+  }
+  return entries;
+}
 
-  const sortedEntries = sortEntriesForDisplay(entries);
-  const summary = summarizePicklistCollab(entries);
+export async function computePicklistCollabView(
+  client: PoolClient,
+  input: { userId: string; requestedOrg: string | null; listId?: string | null },
+): Promise<PicklistCollabView> {
+  const org = await resolveOrg(client, input.userId, input.requestedOrg);
+  if (!org) return setupRequired(null);
+
+  const records = await listPickLists(client, { orgId: org.orgId });
+  if (records.length === 0) {
+    return {
+      status: "setup_required",
+      message: "Create your first pick list for an upcoming event.",
+      steps: [
+        {
+          id: "create-list",
+          label: "Create a pick list",
+          detail:
+            "Name it after your next event. The same list feeds the alliance-selection desk and Pick Clock.",
+          href: "/picklist-collab",
+        },
+      ],
+      orgId: org.orgId,
+    };
+  }
+
+  const lists = records.map(toCollabList);
+  const snapshot = await listPickList(client, {
+    orgId: org.orgId,
+    pickListId: input.listId ?? lists[0]!.id,
+  });
+  if (!snapshot) return setupRequired(org.orgId);
+
+  const activeList = toCollabList(snapshot.list);
+  const epa = await loadEventEpa(client, snapshot.list.eventKey);
+  const entries = projectEntries(snapshot, epa);
 
   return {
     status: "live",
@@ -248,33 +260,52 @@ export async function computePicklistCollabView(
     teamNumber: org.teamNumber,
     lists,
     activeList,
-    entries: sortedEntries,
-    summary,
+    entries: sortEntriesForDisplay(entries),
+    summary: summarizePicklistCollab(entries),
     computedAt: new Date().toISOString(),
   };
 }
 
 // ---- write helpers (run inside the caller's withRls transaction) ----
+// Every one of these now lands on the shared spine, so a change here is visible on the draft
+// board, in Pick Clock, and to the justifier.
 
 export async function createList(
   client: PoolClient,
   input: { orgId: string; userId: string; eventKey: string; name: string; seasonYear: number },
 ): Promise<void> {
-  await client.query(
-    `INSERT INTO picklist_collab_lists (org_id, event_key, name, season_year, created_by)
-     VALUES ($1,$2,$3,$4,$5)`,
-    [input.orgId, input.eventKey, input.name, input.seasonYear, input.userId],
-  );
+  try {
+    await ensurePickList(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      eventKey: input.eventKey,
+      name: input.name,
+      seasonYear: input.seasonYear,
+      source: "picklist_collab",
+    });
+  } catch (error) {
+    // pick_lists.event_key is FK'd to the TBA event reference — degrade to a "configure X" state.
+    const message = error instanceof Error ? error.message : "";
+    if (/foreign key|events_ref/i.test(message)) {
+      throw new Error(
+        `${input.eventKey} is not in the event reference yet — sync the event from Competition first.`,
+        { cause: error },
+      );
+    }
+    throw error;
+  }
 }
 
 export async function updateListStatus(
   client: PoolClient,
-  input: { orgId: string; listId: string; status: PicklistCollabListStatus },
+  input: { orgId: string; listId: string; status: PicklistCollabListStatus; userId?: string },
 ): Promise<void> {
-  await client.query(
-    `UPDATE picklist_collab_lists SET status = $3, updated_at = now() WHERE org_id = $1 AND id = $2`,
-    [input.orgId, input.listId, input.status],
-  );
+  await setListStatus(client, {
+    orgId: input.orgId,
+    userId: input.userId ?? null,
+    pickListId: input.listId,
+    status: input.status,
+  });
 }
 
 export async function addEntry(
@@ -289,39 +320,58 @@ export async function addEntry(
     note: string | null;
   },
 ): Promise<void> {
-  const positionResult = await client.query<{ next: number }>(
-    `SELECT COALESCE(MAX(position), 0) + 1 AS next FROM picklist_collab_entries WHERE list_id = $1 AND tier = $2`,
-    [input.listId, input.tier],
-  );
-  const position = positionResult.rows[0]?.next ?? 1;
-  await client.query(
-    `INSERT INTO picklist_collab_entries (org_id, list_id, team_number, team_name, tier, position, note, added_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-     ON CONFLICT (list_id, team_number) DO UPDATE SET
-       team_name = EXCLUDED.team_name, tier = EXCLUDED.tier, note = EXCLUDED.note, updated_at = now()`,
-    [input.orgId, input.listId, input.teamNumber, input.teamName, input.tier, position, input.note, input.userId],
-  );
+  await upsertEntry(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    pickListId: input.listId,
+    teamKey: input.teamNumber,
+    bucket: bucketFromTier(input.tier),
+    notes: input.note,
+  });
 }
 
+/**
+ * Tier change / drag. `position` is the 1-based slot the UI is holding, so it maps straight onto
+ * the store's zero-based destination index. Last-write-wins; the conflict (if any) is surfaced by
+ * the unified /api/picklist endpoint.
+ */
 export async function moveEntry(
   client: PoolClient,
-  input: { orgId: string; entryId: string; tier: PicklistCollabTier; position: number },
+  input: {
+    orgId: string;
+    entryId: string;
+    tier: PicklistCollabTier;
+    position: number;
+    userId?: string;
+    listId?: string | null;
+    expectedRevision?: number | null;
+  },
 ): Promise<void> {
-  await client.query(
-    `UPDATE picklist_collab_entries SET tier = $3, position = $4, updated_at = now()
-     WHERE org_id = $1 AND id = $2`,
-    [input.orgId, input.entryId, input.tier, input.position],
-  );
+  const listId = input.listId ?? (await pickListIdForEntry(client, input.orgId, input.entryId));
+  if (!listId) throw new Error("Pick-list entry not found");
+  await reorderEntry(client, {
+    orgId: input.orgId,
+    userId: input.userId ?? (await entryActor(client, input.orgId, input.entryId)),
+    pickListId: listId,
+    entryId: input.entryId,
+    toIndex: Math.max(0, Math.trunc(input.position) - 1),
+    bucket: bucketFromTier(input.tier),
+    expectedRevision: input.expectedRevision ?? null,
+  });
 }
 
 export async function deleteEntry(
   client: PoolClient,
-  input: { orgId: string; entryId: string },
+  input: { orgId: string; entryId: string; userId?: string; listId?: string | null },
 ): Promise<void> {
-  await client.query(`DELETE FROM picklist_collab_entries WHERE org_id = $1 AND id = $2`, [
-    input.orgId,
-    input.entryId,
-  ]);
+  const listId = input.listId ?? (await pickListIdForEntry(client, input.orgId, input.entryId));
+  if (!listId) return;
+  await deleteSpineEntry(client, {
+    orgId: input.orgId,
+    userId: input.userId ?? (await entryActor(client, input.orgId, input.entryId)),
+    pickListId: listId,
+    entryId: input.entryId,
+  });
 }
 
 export async function castVote(
@@ -333,25 +383,61 @@ export async function castVote(
     weight: number;
     rankSuggestion: number | null;
     comment: string | null;
+    listId?: string | null;
   },
 ): Promise<void> {
-  await client.query(
-    `INSERT INTO picklist_collab_votes (org_id, entry_id, voter_id, weight, rank_suggestion, comment)
-     VALUES ($1,$2,$3,$4,$5,$6)
-     ON CONFLICT (entry_id, voter_id) DO UPDATE SET
-       weight = EXCLUDED.weight, rank_suggestion = EXCLUDED.rank_suggestion,
-       comment = EXCLUDED.comment, updated_at = now()`,
-    [input.orgId, input.entryId, input.userId, input.weight, input.rankSuggestion, input.comment],
-  );
+  const listId = input.listId ?? (await pickListIdForEntry(client, input.orgId, input.entryId));
+  if (!listId) throw new Error("Pick-list entry not found");
+  await recordVote(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    pickListId: listId,
+    entryId: input.entryId,
+    weight: input.weight,
+    rankSuggestion: input.rankSuggestion,
+    comment: input.comment,
+  });
 }
 
 export async function removeVote(
   client: PoolClient,
-  input: { orgId: string; userId: string; entryId: string },
+  input: { orgId: string; userId: string; entryId: string; listId?: string | null },
 ): Promise<void> {
-  await client.query(`DELETE FROM picklist_collab_votes WHERE org_id = $1 AND entry_id = $2 AND voter_id = $3`, [
-    input.orgId,
-    input.entryId,
-    input.userId,
-  ]);
+  const listId = input.listId ?? (await pickListIdForEntry(client, input.orgId, input.entryId));
+  if (!listId) return;
+  await removeVoteFromSpine(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    pickListId: listId,
+    entryId: input.entryId,
+  });
+}
+
+async function pickListIdForEntry(
+  client: PoolClient,
+  orgId: string,
+  entryId: string,
+): Promise<string | null> {
+  const result = await client.query<{ pickListId: string }>(
+    `SELECT pick_list_id AS "pickListId" FROM pick_list_entries
+     WHERE org_id = $1::uuid AND id = $2::uuid`,
+    [orgId, entryId],
+  );
+  return result.rows[0]?.pickListId ?? null;
+}
+
+/**
+ * The acting user when a legacy caller did not pass one. `current_app_user_id()` is the identity
+ * withRls already pinned on this connection, so "updated by X" names the real editor.
+ */
+async function entryActor(client: PoolClient, orgId: string, entryId: string): Promise<string> {
+  const result = await client.query<{ actor: string | null }>(
+    `SELECT COALESCE(current_app_user_id(), e.updated_by, e.added_by)::text AS actor
+     FROM pick_list_entries e
+     WHERE e.org_id = $1::uuid AND e.id = $2::uuid`,
+    [orgId, entryId],
+  );
+  const actor = result.rows[0]?.actor;
+  if (!actor) throw new Error("Pick-list entry not found");
+  return actor;
 }

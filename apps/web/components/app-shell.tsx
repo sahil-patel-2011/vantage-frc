@@ -3,15 +3,13 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ShellOutboxStatus } from "./shell-outbox-status";
+import ReportBugButton from "./report-bug-button";
 import {
   ISLAND_TAB_CATALOG,
   LOGISTICS_DEEP_LINKS,
-  MORE_SHEET_LINKS,
   ORG_EXEMPT_HREFS,
-  PILLAR_SHEET_LINKS,
   PRODUCT_NAV_GROUPS,
   breadcrumbForPath,
-  cmdkNavCatalog,
   findNavMatch,
   navTitleForPath,
   withOrgHref,
@@ -27,6 +25,8 @@ import {
   type ClientHubAccessRow,
 } from "../lib/nav/hub-access-filter";
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
+import { commandCatalog, searchCommands, type CommandHit } from "../lib/nav/command-search";
+import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
 import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
@@ -87,8 +87,6 @@ function drawerNestedItems(group: ProductNavGroup): Array<{ href: string; label:
     label: tab.label,
   }));
 }
-const pillarSheetLinks = PILLAR_SHEET_LINKS;
-const moreSheetLinks = MORE_SHEET_LINKS;
 
 function formatMembershipLabel(row: MembershipOption): string {
   const team =
@@ -318,9 +316,16 @@ export default function AppShell() {
   const [commandQuery, setCommandQuery] = useState("");
   const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [commandCursor, setCommandCursor] = useState(0);
+  const [recentCommands, setRecentCommands] = useState<string[]>([]);
+  // Rendered after mount so the server and client markup agree.
+  const [shortcutHint, setShortcutHint] = useState("");
   const commandInputRef = useRef<HTMLInputElement>(null);
   const searchRequestId = useRef(0);
   const islandQueryOpened = useRef(false);
+  const islandPressTimer = useRef<number | null>(null);
+  const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
+  const islandLongPressed = useRef(false);
 
   const activeNav = findNavMatch(pathname);
   const activeGroupLabel = activeNav?.group.label;
@@ -358,6 +363,8 @@ export default function AppShell() {
 
   useEffect(() => {
     setRecentOrgIds(listRecentOrgIds());
+    const mac = /mac|iphone|ipad|ipod/i.test(window.navigator.platform || window.navigator.userAgent);
+    setShortcutHint(mac ? "⌘K" : "Ctrl K");
   }, []);
 
   useEffect(() => {
@@ -365,8 +372,10 @@ export default function AppShell() {
       setCommandQuery("");
       setSearchHits([]);
       setSearchLoading(false);
+      setCommandCursor(0);
       return;
     }
+    setRecentCommands(listRecentCommands());
     const focusTimer = window.setTimeout(() => commandInputRef.current?.focus(), 30);
     return () => window.clearTimeout(focusTimer);
   }, [commandOpen]);
@@ -463,6 +472,46 @@ export default function AppShell() {
     setIslandEditorOpen(true);
   }
 
+  /**
+   * The island promises "press and hold", and a phone has no right-click to fall
+   * back to — so the hold has to be wired, without letting a scroll or a tap
+   * become one.
+   */
+  function clearIslandPress() {
+    if (islandPressTimer.current !== null) {
+      window.clearTimeout(islandPressTimer.current);
+      islandPressTimer.current = null;
+    }
+    islandPressOrigin.current = null;
+  }
+
+  function startIslandPress(event: React.PointerEvent<HTMLElement>) {
+    // Right-click keeps travelling the onContextMenu path.
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    clearIslandPress();
+    islandLongPressed.current = false;
+    islandPressOrigin.current = { x: event.clientX, y: event.clientY };
+    islandPressTimer.current = window.setTimeout(() => {
+      islandPressTimer.current = null;
+      islandPressOrigin.current = null;
+      islandLongPressed.current = true;
+      openIslandEditor();
+    }, 450);
+  }
+
+  function trackIslandPress(event: React.PointerEvent<HTMLElement>) {
+    const origin = islandPressOrigin.current;
+    if (!origin) return;
+    if (Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 10) clearIslandPress();
+  }
+
+  useEffect(
+    () => () => {
+      if (islandPressTimer.current !== null) window.clearTimeout(islandPressTimer.current);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!orgId) {
       setMyDayGlance(null);
@@ -548,14 +597,6 @@ export default function AppShell() {
       pathAllowedByHubAccess(href, hubAccess) && pathAllowedBySponsors(href, sponsorsAllowed),
     [hubAccess, sponsorsAllowed],
   );
-  const visiblePillarLinks = useMemo(
-    () => pillarSheetLinks.filter((link) => navHrefAllowed(link.href)),
-    [navHrefAllowed],
-  );
-  const visibleMoreLinks = useMemo(
-    () => moreSheetLinks.filter((link) => navHrefAllowed(link.href)),
-    [navHrefAllowed],
-  );
   const visibleIslandCatalog = useMemo(
     () => ISLAND_TAB_CATALOG.filter((item) => navHrefAllowed(item.href)),
     [navHrefAllowed],
@@ -571,42 +612,50 @@ export default function AppShell() {
     [navHrefAllowed],
   );
 
-  const flat = useMemo(() => {
-    const items = cmdkNavCatalog().filter((item) => navHrefAllowed(item.href));
-    if (me.platformAdmin) {
-      items.push({ href: "/admin", label: "Global Team Manager", icon: "grid" });
-    }
-    const seen = new Set<string>();
-    return items.filter((item) => {
-      if (seen.has(item.href)) return false;
-      seen.add(item.href);
-      return true;
-    });
-  }, [me.platformAdmin, navHrefAllowed]);
+  /**
+   * Ranked destinations + verbs. Labels in the hub catalog are context-free
+   * ("Forms", "Coverage"), so this matches over hub breadcrumbs and the words
+   * teams actually use ("bumpers", "onshape", "clock in") — see command-search.
+   */
+  const paletteCatalog = useMemo(() => {
+    const entries = commandCatalog();
+    if (!me.platformAdmin) return entries;
+    return [
+      ...entries,
+      {
+        id: "platform-admin",
+        label: "Global Team Manager",
+        context: "Platform admin",
+        href: "/admin",
+        kind: "destination" as const,
+        keywords: ["admin", "platform", "all teams", "provision"],
+      },
+    ];
+  }, [me.platformAdmin]);
 
-  const filteredNav = useMemo(() => {
-    const q = commandQuery.trim().toLowerCase();
-    if (!q) {
-      // Empty query: glanceable shortcuts only — typing unlocks the full module list.
-      const shortcuts: Array<{ href: string; label: string; icon: ProductNavIcon; state?: undefined }> = [
-        { href: "/dashboard", label: "Home", icon: "home" },
-        ...visiblePillarLinks,
-        ...visibleMoreLinks,
-        { href: "/docs", label: "App manual", icon: "clipboard" },
-        { href: "/account", label: "Account", icon: "gear" },
-      ];
-      const seen = new Set<string>();
-      return shortcuts.filter((item) => {
-        if (seen.has(item.href)) return false;
-        seen.add(item.href);
-        return true;
-      });
-    }
-    return flat.filter((item) => {
-      const hay = `${item.label} ${item.href} ${item.state ?? ""}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [commandQuery, flat, visibleMoreLinks, visiblePillarLinks]);
+  const commandHits = useMemo(
+    () =>
+      searchCommands(commandQuery, paletteCatalog, {
+        // Past ~8 rows a member is scanning rather than selecting.
+        limit: 8,
+        isAllowed: navHrefAllowed,
+        recentHrefs: recentCommands,
+      }),
+    [commandQuery, navHrefAllowed, paletteCatalog, recentCommands],
+  );
+
+  const goToCommand = useCallback(
+    (hit: CommandHit) => {
+      setCommandOpen(false);
+      setRecentCommands(rememberRecentCommand(hit.href));
+      router.push(withOrgHref(hit.href, orgId || null));
+    },
+    [orgId, router],
+  );
+
+  useEffect(() => {
+    setCommandCursor(0);
+  }, [commandQuery]);
 
   const orderedMemberships = useMemo(
     () => sortMembershipsByRecent(memberships, recentOrgIds),
@@ -722,26 +771,48 @@ export default function AppShell() {
     router.push(href);
   }, [commandQuery, orgId, router]);
 
-  const jumpCommandTopResult = useCallback(() => {
-    const firstHit = searchHits[0];
-    if (firstHit) {
+  /**
+   * One ordered list so ↑/↓ crosses both groups. Destinations resolve locally
+   * and stay put; async data hits append underneath rather than reshuffling
+   * the row under the cursor mid-keystroke.
+   */
+  const paletteRows = useMemo(
+    () => [
+      ...commandHits.map((hit) => ({ kind: "command" as const, href: hit.href, hit })),
+      ...searchHits.map((hit) => ({ kind: "data" as const, href: hit.href, hit })),
+    ],
+    [commandHits, searchHits],
+  );
+
+  const activeRowIndex = paletteRows.length
+    ? Math.min(commandCursor, paletteRows.length - 1)
+    : -1;
+
+  const openPaletteRow = useCallback(
+    (index: number) => {
+      const row = paletteRows[index];
+      if (!row) {
+        openFullSearch();
+        return;
+      }
+      if (row.kind === "command") {
+        goToCommand(row.hit);
+        return;
+      }
       setCommandOpen(false);
-      router.push(firstHit.href);
-      return;
-    }
-    const q = commandQuery.trim();
-    if (!q) {
+      setRecentCommands(rememberRecentCommand(row.href));
+      router.push(row.href);
+    },
+    [goToCommand, openFullSearch, paletteRows, router],
+  );
+
+  const jumpCommandTopResult = useCallback(() => {
+    if (activeRowIndex < 0) {
       openFullSearch();
       return;
     }
-    const firstNav = filteredNav[0];
-    if (firstNav) {
-      setCommandOpen(false);
-      router.push(withOrgHref(firstNav.href, orgId || null));
-      return;
-    }
-    openFullSearch();
-  }, [commandQuery, filteredNav, openFullSearch, orgId, router, searchHits]);
+    openPaletteRow(activeRowIndex);
+  }, [activeRowIndex, openFullSearch, openPaletteRow]);
 
   async function handleSignOut() {
     if (signingOut) return;
@@ -825,15 +896,23 @@ export default function AppShell() {
         </div>
         <div className="soft-topbar-actions">
           <ShellOutboxStatus orgId={orgId || null} />
+          {/* Inline (not floating) so it never overlays the four-app island on mobile. */}
+          <ReportBugButton variant="inline" />
           <button
             className="soft-icon-btn soft-search-btn"
             type="button"
-            aria-label="Search"
+            aria-label="Search and jump to anything"
+            aria-keyshortcuts="Control+K Meta+K"
             onClick={() => {
               setCommandOpen(true);
             }}
           >
             <Icon name="search" />
+            <span className="soft-search-label">Search</span>
+            {/* Nobody discovers ⌘K unless it is on screen. */}
+            <kbd className="soft-search-kbd" aria-hidden="true">
+              {shortcutHint}
+            </kbd>
           </button>
           <a
             className="soft-icon-btn soft-notif"
@@ -896,7 +975,7 @@ export default function AppShell() {
                   </div>
                 ) : null}
                 <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)}>
-                  Account settings
+                  Settings
                 </a>
                 <a role="menuitem" href="/account?tab=appearance" onClick={() => setAccountMenuOpen(false)}>
                   Appearance
@@ -909,6 +988,9 @@ export default function AppShell() {
                 </a>
                 <a role="menuitem" href="/support" onClick={() => setAccountMenuOpen(false)}>
                   Support tickets
+                </a>
+                <a role="menuitem" href="/report-bug" onClick={() => setAccountMenuOpen(false)}>
+                  Report a bug
                 </a>
                 {me.platformAdmin ? (
                   <a role="menuitem" href="/admin" onClick={() => setAccountMenuOpen(false)}>
@@ -1086,29 +1168,44 @@ export default function AppShell() {
             }
             const hub = navHubByLabel(group.label);
             const liveTab = new URLSearchParams(pathSearch.replace(/^\?/, "")).get("tab");
+            const panelId = `soft-nav-items-${group.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
             return (
               <div
                 key={group.label}
                 className={`soft-nav-group${isActive ? " is-active" : ""}`}
                 style={toneStyle}
               >
-                <button
-                  type="button"
-                  className="soft-nav-heading"
-                  aria-expanded={expanded}
-                  onClick={() => setExpandedHub(expanded ? null : group.label)}
-                >
-                  <i>
-                    <Icon name={group.icon} />
-                  </i>
-                  <span>{group.label}</span>
-                  <em className="soft-nav-count">{nested.length}</em>
-                  <span className={`soft-nav-caret${expanded ? " open" : ""}`} aria-hidden="true">
-                    <Icon name="chevron" />
+                {/* Destination and disclosure are separate controls: hubs with a
+                    single child (Build, AI) must open in one tap, not two. */}
+                <div className="soft-nav-heading soft-nav-heading-row">
+                  <span className="soft-nav-hub-lead">
+                    <a
+                      className="soft-nav-hub-link"
+                      href={withOrgHref(item.href, orgId)}
+                      onClick={() => setOpen(false)}
+                    >
+                      <i>
+                        <Icon name={group.icon} />
+                      </i>
+                      <span>{group.label}</span>
+                    </a>
                   </span>
-                </button>
+                  <em className="soft-nav-count">{nested.length}</em>
+                  <button
+                    type="button"
+                    className="soft-icon-btn soft-nav-heading-toggle"
+                    aria-expanded={expanded}
+                    aria-controls={panelId}
+                    aria-label={`${expanded ? "Hide" : "Show"} ${group.label} pages`}
+                    onClick={() => setExpandedHub(expanded ? null : group.label)}
+                  >
+                    <span className={`soft-nav-caret${expanded ? " open" : ""}`} aria-hidden="true">
+                      <Icon name="chevron" />
+                    </span>
+                  </button>
+                </div>
                 {expanded ? (
-                  <div className="soft-nav-items">
+                  <div className="soft-nav-items" id={panelId}>
                     {nested.map((entry) => {
                       const hrefTab = new URLSearchParams(entry.href.split("?")[1] ?? "").get("tab");
                       const pathOnly = entry.href.split("?")[0] ?? entry.href;
@@ -1164,6 +1261,20 @@ export default function AppShell() {
         onContextMenu={(event) => {
           event.preventDefault();
           openIslandEditor();
+        }}
+        onPointerDown={startIslandPress}
+        onPointerMove={trackIslandPress}
+        onPointerUp={clearIslandPress}
+        onPointerCancel={clearIslandPress}
+        onPointerLeave={clearIslandPress}
+        onClickCapture={(event) => {
+          if (!islandLongPressed.current) return;
+          islandLongPressed.current = false;
+          // Keyboard activation is never the hold's own click, so let it through.
+          if (event.detail === 0) return;
+          // The hold already opened the editor — don't also follow the tab link.
+          event.preventDefault();
+          event.stopPropagation();
         }}
       >
         {islandTabs.map((tab) => (
@@ -1249,16 +1360,38 @@ export default function AppShell() {
               </button>
             </header>
             <label htmlFor="soft-command-input">
-              Filter modules or search help, tasks, inventory, impact, and knowledge
+              Go to any tool, or search your tasks, inventory, impact, and knowledge
               <input
                 id="soft-command-input"
                 ref={commandInputRef}
                 type="search"
+                role="combobox"
+                aria-expanded={paletteRows.length > 0}
+                aria-controls="soft-command-results"
+                aria-activedescendant={
+                  activeRowIndex >= 0 ? `soft-command-row-${activeRowIndex}` : undefined
+                }
                 value={commandQuery}
-                placeholder="Type to filter… Enter opens top result"
+                placeholder="Search for anything — try “bumpers”, “clock in”, “pick list”"
                 autoComplete="off"
                 onChange={(event) => setCommandQuery(event.target.value)}
                 onKeyDown={(event) => {
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    if (paletteRows.length) {
+                      setCommandCursor((current) => (current + 1) % paletteRows.length);
+                    }
+                    return;
+                  }
+                  if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    if (paletteRows.length) {
+                      setCommandCursor(
+                        (current) => (current - 1 + paletteRows.length) % paletteRows.length,
+                      );
+                    }
+                    return;
+                  }
                   if (event.key === "Enter") {
                     event.preventDefault();
                     if (event.metaKey || event.ctrlKey) {
@@ -1270,55 +1403,79 @@ export default function AppShell() {
                 }}
               />
             </label>
-            {searchHits.length > 0 || searchLoading ? (
-              <section className="command-search-hits" aria-label="Search results">
-                <header>
-                  <strong>Results</strong>
-                  {searchLoading ? <small>Searching…</small> : null}
-                </header>
-                <nav>
-                  {searchHits.map((hit) => (
+            <div id="soft-command-results" role="listbox" aria-label="Results">
+              {commandHits.length > 0 ? (
+                <nav className="command-group" aria-label="Go to">
+                  <p className="command-group-head">
+                    {commandQuery.trim() ? "Go to" : recentCommands.length ? "Recent" : "Jump to"}
+                  </p>
+                  {commandHits.map((hit, index) => (
                     <a
-                      href={hit.href}
-                      key={`${hit.href}-${hit.title}`}
-                      onClick={() => setCommandOpen(false)}
+                      id={`soft-command-row-${index}`}
+                      role="option"
+                      aria-selected={index === activeRowIndex}
+                      className={index === activeRowIndex ? "is-active" : undefined}
+                      href={withOrgHref(hit.href, orgId)}
+                      key={hit.id}
+                      onMouseEnter={() => setCommandCursor(index)}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        goToCommand(hit);
+                      }}
                     >
-                      <Icon name="search" />
+                      <Icon name={hit.kind === "action" ? "bolt" : "grid"} />
                       <span>
-                        {hit.title}
-                        {hit.subtitle ? <small>{hit.subtitle}</small> : null}
+                        {hit.label}
+                        <small>{hit.context}</small>
                       </span>
-                      {hit.sourceLabel ? <small>{hit.sourceLabel}</small> : null}
+                      {index === activeRowIndex ? <small aria-hidden="true">↵</small> : null}
                     </a>
                   ))}
                 </nav>
-                <button type="button" className="command-open-full" onClick={openFullSearch}>
-                  Open full search{commandQuery.trim() ? ` for “${commandQuery.trim()}”` : ""}
-                </button>
-              </section>
-            ) : null}
-            <nav aria-label="Modules">
-              {filteredNav.length === 0 ? (
-                <p className="command-empty">No modules match — try full search (Ctrl/⌘+Enter).</p>
-              ) : (
-                <>
-                  {!commandQuery.trim() ? (
-                    <p className="command-empty">Shortcuts — type to search every module.</p>
-                  ) : null}
-                  {filteredNav.map((item) => (
-                    <a
-                      href={withOrgHref(item.href, orgId)}
-                      key={`${item.href}-${item.label}`}
-                      onClick={() => setCommandOpen(false)}
-                    >
-                      <Icon name={item.icon} />
-                      <span>{item.label}</span>
-                      {item.state ? <small>{item.state}</small> : null}
-                    </a>
-                  ))}
-                </>
-              )}
-            </nav>
+              ) : null}
+
+              {searchHits.length > 0 || searchLoading ? (
+                <section className="command-search-hits" aria-label="Your data">
+                  <header>
+                    <strong>In your team&apos;s data</strong>
+                    {searchLoading ? <small>Searching…</small> : null}
+                  </header>
+                  <nav>
+                    {searchHits.map((hit, offset) => {
+                      const index = commandHits.length + offset;
+                      return (
+                        <a
+                          id={`soft-command-row-${index}`}
+                          role="option"
+                          aria-selected={index === activeRowIndex}
+                          className={index === activeRowIndex ? "is-active" : undefined}
+                          href={hit.href}
+                          key={`${hit.href}-${hit.title}`}
+                          onMouseEnter={() => setCommandCursor(index)}
+                          onClick={() => setCommandOpen(false)}
+                        >
+                          <Icon name="search" />
+                          <span>
+                            {hit.title}
+                            {hit.subtitle ? <small>{hit.subtitle}</small> : null}
+                          </span>
+                          {hit.sourceLabel ? <small>{hit.sourceLabel}</small> : null}
+                        </a>
+                      );
+                    })}
+                  </nav>
+                  <button type="button" className="command-open-full" onClick={openFullSearch}>
+                    Open full search{commandQuery.trim() ? ` for “${commandQuery.trim()}”` : ""}
+                  </button>
+                </section>
+              ) : null}
+
+              {paletteRows.length === 0 && !searchLoading ? (
+                <p className="command-empty">
+                  Nothing matches “{commandQuery.trim()}”. Press Ctrl/⌘+Enter to search your data.
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}

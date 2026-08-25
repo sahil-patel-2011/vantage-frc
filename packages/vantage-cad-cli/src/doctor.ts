@@ -1,12 +1,68 @@
 import { homedir, platform as osPlatform, release, arch } from "node:os";
 import { join } from "node:path";
-import { FUSION_RELAY_PROTOCOL_VERSION } from "@vantage/cad";
+import { assertFusionRelayParity, FUSION_RELAY_PROTOCOL_VERSION } from "@vantage/cad";
 import { credentialStorageStatus, loadDeviceCredential } from "./secure-store";
 import {
   DEFAULT_FUSION_PLUGIN_ENDPOINT,
   detectFusionPrerequisites,
   probeFusionPluginHealth,
 } from "./platform";
+import { readCadSyncStatus } from "./sync";
+
+/** A queued event older than this means the CLI has been unable to reach Vantage. */
+export const SYNC_STALE_WARN_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Team-sync freshness for the doctor. Pure so it can be tested without touching
+ * disk: `queued` is the CLI's unsent backlog, `lastSyncedAt` the last successful post.
+ */
+export function syncFreshnessCheck(
+  input: { queued: number; lastSyncedAt: string | null },
+  paired: boolean,
+  now = Date.now(),
+): DoctorCheck {
+  if (!paired) {
+    return {
+      id: "sync-age",
+      title: "Team sync freshness",
+      status: "skip",
+      detail: "Not paired, so nothing syncs to the team /cad page. Fix: `vantage-cad setup`.",
+    };
+  }
+  if (!input.lastSyncedAt) {
+    return {
+      id: "sync-age",
+      title: "Team sync freshness",
+      status: input.queued > 0 ? "warn" : "skip",
+      detail:
+        input.queued > 0
+          ? `${input.queued} CAD event${input.queued === 1 ? "" : "s"} queued and never delivered. Fix: run any CAD tool again (e.g. \`vantage-cad onshape docs\`) to flush the queue, or \`vantage-cad setup\` if pairing was revoked.`
+          : "No CAD tools have run on this machine yet — nothing to sync. Run `vantage-cad claude` to start.",
+    };
+  }
+  const ageMs = now - Date.parse(input.lastSyncedAt);
+  if (!Number.isFinite(ageMs)) {
+    return {
+      id: "sync-age",
+      title: "Team sync freshness",
+      status: "warn",
+      detail: `Sync state has an unreadable timestamp (${input.lastSyncedAt}). Fix: \`vantage-cad logout\` then \`vantage-cad setup\`.`,
+    };
+  }
+  const hours = Math.max(0, Math.round(ageMs / 3_600_000));
+  const stale = ageMs > SYNC_STALE_WARN_MS;
+  return {
+    id: "sync-age",
+    title: "Team sync freshness",
+    status: input.queued > 0 || stale ? "warn" : "pass",
+    detail:
+      input.queued > 0
+        ? `${input.queued} event${input.queued === 1 ? "" : "s"} still queued; last delivered ${hours}h ago. Fix: run a CAD tool again to flush, or \`vantage-cad doctor\` after reconnecting.`
+        : stale
+          ? `Last synced ${hours}h ago — the team /cad page may be behind. Fix: run \`vantage-cad claude\` to refresh, or \`vantage-cad setup\` if pairing expired.`
+          : `Last synced ${hours}h ago, queue empty.`,
+  };
+}
 
 export type DoctorStatus = "pass" | "warn" | "fail" | "skip";
 
@@ -98,7 +154,7 @@ export function onshapeEnvChecks(env: NodeJS.ProcessEnv = process.env): DoctorCh
         title: "Onshape OAuth env (local)",
         status: "fail",
         detail:
-          "Only one of ONSHAPE_OAUTH_CLIENT_ID / ONSHAPE_OAUTH_CLIENT_SECRET is set — both are required for a local Vantage server.",
+          "Only one of ONSHAPE_OAUTH_CLIENT_ID / ONSHAPE_OAUTH_CLIENT_SECRET is set — both are required for a local Vantage server. Fix: set both in the Vantage server's .env, then restart it.",
       },
     ];
   }
@@ -132,7 +188,8 @@ export function onshapeCliKeyChecks(env: NodeJS.ProcessEnv = process.env): Docto
         id: "onshape-api-keys",
         title: "Onshape API keys (Claude Code / CLI)",
         status: "fail",
-        detail: "Only one of ONSHAPE_ACCESS_KEY / ONSHAPE_SECRET_KEY is set. Both are required.",
+        detail:
+          "Only one of ONSHAPE_ACCESS_KEY / ONSHAPE_SECRET_KEY is set. Both are required. Fix (PowerShell): $env:ONSHAPE_ACCESS_KEY=\"…\"; $env:ONSHAPE_SECRET_KEY=\"…\" — get the pair at https://dev-portal.onshape.com/keys.",
       },
     ];
   }
@@ -167,7 +224,7 @@ export async function runDoctor(input: {
     detail:
       nodeMajor >= MIN_NODE_MAJOR
         ? `Node ${process.versions.node} (requires >=${MIN_NODE_MAJOR})`
-        : `Node ${process.versions.node} is below required >=${MIN_NODE_MAJOR}`,
+        : `Node ${process.versions.node} is below required >=${MIN_NODE_MAJOR}. Fix: install Node ${MIN_NODE_MAJOR} LTS from https://nodejs.org, then re-run \`vantage-cad doctor\`.`,
   });
 
   checks.push({
@@ -209,8 +266,8 @@ export async function runDoctor(input: {
       title: "Vantage URL reachability",
       status: "fail",
       detail: vantageProbe.error
-        ? `Cannot reach ${base}: ${vantageProbe.error}. Set VANTAGE_URL.`
-        : `${base} returned HTTP ${vantageProbe.status ?? "?"}`,
+        ? `Cannot reach ${base}: ${vantageProbe.error}. Fix: set VANTAGE_URL to your Vantage host (PowerShell: $env:VANTAGE_URL="https://your-team.vantage.app"), then \`vantage-cad doctor\`.`
+        : `${base} returned HTTP ${vantageProbe.status ?? "?"}. Fix: confirm VANTAGE_URL points at the Vantage web app, then \`vantage-cad doctor\`.`,
     });
   }
 
@@ -235,7 +292,7 @@ export async function runDoctor(input: {
       status: compatible ? "pass" : "fail",
       detail: compatible
         ? `Server protocol ${body.protocol?.current ?? "?"} matches CLI ${input.version}`
-        : `Incompatible with server: ${reasons.join("; ") || "see /api/cad/compatibility"}`,
+        : `Incompatible with server: ${reasons.join("; ") || "see /api/cad/compatibility"}. Fix: \`vantage-cad update\`.`,
     });
   } else {
     checks.push({
@@ -243,7 +300,7 @@ export async function runDoctor(input: {
       title: "Relay protocol compatibility",
       status: vantageProbe.ok || (vantageProbe.status !== undefined && vantageProbe.status < 500) ? "warn" : "skip",
       detail: compatProbe.error
-        ? `Compatibility API unreachable: ${compatProbe.error}`
+        ? `Compatibility API unreachable: ${compatProbe.error}. Fix: check VANTAGE_URL and your network, then \`vantage-cad doctor\`.`
         : `GET /api/cad/compatibility returned HTTP ${compatProbe.status ?? "?"}`,
     });
   }
@@ -263,14 +320,14 @@ export async function runDoctor(input: {
       status: heartbeat.ok ? "pass" : "fail",
       detail: heartbeat.ok
         ? `Device heartbeat OK (serverTime=${String((heartbeat.body as Record<string, unknown>)?.serverTime ?? "ok")})`
-        : (heartbeat.error ?? `Heartbeat HTTP ${heartbeat.status ?? "?"}`),
+        : `${heartbeat.error ?? `Heartbeat HTTP ${heartbeat.status ?? "?"}`}. Fix: this device’s pairing was revoked or expired — run \`vantage-cad logout\` then \`vantage-cad setup\`.`,
     });
   } else {
     checks.push({
       id: "heartbeat",
       title: "Relay heartbeat",
       status: "skip",
-      detail: "Skipped until paired.",
+      detail: "Skipped until paired. Fix: `vantage-cad setup`.",
     });
   }
 
@@ -347,8 +404,29 @@ export async function runDoctor(input: {
       status: health.reachable && health.ok ? "pass" : wantFusion ? "fail" : "warn",
       detail: health.reachable
         ? `${endpoint} — ok=${health.ok} mock=${Boolean(health.mock)} protocol=${health.protocol ?? "?"} version=${health.addinVersion ?? "?"}`
-        : `${endpoint} — unreachable (${health.error}). Start VantageCadRelay in Fusion, or VANTAGE_CAD_MOCK=1.`,
+        : `${endpoint} — unreachable (${health.error}). Fix: open Fusion → Utilities → Add-Ins → Scripts and Add-Ins → run VantageCadRelay, then re-run \`vantage-cad doctor\`. On Linux/CI: VANTAGE_CAD_MOCK=1 vantage-cad start.`,
     });
+
+    // Version skew is the failure teams actually hit: the relay answers /health,
+    // then refuses the fillet halfway through a build. Name it before that happens.
+    if (health.reachable) {
+      const parity = assertFusionRelayParity(health.operations);
+      checks.push({
+        id: "fusion-parity",
+        title: "Fusion operation parity",
+        status: parity.inSync ? "pass" : "warn",
+        detail: parity.inSync
+          ? `Add-in runs every operation this CLI expects (${health.operations?.length ?? 0} operations).`
+          : `${parity.note} Fix: \`vantage-cad update\`, then restart VantageCadRelay in Fusion.`,
+      });
+    } else {
+      checks.push({
+        id: "fusion-parity",
+        title: "Fusion operation parity",
+        status: "skip",
+        detail: "Skipped — the relay must be reachable first. Fix: run VantageCadRelay in Fusion.",
+      });
+    }
   }
 
   checks.push({
@@ -360,6 +438,10 @@ export async function runDoctor(input: {
         ? "VANTAGE_CAD_MOCK=1 — in-process mock plugin starts with `vantage-cad start`."
         : "Optional for CI/Linux: export VANTAGE_CAD_MOCK=1",
   });
+
+  checks.push(
+    syncFreshnessCheck(await readCadSyncStatus().catch(() => ({ queued: 0, lastSyncedAt: null })), Boolean(credential)),
+  );
 
   checks.push({
     id: "home-dir",

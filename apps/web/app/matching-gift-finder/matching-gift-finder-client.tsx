@@ -32,7 +32,7 @@ import {
   type MatchingGiftFinderNextAction,
   type MatchingGiftFinderShellKind,
 } from "../../lib/matching-gift-finder/matching-gift-finder-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./matching-gift-finder.css";
 
@@ -96,7 +96,7 @@ function GiftShell({
 }) {
   const actions = matchingGiftFinderNextActions({ orgId, shell });
   const copy = matchingGiftFinderShellCopy(shell);
-  const businessHref = hubHref("/business", "matching-gift-finder", orgId);
+  const businessHref = hubWorkbenchHref("business", "matching-gift-finder", orgId);
   const steps = shell === "setup" ? matchingGiftFinderSetupSteps(orgId) : [];
 
   return (
@@ -217,7 +217,7 @@ export default function MatchingGiftFinderClient() {
   const relatedLinks = matchingGiftFinderRelatedLinks(orgId, {
     include: [...MATCHING_GIFT_FINDER_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "matching-gift-finder", orgId);
+  const businessHref = hubWorkbenchHref("business", "matching-gift-finder", orgId);
   const showTiles = shouldShowMatchingGiftFinderSummaryTiles(contactCount);
 
   const mutate = useCallback(
@@ -738,9 +738,10 @@ function DraftsPanel({
 }) {
   return (
     <Panel>
-      <h2 style={{ marginTop: 0 }}>AI-drafted HR request letters</h2>
+      <h2 style={{ marginTop: 0 }}>Drafted HR request letters</h2>
       <p className="app-muted" style={{ marginTop: 0 }}>
-        Generated from Matched employers above — metered, grounded only in the contact and program record.
+        Computed from Matched employers above — a template grounded only in the contact and program
+        record, not model output.
       </p>
       {view.drafts.length === 0 ? (
         <EmptyState

@@ -4,7 +4,7 @@ import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 import { authDb } from "@vantage/db/auth";
 import { sessions, verifications } from "@vantage/db/schema";
 import { and, eq, gt, lt } from "drizzle-orm";
-import { isEmailProviderConfigured, runtimeEnv } from "./access-policy";
+import { isEmailDeliveryConfigured, runtimeEnv } from "./access-policy";
 import {
   auditAuthEvent,
   createEmailProvider,
@@ -22,10 +22,10 @@ export function isEmail2faBypassEnabled() {
   return runtimeEnv("ENABLE_EMAIL_2FA_BYPASS") === "true";
 }
 
-/** Enforce email OTP second factor only when delivery works and bypass is off. */
+/** Enforce email OTP second factor only when Resend can actually deliver. */
 export function isEmail2faEnforced() {
   if (isEmail2faBypassEnabled()) return false;
-  return isEmailProviderConfigured();
+  return isEmailDeliveryConfigured();
 }
 
 export function sessionHasEmail2fa(session: { email2faVerifiedAt?: Date | string | null } | null | undefined) {

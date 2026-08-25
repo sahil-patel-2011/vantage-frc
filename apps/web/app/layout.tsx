@@ -6,6 +6,7 @@ import "./soft-ui.css";
 import "./styles.css";
 import PwaRegister from "./pwa-register";
 import ThemeProvider from "./theme-provider";
+import { ConsentBanner } from "../components/consent-banner";
 import { rootMarketingMetadata } from "../lib/marketing/seo";
 
 const sourceSans = Source_Sans_3({
@@ -50,6 +51,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <body>
         <PwaRegister />
         <ThemeProvider>{children}</ThemeProvider>
+        {/* Asks before any first-party product analytics are collected, and
+            owns the route-change page-view tracker that the answer gates. */}
+        <ConsentBanner />
         {domain && (
           <Script
             defer

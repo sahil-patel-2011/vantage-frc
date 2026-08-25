@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
 import { DUTY_KIND_LABELS, type DutyAssignment, type DutyRosterView } from "../../lib/duty-roster-shared";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 export default function DutiesClient() {
   const [view, setView] = useState<DutyRosterView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead-end setup card.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -16,18 +19,53 @@ export default function DutiesClient() {
     void fetch(`/api/duties${qs}`)
       .then(async (response) => {
         const data = (await response.json()) as DutyRosterView & { error?: string };
-        if (!response.ok) throw new Error(data.error ?? "Could not load duties");
+        if (!response.ok) {
+          setErrorStatus(response.status);
+          throw new Error(data.error ?? "Could not load duties");
+        }
         setView(data);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Could not load duties"));
   }, []);
 
   if (error) {
+    // Retry cannot fix an expired session, so the failure decides its own action.
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: error,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined"
+            ? null
+            : `${window.location.pathname}${window.location.search}`,
+        message: error,
+      },
+    );
     return (
       <main className="module-page duties-page">
         <PageHeader navPath="/duties" title="Duty roster" />
-        <EmptyState soft badge="Setup" badgeTone="setup" title="Could not load duty roster" description={error}>
+        <EmptyState
+          soft
+          badge={
+            failure.kind === "auth"
+              ? "Signed out"
+              : failure.kind === "forbidden"
+                ? "No access"
+                : "Setup"
+          }
+          badgeTone="setup"
+          title={failure.title}
+          description={failure.description}
+        >
           <div className="soft-btn-row">
+            {failure.primary ? (
+              <a className="app-button" href={failure.primary.href}>
+                {failure.primary.label}
+              </a>
+            ) : null}
             <a className="app-button secondary" href="/workspace">
               Choose workspace
             </a>

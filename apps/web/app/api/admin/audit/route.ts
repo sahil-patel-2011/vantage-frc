@@ -6,9 +6,9 @@ import { headers } from "next/headers";
 // platform-admin action (trials, gifts, credit packs, provisioning, …) into
 // admin_actions, but nothing ever read it back — this is the reader that fills
 // the admin "Audit log" surface. RLS restricts admin_actions to platform admins;
-// organizations are readable via organizations_platform_read. Note: there is no
-// platform-admin read policy on users, so actor email resolves only for the
-// viewer themselves and otherwise falls back to the id.
+// organizations are readable via organizations_platform_read and actor emails
+// via users_platform_read (0479). On databases that predate 0479 the email
+// LEFT JOIN degrades to NULL and the UI falls back to the actor id.
 
 const LIMIT = 200;
 

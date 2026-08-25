@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, TabBar } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   NOTIFICATION_RELATED_INCLUDE,
   notificationNextActions,
@@ -91,11 +92,14 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setFetchFailed(false);
+    setErrorStatus(null);
     try {
       const params = new URLSearchParams({ filter });
       if (orgId) params.set("orgId", orgId);
@@ -107,6 +111,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
       };
       if (!response.ok) {
         setMessage(data.error ?? "Could not load notifications.");
+        setErrorStatus(response.status);
         setItems([]);
         setUnreadCount(0);
         setFetchFailed(true);
@@ -194,31 +199,58 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
       {loading ? (
         <EmptyState soft title="Loading inbox…" description="Fetching notifications for your account." aria-busy />
       ) : fetchFailed ? (
-        <>
-          <EmptyState
-            soft
-            badge="Unavailable"
-            badgeTone="setup"
-            title="Couldn’t load notifications"
-            description="Try again, or open Support if the inbox keeps failing. Nothing was filled with DEMO notifications."
-          >
-            <div className="notif-empty-actions">
-              <button type="button" className="app-button" onClick={() => void load()}>
-                Retry
-              </button>
-              <a className="app-button secondary" href="/support">
-                Help & Support
-              </a>
-            </div>
-          </EmptyState>
-          <NextActions
-            itemCount={0}
-            unreadCount={0}
-            filter={filter}
-            busy={busy}
-            onMarkAllRead={() => void patch("read_all")}
-          />
-        </>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message:
+                message ||
+                "Try again, or open Support if the inbox keeps failing. Nothing was filled with DEMO notifications.",
+            },
+          );
+          return (
+          <>
+            <EmptyState
+              soft
+              badge="Unavailable"
+              badgeTone="setup"
+              title={copy.title}
+              description={copy.description}
+            >
+              <div className="notif-empty-actions">
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+                {copy.showRetry ? (
+                  <button type="button" className="app-button" onClick={() => void load()}>
+                    Retry
+                  </button>
+                ) : null}
+                <a className="app-button secondary" href="/support">
+                  Help & Support
+                </a>
+              </div>
+            </EmptyState>
+            <NextActions
+              itemCount={0}
+              unreadCount={0}
+              filter={filter}
+              busy={busy}
+              onMarkAllRead={() => void patch("read_all")}
+            />
+          </>
+          );
+        })()
       ) : (
         <>
           <TabBar

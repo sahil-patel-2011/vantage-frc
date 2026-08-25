@@ -6,11 +6,13 @@ import { OfflineBanner } from "../../components/offline-banner";
 
 import type { SchemaDefinition, ScoutSchema, SyncEntry, ScoutIdentity } from "@vantage/scouting";
 import {
+  applyFormResetBehavior,
   applyVoiceTranscriptToForm,
   DEFAULT_DRIVETRAIN_OPTIONS,
+  isLayoutOnlyField,
   normalizeRobotImageRefs,
 } from "@vantage/scouting";
-import { isScoutIdentityField, lockScoutPayload, SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
+import { isScoutIdentityField, SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import {
   fieldConfidenceHint,
   lintSchemaBudget,
@@ -19,6 +21,7 @@ import {
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
+import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import {
@@ -31,15 +34,30 @@ import {
 } from "../../lib/scouting/draft-autosave";
 import {
   cacheEvent,
+  discardQuarantined,
   getCachedEvent,
+  getQueuedMediaBlob,
+  listQuarantine,
   pendingCounts,
   queueEntry,
   queueMedia,
+  quarantineMedia,
+  retryQuarantined,
   stableClientId,
   syncMediaOutbox,
   syncOutbox,
+  type QuarantinedItem,
 } from "../../lib/scout-offline";
-import { scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
+import {
+  DOWNSCALE_JPEG_QUALITY,
+  downscaleDimensions,
+  exceedsMediaCap,
+  isDownscalableImageType,
+  mediaKindLabel,
+  oversizeMediaReason,
+} from "../../lib/scouting/media-downscale";
+import { nextMatchKey, scoutingPostSaveNextSteps } from "../../lib/scouting/form-builder";
+import { StudioField, isStudioField } from "./studio-fields";
 import {
   SCOUTING_RELATED_INCLUDE,
   classifyScoutingShell,
@@ -55,6 +73,7 @@ import {
 } from "../../lib/scouting/scouting-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import ScoutingTrustPanel from "./scouting-trust-panel";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
@@ -93,6 +112,28 @@ type Bootstrap = {
 
 
 type ScoutTab = "match" | "pit" | "conflicts" | "handoff" | "trust";
+
+type RecentEntry = NonNullable<Bootstrap["recentEntries"]>[number];
+
+/**
+ * CSV shape of the recent-entries feed — the raw scouting rows teams otherwise
+ * re-type into a Sheet. Identity, source, and confidence travel with the row so an
+ * exported file is still auditable outside Vantage.
+ */
+const SCOUT_ENTRY_CSV_COLUMNS: CsvColumn<RecentEntry>[] = [
+  { key: "matchKey", header: "Match", hint: "Blank for pit entries", value: (entry) => entry.matchKey },
+  { key: "teamKey", header: "Team", hint: "TBA team key, e.g. frc1678", value: (entry) => entry.teamKey },
+  { key: "type", header: "Type", hint: "match or pit" },
+  { key: "scoutName", header: "Scout", hint: "Who submitted it" },
+  { key: "source", header: "Source", hint: "How it arrived (form, QR handoff, sync)" },
+  { key: "confidence", header: "Confidence", hint: "Scout's own confidence flag" },
+  {
+    key: "updatedAt",
+    header: "Updated at",
+    hint: "ISO-8601 UTC — latest timestamp wins per entry",
+    value: (entry) => entry.updatedAt,
+  },
+];
 
 type ConflictCandidate = {
   entryId: string;
@@ -172,6 +213,7 @@ function ScoutingShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   embedded = false,
   children,
@@ -179,6 +221,8 @@ function ScoutingShell({
   orgId?: string | null;
   shell: ScoutingShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session can offer sign-in. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   embedded?: boolean;
   children?: ReactNode;
@@ -186,6 +230,23 @@ function ScoutingShell({
   const actions = scoutingNextActions({ orgId, shell });
   const copy = scoutingShellCopy(shell);
   const steps = shell === "setup" ? scoutingSetupSteps(orgId) : [];
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus ?? null,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error ?? null,
+          },
+        )
+      : null;
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const commandHref = hubHref("/competition", "command", orgId);
   const formsHref = hubHref("/competition", "forms", orgId);
@@ -218,11 +279,16 @@ function ScoutingShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : (error ?? copy.description)}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {failure?.showRetry && onRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -281,8 +347,11 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [entryClientId, setEntryClientId] = useState(() => stableClientId());
   const online = useOnline();
   const [fromCache, setFromCache] = useState(false);
-  const [counts, setCounts] = useState({ entries: 0, media: 0 });
+  const [counts, setCounts] = useState({ entries: 0, media: 0, quarantined: 0 });
+  const [quarantine, setQuarantine] = useState<QuarantinedItem[]>([]);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [bootstrapStatus, setBootstrapStatus] = useState<number | null>(null);
   const [saveReceipt, setSaveReceipt] = useState<{
     teamKey: string;
     matchKey?: string;
@@ -303,7 +372,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
 
   const type = tab === "pit" ? "pit" : "match";
 
-  const refreshCounts = useCallback(async () => setCounts(await pendingCounts()), []);
+  const refreshCounts = useCallback(async () => {
+    setCounts(await pendingCounts());
+    setQuarantine(await listQuarantine(orgId));
+  }, [orgId]);
   const loadTrust = useCallback(async (eventKey: string | null | undefined) => {
     if (!orgId || !eventKey || !navigator.onLine) return;
     try {
@@ -328,12 +400,16 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       });
       const media = await syncMediaOutbox(orgId);
       if (entries.validations.length) setOfficialFlags(entries.validations);
-      if (entries.count || media) {
+      const quarantinedNow = entries.quarantined + media.quarantined;
+      if (entries.count || media.synced || quarantinedNow) {
         const conflictCount = entries.validations.filter((flag) => flag.status === "conflict").length;
+        const attention = quarantinedNow
+          ? ` · ${quarantinedNow} need${quarantinedNow === 1 ? "s" : ""} attention below`
+          : "";
         setMessage(
           conflictCount
-            ? `Synced ${entries.count} entries · ${conflictCount} TBA contradiction${conflictCount === 1 ? "" : "s"} flagged`
-            : `Synced ${entries.count} entries and ${media} media files`,
+            ? `Synced ${entries.count} entries · ${conflictCount} TBA contradiction${conflictCount === 1 ? "" : "s"} flagged${attention}`
+            : `Synced ${entries.count} entries and ${media.synced} media files${attention}`,
         );
       }
       setSyncState("idle");
@@ -363,6 +439,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     void (async () => {
       setLoading(true);
       setFetchFailed(false);
+      setBootstrapStatus(null);
       const cached = await getCachedEvent<Bootstrap>(orgId);
       if (cached) {
         setData(cached);
@@ -381,6 +458,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           setMessage("Using cached event data — bootstrap unavailable");
         } else {
           setFetchFailed(true);
+          setBootstrapStatus(response.status);
           setMessage("Could not load scouting bootstrap");
         }
       } catch {
@@ -556,7 +634,14 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     };
     await queueEntry(entry);
     clearScoutDraft(draftKey);
-    setPayload({});
+    // formResetBehavior: keep the constants a scout would only retype (station,
+    // alliance), step the ones that count up, and drop everything else. The
+    // match number box steps too, so the next match is one tap away.
+    setPayload(applyFormResetBehavior(schema.definition, payload));
+    if (type === "match") {
+      const stepped = nextMatchKey(matchKey);
+      if (stepped) setMatchKey(stepped);
+    }
     setSource("manual");
     setEntryClientId(stableClientId());
     setDraftSavedAt(null);
@@ -582,19 +667,27 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     const clientId = stableClientId();
     const tags = ["pit", ...(options?.tags ?? [])];
     if (options?.fieldKey) tags.push(`field:${options.fieldKey}`, "robot_image");
-    await queueMedia({
-      clientId,
-      orgId,
-      metadata: {
-        eventKey,
-        teamKey,
-        kind: file.type.startsWith("video/") ? "video" : "photo",
-        contentType: file.type || "image/jpeg",
-        byteSize: file.size,
-        tags,
-      },
-      blob: file,
-    });
+    // Phone photos are routinely >6MB — downscale before anything is queued.
+    const blob = await downscaleImageInBrowser(file);
+    const kind = file.type.startsWith("video/") ? "video" : "photo";
+    const metadata = {
+      eventKey,
+      teamKey,
+      kind,
+      contentType: blob.type || file.type || "image/jpeg",
+      byteSize: blob.size,
+      tags,
+    };
+    if (exceedsMediaCap(blob.size)) {
+      // Still over the server cap (e.g. a long video) — quarantine instead of
+      // wedging the media outbox with a file the server will always reject.
+      const reason = oversizeMediaReason(blob.size, mediaKindLabel(kind));
+      await quarantineMedia({ clientId, orgId, metadata, blob }, reason);
+      setMessage(reason);
+      await refreshCounts();
+      return null;
+    }
+    await queueMedia({ clientId, orgId, metadata, blob });
     setMessage(
       options?.fieldKey
         ? "Robot image queued for org-isolated upload"
@@ -603,6 +696,18 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     await refreshCounts();
     await sync();
     return clientId;
+  }
+
+  async function retryQuarantineItem(clientId: string) {
+    await retryQuarantined(clientId);
+    await refreshCounts();
+    await sync();
+  }
+
+  async function discardQuarantineItem(clientId: string) {
+    await discardQuarantined(clientId);
+    await refreshCounts();
+    setMessage("Discarded — it will not sync.");
   }
 
   async function loadConflicts() {
@@ -703,6 +808,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const reloadBootstrap = useCallback(() => {
     setLoading(true);
     setFetchFailed(false);
+    setBootstrapStatus(null);
     void (async () => {
       try {
         const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`);
@@ -715,6 +821,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
           await loadTrust(fresh.eventKey);
         } else {
           setFetchFailed(true);
+          setBootstrapStatus(response.status);
         }
       } catch {
         setFetchFailed(true);
@@ -748,6 +855,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         orgId={orgId}
         shell={shell}
         error={message || undefined}
+        errorStatus={bootstrapStatus}
         onRetry={reloadBootstrap}
         embedded={embedded}
       >
@@ -803,6 +911,12 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         force={online && syncState !== "idle" && counts.entries + counts.media > 0}
         variant={syncState === "degraded" ? "degraded" : syncState === "syncing" ? "syncing" : "offline"}
         detail={offlineDetail}
+      />
+
+      <ScoutQuarantinePanel
+        items={quarantine}
+        onRetry={(clientId) => void retryQuarantineItem(clientId)}
+        onDiscard={(clientId) => void discardQuarantineItem(clientId)}
       />
 
       {shell === "empty" && tab !== "conflicts" && tab !== "handoff" && tab !== "trust" ? (
@@ -1147,7 +1261,13 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
               entryType={type}
               pendingEntryClientId={entryClientId}
               formFields={formFields
-                .filter((field) => field.type !== "robot_image" && field.widget !== "robot_image")
+                .filter(
+                  (field) =>
+                    field.type !== "robot_image" &&
+                    field.widget !== "robot_image" &&
+                    // Section headers hold no answer, so a transcript has nowhere to land.
+                    !isLayoutOnlyField(field),
+                )
                 .map((field) => ({ key: field.key, label: field.label }))}
               onApplyToForm={(transcript, fieldKey) => {
                 if (!schema) return;
@@ -1256,21 +1376,34 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
                 never DEMO entries.
               </p>
               {data?.recentEntries && shouldShowScoutingRecentEntries(data.recentEntries.length) ? (
-                <ul className="scout-entry-list">
-                  {data.recentEntries.map((entry) => (
-                    <li key={entry.id}>
-                      <strong>
-                        {entry.matchKey ?? "PIT"} · {entry.teamKey}
-                      </strong>
-                      <span>
-                        {entry.scoutName} · {entry.source}
-                      </span>
-                      <small className="app-muted">
-                        {entry.confidence} confidence · {new Date(entry.updatedAt).toLocaleTimeString()}
-                      </small>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ExportButton
+                    rows={data.recentEntries}
+                    columns={SCOUT_ENTRY_CSV_COLUMNS}
+                    feature="Scouting entries"
+                    orgLabel={data.eventKey}
+                    orgId={orgId}
+                    size="sm"
+                    provenance={`${
+                      data.eventKey ?? "Active event"
+                    } — the 30 most recent synced entries only. Anything still queued offline, and the rest of the event, is in the full export.`}
+                  />
+                  <ul className="scout-entry-list">
+                    {data.recentEntries.map((entry) => (
+                      <li key={entry.id}>
+                        <strong>
+                          {entry.matchKey ?? "PIT"} · {entry.teamKey}
+                        </strong>
+                        <span>
+                          {entry.scoutName} · {entry.source}
+                        </span>
+                        <small className="app-muted">
+                          {entry.confidence} confidence · {new Date(entry.updatedAt).toLocaleTimeString()}
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               ) : (
                 <p className="app-muted">No entries yet for this event — nothing is fabricated.</p>
               )}
@@ -1296,7 +1429,15 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
                     />
                   </FormRow>
                   {schema?.definition.fields
-                    .filter((field) => field.type === "number")
+                    .filter(
+                      (field) =>
+                        // Counters, ratings, and sliders store plain numbers too —
+                        // a tap-tallied cycle count is exactly what a pick formula wants.
+                        field.type === "number" ||
+                        field.type === "counter" ||
+                        field.type === "rating" ||
+                        field.type === "slider",
+                    )
                     .map((field) => (
                       <FormRow key={field.key} label={`${field.label} weight`}>
                         <input
@@ -1321,6 +1462,139 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         </div>
       )}
     </main>
+  );
+}
+
+/**
+ * Canvas re-encode of a still image so queued photos fit the server media cap
+ * (max edge / quality live in lib/scouting/media-downscale.ts with the pure
+ * geometry math). Falls back to the original file on any decode failure.
+ */
+async function downscaleImageInBrowser(file: File): Promise<Blob> {
+  if (!isDownscalableImageType(file.type)) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    try {
+      const { width, height, scaled } = downscaleDimensions(bitmap.width, bitmap.height);
+      // Small-but-heavy files (huge PNGs) still get a JPEG re-encode.
+      if (!scaled && !exceedsMediaCap(file.size)) return file;
+      if (width < 1 || height < 1) return file;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) return file;
+      context.drawImage(bitmap, 0, 0, width, height);
+      const encoded = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", DOWNSCALE_JPEG_QUALITY),
+      );
+      if (!encoded || encoded.size === 0) return file;
+      return encoded.size < file.size ? encoded : file;
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return file;
+  }
+}
+
+/**
+ * Offline-first photo preview: while the blob is still queued in IndexedDB it
+ * renders from an object URL (revoked on unmount); once synced it falls back
+ * to the org-scoped server route.
+ */
+function RobotImagePreview({ clientId, orgId }: { clientId: string; orgId: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    void (async () => {
+      const blob = await getQueuedMediaBlob(clientId).catch(() => null);
+      if (cancelled) return;
+      if (blob) {
+        objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      } else {
+        setSrc(`/api/scouting/media/${encodeURIComponent(clientId)}?orgId=${encodeURIComponent(orgId)}`);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [clientId, orgId]);
+  if (!src) return <span className="app-muted">Loading photo…</span>;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- org-scoped or locally queued media
+    <img src={src} alt="Robot" width={72} height={72} />
+  );
+}
+
+function quarantineItemLabel(item: QuarantinedItem): string {
+  if (item.kind === "entry") {
+    const entry = item.entry;
+    return `${entry.type === "pit" ? "Pit" : "Match"} entry · ${entry.teamKey}${
+      entry.matchKey ? ` · ${entry.matchKey}` : ""
+    }`;
+  }
+  const teamKey = typeof item.metadata.teamKey === "string" ? item.metadata.teamKey : "";
+  return `${mediaKindLabel(item.metadata.kind)}${teamKey ? ` · ${teamKey}` : ""}`;
+}
+
+/** "N entries need attention" — permanently rejected items with Retry/Discard. */
+function ScoutQuarantinePanel({
+  items,
+  onRetry,
+  onDiscard,
+}: {
+  items: QuarantinedItem[];
+  onRetry: (clientId: string) => void;
+  onDiscard: (clientId: string) => void;
+}) {
+  if (!items.length) return null;
+  return (
+    <Panel
+      as="section"
+      className="scout-quarantine-panel"
+      style={{ minHeight: "auto", marginBottom: 14 }}
+      aria-label="Entries needing attention"
+    >
+      <header>
+        <h2 style={{ marginTop: 0 }}>
+          {items.length} {items.length === 1 ? "entry needs" : "entries need"} attention
+        </h2>
+        <p className="app-muted">
+          Sync rejected these; everything else kept syncing. They stay on this device until you
+          retry or discard each one.
+        </p>
+      </header>
+      <ul className="scout-quarantine-list" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        {items.map((item) => (
+          <li
+            key={item.clientId}
+            style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", padding: "8px 0" }}
+          >
+            <div style={{ flex: "1 1 240px", display: "grid", gap: 2 }}>
+              <strong>{quarantineItemLabel(item)}</strong>
+              <span>{item.reason}</span>
+              <small className="app-muted">{new Date(item.quarantinedAt).toLocaleString()}</small>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                className="app-button secondary"
+                onClick={() => onRetry(item.clientId)}
+              >
+                Retry
+              </button>
+              <button type="button" className="text-button" onClick={() => onDiscard(item.clientId)}>
+                Discard
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }
 
@@ -1373,6 +1647,11 @@ function Field({
   }
 
   const body = (() => {
+    // Studio types first — they own their own label/readout chrome, so they must
+    // not fall through into the legacy FormRow renderers below.
+    if (isStudioField(field)) {
+      return <StudioField field={field} value={value} onChange={onChange} label={label} />;
+    }
     if (field.type === "boolean" || field.widget === "yesno") {
       return (
         <label className="soft-form-row check-field">
@@ -1410,13 +1689,7 @@ function Field({
                 {refs.map((ref) => (
                   <li key={ref}>
                     {orgId ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- org-scoped media URL
-                      <img
-                        src={`/api/scouting/media/${encodeURIComponent(ref)}?orgId=${encodeURIComponent(orgId)}`}
-                        alt="Robot"
-                        width={72}
-                        height={72}
-                      />
+                      <RobotImagePreview clientId={ref} orgId={orgId} />
                     ) : (
                       <span className="app-muted">{ref.slice(0, 8)}…</span>
                     )}

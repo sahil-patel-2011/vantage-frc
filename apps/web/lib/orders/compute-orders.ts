@@ -1,5 +1,6 @@
 import { emitPreferredNotification } from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
+import { recordMoney, removeMoney } from "../finance/ledger";
 import {
   canTransitionOrder,
   computeOrderMetrics,
@@ -8,15 +9,7 @@ import {
   unitCostFromEstimate,
   validateOrderSubmit,
 } from "./evaluate";
-import type {
-  OrderAiSummary,
-  OrderMember,
-  OrderMetrics,
-  OrderRequest,
-  OrderStatus,
-  OrdersView,
-} from "./types";
-import { ORDER_STATUSES } from "./types";
+import type { OrderMember, OrderRequest, OrderStatus, OrdersView } from "./types";
 
 export { ORDER_STATUSES, canTransitionOrder, statusLabel, showBuyPanel, validateOrderSubmit } from "./evaluate";
 export type { OrderStatus };
@@ -441,17 +434,27 @@ export async function reviewOrder(
   );
 
   if (input.decision === "approved") {
-    await client.query(
-      `INSERT INTO finance_transactions(
-         org_id, season_year, type, source, amount_usd, category_id, purchase_request_id, description, created_by
-       )
-       SELECT $1::uuid, $2, 'expense', 'purchase_request', $3, $4, $5::uuid, $6, $7::uuid
-       WHERE NOT EXISTS (
-         SELECT 1 FROM finance_transactions
-         WHERE org_id = $1::uuid AND purchase_request_id = $5::uuid AND type = 'expense'
-       )`,
-      [input.orgId, row.seasonYear, row.totalCostUsd, row.categoryId, input.orderId, row.title, input.userId],
-    );
+    // Mirror the committed spend onto the unified money ledger (0461) in the
+    // SAME transaction — idempotent upsert keyed by (org, source, source_id).
+    await recordMoney(client, {
+      orgId: input.orgId,
+      source: "purchase_request",
+      sourceId: input.orderId,
+      direction: "out",
+      amountUsd: num(row.totalCostUsd),
+      seasonYear: row.seasonYear,
+      categoryId: row.categoryId,
+      label: `Order — ${row.title}`,
+      createdBy: input.userId,
+    });
+  } else if (row.status === "approved") {
+    // Rejecting an approved order un-commits the money — remove its mirror row
+    // so the ledger never keeps counting spend that will not happen.
+    await removeMoney(client, {
+      orgId: input.orgId,
+      source: "purchase_request",
+      sourceId: input.orderId,
+    });
   }
 
   await notifyRequesterReviewed(client, {
@@ -494,7 +497,7 @@ export async function updateOrderItemUrl(
     parsedUrl = parsed.toString();
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Vendor link")) throw error;
-    throw new Error("Vendor link must be a valid URL.");
+    throw new Error("Vendor link must be a valid URL.", { cause: error });
   }
 
   const org = await client.query<{ role: string }>(

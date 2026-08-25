@@ -4,6 +4,18 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { buildCalendar, type CalendarIcsEvent } from "../../../../lib/calendar-ics";
+import { describeRRule, RecurrenceError } from "../../../../lib/calendar/recurrence";
+import {
+  expandSeriesRows,
+  parseOccurrenceRef,
+  parseOccurrenceScope,
+  parseRepeatInput,
+  splitSeriesRule,
+  type OccurrenceScope,
+  type RecurrenceEventFields,
+  type SeriesRow,
+  type StoredException,
+} from "../../../../lib/calendar/series";
 import { listDutiesForOrg } from "../../../../lib/duty-roster";
 import {
   createGitHubHttp,
@@ -183,6 +195,165 @@ async function loadCalendarFeed(
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Recurrence (migration 0456)
+ * ------------------------------------------------------------------ */
+
+/** How far back / forward occurrences are materialized for the UI. */
+const OCCURRENCE_LOOKBACK_DAYS = 120;
+const OCCURRENCE_LOOKAHEAD_DAYS = 400;
+/** Per-series ceiling so one runaway rule cannot flood the response. */
+const MAX_OCCURRENCES_PER_SERIES = 200;
+
+type StoredEventRow = Omit<CalendarEvent, "myRsvp" | "rsvpGoing" | "rsvpMaybe" | "rsvpNo"> &
+  RecurrenceEventFields;
+
+const BASE_EVENT_COLUMNS = `e.id, e.title, e.kind, e.starts_at::text AS "startsAt", e.ends_at::text AS "endsAt",
+              e.location, e.notes, e.subteam_id AS "subteamId",
+              st.name AS "subteamName", st.color AS "subteamColor",
+              e.attendance_event_id AS "attendanceEventId",
+              ae.title AS "attendanceEventTitle",
+              e.milestone_id AS "milestoneId",
+              e.driver_session_id AS "driverSessionId",
+              cb.name AS "createdByName"`;
+
+const EVENT_JOINS = `FROM subteam_calendar_events e
+       LEFT JOIN team_subteams st ON st.id = e.subteam_id
+       LEFT JOIN attendance_events ae ON ae.id = e.attendance_event_id
+       LEFT JOIN users cb ON cb.id = e.created_by`;
+
+/**
+ * Stored calendar rows. Series masters are kept even when their DTSTART is far
+ * in the past — a build season created in January still has meetings in March.
+ * Falls back to the pre-0456 shape so the calendar keeps working (without
+ * recurrence) on a database where the migration has not been applied.
+ */
+async function loadStoredEventRows(
+  client: PoolClient,
+  orgId: string,
+): Promise<{ rows: StoredEventRow[]; recurrenceReady: boolean }> {
+  try {
+    const result = await client.query<StoredEventRow>(
+      `SELECT ${BASE_EVENT_COLUMNS},
+              e.rrule, e.recurrence_end::text AS "recurrenceEnd",
+              e.series_id AS "seriesId",
+              e.recurrence_timezone AS "recurrenceTimezone"
+       ${EVENT_JOINS}
+       WHERE e.org_id = $1
+         AND (
+           e.starts_at > now() - interval '${OCCURRENCE_LOOKBACK_DAYS} days'
+           OR (
+             e.rrule IS NOT NULL
+             AND (e.recurrence_end IS NULL
+                  OR e.recurrence_end > CURRENT_DATE - ${OCCURRENCE_LOOKBACK_DAYS})
+           )
+         )
+       ORDER BY e.starts_at ASC
+       LIMIT 800`,
+      [orgId],
+    );
+    return { rows: result.rows, recurrenceReady: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (!/rrule|recurrence_end|series_id|recurrence_timezone|column .* does not exist/i.test(message)) {
+      throw error;
+    }
+    const result = await client.query<StoredEventRow>(
+      `SELECT ${BASE_EVENT_COLUMNS}
+       ${EVENT_JOINS}
+       WHERE e.org_id = $1
+         AND e.starts_at > now() - interval '${OCCURRENCE_LOOKBACK_DAYS} days'
+       ORDER BY e.starts_at ASC
+       LIMIT 800`,
+      [orgId],
+    );
+    return { rows: result.rows, recurrenceReady: false };
+  }
+}
+
+/** Recorded skips / moves / edits. Absent table simply means no exceptions. */
+async function loadSeriesExceptions(
+  client: PoolClient,
+  orgId: string,
+): Promise<StoredException[]> {
+  try {
+    const result = await client.query<StoredException>(
+      // Occurrence identity is matched as an exact instant, so the timestamp is
+      // rendered as unambiguous UTC ISO rather than the session's text format.
+      `SELECT series_id AS "seriesId",
+              to_char(occurrence_date AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+                AS "occurrenceDate",
+              action, detached_event_id AS "detachedEventId"
+       FROM calendar_event_exceptions
+       WHERE org_id = $1`,
+      [orgId],
+    );
+    return result.rows.map((row) => ({
+      ...row,
+      occurrenceDate: new Date(row.occurrenceDate).toISOString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Turn stored rows into the flat event list the calendar renders: a series
+ * master becomes its occurrences inside the window, everything else passes
+ * through untouched. Occurrences after the first carry a composite
+ * `<master>#<original ISO>` id; the first keeps the row's real uuid so existing
+ * RSVPs, attendance links, and duty rows still resolve.
+ */
+function materializeCalendarRows(
+  rows: StoredEventRow[],
+  exceptions: StoredException[],
+  now: Date,
+): StoredEventRow[] {
+  const seriesRows: SeriesRow[] = rows.map((row) => ({
+    id: row.id,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
+    rrule: row.rrule ?? null,
+    recurrenceEnd: row.recurrenceEnd ?? null,
+    seriesId: row.seriesId ?? null,
+    recurrenceTimezone: row.recurrenceTimezone ?? null,
+  }));
+
+  const windowStart = new Date(now.getTime() - OCCURRENCE_LOOKBACK_DAYS * 86400000).toISOString();
+  const windowEnd = new Date(now.getTime() + OCCURRENCE_LOOKAHEAD_DAYS * 86400000).toISOString();
+  const expanded = expandSeriesRows(seriesRows, exceptions, {
+    windowStart,
+    windowEnd,
+    maxPerSeries: MAX_OCCURRENCES_PER_SERIES,
+  });
+
+  const out: StoredEventRow[] = [];
+  for (const row of rows) {
+    const occurrences = expanded.get(row.id);
+    if (!occurrences) {
+      out.push(row);
+      continue;
+    }
+    const summary = row.rrule
+      ? describeRRule(row.rrule, { start: row.startsAt, timeZone: row.recurrenceTimezone ?? "UTC" })
+      : null;
+    for (const occurrence of occurrences) {
+      out.push({
+        ...row,
+        id: occurrence.id,
+        startsAt: occurrence.startsAt,
+        endsAt: occurrence.endsAt,
+        seriesId: row.id,
+        occurrenceStart: occurrence.occurrenceStart,
+        isOccurrence: true,
+        recurrenceSummary: summary,
+      });
+    }
+  }
+  out.sort((a, b) => (a.startsAt < b.startsAt ? -1 : a.startsAt > b.startsAt ? 1 : 0));
+  return out;
+}
+
 async function loadView(
   client: PoolClient,
   orgId: string,
@@ -216,27 +387,7 @@ async function loadView(
        LIMIT 500`,
       [orgId],
     ),
-    client.query<
-      Omit<CalendarEvent, "myRsvp" | "rsvpGoing" | "rsvpMaybe" | "rsvpNo">
-    >(
-      `SELECT e.id, e.title, e.kind, e.starts_at::text AS "startsAt", e.ends_at::text AS "endsAt",
-              e.location, e.notes, e.subteam_id AS "subteamId",
-              st.name AS "subteamName", st.color AS "subteamColor",
-              e.attendance_event_id AS "attendanceEventId",
-              ae.title AS "attendanceEventTitle",
-              e.milestone_id AS "milestoneId",
-              e.driver_session_id AS "driverSessionId",
-              cb.name AS "createdByName"
-       FROM subteam_calendar_events e
-       LEFT JOIN team_subteams st ON st.id = e.subteam_id
-       LEFT JOIN attendance_events ae ON ae.id = e.attendance_event_id
-       LEFT JOIN users cb ON cb.id = e.created_by
-       WHERE e.org_id = $1
-         AND e.starts_at > now() - interval '120 days'
-       ORDER BY e.starts_at ASC
-       LIMIT 800`,
-      [orgId],
-    ),
+    loadStoredEventRows(client, orgId),
     client.query<{ subteamId: string; userId: string }>(
       `SELECT subteam_id AS "subteamId", user_id AS "userId"
        FROM team_subteam_members WHERE org_id = $1`,
@@ -288,7 +439,12 @@ async function loadView(
     // Migration 0141 may not be applied yet — calendar still works without RSVPs.
   }
 
-  const eventRows: CalendarEvent[] = events.rows.map((row) => {
+  const exceptions = events.recurrenceReady ? await loadSeriesExceptions(client, orgId) : [];
+  const materialized = events.recurrenceReady
+    ? materializeCalendarRows(events.rows, exceptions, new Date())
+    : events.rows;
+
+  const eventRows: CalendarEvent[] = materialized.map((row) => {
     const rsvp = rsvpByEvent.get(row.id);
     return {
       ...row,
@@ -311,7 +467,7 @@ async function loadView(
     );
     attendanceEvents = attendance.rows;
   } catch {
-    attendanceEvents = [];
+    // Table absent: stays [].
   }
 
   let practiceSessions: LinkablePractice[] = [];
@@ -326,7 +482,7 @@ async function loadView(
     );
     practiceSessions = practice.rows;
   } catch {
-    practiceSessions = [];
+    // Table absent: stays [].
   }
 
   const calendarFeed = await loadCalendarFeed(client, orgId, userId, feedScope, feedSubteamId);
@@ -351,7 +507,7 @@ async function loadView(
       mine: duty.mine,
     }));
   } catch {
-    duties = [];
+    // Table absent: stays [].
   }
 
 
@@ -373,7 +529,7 @@ async function loadView(
     );
     travelLegs = legs.rows;
   } catch {
-    travelLegs = [];
+    // Table absent: stays [].
   }
 
   const githubCalendar = await loadGitHubCalendarOverlay(client, orgId);
@@ -538,10 +694,506 @@ export async function GET(request: Request) {
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Occurrence-scoped writes (this / this and following / all events)
+ * ------------------------------------------------------------------ */
+
+type MasterRow = {
+  id: string;
+  startsAt: string;
+  endsAt: string | null;
+  rrule: string | null;
+  recurrenceEnd: string | null;
+  seriesId: string | null;
+  recurrenceTimezone: string | null;
+};
+
+async function loadMaster(
+  client: PoolClient,
+  orgId: string,
+  id: string,
+): Promise<MasterRow | null> {
+  const result = await client.query<MasterRow>(
+    `SELECT id, starts_at::text AS "startsAt", ends_at::text AS "endsAt", rrule,
+            recurrence_end::text AS "recurrenceEnd", series_id AS "seriesId",
+            recurrence_timezone AS "recurrenceTimezone"
+     FROM subteam_calendar_events
+     WHERE id = $1::uuid AND org_id = $2::uuid
+     LIMIT 1`,
+    [id, orgId],
+  );
+  return result.rows[0] ?? null;
+}
+
+/** Drop the detached row (if any) recorded for one occurrence of a series. */
+async function clearDetachedRow(
+  client: PoolClient,
+  orgId: string,
+  seriesId: string,
+  occurrenceIso: string,
+): Promise<void> {
+  // The exception's FK is ON DELETE CASCADE, so removing the detached row also
+  // removes the exception — the caller writes the replacement afterwards.
+  await client.query(
+    `DELETE FROM subteam_calendar_events
+     WHERE org_id = $1::uuid
+       AND id IN (
+         SELECT detached_event_id FROM calendar_event_exceptions
+         WHERE org_id = $1::uuid AND series_id = $2::uuid
+           AND occurrence_date = $3::timestamptz
+           AND detached_event_id IS NOT NULL
+       )`,
+    [orgId, seriesId, occurrenceIso],
+  );
+  await client.query(
+    `DELETE FROM calendar_event_exceptions
+     WHERE org_id = $1::uuid AND series_id = $2::uuid AND occurrence_date = $3::timestamptz`,
+    [orgId, seriesId, occurrenceIso],
+  );
+}
+
+/**
+ * Pin one occurrence of a series to a row of its own so it can be edited or
+ * moved. Idempotent: an occurrence already detached returns its existing row.
+ */
+async function materializeOccurrence(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+  seriesId: string,
+  occurrenceIso: string,
+): Promise<string> {
+  const existing = await client.query<{ detachedEventId: string | null }>(
+    `SELECT detached_event_id AS "detachedEventId"
+     FROM calendar_event_exceptions
+     WHERE org_id = $1::uuid AND series_id = $2::uuid AND occurrence_date = $3::timestamptz
+     LIMIT 1`,
+    [orgId, seriesId, occurrenceIso],
+  );
+  const already = existing.rows[0]?.detachedEventId;
+  if (already) return already;
+
+  const inserted = await client.query<{ id: string }>(
+    `INSERT INTO subteam_calendar_events
+       (org_id, subteam_id, title, kind, starts_at, ends_at, location, notes,
+        milestone_id, driver_session_id, series_id, recurrence_timezone, created_by)
+     SELECT e.org_id, e.subteam_id, e.title, e.kind,
+            $3::timestamptz,
+            CASE WHEN e.ends_at IS NULL THEN NULL
+                 ELSE $3::timestamptz + (e.ends_at - e.starts_at) END,
+            e.location, e.notes, e.milestone_id, e.driver_session_id,
+            e.id, e.recurrence_timezone, $4::uuid
+     FROM subteam_calendar_events e
+     WHERE e.id = $2::uuid AND e.org_id = $1::uuid AND e.rrule IS NOT NULL
+     RETURNING id`,
+    [orgId, seriesId, occurrenceIso, userId],
+  );
+  const detachedId = inserted.rows[0]?.id;
+  if (!detachedId) throw new HttpError(404, "Repeating event not found");
+
+  await client.query(
+    `INSERT INTO calendar_event_exceptions
+       (org_id, series_id, occurrence_date, action, override, detached_event_id, created_by)
+     VALUES ($1::uuid, $2::uuid, $3::timestamptz, 'edited', '{}'::jsonb, $4::uuid, $5::uuid)
+     ON CONFLICT (series_id, occurrence_date) DO UPDATE
+       SET action = 'edited',
+           detached_event_id = EXCLUDED.detached_event_id,
+           updated_at = now()`,
+    [orgId, seriesId, occurrenceIso, detachedId, userId],
+  );
+  return detachedId;
+}
+
+/** Forget overrides at or after a split point, so a new tail series is clean. */
+async function dropExceptionsFrom(
+  client: PoolClient,
+  orgId: string,
+  seriesId: string,
+  fromIso: string,
+): Promise<void> {
+  await client.query(
+    `DELETE FROM subteam_calendar_events
+     WHERE org_id = $1::uuid
+       AND id IN (
+         SELECT detached_event_id FROM calendar_event_exceptions
+         WHERE org_id = $1::uuid AND series_id = $2::uuid
+           AND occurrence_date >= $3::timestamptz
+           AND detached_event_id IS NOT NULL
+       )`,
+    [orgId, seriesId, fromIso],
+  );
+  await client.query(
+    `DELETE FROM calendar_event_exceptions
+     WHERE org_id = $1::uuid AND series_id = $2::uuid AND occurrence_date >= $3::timestamptz`,
+    [orgId, seriesId, fromIso],
+  );
+}
+
+type EventFieldPatch = {
+  title?: string;
+  kind?: string;
+  startsAt?: string;
+  endsAt?: string | null;
+  location?: string;
+  notes?: string;
+  subteamId?: string | null;
+};
+
+function readEventPatch(source: Record<string, unknown>): EventFieldPatch {
+  const patch: EventFieldPatch = {};
+  const text = (value: unknown, max: number) => String(value ?? "").slice(0, max);
+  if (Object.prototype.hasOwnProperty.call(source, "title")) {
+    const title = text(source.title, 200).trim();
+    if (!title) throw new HttpError(400, "Title is required");
+    patch.title = title;
+  }
+  if (Object.prototype.hasOwnProperty.call(source, "kind")) patch.kind = text(source.kind, 40);
+  if (Object.prototype.hasOwnProperty.call(source, "location")) {
+    patch.location = text(source.location, 200);
+  }
+  if (Object.prototype.hasOwnProperty.call(source, "notes")) patch.notes = text(source.notes, 2000);
+  if (Object.prototype.hasOwnProperty.call(source, "subteamId")) {
+    const value = source.subteamId;
+    patch.subteamId = value == null || value === "" ? null : String(value);
+  }
+  const isoOf = (value: unknown, label: string) => {
+    const ms = new Date(String(value)).getTime();
+    if (Number.isNaN(ms)) throw new HttpError(400, `${label} is not a valid date and time`);
+    return new Date(ms).toISOString();
+  };
+  if (Object.prototype.hasOwnProperty.call(source, "startsAt")) {
+    patch.startsAt = isoOf(source.startsAt, "Start");
+  }
+  if (Object.prototype.hasOwnProperty.call(source, "endsAt")) {
+    patch.endsAt =
+      source.endsAt == null || source.endsAt === "" ? null : isoOf(source.endsAt, "End");
+  }
+  if (patch.startsAt && patch.endsAt && patch.endsAt < patch.startsAt) {
+    throw new HttpError(400, "End must be on or after the start");
+  }
+  return patch;
+}
+
+async function applyPatchToRow(
+  client: PoolClient,
+  orgId: string,
+  rowId: string,
+  patch: EventFieldPatch,
+  extra: { rrule?: string | null; recurrenceEnd?: string | null; timeZone?: string } = {},
+): Promise<void> {
+  const values: unknown[] = [rowId, orgId];
+  const sets: string[] = [];
+  const push = (column: string, value: unknown, cast = "") => {
+    values.push(value);
+    sets.push(`${column} = $${values.length}${cast}`);
+  };
+  if (patch.title != null) push("title", patch.title);
+  if (patch.kind != null) push("kind", patch.kind);
+  if (patch.location != null) push("location", patch.location);
+  if (patch.notes != null) push("notes", patch.notes);
+  if (Object.prototype.hasOwnProperty.call(patch, "subteamId")) {
+    push("subteam_id", patch.subteamId, "::uuid");
+  }
+  if (patch.startsAt != null) push("starts_at", patch.startsAt, "::timestamptz");
+  if (Object.prototype.hasOwnProperty.call(patch, "endsAt")) {
+    push("ends_at", patch.endsAt, "::timestamptz");
+  }
+  if (Object.prototype.hasOwnProperty.call(extra, "rrule")) push("rrule", extra.rrule);
+  if (Object.prototype.hasOwnProperty.call(extra, "recurrenceEnd")) {
+    push("recurrence_end", extra.recurrenceEnd, "::date");
+  }
+  if (extra.timeZone) push("recurrence_timezone", extra.timeZone);
+  if (sets.length === 0) throw new HttpError(400, "No event fields to update");
+
+  const updated = await client.query(
+    `UPDATE subteam_calendar_events SET ${sets.join(", ")}, updated_at = now()
+     WHERE id = $1::uuid AND org_id = $2::uuid`,
+    values,
+  );
+  if (!updated.rowCount) throw new HttpError(404, "Event not found");
+}
+
+/**
+ * Start a new series at `startIso` by copying `sourceId` and applying `patch`.
+ * Used by "this and following", which leaves the past alone and rewrites the
+ * remainder as its own series.
+ */
+async function forkSeries(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+  sourceId: string,
+  startIso: string,
+  rrule: string,
+  recurrenceEnd: string | null,
+  patch: EventFieldPatch,
+): Promise<string> {
+  const inserted = await client.query<{ id: string }>(
+    `INSERT INTO subteam_calendar_events
+       (org_id, subteam_id, title, kind, starts_at, ends_at, location, notes,
+        milestone_id, driver_session_id, rrule, recurrence_end, recurrence_timezone, created_by)
+     SELECT e.org_id, e.subteam_id, e.title, e.kind,
+            $3::timestamptz,
+            CASE WHEN e.ends_at IS NULL THEN NULL
+                 ELSE $3::timestamptz + (e.ends_at - e.starts_at) END,
+            e.location, e.notes, e.milestone_id, e.driver_session_id,
+            $4, $5::date, e.recurrence_timezone, $6::uuid
+     FROM subteam_calendar_events e
+     WHERE e.id = $2::uuid AND e.org_id = $1::uuid
+     RETURNING id`,
+    [orgId, sourceId, startIso, rrule, recurrenceEnd, userId],
+  );
+  const newId = inserted.rows[0]?.id;
+  if (!newId) throw new HttpError(404, "Repeating event not found");
+  await client.query(
+    `UPDATE subteam_calendar_events SET series_id = id WHERE id = $1::uuid AND org_id = $2::uuid`,
+    [newId, orgId],
+  );
+  const rest: EventFieldPatch = { ...patch };
+  delete rest.startsAt;
+  if (Object.keys(rest).length > 0) await applyPatchToRow(client, orgId, newId, rest);
+  return newId;
+}
+
+function recurrenceUnavailable(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : "";
+  return /calendar_event_exceptions|rrule|recurrence_end|series_id|recurrence_timezone/i.test(
+    message,
+  ) && /does not exist/i.test(message);
+}
+
+async function handleOccurrenceWrite(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+  body: Record<string, unknown>,
+  mode: "update" | "delete",
+): Promise<Record<string, unknown>> {
+  const ref = parseOccurrenceRef(body.id);
+  const scope: OccurrenceScope = parseOccurrenceScope(body.scope);
+  const master = await loadMaster(client, orgId, ref.rowId);
+  if (!master) throw new HttpError(404, "Event not found");
+
+  // A plain row with no rule is just an event — no scope choice applies.
+  if (!master.rrule) {
+    if (mode === "delete") {
+      const deleted = await client.query(
+        `DELETE FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`,
+        [ref.rowId, orgId],
+      );
+      if (!deleted.rowCount) throw new HttpError(404, "Event not found");
+      return { ok: true, scope: "this" };
+    }
+    await applyPatchToRow(client, orgId, ref.rowId, readEventPatch(bodyPatch(body)));
+    return { ok: true, scope: "this" };
+  }
+
+  const occurrenceIso = ref.occurrenceStart ?? new Date(master.startsAt).toISOString();
+  const timeZone = master.recurrenceTimezone ?? "UTC";
+
+  if (mode === "delete") {
+    if (scope === "all") {
+      await client.query(
+        `DELETE FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`,
+        [master.id, orgId],
+      );
+      return { ok: true, scope };
+    }
+    if (scope === "following") {
+      const split = splitSeriesRule({
+        rrule: master.rrule,
+        start: master.startsAt,
+        splitStart: occurrenceIso,
+        timeZone,
+        recurrenceEnd: master.recurrenceEnd,
+      });
+      await dropExceptionsFrom(client, orgId, master.id, occurrenceIso);
+      if (!split.head) {
+        await client.query(
+          `DELETE FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`,
+          [master.id, orgId],
+        );
+        return { ok: true, scope, deletedSeries: true };
+      }
+      await applyPatchToRow(
+        client,
+        orgId,
+        master.id,
+        {},
+        { rrule: split.head.rrule, recurrenceEnd: split.head.recurrenceEnd },
+      );
+      return { ok: true, scope };
+    }
+    // scope === "this": record a skip so the ICS feed emits an EXDATE.
+    await clearDetachedRow(client, orgId, master.id, occurrenceIso);
+    await client.query(
+      `INSERT INTO calendar_event_exceptions
+         (org_id, series_id, occurrence_date, action, override, created_by)
+       VALUES ($1::uuid, $2::uuid, $3::timestamptz, 'skipped', '{}'::jsonb, $4::uuid)
+       ON CONFLICT (series_id, occurrence_date) DO UPDATE
+         SET action = 'skipped', detached_event_id = NULL, updated_at = now()`,
+      [orgId, master.id, occurrenceIso, userId],
+    );
+    return { ok: true, scope, skipped: occurrenceIso };
+  }
+
+  const patch = readEventPatch(bodyPatch(body));
+  const repeat = Object.prototype.hasOwnProperty.call(bodyPatch(body), "rrule")
+    ? parseRepeatInput({ ...bodyPatch(body), timeZone })
+    : null;
+
+  if (scope === "all") {
+    // Moving DTSTART shifts the whole series; the rule itself is unchanged
+    // unless the caller also sent a new one.
+    await applyPatchToRow(
+      client,
+      orgId,
+      master.id,
+      patch,
+      repeat
+        ? { rrule: repeat.rrule, recurrenceEnd: repeat.recurrenceEnd, timeZone: repeat.timeZone }
+        : {},
+    );
+    return { ok: true, scope, id: master.id };
+  }
+
+  if (scope === "following") {
+    const split = splitSeriesRule({
+      rrule: master.rrule,
+      start: master.startsAt,
+      splitStart: occurrenceIso,
+      timeZone,
+      recurrenceEnd: master.recurrenceEnd,
+    });
+    if (!split.head) {
+      await applyPatchToRow(
+        client,
+        orgId,
+        master.id,
+        patch,
+        repeat
+          ? { rrule: repeat.rrule, recurrenceEnd: repeat.recurrenceEnd, timeZone: repeat.timeZone }
+          : {},
+      );
+      return { ok: true, scope: "all", id: master.id };
+    }
+    await dropExceptionsFrom(client, orgId, master.id, occurrenceIso);
+    const tailRule = repeat?.rrule ?? split.tail.rrule;
+    const tailEnd = repeat ? repeat.recurrenceEnd : split.tail.recurrenceEnd;
+    const newId = await forkSeries(
+      client,
+      orgId,
+      userId,
+      master.id,
+      patch.startsAt ?? occurrenceIso,
+      tailRule,
+      tailEnd,
+      patch,
+    );
+    await applyPatchToRow(
+      client,
+      orgId,
+      master.id,
+      {},
+      { rrule: split.head.rrule, recurrenceEnd: split.head.recurrenceEnd },
+    );
+    return { ok: true, scope, id: newId };
+  }
+
+  // scope === "this": pin the occurrence to its own row and edit that.
+  const detachedId = await materializeOccurrence(client, orgId, userId, master.id, occurrenceIso);
+  if (Object.keys(patch).length > 0) {
+    await applyPatchToRow(client, orgId, detachedId, patch);
+    if (patch.startsAt && patch.startsAt !== occurrenceIso) {
+      await client.query(
+        `UPDATE calendar_event_exceptions SET action = 'moved', updated_at = now()
+         WHERE org_id = $1::uuid AND series_id = $2::uuid AND occurrence_date = $3::timestamptz`,
+        [orgId, master.id, occurrenceIso],
+      );
+    }
+  }
+  return { ok: true, scope, id: detachedId };
+}
+
+function bodyPatch(body: Record<string, unknown>): Record<string, unknown> {
+  const patch = body.patch;
+  if (patch && typeof patch === "object" && !Array.isArray(patch)) {
+    return patch as Record<string, unknown>;
+  }
+  return {};
+}
+
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
-    const action = parseSubteamCalendarAction(await request.json());
+    const rawBody = await request.json();
+    const body: Record<string, unknown> =
+      rawBody && typeof rawBody === "object" && !Array.isArray(rawBody)
+        ? (rawBody as Record<string, unknown>)
+        : {};
+    const rawAction = typeof body.action === "string" ? body.action : "";
+
+    // Occurrence-scoped writes never reach parseSubteamCalendarAction — they are
+    // recurrence-only verbs owned by this route.
+    if (rawAction === "update_occurrence" || rawAction === "delete_occurrence") {
+      const orgId = typeof body.orgId === "string" ? body.orgId : "";
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orgId)) {
+        throw new HttpError(400, "Organization is required");
+      }
+      const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        await membershipRole(client, orgId, session.user.id);
+        try {
+          return await handleOccurrenceWrite(
+            client,
+            orgId,
+            session.user.id,
+            body,
+            rawAction === "delete_occurrence" ? "delete" : "update",
+          );
+        } catch (error) {
+          if (recurrenceUnavailable(error)) {
+            throw new HttpError(
+              503,
+              "Apply the recurring events migration first (0456_calendar_recurrence).",
+            );
+          }
+          if (error instanceof RecurrenceError) throw new HttpError(400, error.message);
+          throw error;
+        }
+      });
+      return Response.json(result);
+    }
+
+    // RSVPing to a virtual occurrence pins it to a row of its own first, so the
+    // response is attached to that meeting and not to the whole series.
+    if (rawAction === "set_rsvp" && typeof body.id === "string" && body.id.includes("#")) {
+      const orgId = typeof body.orgId === "string" ? body.orgId : "";
+      const ref = parseOccurrenceRef(body.id);
+      if (ref.occurrenceStart && /^[0-9a-f-]{36}$/i.test(orgId)) {
+        body.id = await withRls({ userId: session.user.id, orgId }, async (client) => {
+          await membershipRole(client, orgId, session.user.id);
+          try {
+            return await materializeOccurrence(
+              client,
+              orgId,
+              session.user.id,
+              ref.rowId,
+              ref.occurrenceStart!,
+            );
+          } catch (error) {
+            if (recurrenceUnavailable(error)) {
+              throw new HttpError(
+                503,
+                "Apply the recurring events migration first (0456_calendar_recurrence).",
+              );
+            }
+            throw error;
+          }
+        });
+      }
+    }
+
+    const action = parseSubteamCalendarAction(body);
     const userId = session.user.id;
 
     const result = await withRls({ userId, orgId: action.orgId }, async (client) => {
@@ -683,28 +1335,88 @@ export async function POST(request: Request) {
             if (!milestone.rowCount) throw new HttpError(400, "Milestone not found");
           }
 
-          const inserted = await client.query<{ id: string }>(
-            `INSERT INTO subteam_calendar_events
-               (org_id, subteam_id, title, kind, starts_at, ends_at, location, notes,
-                attendance_event_id, milestone_id, driver_session_id, created_by)
-             VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10, $11, $12)
-             RETURNING id`,
-            [
-              action.orgId,
-              action.subteamId,
-              action.title,
-              action.kind,
-              action.startsAt,
-              action.endsAt,
-              action.location,
-              action.notes,
-              attendanceEventId,
-              action.milestoneId,
-              action.driverSessionId,
-              userId,
-            ],
-          );
-          const eventId = inserted.rows[0]!.id;
+          // Optional repeat rule. Rejected loudly if it is outside the supported
+          // subset — a rule we cannot expand must never reach the table.
+          let repeat: { rrule: string | null; timeZone: string; recurrenceEnd: string | null };
+          try {
+            repeat = parseRepeatInput(body);
+          } catch (error) {
+            if (error instanceof RecurrenceError) throw new HttpError(400, error.message);
+            throw error;
+          }
+
+          let eventId: string;
+          try {
+            const inserted = await client.query<{ id: string }>(
+              `INSERT INTO subteam_calendar_events
+                 (org_id, subteam_id, title, kind, starts_at, ends_at, location, notes,
+                  attendance_event_id, milestone_id, driver_session_id, created_by,
+                  rrule, recurrence_end, recurrence_timezone)
+               VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10, $11, $12,
+                       $13, $14::date, $15)
+               RETURNING id`,
+              [
+                action.orgId,
+                action.subteamId,
+                action.title,
+                action.kind,
+                action.startsAt,
+                action.endsAt,
+                action.location,
+                action.notes,
+                attendanceEventId,
+                action.milestoneId,
+                action.driverSessionId,
+                userId,
+                repeat.rrule,
+                repeat.recurrenceEnd,
+                repeat.timeZone,
+              ],
+            );
+            eventId = inserted.rows[0]!.id;
+            if (repeat.rrule) {
+              // A master owns its own series; detached occurrences point back here.
+              await client.query(
+                `UPDATE subteam_calendar_events SET series_id = id
+                 WHERE id = $1::uuid AND org_id = $2::uuid`,
+                [eventId, action.orgId],
+              );
+            }
+          } catch (error) {
+            if (recurrenceUnavailable(error)) {
+              if (repeat.rrule) {
+                throw new HttpError(
+                  503,
+                  "Apply the recurring events migration first (0456_calendar_recurrence).",
+                );
+              }
+              // No repeat requested — fall back to the pre-0456 column set.
+              const inserted = await client.query<{ id: string }>(
+                `INSERT INTO subteam_calendar_events
+                   (org_id, subteam_id, title, kind, starts_at, ends_at, location, notes,
+                    attendance_event_id, milestone_id, driver_session_id, created_by)
+                 VALUES ($1, $2, $3, $4, $5::timestamptz, $6::timestamptz, $7, $8, $9, $10, $11, $12)
+                 RETURNING id`,
+                [
+                  action.orgId,
+                  action.subteamId,
+                  action.title,
+                  action.kind,
+                  action.startsAt,
+                  action.endsAt,
+                  action.location,
+                  action.notes,
+                  attendanceEventId,
+                  action.milestoneId,
+                  action.driverSessionId,
+                  userId,
+                ],
+              );
+              eventId = inserted.rows[0]!.id;
+            } else {
+              throw error;
+            }
+          }
           try {
             await notifyCalendarEvent(client, {
               orgId: action.orgId,

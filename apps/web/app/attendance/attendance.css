@@ -1,5 +1,5 @@
 /* Team Attendance — Soft-UI, .att-* prefixed + shared app tokens. */
-.att-page input,.att-page select,.att-page textarea{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.att-page input,.att-page select,.att-page textarea{min-height:44px;padding:10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
 .att-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .att-empty-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
 .att-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
@@ -16,10 +16,10 @@
 .att-next-actions li div{display:grid;gap:2px;min-width:0}
 .att-next-actions li strong{font-size:14px}
 .att-next-actions li span{color:var(--app-muted);font-size:12px;line-height:1.35}
-.att-next-actions li .app-button{flex:none;min-height:36px;padding:0 12px;font-size:12px;text-decoration:none;display:inline-flex;align-items:center}
+.att-next-actions li .app-button{flex:none;min-height:44px;padding:0 14px;font-size:12px;text-decoration:none;display:inline-flex;align-items:center}
 .att-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
 .att-filters{display:flex;flex-wrap:wrap;gap:6px}
-.att-filter{min-height:32px;padding:4px 12px;border-radius:999px;border:1px solid var(--soft-line,var(--app-line));background:var(--soft-card,var(--app-surface));color:var(--app-muted);font:700 11px inherit;cursor:pointer}
+.att-filter{display:inline-flex;align-items:center;min-height:44px;padding:4px 14px;border-radius:999px;border:1px solid var(--app-line);background:var(--app-surface);color:var(--app-muted);font:700 11px inherit;cursor:pointer}
 .att-filter.active,.att-filter[aria-pressed="true"]{border-color:color-mix(in srgb,var(--app-accent) 45%,var(--app-line));color:var(--app-accent);background:color-mix(in srgb,var(--app-accent) 10%,var(--app-surface))}
 .att-search{min-width:min(100%,220px)}
 .att-search input{width:100%}
@@ -46,7 +46,7 @@
 .att-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .att-field.wide{grid-column:1/-1}
 .att-suggestions{display:flex;flex-wrap:wrap;gap:6px}
-.att-chip{min-height:30px;padding:4px 10px;border-radius:999px;border:1px solid var(--soft-line,var(--app-line));background:var(--soft-card,var(--app-surface));color:var(--soft-ink,var(--app-ink));font:700 11px inherit;cursor:pointer}
+.att-chip{display:inline-flex;align-items:center;min-height:44px;padding:4px 14px;border-radius:999px;border:1px solid var(--app-line);background:var(--app-surface);color:var(--app-ink);font:700 11px inherit;cursor:pointer}
 .att-chip:hover{border-color:color-mix(in srgb,var(--app-accent) 45%,var(--app-line));color:var(--app-accent)}
 .att-chip:disabled{opacity:.5;cursor:not-allowed}
 .att-one-tap{display:grid;gap:10px;padding:12px;border:1px solid var(--soft-line,var(--app-line));border-radius:12px;background:color-mix(in srgb,var(--app-soft) 70%,var(--app-surface))}

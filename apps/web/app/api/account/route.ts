@@ -39,6 +39,7 @@ const emailPrefsSchema = z.object({
   coachTodos: z.boolean().optional(),
   coachPracticeReminders: z.boolean().optional(),
   sponsorReminders: z.boolean().optional(),
+  performanceDigest: z.boolean().optional(),
 });
 
 const putSchema = z.object({

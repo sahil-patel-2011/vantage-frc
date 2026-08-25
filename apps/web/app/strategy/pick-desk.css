@@ -32,7 +32,7 @@
   justify-content:space-between;
   gap:10px;
   padding:10px 0;
-  border-bottom:1px solid var(--soft-line,#d7dde3);
+  border-bottom:1px solid var(--soft-line);
 }
 .pick-desk-setup-steps li:last-child{border-bottom:0}
 .pick-desk-setup-steps p{margin:4px 0 0}
@@ -40,7 +40,7 @@
   margin:0;
   padding:14px;
   border-radius:14px;
-  border:1px dashed var(--soft-line,#d7dde3);
+  border:1px dashed var(--soft-line);
 }
 .pick-desk-kpis{
   display:grid;
@@ -51,22 +51,53 @@
   display:grid;
   gap:4px;
   padding:14px 16px;
-  border:1px solid var(--soft-line,#d5dde8);
-  border-radius:var(--soft-radius-sm,12px);
-  background:var(--soft-card,#fff);
-  box-shadow:var(--soft-shadow,0 10px 28px rgba(19,32,51,.07));
+  border:1px solid var(--soft-line);
+  border-radius:var(--soft-radius-sm);
+  background:var(--soft-card);
+  box-shadow:var(--soft-shadow);
 }
 .pick-desk-kpis strong{
   font:700 22px/1.1 var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
-  color:var(--soft-ink,#132033);
+  color:var(--soft-ink);
   letter-spacing:-.02em;
 }
 .pick-desk-kpis small{
-  color:var(--soft-muted,#5a6578);
+  color:var(--soft-muted);
   font:600 12px var(--font-source-sans),ui-sans-serif;
 }
 @media (max-width:800px){
   .pick-desk-heading{flex-direction:column}
   .pick-desk-related{justify-content:flex-start}
   .pick-desk-kpis{grid-template-columns:1fr}
+}
+
+/* Field-position heat grid on a pick-list row — data-only, never DEMO taps. */
+.pick-heat-panel {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--soft-line, var(--app-line));
+  border-radius: 10px;
+  background: var(--soft-bg, var(--app-bg));
+}
+.pick-heat-figure {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.pick-heat-figure figcaption {
+  font: 700 12px var(--font-source-sans), ui-sans-serif;
+}
+.pick-heat-grid {
+  display: grid;
+  gap: 2px;
+  max-width: 320px;
+}
+.pick-heat-cell {
+  aspect-ratio: 1;
+  min-width: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--soft-line, var(--app-line));
 }

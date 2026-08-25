@@ -151,7 +151,7 @@ export function buildOnboardingChecklistSteps(signals: OnboardingSignals): Onboa
       label: "Metered AI",
       detail: "BYO provider for free-tier AI",
       done: signals.hasAiProvider,
-      href: `/team${q}#custom-providers`,
+      href: `/team/ai-keys${q}`,
     },
   ];
 }

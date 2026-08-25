@@ -32,7 +32,7 @@ import {
   type AllianceSelectionDeskShellKind,
 } from "../../lib/alliance-selection-desk/alliance-selection-desk-related";
 import type { DeskAlliance, DeskExportSnapshot, DeskSlot } from "../../lib/alliance-selection-desk/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./alliance-selection-desk.css";
 
@@ -106,7 +106,7 @@ function DeskShell({
 }) {
   const actions = allianceSelectionDeskNextActions({ orgId, shell });
   const copy = allianceSelectionDeskShellCopy(shell);
-  const competitionHref = hubHref("/competition", "alliance-selection-desk", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "alliance-selection-desk", orgId);
   const steps = shell === "setup" ? allianceSelectionDeskSetupSteps(orgId) : [];
 
   return (
@@ -115,10 +115,10 @@ function DeskShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Alliance Selection Desk"}
+            {" / Alliance selection desk"}
           </>
         }
-        title="Alliance Selection Desk 2.0"
+        title="Alliance selection desk"
         description={description}
       >
         <DeskRelatedStrip orgId={orgId} />
@@ -195,6 +195,8 @@ function SlotRow({
     <div className="alliance-desk-slot">
       <div className="alliance-desk-slot-head">
         <strong>{pickSlotLabel(slot.pickSlot)}</strong>
+        {/* One pick list: this is the team's place on the SAME list the team ranked together. */}
+        {slot.pickListRank != null ? <Badge tone="info">Pick list #{slot.pickListRank}</Badge> : null}
         {slot.tbaRank != null ? <Badge tone="neutral">TBA #{slot.tbaRank}</Badge> : null}
         {slot.tbaEpa != null ? <Badge tone="neutral">EPA {slot.tbaEpa.toFixed(1)}</Badge> : null}
         {slot.matchScoutCount > 0 ? <Badge tone="good">{slot.matchScoutCount} match scout</Badge> : null}
@@ -206,6 +208,10 @@ function SlotRow({
         ))}
       </div>
       {slot.nickname ? <p className="app-muted alliance-desk-tip">{slot.nickname}</p> : null}
+      {/* The justifier's source-cited "why", carried on the very row that is on the board. */}
+      {slot.justification ? (
+        <p className="app-muted alliance-desk-tip">Why: {slot.justification}</p>
+      ) : null}
       <FormGrid>
         <FormRow label="Team #">
           <input value={team} onChange={(e) => setTeam(e.target.value)} placeholder="254" disabled={busy} />
@@ -347,7 +353,7 @@ export default function AllianceSelectionDeskClient() {
   const relatedLinks = allianceSelectionDeskRelatedLinks(orgId, {
     include: [...ALLIANCE_SELECTION_DESK_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "alliance-selection-desk", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "alliance-selection-desk", orgId);
   const showTiles = shouldShowAllianceSelectionDeskSummaryTiles(sessionCount);
 
   const mutate = useCallback(
@@ -435,11 +441,11 @@ export default function AllianceSelectionDeskClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Alliance Selection Desk"}
+            {" / Alliance selection desk"}
           </>
         }
-        title="Alliance Selection Desk 2.0"
-        description="Live pick board with shared slots, scout evidence attach, TBA conflict flags, and drive-team export — never DEMO rankings. Cross-check Strategy, Collaborative Pick List, and Pick clock."
+        title="Alliance selection desk"
+        description="Live pick board with shared slots, scout evidence attach, TBA conflict flags, and drive-team export — never DEMO rankings. Cross-check Strategy, Collaborative pick list, and Pick clock."
       >
         <div className="alliance-desk-header-actions">
           {view?.status === "live" ? (
@@ -489,7 +495,7 @@ export default function AllianceSelectionDeskClient() {
       <DeskNextActionsPanel actions={nextActions} />
 
       {showTiles && view?.status === "live" ? (
-        <section className="alliance-desk-stats" aria-label="Alliance Selection Desk counts">
+        <section className="alliance-desk-stats" aria-label="Alliance selection desk counts">
           <StatTile label="Filled slots" value={formatAllianceSelectionDeskMetric(filledSlots, true)} />
           <StatTile
             label="Conflicts"

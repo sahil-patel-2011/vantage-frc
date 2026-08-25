@@ -1,0 +1,259 @@
+/* Team agent config — layout + editor. Tokens come from the app shell
+   (--app-*) so light/dark both work; everything degrades to one column at
+   narrow widths and all controls keep >=44px touch targets. */
+
+.agent-config-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) 1.1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.agent-config-panel {
+  padding: 18px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 10px;
+}
+.agent-config-panel h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+.agent-config-panel h3 {
+  margin: 16px 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--app-muted);
+}
+
+.agent-config-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.agent-config-items li {
+  border-top: 1px solid var(--app-line);
+}
+.agent-config-items button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 6px;
+  color: var(--app-ink);
+  background: transparent;
+  border: 0;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.agent-config-items button:hover,
+.agent-config-items button[aria-current="true"] {
+  background: var(--app-soft);
+}
+.agent-config-items small {
+  display: block;
+  color: var(--app-muted);
+  margin-top: 2px;
+}
+
+.agent-config-editor {
+  display: grid;
+  gap: 10px;
+}
+.agent-config-editor label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--app-muted);
+}
+.agent-config-editor input,
+.agent-config-editor select,
+.agent-config-editor textarea {
+  min-height: 44px;
+  padding: 10px;
+  color: var(--app-ink);
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 7px;
+  font-size: 13px;
+}
+.agent-config-editor textarea {
+  min-height: 260px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.agent-config-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.agent-config-actions button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 7px;
+  border: 1px solid var(--app-line);
+  background: var(--app-soft);
+  color: var(--app-ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.agent-config-actions button.primary {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  color: #fff;
+}
+.agent-config-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.agent-config-problems {
+  margin: 0;
+  padding: 12px 14px 12px 28px;
+  background: rgba(192, 38, 38, 0.07);
+  border: 1px solid rgba(192, 38, 38, 0.35);
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.agent-config-ok {
+  margin: 0;
+  font-size: 12px;
+  color: var(--app-positive, #1f7a3d);
+}
+
+.agent-config-cheatsheet pre,
+.agent-config-howto pre {
+  overflow-x: auto;
+  padding: 12px;
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.agent-config-cheatsheet summary,
+.agent-config-revisions summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.agent-config-revisions ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.agent-config-revisions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 0;
+  border-top: 1px solid var(--app-line);
+  font-size: 12px;
+}
+.agent-config-revisions button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--app-line);
+  background: var(--app-soft);
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.agent-config-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 13px;
+}
+.agent-config-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
+.agent-config-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+/* Per-item sharing scope (Entire team / Only specific people) */
+.agent-config-sharing {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--app-line);
+  border-radius: 7px;
+}
+.agent-config-sharing legend {
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-muted);
+}
+.agent-config-share-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 13px;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+.agent-config-share-choice input,
+.agent-config-share-members input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.agent-config-share-note {
+  margin: 4px 0;
+  font-size: 12px;
+  color: var(--app-muted);
+  line-height: 1.5;
+}
+.agent-config-share-members {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.agent-config-share-members li {
+  border-top: 1px solid var(--app-line);
+}
+.agent-config-share-members label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 2px;
+  font-size: 13px;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+.agent-config-share-members small {
+  display: block;
+  color: var(--app-muted);
+}
+
+@media (max-width: 900px) {
+  .agent-config-grid {
+    grid-template-columns: 1fr;
+  }
+}

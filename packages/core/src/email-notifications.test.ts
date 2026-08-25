@@ -10,15 +10,16 @@ import {
 } from "./email-notifications";
 
 describe("email notification preferences", () => {
-  it("defaults product updates on and other email categories off", () => {
+  it("defaults product updates + performance digest on and other email categories off", () => {
     expect(DEFAULT_EMAIL_PREFERENCES).toEqual({
       productUpdates: true,
       coachAssignments: false,
       coachTodos: false,
       coachPracticeReminders: false,
       sponsorReminders: false,
+      performanceDigest: true,
     });
-    expect(EMAIL_NOTIFICATION_CATEGORIES).toHaveLength(5);
+    expect(EMAIL_NOTIFICATION_CATEGORIES).toHaveLength(6);
   });
 
   it("validates categories and maps preference keys", () => {
@@ -27,8 +28,11 @@ describe("email notification preferences", () => {
     expect(isEmailNotificationCategory("spam")).toBe(false);
     expect(preferenceKeyForCategory("coach_todos")).toBe("coachTodos");
     expect(preferenceKeyForCategory("sponsor_reminders")).toBe("sponsorReminders");
+    expect(isEmailNotificationCategory("performance_digest")).toBe(true);
+    expect(preferenceKeyForCategory("performance_digest")).toBe("performanceDigest");
     expect(categoryLabel("coach_practice_reminders")).toBe("Practice reminders");
     expect(categoryLabel("sponsor_reminders")).toBe("Sponsor reminders");
+    expect(categoryLabel("performance_digest")).toBe("Daily performance digest");
   });
 
   it("builds unsubscribe URLs with token and category", () => {

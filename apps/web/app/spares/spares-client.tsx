@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { consumableCategoryLabel, evaluateConsumable, statusLabel } from "../../lib/spares";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { CONSUMABLE_CATEGORIES, type SparesView } from "../../lib/spares/compute-spares";
 import type { Consumable, ConsumableCategory, ConsumableStatus } from "../../lib/spares/types";
 
@@ -10,16 +12,42 @@ type Mutate = (payload: Record<string, unknown>) => void;
 
 const STATUS_COLOR: Record<ConsumableStatus, string> = { ok: "#1f7a3d", low: "#b26a00", out: "#c02626" };
 
+/**
+ * CSV shape of the consumables shelf — the file a mentor sorts by status and takes
+ * to McMaster or the hardware store. Counts stay raw numbers so the sheet can add them up.
+ */
+const CONSUMABLE_CSV_COLUMNS: CsvColumn<Consumable>[] = [
+  { key: "name", header: "Item", hint: "Consumable name" },
+  { key: "category", header: "Category", value: (item) => consumableCategoryLabel(item.category) },
+  { key: "onHand", header: "On hand", hint: "Current count", value: (item) => item.onHand },
+  { key: "unit", header: "Unit", hint: "each / ft / roll …" },
+  { key: "reorderPoint", header: "Reorder at", hint: "0 means only when out", value: (item) => item.reorderPoint },
+  { key: "status", header: "Status", hint: "ok / low / out", value: (item) => evaluateConsumable(item).status },
+  {
+    key: "needsReorder",
+    header: "Needs reorder",
+    hint: "true when it is at or below the reorder point",
+    value: (item) => evaluateConsumable(item).needsReorder,
+  },
+  { key: "preferredVendor", header: "Preferred vendor", value: (item) => item.preferredVendor },
+  { key: "notes", header: "Notes", value: (item) => item.notes },
+];
+
 export default function SparesClient() {
   const [view, setView] = useState<SparesView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
+    setErrorStatus(null);
+    setErrorMessage(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -27,6 +55,8 @@ export default function SparesClient() {
       .then(async (response) => {
         const data = (await response.json()) as SparesView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setErrorMessage("error" in data && data.error ? data.error : null);
           setFetchFailed(true);
           return;
         }
@@ -83,13 +113,38 @@ export default function SparesClient() {
       ) : null}
 
       {fetchFailed ? (
-        <section className="app-card soft-panel">
-          <h2>Could not load consumables</h2>
-          <p className="app-muted">A network or server issue prevented loading. Try again.</p>
-          <button type="button" className="app-button secondary" onClick={load}>
-            Retry
-          </button>
-        </section>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: errorMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: errorMessage,
+            },
+          );
+          return (
+            <section className="app-card soft-panel">
+              <h2>{copy.title}</h2>
+              <p className="app-muted">{copy.description}</p>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={load}>
+                  Retry
+                </button>
+              ) : null}
+            </section>
+          );
+        })()
       ) : view == null ? (
         <section className="app-card soft-panel">
           <h2>Loading…</h2>
@@ -258,8 +313,19 @@ function ItemTable({ view, busy, mutate }: { view: LiveView; busy: boolean; muta
   }
   return (
     <section className="app-card soft-panel" style={{ overflowX: "auto" }}>
-      <h2 style={{ marginTop: 0 }}>On hand</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <h2 style={{ margin: 0 }}>On hand</h2>
+        <ExportButton
+          rows={view.items}
+          columns={CONSUMABLE_CSV_COLUMNS}
+          feature="Consumables"
+          orgLabel={view.teamNumber != null ? `team-${view.teamNumber}` : null}
+          orgId={view.orgId}
+          size="sm"
+          provenance="Live shelf counts for this workspace — status is recomputed from on-hand vs reorder point."
+        />
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620, marginTop: 12 }}>
         <thead>
           <tr style={{ textAlign: "left", borderBottom: "1px solid rgba(128,128,128,0.3)" }}>
             <th style={{ padding: "6px 8px" }}>Item</th>

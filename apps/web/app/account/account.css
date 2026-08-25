@@ -122,7 +122,7 @@
 
 .account-next-actions li .app-button {
   flex: none;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
   font-size: 12px;
 }
@@ -160,7 +160,7 @@
 }
 
 .account-ai-keys-actions .app-button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
   font-size: 12px;
 }
@@ -255,3 +255,7 @@
     align-items: stretch;
   }
 }
+
+/* The Appearance tab now carries the island editor grid — give it room. */
+.appearance-panel{max-width:920px}
+.appearance-panel .theme-setting legend{font-size:16px}

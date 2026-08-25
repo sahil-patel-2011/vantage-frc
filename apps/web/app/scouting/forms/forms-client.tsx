@@ -1,17 +1,26 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_DRIVETRAIN_OPTIONS,
+  FIELD_POSITION_MAX_GRID,
+  FIELD_POSITION_MIN_GRID,
+  RATING_MAX_STARS,
+  RATING_MIN_STARS,
   type EntryType,
+  type FormResetBehavior,
   type SchemaDefinition,
   type ScoutSchema,
 } from "@vantage/scouting";
+import { StudioField } from "../studio-fields";
+import "../scouting.css";
 import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
   ANSWER_KIND_OPTIONS,
   DRIVETRAIN_OPTIONS_TEXT,
   FORM_BUILDER_RELATED_INCLUDE,
+  IMPORTED_FORM_DRAFT_KEY,
   addOption,
   classifyFormBuilderShell,
   definitionFromDraft,
@@ -22,21 +31,31 @@ import {
   formBuilderRelatedLinks,
   formBuilderSetupSteps,
   formBuilderShellCopy,
+  isStudioAnswerKind,
   moveOption,
   moveQuestion,
   needsOptionEditor,
+  needsSettingsEditor,
   newDraftQuestion,
   parseOptions,
+  parseSubCounters,
+  previewFieldForQuestion,
   removeOption,
   resolveDraftPublishStatus,
+  retypeQuestion,
+  RESET_BEHAVIOR_OPTIONS,
   SCOUT_IDENTITY_LOCK_COPY,
   serializeOptions,
+  STRATEGY_ROLE_OPTIONS,
+  detectedRoleForQuestion,
   updateOptionAt,
   validateDraft,
   type AnswerKind,
+  type DraftFieldSettings,
   type DraftQuestion,
   type FormBuilderNextAction,
   type FormBuilderShellKind,
+  type StrategyFieldRole,
 } from "../../../lib/scouting/form-builder";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
@@ -67,12 +86,20 @@ function defaultQuestions(type: EntryType): DraftQuestion[] {
       newDraftQuestion({ label: "Driver seasons of experience", kind: "number" }),
       newDraftQuestion({ label: "Coach seasons of experience", kind: "number" }),
       newDraftQuestion({ label: "Robot images", kind: "robot_image" }),
-      newDraftQuestion({ label: "Notes", kind: "free" }),
+      newDraftQuestion({ label: "Notes", kind: "free", role: "notes" }),
     ];
   }
+  // Default roles so an untouched starter form feeds strategy out of the box.
   return [
-    newDraftQuestion({ label: "Auto score", kind: "number" }),
-    newDraftQuestion({ label: "Notes", kind: "free" }),
+    newDraftQuestion({ label: "Auto score", kind: "number", role: "auto_score" }),
+    newDraftQuestion({ label: "Teleop score", kind: "number", role: "teleop_score" }),
+    newDraftQuestion({
+      label: "Endgame",
+      kind: "dropdown",
+      optionsText: "none, partial, full",
+      role: "endgame",
+    }),
+    newDraftQuestion({ label: "Notes", kind: "free", role: "notes" }),
   ];
 }
 
@@ -205,6 +232,7 @@ function FormBuilderShell({
   shell,
   entryType,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -212,12 +240,31 @@ function FormBuilderShell({
   shell: FormBuilderShellKind;
   entryType?: EntryType;
   error?: string;
+  /** HTTP status of the failed load, so an expired session can offer sign-in. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = formBuilderNextActions({ orgId, shell, entryType });
   const copy = formBuilderShellCopy(shell, { entryType });
   const steps = shell === "setup" ? formBuilderSetupSteps(orgId) : [];
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus ?? null,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error ?? null,
+          },
+        )
+      : null;
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const commandHref = hubHref("/competition", "command", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -244,11 +291,16 @@ function FormBuilderShell({
               : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : (error ?? copy.description)}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {failure?.showRetry && onRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -287,10 +339,239 @@ function FormBuilderShell({
   );
 }
 
+/**
+ * Config editor for the studio answer types.
+ *
+ * Everything here writes into the draft's `settings`, which `definitionFromDraft`
+ * serializes into the published `config` — the exact bag the entry renderers and
+ * the server-side validator both read. One source of truth for "what is in range".
+ */
+function StudioSettingsEditor({
+  question,
+  disabled,
+  onChange,
+}: {
+  question: DraftQuestion;
+  disabled: boolean;
+  onChange(settings: DraftFieldSettings): void;
+}) {
+  const settings = question.settings ?? {};
+  const patch = (next: DraftFieldSettings) => onChange({ ...settings, ...next });
+  const numberOr = (raw: string, fallback: number) => {
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : fallback;
+  };
+
+  if (question.kind === "counter" || question.kind === "multi_counter") {
+    const subCounters = parseSubCounters(settings.subCountersText);
+    return (
+      <div className="sfb-settings">
+        {question.kind === "multi_counter" ? (
+          <FormRow
+            label="Named counters"
+            hint={
+              subCounters.length
+                ? `${subCounters.length} counter${subCounters.length === 1 ? "" : "s"}: ${subCounters
+                    .map((counter) => counter.label)
+                    .join(" · ")}`
+                : "Add at least one — comma separated (e.g. High, Mid, Low)"
+            }
+          >
+            <input
+              value={settings.subCountersText ?? ""}
+              disabled={disabled}
+              placeholder="High, Mid, Low"
+              aria-label="Named counters"
+              onChange={(event) => patch({ subCountersText: event.target.value })}
+            />
+          </FormRow>
+        ) : null}
+        <FormRow label="Bulk step buttons" hint="Comma separated; the first one is the big primary tap">
+          <input
+            value={settings.counterStepsText ?? ""}
+            disabled={disabled}
+            placeholder="1, 5, 10"
+            aria-label="Counter step buttons"
+            onChange={(event) => patch({ counterStepsText: event.target.value })}
+          />
+        </FormRow>
+        <FormRow label="Max" hint="Blank for no cap — the server rejects anything above it">
+          <input
+            type="number"
+            value={settings.maxText ?? ""}
+            disabled={disabled}
+            placeholder="No cap"
+            aria-label="Counter maximum"
+            onChange={(event) => patch({ maxText: event.target.value })}
+          />
+        </FormRow>
+        <label className="sfb-check">
+          <input
+            type="checkbox"
+            checked={Boolean(settings.allowNegative)}
+            disabled={disabled}
+            onChange={(event) => patch({ allowNegative: event.target.checked })}
+          />
+          <span>
+            <strong>Allow negative counts</strong>
+            <small className="app-muted">Off by default — a tally cannot go below zero</small>
+          </span>
+        </label>
+      </div>
+    );
+  }
+
+  if (question.kind === "timer") {
+    return (
+      <div className="sfb-settings">
+        <FormRow
+          label="Stopwatch mode"
+          hint={
+            settings.timerMode === "total"
+              ? "Start-stop adds to one running total"
+              : "Each start-stop records a lap; the total and average come from the laps"
+          }
+        >
+          <select
+            value={settings.timerMode ?? "lap"}
+            disabled={disabled}
+            aria-label="Stopwatch mode"
+            onChange={(event) => patch({ timerMode: event.target.value === "total" ? "total" : "lap" })}
+          >
+            <option value="lap">Laps — one per start-stop</option>
+            <option value="total">Total — one running clock</option>
+          </select>
+        </FormRow>
+      </div>
+    );
+  }
+
+  if (question.kind === "rating") {
+    return (
+      <div className="sfb-settings">
+        <FormRow label="Stars" hint={`Between ${RATING_MIN_STARS} and ${RATING_MAX_STARS}`}>
+          <input
+            type="number"
+            min={RATING_MIN_STARS}
+            max={RATING_MAX_STARS}
+            value={settings.ratingMax ?? 5}
+            disabled={disabled}
+            aria-label="Rating stars"
+            onChange={(event) => patch({ ratingMax: numberOr(event.target.value, 5) })}
+          />
+        </FormRow>
+      </div>
+    );
+  }
+
+  if (question.kind === "slider") {
+    return (
+      <div className="sfb-settings">
+        <FormRow label="Min">
+          <input
+            type="number"
+            value={settings.sliderMin ?? 0}
+            disabled={disabled}
+            aria-label="Slider minimum"
+            onChange={(event) => patch({ sliderMin: numberOr(event.target.value, 0) })}
+          />
+        </FormRow>
+        <FormRow label="Max">
+          <input
+            type="number"
+            value={settings.sliderMax ?? 10}
+            disabled={disabled}
+            aria-label="Slider maximum"
+            onChange={(event) => patch({ sliderMax: numberOr(event.target.value, 10) })}
+          />
+        </FormRow>
+        <FormRow label="Step" hint="Must be positive and no wider than the range">
+          <input
+            type="number"
+            value={settings.sliderStep ?? 1}
+            disabled={disabled}
+            aria-label="Slider step"
+            onChange={(event) => patch({ sliderStep: numberOr(event.target.value, 1) })}
+          />
+        </FormRow>
+        <FormRow label="Low end label" hint="Optional — shown under the left end">
+          <input
+            value={settings.sliderMinLabel ?? ""}
+            disabled={disabled}
+            placeholder="e.g. Never"
+            aria-label="Slider low label"
+            onChange={(event) => patch({ sliderMinLabel: event.target.value })}
+          />
+        </FormRow>
+        <FormRow label="High end label" hint="Optional — shown under the right end">
+          <input
+            value={settings.sliderMaxLabel ?? ""}
+            disabled={disabled}
+            placeholder="e.g. Every cycle"
+            aria-label="Slider high label"
+            onChange={(event) => patch({ sliderMaxLabel: event.target.value })}
+          />
+        </FormRow>
+      </div>
+    );
+  }
+
+  if (question.kind === "field_position") {
+    return (
+      <div className="sfb-settings">
+        <FormRow
+          label="Grid columns"
+          hint={`${FIELD_POSITION_MIN_GRID}–${FIELD_POSITION_MAX_GRID}. Only cell numbers are stored — no game art, so the form survives the next reveal.`}
+        >
+          <input
+            type="number"
+            min={FIELD_POSITION_MIN_GRID}
+            max={FIELD_POSITION_MAX_GRID}
+            value={settings.gridCols ?? 6}
+            disabled={disabled}
+            aria-label="Field grid columns"
+            onChange={(event) => patch({ gridCols: numberOr(event.target.value, 6) })}
+          />
+        </FormRow>
+        <FormRow label="Grid rows" hint={`${FIELD_POSITION_MIN_GRID}–${FIELD_POSITION_MAX_GRID}`}>
+          <input
+            type="number"
+            min={FIELD_POSITION_MIN_GRID}
+            max={FIELD_POSITION_MAX_GRID}
+            value={settings.gridRows ?? 3}
+            disabled={disabled}
+            aria-label="Field grid rows"
+            onChange={(event) => patch({ gridRows: numberOr(event.target.value, 3) })}
+          />
+        </FormRow>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/**
+ * Live preview of one studio field.
+ *
+ * It renders the real entry control against the real published config, so what
+ * a coach taps here is exactly what a scout will tap in the stands. State is
+ * local and thrown away — nothing previewed is ever saved.
+ */
+function StudioPreviewField({ question }: { question: DraftQuestion }) {
+  const field = useMemo(() => previewFieldForQuestion(question), [question]);
+  const [value, setValue] = useState<unknown>(undefined);
+  const label = `${question.label || "Untitled"}${question.required ? " *" : ""}`;
+  return <StudioField field={field} value={value} onChange={setValue} label={label} />;
+}
+
 function PreviewField({ question }: { question: DraftQuestion }) {
   const options = parseOptions(question.optionsText);
   const label = `${question.label || "Untitled"}${question.required ? " *" : ""}`;
 
+  if (isStudioAnswerKind(question.kind)) {
+    return <StudioPreviewField question={question} />;
+  }
   if (question.kind === "yesno") {
     return (
       <label className="sfb-check">
@@ -366,9 +647,11 @@ function PreviewField({ question }: { question: DraftQuestion }) {
   );
 }
 
-export default function FormsClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
+export default function FormsClient({ orgId }: { orgId: string; embedded?: boolean }) {
   const [payload, setPayload] = useState<SchemasPayload | null>(null);
   const [loadError, setLoadError] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
   const [type, setType] = useState<EntryType>("match");
   const [mode, setMode] = useState<Mode>("edit");
   const [title, setTitle] = useState("Match scouting");
@@ -381,7 +664,30 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
 
   const validation = useMemo(() => validateDraft(title, questions, type), [title, questions, type]);
 
+  // One-shot handoff from the migrate page (undefined = not yet checked,
+  // null = checked and nothing was waiting). Consumed inside loadSchemaIntoDraft
+  // so the imported draft beats — rather than races — the initial schema fetch.
+  const importedDraftRef = useRef<SchemaDefinition | null | undefined>(undefined);
+
   const loadSchemaIntoDraft = useCallback((schema: ScoutSchema | undefined, nextType: EntryType) => {
+    if (importedDraftRef.current === undefined) {
+      importedDraftRef.current = null;
+      try {
+        const raw = window.sessionStorage.getItem(IMPORTED_FORM_DRAFT_KEY);
+        if (raw) {
+          window.sessionStorage.removeItem(IMPORTED_FORM_DRAFT_KEY);
+          const imported = JSON.parse(raw) as SchemaDefinition;
+          const draft = draftFromDefinition(imported);
+          importedDraftRef.current = imported;
+          setTitle(draft.title);
+          setQuestions(draft.questions.length ? draft.questions : defaultQuestions(nextType));
+          setMessage("Imported from QRScout — review every question, then Publish. Nothing is live yet.");
+          return;
+        }
+      } catch {
+        // Malformed or blocked handoff payload: fall through to the normal load.
+      }
+    }
     if (schema?.definition) {
       const draft = draftFromDefinition(schema.definition);
       setTitle(draft.title);
@@ -395,12 +701,14 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
 
   const load = useCallback(async () => {
     setLoadError("");
+    setLoadErrorStatus(null);
     try {
       const response = await fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}`, {
         cache: "no-store",
       });
       const body = (await response.json()) as SchemasPayload & { error?: string };
       if (!response.ok) {
+        setLoadErrorStatus(response.status);
         setLoadError(body.error ?? "Could not load scouting schemas.");
         return;
       }
@@ -427,6 +735,15 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     const schema = payload?.schemas.find((entry) => entry.type === next);
     loadSchemaIntoDraft(schema, next);
     if (payload?.year != null) setYear(payload.year);
+  }
+
+  /**
+   * Change a question's answer type. Goes through `retypeQuestion` so the new
+   * kind gets sensible defaults while the stored key stays put — renaming or
+   * retyping a published field must never orphan the payloads saved under it.
+   */
+  function retypeQuestionById(id: string, kind: AnswerKind) {
+    setQuestions((prev) => prev.map((q) => (q.id === id ? retypeQuestion(q, kind) : q)));
   }
 
   function updateQuestion(id: string, patch: Partial<DraftQuestion>) {
@@ -507,6 +824,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         shell="error"
         entryType={type}
         error={loadError}
+        errorStatus={loadErrorStatus}
         onRetry={() => void load()}
       />
     );
@@ -798,11 +1116,43 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                           value={question.kind}
                           disabled={!payload.canManageSchemas}
                           onChange={(event) =>
-                            updateQuestion(question.id, { kind: event.target.value as AnswerKind })
+                            retypeQuestionById(question.id, event.target.value as AnswerKind)
                           }
                         >
                           {ANSWER_KIND_OPTIONS.map((option) => (
                             <option key={option.kind} value={option.kind}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </FormRow>
+                      <FormRow
+                        label="Feeds strategy as"
+                        hint={
+                          question.role === "none"
+                            ? detectedRoleForQuestion(question) !== "none"
+                              ? `Detected: ${
+                                  STRATEGY_ROLE_OPTIONS.find(
+                                    (option) => option.role === detectedRoleForQuestion(question),
+                                  )?.label ?? detectedRoleForQuestion(question)
+                                }`
+                              : "Not mapped — pick a role so answers reach strategy and pick tools"
+                            : STRATEGY_ROLE_OPTIONS.find((option) => option.role === question.role)
+                                ?.hint
+                        }
+                      >
+                        <select
+                          value={question.role}
+                          disabled={!payload.canManageSchemas}
+                          aria-label={`Strategy mapping for question ${index + 1}`}
+                          onChange={(event) =>
+                            updateQuestion(question.id, {
+                              role: event.target.value as StrategyFieldRole,
+                            })
+                          }
+                        >
+                          {STRATEGY_ROLE_OPTIONS.map((option) => (
+                            <option key={option.role} value={option.role}>
                               {option.label}
                             </option>
                           ))}
@@ -821,24 +1171,67 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         {ANSWER_KIND_OPTIONS.find((o) => o.kind === question.kind)?.hint}
                       </p>
                     )}
-                    <label className={`sfb-check sfb-required-toggle${question.required ? " is-on" : ""}`}>
-                      <input
-                        type="checkbox"
-                        checked={question.required}
+                    {needsSettingsEditor(question.kind) ? (
+                      <StudioSettingsEditor
+                        question={question}
                         disabled={!payload.canManageSchemas}
-                        onChange={(event) =>
-                          updateQuestion(question.id, { required: event.target.checked })
-                        }
+                        onChange={(settings) => updateQuestion(question.id, { settings })}
                       />
-                      <span>
-                        <strong>Required</strong>
-                        <small className="app-muted">
-                          {question.required
-                            ? "Scouts must answer before save"
-                            : "Optional — scouts can skip"}
-                        </small>
-                      </span>
-                    </label>
+                    ) : null}
+                    {question.kind === "section" ? (
+                      <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
+                        Layout only — this heading groups every question under it until the next
+                        section, and it stores no answer.
+                      </p>
+                    ) : (
+                      <>
+                        <FormRow
+                          label="After a save"
+                          hint={
+                            RESET_BEHAVIOR_OPTIONS.find(
+                              (option) => option.behavior === question.reset,
+                            )?.hint
+                          }
+                        >
+                          <select
+                            value={question.reset}
+                            disabled={!payload.canManageSchemas}
+                            aria-label={`After-save behavior for question ${index + 1}`}
+                            onChange={(event) =>
+                              updateQuestion(question.id, {
+                                reset: event.target.value as FormResetBehavior,
+                              })
+                            }
+                          >
+                            {RESET_BEHAVIOR_OPTIONS.map((option) => (
+                              <option key={option.behavior} value={option.behavior}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </FormRow>
+                        <label
+                          className={`sfb-check sfb-required-toggle${question.required ? " is-on" : ""}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={question.required}
+                            disabled={!payload.canManageSchemas}
+                            onChange={(event) =>
+                              updateQuestion(question.id, { required: event.target.checked })
+                            }
+                          />
+                          <span>
+                            <strong>Required</strong>
+                            <small className="app-muted">
+                              {question.required
+                                ? "Scouts must answer before save"
+                                : "Optional — scouts can skip"}
+                            </small>
+                          </span>
+                        </label>
+                      </>
+                    )}
                   </article>
                 ))}
               </div>
@@ -956,14 +1349,29 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
           </Panel>
           <Panel>
             <h2>Answer types</h2>
-            <ul className="sfb-published">
+            <p className="app-muted" style={{ margin: "0 0 10px", fontSize: 13 }}>
+              Tap one to add a question of that type, then give it a label.
+            </p>
+            <ul className="sfb-palette">
               {ANSWER_KIND_OPTIONS.map((option) => (
                 <li key={option.kind}>
-                  <span>
+                  <button
+                    type="button"
+                    disabled={!payload.canManageSchemas}
+                    aria-label={`Add a ${option.label} question`}
+                    onClick={() =>
+                      setQuestions((prev) => [
+                        ...prev,
+                        newDraftQuestion({
+                          kind: option.kind,
+                          label: option.kind === "section" ? "Teleop" : "",
+                        }),
+                      ])
+                    }
+                  >
                     <strong>{option.label}</strong>
-                    <br />
-                    <span className="app-muted">{option.hint}</span>
-                  </span>
+                    <small className="app-muted">{option.hint}</small>
+                  </button>
                 </li>
               ))}
             </ul>

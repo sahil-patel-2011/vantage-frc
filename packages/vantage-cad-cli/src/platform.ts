@@ -100,6 +100,8 @@ export type PluginHealth = {
   protocol?: string;
   addinVersion?: string;
   documentName?: string;
+  /** Operations the running add-in advertises (v0.2.0+). Undefined on older add-ins. */
+  operations?: string[];
   error?: string;
 };
 
@@ -123,6 +125,9 @@ export async function probeFusionPluginHealth(
       protocol: typeof data.protocol === "string" ? data.protocol : undefined,
       addinVersion: typeof data.addinVersion === "string" ? data.addinVersion : undefined,
       documentName: typeof data.documentName === "string" ? data.documentName : undefined,
+      // Add-ins >= 0.2.0 publish the operations they really execute; doctor compares
+      // that against FUSION_RELAY_IMPLEMENTED_OPERATIONS instead of assuming parity.
+      operations: Array.isArray(data.operations) ? data.operations.map(String) : undefined,
     };
   } catch (error) {
     return {

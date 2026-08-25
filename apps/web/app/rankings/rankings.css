@@ -1,6 +1,6 @@
-/* Event Rankings & Playoff Bracket — co-located styles. All selectors are
-   .rank- prefixed and theme-aware. Alliance red #d43a3a / blue #2f6fdd appear
-   ONLY as small dots and chips; all general text stays on theme variables. */
+/* Event rankings and playoff bracket — co-located styles. All selectors are
+   .rank- prefixed and theme-aware. Alliance red/blue ride the shared
+   --app-critical / --app-accent tokens so dots and chips survive dark mode. */
 .rank-empty{display:grid;gap:12px;justify-items:start;padding:26px}
 .rank-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .rank-standing{padding:6px 12px;color:var(--app-accent);background:transparent;border:1px solid var(--app-accent);border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -38,12 +38,12 @@
 .rank-match-top strong{color:var(--app-ink);font-size:13px}
 .rank-match-time{margin-left:auto;color:var(--app-muted);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rank-winner{margin-left:auto;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
-.rank-winner.red{color:#d43a3a;border:1px solid #d43a3a}
-.rank-winner.blue{color:#2f6fdd;border:1px solid #2f6fdd}
+.rank-winner.red{color:var(--app-critical);border:1px solid var(--app-critical)}
+.rank-winner.blue{color:var(--app-accent);border:1px solid var(--app-accent)}
 .rank-alliance{display:flex;align-items:center;gap:8px}
 .rank-dot{flex:none;width:8px;height:8px;border-radius:50%}
-.rank-dot.red{background:#d43a3a}
-.rank-dot.blue{background:#2f6fdd}
+.rank-dot.red{background:var(--app-critical)}
+.rank-dot.blue{background:var(--app-accent)}
 .rank-alliance-teams{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0}
 .rank-alliance-teams b{color:var(--app-ink);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 .rank-alliance-teams b.us{color:var(--app-accent);text-decoration:underline;text-underline-offset:3px}

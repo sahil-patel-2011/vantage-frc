@@ -1,0 +1,296 @@
+/* Recent CAD activity — web agent + terminal sessions in one list. */
+.cad-activity {
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  background: var(--app-bg);
+  display: grid;
+}
+.cad-activity-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--app-line);
+  font: 700 12px/1 var(--font-source-sans), ui-sans-serif;
+  color: var(--app-ink);
+}
+.cad-activity-head button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.cad-activity-empty,
+.cad-activity-error {
+  margin: 0;
+  padding: 14px;
+  font: 400 13px/1.45 var(--font-source-sans), ui-sans-serif;
+  color: var(--app-muted);
+}
+.cad-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+.cad-activity-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  padding: 10px 14px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--app-line);
+  font: 400 13px/1.35 var(--font-source-sans), ui-sans-serif;
+  color: var(--app-ink);
+}
+.cad-activity-item:last-child {
+  border-bottom: none;
+}
+.cad-activity-source {
+  font: 700 10px/1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--app-line);
+  color: var(--app-muted);
+  white-space: nowrap;
+}
+.cad-activity-source--terminal {
+  color: var(--app-positive, #0a7a4a);
+  border-color: currentColor;
+}
+.cad-activity-title {
+  font-weight: 600;
+}
+.cad-activity-meta {
+  color: var(--app-muted);
+  font-size: 12px;
+}
+.cad-activity-status--failed {
+  color: var(--app-critical);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Filters: narrow the same org-scoped list (mine/everyone, web/terminal). */
+.cad-activity-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cad-activity-filter {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--app-line);
+  border-radius: 999px;
+}
+.cad-activity-chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--app-muted);
+  font: 600 12px/1 var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+}
+.cad-activity-chip:hover {
+  color: var(--app-ink);
+}
+.cad-activity-chip.active {
+  background: var(--app-ink);
+  color: var(--app-bg);
+}
+.cad-activity-chip:focus-visible {
+  outline: 2px solid var(--app-accent, currentColor);
+  outline-offset: 2px;
+}
+
+/* Row becomes the expand control; keep the original inline layout. */
+.cad-activity-item {
+  display: block;
+  padding: 0;
+}
+.cad-activity-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  width: 100%;
+  padding: 10px 14px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.cad-activity-row:hover {
+  background: color-mix(in srgb, var(--app-ink) 5%, transparent);
+}
+.cad-activity-row:focus-visible {
+  outline: 2px solid var(--app-accent, currentColor);
+  outline-offset: -2px;
+}
+.cad-activity-caret {
+  margin-left: auto;
+  color: var(--app-muted);
+}
+.cad-activity-detail {
+  padding: 0 14px 12px 14px;
+  border-top: 1px dashed var(--app-line);
+}
+.cad-activity-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--app-accent, var(--app-ink));
+  font: 600 12px/1 var(--font-source-sans), ui-sans-serif;
+}
+
+/* Narrated build steps — shared by the session pane and the activity detail. */
+.cad-step-panel {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: var(--app-bg);
+  font: 400 13px/1.4 var(--font-source-sans), ui-sans-serif;
+  color: var(--app-ink);
+}
+.cad-step-list {
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+}
+.cad-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--app-line);
+}
+.cad-step:last-child {
+  border-bottom: none;
+}
+.cad-step-index {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--app-line);
+  color: var(--app-muted);
+  font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
+}
+.cad-step-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.cad-step-title {
+  font: 600 13px/1.35 var(--font-source-sans), ui-sans-serif;
+  overflow-wrap: anywhere;
+}
+.cad-step-detail {
+  color: var(--app-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.cad-step-status {
+  flex: 0 0 auto;
+  color: var(--app-muted);
+  font: 600 11px/1 var(--font-source-sans), ui-sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cad-step--failed .cad-step-index,
+.cad-step--failed .cad-step-status {
+  color: var(--app-critical);
+  border-color: currentColor;
+}
+
+@media (max-width: 480px) {
+  .cad-activity-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cad-activity-filters {
+    justify-content: flex-start;
+  }
+}
+
+/* Tools panel — the "Onshape only" answer, given before anyone asks. */
+.cad-tools-body {
+  display: grid;
+  gap: 14px;
+  padding: 4px 14px 14px 14px;
+}
+.cad-tools-group h3 {
+  margin: 0 0 6px 0;
+  font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+.cad-tools-group ul {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.cad-tool {
+  display: grid;
+  gap: 3px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--app-line);
+}
+.cad-tools-group ul li:last-child {
+  border-bottom: none;
+}
+.cad-tool-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cad-tool-head code {
+  font: 600 12px/1.3 var(--font-mono, ui-monospace), monospace;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+.cad-tool-badge {
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font: 700 10px/1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.cad-tool-badge--onshape {
+  color: var(--app-accent, var(--app-ink));
+}
+.cad-tool-badge--fusion {
+  color: var(--app-muted);
+}
+.cad-tool-desc {
+  color: var(--app-muted);
+  font: 400 12px/1.45 var(--font-source-sans), ui-sans-serif;
+}
+.cad-tool-note {
+  color: var(--app-muted);
+  font: 400 11px/1.4 var(--font-source-sans), ui-sans-serif;
+  font-style: italic;
+}

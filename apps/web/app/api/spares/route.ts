@@ -110,6 +110,7 @@ export async function POST(request: Request) {
           if (body.category !== undefined && !category) throw new Error("Invalid category");
           await updateConsumable(client, {
             orgId,
+            userId,
             itemId,
             name: body.name === undefined ? undefined : (trimmedOrNull(body.name, 200) ?? undefined),
             category: category ?? undefined,
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
         case "adjust-stock": {
           const itemId = trimmedOrNull(body.itemId, 64);
           if (!itemId) throw new Error("itemId is required");
-          await adjustStock(client, { orgId, itemId, delta: deltaFrom(body.delta) });
+          await adjustStock(client, { orgId, userId, itemId, delta: deltaFrom(body.delta) });
           break;
         }
         case "delete-item": {

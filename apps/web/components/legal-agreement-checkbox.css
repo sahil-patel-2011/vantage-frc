@@ -1,0 +1,86 @@
+/**
+ * Two separate consents: Terms of Service and Privacy Policy.
+ * Class names are doubled for specificity so legacy per-page wrappers
+ * (.consent, .invite-legal, .onboarding-legal-accept) cannot flatten the two
+ * rows back onto one line.
+ */
+.legal-consent.legal-consent {
+  display: grid;
+  gap: 4px;
+  align-items: stretch;
+  margin: 16px 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.legal-consent-row.legal-consent-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  padding: 4px 2px;
+  color: var(--soft-ink, #132033);
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+
+.legal-consent-row input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--soft-accent, #1f4fd6);
+  cursor: pointer;
+}
+
+.legal-consent-row input[type="checkbox"]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--soft-accent, #1f4fd6) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.legal-consent-row a {
+  color: var(--soft-accent, #1f4fd6);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.legal-consent-row a:hover,
+.legal-consent-row a:focus-visible {
+  text-decoration-thickness: 2px;
+}
+
+.legal-consent-hint.legal-consent-hint {
+  margin: 2px 0 0;
+  color: var(--soft-muted, #5a6578);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.legal-consent-error.legal-consent-error {
+  margin: 4px 0 0;
+  color: #a33a32;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+html[data-theme="dark"] .legal-consent-error.legal-consent-error {
+  color: #ff9d94;
+}
+
+/* 360px-wide phones: let the label text wrap without shrinking the box. */
+@media (max-width: 420px) {
+  .legal-consent-row.legal-consent-row {
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .legal-consent-row input[type="checkbox"] {
+    margin-top: 2px;
+  }
+}

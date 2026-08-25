@@ -112,6 +112,13 @@ describe("generateGrantReport", () => {
     expect(report.spendByCategory[0]?.totalUsd).toBe(800);
     expect(report.narrative).toContain("NASA Grant");
     expect(report.narrative).toContain("$2,000");
+    // Season expenses have no per-grant linkage: the report must disclose that instead of
+    // presenting org-wide spend as if it were this grant's spend.
+    expect(report.narrative).toContain("Spend linkage is not configured");
+    expect(report.narrative).not.toContain("Recorded fund usage");
+    const spendSection = report.sections.find((section) => section.id === "spend");
+    expect(spendSection?.title).toBe("Season spending context (not grant-attributed)");
+    expect(spendSection?.body).toContain("For context only");
 
     const reportInsert = inserted.find((entry) => entry.sql.includes("INSERT INTO grant_report_reports"));
     expect(reportInsert).toBeDefined();

@@ -36,8 +36,22 @@ export const CATEGORY_LABELS: Record<InventoryCategory, string> = {
   other: "Other",
 };
 
+/** One parts ledger (0462): consumables live on the same spine, discriminated by kind. */
+export const ITEM_KINDS = ["part", "consumable"] as const;
+export type ItemKind = (typeof ITEM_KINDS)[number];
+
+/** Consumable taxonomy (kind='consumable' rows keep it verbatim after the 0462 unification). */
+const CONSUMABLE_CATEGORY_LABELS: Record<string, string> = {
+  fasteners: "Fasteners",
+  electrical: "Electrical",
+  adhesives: "Adhesives",
+  stock: "Raw stock",
+  tools: "Tool consumables",
+  ppe: "PPE",
+};
+
 export function categoryLabel(category: string): string {
-  return CATEGORY_LABELS[category as InventoryCategory] ?? category;
+  return CATEGORY_LABELS[category as InventoryCategory] ?? CONSUMABLE_CATEGORY_LABELS[category] ?? category;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +69,8 @@ export type InventoryLocation = {
 export type InventoryItem = {
   id: string;
   name: string;
+  /** One parts ledger (0462): 'part' | 'consumable'. Optional so pre-unification callers still typecheck. */
+  kind?: ItemKind;
   category: InventoryCategory;
   partNumber: string | null;
   vendor: string | null;

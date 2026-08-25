@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { BusinessRelated } from "../../components/business-related";
-import { EmptyState } from "../../components/ui";
+import { Badge, EmptyState, StatTile } from "../../components/ui";
+import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
+import {
+  MONEY_SOURCE_LABELS,
+  type FinanceBalanceView,
+  type UnifiedLedgerEntry,
+} from "../../lib/finance/balance";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SEASON_FINANCE_RELATED_INCLUDE } from "../../lib/business/business-related";
 import {
   FUNDING_KIND_LABELS,
@@ -43,20 +50,31 @@ export default function SeasonFinanceClient({
   const [view, setView] = useState<SeasonFinanceView | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Kept apart from mutation errors so an expired session offers sign-in, not a Retry that cannot work.
+  const [loadFailure, setLoadFailure] = useState<{ status: number | null; message: string } | null>(null);
   const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
     setError("");
+    setLoadFailure(null);
     const query = new URLSearchParams({ orgId, season: String(seasonYear) });
     try {
       const response = await fetch(`/api/business/finance?${query.toString()}`);
       const data = (await response.json()) as SeasonFinanceView | { error?: string };
       if (!response.ok || !("status" in data)) {
-        throw new Error("error" in data && data.error ? data.error : "Could not load season finance");
+        setLoadFailure({
+          status: response.status,
+          message: ("error" in data && data.error) || "Could not load season finance",
+        });
+        return;
       }
+      setLoadFailure(null);
       setView(data);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load season finance");
+      setLoadFailure({
+        status: null,
+        message: cause instanceof Error ? cause.message : "Could not load season finance",
+      });
     }
   }, [orgId, seasonYear]);
 
@@ -157,7 +175,42 @@ export default function SeasonFinanceClient({
         </div>
       ) : null}
 
-      {!view && !error ? <p className="app-muted">Loading season finance…</p> : null}
+      {!view && !loadFailure ? <p className="app-muted">Loading season finance…</p> : null}
+
+      {!view && loadFailure
+        ? (() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: loadFailure.status,
+                message: loadFailure.message,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: loadFailure.message,
+              },
+            );
+            return (
+              <EmptyState title={copy.title} description={copy.description}>
+                <div className="season-finance-next">
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </div>
+              </EmptyState>
+            );
+          })()
+        : null}
 
       {view?.status === "setup_required" ? (
         <EmptyState badge="Setup required" badgeTone="setup" title={view.message} description="Funding, purchases, and sponsorships stay empty until this workspace can read the finance tables.">
@@ -193,6 +246,8 @@ function LiveDesk({
   const hasPlan = rollup.plannedIncomeCents > 0 || rollup.plannedSpendCents > 0 || view.funding.length > 0;
   return (
     <>
+      <BalancePanel orgId={view.orgId} />
+
       <section className="season-finance-next app-card soft-panel" aria-label="Next actions">
         <header>
           <span className="biz-overline">Plan this season</span>
@@ -498,6 +553,187 @@ function LiveDesk({
         </div>
       </section>
     </>
+  );
+}
+
+/** CSV columns for the unified ledger export — raw values, never formatted. */
+const LEDGER_CSV_COLUMNS: readonly CsvColumn<UnifiedLedgerEntry>[] = [
+  { key: "date", header: "date", value: (row) => row.date.slice(0, 10), hint: "When the money moved" },
+  { key: "label", header: "entry", hint: "What the row records" },
+  {
+    key: "source",
+    header: "source",
+    value: (row) => MONEY_SOURCE_LABELS[row.source] ?? row.source,
+    hint: "Which surface recorded it (Order, Receipt, Season cost, Manual…)",
+  },
+  { key: "direction", header: "direction", hint: "in = income, out = spend" },
+  { key: "amountUsd", header: "amount_usd", hint: "US dollars, positive numbers" },
+  {
+    key: "category",
+    header: "category",
+    value: (row) => row.categoryName ?? "",
+    hint: "Budget category, when one is assigned",
+  },
+  {
+    key: "mirrored",
+    header: "on_unified_ledger",
+    hint: "false = legacy row not yet mirrored onto the unified ledger",
+  },
+];
+
+/**
+ * Real money balance — totals derived on every load from recorded rows only
+ * (the unified ledger from 0461_money_unify.sql, plus sponsor cash,
+ * fundraisers, funding desk, and grants). No stored balance column exists
+ * anywhere, and rows already mirrored onto the ledger are never counted twice.
+ */
+function BalancePanel({ orgId }: { orgId: string }) {
+  const [balance, setBalance] = useState<FinanceBalanceView | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(`/api/finance/balance?${new URLSearchParams({ orgId }).toString()}`);
+        const data = (await response.json()) as FinanceBalanceView | { error?: string };
+        if (cancelled) return;
+        if (!response.ok || !("status" in data)) {
+          setFailed(true);
+          return;
+        }
+        setBalance(data);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
+  // usdToBalance: API returns USD numbers; reuse the file's cents formatter.
+  const usd = (amount: number) => money(Math.round(amount * 100));
+
+  return (
+    <section className="app-card finance-balance" aria-label="Team money balance">
+      <header className="biz-card-head">
+        <div>
+          <span className="biz-overline">Balance</span>
+          <h2>Where the money actually stands</h2>
+          <p className="app-muted finance-balance-note">
+            Derived from recorded income and spend only — ledger, sponsor cash, fundraisers, funding lines,
+            grants, orders, receipts, and paid season costs. Nothing is estimated.
+          </p>
+        </div>
+      </header>
+
+      {failed ? (
+        <p className="app-muted">Balance could not load right now. The season figures below are unaffected.</p>
+      ) : null}
+      {!failed && !balance ? <p className="app-muted">Computing balance…</p> : null}
+      {balance?.status === "setup_required" ? <p className="app-muted">{balance.message}</p> : null}
+
+      {balance?.status === "live" && !balance.hasData ? (
+        <p className="app-muted">
+          No money recorded yet. Log a funding source, sponsor contribution, or purchase and the balance
+          appears here — never a placeholder number.
+        </p>
+      ) : null}
+
+      {balance?.status === "live" && balance.hasData ? (
+        <>
+          <div className="finance-balance-tiles">
+            <StatTile label="Money in" value={usd(balance.totalInUsd)} />
+            <StatTile label="Money out" value={usd(balance.totalOutUsd)} />
+            <StatTile
+              label="Balance"
+              value={usd(balance.balanceUsd)}
+              className={balance.balanceUsd < 0 ? "finance-balance-negative" : undefined}
+              footer={balance.balanceUsd < 0 ? "Spend exceeds recorded income" : "Recorded income minus spend"}
+            />
+          </div>
+
+          {balance.byCategory.length ? (
+            <div className="finance-balance-activity">
+              <h3>By category</h3>
+              <ul>
+                {balance.byCategory.map((row) => (
+                  <li key={row.categoryId ?? "uncategorized"}>
+                    <span className="finance-balance-activity-label">
+                      <strong>{row.name}</strong>
+                      {row.inUsd > 0 ? <small>+{usd(row.inUsd)} in</small> : null}
+                    </span>
+                    <span className={`finance-balance-amount ${row.outUsd > 0 ? "out" : "in"}`}>
+                      {row.outUsd > 0 ? `−${usd(row.outUsd)}` : `+${usd(row.inUsd)}`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {balance.ledger.length ? (
+            <div className="finance-balance-activity">
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <h3 style={{ margin: 0 }}>The ledger</h3>
+                <ExportButton
+                  rows={balance.ledger}
+                  columns={LEDGER_CSV_COLUMNS}
+                  feature="Money ledger"
+                  orgId={orgId}
+                  size="sm"
+                  provenance="Every recorded money movement on the unified ledger, newest first — mirrored orders, receipts, season costs, and manual entries, deduplicated by source."
+                />
+              </div>
+              <div className="biz-table-wrap">
+                <table className="biz-table">
+                  <thead>
+                    <tr>
+                      <th>Entry</th>
+                      <th>Source</th>
+                      <th>Category</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {balance.ledger.map((row) => (
+                      <tr key={`${row.source}-${row.id}`}>
+                        <td>
+                          <strong>{row.label}</strong>
+                          <small>{row.date.slice(0, 10)}</small>
+                        </td>
+                        <td>
+                          <Badge tone="neutral" icon={null}>
+                            {MONEY_SOURCE_LABELS[row.source] ?? row.source}
+                          </Badge>
+                          {!row.mirrored ? (
+                            <Badge tone="info" icon={null} title="This legacy row is not yet mirrored onto the unified ledger; it is still counted exactly once.">
+                              legacy
+                            </Badge>
+                          ) : null}
+                        </td>
+                        <td>{row.categoryName ?? "Uncategorized"}</td>
+                        <td>
+                          <span className={`finance-balance-amount ${row.direction}`}>
+                            {row.direction === "in" ? "+" : "−"}
+                            {usd(row.amountUsd)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="app-muted" style={{ margin: "8px 0 0", fontSize: 12 }}>
+                Sponsor cash, fundraiser proceeds, funding lines, and grant awards are counted from their own
+                surfaces (see “Also recorded elsewhere”) so no dollar appears twice.
+              </p>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+    </section>
   );
 }
 

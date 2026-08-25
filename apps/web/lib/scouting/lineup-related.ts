@@ -1,3 +1,4 @@
+import type { CoverageGapStatus, CoverageSlotInput } from "@vantage/scouting/coverage";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
@@ -141,6 +142,112 @@ export function lineupScoutNowHref(
   const base = hubHref("/competition", "scouting", orgId);
   const params = new URLSearchParams({ matchKey, teamKey });
   return `${base}&${params.toString()}`;
+}
+
+/**
+ * Live-board poll interval. Tablet-friendly: at least 15s so pit tablets on
+ * battery do not hammer the network, and polling pauses while the tab is hidden.
+ */
+export const LINEUP_POLL_MS = 15_000;
+
+/** Poll only while the tab is visible — battery-safe for pit tablets. */
+export function shouldPollLineup(visibilityState: string | null | undefined): boolean {
+  return visibilityState !== "hidden";
+}
+
+/** DB rows the coverage route joins — matches_ref alliances as stored (JSONB). */
+export type LineupMatchRow = {
+  matchKey: string;
+  matchNumber: number;
+  compLevel: string;
+  redAlliance: { teamKeys?: string[] } | null;
+  blueAlliance: { teamKeys?: string[] } | null;
+  eventTime?: string | null;
+};
+
+export type LineupAssignmentCountRow = {
+  matchKey: string;
+  teamKey: string;
+  count: number;
+};
+
+/** One row per membership-bound match entry — never typed scout names. */
+export type LineupEntryScoutRow = {
+  matchKey: string;
+  teamKey: string;
+  scoutUserId: string;
+  scoutName: string | null;
+};
+
+/**
+ * Assemble coverage slots from real schedule + assignment + entry rows only.
+ * One slot per (match, alliance robot); counts come straight from the DB rows —
+ * never invented, never DEMO %.
+ */
+export function buildLineupCoverageSlots(input: {
+  matches: LineupMatchRow[];
+  assignments: LineupAssignmentCountRow[];
+  entryScouts: LineupEntryScoutRow[];
+}): CoverageSlotInput[] {
+  const assignmentCounts = new Map<string, number>();
+  for (const row of input.assignments) {
+    assignmentCounts.set(`${row.matchKey}|${row.teamKey}`, Number(row.count) || 0);
+  }
+  const entriesByCell = new Map<string, LineupEntryScoutRow[]>();
+  for (const row of input.entryScouts) {
+    const key = `${row.matchKey}|${row.teamKey}`;
+    const list = entriesByCell.get(key) ?? [];
+    list.push(row);
+    entriesByCell.set(key, list);
+  }
+  const slots: CoverageSlotInput[] = [];
+  for (const match of input.matches) {
+    const alliances: Array<{ alliance: "red" | "blue"; teamKeys: string[] }> = [
+      { alliance: "red", teamKeys: match.redAlliance?.teamKeys ?? [] },
+      { alliance: "blue", teamKeys: match.blueAlliance?.teamKeys ?? [] },
+    ];
+    for (const { alliance, teamKeys } of alliances) {
+      for (const teamKey of teamKeys) {
+        if (typeof teamKey !== "string" || !teamKey) continue;
+        const key = `${match.matchKey}|${teamKey}`;
+        const entries = entriesByCell.get(key) ?? [];
+        const scoutUserIds: string[] = [];
+        const scoutNames: string[] = [];
+        for (const entry of entries) {
+          if (scoutUserIds.includes(entry.scoutUserId)) continue;
+          scoutUserIds.push(entry.scoutUserId);
+          scoutNames.push(entry.scoutName || "Team scout");
+        }
+        slots.push({
+          matchKey: match.matchKey,
+          teamKey,
+          matchNumber: match.matchNumber,
+          compLevel: match.compLevel,
+          alliance,
+          assignmentCount: assignmentCounts.get(key) ?? 0,
+          entryCount: entries.length,
+          scoutUserIds,
+          scoutNames,
+          eventTime: match.eventTime ?? null,
+        });
+      }
+    }
+  }
+  return slots;
+}
+
+/**
+ * Default live-window anchor: the first schedule-ordered match that still has a
+ * gap (unscouted or assigned-but-empty). Null when nothing needs coverage —
+ * the window then starts at the first match.
+ */
+export function defaultLineupFocusMatchKey(
+  slots: Array<{ matchKey: string; status: CoverageGapStatus }>,
+): string | null {
+  for (const slot of slots) {
+    if (slot.status === "unscouted" || slot.status === "assigned") return slot.matchKey;
+  }
+  return null;
 }
 
 /** Classify Lineup Soft-UI shell — never invents DEMO %. */

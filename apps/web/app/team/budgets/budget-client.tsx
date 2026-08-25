@@ -98,7 +98,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     modelAllowlistEnabled: false,
     providerAllowlistEnabled: false,
     killSwitch: false,
-    promptCachingEnabled: false,
+    promptCachingEnabled: true,
   });
   const [usage, setUsage] = useState<Record<string, string>>({});
   const [projected, setProjected] = useState<number | null>(null);
@@ -170,7 +170,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
         modelAllowlistEnabled: false,
         providerAllowlistEnabled: false,
         killSwitch: false,
-        promptCachingEnabled: false,
+        promptCachingEnabled: true,
       }));
     }
     setUsage(data.usage ?? {});
@@ -641,7 +641,7 @@ function UsageCutoffQuickActions({
         type="button"
         className="app-button secondary"
         disabled={busy != null}
-        onClick={() => void checkout("subscription", { planCode: "team_pro" })}
+        onClick={() => void checkout("subscription", { planCode: "pro" })}
       >
         {busy === "subscription" ? "Opening…" : "Upgrade plan"}
       </button>

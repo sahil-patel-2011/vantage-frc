@@ -102,7 +102,7 @@
 .ch-thread-actions button,
 .ch-thread-list button,
 .ch-context button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 8px 10px;
   text-align: left;
   color: var(--app-ink);
@@ -181,10 +181,10 @@
 }
 .ch-shared-banner {
   padding: 8px 12px;
-  background: color-mix(in srgb, #d97706 12%, var(--app-surface));
-  border: 1px solid color-mix(in srgb, #d97706 35%, var(--app-line));
+  background: color-mix(in srgb, var(--app-warning) 12%, var(--app-surface));
+  border: 1px solid color-mix(in srgb, var(--app-warning) 35%, var(--app-line));
   border-radius: 10px;
-  color: #92400e;
+  color: var(--app-warning);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -239,7 +239,7 @@
   font-size: 12px;
 }
 .ch-tool.status-empty {
-  border-color: color-mix(in srgb, #d97706 40%, var(--app-line));
+  border-color: color-mix(in srgb, var(--app-warning) 40%, var(--app-line));
 }
 .ch-tool.status-error,
 .ch-tool.status-failed {
@@ -278,12 +278,12 @@
 .ch-composer-note {
   font-size: 11px;
   font-weight: 700;
-  color: #92400e;
+  color: var(--app-warning);
 }
 .ch-composer textarea,
 .ch-context textarea,
 .ch-context input {
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 10px;
   color: var(--app-ink);
   background: var(--app-bg);

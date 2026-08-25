@@ -4,6 +4,9 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import PairClient, { type PairDevice, type PairOrganization } from "./pair-client";
 
+// Session-gated server page: never prerendered, so a credential-free build works.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Pair VS Code · Vantage",
   description:

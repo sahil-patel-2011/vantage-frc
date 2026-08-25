@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
+import { isSttUnsupportedStatus, resolveOrgSttEndpoint } from "@vantage/agent";
 import { resolveScoutOrg } from "../scout-org-access";
 import {
   estimateCloudSttCostUsd,
@@ -64,6 +65,7 @@ export type ScoutVoiceView =
 export async function detectCloudSttProvider(
   client: PoolClient,
   orgId: string,
+  userId?: string,
 ): Promise<ScoutVoiceProviders> {
   if (process.env.OPENAI_API_KEY?.trim()) {
     return { cloudConfigured: true, cloudProvider: "openai" };
@@ -73,19 +75,47 @@ export async function detectCloudSttProvider(
     `SELECT 1
      FROM org_llm_keys
      WHERE org_id = $1 AND lower(provider) LIKE '%openai%'
-     UNION ALL
-     SELECT 1
-     FROM org_provider_configs
-     WHERE org_id = $1
-       AND enabled = true
-       AND key_ciphertext IS NOT NULL
-       AND (lower(kind) LIKE '%openai%' OR lower(coalesce(kind,'')) = 'openai-compatible')
      LIMIT 1`,
     [orgId],
   );
-
   if (keys.rowCount) {
     return { cloudConfigured: true, cloudProvider: "openai" };
+  }
+
+  if (userId) {
+    try {
+      const memberKeys = await client.query(
+        `SELECT 1
+         FROM member_llm_keys
+         WHERE org_id = $1::uuid AND user_id = $2::uuid AND lower(provider) LIKE '%openai%'
+         LIMIT 1`,
+        [orgId, userId],
+      );
+      if (memberKeys.rowCount) {
+        return { cloudConfigured: true, cloudProvider: "openai" };
+      }
+    } catch {
+      // member_llm_keys may not exist yet before migration.
+    }
+  }
+
+  // OpenAI-compatible connector base URL (Ollama / LM Studio / LocalAI …) — key
+  // optional; whether the endpoint actually supports /audio/transcriptions is
+  // verified honestly at transcription time.
+  const configs = await client.query(
+    `SELECT 1
+     FROM org_provider_configs
+     WHERE org_id = $1
+       AND enabled = true
+       AND disabled_at IS NULL
+       AND local_relay = false
+       AND base_url IS NOT NULL
+       AND (lower(kind) LIKE '%openai%' OR lower(coalesce(kind,'')) LIKE '%compatible%')
+     LIMIT 1`,
+    [orgId],
+  );
+  if (configs.rowCount) {
+    return { cloudConfigured: true, cloudProvider: "openai-compatible" };
   }
 
   return { cloudConfigured: false, cloudProvider: null };
@@ -243,7 +273,7 @@ export async function computeScoutVoiceView(
   const [orgSettings, userPrefs, providers, notes] = await Promise.all([
     loadOrgSettings(client, org.orgId),
     loadUserPrefs(client, org.orgId, input.userId),
-    detectCloudSttProvider(client, org.orgId),
+    detectCloudSttProvider(client, org.orgId, input.userId),
     loadNotes(client, org.orgId, {
       eventKey: input.eventKey,
       entryClientId: input.entryClientId,
@@ -417,6 +447,12 @@ export async function deleteVoiceNote(
 /**
  * Cloud STT path: meters AI usage. Throws a setup_required-style error when no provider is configured.
  * Browser STT must be used client-side and attached via attachVoiceNote without this helper.
+ *
+ * Endpoint resolution goes through the BYOK layer (resolveOrgSttEndpoint):
+ * member/org OpenAI key → org OpenAI-compatible base URL (Ollama / LocalAI /
+ * faster-whisper class servers) → platform OPENAI_API_KEY. When the configured
+ * endpoint lacks /audio/transcriptions support the error says so honestly —
+ * the transcript is never fabricated.
  */
 export async function transcribeWithCloudStt(
   client: PoolClient,
@@ -427,11 +463,21 @@ export async function transcribeWithCloudStt(
     contentType: string;
     fileName?: string;
   },
-): Promise<{ transcript: string; costUsd: number; provider: string; model: string }> {
-  const providers = await detectCloudSttProvider(client, input.orgId);
-  if (!providers.cloudConfigured) {
+): Promise<{
+  transcript: string;
+  costUsd: number;
+  provider: string;
+  model: string;
+  source?: string;
+  baseUrlOrigin?: string | null;
+}> {
+  const endpoint = await resolveOrgSttEndpoint(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+  });
+  if (!endpoint) {
     throw new Error(
-      "setup_required: No speech-to-text provider is configured. Add an OpenAI platform/org key, or use browser speech recognition.",
+      "setup_required: No speech-to-text provider is configured. Add an OpenAI key (team or personal) or an OpenAI-compatible base URL under Team → AI API keys, or use browser speech recognition.",
     );
   }
 
@@ -439,15 +485,17 @@ export async function transcribeWithCloudStt(
   if (raw.byteLength < 64) throw new Error("Audio payload is too small");
   if (raw.byteLength > 25 * 1024 * 1024) throw new Error("Audio payload exceeds 25 MB");
 
-  const estimatedCostUsd = estimateCloudSttCostUsd(raw.byteLength, input.contentType);
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) {
-    // Org BYO keys are encrypted; without a decrypt path here we only support platform OPENAI_API_KEY.
-    // Still meter the attempt refusal as setup so the UI can guide configuration.
-    throw new Error(
-      "setup_required: Cloud STT needs OPENAI_API_KEY (platform) or use browser speech recognition.",
-    );
-  }
+  // Local endpoints have no provider bill — never fabricate a Whisper-rate cost for them.
+  const estimatedCostUsd =
+    endpoint.source === "local-connector"
+      ? 0
+      : estimateCloudSttCostUsd(raw.byteLength, input.contentType);
+  const keySource =
+    endpoint.source === "hosted"
+      ? "platform"
+      : endpoint.source === "local-connector"
+        ? "local"
+        : "byo";
 
   return meteredAI({
     client,
@@ -456,25 +504,39 @@ export async function transcribeWithCloudStt(
     feature: SCOUT_VOICE_STT_FEATURE,
     requestId: `scout-voice-stt-${randomUUID()}`,
     estimatedCostUsd,
-    provider: "openai",
-    model: "whisper-1",
+    provider: endpoint.provider,
+    model: endpoint.model,
+    keySource,
     metadata: {
       contentType: input.contentType,
       byteSize: raw.byteLength,
       path: "cloud_stt",
+      sttSource: endpoint.source,
+      sttOrigin: endpoint.baseUrlOrigin,
     },
     invoke: async () => {
       const form = new FormData();
       const blob = new Blob([raw], { type: input.contentType || "audio/webm" });
       form.append("file", blob, input.fileName || "scout-voice.webm");
-      form.append("model", "whisper-1");
+      form.append("model", endpoint.model);
       form.append("response_format", "json");
 
-      const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      const headers: Record<string, string> = {};
+      // Ollama-class local servers accept requests without Authorization.
+      if (endpoint.apiKey.trim()) headers.Authorization = `Bearer ${endpoint.apiKey}`;
+
+      const response = await fetch(`${endpoint.baseUrl}/audio/transcriptions`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}` },
+        headers,
         body: form,
       });
+      if (isSttUnsupportedStatus(response.status)) {
+        throw new Error(
+          `setup_required: The configured AI endpoint${
+            endpoint.baseUrlOrigin ? ` (${endpoint.baseUrlOrigin})` : ""
+          } does not support audio transcription (/audio/transcriptions returned ${response.status}). Use browser speech recognition, or point Team → AI API keys at a Whisper-compatible server.`,
+        );
+      }
       if (!response.ok) {
         const detail = await response.text().catch(() => "");
         throw new Error(`Cloud STT failed (${response.status})${detail ? `: ${detail.slice(0, 200)}` : ""}`);
@@ -487,14 +549,16 @@ export async function transcribeWithCloudStt(
         value: {
           transcript,
           costUsd: estimatedCostUsd,
-          provider: "openai",
-          model: "whisper-1",
+          provider: endpoint.provider,
+          model: endpoint.model,
+          source: endpoint.source,
+          baseUrlOrigin: endpoint.baseUrlOrigin,
         },
         promptTokens: Math.max(1, Math.round(raw.byteLength / 1000)),
         completionTokens: Math.max(1, Math.round(transcript.length / 4)),
         costUsd: estimatedCostUsd,
-        model: "whisper-1",
-        provider: "openai",
+        model: endpoint.model,
+        provider: endpoint.provider,
       };
     },
   });

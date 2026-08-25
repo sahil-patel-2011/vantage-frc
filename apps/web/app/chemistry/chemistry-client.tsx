@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Icon } from "../../components/app-shell";
 import { EmptyState, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { ChemistryView } from "../../lib/chemistry/load-chemistry";
 import {
   CHEMISTRY_RELATED_INCLUDE,
@@ -70,17 +71,37 @@ function ChemistryShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
   orgId?: string | null;
   shell: ChemistryShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session offers sign-in over Retry. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = chemistryNextActions({ orgId, shell });
   const copy = chemistryShellCopy(shell);
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
   const steps = shell === "setup" ? chemistrySetupSteps(orgId) : [];
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
@@ -92,7 +113,7 @@ function ChemistryShell({
     <main className="module-page chem-page chem-workbench soft-gate">
       <PageHeader
         breadcrumbs="Competition / Chemistry"
-        title="Alliance Chemistry"
+        title="Alliance chemistry"
         description="Score how well 2–3 robots complement each other from synced TBA/Statbotics seats — never DEMO chemistry scores."
       >
         <ChemistryRelatedStrip orgId={orgId} />
@@ -111,11 +132,16 @@ function ChemistryShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {failure?.showRetry && onRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -168,12 +194,14 @@ function ChemistryShell({
   );
 }
 
-export default function ChemistryClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function ChemistryClient(_props: { embedded?: boolean } = {}) {
   const [orgId, setOrgId] = useState("");
   const [view, setView] = useState<ChemistryView | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
@@ -211,6 +239,7 @@ export default function ChemistryClient({ embedded = false }: { embedded?: boole
         if (!response.ok) {
           const body = await response.json().catch(() => ({}));
           setError(body.error ?? "Could not load chemistry");
+          setErrorStatus(response.status);
           setView(null);
           setFetchFailed(true);
           setLoading(false);
@@ -222,9 +251,11 @@ export default function ChemistryClient({ embedded = false }: { embedded?: boole
           setDraft(data.teamKeys.map((key) => key.replace(/^frc/i, "")).join(", "));
         }
         setError("");
+        setErrorStatus(null);
         setFetchFailed(false);
       } catch {
         setError("Could not load chemistry");
+        setErrorStatus(null);
         setView(null);
         setFetchFailed(true);
       } finally {
@@ -268,6 +299,7 @@ export default function ChemistryClient({ embedded = false }: { embedded?: boole
       <ChemistryShell
         orgId={view?.orgId ?? (orgId || null)}
         shell={shell}
+        errorStatus={errorStatus}
         error={
           shell === "error"
             ? error || "Could not load alliance chemistry."
@@ -303,7 +335,7 @@ export default function ChemistryClient({ embedded = false }: { embedded?: boole
     <main className="module-page chem-page chem-workbench">
       <PageHeader
         breadcrumbs="Competition / Chemistry"
-        title="Alliance Chemistry"
+        title="Alliance chemistry"
         description={
           view?.eventName
             ? `${view.eventName} · MODEL fit from synced EPA and scout reliability — never DEMO chemistry scores.`

@@ -181,7 +181,7 @@ export function summarizeOpenOrders(orders: OrderRequest[]): OrderAiSummary {
     };
   }
 
-  let headline = `${open.length} open request${open.length === 1 ? "" : "s"} totaling ${usd(openTotalUsd)}.`;
+  let headline: string;
   if (pending.length && approved.length) {
     headline = `${pending.length} awaiting approval and ${approved.length} ready to buy (${usd(openTotalUsd)} open).`;
   } else if (pending.length) {

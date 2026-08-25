@@ -1,5 +1,12 @@
+// Consumables view over the ONE PARTS LEDGER (0462_parts_unify.sql).
+// Consumables are inventory_items rows with kind='consumable': on_hand -> quantity,
+// reorder_point -> min_quantity, preferred_vendor -> vendor. Every count change goes through
+// the append-only inventory_transactions ledger via lib/parts/store — never a bare UPDATE —
+// so BOM coverage, low-stock rollups, forecasts and pit-repair triage all see the same numbers.
+
 import type { PoolClient } from "@neondatabase/serverless";
 import { sortSpares, summarizeSpares } from ".";
+import { adjustStock as adjustLedgerStock, setStockLevel } from "../parts/store";
 import type { Consumable, ConsumableCategory, SparesSummary } from "./types";
 
 export const CONSUMABLE_CATEGORIES: ConsumableCategory[] = [
@@ -34,7 +41,7 @@ export type SparesView =
 type ItemRow = {
   id: string;
   name: string;
-  category: ConsumableCategory;
+  category: string;
   unit: string;
   onHand: string | number | null;
   reorderPoint: string | number | null;
@@ -48,16 +55,21 @@ function num(value: string | number | null): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Unified rows keep their category verbatim; anything outside the taxonomy reads as "other". */
+function asConsumableCategory(value: string): ConsumableCategory {
+  return (CONSUMABLE_CATEGORIES as string[]).includes(value) ? (value as ConsumableCategory) : "other";
+}
+
 function mapItem(row: ItemRow): Consumable {
   return {
     id: row.id,
     name: row.name,
-    category: row.category,
+    category: asConsumableCategory(row.category),
     unit: row.unit,
     onHand: num(row.onHand),
     reorderPoint: num(row.reorderPoint),
     preferredVendor: row.preferredVendor,
-    notes: row.notes,
+    notes: row.notes?.trim() ? row.notes : null,
   };
 }
 
@@ -96,9 +108,10 @@ export async function computeSparesView(
   }
 
   const result = await client.query<ItemRow>(
-    `SELECT id, name, category, unit, on_hand AS "onHand", reorder_point AS "reorderPoint",
-            preferred_vendor AS "preferredVendor", notes
-     FROM consumables WHERE org_id = $1`,
+    `SELECT id, name, category, unit, quantity AS "onHand", min_quantity AS "reorderPoint",
+            vendor AS "preferredVendor", notes
+     FROM inventory_items
+     WHERE org_id = $1 AND kind = 'consumable' AND archived = false`,
     [org.orgId],
   );
 
@@ -130,27 +143,37 @@ export async function createConsumable(
     notes: string | null;
   },
 ): Promise<void> {
-  await client.query(
-    `INSERT INTO consumables (org_id, name, category, unit, on_hand, reorder_point, preferred_vendor, notes, created_by)
-     VALUES ($1,$2,$3,$4,$5::numeric,$6::numeric,$7,$8,$9)`,
+  const onHand = Math.max(0, input.onHand);
+  const inserted = await client.query<{ id: string }>(
+    `INSERT INTO inventory_items (org_id, name, category, kind, unit, quantity, min_quantity, vendor, notes, created_by)
+     VALUES ($1, $2, $3, 'consumable', $4, $5::numeric, $6::numeric, $7, $8, $9)
+     RETURNING id`,
     [
       input.orgId,
       input.name,
       input.category,
       input.unit || "each",
-      Math.max(0, input.onHand),
+      onHand,
       Math.max(0, input.reorderPoint),
       input.preferredVendor,
-      input.notes,
+      input.notes ?? "",
       input.userId,
     ],
   );
+  if (onHand > 0) {
+    await client.query(
+      `INSERT INTO inventory_transactions (org_id, item_id, delta, reason, note, created_by)
+       VALUES ($1, $2, $3::numeric, 'received', 'Initial stock', $4)`,
+      [input.orgId, inserted.rows[0]!.id, onHand, input.userId],
+    );
+  }
 }
 
 export async function updateConsumable(
   client: PoolClient,
   input: {
     orgId: string;
+    userId: string;
     itemId: string;
     name?: string;
     category?: ConsumableCategory;
@@ -161,24 +184,22 @@ export async function updateConsumable(
     notes?: string | null;
   },
 ): Promise<void> {
-  await client.query(
-    `UPDATE consumables SET
+  const updated = await client.query(
+    `UPDATE inventory_items SET
        name = COALESCE($3, name),
        category = COALESCE($4, category),
        unit = COALESCE($5, unit),
-       on_hand = COALESCE($6::numeric, on_hand),
-       reorder_point = COALESCE($7::numeric, reorder_point),
-       preferred_vendor = CASE WHEN $8::boolean THEN $9 ELSE preferred_vendor END,
-       notes = CASE WHEN $10::boolean THEN $11 ELSE notes END,
+       min_quantity = COALESCE($6::numeric, min_quantity),
+       vendor = CASE WHEN $7::boolean THEN $8 ELSE vendor END,
+       notes = CASE WHEN $9::boolean THEN COALESCE($10, '') ELSE notes END,
        updated_at = now()
-     WHERE id = $1 AND org_id = $2`,
+     WHERE id = $1 AND org_id = $2 AND kind = 'consumable'`,
     [
       input.itemId,
       input.orgId,
       input.name ?? null,
       input.category ?? null,
       input.unit ?? null,
-      input.onHand == null ? null : Math.max(0, input.onHand),
       input.reorderPoint == null ? null : Math.max(0, input.reorderPoint),
       input.preferredVendor !== undefined,
       input.preferredVendor ?? null,
@@ -186,22 +207,51 @@ export async function updateConsumable(
       input.notes ?? null,
     ],
   );
+  if (!updated.rowCount) throw new Error("Consumable not found");
+
+  // An absolute on-hand edit becomes a ledger movement of the difference — never a bare UPDATE.
+  if (input.onHand != null) {
+    await setStockLevel(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      itemId: input.itemId,
+      quantity: Math.max(0, input.onHand),
+      note: "Set on-hand from Spares",
+    });
+  }
 }
 
+/** +/- movement from the Spares page; clamped at zero (counting can drift below reality). */
 export async function adjustStock(
   client: PoolClient,
-  input: { orgId: string; itemId: string; delta: number },
+  input: { orgId: string; userId: string; itemId: string; delta: number },
 ): Promise<void> {
-  await client.query(
-    `UPDATE consumables SET on_hand = GREATEST(0, on_hand + $3::numeric), updated_at = now()
-     WHERE id = $1 AND org_id = $2`,
-    [input.itemId, input.orgId, input.delta],
+  const current = await client.query<{ quantity: number }>(
+    `SELECT quantity::float8 AS quantity FROM inventory_items
+     WHERE id = $1 AND org_id = $2 AND kind = 'consumable'
+     FOR UPDATE`,
+    [input.itemId, input.orgId],
   );
+  if (!current.rowCount) throw new Error("Consumable not found");
+  const onHand = Number(current.rows[0]!.quantity) || 0;
+  const effective = Math.max(input.delta, -onHand);
+  if (effective === 0) return;
+  await adjustLedgerStock(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    itemId: input.itemId,
+    delta: effective,
+    reason: effective > 0 ? "received" : "used",
+    note: "Count from Spares",
+  });
 }
 
 export async function deleteConsumable(
   client: PoolClient,
   input: { orgId: string; itemId: string },
 ): Promise<void> {
-  await client.query(`DELETE FROM consumables WHERE id = $1 AND org_id = $2`, [input.itemId, input.orgId]);
+  await client.query(`DELETE FROM inventory_items WHERE id = $1 AND org_id = $2 AND kind = 'consumable'`, [
+    input.itemId,
+    input.orgId,
+  ]);
 }

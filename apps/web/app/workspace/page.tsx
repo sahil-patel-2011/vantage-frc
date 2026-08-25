@@ -17,6 +17,9 @@ import QuickActions from "./quick-actions";
 import { VantageLogo } from "../../components/brand";
 import "../invite/invite-flow.css";
 
+// Session-gated server page: never prerendered, so a credential-free build works.
+export const dynamic = "force-dynamic";
+
 export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
   const { orgId: orgIdParam } = await searchParams;
   const session = await auth.api.getSession({ headers: await headers() });

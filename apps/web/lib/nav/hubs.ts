@@ -51,6 +51,15 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "my-day", label: "My Day", legacyHref: "/my-day" },
         { id: "event-day-plan", label: "Day plan", legacyHref: "/event-day-plan" },
         { id: "drive-team-signals", label: "Drive-team board", legacyHref: "/drive-team-signals" },
+        // THE one pre-match surface (absorbed Match Copilot — see legacy-redirects).
+        { id: "briefing", label: "Pre-match briefing", legacyHref: "/briefing", featured: true },
+        // Labelled "Schedule", not "Match schedule": seven palette entries already
+        // start with "Matc" and the top-5 prefix ranking can only surface five.
+        { id: "schedule", label: "Schedule", legacyHref: "/schedule" },
+        { id: "rankings", label: "Rankings", legacyHref: "/rankings" },
+        // The dated pre-event flow (inspection prep, consent, packing, travel) —
+        // it belongs beside the day-of surfaces, not in a settings corner.
+        { id: "event-readiness", label: "Event readiness", legacyHref: "/event-readiness" },
       ]),
       { id: "scouting", label: "Scouting", legacyHref: "/scouting" },
       ...nest("scouting", [
@@ -85,7 +94,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "defense-planner", label: "Defense", legacyHref: "/defense-planner" },
         { id: "opponent-watchlist", label: "Watchlist", legacyHref: "/opponent-watchlist" },
         { id: "match-strategy-cards", label: "Match cards", legacyHref: "/match-strategy-cards" },
-        { id: "match-copilot", label: "Match copilot", legacyHref: "/match-copilot" },
+        // "Match copilot" was consolidated into the Pre-match briefing (Event day tab);
+        // /match-copilot now redirects to /briefing.
         { id: "match-sim", label: "Match sim", legacyHref: "/match-sim" },
         { id: "match-notes-timeline", label: "Match notes", legacyHref: "/match-notes-timeline" },
         { id: "match-delta-watcher", label: "Match delta", legacyHref: "/match-delta-watcher" },
@@ -94,9 +104,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "overnight-intel", label: "Overnight intel", legacyHref: "/overnight-intel" },
         { id: "district-advancement", label: "Districts", legacyHref: "/district-advancement" },
         { id: "ranking-projection", label: "Rank projection", legacyHref: "/ranking-projection" },
+        { id: "intel", label: "Intel", legacyHref: "/intel" },
+        { id: "dossier", label: "Team dossier", legacyHref: "/dossier" },
+        { id: "video", label: "Video review", legacyHref: "/video" },
       ]),
       { id: "match-checklist", label: "Pit", legacyHref: "/match-checklist" },
       ...nest("match-checklist", [
+        { id: "pit", label: "Pit command", legacyHref: "/pit" },
         { id: "pit-repair-triage", label: "Repair triage", legacyHref: "/pit-repair-triage" },
         { id: "battery-rotation", label: "Charge plan", legacyHref: "/battery-rotation" },
       ]),
@@ -115,13 +129,25 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "attendance", label: "People", legacyHref: "/attendance" },
       ...nest("attendance", [
         { id: "hours", label: "Hours kiosk", legacyHref: "/hours", featured: true },
+        // One presence record: RSVP → roll call → hours, so "who is coming tonight"
+        // has a single answer instead of three half-answers.
+        { id: "presence", label: "Presence", legacyHref: "/presence" },
         { id: "hours-self-view", label: "My hours", legacyHref: "/hours-self-view" },
+        { id: "my-kit", label: "My kit", legacyHref: "/my-kit" },
         { id: "mentor-hours", label: "Mentor hours", legacyHref: "/mentor-hours" },
         { id: "onboarding-buddy", label: "Onboarding buddy", legacyHref: "/onboarding-buddy" },
         { id: "alumni-network", label: "Alumni", legacyHref: "/alumni-network" },
         { id: "skills-graph", label: "Skills", legacyHref: "/skills-graph" },
+        // Learning sits next to Skills because its predictions feed the skills graph;
+        // the mentor "who is struggling" view is the same people list, one level in.
+        { id: "learning", label: "Learning", legacyHref: "/learning" },
+        { id: "training", label: "Training matrix", legacyHref: "/training" },
+        { id: "roles", label: "Season roles", legacyHref: "/roles" },
         { id: "driver-tryouts", label: "Driver tryouts", legacyHref: "/driver-tryouts" },
         { id: "exit-interview", label: "Exit interviews", legacyHref: "/exit-interview" },
+        // Families are part of the roster in practice: contacts, the digest email, and
+        // the token-scoped read-only view a guardian opens without an account.
+        { id: "parents", label: "Parents", legacyHref: "/parents" },
       ]),
       { id: "todos", label: "Work", legacyHref: "/todos" },
       ...nest("todos", [
@@ -134,6 +160,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         },
         { id: "task-board", label: "Task board", legacyHref: "/tasks" },
         { id: "goals-tracker", label: "Goals", legacyHref: "/goals-tracker" },
+        { id: "goals", label: "Objectives", legacyHref: "/goals" },
         { id: "standup-digest", label: "Standup", legacyHref: "/standup-digest" },
         { id: "meeting-autopilot", label: "Meeting agenda", legacyHref: "/meeting-autopilot" },
         { id: "retro", label: "Retro", legacyHref: "/retro" },
@@ -142,14 +169,27 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
         { id: "equipment-maintenance", label: "Equipment", legacyHref: "/equipment-maintenance" },
         { id: "safety-training", label: "Safety", legacyHref: "/safety-training" },
+        { id: "safety", label: "Safety log", legacyHref: "/safety" },
         { id: "checklist-library", label: "Checklists", legacyHref: "/checklist-library" },
         { id: "pit-map-planner", label: "Pit map", legacyHref: "/pit-map-planner" },
         { id: "field-reset-timer", label: "Field reset", legacyHref: "/field-reset-timer" },
       ]),
       { id: "knowledge", label: "Playbook", legacyHref: "/team/knowledge" },
       ...nest("knowledge", [
+        // The rookie-survival roadmap. Community research rates "what do I even
+        // prioritize" a blocker for rookie coaches, so it is pinned to the front of
+        // the Playbook workbench rather than buried in the tail.
+        { id: "roadmap", label: "Season roadmap", legacyHref: "/roadmap", featured: true },
         { id: "migrate", label: "Bring your season", legacyHref: "/migrate", featured: true },
+        // The team's shared shelf: any file (STEP/DXF, PDFs, manuals), nestable
+        // folders, and external links — with team-wide vs restricted sharing.
+        { id: "library", label: "Library", legacyHref: "/library", featured: true },
+        { id: "team-storage", label: "Storage node", legacyHref: "/team/storage" },
+        // Capture-from-work review queue. It sits beside the Playbook because that is
+        // where an approved draft lands — and nothing lands there without an Approve.
+        { id: "knowledge-drafts", label: "Knowledge drafts", legacyHref: "/knowledge-drafts" },
         { id: "knowledge-gap", label: "Knowledge gaps", legacyHref: "/knowledge-gap" },
+        { id: "notebook", label: "Engineering notebook", legacyHref: "/notebook" },
         { id: "offline-shell", label: "Offline", legacyHref: "/offline-shell" },
         { id: "degraded-mode", label: "Degraded mode", legacyHref: "/degraded-mode" },
         { id: "object-chat-bridge", label: "Object chat", legacyHref: "/object-chat-bridge" },
@@ -158,6 +198,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "cross-team-scrim", label: "Scrims", legacyHref: "/cross-team-scrim" },
         { id: "build-burndown", label: "Burndown", legacyHref: "/build-burndown" },
         { id: "risk-burndown", label: "Risk burndown", legacyHref: "/risk-burndown" },
+        { id: "risks", label: "Risk register", legacyHref: "/risks" },
       ]),
     ],
   },
@@ -176,6 +217,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "orders", label: "Orders", legacyHref: "/orders" },
         { id: "costs", label: "Season costs", legacyHref: "/costs" },
         { id: "vendor-lead-times", label: "Lead times", legacyHref: "/vendor-lead-times" },
+        { id: "reimbursements", label: "Reimbursements", legacyHref: "/reimbursements" },
+        { id: "vendors", label: "Vendor directory", legacyHref: "/vendors" },
       ]),
       { id: "sponsors", label: "Sponsors" },
       ...nest("sponsors", [
@@ -189,7 +232,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ]),
       { id: "grants", label: "Grants", legacyHref: "/team/grants" },
       ...nest("grants", [
-        { id: "grants-workbench", label: "Workbench", legacyHref: "/team/grants" },
+        // The "Grants" workbench root already links /team/grants; a second nested
+        // entry for the same route showed the page twice in the inner TabBar.
         { id: "grant-report", label: "Reports", legacyHref: "/grant-report" },
         { id: "grant-eligibility-matcher", label: "Eligibility", legacyHref: "/grant-eligibility-matcher" },
       ]),
@@ -202,7 +246,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "impact-essay", label: "Impact essay", legacyHref: "/impact-essay" },
         { id: "judge-sim", label: "Judge pitch", legacyHref: "/judge-sim" },
         { id: "media-kit", label: "Media kit", legacyHref: "/media?tab=kit" },
-        { id: "outreach-calendar", label: "Outreach calendar", legacyHref: "/media?tab=calendar" },
+        { id: "outreach-calendar", label: "Outreach calendar", legacyHref: "/outreach-calendar" },
       ]),
     ],
   },
@@ -217,31 +261,53 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "kickoff", label: "Kickoff", legacyHref: "/kickoff" },
       { id: "cad", label: "CAD", legacyHref: "/cad" },
       ...nest("cad", [
+        // The document vault (STL/STEP/DXF uploads, versions, subsystem links) — the
+        // "where is the printable file" question, distinct from the live CAD model.
+        { id: "cad-vault", label: "CAD vault", legacyHref: "/cad-vault" },
         { id: "cad-change-radar", label: "Change radar", legacyHref: "/cad-change-radar" },
         { id: "sketch-to-brief", label: "Sketch to brief", legacyHref: "/sketch-to-brief" },
       ]),
       { id: "code", label: "Code", legacyHref: "/code" },
       ...nest("code", [
+        // Community research rates control-system get-unstuck the single most
+        // recurring blocker, so it is pinned to the front of the Code workbench.
+        { id: "troubleshoot", label: "Get unstuck", legacyHref: "/troubleshoot", featured: true },
         { id: "bugbot", label: "AI Bugbot", legacyHref: "/bugbot", featured: true },
         { id: "code-deploy-log", label: "Deploy log", legacyHref: "/code-deploy-log" },
+        { id: "agent-config", label: "Team agent config", legacyHref: "/team/agent-config" },
         { id: "code-perf", label: "Code vs match", legacyHref: "/code-perf" },
       ]),
       { id: "fmea", label: "Robot", legacyHref: "/fmea" },
       ...nest("fmea", [
         { id: "robot", label: "Blueprint", legacyHref: "/robot", featured: true },
+        { id: "subsystems", label: "Subsystem specs", legacyHref: "/subsystems" },
+        { id: "bringup", label: "Bring-up", legacyHref: "/bringup" },
+        { id: "reviews", label: "Design reviews", legacyHref: "/reviews" },
+        { id: "gearbox", label: "Gearbox calculator", legacyHref: "/gearbox" },
+        { id: "shooter-table", label: "Shooter table", legacyHref: "/shooter-table" },
+        { id: "weight-budget", label: "Weight budget", legacyHref: "/weight-budget" },
+        { id: "power-budget", label: "Power budget", legacyHref: "/power-budget" },
         { id: "prototype", label: "Prototypes", legacyHref: "/prototype-tracker" },
         { id: "batteries", label: "Batteries", legacyHref: "/batteries" },
         { id: "inspection-copilot", label: "Inspection", legacyHref: "/inspection-copilot" },
         { id: "robot-weigh-in", label: "Weigh-in", legacyHref: "/robot-weigh-in" },
         { id: "readiness-score", label: "Readiness", legacyHref: "/readiness-score" },
-        { id: "wiring-diagnoser", label: "Wiring", legacyHref: "/wiring-diagnoser" },
+        { id: "wiring-diagnoser", label: "Wiring check", legacyHref: "/wiring-diagnoser" },
+        { id: "wiring-map", label: "CAN-bus map", legacyHref: "/wiring" },
         { id: "rule-impact", label: "Rule impact", legacyHref: "/rule-impact" },
-        { id: "tuning-autopilot", label: "Tuning", legacyHref: "/tuning-autopilot" },
+        { id: "tuning-autopilot", label: "Tuning advisor", legacyHref: "/tuning-autopilot" },
+        { id: "tuning-log", label: "Tuning log", legacyHref: "/tuning" },
         { id: "failure-patterns", label: "Failure patterns", legacyHref: "/failure-patterns" },
         { id: "incident-heatmap", label: "Incidents", legacyHref: "/incident-heatmap" },
         { id: "auton-path-library", label: "Auton paths", legacyHref: "/auton-path-library" },
         { id: "reuse-advisor", label: "Reuse", legacyHref: "/reuse-advisor" },
-        { id: "spare-forecast", label: "Spares", legacyHref: "/spare-forecast" },
+        { id: "spare-forecast", label: "Spares forecast", legacyHref: "/spare-forecast" },
+        // Where a BOM part actually gets made: "needs CAM" → machining → done.
+        { id: "manufacturing", label: "Manufacturing", legacyHref: "/manufacturing" },
+        // The printers themselves — queue, spools, and which subsystem a job is for.
+        // Filed next to Consumables because filament is stock that runs out.
+        { id: "print-farm", label: "Print farm", legacyHref: "/print-farm" },
+        { id: "consumables", label: "Consumables", legacyHref: "/spares" },
         { id: "spare-robot-kit", label: "Spare kit", legacyHref: "/spare-robot-kit" },
         { id: "bin-shelf-locator", label: "Bin locator", legacyHref: "/bin-shelf-locator" },
         { id: "budget-reconciler", label: "Budget check", legacyHref: "/budget-reconciler" },
@@ -268,6 +334,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "governance", label: "Governance", legacyHref: "/team/ai-policy" },
         { id: "finance", label: "Finance" },
         { id: "ai-keys", label: "API keys", legacyHref: "/team/ai-keys", featured: true },
+        { id: "ai-bridge", label: "Subscription bridge", legacyHref: "/team/ai-bridge" },
         { id: "ai-usage", label: "BYOK usage", legacyHref: "/team/ai-usage" },
         { id: "usage", label: "Usage", legacyHref: "/team/usage" },
       ]),
@@ -292,6 +359,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       { id: "drafts", label: "Drafts" },
       { id: "reminders", label: "Reminders" },
       { id: "kit", label: "Kit", legacyHref: "/media-kit" },
+      ...nest("kit", [
+        { id: "media-library", label: "Media library", legacyHref: "/media-library", featured: true },
+      ]),
       { id: "impact", label: "Impact", legacyHref: "/impact" },
     ],
   },
@@ -344,6 +414,24 @@ export function hubHref(hubPath: string, tab: string, orgId?: string | null): st
   params.set("tab", tab);
   if (orgId) params.set("orgId", orgId);
   return `${hubPath}?${params.toString()}`;
+}
+
+/**
+ * Deep link to the workbench a tab lives under, rather than to the tab itself.
+ *
+ * Leaf tools build their "back to hub" link from their own tab id, so the link
+ * lands the user right back on the leaf they were trying to leave instead of the
+ * section they came from. Pass the leaf id here to get its parent workbench root:
+ * a workbench root resolves to itself, and an unknown id falls back to the hub's
+ * defaultTab (via hubWorkbenchId).
+ */
+export function hubWorkbenchHref(
+  hubId: ProductHubDef["id"],
+  tabId: string,
+  orgId?: string | null,
+): string {
+  const hub = hubById(hubId);
+  return hubHref(hub.href, hubWorkbenchId(hub, tabId), orgId);
 }
 
 export function hubLegacyHref(tab: HubTabDef, orgId?: string | null): string {

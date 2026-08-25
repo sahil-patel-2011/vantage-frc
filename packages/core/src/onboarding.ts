@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { assertTermsAccepted, recordLegalAcceptance } from "./legal";
+import { assertLegalAccepted, recordLegalAcceptance } from "./legal";
 
 export const GENDER_OPTIONS = [
   "female",
@@ -50,6 +50,7 @@ export type OrgLocationInput = {
   stateProv?: string | null;
   description?: string | null;
   termsAccepted?: boolean;
+  privacyAccepted?: boolean;
 };
 
 export type OrgFundingInput = {
@@ -80,7 +81,10 @@ export type OnboardingPayload = {
   city?: string | null;
   stateProv?: string | null;
   description?: string | null;
+  /** Terms of Service consent. Separate from privacyAccepted; both are required. */
   termsAccepted?: boolean;
+  /** Privacy Policy consent. Separate from termsAccepted; both are required. */
+  privacyAccepted?: boolean;
   teamAffiliation?: TeamAffiliationOption | null;
   schoolFunded?: boolean | null;
   outsideGrants?: boolean | null;
@@ -115,6 +119,8 @@ export type OnboardingState = {
   platformAdmin: boolean;
   termsAcceptedAt: string | null;
   termsVersion: string | null;
+  privacyAcceptedAt: string | null;
+  privacyVersion: string | null;
   currentStep: OnboardingStep;
   startedAt: string | null;
   savedAt: string | null;
@@ -206,7 +212,10 @@ export function parseDob(value: string): Date {
 }
 
 export function validateOnboardingPayload(input: OnboardingPayload): OnboardingPayload {
-  assertTermsAccepted(input.termsAccepted);
+  assertLegalAccepted({
+    termsAccepted: input.termsAccepted,
+    privacyAccepted: input.privacyAccepted,
+  });
   const firstName = input.firstName.trim();
   const lastName = input.lastName.trim();
   if (firstName.length < 1 || firstName.length > 60) throw new Error("First name is required (max 60 characters).");
@@ -238,6 +247,8 @@ export function validateOnboardingPayload(input: OnboardingPayload): OnboardingP
     lastName,
     dateOfBirth: input.dateOfBirth.trim(),
     gender: input.gender,
+    termsAccepted: true,
+    privacyAccepted: true,
     preferredTeamNumber: teamNumber,
     teamRole: input.teamRole || null,
     crewRole,
@@ -288,6 +299,8 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     onboardingCompletedAt: string | null;
     termsAcceptedAt: string | null;
     termsVersion: string | null;
+    privacyAcceptedAt: string | null;
+    privacyVersion: string | null;
     currentStep: OnboardingStep | null;
     startedAt: string | null;
     savedAt: string | null;
@@ -306,6 +319,8 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
             onboarding_completed_at::text AS "onboardingCompletedAt",
             terms_accepted_at::text AS "termsAcceptedAt",
             terms_version AS "termsVersion",
+            privacy_accepted_at::text AS "privacyAcceptedAt",
+            privacy_version AS "privacyVersion",
             onboarding_current_step AS "currentStep",
             onboarding_started_at::text AS "startedAt",
             onboarding_saved_at::text AS "savedAt"
@@ -379,6 +394,8 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     platformAdmin: Boolean(admin.rowCount),
     termsAcceptedAt: row?.termsAcceptedAt ?? null,
     termsVersion: row?.termsVersion ?? null,
+    privacyAcceptedAt: row?.privacyAcceptedAt ?? null,
+    privacyVersion: row?.privacyVersion ?? null,
     currentStep: row?.onboardingCompletedAt ? "complete" : (row?.currentStep ?? "profile"),
     startedAt: row?.startedAt ?? null,
     savedAt: row?.savedAt ?? null,

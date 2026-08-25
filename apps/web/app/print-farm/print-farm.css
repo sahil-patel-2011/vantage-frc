@@ -1,0 +1,20 @@
+/* 3D Print Farm — manual, human-reported; no telemetry. Layout only, tokens elsewhere. */
+.pf-page{display:grid;gap:16px}
+.pf-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.pf-panel{display:grid;gap:12px}
+.pf-panel h2{margin:0}
+.pf-list{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.pf-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.pf-row-main{display:grid;gap:2px;min-width:0;flex:1 1 220px}
+.pf-name{display:block}
+.pf-block{margin:0;display:block}
+.pf-actions{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;align-items:center}
+.pf-inline-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;width:100%}
+.pf-inline-form label{display:grid;gap:4px;font-size:0.85em}
+.pf-inline-form input,.pf-inline-form select{min-height:44px}
+.pf-meter{min-width:180px;flex:1 1 180px}
+.pf-nongoals{margin:0}
+@media(max-width:900px){
+  .pf-row{flex-direction:column;align-items:stretch}
+  .pf-actions{justify-content:flex-start}
+}

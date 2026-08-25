@@ -1,0 +1,170 @@
+/* AI subscription bridge — tokens only, works in light + dark, usable at 360px. */
+.ai-bridge-page {
+  display: grid;
+  gap: 20px;
+  max-width: 960px;
+}
+
+.ai-bridge-page header h1 {
+  margin: 4px 0 8px;
+}
+
+.ai-bridge-org {
+  display: grid;
+  gap: 6px;
+  max-width: 360px;
+  font-weight: 600;
+}
+
+.ai-bridge-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.ai-bridge-card {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 16px;
+  border: 1px solid var(--app-border, rgba(127, 127, 127, 0.35));
+  border-radius: 12px;
+  background: var(--app-surface, transparent);
+}
+
+.ai-bridge-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.ai-bridge-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.ai-bridge-card label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.ai-bridge-card input[type="text"],
+.ai-bridge-card input:not([type]),
+.ai-bridge-card input[type="checkbox"] {
+  min-height: 24px;
+}
+
+.ai-bridge-card input,
+.ai-bridge-card select,
+.ai-bridge-page .primary-action,
+.ai-bridge-page .app-button {
+  min-height: 44px;
+}
+
+.ai-bridge-devices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.ai-bridge-devices > li {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--app-border, rgba(127, 127, 127, 0.35));
+  border-radius: 10px;
+}
+
+.ai-bridge-device-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-bridge-dot {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--app-border, rgba(127, 127, 127, 0.35));
+  color: var(--app-muted, inherit);
+}
+
+.ai-bridge-dot.online {
+  color: var(--app-success, #157347);
+  border-color: currentColor;
+}
+
+.ai-bridge-meta {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.ai-bridge-engines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.ai-bridge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-bridge-toggle {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  min-height: 44px;
+}
+
+.ai-bridge-toggle input[type="checkbox"],
+.ai-bridge-toggle input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+}
+
+.ai-bridge-coverage {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--hub-border, rgba(127, 127, 127, 0.25));
+  border-radius: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.ai-bridge-coverage legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+.ai-bridge-terms ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.ai-bridge-terms a {
+  text-decoration: underline;
+}
+
+@media (max-width: 420px) {
+  .ai-bridge-card {
+    padding: 12px;
+  }
+}

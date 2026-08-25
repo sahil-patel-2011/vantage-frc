@@ -20,7 +20,7 @@ import {
   type RiskBurndownShellKind,
 } from "../../lib/risk-burndown/risk-burndown-related";
 import type { RiskCategory, RiskSeverityBand, RiskStatus } from "../../lib/risk-burndown/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./risk-burndown.css";
 
@@ -98,7 +98,7 @@ function RiskBurndownShell({
 }) {
   const actions = riskBurndownNextActions({ orgId, shell });
   const copy = riskBurndownShellCopy(shell);
-  const teamHref = hubHref("/team", "risk-burndown", orgId);
+  const teamHref = hubWorkbenchHref("team", "risk-burndown", orgId);
   const risksHref = withOrgHref("/risks", orgId);
   const fmeaHref = hubHref("/team", "fmea", orgId);
 
@@ -215,7 +215,7 @@ export default function RiskBurndownClient() {
   const relatedLinks = riskBurndownRelatedLinks(orgId, {
     include: [...RISK_BURNDOWN_RELATED_INCLUDE],
   });
-  const teamHref = hubHref("/team", "risk-burndown", orgId);
+  const teamHref = hubWorkbenchHref("team", "risk-burndown", orgId);
   const risksHref = withOrgHref("/risks", orgId);
   const fmeaHref = hubHref("/team", "fmea", orgId);
 

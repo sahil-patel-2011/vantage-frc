@@ -66,9 +66,9 @@
   margin: 0 0 14px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid #fcd34d;
-  background: #fffbeb;
-  color: #92400e;
+  border: 1px solid color-mix(in srgb, var(--app-warning) 40%, var(--soft-line));
+  background: color-mix(in srgb, var(--app-warning) 12%, var(--soft-card));
+  color: var(--app-warning);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -165,8 +165,8 @@
 }
 
 .sfb-question-actions button {
-  min-height: 36px;
-  padding: 0 10px;
+  min-height: 44px;
+  padding: 0 12px;
   border-radius: 10px;
   border: 1px solid var(--soft-line);
   background: var(--soft-card);
@@ -209,6 +209,66 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 4px;
+}
+
+/* Per-kind config editor for the scouting input studio types. */
+.sfb-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: 12px;
+  background: var(--soft-bg);
+}
+
+.sfb-settings .sfb-check {
+  grid-column: 1 / -1;
+  align-items: flex-start;
+}
+
+.sfb-settings .sfb-check span {
+  display: grid;
+  gap: 2px;
+}
+
+/* Answer-type palette — one tap adds a question of that kind. */
+.sfb-palette {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.sfb-palette button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  padding: 9px 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: 12px;
+  background: var(--soft-card);
+  color: var(--soft-ink);
+  text-align: left;
+  cursor: pointer;
+  font: 600 13px/1.3 var(--font-source-sans), ui-sans-serif;
+}
+
+.sfb-palette button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--soft-accent) 46%, var(--soft-line));
+  background: var(--soft-accent-soft);
+}
+
+.sfb-palette button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sfb-palette small {
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .sfb-preview h2,
@@ -276,15 +336,15 @@
 }
 
 .sfb-budget.caution {
-  color: #92400e;
-  background: #fffbeb;
-  border-color: #fcd34d;
+  color: var(--app-warning);
+  background: color-mix(in srgb, var(--app-warning) 12%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-warning) 40%, var(--soft-line));
 }
 
 .sfb-budget.over_budget {
-  color: #9a3412;
-  background: #fff7ed;
-  border-color: #fdba74;
+  color: var(--app-critical);
+  background: color-mix(in srgb, var(--app-critical) 12%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-critical) 42%, var(--soft-line));
 }
 
 .sfb-budget.healthy {
@@ -297,7 +357,7 @@
   padding-left: 1.1rem;
   display: grid;
   gap: 4px;
-  color: #9a3412;
+  color: var(--app-critical);
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
 
@@ -371,23 +431,23 @@
 
 .sfb-status-unpublished .sfb-status-pill,
 .sfb-status-inline.sfb-status-unpublished strong {
-  color: #92400e;
-  background: #fffbeb;
-  border-color: #fcd34d;
+  color: var(--app-warning);
+  background: color-mix(in srgb, var(--app-warning) 12%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-warning) 40%, var(--soft-line));
 }
 
 .sfb-status-draft_changes .sfb-status-pill,
 .sfb-status-inline.sfb-status-draft_changes strong {
-  color: #9a3412;
-  background: #fff7ed;
-  border-color: #fdba74;
+  color: var(--soft-accent);
+  background: color-mix(in srgb, var(--soft-accent) 12%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--soft-accent) 40%, var(--soft-line));
 }
 
 .sfb-status-published .sfb-status-pill,
 .sfb-status-inline.sfb-status-published strong {
-  color: #166534;
-  background: #f0fdf4;
-  border-color: #86efac;
+  color: var(--app-positive);
+  background: color-mix(in srgb, var(--app-positive) 12%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-positive) 40%, var(--soft-line));
 }
 
 .sfb-status-inline {
@@ -513,9 +573,9 @@
 }
 
 .sfb-option-actions button {
-  min-width: 36px;
-  min-height: 36px;
-  padding: 0 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
   border-radius: 10px;
   border: 1px solid var(--soft-line);
   background: var(--soft-bg);

@@ -217,7 +217,7 @@ export async function computePrivateEdgeView(
       );
     }
   } catch {
-    calibrations = [];
+    // stays [] (or keeps parsed rows if only the persistence write failed)
   }
 
   let remainingMatches = 0;
@@ -235,7 +235,7 @@ export async function computePrivateEdgeView(
     );
     remainingMatches = remaining.rows[0]?.n ?? 0;
   } catch {
-    remainingMatches = 0;
+    // stays 0
   }
 
   const packs: Array<{ label: string; status: string; irMohm: number | null }> = [];
@@ -314,7 +314,7 @@ export async function computePrivateEdgeView(
       );
     }
   } catch {
-    cadLinks = [];
+    // stays [] (or keeps computed links if only the persistence write failed)
   }
 
   let knowledge: ReturnType<typeof crossSeasonVsOpponent> = [];

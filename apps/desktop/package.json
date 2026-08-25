@@ -30,10 +30,18 @@
     "files": [
       "dist/**/*",
       "offline.html",
+      "gate.html",
       "package.json"
+    ],
+    "protocols": [
+      {
+        "name": "Vantage",
+        "schemes": ["vantage-frc"]
+      }
     ],
     "win": {
       "signAndEditExecutable": false,
+      "icon": "build/icon.png",
       "target": [
         {
           "target": "nsis",

@@ -357,7 +357,7 @@ export async function loadBusinessView(
     );
     financeAiEnabled = Boolean(aiFlag.rows[0]?.aiAssistEnabled);
   } catch {
-    financeAiEnabled = false;
+    // stays false
   }
   const ordersPulse = buildOrdersPulse(purchases, seasonYear, financeAiEnabled);
 

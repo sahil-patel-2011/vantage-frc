@@ -1,6 +1,16 @@
 {
   "name": "VantageCadRelay",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "protocol": "2026-07-1",
-  "minCliVersion": "0.1.0"
+  "minCliVersion": "0.1.0",
+  "operations": [
+    "create_sketch",
+    "create_extrude",
+    "create_fillet",
+    "create_chamfer",
+    "delete_feature",
+    "verify_topology",
+    "render_views",
+    "create_checkpoint"
+  ]
 }

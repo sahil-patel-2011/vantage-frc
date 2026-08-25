@@ -1,0 +1,171 @@
+/*
+ * Consent banner.
+ *
+ * Design rules this file keeps:
+ *   - Design tokens only (--soft-*), so light and dark both come for free from
+ *     the html[data-theme] block in soft-ui.css. No hard-coded ink or paper.
+ *   - Accept and decline are the SAME size and sit side by side. A decline that
+ *     is smaller or greyer than the accept is a dark pattern, and this product
+ *     is used by minors.
+ *   - Every target is at least 44px tall.
+ *   - Works at 360px: the actions stack full-width instead of squeezing.
+ */
+
+.consent-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Above the bottom app island (z-index 95/96 in soft-ui.css) so the question
+     is readable, below modals and toasts (120) so it can never trap a dialog.
+     The wrapper is pointer-events: none, so only the card itself intercepts
+     clicks — the page underneath stays usable while the banner is up. */
+  z-index: 110;
+  display: flex;
+  justify-content: center;
+  padding: 12px 12px calc(12px + var(--soft-safe-bottom, 0px));
+  pointer-events: none;
+}
+
+.consent-banner-card {
+  pointer-events: auto;
+  width: min(680px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  border-radius: var(--soft-radius, 16px);
+  background: var(--soft-card, #fff);
+  color: var(--soft-ink, #132033);
+  box-shadow: var(--soft-shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
+  font-family: var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.consent-banner-text {
+  display: grid;
+  gap: 6px;
+}
+
+.consent-banner-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--soft-ink, #132033);
+}
+
+.consent-banner-lead {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--soft-ink, #132033);
+}
+
+.consent-banner-detail {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--soft-muted, #5a6578);
+}
+
+.consent-banner-current {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--soft-accent, #1f4fd6);
+}
+
+.consent-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.consent-banner-btn {
+  flex: 1 1 180px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--soft-radius-sm, 12px);
+  border: 1px solid var(--soft-line, #d5dde8);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: filter 0.12s ease, background-color 0.12s ease;
+}
+
+.consent-banner-btn:hover {
+  filter: brightness(0.97);
+}
+
+.consent-banner-btn:focus-visible {
+  outline: 2px solid var(--soft-accent, #1f4fd6);
+  outline-offset: 2px;
+}
+
+.consent-banner-btn--accept {
+  background: var(--soft-accent, #1f4fd6);
+  border-color: var(--soft-accent, #1f4fd6);
+  color: var(--soft-brand-ink, #fff);
+}
+
+/* Same weight, same height, same prominence class of control — only the fill
+   differs, because "no" must be as easy to click as "yes". */
+.consent-banner-btn--decline {
+  background: var(--soft-card, #fff);
+  color: var(--soft-ink, #132033);
+  border-color: color-mix(in srgb, var(--soft-ink, #132033) 24%, var(--soft-line, #d5dde8));
+}
+
+.consent-banner-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--soft-radius-sm, 12px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--soft-accent, #1f4fd6);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.consent-banner-link:focus-visible {
+  outline: 2px solid var(--soft-accent, #1f4fd6);
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  .consent-banner {
+    padding: 8px 8px calc(8px + var(--soft-safe-bottom, 0px));
+  }
+
+  .consent-banner-card {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .consent-banner-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .consent-banner-btn,
+  .consent-banner-link {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consent-banner-btn {
+    transition: none;
+  }
+}

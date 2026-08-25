@@ -42,7 +42,9 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   await expect(page.getByText("Customize Home")).toBeVisible();
   await expect(page.getByTestId("dash-widget-grid")).toHaveAttribute("data-dash-drag", "on");
   await expect(page.locator(".dash-grid")).toBeVisible();
-  await expect(page.locator(".dash-widget-palette button").first()).toHaveAttribute("draggable", "true");
+  // The palette uses Pointer Events (so it works on touch), not HTML5 draggable —
+  // assert it is a real enabled control rather than a legacy drag attribute.
+  await expect(page.locator(".dash-widget-palette button").first()).toBeEnabled();
 
   const snapshot = page.locator('[data-testid="dash-grid-item"][data-widget-type="competition_snapshot"]');
   await expect(snapshot).toBeVisible();
@@ -62,7 +64,17 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
 
   const beforeCount = await page.getByTestId("dash-grid-item").count();
   const palette = page.locator(".dash-widget-palette button").first();
-  await palette.dragTo(page.locator(".dash-grid"), { targetPosition: { x: 40, y: 40 } });
+  await palette.scrollIntoViewIfNeeded();
+  const paletteBox = await palette.boundingBox();
+  const gridBox = await page.locator(".dash-grid").boundingBox();
+  expect(paletteBox).toBeTruthy();
+  expect(gridBox).toBeTruthy();
+  // Playwright's dragTo() drives HTML5 drag-and-drop, which this grid no longer
+  // uses. Driving the mouse exercises the same pointer path a touch user gets.
+  await page.mouse.move(paletteBox!.x + paletteBox!.width / 2, paletteBox!.y + paletteBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(gridBox!.x + 40, gridBox!.y + 40, { steps: 15 });
+  await page.mouse.up();
   await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
 });
 

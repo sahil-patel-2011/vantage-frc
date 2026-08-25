@@ -15,7 +15,7 @@
 .team-discord-announce{display:grid;gap:10px;margin-top:8px;padding-top:14px;border-top:1px solid var(--app-line)}
 .team-discord-status{margin:0;font-size:13px;font-weight:600}
 .team-discord-status.ok{color:var(--app-accent)}
-.team-discord-status.err{color:#b42318}
+.team-discord-status.err{color:var(--app-critical)}
 
 .team-discord-next-actions{display:grid;gap:10px;margin:0;padding:16px 18px}
 .team-discord-next-actions>header{display:grid;gap:4px}

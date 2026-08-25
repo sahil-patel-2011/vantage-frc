@@ -1,0 +1,111 @@
+/* Soft-UI Team Library — the team's shared shelf. Real resources only, never
+   demo shelves. Colors derive from currentColor / shared app classes so light
+   and dark themes both work without new tokens. Works down to 360px. */
+
+.tl-page{display:grid;gap:16px}
+
+.tl-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.tl-toolbar .app-button{min-height:44px}
+.tl-upload-visibility{display:grid;gap:4px;font-size:.85rem}
+.tl-upload-visibility select{min-height:44px;padding:6px 10px;border-radius:10px;border:1px solid color-mix(in srgb, currentColor 25%, transparent);background:transparent;color:inherit}
+.tl-hidden-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+.tl-error{margin:0;color:#c2372f}
+@media (prefers-color-scheme: dark){.tl-error{color:#ff8a80}}
+
+.tl-uploads ul{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
+.tl-uploads li{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;font-size:.9rem}
+.tl-uploads .app-button{min-height:44px}
+.tl-upload-error span{color:#c2372f}
+@media (prefers-color-scheme: dark){.tl-upload-error span{color:#ff8a80}}
+
+.tl-form{display:grid;gap:10px;max-width:560px}
+.tl-form h2{margin:0;font-size:1.05rem}
+.tl-form label{display:grid;gap:4px;font-size:.9rem}
+.tl-form input,.tl-form select,.tl-form textarea{min-height:44px;padding:8px 10px;border-radius:10px;border:1px solid color-mix(in srgb, currentColor 25%, transparent);background:transparent;color:inherit;font:inherit}
+.tl-form textarea{resize:vertical}
+.tl-form-actions{display:flex;flex-wrap:wrap;gap:8px}
+.tl-form-actions .app-button{min-height:44px}
+
+.tl-filters{display:flex;flex-wrap:wrap;gap:10px}
+.tl-filters label{display:grid;gap:4px;font-size:.85rem;min-width:120px}
+.tl-filters .tl-search{flex:1 1 220px}
+.tl-filters input,.tl-filters select{min-height:44px;padding:6px 10px;border-radius:10px;border:1px solid color-mix(in srgb, currentColor 25%, transparent);background:transparent;color:inherit;font:inherit}
+
+.tl-breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:2px;font-size:.9rem}
+.tl-breadcrumb button{min-height:44px;padding:0 8px;border:0;background:none;color:inherit;cursor:pointer;text-decoration:underline;font:inherit}
+.tl-breadcrumb button.active{text-decoration:none;font-weight:600;cursor:default}
+.tl-search-note{margin:0;font-size:.85rem}
+
+.tl-folders{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.tl-folder-card{display:flex;align-items:stretch;gap:0;border-radius:12px;overflow:hidden;background:color-mix(in srgb, currentColor 5%, transparent);border:1px solid color-mix(in srgb, currentColor 14%, transparent)}
+.tl-folder-open{flex:1;display:grid;gap:2px;text-align:left;min-height:64px;padding:10px 12px;border:0;background:none;cursor:pointer;color:inherit;font:inherit;min-width:0}
+.tl-folder-open strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-folder-open span{font-size:.8rem}
+.tl-folder-manage{min-width:44px;border:0;border-left:1px solid color-mix(in srgb, currentColor 14%, transparent);background:none;color:inherit;cursor:pointer;font-size:.8rem;padding:0 10px}
+
+.tl-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.tl-item{display:grid;gap:4px;width:100%;padding:0;border:0;background:none;cursor:pointer;text-align:left;color:inherit;font:inherit}
+.tl-thumb{position:relative;display:block;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:color-mix(in srgb, currentColor 8%, transparent)}
+.tl-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.tl-thumb-fallback{display:flex;align-items:center;justify-content:center;height:100%;font-size:1rem;font-weight:700;letter-spacing:.04em;opacity:.6}
+.tl-pending,.tl-restricted{position:absolute;bottom:6px;padding:2px 6px;border-radius:8px;font-size:.72rem;background:rgba(0,0,0,.65);color:#fff}
+.tl-pending{left:6px}
+.tl-restricted{right:6px}
+.tl-item-title{font-size:.9rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-item-meta{font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-item-tags{display:flex;flex-wrap:wrap;gap:4px}
+.tl-tag{font-size:.72rem;padding:1px 8px;border-radius:999px;background:color-mix(in srgb, currentColor 10%, transparent)}
+
+.tl-overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.55)}
+.tl-detail{display:grid;gap:12px;width:min(720px,100%);max-height:90vh;overflow:auto;padding:16px}
+.tl-detail-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.tl-detail-head h2{margin:0;font-size:1.1rem;overflow:hidden;text-overflow:ellipsis}
+.tl-detail-head .app-button{min-height:44px}
+.tl-detail-media{display:grid;gap:8px;justify-items:start}
+.tl-detail-media img{width:100%;max-height:52vh;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.2)}
+.tl-detail-media .app-button{min-height:44px}
+.tl-download-card{display:flex;gap:12px;align-items:center;padding:12px;border-radius:12px;background:color-mix(in srgb, currentColor 6%, transparent)}
+.tl-download-card .tl-thumb-fallback{flex:0 0 72px;height:72px;border-radius:10px;background:color-mix(in srgb, currentColor 8%, transparent)}
+.tl-download-card>div{min-width:0}
+.tl-download-name{margin:0 0 8px;font-size:.9rem;overflow-wrap:anywhere}
+.tl-download-card .app-button{min-height:44px}
+.tl-detail-meta{margin:0;font-size:.85rem}
+.tl-detail-notes{margin:0;font-size:.9rem;white-space:pre-wrap}
+
+.tl-links{display:grid;gap:8px}
+.tl-links h3{margin:0;font-size:.95rem}
+.tl-links ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:.9rem}
+.tl-links a{text-decoration:underline;overflow-wrap:anywhere}
+.tl-link-remove{min-height:44px;margin-left:8px;border:0;background:none;color:inherit;cursor:pointer;text-decoration:underline;font-size:.8rem}
+.tl-link-add{display:flex;flex-wrap:wrap;gap:8px}
+.tl-link-add input{flex:1 1 180px;min-height:44px;padding:8px 10px;border-radius:10px;border:1px solid color-mix(in srgb, currentColor 25%, transparent);background:transparent;color:inherit;font:inherit}
+.tl-link-add .app-button{min-height:44px}
+
+.tl-detail-form{display:grid;gap:10px}
+.tl-detail-form h3{margin:0;font-size:.95rem}
+.tl-detail-form label{display:grid;gap:4px;font-size:.85rem}
+.tl-detail-form textarea,.tl-detail-form input,.tl-detail-form select{min-height:44px;padding:8px 10px;border-radius:10px;border:1px solid color-mix(in srgb, currentColor 25%, transparent);background:transparent;color:inherit;font:inherit}
+.tl-detail-form textarea{resize:vertical}
+.tl-detail-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tl-detail-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tl-detail-actions .app-button{min-height:44px}
+.tl-detail-actions .app-button.danger{color:#c2372f;border-color:currentColor}
+@media (prefers-color-scheme: dark){.tl-detail-actions .app-button.danger{color:#ff8a80}}
+
+.tl-sharing{display:grid;gap:8px}
+.tl-sharing label{display:grid;gap:4px;font-size:.85rem}
+.tl-sharing select{min-height:44px;padding:6px 10px;border-radius:10px;border:1px solid color-mix(in srgb, currentColor 25%, transparent);background:transparent;color:inherit;font:inherit}
+.tl-member-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:4px;max-height:200px;overflow:auto;padding:6px;border-radius:10px;border:1px solid color-mix(in srgb, currentColor 14%, transparent)}
+.tl-member{display:flex;align-items:center;gap:8px;min-height:44px;font-size:.9rem;cursor:pointer}
+.tl-member input{width:18px;height:18px}
+.tl-sharing-note{margin:0;font-size:.8rem}
+
+@media (max-width: 480px){
+  .tl-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .tl-folders{grid-template-columns:1fr 1fr}
+  .tl-detail{padding:12px}
+}
+@media (max-width: 380px){
+  .tl-folders{grid-template-columns:1fr}
+}

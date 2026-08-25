@@ -16,7 +16,16 @@ function writeFrame(message: unknown) {
   process.stdout.write(payload);
 }
 
-export async function dispatchCadMcp(message: JsonRpc): Promise<void> {
+export type CadMcpHooks = {
+  /**
+   * Observes every tools/call after it ran (ok=false carries the error text).
+   * Used by the vantage-cad CLI to sync terminal sessions to the web app.
+   * Must never throw and never write to stdout (stdout is MCP protocol).
+   */
+  onToolCall?: (name: string, args: Record<string, unknown>, ok: boolean, error?: string) => void | Promise<void>;
+};
+
+export async function dispatchCadMcp(message: JsonRpc, hooks: CadMcpHooks = {}): Promise<void> {
   const method = String(message.method ?? "");
   const id = message.id;
   if (method === "initialize") {
@@ -51,6 +60,7 @@ export async function dispatchCadMcp(message: JsonRpc): Promise<void> {
         id,
         result: { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] },
       });
+      if (hooks.onToolCall) await Promise.resolve(hooks.onToolCall(name, args, true)).catch(() => undefined);
     } catch (error) {
       const text = error instanceof Error ? error.message : "CAD tool failed";
       writeFrame({
@@ -58,6 +68,7 @@ export async function dispatchCadMcp(message: JsonRpc): Promise<void> {
         id,
         result: { content: [{ type: "text", text }], isError: true },
       });
+      if (hooks.onToolCall) await Promise.resolve(hooks.onToolCall(name, args, false, text)).catch(() => undefined);
     }
     return;
   }
@@ -66,7 +77,7 @@ export async function dispatchCadMcp(message: JsonRpc): Promise<void> {
   }
 }
 
-export async function runCadMcpStdio() {
+export async function runCadMcpStdio(hooks: CadMcpHooks = {}) {
   let buffer = Buffer.alloc(0);
   process.stdin.on("data", (chunk: Buffer) => {
     buffer = Buffer.concat([buffer, chunk]);
@@ -79,7 +90,7 @@ export async function runCadMcpStdio() {
           const line = asText.slice(0, nl).trim();
           buffer = Buffer.from(asText.slice(nl + 1), "utf8");
           try {
-            void dispatchCadMcp(JSON.parse(line) as JsonRpc);
+            void dispatchCadMcp(JSON.parse(line) as JsonRpc, hooks);
           } catch {
             /* ignore incomplete */
           }
@@ -99,7 +110,7 @@ export async function runCadMcpStdio() {
       const body = buffer.subarray(bodyStart, bodyStart + length).toString("utf8");
       buffer = buffer.subarray(bodyStart + length);
       try {
-        void dispatchCadMcp(JSON.parse(body) as JsonRpc);
+        void dispatchCadMcp(JSON.parse(body) as JsonRpc, hooks);
       } catch {
         /* ignore */
       }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
+import { ModelProvenance } from "../../components/ui";
 import {
   composeGrantAnswer,
   composeSponsorEmail,
@@ -472,6 +473,9 @@ type PitchResponse = WriterView & {
     runId: string;
     provider: string;
     model: string;
+    baseUrlOrigin?: string | null;
+    /** Which key paid for the call (org/hosted/…) — distinct from `source` above. */
+    keySource?: string | null;
   };
 };
 
@@ -533,6 +537,13 @@ function Composer({
   const [draftBody, setDraftBody] = useState("");
   const [draftSource, setDraftSource] = useState<"template" | "ai" | null>(null);
   const [aiMeta, setAiMeta] = useState<string | null>(null);
+  /** Set only for a real model draft — a template draft has no endpoint to name. */
+  const [aiProvenance, setAiProvenance] = useState<{
+    provider: string;
+    modelId: string;
+    baseUrlOrigin?: string | null;
+    source?: string | null;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
   const [providerSetup, setProviderSetup] = useState<{
     message: string;
@@ -567,6 +578,7 @@ function Composer({
     }
     setDraftSource("template");
     setAiMeta(null);
+    setAiProvenance(null);
     setCopied(false);
   };
 
@@ -632,10 +644,23 @@ function Composer({
           setSubject(data.pitch.subject ?? "");
           setDraftBody(data.pitch.body);
           setDraftSource(data.pitch.source === "ai" ? "ai" : "template");
+          // The endpoint/model moved to <ModelProvenance> below, so the badge no
+          // longer repeats it. A template draft never gets provenance — nothing
+          // generated it.
           setAiMeta(
             data.pitch.source === "ai"
-              ? `Metered FRC Assistant · ${data.pitch.provider}/${data.pitch.model}`
+              ? "Metered FRC Assistant"
               : `Org-scoped template + business facts · usage logged (${data.pitch.provider})`,
+          );
+          setAiProvenance(
+            data.pitch.source === "ai"
+              ? {
+                  provider: data.pitch.provider,
+                  modelId: data.pitch.model,
+                  baseUrlOrigin: data.pitch.baseUrlOrigin ?? null,
+                  source: data.pitch.keySource ?? null,
+                }
+              : null,
           );
         }
         setCopied(false);
@@ -772,6 +797,9 @@ function Composer({
               {draftSource === "ai" ? "AI draft" : "Template draft"}
               {aiMeta ? ` · ${aiMeta}` : ""}
             </span>
+          ) : null}
+          {draftSource === "ai" && aiProvenance ? (
+            <ModelProvenance meta={aiProvenance} />
           ) : null}
           {!isGrant ? (
             <label style={{ display: "grid", gap: 4 }}>

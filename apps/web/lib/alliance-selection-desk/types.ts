@@ -42,6 +42,11 @@ export type DeskSlot = {
   nickname: string | null;
   rationale: string;
   sortOrder: number;
+  /** Where this team sits on the ONE pick list — null when the board picked an unranked team. */
+  pickListRank: number | null;
+  pickListBucket: "first_pick" | "second_pick" | "avoid" | "unranked" | null;
+  /** The justifier's source-cited "why", carried on the same row the board is showing. */
+  justification: string | null;
   evidence: DeskEvidence[];
   matchScoutCount: number;
   pitScoutCount: number;

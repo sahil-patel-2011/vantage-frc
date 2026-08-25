@@ -43,6 +43,7 @@
         "packages/intel-research/src/production-worker.ts"
       ],
       "@vantage/agent": ["packages/agent/src/index.ts"],
+      "@vantage/agent/model-tier": ["packages/agent/src/model-tier.ts"],
       "@vantage/agent/repository": ["packages/agent/src/repository.ts"],
       "@vantage/agent/coding-assistant": ["packages/agent/src/coding-assistant.ts"],
       "@vantage/cad": ["packages/cad/src/index.ts"],
@@ -50,6 +51,8 @@
       "@vantage/export-center": ["packages/export-center/src/index.ts"],
       "@vantage/game-year": ["packages/game-year/src/index.ts"],
       "@vantage/import": ["packages/import/src/index.ts"],
+      "@vantage/import/connectors": ["packages/import/src/connectors.ts"],
+      "@vantage/import/presets": ["packages/import/src/csv-presets.ts"],
       "@vantage/prediction-strategy": ["packages/prediction-strategy/src/index.ts"]
     }
   }

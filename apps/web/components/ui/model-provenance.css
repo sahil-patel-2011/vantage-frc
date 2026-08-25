@@ -1,0 +1,122 @@
+/*
+ * ModelProvenance — "via <endpoint> · <model>" plus an optional, dismissible
+ * quality notice.
+ *
+ * Prefixed .vmp-* so the styles stay local. Design tokens only (--app-*), which
+ * flip under html[data-theme="dark"], so light and dark are both correct without
+ * a second rule set. The notice uses the NEUTRAL surface tone deliberately —
+ * it is information, not a warning, and must never read as an error. Dismiss is
+ * >= 44px on coarse pointers (WCAG 2.5.8) and the block wraps at 360px.
+ */
+
+.vmp-root {
+  display: grid;
+  gap: 8px;
+  max-width: 100%;
+  margin-top: 8px;
+}
+
+.vmp-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.vmp-endpoint {
+  font-weight: 600;
+}
+
+.vmp-source {
+  font-weight: 400;
+}
+
+/* --- the quality notice --- */
+
+.vmp-notice {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius, 10px);
+  /* Neutral, low-contrast fill: informational, never the warn/critical palette. */
+  background: color-mix(in srgb, var(--app-accent) 6%, var(--app-soft));
+  color: var(--app-ink);
+}
+
+.vmp-notice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--app-accent);
+}
+
+.vmp-notice-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.vmp-notice-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* The notice's only control, so it carries a full 44px target on every pointer
+   — a mouse user misses a 32px chip too, and this one appears mid-answer. */
+.vmp-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--app-line);
+  border-radius: 7px;
+  background: var(--app-surface);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.vmp-dismiss:hover {
+  border-color: color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
+  background: color-mix(in srgb, var(--app-accent) 9%, var(--app-surface));
+}
+
+.vmp-dismiss:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .vmp-dismiss {
+    padding: 10px 16px;
+  }
+}
+
+/* Narrow columns and 360px phones: let the note own the full width and drop the
+   dismiss onto its own row instead of squeezing the text to two words a line. */
+@media (max-width: 420px) {
+  .vmp-notice {
+    grid-template-columns: auto 1fr;
+  }
+  .vmp-dismiss {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

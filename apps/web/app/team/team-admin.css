@@ -27,7 +27,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.75rem 0;
-  border-top: 1px solid color-mix(in srgb, var(--app-border, #d0d7de) 80%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
 }
 
 .team-admin-next-actions li:first-child,
@@ -49,7 +49,7 @@
 
 .team-admin-next-actions li span,
 .team-admin-tip {
-  color: var(--app-muted, #656d76);
+  color: var(--app-muted);
   font-size: 0.9rem;
 }
 
@@ -65,7 +65,7 @@
   min-width: 6.5rem;
   padding: 0.75rem 1rem;
   border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--app-surface, #fff) 88%, var(--app-border, #d0d7de));
+  background: color-mix(in srgb, var(--app-surface) 88%, var(--app-line));
 }
 
 .team-admin-metrics article strong {
@@ -76,7 +76,7 @@
 
 .team-admin-metrics article span {
   font-size: 0.8rem;
-  color: var(--app-muted, #656d76);
+  color: var(--app-muted);
 }
 
 .team-admin-members article {
@@ -86,7 +86,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.85rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--app-border, #d0d7de) 80%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
 }
 
 .team-admin-members article:last-child {
@@ -98,7 +98,7 @@
 }
 
 .team-admin-members small {
-  color: var(--app-muted, #656d76);
+  color: var(--app-muted);
 }
 
 .team-invite-grid {
@@ -108,9 +108,9 @@
 .team-invite-form,
 .team-invite-ledger {
   padding: 1.15rem 1.2rem;
-  border: 1px solid color-mix(in srgb, var(--app-border, #d0d7de) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-line) 85%, transparent);
   border-radius: 1rem;
-  background: color-mix(in srgb, var(--app-surface, #fff) 92%, var(--app-border, #d0d7de));
+  background: color-mix(in srgb, var(--app-surface) 92%, var(--app-line));
 }
 
 .team-invite-form h2 {
@@ -120,7 +120,7 @@
 
 .team-invite-form > p {
   margin: 0 0 0.9rem;
-  color: var(--app-muted, #656d76);
+  color: var(--app-muted);
   font-size: 0.92rem;
   line-height: 1.45;
 }
@@ -138,9 +138,9 @@
   width: 100%;
   min-height: 2.4rem;
   padding: 0.45rem 0.65rem;
-  border: 1px solid var(--app-border, #d0d7de);
+  border: 1px solid var(--app-line);
   border-radius: 0.7rem;
-  background: var(--app-surface, #fff);
+  background: var(--app-surface);
 }
 
 .team-invite-banner,
@@ -161,34 +161,34 @@
 
 .team-invite-banner.setup,
 .team-invite-notice.warn {
-  border: 1px solid #f0c36d;
-  background: #fff8eb;
-  color: #8a5a10;
+  border: 1px solid color-mix(in srgb, var(--app-warning) 40%, var(--app-line));
+  background: color-mix(in srgb, var(--app-warning) 12%, var(--app-surface));
+  color: var(--app-warning);
 }
 
 .team-invite-banner.info {
-  border: 1px solid #b9cef2;
-  background: #f0f6ff;
-  color: #25436f;
+  border: 1px solid color-mix(in srgb, var(--app-accent) 40%, var(--app-line));
+  background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface));
+  color: var(--app-accent);
 }
 
 .team-invite-notice.ok {
-  border: 1px solid #a8d4bf;
-  background: #eef9f4;
-  color: #166534;
+  border: 1px solid color-mix(in srgb, var(--app-positive) 40%, var(--app-line));
+  background: color-mix(in srgb, var(--app-positive) 12%, var(--app-surface));
+  color: var(--app-positive);
 }
 
 .team-invite-notice.error {
-  border: 1px solid #f0b4ba;
-  background: #fff1f2;
-  color: #9f1239;
+  border: 1px solid color-mix(in srgb, var(--app-critical) 40%, var(--app-line));
+  background: color-mix(in srgb, var(--app-critical) 12%, var(--app-surface));
+  color: var(--app-critical);
 }
 
 .team-invite-ledger article {
   display: grid;
   gap: 0.35rem;
   padding: 0.85rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--app-border, #d0d7de) 80%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--app-line) 80%, transparent);
 }
 
 .team-invite-ledger article:last-child {
@@ -196,7 +196,7 @@
 }
 
 .team-invite-ledger article.pending {
-  background: color-mix(in srgb, #f0f6ff 55%, transparent);
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
   margin: 0 -0.6rem;
   padding: 0.85rem 0.6rem;
   border-radius: 0.7rem;
@@ -209,7 +209,7 @@
 
 .team-invite-ledger small,
 .team-invite-ledger time {
-  color: var(--app-muted, #656d76);
+  color: var(--app-muted);
   font-size: 0.82rem;
 }
 
@@ -222,9 +222,9 @@
 .team-invite-row-actions button {
   min-height: 2rem;
   padding: 0.25rem 0.7rem;
-  border: 1px solid var(--app-border, #d0d7de);
+  border: 1px solid var(--app-line);
   border-radius: 999px;
-  background: var(--app-surface, #fff);
+  background: var(--app-surface);
   font-size: 0.8rem;
   font-weight: 600;
 }

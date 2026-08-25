@@ -21,7 +21,7 @@ import {
   type CrossTeamScrimShellKind,
 } from "../../lib/cross-team-scrim/cross-team-scrim-related";
 import type { ScrimDataShareScope, ScrimStatus } from "../../lib/cross-team-scrim/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./cross-team-scrim.css";
 
@@ -94,7 +94,7 @@ function ScrimShell({
 }) {
   const actions = crossTeamScrimNextActions({ orgId, shell });
   const copy = crossTeamScrimShellCopy(shell);
-  const teamHref = hubHref("/team", "cross-team-scrim", orgId);
+  const teamHref = hubWorkbenchHref("team", "cross-team-scrim", orgId);
   const steps = shell === "setup" ? crossTeamScrimSetupSteps(orgId) : [];
 
   return (
@@ -232,7 +232,7 @@ export default function CrossTeamScrimClient() {
   const relatedLinks = crossTeamScrimRelatedLinks(orgId, {
     include: [...CROSS_TEAM_SCRIM_RELATED_INCLUDE],
   });
-  const teamHref = hubHref("/team", "cross-team-scrim", orgId);
+  const teamHref = hubWorkbenchHref("team", "cross-team-scrim", orgId);
   const showTiles = shouldShowCrossTeamScrimSummaryTiles({ inviteCount, upcomingCount });
 
   const mutate = useCallback(

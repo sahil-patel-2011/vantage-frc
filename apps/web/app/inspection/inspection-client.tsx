@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { EmptyState } from "../../components/ui";
 import {
   groupByCategory,
   inspectionProgress,
@@ -10,6 +11,7 @@ import {
   type InspectionStatus,
   type InspectionView,
 } from "../../lib/inspection";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 
@@ -94,6 +96,8 @@ export default function InspectionClient() {
   const [view, setView] = useState<InspectionView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [robotLabel, setRobotLabel] = useState("competition");
   const [customCategory, setCustomCategory] = useState("Game-specific");
@@ -104,6 +108,7 @@ export default function InspectionClient() {
 
   const load = useCallback(async () => {
     setFetchFailed(false);
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
@@ -111,6 +116,7 @@ export default function InspectionClient() {
       const data = (await response.json()) as InspectionView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load inspection.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
@@ -174,13 +180,36 @@ export default function InspectionClient() {
         </header>
         <div className="app-card insp-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load inspection</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
+            (() => {
+              const kind = classifyLoadFailure({
+                status: errorStatus,
+                message: error,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              });
+              const copy = loadFailureCopy(kind, {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: error || "Check your connection and try again.",
+              });
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading inspection…</p>
           )}
@@ -199,13 +228,11 @@ export default function InspectionClient() {
             <p>Self-inspect against the standard checklist before the real inspector arrives.</p>
           </div>
         </header>
-        <div className="app-card insp-empty">
-          <strong>Select a team workspace</strong>
-          <p className="app-muted">{view.message}</p>
+        <EmptyState className="insp-empty" title="Select a team workspace" description={view.message}>
           <a className="app-button" href="/workspace">
             Choose workspace
           </a>
-        </div>
+        </EmptyState>
       </main>
     );
   }
@@ -270,9 +297,11 @@ export default function InspectionClient() {
       <div className="insp-layout">
         <section className="insp-panel">
           {robotItems.length === 0 ? (
-            <div className="app-card insp-empty">
-              <strong>No checklist yet for “{robotLabel}”</strong>
-              <p className="app-muted">Load the standard FRC self-inspection checklist, then add game-specific items.</p>
+            <EmptyState
+              className="insp-empty"
+              title={`No checklist yet for “${robotLabel}”`}
+              description="Load the standard FRC self-inspection checklist, then add game-specific items."
+            >
               <button
                 type="button"
                 className="app-button"
@@ -281,7 +310,7 @@ export default function InspectionClient() {
               >
                 Load standard checklist
               </button>
-            </div>
+            </EmptyState>
           ) : (
             <>
               {groups.map((group) => (

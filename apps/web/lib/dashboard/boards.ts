@@ -75,7 +75,32 @@ export function pickHomeBoard<T extends HomeBoardPick>(
   return mine.find((board) => board.isActive) ?? mine[0] ?? null;
 }
 
-/** Maps a react-grid-layout drag/resize onto the saved 12-column layout. */
+export const BOARD_NAME_MAX = 80;
+
+/**
+ * "Match strategy" → "Match strategy copy" → "Match strategy copy 2" …
+ *
+ * Duplicating twice used to leave two identically named boards in the switcher,
+ * which is exactly the moment a member edits the wrong one.
+ */
+export function duplicateBoardName(sourceName: string, existingNames: readonly string[]): string {
+  const taken = new Set(existingNames.map((name) => name.trim().toLowerCase()));
+  const base = sourceName.trim().slice(0, BOARD_NAME_MAX - 8) || "Board";
+  const candidate = `${base} copy`;
+  if (!taken.has(candidate.toLowerCase())) return candidate.slice(0, BOARD_NAME_MAX);
+  for (let n = 2; n < 100; n += 1) {
+    const next = `${base} copy ${n}`;
+    if (!taken.has(next.toLowerCase())) return next.slice(0, BOARD_NAME_MAX);
+  }
+  return candidate.slice(0, BOARD_NAME_MAX);
+}
+
+/**
+ * Maps a drag/resize expressed in the *displayed* grid (phone 1-col, tablet
+ * 8-col, laptop/TV 12-col) back onto the saved 12-column board. The pointer and
+ * keyboard editors in lib/dashboard/grid-drag both settle in display space and
+ * then come through here.
+ */
 export function applyGridDrag(
   current: DashboardWidgetLayout[],
   nextLayout: readonly GridDragItem[],

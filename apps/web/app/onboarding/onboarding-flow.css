@@ -8,14 +8,15 @@
 .onboarding-step-hint{margin:0 auto;max-width:460px;text-align:center;color:var(--soft-muted,#6b7280);font-size:12px;line-height:1.45}
 .onboarding-steps-simple{grid-template-columns:repeat(3,1fr);max-width:420px;margin-inline:auto;margin-bottom:0}.onboarding-steps-simple li{position:relative}.onboarding-steps-simple li+li:before{content:"";position:absolute;right:calc(50% + 17px);top:13px;left:calc(-50% + 17px);height:1px;background:#dbe2ec}.onboarding-steps-simple li.done+li.done:before,.onboarding-steps-simple li.done+li.current:before{background:var(--soft-accent,#2563eb)}
 .onboarding-steps-simple li.done,.onboarding-steps-simple li.current{color:var(--soft-accent,#2563eb)}
-.onboarding-steps-simple li.upcoming{color:#9aa3b2}
+.onboarding-steps-simple li.upcoming{color:#667082}
+.onboarding-steps-simple li.upcoming b{color:#5a6578}
 .onboarding-steps-simple li.done b{color:#fff;background:#1c9367}
 .onboarding-steps-simple li.current b{background:var(--soft-accent-soft,#dbeafe);color:var(--soft-accent,#2563eb);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 
 .onboarding-message{margin:0 0 16px;padding:12px 14px;border:1px solid #c5d4ec;border-radius:12px;color:#25436f;background:#f0f6ff;font-size:13px;line-height:1.45}
 .onboarding-resume-note{display:grid;gap:3px;margin:0 0 16px;padding:11px 13px;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc}.onboarding-resume-note b{font-size:12px}.onboarding-resume-note span{color:var(--soft-muted,#6b7280);font-size:11px;line-height:1.4}
 .onboarding-team-lock{padding:14px;border:1px solid var(--soft-line,#e5e7eb);border-radius:14px;background:#f8fafc}.onboarding-team-lock.locked{border-color:#b9cef2;background:#f0f6ff}.onboarding-team-lock p{margin:8px 0 0;color:var(--soft-muted,#6b7280);font-size:12px;line-height:1.4}
-.onboarding-focus-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0;padding:0;border:0}.onboarding-focus-grid legend{grid-column:1/-1;margin-bottom:2px;font-size:13px;font-weight:700}.onboarding-focus-grid label{position:relative;display:grid!important;grid-template-columns:28px 1fr;gap:3px 8px;min-height:104px;padding:14px;border:1px solid var(--soft-line,#dce3ec);border-radius:14px;background:#fff;cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}.onboarding-focus-grid label:hover{transform:translateY(-1px);border-color:#a8bee4}.onboarding-focus-grid label.selected{border-color:var(--soft-accent,#2563eb);box-shadow:0 0 0 3px rgba(37,99,235,.1);background:#f5f8ff}.onboarding-focus-grid input{position:absolute;opacity:0;pointer-events:none}.onboarding-focus-grid i{grid-row:1/3;color:#7890b6;font:700 9px var(--font-ibm-mono),monospace;font-style:normal}.onboarding-focus-grid strong{font-size:14px}.onboarding-focus-grid span{grid-column:2;color:var(--soft-muted,#6b7280);font-size:11px;line-height:1.4;font-weight:500}
+.onboarding-focus-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0;padding:0;border:0}.onboarding-focus-grid legend{grid-column:1/-1;margin-bottom:2px;font-size:13px;font-weight:700}.onboarding-focus-grid label{position:relative;display:grid!important;grid-template-columns:28px 1fr;gap:3px 8px;min-height:104px;padding:14px;border:1px solid var(--soft-line,#dce3ec);border-radius:14px;background:#fff;cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}.onboarding-focus-grid label:hover{transform:translateY(-1px);border-color:#a8bee4}.onboarding-focus-grid label.selected{border-color:var(--soft-accent,#2563eb);box-shadow:0 0 0 3px rgba(37,99,235,.1);background:#f5f8ff}.onboarding-focus-grid input{position:absolute;opacity:0;pointer-events:none}.onboarding-focus-grid i{grid-row:1/3;color:#5c6f92;font:700 9px var(--font-ibm-mono),monospace;font-style:normal}.onboarding-focus-grid strong{font-size:14px}.onboarding-focus-grid span{grid-column:2;color:var(--soft-muted,#6b7280);font-size:11px;line-height:1.4;font-weight:500}
 .onboarding-review-card{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;overflow:hidden;border:1px solid var(--soft-line,#dce3ec);border-radius:14px;background:var(--soft-line,#dce3ec)}.onboarding-review-card>div{display:grid;gap:5px;padding:14px;background:#f8fafc}.onboarding-review-card span{color:var(--soft-muted,#6b7280);font:700 8px var(--font-ibm-mono),monospace;letter-spacing:.08em}.onboarding-review-card strong{font-size:13px}
 .onboarding-security-note{display:grid;grid-template-columns:30px 1fr;gap:11px;padding:14px;border:1px solid #a8d4bf;border-radius:14px;background:#eef9f4}.onboarding-security-note>b{display:grid;place-items:center;width:28px;height:28px;border-radius:999px;color:#fff;background:#16855b}.onboarding-security-note p{display:grid;gap:3px;margin:0}.onboarding-security-note strong{font-size:13px}.onboarding-security-note span{color:#46675b;font-size:11px;line-height:1.45}
 
@@ -36,7 +37,7 @@
 .onboarding-load-shell a.signin-submit{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 
 .onboarding-pending-panel{display:grid;gap:20px}.onboarding-request-status{display:flex;align-items:center;gap:14px;padding:18px;border:1px solid #c3d4ef;border-radius:16px;background:#f2f7ff}.onboarding-request-status>i{width:13px;height:13px;border-radius:999px;background:#f59e0b;box-shadow:0 0 0 7px rgba(245,158,11,.13)}.onboarding-request-status.declined>i{background:#dc5660;box-shadow:0 0 0 7px rgba(220,86,96,.12)}.onboarding-request-status.invited>i,.onboarding-request-status.approved>i{background:#24a36f;box-shadow:0 0 0 7px rgba(36,163,111,.12)}.onboarding-request-status>div{display:grid;gap:4px}.onboarding-request-status span{color:#536b8d;font:700 8px var(--font-ibm-mono),monospace;letter-spacing:.1em}.onboarding-request-status strong{font-size:17px}
-.onboarding-approval-path{margin:0;padding:0;list-style:none}.onboarding-approval-path li{position:relative;display:grid;grid-template-columns:34px 1fr;gap:12px;min-height:75px}.onboarding-approval-path li:not(:last-child):after{content:"";position:absolute;top:34px;bottom:0;left:16px;width:1px;background:#d6dee9}.onboarding-approval-path b{z-index:1;display:grid;place-items:center;align-self:start;width:34px;height:34px;border:1px solid #cbd5e1;border-radius:999px;color:#7b8798;background:#fff;font-size:11px}.onboarding-approval-path li.done b{color:#fff;border-color:#1c9367;background:#1c9367}.onboarding-approval-path li.current b{color:#fff;border-color:#f59e0b;background:#f59e0b}.onboarding-approval-path div{display:grid;align-content:start;gap:4px;padding-top:3px}.onboarding-approval-path strong{font-size:14px}.onboarding-approval-path span{color:var(--soft-muted,#6b7280);font-size:12px;line-height:1.4}
+.onboarding-approval-path{margin:0;padding:0;list-style:none}.onboarding-approval-path li{position:relative;display:grid;grid-template-columns:34px 1fr;gap:12px;min-height:75px}.onboarding-approval-path li:not(:last-child):after{content:"";position:absolute;top:34px;bottom:0;left:16px;width:1px;background:#d6dee9}.onboarding-approval-path b{z-index:1;display:grid;place-items:center;align-self:start;width:34px;height:34px;border:1px solid #cbd5e1;border-radius:999px;color:#5a6578;background:#fff;font-size:11px}.onboarding-approval-path li.done b{color:#fff;border-color:#14714f;background:#14714f}.onboarding-approval-path li.current b{color:#fff;border-color:#a86608;background:#a86608}.onboarding-approval-path div{display:grid;align-content:start;gap:4px;padding-top:3px}.onboarding-approval-path strong{font-size:14px}.onboarding-approval-path span{color:var(--soft-muted,#6b7280);font-size:12px;line-height:1.4}
 .onboarding-pending-help{margin:0;padding:13px 15px;border-left:3px solid #86a8df;color:#56657a;background:#f7f9fc;font-size:12px;line-height:1.5}.onboarding-pending-actions{display:flex;align-items:center;justify-content:space-between;gap:14px}.onboarding-pending-actions .signin-submit{width:auto;min-width:190px}
 @media(max-width:620px){.onboarding-flow-page{padding:18px 10px}.onboarding-flow-card{padding:24px 17px;border-radius:18px}.onboarding-focus-grid,.onboarding-review-card{grid-template-columns:1fr}.onboarding-focus-grid label{min-height:auto}.onboarding-pending-actions{align-items:stretch;flex-direction:column}.onboarding-pending-actions .signin-submit{width:100%}.onboarding-steps-simple span{display:block}}
 @media(prefers-reduced-motion:reduce){.onboarding-focus-grid label{transition:none}}
@@ -49,3 +50,164 @@
 .onboarding-affiliation,.onboarding-funding-paths{margin:0 0 10px;padding:0;border:0;display:grid;gap:6px}
 .onboarding-affiliation legend,.onboarding-funding-paths legend{font-size:12px;font-weight:700;margin-bottom:2px}
 .onboarding-funding-note{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#eff6ff;color:#1e3a5f;font-size:12px;line-height:1.45}
+
+/* ------------------------------------------------------------------ *
+ * Screen 1 — big tappable role / crew cards instead of dropdowns.
+ * Phone-first: one column at 360px, and every card clears 44px on its
+ * own because the whole <label> is the target, not just the input.
+ * ------------------------------------------------------------------ */
+.onboarding-cards{display:grid;gap:8px;margin:0;padding:0;border:0}
+.onboarding-cards legend{margin-bottom:6px;padding:0;font-size:13px;font-weight:700}
+.onboarding-cards legend small{display:block;margin-top:2px;color:var(--soft-muted,#6b7280);font-size:11px;font-weight:500;line-height:1.4}
+.onboarding-cards label{position:relative;display:grid;align-content:center;gap:2px;min-height:56px;padding:11px 13px;border:1px solid var(--soft-line,#dce3ec);border-radius:14px;background:var(--soft-card,#fff);cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease}
+.onboarding-cards label:hover{border-color:#a8bee4}
+.onboarding-cards label:focus-within{border-color:var(--soft-accent,#2563eb);box-shadow:0 0 0 3px rgba(37,99,235,.18)}
+.onboarding-cards label.selected{border-color:var(--soft-accent,#2563eb);background:var(--soft-accent-soft,#f5f8ff);box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+.onboarding-cards input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.onboarding-cards strong{font-size:14px;line-height:1.2}
+.onboarding-cards span{color:var(--soft-muted,#6b7280);font-size:11px;font-weight:500;line-height:1.35}
+.onboarding-cards-role label{grid-template-columns:26px 1fr;align-items:center;column-gap:10px}
+.onboarding-cards-role i{grid-row:1/3;font-size:19px;font-style:normal;line-height:1}
+.onboarding-cards-role strong,.onboarding-cards-role span{grid-column:2}
+/* Role: 5 options read best two-up; crew: 10 short options read three-up. */
+@media(min-width:520px){
+  .onboarding-cards-role{grid-template-columns:1fr 1fr}
+  .onboarding-cards-crew{grid-template-columns:repeat(3,1fr)}
+  .onboarding-cards legend{grid-column:1/-1}
+}
+
+.onboarding-account-fields{display:grid;gap:10px;margin:0;padding:14px;border:1px solid var(--soft-line,#dce3ec);border-radius:14px;background:#f8fafc}
+.onboarding-account-fields legend{padding:0 4px;font-size:13px;font-weight:700}
+.onboarding-account-fields .onboarding-team-profile-hint{margin:0}
+
+/* ------------------------------------------------------------------ *
+ * Screen 2 — live team-number feedback. Tone is the only thing that
+ * changes; the copy itself never claims more than the server confirmed.
+ * ------------------------------------------------------------------ */
+.onboarding-lookup{display:grid!important;gap:4px;margin:8px 0 0!important;padding:11px 13px;border:1px solid var(--soft-line,#dce3ec);border-left-width:3px;border-radius:10px;background:var(--soft-card,#fff)}
+.onboarding-lookup strong{font-size:13px;line-height:1.3}
+.onboarding-lookup span{color:var(--soft-muted,#6b7280);font-size:12px!important;line-height:1.45}
+.onboarding-lookup a{justify-self:start;display:inline-flex;align-items:center;min-height:44px;color:var(--soft-accent,#2563eb);font-size:12px;font-weight:700;text-decoration:none}
+.onboarding-lookup a:hover{text-decoration:underline}
+.onboarding-lookup.neutral{border-left-color:#9aa3b2}
+.onboarding-lookup.info{border-left-color:#5b87dd;background:#f5f9ff}
+.onboarding-lookup.good{border-left-color:#1c9367;background:#f2faf6}
+.onboarding-lookup.warn{border-left-color:#e0921c;background:#fffaf1}
+.onboarding-lookup.error{border-left-color:#d4515c;background:#fff5f5}
+.onboarding-team-lock .check-field,.onboarding-affiliation .check-field,.onboarding-funding-paths .check-field,.onboarding-theme .check-field{display:flex!important;align-items:center;gap:9px;min-height:44px;font-size:13px;font-weight:600;cursor:pointer}
+.onboarding-team-lock .check-field input,.onboarding-affiliation .check-field input,.onboarding-funding-paths .check-field input,.onboarding-theme .check-field input{flex:none;width:20px;height:20px;accent-color:var(--soft-accent,#2563eb)}
+.onboarding-team-lock input[disabled]{opacity:.6;cursor:not-allowed}
+
+/* Screen 3 — optional extras stay collapsed so Finish is one decision. */
+.onboarding-optional{padding:0 14px;border:1px solid var(--soft-line,#dce3ec);border-radius:14px;background:#f8fafc}
+.onboarding-optional>summary{display:flex;align-items:center;min-height:48px;font-size:13px;font-weight:700;cursor:pointer}
+.onboarding-optional>summary small{margin-left:6px;color:var(--soft-muted,#6b7280);font-size:11px;font-weight:500}
+.onboarding-optional>*:not(summary){margin-bottom:14px}
+.onboarding-theme{display:grid;gap:4px;margin:0;padding:0;border:0}
+.onboarding-theme legend{margin-bottom:2px;font-size:12px;font-weight:700}
+
+/* ------------------------------------------------------------------ *
+ * Pending — what you can do while a team decides.
+ * ------------------------------------------------------------------ */
+.onboarding-meanwhile{display:grid;gap:10px}
+.onboarding-meanwhile h2{margin:0;font-size:13px;letter-spacing:-.01em}
+.onboarding-meanwhile ul{display:grid;gap:7px;margin:0;padding:0;list-style:none}
+.onboarding-meanwhile a{display:grid;gap:3px;min-height:56px;align-content:center;padding:11px 13px;border:1px solid var(--soft-line,#dce3ec);border-radius:12px;background:var(--soft-card,#fff);text-decoration:none;color:inherit;transition:border-color .16s ease}
+.onboarding-meanwhile a:hover{border-color:var(--soft-accent,#2563eb)}
+.onboarding-meanwhile strong{font-size:13px}
+.onboarding-meanwhile span{color:var(--soft-muted,#6b7280);font-size:11px;line-height:1.4}
+
+/* ------------------------------------------------------------------ *
+ * Done — the "first five minutes", role-aware, instead of a bare redirect.
+ * ------------------------------------------------------------------ */
+.onboarding-landing{display:grid;gap:18px}
+.onboarding-landing-summary{margin:0;color:var(--soft-muted,#6b7280);font-size:13px;line-height:1.5}
+.onboarding-landing-list{display:grid;gap:8px;margin:0;padding:0;list-style:none;counter-reset:none}
+.onboarding-landing-list a{display:grid;grid-template-columns:30px 1fr;align-items:start;gap:12px;min-height:60px;padding:12px 13px;border:1px solid var(--soft-line,#dce3ec);border-radius:14px;background:var(--soft-card,#fff);text-decoration:none;color:inherit;transition:border-color .16s ease,transform .16s ease}
+.onboarding-landing-list a:hover{border-color:var(--soft-accent,#2563eb);transform:translateY(-1px)}
+.onboarding-landing-list b{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;background:var(--soft-accent-soft,#dbeafe);color:var(--soft-accent,#2563eb);font:700 12px var(--font-ibm-mono),monospace}
+.onboarding-landing-list div{display:grid;gap:3px}
+.onboarding-landing-list strong{font-size:14px;line-height:1.25}
+.onboarding-landing-list span{color:var(--soft-muted,#6b7280);font-size:12px;line-height:1.4}
+.onboarding-landing-list em{color:#5c6f92;font:600 10px var(--font-ibm-mono),monospace;font-style:normal;letter-spacing:.04em;text-transform:uppercase}
+
+/* Every button/link in the flow is a real thumb target. */
+.onboarding-actions .signin-submit,.onboarding-actions .signin-link,.onboarding-pending-actions .signin-submit,.onboarding-pending-actions .signin-link{min-height:44px}
+.onboarding-actions .signin-link,.onboarding-pending-actions .signin-link{display:inline-flex;align-items:center;justify-content:center;padding:0 12px;background:none;border:0;cursor:pointer}
+.onboarding-pending-actions a.signin-submit{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+
+/* ------------------------------------------------------------------ *
+ * Phones. Most students onboard from the shop floor — 360px is the
+ * floor, and nothing may overflow it horizontally.
+ * ------------------------------------------------------------------ */
+@media(max-width:420px){
+  .onboarding-flow-page{padding:12px 8px}
+  .onboarding-flow-card{padding:20px 14px}
+  .onboarding-flow-header h1{font-size:24px}
+  .onboarding-row{grid-template-columns:1fr}
+  .onboarding-cards-role,.onboarding-cards-crew{grid-template-columns:1fr}
+  .onboarding-review-card{grid-template-columns:1fr}
+  .onboarding-steps-simple{max-width:none}
+  .onboarding-steps-simple span{font-size:10px}
+  .onboarding-landing-list a{grid-template-columns:26px 1fr;gap:10px}
+  .onboarding-approval-path li{grid-template-columns:30px 1fr;gap:10px}
+  .onboarding-actions{align-items:stretch;flex-direction:column-reverse}
+  .onboarding-actions .signin-submit{width:100%}
+}
+.onboarding-flow-page input,.onboarding-flow-page select,.onboarding-flow-page textarea{max-width:100%}
+.onboarding-flow-page{overflow-x:hidden}
+
+/* ------------------------------------------------------------------ *
+ * Dark. The page can render before a theme preference is ever saved,
+ * so every hard-coded light surface above needs a counterpart.
+ * ------------------------------------------------------------------ */
+html[data-theme="dark"] .onboarding-flow-page{background:var(--soft-bg) radial-gradient(circle at 10% 0,rgba(110,155,255,.14),transparent 38%)}
+html[data-theme="dark"] .onboarding-account-fields,
+html[data-theme="dark"] .onboarding-team-lock,
+html[data-theme="dark"] .onboarding-team-profile,
+html[data-theme="dark"] .onboarding-optional,
+html[data-theme="dark"] .onboarding-load-shell,
+html[data-theme="dark"] .onboarding-resume-note{background:#111823;border-color:var(--soft-line)}
+html[data-theme="dark"] .onboarding-cards label,
+html[data-theme="dark"] .onboarding-focus-grid label,
+html[data-theme="dark"] .onboarding-lookup,
+html[data-theme="dark"] .onboarding-meanwhile a,
+html[data-theme="dark"] .onboarding-landing-list a,
+html[data-theme="dark"] .onboarding-review-card>div{background:var(--soft-card);border-color:var(--soft-line);color:var(--soft-ink)}
+html[data-theme="dark"] .onboarding-review-card{background:var(--soft-line);border-color:var(--soft-line)}
+html[data-theme="dark"] .onboarding-cards label.selected,
+html[data-theme="dark"] .onboarding-focus-grid label.selected{background:var(--soft-accent-soft);border-color:var(--soft-accent)}
+html[data-theme="dark"] .onboarding-lookup.info{background:#152036}
+html[data-theme="dark"] .onboarding-lookup.good{background:#122a20}
+html[data-theme="dark"] .onboarding-lookup.warn{background:#2a2113}
+html[data-theme="dark"] .onboarding-lookup.error{background:#2c1519}
+html[data-theme="dark"] .onboarding-landing-list b{background:var(--soft-accent-soft);color:var(--soft-accent)}
+html[data-theme="dark"] .onboarding-landing-list em{color:#8fa5c9}
+html[data-theme="dark"] .onboarding-message{background:#152036;border-color:#2c3d5c;color:#c9dcff}
+html[data-theme="dark"] .onboarding-security-note{background:#122a20;border-color:#1f5741}
+html[data-theme="dark"] .onboarding-security-note span{color:#a5c9b8}
+html[data-theme="dark"] .onboarding-terms-block{background:#152036;border-color:#2c3d5c}
+html[data-theme="dark"] .onboarding-terms-already{background:#122a20;border-color:#1f5741}
+html[data-theme="dark"] .onboarding-terms-already span{color:#a5c9b8}
+html[data-theme="dark"] .onboarding-request-status{background:#152036;border-color:#2c3d5c}
+html[data-theme="dark"] .onboarding-approval-path b{background:#111823;border-color:var(--soft-line);color:var(--soft-muted)}
+html[data-theme="dark"] .onboarding-approval-path li:not(:last-child):after,
+html[data-theme="dark"] .onboarding-steps-simple li+li:before{background:var(--soft-line)}
+html[data-theme="dark"] .onboarding-funding-note{background:#152036;color:#c9dcff}
+html[data-theme="dark"] .onboarding-pending-help{background:#111823;color:var(--soft-muted)}
+html[data-theme="dark"] .onboarding-load-badge{background:#243040;color:#c3d2e6}
+html[data-theme="dark"] .onboarding-load-badge.setup{background:#33270f;color:#e5bd77}
+html[data-theme="dark"] .onboarding-steps-simple li.upcoming{color:var(--soft-muted)}
+/* The base step dot is a light chip from soft-ui.css; unfixed it leaves grey-on-grey. */
+html[data-theme="dark"] .onboarding-steps-simple b{background:#243040;color:var(--soft-muted)}
+html[data-theme="dark"] .onboarding-steps-simple li.current b{background:var(--soft-accent-soft);color:var(--soft-accent)}
+html[data-theme="dark"] .onboarding-steps-simple li.done b{background:#1c9367;color:#fff}
+/* Scoped to this flow so the shared sign-in styling is left alone. */
+html[data-theme="dark"] .onboarding-flow-page .signin-link{color:#a9b8c9}
+html[data-theme="dark"] .onboarding-request-status span{color:#93aad0}
+
+@media(prefers-reduced-motion:reduce){
+  .onboarding-cards label,.onboarding-meanwhile a,.onboarding-landing-list a{transition:none}
+  .onboarding-landing-list a:hover{transform:none}
+}
+html[data-theme="dark"] .onboarding-focus-grid i{color:#8fa5c9}

@@ -18,7 +18,7 @@ import {
   type ImpactEssayShellKind,
 } from "../../lib/impact-essay/impact-essay-related";
 import type { ImpactEssayAward } from "../../lib/impact-essay/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./impact-essay.css";
 
@@ -85,7 +85,7 @@ function ImpactEssayShell({
 }) {
   const actions = impactEssayNextActions({ orgId, shell });
   const copy = impactEssayShellCopy(shell);
-  const businessHref = hubHref("/business", "impact-essay", orgId);
+  const businessHref = hubWorkbenchHref("business", "impact-essay", orgId);
   const impactHref = hubHref("/business", "impact", orgId);
   const awardsHref = hubHref("/business", "evidence", orgId);
   const writerHref = hubHref("/ai", "writer", orgId);
@@ -213,7 +213,7 @@ export default function ImpactEssayClient() {
   const relatedLinks = impactEssayRelatedLinks(orgId, {
     include: [...IMPACT_ESSAY_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "impact-essay", orgId);
+  const businessHref = hubWorkbenchHref("business", "impact-essay", orgId);
   const impactHref = hubHref("/business", "impact", orgId);
   const awardsHref = hubHref("/business", "evidence", orgId);
   const writerHref = hubHref("/ai", "writer", orgId);

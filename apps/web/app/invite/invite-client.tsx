@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { VantageLogo } from "../../components/brand";
 import { LegalAgreementCheckbox } from "../../components/legal-agreement-checkbox";
@@ -16,6 +16,7 @@ import {
   type InviteFlowKind,
   type InvitePreview,
 } from "../../lib/invite";
+import { legalConsentMessage } from "../../lib/legal";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import "./invite-flow.css";
 
@@ -24,7 +25,7 @@ export const PENDING_INVITE_KEY = PENDING_INVITE_STORAGE_KEY;
 
 type PreviewResponse = {
   preview?: InvitePreview | null;
-  termsRequired?: boolean;
+  legalRequired?: boolean;
   signedIn?: boolean;
   emailMismatch?: boolean;
   sessionEmail?: string | null;
@@ -92,28 +93,58 @@ function InviteIdentity({ preview }: { preview: InvitePreview }) {
 
 export default function InviteClient() {
   const params = useSearchParams();
-  const token = params.get("token")?.trim() ?? "";
+  const urlToken = params.get("token")?.trim() ?? "";
+  // `proxy.ts` builds its sign-in / second-factor bounce from `pathname` alone,
+  // so a user can come back to a bare `/invite`. The token we stashed on the
+  // first visit is what keeps that from reading as "link incomplete".
+  const [recoveredToken, setRecoveredToken] = useState<string | null>(null);
+  const [recovering, setRecovering] = useState(!urlToken);
+  const token = urlToken || recoveredToken || "";
+  const acceptRef = useRef<HTMLButtonElement | null>(null);
   const [preview, setPreview] = useState<InvitePreview | null | undefined>(undefined);
-  const [termsRequired, setTermsRequired] = useState(true);
+  const [legalRequired, setLegalRequired] = useState(true);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"info" | "error">("info");
   const [busy, setBusy] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [legalError, setLegalError] = useState<string | null>(null);
   const [authRequired, setAuthRequired] = useState(false);
   const [emailMismatch, setEmailMismatch] = useState(false);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) return;
-    try {
-      sessionStorage.setItem(PENDING_INVITE_KEY, token);
-    } catch {
-      /* sessionStorage unavailable */
+    if (urlToken) {
+      setRecovering(false);
+      try {
+        sessionStorage.setItem(PENDING_INVITE_KEY, urlToken);
+      } catch {
+        /* sessionStorage unavailable */
+      }
+      return;
     }
-  }, [token]);
+    let stashed: string;
+    try {
+      stashed = sessionStorage.getItem(PENDING_INVITE_KEY)?.trim() ?? "";
+    } catch {
+      stashed = "";
+    }
+    setRecoveredToken(stashed || null);
+    setRecovering(false);
+    if (stashed) {
+      // Put the token back in the address bar so a refresh or a shared tab
+      // keeps working. `replaceState` leaves no extra history entry.
+      try {
+        window.history.replaceState(null, "", `/invite?token=${encodeURIComponent(stashed)}`);
+      } catch {
+        /* history unavailable */
+      }
+    }
+  }, [urlToken]);
 
   useEffect(() => {
+    if (recovering) return;
     if (!token) {
       setPreview(null);
       setLoadError(null);
@@ -133,7 +164,7 @@ export default function InviteClient() {
         const data = (await response.json()) as PreviewResponse;
         if (!active) return;
         setSessionEmail(data.sessionEmail ?? null);
-        setTermsRequired(data.termsRequired !== false);
+        setLegalRequired(data.legalRequired !== false);
         if (response.status === 401) {
           setAuthRequired(true);
           setPreview(data.preview ?? null);
@@ -167,10 +198,11 @@ export default function InviteClient() {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, recovering]);
 
   const loading =
-    Boolean(token) && preview === undefined && !authRequired && !emailMismatch && !loadError;
+    recovering ||
+    (Boolean(token) && preview === undefined && !authRequired && !emailMismatch && !loadError);
   const kind = classifyInviteFlow({
     token,
     loading,
@@ -181,8 +213,9 @@ export default function InviteClient() {
   });
   const empty = inviteEmptyCopy(kind, loadError);
   const canAccept = inviteCanAccept({
-    termsAccepted: termsRequired ? termsAccepted : true,
-    termsRequired,
+    termsAccepted,
+    privacyAccepted,
+    legalRequired,
     status: preview?.status,
   });
   const identityPreview =
@@ -194,10 +227,24 @@ export default function InviteClient() {
     [identityPreview],
   );
 
+  /**
+   * Coming back from sign-in, the acceptance button is the only thing left to
+   * do — put focus on it rather than making the user hunt down the page.
+   */
+  useEffect(() => {
+    if (kind !== "ready") return;
+    const frame = window.requestAnimationFrame(() => acceptRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [kind]);
+
   async function accept() {
-    if (termsRequired && !termsAccepted) {
+    if (legalRequired && !(termsAccepted && privacyAccepted)) {
+      const consentMessage =
+        legalConsentMessage({ terms: termsAccepted, privacy: privacyAccepted }) ??
+        "Agree to the Terms of Service and the Privacy Policy.";
+      setLegalError(consentMessage);
       setMessageTone("error");
-      setMessage("Please agree to the Terms of Service and Privacy Policy.");
+      setMessage(consentMessage);
       return;
     }
     let inviteToken = token;
@@ -221,7 +268,7 @@ export default function InviteClient() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           token: inviteToken,
-          ...(termsRequired ? { termsAccepted: true as const } : {}),
+          ...(legalRequired ? { termsAccepted: true as const, privacyAccepted: true as const } : {}),
         }),
       });
       const data = (await response.json()) as { orgId?: string; error?: string };
@@ -288,17 +335,25 @@ export default function InviteClient() {
 
         {showReady ? (
           <>
-            {termsRequired ? (
+            {legalRequired ? (
               <LegalAgreementCheckbox
-                id="invite-terms"
-                checked={termsAccepted}
-                onChange={setTermsAccepted}
+                id="invite-legal"
+                terms={termsAccepted}
+                privacy={privacyAccepted}
+                onChange={(next) => {
+                  setTermsAccepted(next.terms);
+                  setPrivacyAccepted(next.privacy);
+                  setLegalError(legalConsentMessage({ terms: next.terms, privacy: next.privacy }));
+                }}
                 className="invite-legal"
+                disabled={busy}
+                error={legalError}
               />
             ) : null}
 
             <div className="invite-actions" id="invite-accept">
               <button
+                ref={acceptRef}
                 type="button"
                 className="signin-submit"
                 disabled={busy || !token || !canAccept}

@@ -694,7 +694,7 @@ export async function loadDashboardSnapshot(
       );
       joinedSubteam = Number(sub.rows[0]?.count ?? 0) > 0;
     } catch {
-      joinedSubteam = false;
+      // stays false
     }
 
     try {
@@ -704,7 +704,7 @@ export async function loadDashboardSnapshot(
       );
       hasKnowledge = Number(knowledge.rows[0]?.chars ?? 0) > 100;
     } catch {
-      hasKnowledge = false;
+      // stays false
     }
 
     try {
@@ -717,7 +717,7 @@ export async function loadDashboardSnapshot(
       hasLogistics =
         Number(logistics.rows[0]?.trips ?? 0) > 0 || Number(logistics.rows[0]?.hotels ?? 0) > 0;
     } catch {
-      hasLogistics = false;
+      // stays false
     }
 
     try {
@@ -731,7 +731,7 @@ export async function loadDashboardSnapshot(
       kickoffReady =
         Number(kick.rows[0]?.actions ?? 0) > 0 || Number(kick.rows[0]?.priorities ?? 0) > 0;
     } catch {
-      kickoffReady = false;
+      // stays false
     }
 
     try {
@@ -743,7 +743,6 @@ export async function loadDashboardSnapshot(
       openedCadBrief = Number(cad.rows[0]?.count ?? 0) > 0;
     } catch {
       // cad_jobs schema may differ — treat as not done without inventing progress.
-      openedCadBrief = false;
     }
 
     const knowsNextMatch = widgets.next_match?.status === "live";
@@ -802,7 +801,7 @@ export async function loadDashboardSnapshot(
       );
       needsAssignment = Number(duties.rows[0]?.count ?? 0);
     } catch {
-      needsAssignment = 0;
+      // stays 0
     }
 
     try {
@@ -826,7 +825,7 @@ export async function loadDashboardSnapshot(
         roomLabel = hotel.rows[0]?.roomLabel ?? null;
       }
     } catch {
-      lodgingGaps = 0;
+      // stays 0
     }
 
     try {
@@ -845,7 +844,7 @@ export async function loadDashboardSnapshot(
       );
       unsignedChecklists = Number(unsigned.rows[0]?.count ?? 0);
     } catch {
-      unsignedChecklists = 0;
+      // stays 0
     }
 
     try {
@@ -869,8 +868,7 @@ export async function loadDashboardSnapshot(
       nextPracticeTitle = practice.rows[0]?.title ?? null;
       nextPracticeAt = practice.rows[0]?.startsAt ?? null;
     } catch {
-      nextPracticeTitle = null;
-      nextPracticeAt = null;
+      // stay null
     }
 
     try {
@@ -881,7 +879,7 @@ export async function loadDashboardSnapshot(
       );
       mineOpenTodos = Number(todos.rows[0]?.count ?? 0);
     } catch {
-      mineOpenTodos = 0;
+      // stays 0
     }
 
     try {
@@ -895,7 +893,7 @@ export async function loadDashboardSnapshot(
       kickoffReady =
         Number(kick.rows[0]?.actions ?? 0) > 0 || Number(kick.rows[0]?.priorities ?? 0) > 0;
     } catch {
-      kickoffReady = false;
+      // stays false
     }
 
     try {
@@ -910,8 +908,7 @@ export async function loadDashboardSnapshot(
       nextTravelLabel = travel.rows[0]?.title ?? null;
       nextTravelAt = travel.rows[0]?.startsAt ?? null;
     } catch {
-      nextTravelLabel = null;
-      nextTravelAt = null;
+      // stay null
     }
 
     try {
@@ -928,7 +925,7 @@ export async function loadDashboardSnapshot(
       );
       visitHostGaps = Number(hosts.rows[0]?.count ?? 0);
     } catch {
-      visitHostGaps = 0;
+      // stays 0
     }
 
     context.homeStrip = {

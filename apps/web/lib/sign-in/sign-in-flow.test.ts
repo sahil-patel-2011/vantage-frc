@@ -8,6 +8,7 @@ import {
   signInNextActions,
   signInSetupCopy,
   signInSubtitle,
+  signInUnavailableCopy,
   WAITLIST_ONLY_MESSAGE,
 } from "./sign-in-flow";
 
@@ -21,9 +22,9 @@ describe("sign-in Soft-UI helpers", () => {
     expect(signInSetupCopy("email_otp").title).toMatch(/mail provider/i);
   });
 
-  it("clarifies Google vs email OTP in the subtitle", () => {
-    expect(signInSubtitle({ email2faEnforced: true, emailOtpAvailable: true })).toMatch(/authorized/i);
-    expect(signInSubtitle({ email2faEnforced: false, emailOtpAvailable: false })).toMatch(/authorized/i);
+  it("uses one shared sign-in for every team", () => {
+    expect(signInSubtitle({ email2faEnforced: true, emailOtpAvailable: true })).toMatch(/every team/i);
+    expect(signInSubtitle({ email2faEnforced: false, emailOtpAvailable: false })).toMatch(/every team/i);
     expect(googleReady({ googleSignInAvailable: false }, true)).toBe(true);
     expect(googleReady({ googleSignInAvailable: false }, false)).toBe(false);
   });
@@ -31,8 +32,23 @@ describe("sign-in Soft-UI helpers", () => {
   it("exposes waitlist + raised pricing CTAs without inventing access", () => {
     const actions = signInNextActions();
     expect(actions.find((a) => a.id === "waitlist")?.href).toBe("/#waitlist");
-    expect(actions.find((a) => a.id === "pricing")?.detail).toMatch(/\$69/);
-    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$0", "$109 / $159", "$299 / $549"]);
+    expect(actions.find((a) => a.id === "pricing")?.detail).toMatch(/\$20/);
+    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$0", "$20", "$60", "$100"]);
+  });
+
+  it("only claims 'use another method' when another method actually exists", () => {
+    expect(signInUnavailableCopy({ google: true, email: true })).toBeNull();
+    expect(signInUnavailableCopy({ google: false, email: true })).toBeNull();
+
+    const googleOnly = signInUnavailableCopy({ google: true, email: false });
+    expect(googleOnly?.description).toMatch(/google/i);
+
+    const nothing = signInUnavailableCopy({ google: false, email: false });
+    expect(nothing?.title).toMatch(/isn’t configured/i);
+    expect(nothing?.description).toMatch(/no one can sign in yet/i);
+    // Says what will happen to what you type, and names no env vars.
+    expect(nothing?.description).toMatch(/nothing you type here would be sent/i);
+    expect(nothing?.description).not.toMatch(/RESEND|AUTH_EMAIL_FROM|DATABASE_/);
   });
 
   it("maps OAuth waitlist denials to closed-access copy", () => {

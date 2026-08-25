@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
 import { RECOGNITION_STAGE_LABEL, SUGGESTED_AWARDS, type RecognitionStage } from "../../lib/recognition";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type RankedNomination = { id: string; nomineeName: string; reason: string; voteCount: number };
 type Award = {
@@ -36,6 +37,8 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [awardName, setAwardName] = useState("");
   const [nomineeInputs, setNomineeInputs] = useState<Record<string, string>>({});
 
@@ -46,8 +49,10 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
     const data = (await response.json()) as View & { error?: string };
     if (!response.ok) {
       setMessage(data.error ?? "Failed to load team awards");
+      setErrorStatus(response.status);
       return;
     }
+    setErrorStatus(null);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => {
@@ -80,9 +85,48 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
   }
 
   if (!view) {
+    // A failed load names its own recovery — Retry cannot fix an expired session.
+    const copy = message
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message,
+          },
+        )
+      : null;
     return (
       <main className="module-page">
-        <PageHeader navPath="/recognition" title="Recognition" description={message || "Loading team awards…"} />
+        <PageHeader
+          navPath="/recognition"
+          title="Recognition"
+          description={
+            copy
+              ? "Nominate teammates for your team's own end-of-season awards, then vote."
+              : "Loading team awards…"
+          }
+        />
+        {copy ? (
+          <EmptyState soft badge="Unavailable" badgeTone="setup" title={copy.title} description={copy.description}>
+            {copy.primary ? (
+              <a className="app-button" href={copy.primary.href}>
+                {copy.primary.label}
+              </a>
+            ) : null}
+            {copy.showRetry ? (
+              <button type="button" className="app-button secondary" onClick={() => void load()}>
+                Retry
+              </button>
+            ) : null}
+          </EmptyState>
+        ) : null}
       </main>
     );
   }

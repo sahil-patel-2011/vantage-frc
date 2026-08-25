@@ -1,8 +1,9 @@
 /* Business portal — Soft-UI, scoped .biz-* + shared app tokens. */
 .business-page {
-  --biz-mint: #2f8f6b;
-  --biz-gold: #d79524;
-  --biz-red: #c24d47;
+  /* Severity hues track the shared semantic tokens so light and dark both read correctly. */
+  --biz-mint: var(--app-positive);
+  --biz-gold: var(--app-warning);
+  --biz-red: var(--app-critical);
   display: grid;
   gap: 16px;
   max-width: 1680px;
@@ -31,7 +32,7 @@
 
 .biz-season select {
   min-width: 86px;
-  min-height: 38px;
+  min-height: 44px;
   padding: 6px 10px;
   color: var(--app-ink);
   background: var(--app-soft);
@@ -58,6 +59,7 @@
 }
 
 .biz-alert button {
+  min-height: 44px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -66,15 +68,15 @@
 }
 
 .biz-alert.danger {
-  color: #8c322e;
-  background: #fff1ef;
-  border-color: #e7b4af;
+  color: var(--app-critical);
+  background: color-mix(in srgb, var(--app-critical) 12%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-critical) 42%, var(--app-line));
 }
 
 .biz-alert.success {
-  color: #226247;
-  background: #edf8f2;
-  border-color: #a8d5bf;
+  color: var(--app-positive);
+  background: color-mix(in srgb, var(--app-positive) 12%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-positive) 42%, var(--app-line));
 }
 
 .biz-stack {
@@ -152,21 +154,21 @@
 }
 
 .biz-badge.good {
-  color: #1d6648;
-  background: #eaf7f0;
-  border-color: #a9d4be;
+  color: var(--app-positive);
+  background: color-mix(in srgb, var(--app-positive) 12%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-positive) 38%, var(--app-line));
 }
 
 .biz-badge.warn {
-  color: #785417;
-  background: #fff7e5;
-  border-color: #e1c98e;
+  color: var(--app-warning);
+  background: color-mix(in srgb, var(--app-warning) 12%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-warning) 38%, var(--app-line));
 }
 
 .biz-badge.danger {
-  color: #873631;
-  background: #fff0ee;
-  border-color: #e6b5b1;
+  color: var(--app-critical);
+  background: color-mix(in srgb, var(--app-critical) 12%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--app-line));
 }
 
 .biz-badge.blue {
@@ -218,7 +220,7 @@
   background: var(--app-surface);
   border: 1px solid var(--app-line);
   border-radius: var(--app-radius, 14px);
-  border-left: 4px solid #778396;
+  border-left: 4px solid color-mix(in srgb, var(--app-muted) 60%, var(--app-line));
 }
 
 .biz-kpi.blue {
@@ -317,6 +319,9 @@
 }
 
 .biz-text-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   margin-top: 12px;
   padding: 0;
   color: var(--app-accent);
@@ -366,6 +371,7 @@
 }
 
 .biz-action-list li button {
+  min-height: 44px;
   color: var(--app-accent);
   background: transparent;
   border: 0;
@@ -481,7 +487,7 @@
 .biz-inline-form input,
 .biz-card-head select {
   width: 100%;
-  min-height: 42px;
+  min-height: 44px;
   padding: 10px 12px;
   color: var(--app-ink);
   background: var(--app-bg);
@@ -622,7 +628,7 @@
 .biz-draft article > button,
 .placement-actions button,
 .placement-actions select {
-  min-height: 34px;
+  min-height: 44px;
   padding: 6px 10px;
   color: var(--app-accent);
   background: color-mix(in srgb, var(--app-accent) 10%, transparent);
@@ -634,9 +640,9 @@
 }
 
 .biz-row-actions button.danger {
-  color: #8b332e;
-  background: #fff1ef;
-  border-color: #e2b2ae;
+  color: var(--app-critical);
+  background: color-mix(in srgb, var(--app-critical) 10%, var(--app-surface));
+  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--app-line));
 }
 
 .biz-research-card > p,
@@ -798,7 +804,7 @@
 .biz-fundraising-glance { display: grid; gap: 14px; }
 .biz-fundraising-stats { margin-top: 4px; }
 .biz-fundraising-track { height: 10px; margin: 2px 0 0; }
-.biz-fundraising-track i { background: linear-gradient(90deg, var(--biz-mint, #2f8f6b), #4aa882); }
+.biz-fundraising-track i { background: linear-gradient(90deg, var(--biz-mint), color-mix(in srgb, var(--biz-mint) 72%, var(--app-accent))); }
 .biz-fundraising-split { display: flex; flex-wrap: wrap; gap: 14px; color: var(--app-muted); font-size: 12px; }
 .biz-stage-pipeline { display: grid; gap: 10px; padding-top: 8px; border-top: 1px solid var(--soft-line, var(--app-line)); }
 .biz-stage-pipeline > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -809,12 +815,12 @@
   background: var(--soft-card, var(--app-soft)); border: 1px solid var(--soft-line, transparent);
   border-radius: 14px; box-shadow: var(--soft-shadow, none);
 }
-.biz-stage-strip li.has-partners { border-color: color-mix(in srgb, var(--biz-mint, #2f8f6b) 35%, var(--app-line)); }
+.biz-stage-strip li.has-partners { border-color: color-mix(in srgb, var(--biz-mint) 35%, var(--app-line)); }
 .biz-stage-label { color: var(--app-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 .biz-stage-count { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
 .biz-stage-bar {
   display: block; align-self: end; width: 42%; min-height: 4px; margin: 0 auto;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--biz-mint, #2f8f6b) 70%, #fff), var(--biz-mint, #2f8f6b));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--biz-mint) 70%, var(--app-surface)), var(--biz-mint));
   border-radius: 999px 999px 4px 4px;
 }
 .biz-stage-strip strong { color: var(--app-muted); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -822,7 +828,7 @@
 .biz-pipeline-goal-stats b { display: grid; gap: 4px; padding: 12px; background: var(--app-soft); border-radius: 12px; font-size: 18px; font-variant-numeric: tabular-nums; }
 .biz-pipeline-goal-stats small { color: var(--app-muted); font-size: 11px; font-weight: 500; }
 .biz-meter { height: 10px; margin: 4px 0 12px; overflow: hidden; background: var(--app-soft); border: 1px solid var(--app-line); border-radius: 999px; }
-.biz-meter > span { display: block; height: 100%; background: linear-gradient(90deg, var(--biz-mint), #4aa882); border-radius: inherit; }
+.biz-meter > span { display: block; height: 100%; background: linear-gradient(90deg, var(--biz-mint), color-mix(in srgb, var(--biz-mint) 72%, var(--app-accent))); border-radius: inherit; }
 .biz-sponsor-board { display: grid; grid-template-columns: repeat(6, minmax(160px, 1fr)); gap: 8px; overflow: auto; }
 .biz-sponsor-board > div { display: grid; align-content: start; gap: 8px; min-height: 180px; padding: 9px; background: var(--app-soft); border-radius: 12px; }
 .biz-sponsor-board > div > header { display: flex; justify-content: space-between; padding: 4px; color: var(--app-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
@@ -953,9 +959,9 @@
 
 .biz-review-warning {
   padding: 11px;
-  color: #795616 !important;
-  background: #fff7e5;
-  border: 1px solid #e2c98d;
+  color: var(--app-warning) !important;
+  background: color-mix(in srgb, var(--app-warning) 12%, var(--app-surface));
+  border: 1px solid color-mix(in srgb, var(--app-warning) 38%, var(--app-line));
   border-radius: 10px;
   font-size: 12px;
   line-height: 1.45;
@@ -1037,7 +1043,7 @@
 
 .placement-link button {
   margin-left: auto;
-  min-height: 34px;
+  min-height: 44px;
   padding: 6px 10px;
   color: var(--app-accent);
   background: color-mix(in srgb, var(--app-accent) 10%, transparent);
@@ -1076,7 +1082,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 34px;
+  min-height: 44px;
   padding: 4px 10px;
   background: var(--app-soft);
   border-radius: 10px;
@@ -1271,7 +1277,7 @@
 .biz-workbench .biz-form input,
 .biz-workbench .biz-form select,
 .biz-workbench .biz-form textarea {
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 10px;
   color: var(--app-ink);
   background: var(--app-surface);
@@ -1361,9 +1367,9 @@
   gap: 14px;
   padding: 18px;
   border-radius: 16px;
-  background: var(--soft-card, #fff);
-  border: 1px solid var(--soft-line, #d5dde8);
-  box-shadow: 0 8px 24px rgba(21, 32, 51, 0.05);
+  background: var(--soft-card, var(--app-surface));
+  border: 1px solid var(--soft-line, var(--app-line));
+  box-shadow: var(--soft-shadow, var(--app-shadow));
 }
 .biz-reminder-list {
   list-style: none;
@@ -1379,8 +1385,8 @@
   align-items: center;
   padding: 12px 14px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--soft-card, #fff) 88%, #e8eef8);
-  border: 1px solid var(--soft-line, #e5e7eb);
+  background: var(--app-soft);
+  border: 1px solid var(--soft-line, var(--app-line));
 }
 .biz-reminder-list li > div {
   display: grid;
@@ -1390,7 +1396,7 @@
   font: 650 14px var(--font-source-sans), ui-sans-serif;
 }
 .biz-reminder-list li span {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted, var(--app-muted));
   font-size: 12px;
 }
 .biz-pipeline-goal {
@@ -1411,7 +1417,7 @@
   font: 700 22px/1.1 var(--font-source-sans), ui-sans-serif;
 }
 .biz-pipeline-goal-stats small {
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted, var(--app-muted));
   font: 500 12px var(--font-source-sans), ui-sans-serif;
 }
 .biz-sponsor-board {
@@ -1433,15 +1439,15 @@
   font: 650 12px var(--font-source-sans), ui-sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--soft-muted, #6b7280);
+  color: var(--soft-muted, var(--app-muted));
 }
 .biz-sponsor-board article {
   display: grid;
   gap: 8px;
   padding: 12px;
   border-radius: 12px;
-  border: 1px solid var(--soft-line, #e5e7eb);
-  background: var(--soft-card, #fff);
+  border: 1px solid var(--soft-line, var(--app-line));
+  background: var(--soft-card, var(--app-surface));
 }
 .biz-pipeline-actions {
   display: flex;
@@ -1458,5 +1464,175 @@
   .biz-reminder-list li > button {
     grid-column: 2;
     justify-self: start;
+  }
+}
+
+/* Real money balance panel (season finance desk) */
+.finance-balance-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  max-width: 62ch;
+}
+.finance-balance-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  padding: 4px 0;
+  border-top: 1px solid var(--app-line);
+}
+.finance-balance-negative {
+  color: var(--biz-red, var(--app-critical));
+}
+.finance-balance-activity {
+  margin-top: 14px;
+  border-top: 1px solid var(--app-line);
+  padding-top: 10px;
+}
+.finance-balance-activity h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-muted);
+}
+.finance-balance-activity ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.finance-balance-activity li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.finance-balance-activity-label {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.finance-balance-activity-label strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.finance-balance-activity-label small {
+  color: var(--app-muted);
+  font-size: 11px;
+}
+.finance-balance-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.finance-balance-amount.in {
+  color: var(--biz-mint, var(--app-positive));
+}
+.finance-balance-amount.out {
+  color: var(--app-muted);
+}
+@media (max-width: 720px) {
+  .finance-balance-tiles {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Sustainability early-warning panel (lib/sustainability) ---------------------------- */
+/* Tokens only, so light and dark both track the app theme. Severity is carried by the Badge
+   text and the factor headline as well as the stripe — colour is never the only channel. */
+.biz-sustain {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+}
+.biz-sustain > header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.biz-sustain h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.biz-sustain p {
+  margin: 0;
+  font-size: 13px;
+}
+.biz-sustain-todo {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.biz-sustain-factors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.biz-sustain-factors li {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-left-width: 4px;
+  border-radius: 10px;
+}
+.biz-sustain-factors li.severity-critical {
+  border-left-color: var(--biz-red, var(--app-accent));
+}
+.biz-sustain-factors li.severity-warning {
+  border-left-color: var(--biz-gold, var(--app-accent));
+}
+.biz-sustain-factors li.severity-neutral {
+  border-left-color: var(--biz-mint, var(--app-line));
+}
+.biz-sustain-factors strong {
+  font-size: 14px;
+}
+.biz-sustain-evidence {
+  font-size: 12px;
+  color: var(--app-muted);
+}
+.biz-sustain-action {
+  font-size: 13px;
+}
+.biz-sustain-factors a {
+  justify-self: start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.biz-sustain-foot {
+  font-size: 12px;
+}
+.biz-sustain .app-button {
+  justify-self: start;
+  min-height: 44px;
+}
+
+@media (max-width: 560px) {
+  .biz-sustain > header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .biz-sustain .app-button {
+    width: 100%;
+    justify-content: center;
   }
 }

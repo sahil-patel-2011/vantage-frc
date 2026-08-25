@@ -5,18 +5,26 @@ import { marketingPageMetadata } from "../../lib/marketing/seo";
 export const metadata: Metadata = marketingPageMetadata({
   title: "Desktop app — Vantage",
   description:
-    "Windows desktop shell for the Vantage FRC workspace. Same invite-only product, native window, Google sign-in, and local CAD relay.",
+    "Windows desktop shell for the Vantage FRC workspace. Account required: same invite-only product, native window, persistent sign-in, and local CAD relay.",
   path: "/desktop",
 });
 
 const facts = [
   {
-    title: "Same product",
-    copy: "The window loads the hosted Vantage app. There is no second database and no DEMO workspace.",
+    title: "Account required",
+    copy: "The desktop app is the hosted workspace in a native window — it only works signed in. Signed out, it shows a sign-in screen and blocks everything else. Access stays invite-only.",
   },
   {
-    title: "Windows first",
-    copy: "Download an unsigned installer from GitHub Releases, or build it from the repo. SmartScreen warns until code-signing certs exist.",
+    title: "Stays signed in",
+    copy: "One sign-in (Google or email code) persists between launches until the session expires or you sign out. Window size and position restore too.",
+  },
+  {
+    title: "Same product, locked down",
+    copy: "No second database, no demo workspace. Navigation is allowlisted to Vantage and its sign-in/billing hosts; other links open in your browser. vantage-frc:// links deep-link into the app.",
+  },
+  {
+    title: "Windows first, unsigned",
+    copy: "Download an unsigned installer from GitHub Releases, or build it from the repo. SmartScreen warns until code-signing certs exist. No auto-update — install newer releases yourself.",
   },
   {
     title: "CAD stays local",
@@ -32,8 +40,8 @@ export default function DesktopPage() {
         <header className="lux-route-hero">
           <h1>Vantage on the desktop.</h1>
           <p>
-            A native Windows window around the live workspace — sign-in, scouting, CAD, and Bugbot included. Not a
-            separate cloud.
+            A native Windows window around the live workspace — scouting, CAD, and Bugbot included. Not a separate
+            cloud, and not usable without a Vantage account: the app gates itself to the sign-in flow until you are in.
           </p>
           <div className="actions">
             <a className="button primary" href="/signin">

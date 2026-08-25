@@ -37,6 +37,7 @@ import {
 import { hubById, hubPrimaryTabs, isHubTab } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { useClientAccessProfile } from "../../lib/nav/use-client-access";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./media.css";
 
 const MEDIA_HUB = hubById("media");
@@ -55,11 +56,6 @@ type LiveWithDraft = LiveView & { draft?: MediaPostDraftResult };
 
 function isTab(value: string | null): value is Tab {
   return Boolean(value && MEDIA_HUB_TABS.includes(value as Tab) && isHubTab(MEDIA_HUB, value));
-}
-
-function readOrgIdFromUrl(): string | null {
-  if (typeof window === "undefined") return null;
-  return new URLSearchParams(window.location.search).get("orgId");
 }
 
 function readTabFromUrl(): Tab {
@@ -143,6 +139,7 @@ function MediaShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -150,12 +147,31 @@ function MediaShell({
   orgId?: string | null;
   shell: MediaShellKind;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = mediaNextActions({ orgId, shell });
   const copy = mediaShellCopy(shell);
   const steps = shell === "setup" ? mediaSetupSteps(orgId) : [];
+  // A signed-out tablet needs "Sign in again", not a Retry that can never succeed.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
 
   return (
     <main className="module-page media-page soft-gate">
@@ -177,11 +193,16 @@ function MediaShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && (failure?.showRetry ?? true) ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -425,7 +446,7 @@ function DraftsPanel({
           <UsageCutoffBanner orgId={view.orgId} errorCode={cutoffCode} compact />
         ) : null}
         {draftMeta ? (
-          <AIAttribution feature={draftMeta.feature} generatedAt={draftMeta.generatedAt} />
+          <AIAttribution kind="computed" feature={draftMeta.feature} generatedAt={draftMeta.generatedAt} />
         ) : null}
         {items.length ? (
           <ul className="media-panel-list">
@@ -450,7 +471,7 @@ function DraftsPanel({
                         })
                       }
                     >
-                      Suggest with AI
+                      Suggest caption
                     </button>
                     <button
                       type="button"
@@ -479,7 +500,7 @@ function DraftsPanel({
       <Panel>
         <header>
           <h2>New draft</h2>
-          <p className="app-muted">Save a draft, or ask Vantage AI for a caption grounded in your title.</p>
+          <p className="app-muted">Save a draft, or generate a starter caption computed from your title and notes.</p>
         </header>
         <form className="media-form" onSubmit={(event) => void submit(event)}>
           <label>
@@ -522,7 +543,7 @@ function DraftsPanel({
               onChange={(event) => setCaption(event.target.value)}
               rows={4}
               maxLength={4000}
-              placeholder="Optional — or use Suggest with AI"
+              placeholder="Optional — or use Suggest caption"
             />
           </label>
           <div className="media-form-actions">
@@ -543,7 +564,7 @@ function DraftsPanel({
                 }).then(() => undefined)
               }
             >
-              Suggest with AI
+              Suggest caption
             </button>
           </div>
         </form>
@@ -837,6 +858,8 @@ export default function MediaClient() {
   const [view, setView] = useState<MediaView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("calendar");
@@ -851,6 +874,7 @@ export default function MediaClient() {
 
   const load = useCallback(() => {
     setFetchFailed(false);
+    setErrorStatus(null);
     setAccessDenied(false);
     setError("");
     const params = new URLSearchParams(window.location.search);
@@ -870,6 +894,7 @@ export default function MediaClient() {
           return;
         }
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
           setFetchFailed(true);
           setError("error" in data && data.error ? data.error : "Could not load Media");
           return;
@@ -1045,6 +1070,7 @@ export default function MediaClient() {
       orgId={orgId}
       shell={shell === "ready" ? "empty" : shell}
       error={error || undefined}
+      errorStatus={errorStatus}
       onRetry={load}
     />
   );

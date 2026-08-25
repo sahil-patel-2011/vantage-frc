@@ -1,0 +1,251 @@
+/*
+ * /docs — "How Vantage works, section by section" (.section-guide-* contract).
+ * Tokens only (light + dark); 44px targets; readable at 360px.
+ */
+.section-guide {
+  display: grid;
+  gap: 14px;
+}
+
+.section-guide-head h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.section-guide-head p {
+  margin: 0;
+  max-width: 46rem;
+  line-height: 1.55;
+}
+
+.section-guide-moments {
+  margin: 0;
+}
+
+.section-guide-moments button {
+  min-height: 44px;
+}
+
+.section-guide-count {
+  margin: 0;
+  font-size: 12px;
+}
+
+.section-guide-search {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.section-guide-search .eyebrow {
+  color: var(--app-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.section-guide-search input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  color: var(--app-ink);
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.section-guide-search input:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.section-guide-empty {
+  margin: 0;
+}
+
+.section-guide-hub > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 10px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--app-line);
+}
+
+.section-guide-hub h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.section-guide-hub-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--app-accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.section-guide-hub-link:hover {
+  text-decoration: underline;
+}
+
+.section-guide-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.section-guide-card {
+  padding: 0;
+  color: var(--app-ink);
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius, 10px);
+}
+
+.section-guide-card > summary {
+  display: grid;
+  gap: 3px;
+  min-height: 48px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.section-guide-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-guide-card > summary::after {
+  content: "Show steps";
+  color: var(--app-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.section-guide-card[open] > summary::after {
+  content: "Hide steps";
+}
+
+.section-guide-card > summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
+  outline-offset: -3px;
+}
+
+.section-guide-card > summary strong {
+  font-size: 14px;
+}
+
+.section-guide-card > summary span {
+  color: var(--app-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.section-guide-detail {
+  display: grid;
+  gap: 10px;
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--app-line);
+  padding-top: 12px;
+}
+
+.section-guide-fact {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.section-guide-fact > span {
+  color: var(--app-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.section-guide-moment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.section-guide-moment-chips em {
+  padding: 5px 8px;
+  color: var(--app-muted);
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 5px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.section-guide-detail h4 {
+  margin: 4px 0 0;
+  color: var(--app-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.section-guide-detail ol,
+.section-guide-detail ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.section-guide-detail ol li::marker {
+  color: var(--app-accent);
+  font-weight: 700;
+}
+
+.section-guide-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.section-guide-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--app-ink);
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.section-guide-links a:hover {
+  color: var(--app-accent);
+  border-color: color-mix(in srgb, var(--app-accent) 45%, var(--app-line));
+}
+
+@media (max-width: 720px) {
+  .section-guide-card > summary span,
+  .section-guide-detail ol,
+  .section-guide-detail ul,
+  .section-guide-fact {
+    font-size: 14px;
+  }
+}

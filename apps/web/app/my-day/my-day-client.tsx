@@ -16,6 +16,7 @@ import {
 } from "../../lib/my-day-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 const POLL_MS = 45_000;
 
@@ -142,6 +143,7 @@ function MyDayShell({
   emptyReason,
   hasActiveEvent,
   error,
+  errorStatus,
   onRetry,
   embedded = false,
   children,
@@ -151,6 +153,7 @@ function MyDayShell({
   emptyReason?: "no_schedule" | "no_upcoming" | null;
   hasActiveEvent?: boolean;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   embedded?: boolean;
   children?: ReactNode;
@@ -163,6 +166,24 @@ function MyDayShell({
   });
   const copy = myDayShellCopy(shell, { emptyReason });
   const steps = shell === "setup" ? myDaySetupSteps(orgId) : [];
+  // A signed-out tablet needs "Sign in again", not a Retry that can never succeed.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          },
+        )
+      : null;
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const teamDataHref = withOrgHref("/team/data", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
@@ -194,11 +215,16 @@ function MyDayShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && (failure?.showRetry ?? true) ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -250,6 +276,8 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
   const [view, setView] = useState<MyDayView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -261,14 +289,17 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       const data = (await response.json()) as MyDayView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load My Day.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setFetchFailed(false);
       setView(data);
     } catch {
       setError("Could not load My Day.");
+      setErrorStatus(null);
       setFetchFailed(true);
     } finally {
       setLoading(false);
@@ -296,10 +327,12 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
       <MyDayShell
         shell="error"
         error={error || undefined}
+        errorStatus={errorStatus}
         embedded={embedded}
         onRetry={() => {
           setLoading(true);
           setFetchFailed(false);
+          setErrorStatus(null);
           void load();
         }}
       />

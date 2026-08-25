@@ -25,7 +25,7 @@ export async function resolveTbaConfigured(
     );
     credentialAvailable = Boolean(credentials.rows[0]?.ok);
   } catch {
-    credentialAvailable = false;
+    // stays false
   }
 
   const cache = await client.query<{ ok: boolean }>(

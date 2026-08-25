@@ -13,6 +13,7 @@ import {
   type FundraiserStatus,
   type FundraiserType,
 } from "../../lib/fundraisers";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./fundraisers.css";
 
 type FundraiserEvent = {
@@ -99,6 +100,9 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a spinner that never resolves.
+  const [loadError, setLoadError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -110,12 +114,16 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
   });
 
   const load = useCallback(async () => {
+    setLoadError("");
+    setErrorStatus(null);
     const response = await fetch(
       `/api/fundraisers?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`,
     );
     const data = (await response.json()) as View & { error?: string };
     if (!response.ok) {
       setMessage(data.error ?? "Failed to load fundraisers");
+      setLoadError(data.error ?? "Failed to load fundraisers");
+      setErrorStatus(response.status);
       return;
     }
     setView(data);
@@ -160,6 +168,23 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
   }
 
   if (!view) {
+    // Retry cannot fix an expired session, so the failure decides its own action.
+    const failure = loadError
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError,
+          },
+        )
+      : null;
     return (
       <main className="module-page fr-page">
         <header className="app-page-header">
@@ -170,10 +195,21 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
         </header>
         <EmptyState
           soft
-          title={message || "Loading fundraisers…"}
-          description="Opening this season’s community events."
-          aria-busy
-        />
+          title={failure ? failure.title : "Loading fundraisers…"}
+          description={failure ? failure.description : "Opening this season’s community events."}
+          aria-busy={failure ? undefined : true}
+        >
+          {failure?.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure?.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
       </main>
     );
   }

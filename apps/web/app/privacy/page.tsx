@@ -1,90 +1,103 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "../../components/marketing/site-header";
 import { LEGAL_DOC_VERSION, LEGAL_EFFECTIVE_DATE } from "../../lib/legal";
+import { LEGAL_LAST_UPDATED, PRIVACY_POLICY, splitOnContactEmail } from "../../lib/legal/documents";
 import { marketingPageMetadata } from "../../lib/marketing/seo";
+import "../legal.css";
+
+/** Renders body text, turning the contact address into a mailto link. */
+function LegalText({ text }: { text: string }) {
+  return (
+    <>
+      {splitOnContactEmail(text).map((run, index) =>
+        run.kind === "email" ? (
+          <a href={`mailto:${run.value}`} key={index}>
+            {run.value}
+          </a>
+        ) : (
+          <span key={index}>{run.value}</span>
+        )
+      )}
+    </>
+  );
+}
 
 export const metadata: Metadata = marketingPageMetadata({
   title: "Privacy Policy — Vantage",
   description:
-    "How Vantage handles account, organization, scouting, and AI data for FRC teams. Invite-only workspaces; no sale of student data for ads.",
+    "What Vantage collects from FRC teams and their members, how student data and supervised chat are handled, and what we never do with team content.",
   path: "/privacy",
 });
 
 export default function PrivacyPage() {
+  const doc = PRIVACY_POLICY;
   return (
     <div className="marketing-site marketing-lux legal-page">
       <SiteHeader />
-      <main className="legal-content">
-        <p className="legal-kicker">LEGAL</p>
-        <h1>Privacy Policy — Vantage</h1>
-        <p className="legal-meta">
-          Effective {LEGAL_EFFECTIVE_DATE} · Version {LEGAL_DOC_VERSION}
+      <main className="legal-doc" id="top">
+        <header className="legal-doc-head">
+          <p className="legal-kicker">Legal</p>
+          <h1>{doc.title}</h1>
+          <p className="legal-doc-summary">{doc.summary}</p>
+          <p className="legal-doc-meta">
+            <span>Last updated {LEGAL_LAST_UPDATED}</span>
+            <span>Effective {LEGAL_EFFECTIVE_DATE}</span>
+            <span>Version {LEGAL_DOC_VERSION}</span>
+          </p>
+        </header>
+
+        <p className="legal-doc-notice">
+          <strong>Written to be checked, not to reassure.</strong>
+          This policy describes what the software actually does, including where its protections stop. It has not
+          been reviewed by a lawyer yet. If you are a school administrator, start at{" "}
+          <a href="#minors">Students under 18</a>.
         </p>
-        <p>This Policy explains how Vantage handles information for FRC teams, their members, and site visitors.</p>
-        <h2>Information we collect</h2>
-        <ul>
-          <li>Account and onboarding details, including name, email, recovery email, phone number used for OTP, date of birth, role, and team number.</li>
-          <li>Organization content and operational data that authorized users add, such as scouting, schedules, documents, team chat (including optional Slack-bridged messages), and settings.</li>
-          <li>Technical information needed to secure and operate sessions, including authentication/session data, IP-derived security signals, and service logs.</li>
-          <li>Waitlist contact information and optional affirmative SMS consent.</li>
-        </ul>
-        <h2>How we use information</h2>
-        <p>
-          We use information to authenticate users, provide organization-scoped features, operate and secure the
-          service, support teams, enforce plans and AI usage limits, and meet legal obligations. We do not sell
-          student data or use it for targeted advertising.
-        </p>
-        <h2>Workspace separation and providers</h2>
-        <p>
-          Vantage is multi-tenant: organization data is separated using application permissions and row-level
-          security controls. We use Postgres hosts (Neon today; Supabase Postgres is an optional host) and other
-          service providers to deliver the product, and they process data only as needed to provide their services.
-          Security measures reduce risk but cannot guarantee absolute security.
-        </p>
-        <h2>AI usage and model training</h2>
-        <p>
-          When an authorized user requests AI, relevant prompts and necessary context may be sent to the selected
-          model provider. AI use is metered for the organization. BYOK credentials are encrypted and used only for the
-          configured integration; the provider&apos;s terms and privacy practices also apply.
-        </p>
-        <p>
-          We may use AI prompts, outputs, feature usage metadata, and related interaction data from this app to train,
-          evaluate, and improve Vantage models and AI features. Live product access stays organization-scoped: another
-          team cannot read your workspace in the app. You can export your team&apos;s AI artifacts from Exports; API
-          keys and encryption material are never included.
-        </p>
-        <h2>Scouting voice notes</h2>
-        <p>
-          Optional scouting voice notes are off by default. An organization owner or admin and each scout must
-          separately opt in and accept privacy consent before recording. Transcripts are stored as notes attached to a
-          scout entry and do not fill structured form fields. When cloud speech-to-text is used, audio may be sent to a
-          configured STT provider and is metered as AI usage. Browser speech recognition, when used, produces the
-          transcript on-device. Only enable voice notes when people who may be recorded have consented.
-        </p>
-        <h2>Cookies and sessions</h2>
-        <p>
-          We use necessary cookies and session mechanisms to sign users in, maintain security, and remember essential
-          preferences. We do not use session replay, fingerprinting, or advertising cookies to build cross-site
-          behavioral profiles.
-        </p>
-        <h2>Closed access and retention</h2>
-        <p>
-          Vantage access is limited to approved accounts. We retain information while an account or workspace is active
-          and afterward only as needed for legitimate operational, security, legal, or dispute-resolution purposes.
-          Waitlist entries are retained for launch follow-up until removal is requested.
-        </p>
-        <h2>Your choices</h2>
-        <p>
-          You may request access, correction, deletion, or export of personal information, subject to applicable law
-          and a team&apos;s role in the data. Contact{" "}
-          <a href="mailto:privacy@vantagefrc.com">privacy@vantagefrc.com</a>. Vantage is not a HIPAA service and makes
-          no HIPAA compliance claims.
-        </p>
-        <h2>Updates</h2>
-        <p>
-          We may update this Policy as Vantage changes. Material changes will have a new effective date or version, and
-          may require a new acceptance.
-        </p>
+
+        <nav className="legal-toc" aria-label="Sections of this policy">
+          <h2>On this page</h2>
+          <ol>
+            {doc.sections.map((section) => (
+              <li key={section.id}>
+                <a href={`#${section.id}`}>{section.heading}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
+        <div className="legal-body">
+          {doc.sections.map((section) => (
+            <section className="legal-section" id={section.id} key={section.id} aria-labelledby={`${section.id}-h`}>
+              <h2 id={`${section.id}-h`}>
+                {section.heading}
+                <a className="legal-anchor" href={`#${section.id}`} aria-label={`Link to ${section.heading}`}>
+                  #
+                </a>
+              </h2>
+              {section.paragraphs.map((paragraph, index) => (
+                <p key={`${section.id}-p${index}`}>
+                  <LegalText text={paragraph} />
+                </p>
+              ))}
+              {section.list ? (
+                <ul>
+                  {section.list.map((item, index) => (
+                    <li key={`${section.id}-l${index}`}>
+                      <LegalText text={item} />
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          ))}
+          <p>
+            <a className="legal-back-to-top" href="#top">
+              Back to top
+            </a>{" "}
+            <a className="legal-back-to-top" href="/terms">
+              Read the Terms of Service
+            </a>
+          </p>
+        </div>
       </main>
       <SiteFooter />
     </div>

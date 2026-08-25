@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { OfflineBanner } from "../../../components/offline-banner";
 import {
   googleCalendarSubscribeUrl,
@@ -10,6 +11,16 @@ import {
   monthEventCountLabel,
   monthEventPeek,
 } from "../../../lib/calendar/calendar-related";
+import type { RecurrenceEventFields } from "../../../lib/calendar/series";
+import {
+  browserTimeZone,
+  EMPTY_REPEAT_DRAFT,
+  OccurrenceScopeChoice,
+  RepeatControl,
+  repeatDraftToRule,
+  type OccurrenceScope,
+  type RepeatDraft,
+} from "./repeat-control";
 import { githubConnectionHref } from "../../../lib/github/github-related";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../../lib/offline";
 import {
@@ -57,6 +68,17 @@ import {
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type ReadyView = Extract<SubteamCalendarView, { status: "ready" }>;
+
+/**
+ * Events as the calendar API returns them once migration 0456 is applied: the
+ * recurrence fields are additive, so everything still renders without them.
+ */
+type RecurringEvent = CalendarEvent & RecurrenceEventFields;
+
+/** True when changing this entry could touch more than the one meeting shown. */
+function isSeriesEvent(event: RecurringEvent): boolean {
+  return Boolean(event.seriesId && (event.isOccurrence || event.rrule));
+}
 type Tab = "calendar" | "subteams" | "duties" | "trip" | "sync";
 type DutyScope = "team" | "mine";
 
@@ -248,32 +270,193 @@ function TimedCalendarGrid({
   );
 }
 
+/** `datetime-local` wants local wall-clock text, not the stored instant. */
+function toLocalInputValue(iso: string | null): string {
+  if (!iso) return "";
+  const ms = new Date(iso).getTime();
+  if (Number.isNaN(ms)) return "";
+  const date = new Date(ms);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  );
+}
+
+/**
+ * Edit one meeting. For a series the save step is the standard three-way choice,
+ * because "this Tuesday we start at 5" and "we start at 5 from now on" are
+ * different edits and guessing between them loses a team's schedule.
+ */
+function OccurrenceEditor({
+  event,
+  busy,
+  onSave,
+  onCancel,
+}: {
+  event: RecurringEvent;
+  busy: boolean;
+  onSave: (patch: Record<string, unknown>, scope: OccurrenceScope) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(event.title);
+  const [startsAt, setStartsAt] = useState(() => toLocalInputValue(event.startsAt));
+  const [endsAt, setEndsAt] = useState(() => toLocalInputValue(event.endsAt));
+  const [location, setLocation] = useState(event.location ?? "");
+  const repeats = isSeriesEvent(event);
+
+  const buildPatch = (): Record<string, unknown> | null => {
+    const trimmed = title.trim();
+    if (!trimmed || !startsAt) return null;
+    const startMs = new Date(startsAt).getTime();
+    if (Number.isNaN(startMs)) return null;
+    const endMs = endsAt ? new Date(endsAt).getTime() : null;
+    if (endMs != null && (Number.isNaN(endMs) || endMs < startMs)) return null;
+    return {
+      title: trimmed,
+      startsAt: new Date(startMs).toISOString(),
+      endsAt: endMs == null ? null : new Date(endMs).toISOString(),
+      location,
+    };
+  };
+
+  const submit = (scope: OccurrenceScope) => {
+    const patch = buildPatch();
+    if (!patch) return;
+    onSave(patch, scope);
+  };
+
+  return (
+    <div className="tc-occurrence-edit">
+      <div className="tc-form-grid">
+        <label className="tc-field wide">
+          <span>Title</span>
+          <input value={title} disabled={busy} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        <label className="tc-field">
+          <span>Starts</span>
+          <input
+            type="datetime-local"
+            value={startsAt}
+            disabled={busy}
+            onChange={(e) => setStartsAt(e.target.value)}
+          />
+        </label>
+        <label className="tc-field">
+          <span>Ends</span>
+          <input
+            type="datetime-local"
+            value={endsAt}
+            disabled={busy}
+            onChange={(e) => setEndsAt(e.target.value)}
+          />
+        </label>
+        <label className="tc-field wide">
+          <span>Location</span>
+          <input value={location} disabled={busy} onChange={(e) => setLocation(e.target.value)} />
+        </label>
+      </div>
+      {repeats ? (
+        <OccurrenceScopeChoice
+          title="Save this change to…"
+          actionLabel="Save"
+          busy={busy}
+          onPick={submit}
+          onCancel={onCancel}
+        />
+      ) : (
+        <div className="tc-occurrence-actions">
+          <button
+            type="button"
+            className="app-button secondary"
+            disabled={busy || !title.trim() || !startsAt}
+            onClick={() => submit("this")}
+          >
+            Save
+          </button>
+          <button type="button" className="tc-text-btn" disabled={busy} onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EventCard({
   event,
   busy,
   canDelete,
   onDelete,
   onRsvp,
+  scopePrompt,
+  onScopePick,
+  onCancelScope,
+  canEdit,
+  editing,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
 }: {
-  event: CalendarEvent;
+  event: RecurringEvent;
   busy: boolean;
   canDelete: boolean;
   onDelete: () => void;
   onRsvp: (response: RsvpResponse | null) => void;
+  /** Set while this card is asking how far a removal should reach. */
+  scopePrompt?: boolean;
+  onScopePick?: (scope: OccurrenceScope) => void;
+  onCancelScope?: () => void;
+  canEdit?: boolean;
+  editing?: boolean;
+  onStartEdit?: () => void;
+  onCancelEdit?: () => void;
+  onSaveEdit?: (patch: Record<string, unknown>, scope: OccurrenceScope) => void;
 }) {
   const accent = event.subteamColor ?? "var(--app-accent)";
   const going = event.myRsvp === "going";
+  const repeats = isSeriesEvent(event);
 
   return (
     <article className="tc-event" style={{ ["--tc-accent" as string]: accent }}>
       <div className="tc-event-top">
         <strong>{event.title}</strong>
-        {canDelete ? (
-          <button type="button" className="tc-text-btn" disabled={busy} onClick={onDelete}>
-            Remove
-          </button>
-        ) : null}
+        <span className="tc-event-tools">
+          {canEdit && onStartEdit ? (
+            <button
+              type="button"
+              className="tc-text-btn"
+              disabled={busy}
+              onClick={editing ? onCancelEdit : onStartEdit}
+            >
+              {editing ? "Close" : "Edit"}
+            </button>
+          ) : null}
+          {canDelete ? (
+            <button type="button" className="tc-text-btn" disabled={busy} onClick={onDelete}>
+              Remove
+            </button>
+          ) : null}
+        </span>
       </div>
+      {editing && onSaveEdit && onCancelEdit ? (
+        <OccurrenceEditor event={event} busy={busy} onSave={onSaveEdit} onCancel={onCancelEdit} />
+      ) : null}
+      {repeats && event.recurrenceSummary ? (
+        <p className="tc-repeat-badge">
+          <span aria-hidden="true">↻</span> {event.recurrenceSummary}
+        </p>
+      ) : null}
+      {scopePrompt && onScopePick && onCancelScope ? (
+        <OccurrenceScopeChoice
+          title={`Remove “${event.title}” from the calendar?`}
+          actionLabel="Remove"
+          destructive
+          busy={busy}
+          onPick={onScopePick}
+          onCancel={onCancelScope}
+        />
+      ) : null}
       <div className="tc-event-meta">
         <span className="tc-chip">{event.source === "tba" ? "Match" : SUBTEAM_EVENT_KIND_LABELS[event.kind]}</span>
         <span>
@@ -468,6 +651,16 @@ function CreateEventForm({
   const [createAttendance, setCreateAttendance] = useState(kind === "practice" || kind === "build");
   const [attendanceEventId, setAttendanceEventId] = useState("");
   const [driverSessionId, setDriverSessionId] = useState("");
+  const [repeat, setRepeat] = useState<RepeatDraft>(EMPTY_REPEAT_DRAFT);
+  const [repeatError, setRepeatError] = useState<string | null>(null);
+  // The shop's zone: a 6pm Tuesday build night must stay 6pm across the November
+  // DST change, so the rule is anchored to wall-clock time here, not to UTC.
+  const timeZone = useMemo(() => browserTimeZone(), []);
+  const startsAtIso = useMemo(() => {
+    if (!startsAt) return null;
+    const ms = new Date(startsAt).getTime();
+    return Number.isNaN(ms) ? null : new Date(ms).toISOString();
+  }, [startsAt]);
 
   useEffect(() => {
     setSubteamId(filterSubteamId ?? "");
@@ -482,21 +675,31 @@ function CreateEventForm({
       className="tc-form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!title.trim() || !startsAt) return;
+        if (!title.trim() || !startsAt || !startsAtIso) return;
+        const built = repeatDraftToRule(repeat, startsAtIso, timeZone);
+        if (built.error) {
+          setRepeatError(built.error);
+          return;
+        }
+        setRepeatError(null);
         void run(
           {
             action: "create_event",
             orgId,
             title: title.trim(),
             kind,
-            startsAt: new Date(startsAt).toISOString(),
+            startsAt: startsAtIso,
             endsAt: endsAt ? new Date(endsAt).toISOString() : null,
             location,
             notes,
             subteamId: subteamId || null,
-            createAttendance: createAttendance && !attendanceEventId,
+            // Attendance roll-call is a single dated row, so it only makes sense
+            // for a one-off — a series would silently link every meeting to it.
+            createAttendance: createAttendance && !attendanceEventId && !built.rrule,
             attendanceEventId: attendanceEventId || null,
             driverSessionId: driverSessionId || null,
+            rrule: built.rrule,
+            timeZone,
           },
           "create-event",
         ).then((ok) => {
@@ -504,6 +707,7 @@ function CreateEventForm({
             setTitle("");
             setNotes("");
             setLocation("");
+            setRepeat(EMPTY_REPEAT_DRAFT);
           }
         });
       }}
@@ -586,7 +790,19 @@ function CreateEventForm({
           </label>
         ) : null}
       </div>
-      {!attendanceEventId ? (
+      <RepeatControl
+        draft={repeat}
+        onChange={(next) => {
+          setRepeat(next);
+          setRepeatError(null);
+        }}
+        startsAtIso={startsAtIso}
+        timeZone={timeZone}
+        disabled={busy}
+        idPrefix="create-event"
+      />
+      {repeatError ? <p className="tc-error">{repeatError}</p> : null}
+      {!attendanceEventId && repeat.preset === "none" ? (
         <label className="tc-check">
           <input
             type="checkbox"
@@ -598,7 +814,7 @@ function CreateEventForm({
         </label>
       ) : null}
       <button type="submit" className="app-button secondary" disabled={busy || !title.trim() || !startsAt}>
-        Add detailed event
+        {repeat.preset === "none" ? "Add detailed event" : "Add repeating event"}
       </button>
     </form>
   );
@@ -1243,9 +1459,15 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   const [view, setView] = useState<SubteamCalendarView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  /** Event currently asking "this / this and following / all events". */
+  const [scopeEventId, setScopeEventId] = useState<string | null>(null);
+  /** Event whose inline editor is open. */
+  const [editEventId, setEditEventId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("calendar");
   const [filterSubteamId, setFilterSubteamId] = useState<string | null>(null);
   const [mode, setMode] = useState<CalendarViewMode>("week");
@@ -1282,10 +1504,12 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
       const data = (await response.json()) as SubteamCalendarView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load the team calendar.");
+        setErrorStatus(response.status);
         if (!cached) setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setView(data);
       setFromCache(false);
       setCachedAt(null);
@@ -1420,20 +1644,35 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         <OfflineBanner feature="Calendar" fromCache={Boolean(view) && fromCache} cachedAt={cachedAt} />
         <div className="app-card tc-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load calendar</strong>
-              <p className="app-muted">
-                {error ||
-                  (!online
-                    ? "No cached calendar on this device yet."
-                    : "Check your connection and try again.")}
-              </p>
-              <div className="tc-guide-actions">
-                <button type="button" className="app-button secondary" onClick={() => void load()}>
-                  Retry
-                </button>
-              </div>
-            </>
+            (() => {
+              const kind = classifyLoadFailure({ status: errorStatus, message: error, online });
+              const copy = loadFailureCopy(kind, {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message:
+                  error || "No cached calendar on this device yet. Check your connection and try again.",
+              });
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  <div className="tc-guide-actions">
+                    {copy.primary ? (
+                      <a className="app-button" href={copy.primary.href}>
+                        {copy.primary.label}
+                      </a>
+                    ) : null}
+                    {copy.showRetry ? (
+                      <button type="button" className="app-button secondary" onClick={() => void load()}>
+                        Retry
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading team calendar…</p>
           )}
@@ -1477,20 +1716,53 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
     void run({ action: "set_rsvp", orgId, id: eventId, response }, `rsvp:${eventId}`);
   };
 
-  const renderEventCard = (event: CalendarEvent) => (
-    <EventCard
-      key={event.id}
-      event={event}
-      busy={busy}
-      canDelete={canManage && !isReadonlyCalendarEvent(event)}
-      onDelete={() => {
-        if (confirm(`Remove “${event.title}” from the calendar?`)) {
-          void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
-        }
-      }}
-      onRsvp={(response) => setRsvp(event.id, response)}
-    />
-  );
+  const renderEventCard = (rawEvent: CalendarEvent) => {
+    const event = rawEvent as RecurringEvent;
+    const repeats = isSeriesEvent(event);
+    return (
+      <EventCard
+        key={event.id}
+        event={event}
+        busy={busy}
+        canDelete={canManage && !isReadonlyCalendarEvent(event)}
+        scopePrompt={scopeEventId === event.id}
+        onScopePick={(scope) => {
+          setScopeEventId(null);
+          void run(
+            { action: "delete_occurrence", orgId, id: event.id, scope },
+            `del:${event.id}`,
+          );
+        }}
+        onCancelScope={() => setScopeEventId(null)}
+        canEdit={canManage && !isReadonlyCalendarEvent(event)}
+        editing={editEventId === event.id}
+        onStartEdit={() => {
+          setScopeEventId(null);
+          setEditEventId(event.id);
+        }}
+        onCancelEdit={() => setEditEventId(null)}
+        onSaveEdit={(patch, scope) => {
+          setEditEventId(null);
+          void run(
+            { action: "update_occurrence", orgId, id: event.id, scope, patch },
+            `edit:${event.id}`,
+          );
+        }}
+        onDelete={() => {
+          // A repeating meeting needs the this / following / all choice before
+          // anything is removed; a one-off keeps the plain confirm.
+          if (repeats) {
+            setScopeEventId(event.id);
+            return;
+          }
+          if (confirm(`Remove “${event.title}” from the calendar?`)) {
+            void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
+          }
+        }}
+        onRsvp={(response) => setRsvp(event.id, response)}
+      />
+    );
+  };
 
   return (
     <main className={`module-page tc-page${embedded ? " is-embedded" : ""}`}>

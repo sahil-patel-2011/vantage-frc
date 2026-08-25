@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { formatGoalValue, goalCategoryLabel, goalStatusLabel } from "../../lib/goals";
 import {
@@ -94,6 +95,9 @@ export default function GoalsClient() {
   const [view, setView] = useState<GoalsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadError, setLoadError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -102,6 +106,8 @@ export default function GoalsClient() {
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
+    setLoadError("");
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
@@ -113,6 +119,8 @@ export default function GoalsClient() {
         const data = (await response.json()) as GoalsView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setFetchFailed(true);
+          setErrorStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
           return;
         }
         setView(data);
@@ -151,6 +159,23 @@ export default function GoalsClient() {
   );
 
   if (fetchFailed || view == null) {
+    // Retry cannot fix an expired session, so the failure decides its own action.
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page goals-page">
         <PageHeader
@@ -160,15 +185,16 @@ export default function GoalsClient() {
         />
         <EmptyState
           soft
-          title={fetchFailed ? "Could not load season goals" : "Loading season goals…"}
-          description={
-            fetchFailed
-              ? "A network or server issue prevented loading. Try again."
-              : "Checking your workspace."
-          }
+          title={failure ? failure.title : "Loading season goals…"}
+          description={failure ? failure.description : "Checking your workspace."}
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {failure?.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={() => load()}>
               Retry
             </button>

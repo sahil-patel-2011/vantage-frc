@@ -49,7 +49,7 @@ export function sslOptionForUrl(connectionString: string): boolean | { rejectUna
 export function firstConfiguredEnv(...names: string[]): string {
   for (const name of names) {
     const value = process.env[name]?.trim();
-    if (value) return value;
+    if (value && value !== "[SENSITIVE]") return value;
   }
   return "";
 }
@@ -133,6 +133,11 @@ export function assertSafePostgresUrl(connectionString: string): void {
   if (/^eyJ[A-Za-z0-9_-]+\./.test(value)) {
     throw new UnsafePostgresUrlError(
       "Value looks like a JWT (anon/service_role). Use the Postgres connection string, not a Data API key.",
+    );
+  }
+  if (/^(sb_secret_|sb_publishable_|sbp_)/i.test(value)) {
+    throw new UnsafePostgresUrlError(
+      "Value looks like a Supabase API key (sb_secret_/sb_publishable_). Use the Postgres connection string, not a Data API key.",
     );
   }
   if (!/^postgres(ql)?:\/\//i.test(value)) {

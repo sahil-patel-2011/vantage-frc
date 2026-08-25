@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { leadershipCategoryLabel, leadershipHandoffStatusLabel } from "../../lib/leadership";
 import {
   LEADERSHIP_CATEGORY_VALUES,
@@ -26,6 +27,8 @@ export default function LeadershipClient() {
   const [view, setView] = useState<LeadershipView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -33,6 +36,7 @@ export default function LeadershipClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setErrorStatus(null);
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -44,6 +48,7 @@ export default function LeadershipClient() {
       .then(async (response) => {
         const data = (await response.json()) as LeadershipView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
@@ -124,14 +129,34 @@ export default function LeadershipClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load Leadership Continuity"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const kind = classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          });
+          const copy = loadFailureCopy(kind, {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error,
+          });
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

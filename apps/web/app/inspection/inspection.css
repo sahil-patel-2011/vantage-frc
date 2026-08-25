@@ -1,10 +1,12 @@
 /* Robot Inspection — co-located so styling survives independently of the shared
    global stylesheet. All selectors are .insp-* prefixed and theme-aware. */
-.insp-page input,.insp-page select{min-height:38px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
+.insp-page input,.insp-page select{min-height:44px;padding:8px 10px;color:var(--app-ink);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;font:inherit}
 .insp-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.app-button.sm{min-height:32px;padding:5px 12px;font-size:11px}
-.insp-empty{display:grid;gap:12px;justify-items:start;padding:26px}
-.insp-link{padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
+/* Scoped: an unscoped `.app-button.sm` here leaks to every page once this stylesheet loads. */
+.insp-page .app-button.sm{min-height:44px;padding:5px 12px;font-size:11px}
+/* Scoped so it reliably beats the shared .soft-panel EmptyState shell regardless of import order. */
+.insp-page .insp-empty{display:grid;gap:12px;justify-items:start;padding:26px;text-align:left}
+.insp-link{display:inline-flex;align-items:center;min-height:44px;padding:0;color:var(--app-accent);background:none;border:0;font-size:12px;font-weight:700;cursor:pointer}
 .insp-link.danger{color:var(--app-critical)}
 .insp-summary{display:grid;grid-template-columns:1.3fr .7fr;gap:12px;margin-bottom:16px}
 .insp-summary-tile{display:grid;gap:6px;padding:16px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:var(--app-radius)}
@@ -25,9 +27,10 @@
 .insp-item.s-fail .insp-req{color:var(--app-critical);font-weight:600}
 .insp-custom{font-style:normal;margin-left:6px;padding:1px 6px;background:var(--app-soft);border:1px solid var(--app-line);border-radius:999px;font-size:9px;font-weight:800;color:var(--app-muted);text-transform:uppercase}
 .insp-buttons{display:flex;align-items:center;gap:5px;flex:none}
-.insp-btn{min-height:30px;padding:4px 10px;border-radius:7px;border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-muted);font-size:11px;font-weight:800;cursor:pointer}
-.insp-btn.pass.active{color:#fff;background:var(--app-positive);border-color:var(--app-positive)}
-.insp-btn.fail.active{color:#fff;background:var(--app-critical);border-color:var(--app-critical)}
+/* Pass/fail/N-A are the primary tap targets on a pit tablet — keep them full size. */
+.insp-btn{min-width:44px;min-height:44px;padding:4px 10px;border-radius:7px;border:1px solid var(--app-line);background:var(--app-bg);color:var(--app-muted);font-size:11px;font-weight:800;cursor:pointer}
+.insp-btn.pass.active{color:#fff;background:var(--app-positive-fill);border-color:var(--app-positive-fill)}
+.insp-btn.fail.active{color:#fff;background:var(--app-critical-fill);border-color:var(--app-critical-fill)}
 .insp-btn.na.active{color:var(--app-ink);background:var(--app-soft);border-color:var(--app-muted)}
 .insp-meta{color:var(--app-muted);font-size:10px}
 .insp-note-form{display:flex;gap:8px}

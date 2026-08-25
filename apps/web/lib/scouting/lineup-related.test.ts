@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { buildCoverageGapBoard } from "@vantage/scouting/coverage";
 import {
+  LINEUP_POLL_MS,
   LINEUP_RELATED_INCLUDE,
+  buildLineupCoverageSlots,
   classifyLineupShell,
+  defaultLineupFocusMatchKey,
+  shouldPollLineup,
   formatLineupCoverage,
   formatLineupMetric,
   isLineupBoardEmpty,
@@ -104,6 +109,107 @@ describe("lineupShellCopy", () => {
     }
     expect(lineupShellCopy("empty").description).toMatch(/never DEMO/i);
     expect(lineupShellCopy("setup").badge).toBe("Setup required");
+  });
+});
+
+describe("lineup live polling", () => {
+  it("keeps a tablet-friendly cadence of at least 15s", () => {
+    expect(LINEUP_POLL_MS).toBeGreaterThanOrEqual(15_000);
+  });
+
+  it("pauses while the tab is hidden", () => {
+    expect(shouldPollLineup("hidden")).toBe(false);
+    expect(shouldPollLineup("visible")).toBe(true);
+    // SSR / older engines without visibilityState default to polling.
+    expect(shouldPollLineup(undefined)).toBe(true);
+  });
+});
+
+describe("buildLineupCoverageSlots", () => {
+  const matches = [
+    {
+      matchKey: "2026casj_qm1",
+      matchNumber: 1,
+      compLevel: "qm",
+      redAlliance: { teamKeys: ["frc254", "frc1678"] },
+      blueAlliance: { teamKeys: ["frc973"] },
+      eventTime: "2026-03-01T17:00:00Z",
+    },
+    {
+      matchKey: "2026casj_qm2",
+      matchNumber: 2,
+      compLevel: "qm",
+      redAlliance: null,
+      blueAlliance: { teamKeys: ["frc118"] },
+    },
+  ];
+
+  it("builds one slot per real alliance robot with true counts — never invented", () => {
+    const slots = buildLineupCoverageSlots({
+      matches,
+      assignments: [{ matchKey: "2026casj_qm1", teamKey: "frc973", count: 1 }],
+      entryScouts: [
+        { matchKey: "2026casj_qm1", teamKey: "frc254", scoutUserId: "u1", scoutName: "Ada" },
+        { matchKey: "2026casj_qm1", teamKey: "frc254", scoutUserId: "u2", scoutName: null },
+      ],
+    });
+    expect(slots).toHaveLength(4);
+    const doubled = slots.find((s) => s.teamKey === "frc254");
+    expect(doubled?.entryCount).toBe(2);
+    expect(doubled?.alliance).toBe("red");
+    expect(doubled?.scoutUserIds).toEqual(["u1", "u2"]);
+    expect(doubled?.scoutNames).toEqual(["Ada", "Team scout"]);
+    const assigned = slots.find((s) => s.teamKey === "frc973");
+    expect(assigned?.assignmentCount).toBe(1);
+    expect(assigned?.entryCount).toBe(0);
+    const untouched = slots.find((s) => s.teamKey === "frc118");
+    expect(untouched?.assignmentCount).toBe(0);
+    expect(untouched?.entryCount).toBe(0);
+  });
+
+  it("classifies through the shared compute layer", () => {
+    const board = buildCoverageGapBoard(
+      buildLineupCoverageSlots({
+        matches,
+        assignments: [{ matchKey: "2026casj_qm1", teamKey: "frc973", count: 1 }],
+        entryScouts: [
+          { matchKey: "2026casj_qm1", teamKey: "frc254", scoutUserId: "u1", scoutName: "Ada" },
+          { matchKey: "2026casj_qm1", teamKey: "frc254", scoutUserId: "u2", scoutName: "Grace" },
+          { matchKey: "2026casj_qm1", teamKey: "frc1678", scoutUserId: "u1", scoutName: "Ada" },
+        ],
+      }),
+    );
+    expect(board.find((s) => s.teamKey === "frc254")?.status).toBe("double");
+    expect(board.find((s) => s.teamKey === "frc1678")?.status).toBe("covered");
+    expect(board.find((s) => s.teamKey === "frc973")?.status).toBe("assigned");
+    expect(board.find((s) => s.teamKey === "frc118")?.status).toBe("unscouted");
+  });
+
+  it("returns no slots for an empty schedule — honest empty state", () => {
+    expect(buildLineupCoverageSlots({ matches: [], assignments: [], entryScouts: [] })).toEqual([]);
+  });
+});
+
+describe("defaultLineupFocusMatchKey", () => {
+  it("anchors on the first match still needing coverage", () => {
+    expect(
+      defaultLineupFocusMatchKey([
+        { matchKey: "qm1", status: "covered" },
+        { matchKey: "qm1", status: "double" },
+        { matchKey: "qm2", status: "assigned" },
+        { matchKey: "qm3", status: "unscouted" },
+      ]),
+    ).toBe("qm2");
+  });
+
+  it("returns null when everything is covered", () => {
+    expect(
+      defaultLineupFocusMatchKey([
+        { matchKey: "qm1", status: "covered" },
+        { matchKey: "qm2", status: "double" },
+      ]),
+    ).toBeNull();
+    expect(defaultLineupFocusMatchKey([])).toBeNull();
   });
 });
 

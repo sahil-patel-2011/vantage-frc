@@ -18,6 +18,7 @@ import {
 } from "../../lib/dossier/dossier-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./dossier.css";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -78,17 +79,37 @@ function DossierShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
   orgId?: string | null;
   shell: DossierShellKind;
   error?: string;
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = dossierNextActions({ orgId, shell });
   const copy = dossierShellCopy(shell);
+  // Retry cannot fix an expired session, so the failure decides its own action.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus ?? null,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error ?? null,
+          },
+        )
+      : null;
   const steps = shell === "setup" ? dossierSetupSteps(orgId) : [];
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -111,18 +132,27 @@ function DossierShell({
         badge={
           shell === "setup"
             ? "Setup required"
-            : shell === "error"
-              ? "Unavailable"
+            : failure
+              ? failure.kind === "auth"
+                ? "Signed out"
+                : failure.kind === "forbidden"
+                  ? "No access"
+                  : "Unavailable"
               : shell === "empty"
                 ? "No facts yet"
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : (error ?? copy.description)}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failure?.showRetry !== false ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -181,12 +211,15 @@ export default function DossierClient() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
 
   const load = useCallback(
     (team?: string, resolvedOrg?: string | null) => {
       setFetchFailed(false);
       setError("");
+      setErrorStatus(null);
       setLoading(true);
       const params = new URLSearchParams();
       const activeOrg =
@@ -199,6 +232,7 @@ export default function DossierClient() {
           const data = (await response.json()) as DossierView | { error?: string };
           if (!response.ok || !("status" in data)) {
             setError("error" in data && data.error ? data.error : "Could not load dossier");
+            setErrorStatus(response.status);
             setFetchFailed(true);
             setView(null);
             return;
@@ -271,6 +305,7 @@ export default function DossierClient() {
               ? `${view.message} Facts stay blank until real TBA/Statbotics rows exist — never DEMO stats.`
               : undefined
         }
+        errorStatus={errorStatus}
         onRetry={
           shell === "error"
             ? () => {

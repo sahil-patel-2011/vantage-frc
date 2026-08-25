@@ -28,7 +28,7 @@ import {
   type ScoutFieldBudgetNextAction,
   type ScoutFieldBudgetShellKind,
 } from "../../lib/scout-field-budget/scout-field-budget-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./scout-field-budget.css";
 
@@ -98,7 +98,7 @@ function BudgetShell({
 }) {
   const actions = scoutFieldBudgetNextActions({ orgId, shell });
   const copy = scoutFieldBudgetShellCopy(shell);
-  const competitionHref = hubHref("/competition", "scout-field-budget", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "scout-field-budget", orgId);
   const steps = shell === "setup" ? scoutFieldBudgetSetupSteps(orgId) : [];
 
   return (
@@ -220,7 +220,7 @@ export default function ScoutFieldBudgetClient() {
     snapshotCount,
     overBudgetCount,
   });
-  const competitionHref = hubHref("/competition", "scout-field-budget", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "scout-field-budget", orgId);
   const showTiles = shouldShowScoutFieldBudgetSummaryTiles(snapshotCount);
   const loaded = view?.status === "live";
 

@@ -1,0 +1,204 @@
+/*
+ * My Kit — the per-person view. One column on phones, two on wide screens.
+ * Colours come from soft-ui tokens; the four tone accents are declared as local
+ * custom properties so the dark override is one block, not one rule per element.
+ */
+.mk-page {
+  display: grid;
+  gap: var(--soft-space-4, 16px);
+
+  --mk-tone-overdue: #b42318;
+  --mk-tone-due: #b54708;
+  --mk-tone-done: #067647;
+  --mk-tone-info: var(--soft-accent, #1f4fd6);
+  --mk-tone-neutral: var(--soft-muted, #5a6578);
+}
+
+html[data-theme="dark"] .mk-page {
+  --mk-tone-overdue: #fca5a5;
+  --mk-tone-due: #fcd34d;
+  --mk-tone-done: #86efac;
+}
+
+.mk-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--soft-space-2, 8px);
+}
+
+.mk-identity {
+  display: grid;
+  gap: var(--soft-space-2, 8px);
+}
+
+.mk-identity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--soft-space-2, 8px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--soft-space-3, 12px);
+}
+
+.mk-quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--soft-space-2, 8px);
+}
+
+/* Two columns only when there is genuinely room; one column everywhere else. */
+.mk-sections {
+  display: grid;
+  gap: var(--soft-space-4, 16px);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .mk-sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mk-section.emphasis {
+    grid-column: 1 / -1;
+  }
+}
+
+.mk-section {
+  display: grid;
+  gap: var(--soft-space-3, 12px);
+  align-content: start;
+}
+
+.mk-section.emphasis {
+  box-shadow: var(--soft-shadow-lift, 0 8px 24px rgba(15, 23, 42, 0.1));
+  border-color: var(--soft-accent, #1f4fd6);
+}
+
+.mk-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--soft-space-2, 8px);
+}
+
+.mk-section-head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.mk-reason {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--soft-muted, #5a6578);
+}
+
+.mk-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--soft-space-2, 8px);
+}
+
+.mk-row {
+  display: flex;
+  gap: var(--soft-space-3, 12px);
+  align-items: flex-start;
+  justify-content: space-between;
+  /* Comfortable touch target on a phone in a pit. */
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--soft-radius-sm, 12px);
+  border: 1px solid var(--soft-line, #e2e8f0);
+  background: var(--soft-card, #fff);
+  color: inherit;
+  text-decoration: none;
+}
+
+.mk-row:hover,
+.mk-row:focus-visible {
+  border-color: var(--soft-accent, #1f4fd6);
+}
+
+.mk-row:focus-visible {
+  outline: 2px solid var(--soft-ring, #1f4fd6);
+  outline-offset: 2px;
+}
+
+.mk-row-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mk-row-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.mk-row-detail {
+  font-size: 0.85rem;
+  color: var(--soft-muted, #5a6578);
+  overflow-wrap: anywhere;
+}
+
+.mk-row-meta {
+  flex: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--mk-tone-neutral);
+}
+
+.mk-row.tone-overdue .mk-row-meta {
+  color: var(--mk-tone-overdue);
+}
+.mk-row.tone-due .mk-row-meta {
+  color: var(--mk-tone-due);
+}
+.mk-row.tone-done .mk-row-meta {
+  color: var(--mk-tone-done);
+}
+.mk-row.tone-info .mk-row-meta {
+  color: var(--mk-tone-info);
+}
+
+.mk-row.tone-overdue {
+  border-left: 3px solid var(--mk-tone-overdue);
+}
+.mk-row.tone-due {
+  border-left: 3px solid var(--mk-tone-due);
+}
+
+.mk-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--soft-muted, #5a6578);
+}
+
+.mk-section-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--soft-space-2, 8px);
+}
+
+/* One column, stacked rows, nothing clipped at 360px. */
+@media (max-width: 560px) {
+  .mk-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .mk-row-meta {
+    white-space: normal;
+  }
+  .mk-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}

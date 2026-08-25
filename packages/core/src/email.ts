@@ -16,7 +16,8 @@ export type InviteEmail = {
   expiresAt: Date;
 };
 export type SecurityNotice = { email:string; subject:string; message:string };
-export type FreeformEmail = { to: string; subject: string; text: string };
+/** `html` is optional; providers must always deliver the plain-text body. */
+export type FreeformEmail = { to: string; subject: string; text: string; html?: string };
 
 export interface EmailProvider {
   readonly name: string;
@@ -102,7 +103,13 @@ export class ResendEmailProvider implements EmailProvider {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { authorization: `Bearer ${this.apiKey}`, "content-type": "application/json" },
-      body: JSON.stringify({ from: this.from, to: [message.to], subject: message.subject, text: message.text }),
+      body: JSON.stringify({
+        from: this.from,
+        to: [message.to],
+        subject: message.subject,
+        text: message.text,
+        ...(message.html ? { html: message.html } : {}),
+      }),
     });
     if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
   }

@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { dbAdmin } from "@vantage/db/admin";
-import { NexusClient, parseNexusLive } from "./nexus-client";
+import { NexusClient, hasNexusMapGeometry, parseNexusLive } from "./nexus-client";
 
 export type NexusSyncSummary = {
   attempted: number;
@@ -18,14 +18,23 @@ export async function upsertNexusSnapshot(
   eventKey: string,
   pits: Record<string, string>,
   live: unknown,
+  map?: unknown,
 ): Promise<void> {
   const pitsJson = JSON.stringify(pits ?? {});
   const liveJson = JSON.stringify(live ?? null);
+  // A map we could not fetch this cycle must not erase geometry already cached.
+  const mapJson = map === undefined || map === null ? null : JSON.stringify(map);
   await dbAdmin.execute(sql`
-    INSERT INTO nexus_event_snapshots (event_key, pits, live, synced_at)
-    VALUES (${eventKey}, CAST(${pitsJson} AS jsonb), CAST(${liveJson} AS jsonb), now())
+    INSERT INTO nexus_event_snapshots (event_key, pits, live, map, synced_at)
+    VALUES (
+      ${eventKey}, CAST(${pitsJson} AS jsonb), CAST(${liveJson} AS jsonb),
+      CAST(${mapJson} AS jsonb), now()
+    )
     ON CONFLICT (event_key) DO UPDATE
-    SET pits = excluded.pits, live = excluded.live, synced_at = now()
+    SET pits = excluded.pits,
+        live = excluded.live,
+        map = COALESCE(excluded.map, nexus_event_snapshots.map),
+        synced_at = now()
   `);
 }
 
@@ -42,7 +51,13 @@ export async function syncNexusEvents(eventKeys: string[]): Promise<NexusSyncSum
     try {
       const [live, pits] = await Promise.all([client.getLive(eventKey), client.getPits(eventKey)]);
       parseNexusLive(live, eventKey, new Date().toISOString());
-      await upsertNexusSnapshot(eventKey, pits, live);
+      // Venue geometry is static for the weekend and optional on many events —
+      // a failure here must not fail the queue sync, and never clears the cache.
+      const map = await client
+        .getMap(eventKey)
+        .then((geometry) => (hasNexusMapGeometry(geometry) ? geometry : null))
+        .catch(() => null);
+      await upsertNexusSnapshot(eventKey, pits, live, map);
       written += 1;
     } catch (error) {
       return {

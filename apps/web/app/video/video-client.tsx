@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   fmtTimestamp,
   NOTE_TAGS,
@@ -204,6 +205,8 @@ export default function VideoClient() {
   const [view, setView] = useState<VideoView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
@@ -220,10 +223,12 @@ export default function VideoClient() {
       const data = (await response.json()) as VideoView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load video reviews.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setView(data);
     } catch {
       setFetchFailed(true);
@@ -272,13 +277,38 @@ export default function VideoClient() {
         </header>
         <div className="app-card vid-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load video reviews</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
+            (() => {
+              const copy = loadFailureCopy(
+                classifyLoadFailure({
+                  status: errorStatus,
+                  message: error,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message: error || "Check your connection and try again.",
+                },
+              );
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading video reviews…</p>
           )}

@@ -1,0 +1,162 @@
+/* Scouted-vs-TBA reconciliation. Tokens only, light + dark, 44px+ targets, 360px safe.
+   soft-ui.css has no review/ok semantic pair, so this surface defines its own and
+   flips them with the theme rather than hard-coding hexes at each use site. */
+
+:root {
+  --recon-review-ink: #8a2f22;
+  --recon-review-line: #e6b4aa;
+  --recon-review-bg: #fdeceb;
+  --recon-ok-ink: #14603c;
+  --recon-ok-line: #a9d8bf;
+  --recon-ok-bg: #e8f6ee;
+}
+html[data-theme="dark"] {
+  --recon-review-ink: #fca5a5;
+  --recon-review-line: #7f2f2f;
+  --recon-review-bg: #331b1b;
+  --recon-ok-ink: #6ee7a8;
+  --recon-ok-line: #235c40;
+  --recon-ok-bg: #14291f;
+}
+
+.recon {
+  display: grid;
+  gap: 14px;
+}
+
+.recon-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.recon-kpis article {
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+}
+.recon-kpis span,
+.recon-kpis small {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+}
+.recon-kpis strong {
+  font-size: clamp(20px, 3vw, 26px);
+  line-height: 1.1;
+  color: var(--soft-ink);
+}
+
+.recon-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.recon-actions .app-button {
+  min-height: 44px;
+}
+
+.recon-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recon-match {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-card);
+}
+.recon-match > header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.recon-match h3 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--soft-ink);
+}
+
+.recon-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--soft-line);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--soft-muted);
+  background: transparent;
+}
+.recon-chip.review {
+  color: var(--recon-review-ink);
+  border-color: var(--recon-review-line);
+  background: var(--recon-review-bg);
+}
+.recon-chip.ok {
+  color: var(--recon-ok-ink);
+  border-color: var(--recon-ok-line);
+  background: var(--recon-ok-bg);
+}
+
+.recon-alliance {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--soft-radius-sm, 12px);
+  border: 1px solid var(--soft-line);
+  background: color-mix(in srgb, var(--soft-card) 92%, var(--soft-line));
+}
+.recon-alliance > b {
+  color: var(--soft-ink);
+  font-size: 13px;
+}
+.recon-alliance p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--soft-muted);
+  overflow-wrap: anywhere;
+}
+
+.recon-robots {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recon-robots li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--soft-ink);
+}
+.recon-robots li span {
+  color: var(--soft-muted);
+}
+.recon-robots li a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--soft-accent);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .recon-kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+}

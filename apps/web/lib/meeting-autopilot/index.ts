@@ -99,7 +99,7 @@ export function summarizeAgendaSources(input: AgendaSourceInput): AgendaSourceCo
 
 const OWNER_MENTION_RE = /@([A-Za-z][\w.'-]*)/;
 const DUE_DATE_RE = /\b(?:due|by)\s+(\d{4}-\d{2}-\d{2})\b/i;
-const BULLET_RE = /^(?:[-*•]\s*|(?:todo|action)\s*[:\-]\s*)(.+)$/i;
+const BULLET_RE = /^(?:[-*•]\s*|(?:todo|action)\s*[:-]\s*)(.+)$/i;
 
 /**
  * Deterministically extracts action items from raw post-meeting minutes text. Only bulleted /

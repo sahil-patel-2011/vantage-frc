@@ -48,11 +48,19 @@ const PUBLIC_PREFIXES = [
   "/strategy/board",
   "/display/kiosk",
   "/display/pit",
+  // AI subscription bridge device traffic: pairing codes + device-token claim/heartbeat.
+  "/api/ai-bridge/device",
+  // Desktop shell browser-link sign-in: challenge start + poll + one-time code
+  // exchange (no session cookie; approval itself stays session-gated).
+  "/api/desktop/link",
   // CAD desktop CLI: pairing codes + device-token relay (no session cookie).
   "/api/cad/pair/start",
   "/api/cad/pair/poll",
   "/api/cad/relay",
   "/api/cad/compatibility",
+  // Team agent-config bundle: session OR paired device token — the route
+  // enforces both itself (apps/web/app/api/agent-config/bundle).
+  "/api/agent-config/bundle",
   // VS Code / editor connector: device-code pair + bearer context (no session cookie).
   "/api/editor/pair/start",
   "/api/editor/pair/poll",
@@ -84,11 +92,42 @@ function isPublicPartnerStorefront(pathname: string) {
   );
 }
 
+/**
+ * Public sponsor thank-you walls live at `/sponsor-wall/{uuid}` (and matching API).
+ * The authenticated builder uses exact `/sponsor-wall` — keep that gated.
+ */
+function isPublicSponsorWall(pathname: string) {
+  return (
+    /^\/sponsor-wall\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      pathname,
+    ) ||
+    /^\/api\/sponsor-wall\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      pathname,
+    )
+  );
+}
+
+/**
+ * Token-scoped parent surfaces only (parent contacts have no Vantage account):
+ * the read-only parent view page + API, and the one-click digest unsubscribe.
+ * Narrow regexes on the opaque token — the bare `/parents` mentor page and the
+ * session `/api/parents` management API stay gated.
+ */
+function isPublicParentView(pathname: string) {
+  return (
+    /^\/parent-view\/[A-Za-z0-9_-]{16,100}$/.test(pathname) ||
+    /^\/api\/parent-view\/[A-Za-z0-9_-]{16,100}$/.test(pathname) ||
+    /^\/api\/parents\/unsubscribe\/[A-Za-z0-9_-]{16,100}$/.test(pathname)
+  );
+}
+
 function isPublic(pathname: string) {
   return (
     PUBLIC_PAGES.has(pathname) ||
     isPublicCalendarFeed(pathname) ||
+    isPublicParentView(pathname) ||
     isPublicPartnerStorefront(pathname) ||
+    isPublicSponsorWall(pathname) ||
     PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
     PUBLIC_FILE.test(pathname)
   );

@@ -20,6 +20,73 @@ export const FUSION_RELAY_SUPPORTED_PROTOCOLS = [FUSION_RELAY_PROTOCOL_VERSION] 
 
 export type FusionRelayProtocolVersion = (typeof FUSION_RELAY_SUPPORTED_PROTOCOLS)[number];
 
+/**
+ * Operations the VantageCadRelay Fusion add-in actually executes.
+ *
+ * This is the ONE list that decides `fusion: "supported"` in cad-tool-catalog.ts,
+ * so the /cad tools panel can never claim an operation the add-in refuses. It is
+ * kept byte-for-byte in sync with `IMPLEMENTED` in
+ * packages/fusion360-official-connector/VantageCadRelay/VantageCadRelay.py, which
+ * publishes the same list on GET /health — `assertFusionRelayParity()` compares
+ * the two at runtime so a stale add-in is reported, not discovered mid-build.
+ */
+export const FUSION_RELAY_IMPLEMENTED_OPERATIONS = [
+  "create_chamfer",
+  "create_checkpoint",
+  "create_extrude",
+  "create_fillet",
+  "create_sketch",
+  "delete_feature",
+  "render_views",
+  "verify_topology",
+] as const;
+
+export type FusionRelayImplementedOperation = (typeof FUSION_RELAY_IMPLEMENTED_OPERATIONS)[number];
+
+export function fusionRelayImplements(operation: string): boolean {
+  return (FUSION_RELAY_IMPLEMENTED_OPERATIONS as readonly string[]).includes(operation);
+}
+
+/**
+ * Compare the running add-in's advertised operations against what this build of
+ * Vantage expects. Returns the honest difference instead of assuming parity.
+ * `advertised` is the `operations` array from the relay's /health response;
+ * add-ins older than 0.2.0 do not send it, which is reported as "unknown".
+ */
+export function assertFusionRelayParity(advertised: unknown): {
+  known: boolean;
+  inSync: boolean;
+  missingFromAddin: string[];
+  extraInAddin: string[];
+  note: string;
+} {
+  if (!Array.isArray(advertised)) {
+    return {
+      known: false,
+      inSync: false,
+      missingFromAddin: [],
+      extraInAddin: [],
+      note: "This Fusion add-in does not report its operations (older than v0.2.0). Run `vantage-cad update` to reinstall the add-in, then restart VantageCadRelay in Fusion.",
+    };
+  }
+  const addin = new Set(advertised.map((item) => String(item)));
+  const expected = new Set<string>(FUSION_RELAY_IMPLEMENTED_OPERATIONS);
+  const missingFromAddin = [...expected].filter((op) => !addin.has(op)).sort();
+  const extraInAddin = [...addin].filter((op) => !expected.has(op)).sort();
+  const inSync = missingFromAddin.length === 0 && extraInAddin.length === 0;
+  return {
+    known: true,
+    inSync,
+    missingFromAddin,
+    extraInAddin,
+    note: inSync
+      ? "Fusion add-in operations match this Vantage build."
+      : missingFromAddin.length
+        ? `The installed add-in cannot run: ${missingFromAddin.join(", ")}. Run \`vantage-cad update\`, then restart VantageCadRelay in Fusion.`
+        : `The installed add-in is newer than this Vantage build (extra: ${extraInAddin.join(", ")}). Run \`vantage-cad update\` to match versions.`,
+  };
+}
+
 export type FusionRelayEnvelope = {
   version: string;
   jobId: string;

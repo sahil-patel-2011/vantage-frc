@@ -16,6 +16,7 @@
     "test:cad": "npm test --workspace=@vantage/cad && npm test --workspace=@vantage/cad-cli",
     "desktop:dev": "npm run dev --workspace=@vantage/desktop",
     "desktop:dist": "npm run dist --workspace=@vantage/desktop",
+    "deploy:preflight": "node scripts/deploy-preflight.mjs",
     "db:generate": "drizzle-kit generate --config packages/db/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config packages/db/drizzle.config.ts",
     "cad:package": "node scripts/cad/package-relay.mjs",
@@ -28,11 +29,13 @@
 
   "devDependencies": {
     "@eslint/js": "latest",
+    "@next/eslint-plugin-next": "latest",
     "@playwright/test": "latest",
     "@types/node": "latest",
     "drizzle-kit": "latest",
     "eslint": "latest",
     "eslint-config-next": "latest",
+    "eslint-plugin-react-hooks": "latest",
     "globals": "latest",
     "tsx": "latest",
     "typescript": "latest",

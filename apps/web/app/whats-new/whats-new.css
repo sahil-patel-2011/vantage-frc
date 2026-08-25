@@ -27,6 +27,14 @@
 
 .whats-new-empty-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
 
+.whats-new-beta{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;flex-wrap:wrap}
+.whats-new-beta-copy{display:grid;gap:4px;min-width:0;flex:1 1 320px}
+.whats-new-beta h2{margin:0;font-size:15px;letter-spacing:-.01em}
+.whats-new-beta-copy>p{margin:0;color:var(--app-muted);font-size:13px;line-height:1.45}
+.whats-new-beta-status{margin:0;color:var(--app-muted);font-size:12px;font-weight:600}
+.whats-new-beta-actions{flex:none}
+.whats-new-beta-actions .app-button{min-height:44px}
+
 @media(max-width:640px){
   .whats-new-next-actions li{flex-direction:column;align-items:stretch}
 }

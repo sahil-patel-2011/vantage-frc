@@ -2,6 +2,7 @@
 
 import { type FormEvent, useId, useState } from "react";
 import { LegalAgreementCheckbox } from "../legal-agreement-checkbox";
+import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
 import { track } from "../../lib/marketing/analytics";
 
 type FormState = "idle" | "sending" | "success" | "error";
@@ -18,15 +19,22 @@ export function WaitlistForm({
   const [state, setState] = useState<FormState>("idle");
   const [message, setMessage] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [phone, setPhone] = useState("");
 
   const phoneProvided = phone.trim().length > 0;
+  const consent = { terms: termsAccepted, privacy: privacyAccepted };
+  // A missing-consent error belongs next to the boxes; anything else (network,
+  // server rejection) belongs in the form-level status line.
+  const consentError = state === "error" && !legalConsentComplete(consent) ? message : null;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!termsAccepted) {
+    // Terms and Privacy are two separate agreements; neither one stands in for
+    // the other, so the form will not submit until both are ticked.
+    if (!legalConsentComplete(consent)) {
       setState("error");
-      setMessage("Agree to the Terms of Service and Privacy Policy to join.");
+      setMessage(legalConsentMessage(consent) ?? "Agree to both documents to join.");
       return;
     }
 
@@ -44,6 +52,7 @@ export function WaitlistForm({
           phone: form.get("phone"),
           smsConsent: phoneProvided && form.get("smsConsent") === "on",
           termsAccepted,
+          privacyAccepted,
           website: form.get("website"),
         }),
       });
@@ -130,19 +139,23 @@ export function WaitlistForm({
       ) : null}
 
       <LegalAgreementCheckbox
-        id={`${prefix}-terms`}
-        checked={termsAccepted}
-        onChange={(checked) => {
-          setTermsAccepted(checked);
-          if (checked && state === "error") {
+        id={`${prefix}-legal`}
+        terms={termsAccepted}
+        privacy={privacyAccepted}
+        onChange={(next) => {
+          setTermsAccepted(next.terms);
+          setPrivacyAccepted(next.privacy);
+          if (state === "error" && legalConsentComplete(next)) {
             setState("idle");
             setMessage("");
           }
         }}
         required
+        disabled={state === "sending"}
+        error={consentError}
       />
 
-      {state === "error" ? (
+      {state === "error" && !consentError ? (
         <p className="form-error form-status form-status-error" role="alert">
           {message}
         </p>

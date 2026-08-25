@@ -6,6 +6,7 @@ import {
   validatePurchaseRequestInput,
   type PurchaseRequestStatus,
 } from "../../../../lib/finance";
+import { recordMoney, removeMoney } from "../../../../lib/finance/ledger";
 import { sanitizeFinanceWriteBody } from "../../../../lib/finance/sanitize-write";
 
 async function session() {
@@ -138,11 +139,22 @@ export async function PATCH(request: Request) {
       );
 
       if (to === "approved") {
-        await client.query(
-          `INSERT INTO finance_transactions(org_id, season_year, type, source, amount_usd, category_id, purchase_request_id, description, created_by)
-           VALUES($1,$2,'expense','purchase_request',$3,$4,$5,$6,$7)`,
-          [orgId, row.seasonYear, row.totalCostUsd, row.categoryId, id, "Purchase request approved", current.user.id],
-        );
+        // Mirror onto the unified money ledger (0461) in the same transaction —
+        // idempotent upsert keyed by (org, 'purchase_request', request id).
+        await recordMoney(client, {
+          orgId,
+          source: "purchase_request",
+          sourceId: id,
+          direction: "out",
+          amountUsd: Number(row.totalCostUsd) || 0,
+          seasonYear: row.seasonYear,
+          categoryId: row.categoryId,
+          label: "Purchase request approved",
+          createdBy: current.user.id,
+        });
+      } else if (to === "rejected" && row.status === "approved") {
+        // Rejecting an approved request un-commits the money.
+        await removeMoney(client, { orgId, source: "purchase_request", sourceId: id });
       }
 
       await client.query(

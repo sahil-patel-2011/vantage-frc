@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import FundingProfileClient from "./funding-profile-client";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "./background.css";
 
 type FormState = {
@@ -43,17 +44,24 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"ok" | "error">("ok");
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
+    setLoadFailed(false);
     const response = await fetch(`/api/team/background?orgId=${encodeURIComponent(orgId)}`);
     const data = await response.json();
     if (!response.ok) {
       setMessage(data.error ?? "Could not load team background");
       setMessageTone("error");
+      setErrorStatus(response.status);
+      setLoadFailed(true);
       setLoading(false);
       return;
     }
+    setErrorStatus(null);
     setCanEdit(Boolean(data.canEdit));
     setSeedWhoWeAre(typeof data.seedWhoWeAre === "string" ? data.seedWhoWeAre : null);
     setUpdatedAt(typeof data.updatedAt === "string" ? data.updatedAt : null);
@@ -123,6 +131,23 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
   const title =
     teamNumber != null ? `Team ${teamNumber} background` : orgName ? `${orgName} background` : "Team background";
 
+  const failure = loadFailed
+    ? loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message,
+        },
+      )
+    : null;
+
   return (
     <main className="module-page team-background-page">
       <PageHeader
@@ -141,7 +166,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
 
       <FundingProfileClient orgId={orgId} />
 
-      {message ? (
+      {message && !failure ? (
         <p className={messageTone === "error" ? "status-bad" : "status-good"} role="status">
           {message}
         </p>
@@ -149,6 +174,19 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
 
       {loading ? (
         <EmptyState soft title="Loading team background" description="Pulling this workspace’s profile…" />
+      ) : failure ? (
+        <EmptyState soft title={failure.title} description={failure.description}>
+          {failure.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
       ) : (
         <form className="team-background-form" onSubmit={(event) => void save(event)}>
           <Panel>

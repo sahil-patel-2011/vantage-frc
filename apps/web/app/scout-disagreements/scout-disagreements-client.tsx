@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { distinctValues, scoutDisagreementStatusLabel } from "../../lib/scout-disagreements";
 import { type ScoutDisagreementsView } from "../../lib/scout-disagreements/compute-scout-disagreements";
 import type { ScoutDisagreement } from "../../lib/scout-disagreements/types";
@@ -81,6 +82,7 @@ function ScoutDisagreementsShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -88,6 +90,8 @@ function ScoutDisagreementsShell({
   orgId?: string | null;
   shell: ScoutDisagreementsShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session can offer sign-in. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -95,6 +99,23 @@ function ScoutDisagreementsShell({
   const copy = scoutDisagreementsShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const steps = shell === "setup" ? scoutDisagreementsSetupSteps(orgId) : [];
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus ?? null,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error ?? null,
+          },
+        )
+      : null;
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const accuracyHref = withOrgHref("/scout-accuracy", orgId);
   const coverageHref = withOrgHref("/scouting/lineup", orgId);
@@ -126,11 +147,16 @@ function ScoutDisagreementsShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : (error ?? copy.description)}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {failure?.showRetry && onRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -184,6 +210,8 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
   const [view, setView] = useState<ScoutDisagreementsView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -192,6 +220,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
   const load = useCallback(
     (seasonOverride?: number) => {
       setFetchFailed(false);
+      setFailureStatus(null);
       setError("");
       const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
       const urlOrg = initialOrgId ?? params.get("orgId");
@@ -205,6 +234,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
           const data = (await response.json()) as ScoutDisagreementsView | { error?: string };
           if (!response.ok || !("status" in data)) {
             setFetchFailed(true);
+            setFailureStatus(response.status);
             setError("error" in data && data.error ? data.error : "Could not load scout disagreements.");
             return;
           }
@@ -291,6 +321,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={failureStatus}
         onRetry={() => load()}
       />
     );

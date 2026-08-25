@@ -15,7 +15,7 @@ import {
   type SketchToBriefShellKind,
 } from "../../lib/sketch-to-brief/sketch-to-brief-related";
 import type { BriefRecord, MechanismCategory, RuleFlagSeverity, SketchRecord } from "../../lib/sketch-to-brief/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sketch-to-brief.css";
 
@@ -88,7 +88,7 @@ function SketchShell({
 }) {
   const actions = sketchToBriefNextActions({ orgId, shell });
   const copy = sketchToBriefShellCopy(shell);
-  const buildHref = hubHref("/build", "sketch-to-brief", orgId);
+  const buildHref = hubWorkbenchHref("build", "sketch-to-brief", orgId);
   const kickoffHref = hubHref("/build", "kickoff", orgId);
   const cadHref = hubHref("/build", "cad", orgId);
 
@@ -214,7 +214,7 @@ export default function SketchToBriefClient() {
   const relatedLinks = sketchToBriefRelatedLinks(orgId, {
     include: [...SKETCH_TO_BRIEF_RELATED_INCLUDE],
   });
-  const buildHref = hubHref("/build", "sketch-to-brief", orgId);
+  const buildHref = hubWorkbenchHref("build", "sketch-to-brief", orgId);
   const kickoffHref = hubHref("/build", "kickoff", orgId);
   const cadHref = hubHref("/build", "cad", orgId);
 

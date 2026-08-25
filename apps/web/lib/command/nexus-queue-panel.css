@@ -1,0 +1,251 @@
+/* Nexus queue panel — Event Day. Tokens only, light + dark, usable at 360px. */
+
+.nq-panel {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  border-radius: var(--soft-radius, 16px);
+  background: var(--soft-card, #fff);
+  color: var(--soft-ink, #132033);
+  box-shadow: var(--soft-shadow, 0 10px 28px rgba(19, 32, 51, 0.07));
+}
+
+.nq-panel.is-urgent {
+  border-color: var(--nq-urgent-line, #d94c46);
+  background: var(--nq-urgent-bg, #fff3f2);
+}
+
+.nq-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nq-head h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.nq-head a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--soft-accent, #1f4fd6);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nq-empty {
+  margin: 0;
+  color: var(--soft-muted, #5a6578);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.nq-countdown {
+  display: grid;
+  gap: 12px;
+}
+
+.nq-countdown-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.nq-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--soft-muted, #5a6578);
+}
+
+/* 10-foot readable even on a laptop in the pit. */
+.nq-countdown-main strong {
+  font-size: clamp(48px, 13vw, 88px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.nq-cue {
+  justify-self: start;
+  padding: 6px 12px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  background: var(--soft-accent-soft, #e4ecfc);
+  color: var(--soft-accent, #1f4fd6);
+}
+
+.nq-cue.cue-queue-soon,
+.nq-cue.cue-queue-now {
+  background: var(--nq-urgent-chip, #d94c46);
+  color: #fff;
+}
+
+.nq-cue.cue-on-field {
+  background: var(--nq-field-chip, #15803d);
+  color: #fff;
+}
+
+.nq-countdown-main small {
+  color: var(--soft-muted, #5a6578);
+  font-size: 13px;
+}
+
+.nq-stages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 620px) {
+  .nq-stages {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.nq-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 1px solid var(--soft-line, #d5dde8);
+  border-radius: var(--soft-radius-sm, 12px);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--soft-muted, #5a6578);
+  background: transparent;
+}
+
+.nq-stage.done {
+  color: var(--soft-ink, #132033);
+  border-color: color-mix(in srgb, var(--soft-accent, #1f4fd6) 35%, transparent);
+}
+
+.nq-stage.current {
+  color: #fff;
+  background: var(--soft-accent, #1f4fd6);
+  border-color: var(--soft-accent, #1f4fd6);
+}
+
+.nq-panel.is-urgent .nq-stage.current {
+  background: var(--nq-urgent-chip, #d94c46);
+  border-color: var(--nq-urgent-chip, #d94c46);
+}
+
+.nq-upnext {
+  margin: 0;
+  font-size: 13px;
+  color: var(--soft-muted, #5a6578);
+}
+
+.nq-block {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--soft-line, #d5dde8);
+}
+
+.nq-block h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--soft-muted, #5a6578);
+}
+
+.nq-announcements,
+.nq-parts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nq-announcements li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: var(--soft-radius-sm, 12px);
+  background: var(--soft-bg, #eef2f7);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.nq-announcements time {
+  flex: none;
+  font-size: 12px;
+  color: var(--soft-muted, #5a6578);
+  font-variant-numeric: tabular-nums;
+}
+
+.nq-parts li {
+  display: grid;
+  gap: 2px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: var(--soft-radius-sm, 12px);
+  border: 1px solid var(--soft-line, #d5dde8);
+  background: var(--soft-bg, #eef2f7);
+}
+
+.nq-parts li.is-near {
+  border-color: var(--soft-accent, #1f4fd6);
+  background: var(--soft-accent-soft, #e4ecfc);
+}
+
+.nq-parts strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.nq-parts small {
+  font-size: 12px;
+  color: var(--soft-muted, #5a6578);
+}
+
+.nq-foot {
+  margin: 0;
+  font-size: 12px;
+  color: var(--soft-muted, #5a6578);
+}
+
+html[data-theme="dark"] .nq-panel.is-urgent {
+  --nq-urgent-line: #f87171;
+  --nq-urgent-bg: color-mix(in srgb, #7f1d1d 26%, var(--soft-card, #151b24));
+}
+
+html[data-theme="dark"] .nq-cue.cue-queue-soon,
+html[data-theme="dark"] .nq-cue.cue-queue-now,
+html[data-theme="dark"] .nq-panel.is-urgent .nq-stage.current {
+  --nq-urgent-chip: #dc2626;
+}
+
+html[data-theme="dark"] .nq-cue.cue-on-field {
+  --nq-field-chip: #16a34a;
+}

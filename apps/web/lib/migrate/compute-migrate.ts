@@ -1,17 +1,65 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { importScoutData } from "@vantage/scouting";
+import { importScoutData, type FieldType, type SchemaDefinition } from "@vantage/scouting";
 import { ScoutingRepository } from "@vantage/scouting/repository";
+import { createOrganizationInvite, deliverInviteEmail, type OrgRole } from "@vantage/core";
 import {
+  applyPreset,
+  autoDetectColumns,
   hoursDraftsFromCsv,
   icsEventsToDrafts,
   notionPagesToDrafts,
   parseIcs,
   parseCsvHeaders,
+  presetColumnsFromMapping,
+  purpleStandardEntriesToDrafts,
+  qrScoutConfigToFormDraft,
+  qrScoutPayloadsToDrafts,
+  scoutradiozToDrafts,
+  stimsRosterToInviteDrafts,
   suggestColumnMap,
+  trelloCardsToTaskDrafts,
+  trelloListStatusSuggestions,
+  readTrelloBoard,
+  TASK_STATUSES,
+  type ColumnGuess,
   type ImportDraft,
+  type MappingPreset,
   type NotionPage,
+  type ScoutEntryDraft,
+  type ScoutFormDraft,
+  type TaskStatus,
+  type VantageFieldType,
 } from "@vantage/import";
 import { slugifyTitle } from "../knowledge/helpers";
+
+/**
+ * `@vantage/import` stays dependency-free, so it mirrors the scouting field-type
+ * names rather than importing them. These two assertions are what keep the
+ * mirror honest: if `VANTAGE_FIELD_TYPES` ever names a type `FieldType` does not
+ * have, or an imported form draft stops being a `SchemaDefinition`, `tsc` fails
+ * here instead of the form builder failing on a team's real import.
+ */
+type _FieldTypeMirrorIsExact = VantageFieldType extends FieldType ? true : never;
+const _fieldTypeMirrorIsExact: _FieldTypeMirrorIsExact = true;
+void _fieldTypeMirrorIsExact;
+
+/** The form-builder draft an imported form is loaded into. */
+export type ImportedFormDefinition = SchemaDefinition;
+
+function asSchemaDefinition(draft: ScoutFormDraft): ImportedFormDefinition {
+  return {
+    title: draft.definition.title,
+    fields: draft.definition.fields.map((field) => ({
+      key: field.key,
+      label: field.label,
+      type: field.type as FieldType,
+      ...(field.required === undefined ? {} : { required: field.required }),
+      ...(field.options ? { options: field.options } : {}),
+      ...(field.helpText ? { helpText: field.helpText } : {}),
+      ...(field.config ? { config: field.config } : {}),
+    })),
+  };
+}
 
 export type MigrateSetupStep = { id: string; label: string; detail: string; href: string };
 
@@ -380,6 +428,480 @@ export async function commitScoutCsv(
     if (!ack.duplicate) written += 1;
   }
   return written;
+}
+
+/* -------------------------------------------------------------------------- *
+ * Shared scouting-entry commit path
+ *
+ * The Purple Standard, QRScout, and Scoutradioz all produce `ScoutEntryDraft`s,
+ * so they all land here. The draft's `idempotencyKey` becomes the scouting
+ * sync `clientId`, which is the (org_id, client_id) receipt the repository
+ * already dedupes on — so re-importing the same file writes nothing new and
+ * reports the rows as duplicates rather than as failures.
+ * -------------------------------------------------------------------------- */
+
+export type ScoutCommitReport = {
+  written: number;
+  duplicates: number;
+  /** Draft fields that are not on the org's form, so were NOT stored. */
+  unmappedFields: string[];
+  /** Rows the repository refused, with the reason it gave. */
+  rejected: Array<{ ref: string; reason: string }>;
+  /** Rows the parser itself declined, carried through for the review UI. */
+  skipped: Array<{ ref: string; reason: string }>;
+  errors: Array<{ ref: string; message: string }>;
+};
+
+export async function commitScoutEntryDrafts(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    drafts: ScoutEntryDraft[];
+    skipped?: Array<{ ref: string; reason: string }>;
+    errors?: Array<{ ref: string; message: string }>;
+  },
+): Promise<ScoutCommitReport> {
+  const report: ScoutCommitReport = {
+    written: 0,
+    duplicates: 0,
+    unmappedFields: [],
+    rejected: [],
+    skipped: input.skipped ?? [],
+    errors: input.errors ?? [],
+  };
+  if (!input.drafts.length) return report;
+
+  const repository = new ScoutingRepository(client);
+  const schemaCache = new Map<string, { id: string; fields: Array<{ key: string; type: string }> } | null>();
+  const unmapped = new Set<string>();
+
+  for (const draft of input.drafts) {
+    const cacheKey = `${draft.eventKey}:${draft.entryType}`;
+    let schema = schemaCache.get(cacheKey);
+    if (schema === undefined) {
+      await repository.ensureDefaultSchemas(input.orgId, input.userId, draft.eventKey);
+      const row = await client.query<{
+        id: string;
+        definition: { fields: Array<{ key: string; type: string }> };
+      }>(
+        `SELECT id, schema AS definition FROM scout_schemas
+         WHERE org_id = $1 AND type = $3
+           AND year = (SELECT year FROM events_ref WHERE event_key = $2)
+         ORDER BY version DESC LIMIT 1`,
+        [input.orgId, draft.eventKey, draft.entryType],
+      );
+      const found = row.rows[0];
+      schema = found ? { id: found.id, fields: found.definition.fields ?? [] } : null;
+      schemaCache.set(cacheKey, schema);
+    }
+    if (!schema) {
+      report.rejected.push({
+        ref: draft.title,
+        reason: `No ${draft.entryType} form exists for ${draft.eventKey}. Add the event, then import again.`,
+      });
+      continue;
+    }
+
+    // Report every field the org's form does not have, rather than dropping it
+    // silently — the coach needs to know the import was partial.
+    const known = new Set(schema.fields.map((field) => field.key));
+    for (const key of Object.keys(draft.payload)) {
+      if (!known.has(key)) unmapped.add(key);
+    }
+
+    try {
+      const ack = await repository.syncEntry(input.orgId, input.userId, {
+        clientId: draft.idempotencyKey,
+        type: draft.entryType,
+        eventKey: draft.eventKey,
+        ...(draft.matchKey ? { matchKey: draft.matchKey } : {}),
+        teamKey: draft.teamKey,
+        schemaId: schema.id,
+        payload: coerceScoutPayload(schema.fields, draft.payload),
+        confidence: "normal",
+        source: "import",
+        updatedAt: draft.provenance.importedAt,
+      });
+      if (ack.duplicate) report.duplicates += 1;
+      else report.written += 1;
+    } catch (error) {
+      report.rejected.push({
+        ref: draft.title,
+        reason: error instanceof Error ? error.message : "the scouting repository refused this row",
+      });
+    }
+  }
+
+  report.unmappedFields = Array.from(unmapped).sort();
+  return report;
+}
+
+/* -------------------------------------------------------------------------- *
+ * The Purple Standard
+ * -------------------------------------------------------------------------- */
+
+export function previewPurpleStandard(content: string, eventKey?: string) {
+  const result = purpleStandardEntriesToDrafts({ content, eventKey });
+  return {
+    drafts: result.drafts,
+    skipped: result.skipped,
+    errors: result.errors,
+  };
+}
+
+export async function commitPurpleStandard(
+  client: PoolClient,
+  input: { orgId: string; userId: string; content: string; eventKey?: string },
+): Promise<ScoutCommitReport> {
+  const result = purpleStandardEntriesToDrafts({ content: input.content, eventKey: input.eventKey });
+  return commitScoutEntryDrafts(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    drafts: result.drafts,
+    skipped: result.skipped,
+    errors: result.errors,
+  });
+}
+
+/* -------------------------------------------------------------------------- *
+ * QRScout
+ * -------------------------------------------------------------------------- */
+
+/**
+ * config.json -> a form draft. The form builder holds its draft in client
+ * state, so an import hands back the `SchemaDefinition` for the builder to
+ * load. Nothing is published, and nothing is written to `scout_schemas`.
+ */
+export function previewQrScoutForm(content: string, entryType: "match" | "pit" = "match") {
+  const result = qrScoutConfigToFormDraft({ content, entryType });
+  const draft = result.drafts[0];
+  return {
+    definition: draft ? asSchemaDefinition(draft) : null,
+    entryType,
+    skipped: result.skipped,
+    errors: result.errors,
+  };
+}
+
+export function previewQrScoutEntries(input: {
+  configContent: string;
+  payloadContent: string;
+  eventKey: string;
+}) {
+  const result = qrScoutPayloadsToDrafts(input);
+  return { drafts: result.drafts, skipped: result.skipped, errors: result.errors };
+}
+
+export async function commitQrScoutEntries(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    configContent: string;
+    payloadContent: string;
+    eventKey: string;
+  },
+): Promise<ScoutCommitReport> {
+  const result = qrScoutPayloadsToDrafts(input);
+  return commitScoutEntryDrafts(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    drafts: result.drafts,
+    skipped: result.skipped,
+    errors: result.errors,
+  });
+}
+
+/* -------------------------------------------------------------------------- *
+ * Scoutradioz
+ * -------------------------------------------------------------------------- */
+
+export function previewScoutradioz(content: string, eventKey?: string) {
+  const result = scoutradiozToDrafts({ content, eventKey });
+  return { drafts: result.drafts, skipped: result.skipped, errors: result.errors };
+}
+
+export async function commitScoutradioz(
+  client: PoolClient,
+  input: { orgId: string; userId: string; content: string; eventKey?: string },
+): Promise<ScoutCommitReport> {
+  const result = scoutradiozToDrafts({ content: input.content, eventKey: input.eventKey });
+  return commitScoutEntryDrafts(client, {
+    orgId: input.orgId,
+    userId: input.userId,
+    drafts: result.drafts,
+    skipped: result.skipped,
+    errors: result.errors,
+  });
+}
+
+/* -------------------------------------------------------------------------- *
+ * Trello
+ * -------------------------------------------------------------------------- */
+
+/** Step one of the Trello flow: show every list so the user maps it to a status. */
+export function previewTrelloLists(content: string) {
+  const board = readTrelloBoard(content);
+  return {
+    boardName: board.name ?? "Trello board",
+    lists: trelloListStatusSuggestions(board),
+    statuses: TASK_STATUSES,
+  };
+}
+
+function readListStatusMap(raw: unknown): Record<string, TaskStatus> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const allowed = new Set<string>(TASK_STATUSES);
+  const map: Record<string, TaskStatus> = {};
+  for (const [listId, status] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof status === "string" && allowed.has(status)) map[listId] = status as TaskStatus;
+  }
+  return map;
+}
+
+export function previewTrelloCards(input: {
+  content: string;
+  listStatus?: unknown;
+  includeClosed?: boolean;
+}) {
+  const result = trelloCardsToTaskDrafts({
+    content: input.content,
+    listStatus: readListStatusMap(input.listStatus),
+    includeClosed: input.includeClosed === true,
+  });
+  return { drafts: result.drafts, skipped: result.skipped, errors: result.errors };
+}
+
+/**
+ * Trello cards -> build tasks. Keyed on the Trello card id via `import_uid`-less
+ * dedupe: we match on the provenance line already stored in `notes`, so
+ * re-importing the same board updates nothing and inserts nothing.
+ */
+export async function commitTrelloBoard(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    content: string;
+    listStatus?: unknown;
+    includeClosed?: boolean;
+    seasonYear: number;
+  },
+): Promise<{
+  written: number;
+  duplicates: number;
+  skipped: Array<{ ref: string; reason: string }>;
+  errors: Array<{ ref: string; message: string }>;
+}> {
+  const result = trelloCardsToTaskDrafts({
+    content: input.content,
+    listStatus: readListStatusMap(input.listStatus),
+    includeClosed: input.includeClosed === true,
+  });
+  let written = 0;
+  let duplicates = 0;
+  for (const draft of result.drafts) {
+    const notes = [
+      draft.body ?? "",
+      "",
+      `Imported from Trello list "${draft.payload.listName}" at ${draft.provenance.importedAt}.`,
+      // The card id is the dedupe marker: it is what makes a re-import a no-op.
+      `Trello card: ${draft.idempotencyKey}`,
+    ]
+      .join("\n")
+      .trim();
+    const inserted = await client.query(
+      `INSERT INTO build_tasks
+         (org_id, title, subsystem, status, notes, due_on, season_year, created_by)
+       SELECT $1::uuid, $2, $3, $4, $5, $6::date, $7, $8::uuid
+       WHERE NOT EXISTS (
+         SELECT 1 FROM build_tasks
+         WHERE org_id = $1::uuid AND notes LIKE '%' || $9 || '%'
+       )`,
+      [
+        input.orgId,
+        draft.title.slice(0, 200),
+        draft.payload.subsystem,
+        draft.payload.status,
+        notes.slice(0, 8000),
+        draft.payload.dueOn,
+        input.seasonYear,
+        input.userId,
+        `Trello card: ${draft.idempotencyKey}`,
+      ],
+    );
+    if (inserted.rowCount) written += 1;
+    else duplicates += 1;
+  }
+  return { written, duplicates, skipped: result.skipped, errors: result.errors };
+}
+
+/* -------------------------------------------------------------------------- *
+ * STIMS roster -> reviewed invite list
+ * -------------------------------------------------------------------------- */
+
+export function previewStimsRoster(content: string) {
+  const result = stimsRosterToInviteDrafts({ content });
+  return {
+    drafts: result.drafts.map((draft) => ({ email: draft.email, personName: draft.personName })),
+    skipped: result.skipped,
+    errors: result.errors,
+  };
+}
+
+export type InviteCommitResult = {
+  invited: number;
+  failed: Array<{ email: string; reason: string }>;
+  /** Delivery is reported per invite so an unconfigured mailer is visible. */
+  emailsSent: number;
+};
+
+/**
+ * Send the reviewed invite list through the EXISTING invite machinery, one
+ * `createOrganizationInvite` per row, so capability checks, owner-role rules,
+ * token hashing, and the membership audit trail all apply exactly as they do
+ * for a hand-typed invite. Only the rows the owner explicitly confirmed are
+ * passed in — parsing a roster never sends anything.
+ */
+export async function commitInviteDrafts(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    /** Emails the owner ticked in the review step. */
+    emails: string[];
+    role: OrgRole;
+    sendEmail: boolean;
+  },
+): Promise<InviteCommitResult> {
+  const result: InviteCommitResult = { invited: 0, failed: [], emailsSent: 0 };
+  const seen = new Set<string>();
+  for (const raw of input.emails) {
+    const email = raw.trim().toLowerCase();
+    if (!email || seen.has(email)) continue;
+    seen.add(email);
+    try {
+      const invite = await createOrganizationInvite(client, input.userId, {
+        orgId: input.orgId,
+        email,
+        role: input.role,
+      });
+      result.invited += 1;
+      if (input.sendEmail) {
+        const delivery = await deliverInviteEmail(invite);
+        if (delivery.emailSent) result.emailsSent += 1;
+      }
+    } catch (error) {
+      result.failed.push({
+        email,
+        reason: error instanceof Error ? error.message : "the invite could not be created",
+      });
+    }
+  }
+  return result;
+}
+
+/* -------------------------------------------------------------------------- *
+ * Saved CSV column-mapping presets (migration 0465)
+ * -------------------------------------------------------------------------- */
+
+export type ImportPresetRow = {
+  id: string;
+  connector: string;
+  name: string;
+  columns: Record<string, ColumnGuess>;
+};
+
+export async function listImportPresets(
+  client: PoolClient,
+  input: { orgId: string; connector?: string },
+): Promise<ImportPresetRow[]> {
+  const rows = await client.query<ImportPresetRow>(
+    `SELECT id, connector, name, columns
+     FROM import_mapping_presets
+     WHERE org_id = $1::uuid AND ($2::text IS NULL OR connector = $2)
+     ORDER BY connector, name`,
+    [input.orgId, input.connector ?? null],
+  );
+  return rows.rows;
+}
+
+export async function saveImportPreset(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    userId: string;
+    connector: string;
+    name: string;
+    columns: Record<string, ColumnGuess>;
+  },
+): Promise<ImportPresetRow> {
+  const name = input.name.trim();
+  if (!name) throw new Error("Give the preset a name so you can find it next week");
+  const columns = presetColumnsFromMapping(input.columns);
+  if (!Object.keys(columns).length) {
+    throw new Error("Map at least one column before saving a preset");
+  }
+  const saved = await client.query<ImportPresetRow>(
+    `INSERT INTO import_mapping_presets (org_id, connector, name, columns, created_by)
+     VALUES ($1::uuid, $2, $3, $4::jsonb, $5::uuid)
+     ON CONFLICT (org_id, connector, name)
+     DO UPDATE SET columns = EXCLUDED.columns, updated_at = now()
+     RETURNING id, connector, name, columns`,
+    [input.orgId, input.connector, name.slice(0, 120), JSON.stringify(columns), input.userId],
+  );
+  return saved.rows[0]!;
+}
+
+export async function deleteImportPreset(
+  client: PoolClient,
+  input: { orgId: string; presetId: string },
+): Promise<number> {
+  const removed = await client.query(
+    `DELETE FROM import_mapping_presets WHERE org_id = $1::uuid AND id = $2::uuid`,
+    [input.orgId, input.presetId],
+  );
+  return removed.rowCount ?? 0;
+}
+
+/**
+ * Header row -> a proposed mapping. When a preset is named it is applied first
+ * and every difference from the file is reported; otherwise the headers are
+ * auto-detected. Both paths are SUGGESTIONS the user confirms before commit.
+ */
+export async function previewCsvMapping(
+  client: PoolClient,
+  input: { orgId: string; content: string; connector: string; presetId?: string },
+) {
+  const headers = parseCsvHeaders(input.content);
+  if (!input.presetId) {
+    return {
+      headers,
+      columns: autoDetectColumns(headers),
+      preset: null,
+      missingHeaders: [] as string[],
+      unknownHeaders: [] as string[],
+      presets: await listImportPresets(client, { orgId: input.orgId, connector: input.connector }),
+    };
+  }
+  const rows = await client.query<ImportPresetRow>(
+    `SELECT id, connector, name, columns FROM import_mapping_presets
+     WHERE org_id = $1::uuid AND id = $2::uuid`,
+    [input.orgId, input.presetId],
+  );
+  const found = rows.rows[0];
+  if (!found) throw new Error("That mapping preset no longer exists");
+  const preset: MappingPreset = { id: found.id, name: found.name, columns: found.columns };
+  const applied = applyPreset(preset, headers);
+  return {
+    headers,
+    columns: applied.columns,
+    preset: { id: found.id, name: found.name },
+    missingHeaders: applied.missingHeaders,
+    unknownHeaders: applied.unknownHeaders,
+    presets: await listImportPresets(client, { orgId: input.orgId, connector: input.connector }),
+  };
 }
 
 export async function commitNotionJson(

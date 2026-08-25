@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { groupPacking, packProgress, type PackingList, type PackingView } from "../../lib/packing";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
@@ -269,12 +270,15 @@ export default function PackingClient() {
   const [view, setView] = useState<PackingView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
 
   const load = useCallback(async () => {
     setFetchFailed(false);
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
@@ -282,6 +286,7 @@ export default function PackingClient() {
       const data = (await response.json()) as PackingView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load packing lists.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
@@ -334,13 +339,38 @@ export default function PackingClient() {
         </header>
         <div className="app-card pack-empty">
           {fetchFailed ? (
-            <>
-              <strong>Could not load packing lists</strong>
-              <p className="app-muted">{error || "Check your connection and try again."}</p>
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
-            </>
+            (() => {
+              const copy = loadFailureCopy(
+                classifyLoadFailure({
+                  status: errorStatus,
+                  message: error,
+                  online: typeof navigator === "undefined" ? true : navigator.onLine,
+                }),
+                {
+                  nextPath:
+                    typeof window === "undefined"
+                      ? null
+                      : `${window.location.pathname}${window.location.search}`,
+                  message: error || "Check your connection and try again.",
+                },
+              );
+              return (
+                <>
+                  <strong>{copy.title}</strong>
+                  <p className="app-muted">{copy.description}</p>
+                  {copy.primary ? (
+                    <a className="app-button" href={copy.primary.href}>
+                      {copy.primary.label}
+                    </a>
+                  ) : null}
+                  {copy.showRetry ? (
+                    <button type="button" className="app-button secondary" onClick={() => void load()}>
+                      Retry
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()
           ) : (
             <p className="app-muted">Loading packing lists…</p>
           )}

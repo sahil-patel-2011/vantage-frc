@@ -5,7 +5,8 @@ import { createEmailProvider } from "./email";
 
 /**
  * Email notification categories.
- * Product updates default ON (users can opt out). Coach/sponsor categories default OFF.
+ * Product updates and the daily performance digest default ON (users can opt
+ * out). Coach/sponsor categories default OFF.
  */
 export const EMAIL_NOTIFICATION_CATEGORIES = [
   "product_updates",
@@ -13,6 +14,7 @@ export const EMAIL_NOTIFICATION_CATEGORIES = [
   "coach_todos",
   "coach_practice_reminders",
   "sponsor_reminders",
+  "performance_digest",
 ] as const;
 
 export type EmailNotificationCategory = (typeof EMAIL_NOTIFICATION_CATEGORIES)[number];
@@ -23,6 +25,7 @@ export type UserEmailPreferences = {
   coachTodos: boolean;
   coachPracticeReminders: boolean;
   sponsorReminders: boolean;
+  performanceDigest: boolean;
 };
 
 export const DEFAULT_EMAIL_PREFERENCES: UserEmailPreferences = {
@@ -31,6 +34,7 @@ export const DEFAULT_EMAIL_PREFERENCES: UserEmailPreferences = {
   coachTodos: false,
   coachPracticeReminders: false,
   sponsorReminders: false,
+  performanceDigest: true,
 };
 
 const CATEGORY_COLUMNS: Record<EmailNotificationCategory, keyof UserEmailPreferences> = {
@@ -39,6 +43,7 @@ const CATEGORY_COLUMNS: Record<EmailNotificationCategory, keyof UserEmailPrefere
   coach_todos: "coachTodos",
   coach_practice_reminders: "coachPracticeReminders",
   sponsor_reminders: "sponsorReminders",
+  performance_digest: "performanceDigest",
 };
 
 export function isEmailNotificationCategory(value: string): value is EmailNotificationCategory {
@@ -57,6 +62,8 @@ export function categoryLabel(category: EmailNotificationCategory) {
       return "Practice reminders";
     case "sponsor_reminders":
       return "Sponsor reminders";
+    case "performance_digest":
+      return "Daily performance digest";
   }
 }
 
@@ -70,48 +77,41 @@ export type EmailDeliveryStatus =
   | { status: "setup_required"; reason: string }
   | { status: "error"; reason: string };
 
-function mapPrefsRow(row: {
+type PrefsRow = {
   productUpdates: boolean;
   coachAssignments: boolean;
   coachTodos: boolean;
   coachPracticeReminders: boolean;
   sponsorReminders: boolean;
-}): UserEmailPreferences {
+  performanceDigest: boolean;
+};
+
+function mapPrefsRow(row: PrefsRow): UserEmailPreferences {
   return {
     productUpdates: Boolean(row.productUpdates),
     coachAssignments: Boolean(row.coachAssignments),
     coachTodos: Boolean(row.coachTodos),
     coachPracticeReminders: Boolean(row.coachPracticeReminders),
     sponsorReminders: Boolean(row.sponsorReminders),
+    performanceDigest: Boolean(row.performanceDigest),
   };
 }
 
-/** Ensure a prefs row exists (product updates ON by default). Safe under self RLS. */
+/** Ensure a prefs row exists (product updates + performance digest ON by default). Safe under self RLS. */
 export async function ensureUserEmailPreferences(client: PoolClient, userId: string) {
-  const existing = await client.query<{
-    productUpdates: boolean;
-    coachAssignments: boolean;
-    coachTodos: boolean;
-    coachPracticeReminders: boolean;
-    sponsorReminders: boolean;
-  }>(
+  const existing = await client.query<PrefsRow>(
     `SELECT product_updates AS "productUpdates",
             coach_assignments AS "coachAssignments",
             coach_todos AS "coachTodos",
             coach_practice_reminders AS "coachPracticeReminders",
-            COALESCE(sponsor_reminders, false) AS "sponsorReminders"
+            COALESCE(sponsor_reminders, false) AS "sponsorReminders",
+            COALESCE(performance_digest, true) AS "performanceDigest"
      FROM user_email_preferences WHERE user_id = $1::uuid`,
     [userId],
   );
   if (existing.rows[0]) return mapPrefsRow(existing.rows[0]);
 
-  const inserted = await client.query<{
-    productUpdates: boolean;
-    coachAssignments: boolean;
-    coachTodos: boolean;
-    coachPracticeReminders: boolean;
-    sponsorReminders: boolean;
-  }>(
+  const inserted = await client.query<PrefsRow>(
     `INSERT INTO user_email_preferences (user_id, product_updates, unsubscribe_token)
      VALUES ($1::uuid, true, $2)
      ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
@@ -119,7 +119,8 @@ export async function ensureUserEmailPreferences(client: PoolClient, userId: str
                coach_assignments AS "coachAssignments",
                coach_todos AS "coachTodos",
                coach_practice_reminders AS "coachPracticeReminders",
-               COALESCE(sponsor_reminders, false) AS "sponsorReminders"`,
+               COALESCE(sponsor_reminders, false) AS "sponsorReminders",
+               COALESCE(performance_digest, true) AS "performanceDigest"`,
     [userId, newUnsubscribeToken()],
   );
   return mapPrefsRow(inserted.rows[0] ?? DEFAULT_EMAIL_PREFERENCES);
@@ -143,6 +144,7 @@ export async function updateUserEmailPreferences(
        coach_todos = $4,
        coach_practice_reminders = $5,
        sponsor_reminders = $6,
+       performance_digest = $7,
        updated_at = now()
      WHERE user_id = $1::uuid`,
     [
@@ -152,6 +154,7 @@ export async function updateUserEmailPreferences(
       next.coachTodos,
       next.coachPracticeReminders,
       next.sponsorReminders,
+      next.performanceDigest,
     ],
   );
   return next;
@@ -191,6 +194,28 @@ Unsubscribe from ${categoryLabel(category)}: ${unsub}
 Unsubscribe from all Vantage emails: ${buildUnsubscribeUrl(token, "all")}`;
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+/** Same unsubscribe mechanism as the plain-text footer, rendered for HTML bodies. */
+function appendUnsubscribeFooterHtml(html: string, token: string, category: EmailNotificationCategory) {
+  const unsub = escapeHtml(buildUnsubscribeUrl(token, category));
+  const all = escapeHtml(buildUnsubscribeUrl(token, "all"));
+  const prefs = escapeHtml(buildPreferencesUrl());
+  return `${html.trim()}
+<hr style="border:none;border-top:1px solid #ccc;margin:16px 0" />
+<p style="font-size:12px;color:#666">
+  <a href="${prefs}">Manage email preferences</a> ·
+  <a href="${unsub}">Unsubscribe from ${escapeHtml(categoryLabel(category))}</a> ·
+  <a href="${all}">Unsubscribe from all Vantage emails</a>
+</p>`;
+}
+
 /**
  * Consent-gated send. Never emails when the category is off or no prefs row exists.
  * Returns setup_required when Resend is missing in production (auth OTP path unchanged).
@@ -202,6 +227,8 @@ export async function sendOptInEmail(
     category: EmailNotificationCategory;
     subject: string;
     text: string;
+    /** Optional simple-HTML body; the plain-text body is always sent alongside. */
+    html?: string;
   },
 ): Promise<EmailDeliveryStatus> {
   const delivery = emailDeliveryConfigured();
@@ -217,11 +244,15 @@ export async function sendOptInEmail(
   if (!recipient.email?.trim()) return { status: "skipped", reason: "no_email" };
 
   const body = appendUnsubscribeFooter(input.text, recipient.unsubscribeToken, input.category);
+  const htmlBody = input.html
+    ? appendUnsubscribeFooterHtml(input.html, recipient.unsubscribeToken, input.category)
+    : undefined;
   try {
     await createEmailProvider().sendFreeform({
       to: recipient.email,
       subject: input.subject,
       text: body,
+      ...(htmlBody ? { html: htmlBody } : {}),
     });
     return { status: "sent" };
   } catch (error) {
@@ -294,6 +325,26 @@ export async function sendSponsorReminderEmail(
     category: "sponsor_reminders",
     subject: `Sponsor reminder — ${input.orgName}`,
     text: `${input.summary}${link}`,
+  });
+}
+
+/**
+ * Daily team performance digest (default-ON `performance_digest`, per-member
+ * opt-out). Ensures a prefs row exists first so brand-new members are covered
+ * by the default; the standard unsubscribe footer is appended to both bodies.
+ * Callers must only invoke this on days with REAL performance data.
+ */
+export async function sendPerformanceDigestEmail(
+  client: PoolClient,
+  input: { userId: string; subject: string; text: string; html?: string },
+): Promise<EmailDeliveryStatus> {
+  await ensureUserEmailPreferences(client, input.userId);
+  return sendOptInEmail(client, {
+    userId: input.userId,
+    category: "performance_digest",
+    subject: input.subject,
+    text: input.text,
+    html: input.html,
   });
 }
 

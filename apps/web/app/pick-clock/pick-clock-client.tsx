@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   PICK_CLOCK_RELATED_INCLUDE,
   classifyPickClockShell,
@@ -120,17 +121,38 @@ function PickClockShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
   orgId?: string | null;
   shell: PickClockShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session offers sign-in, not Retry. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
   const actions = pickClockNextActions({ orgId, shell });
   const copy = pickClockShellCopy(shell);
+  // A failed load names its own recovery — Retry cannot fix an expired session.
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || copy.description,
+          },
+        )
+      : null;
   const steps = shell === "setup" ? pickClockSetupSteps(orgId) : [];
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const pickDeskHref = withOrgHref("/strategy?tab=picks", orgId);
@@ -161,11 +183,16 @@ function PickClockShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && failure?.showRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -218,12 +245,14 @@ function PickClockShell({
   );
 }
 
-export default function PickClockClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function PickClockClient(_props: { embedded?: boolean } = {}) {
   const [orgId, setOrgId] = useState("");
   const [view, setView] = useState<PickClockView | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [skipOffset, setSkipOffset] = useState(0);
@@ -252,13 +281,32 @@ export default function PickClockClient({ embedded = false }: { embedded?: boole
     }
     setLoading(true);
     setFetchFailed(false);
+    setErrorStatus(null);
     try {
+      // The ONE pick list owns the draft board, so anything the alliance-selection desk has
+      // already picked must leave the clock's available pool. A board that has not been opened
+      // yet returns an empty list — never a fabricated exclusion.
+      let draftedTeamKeys: string[] = [];
+      try {
+        const boardResponse = await fetch(`/api/picklist/board?orgId=${encodeURIComponent(id)}`);
+        if (boardResponse.ok) {
+          const board = (await boardResponse.json()) as { draftedTeamKeys?: string[] };
+          if (Array.isArray(board.draftedTeamKeys)) draftedTeamKeys = board.draftedTeamKeys;
+        }
+      } catch {
+        // Board unavailable — fall through with no extra exclusions rather than blocking a pick.
+      }
+
+      const excludeParams = draftedTeamKeys
+        .map((key) => `&exclude=${encodeURIComponent(key)}`)
+        .join("");
       const response = await fetch(
-        `/api/strategy/pick-clock?orgId=${encodeURIComponent(id)}`,
+        `/api/strategy/pick-clock?orgId=${encodeURIComponent(id)}${excludeParams}`,
       );
       const data = (await response.json()) as PickClockView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load pick clock.");
+        setErrorStatus(response.status);
         setView(null);
         setFetchFailed(true);
         setLoading(false);
@@ -321,6 +369,7 @@ export default function PickClockClient({ embedded = false }: { embedded?: boole
             : view?.orgId ?? (orgId || null)
         }
         shell={shell}
+        errorStatus={errorStatus}
         error={
           shell === "error"
             ? error || "Could not load pick clock."

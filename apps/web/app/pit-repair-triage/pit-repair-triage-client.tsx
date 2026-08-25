@@ -35,7 +35,7 @@ import {
   type PitRepairTriageNextAction,
   type PitRepairTriageShellKind,
 } from "../../lib/pit-repair-triage/pit-repair-triage-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./pit-repair-triage.css";
 
@@ -115,7 +115,7 @@ function TriageShell({
 }) {
   const actions = pitRepairTriageNextActions({ orgId, shell });
   const copy = pitRepairTriageShellCopy(shell);
-  const competitionHref = hubHref("/competition", "pit-repair-triage", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "pit-repair-triage", orgId);
   const steps = shell === "setup" ? pitRepairTriageSetupSteps(orgId) : [];
 
   return (
@@ -124,10 +124,10 @@ function TriageShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pit Repair Triage"}
+            {" / Pit repair triage"}
           </>
         }
-        title="Pit Repair Triage"
+        title="Pit repair triage"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -251,7 +251,7 @@ export default function PitRepairTriageClient() {
     openCount,
     reinspectReports,
   });
-  const competitionHref = hubHref("/competition", "pit-repair-triage", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "pit-repair-triage", orgId);
   const showTiles = shouldShowPitRepairTriageSummaryTiles(reportCount, fmeaCount, spareCount);
   const loaded = view?.status === "live";
 
@@ -312,10 +312,10 @@ export default function PitRepairTriageClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Pit Repair Triage"}
+            {" / Pit repair triage"}
           </>
         }
-        title="Pit Repair Triage"
+        title="Pit repair triage"
         description="Log a pit failure against real FMEA history and spare stock — never DEMO triage calls. Cross-check Command and Spare Kit."
       >
         <div className="prt-header-actions">
@@ -377,6 +377,112 @@ export default function PitRepairTriageClient() {
   );
 }
 
+type UsedPartDraft = { itemId: string; quantity: number };
+
+/**
+ * Close the loop: resolving a repair that consumed a part decrements the unified parts ledger
+ * (sourceRef = this repair), so forecasts and the next triage read real remaining stock.
+ */
+function ResolveWithPartsForm({
+  report,
+  candidates,
+  busy,
+  onResolve,
+  onCancel,
+}: {
+  report: LiveView["reports"][number];
+  candidates: LiveView["spareCandidates"];
+  busy: boolean;
+  onResolve: (usedParts: UsedPartDraft[]) => void;
+  onCancel: () => void;
+}) {
+  const matched = candidates.find((item) => item.id === report.matchedInventoryItemId);
+  const [chosen, setChosen] = useState<UsedPartDraft[]>(() =>
+    // A swap decision with a matched spare almost certainly consumed it — pre-fill 1, editable.
+    matched && report.decision === "swap" ? [{ itemId: matched.id, quantity: 1 }] : [],
+  );
+  const [pickItemId, setPickItemId] = useState("");
+  const [pickQty, setPickQty] = useState("1");
+
+  const nameOf = (itemId: string) => candidates.find((item) => item.id === itemId)?.name ?? "Unknown part";
+  const addPart = () => {
+    const quantity = Number(pickQty);
+    if (!pickItemId || !Number.isFinite(quantity) || quantity <= 0) return;
+    setChosen((prev) => {
+      const existing = prev.find((part) => part.itemId === pickItemId);
+      if (existing) {
+        return prev.map((part) =>
+          part.itemId === pickItemId ? { ...part, quantity: part.quantity + quantity } : part,
+        );
+      }
+      return [...prev, { itemId: pickItemId, quantity }];
+    });
+    setPickItemId("");
+    setPickQty("1");
+  };
+
+  return (
+    <div className="prt-resolve-form" role="group" aria-label="Used parts">
+      <p className="prt-tip">
+        <strong>Used parts</strong> — picked parts are decremented from stock through the ledger, tagged to
+        this repair. Real counts only; skip if nothing was consumed.
+      </p>
+      {chosen.length > 0 ? (
+        <ul className="prt-used-list">
+          {chosen.map((part) => (
+            <li key={part.itemId}>
+              <span>
+                {nameOf(part.itemId)} × {part.quantity}
+              </span>
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                onClick={() => setChosen((prev) => prev.filter((p) => p.itemId !== part.itemId))}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {candidates.length > 0 ? (
+        <div className="prt-resolve-picker">
+          <select value={pickItemId} onChange={(event) => setPickItemId(event.target.value)} aria-label="Part">
+            <option value="">Add a part…</option>
+            {candidates.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name} ({item.quantity} in stock)
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={pickQty}
+            onChange={(event) => setPickQty(event.target.value)}
+            aria-label="Quantity used"
+          />
+          <button type="button" className="app-button secondary" disabled={busy || !pickItemId} onClick={addPart}>
+            Add
+          </button>
+        </div>
+      ) : (
+        <p className="app-muted prt-tip">No parts currently in stock — resolve without decrementing.</p>
+      )}
+      <div className="prt-status-actions">
+        <button type="button" className="app-button" disabled={busy} onClick={() => onResolve(chosen)}>
+          {chosen.length > 0 ? `Resolve & log ${chosen.length} part(s)` : "Resolve without parts"}
+        </button>
+        <button type="button" className="app-button secondary" disabled={busy} onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ReportsList({
   view,
   busy,
@@ -386,6 +492,7 @@ function ReportsList({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
   return (
     <Panel id="pit-repair-triage-reports" className="prt-panel">
       <h2>Triage reports</h2>
@@ -444,7 +551,7 @@ function ReportsList({
                 {canCue}
               </p>
             ) : null}
-            {report.status !== "resolved" ? (
+            {report.status !== "resolved" && resolvingId !== report.id ? (
               <div className="prt-status-actions">
                 {TRIAGE_STATUSES.filter((status) => status !== report.status).map((status) => (
                   <button
@@ -452,12 +559,35 @@ function ReportsList({
                     type="button"
                     className="app-button secondary"
                     disabled={busy}
-                    onClick={() => mutate({ action: "update-status", reportId: report.id, status })}
+                    onClick={() => {
+                      if (status === "resolved") {
+                        setResolvingId(report.id);
+                      } else {
+                        mutate({ action: "update-status", reportId: report.id, status });
+                      }
+                    }}
                   >
                     Mark {STATUS_LABEL[status].toLowerCase()}
                   </button>
                 ))}
               </div>
+            ) : null}
+            {report.status !== "resolved" && resolvingId === report.id ? (
+              <ResolveWithPartsForm
+                report={report}
+                candidates={view.spareCandidates}
+                busy={busy}
+                onCancel={() => setResolvingId(null)}
+                onResolve={(usedParts) => {
+                  setResolvingId(null);
+                  mutate({
+                    action: "update-status",
+                    reportId: report.id,
+                    status: "resolved",
+                    usedParts: usedParts.length > 0 ? usedParts : undefined,
+                  });
+                }}
+              />
             ) : null}
           </li>
           );

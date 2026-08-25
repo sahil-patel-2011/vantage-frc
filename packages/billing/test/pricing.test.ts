@@ -12,6 +12,11 @@ import {
   PRICING_CATALOG,
   CATALOG_SERVICE_MULTIPLIER,
   BYOK_LIST_MULTIPLIER,
+  LEGACY_PLAN_CODE_MAP,
+  byokEveryPlanCopy,
+  canonicalPlanCode,
+  everyPlanValueLine,
+  freeHostedModelClassCopy,
   hostedApiSavingsCopy,
   hostedApiEconomicsSoftLine,
   hostedCreditPackListApiUsd,
@@ -21,22 +26,62 @@ import {
 import type { PoolClient } from "@neondatabase/serverless";
 import type Stripe from "stripe";
 
-describe("appealing pricing catalog", () => {
-  it("keeps Soft-UI / ops ladder and 0.75× hosted credits aligned", () => {
+describe("pricing ladder catalog", () => {
+  it("keeps the four-plan team ladder and 0.75× hosted credits aligned", () => {
     expect(CATALOG_SERVICE_MULTIPLIER).toBe(0.75);
     expect(DEFAULT_SERVICE_MULTIPLIER).toBe(0.75);
     expect(BYOK_LIST_MULTIPLIER).toBe(1);
-    expect(PRICING_CATALOG.access.monthlyUsd).toBe(69);
-    expect(PRICING_CATALOG.individual_pro).toMatchObject({ monthlyUsd: 109, includedAllowanceUsd: 75 });
-    expect(PRICING_CATALOG.individual_max).toMatchObject({ monthlyUsd: 159, includedAllowanceUsd: 130 });
-    expect(PRICING_CATALOG.team_pro).toMatchObject({ monthlyUsd: 299, includedAllowanceUsd: 225 });
-    expect(PRICING_CATALOG.team_max).toMatchObject({ monthlyUsd: 549, includedAllowanceUsd: 450 });
-    expect(PRICING_CATALOG.team_trial.includedAllowanceUsd).toBe(39);
-    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$0", "$109 / $159", "$299 / $549"]);
+    expect(PRICING_CATALOG.free).toMatchObject({ monthlyUsd: 0, includedAllowanceUsd: 3 });
+    expect(PRICING_CATALOG.pro).toMatchObject({ monthlyUsd: 20, includedAllowanceUsd: 12 });
+    expect(PRICING_CATALOG.pro_plus).toMatchObject({ monthlyUsd: 60, includedAllowanceUsd: 40 });
+    expect(PRICING_CATALOG.max).toMatchObject({ monthlyUsd: 100, includedAllowanceUsd: 70 });
+    expect(PRICING_CATALOG.team_trial.includedAllowanceUsd).toBe(15);
+    expect(raisedPricingStrip().map((p) => p.price)).toEqual(["$0", "$20", "$60", "$100"]);
     expect(raisedPricingSummaryLine()).toMatch(/Free \$0/);
+    expect(raisedPricingSummaryLine()).toMatch(/every feature on every plan/i);
     expect(hostedApiSavingsCopy()).toMatch(/Credits go further/i);
     expect(hostedApiEconomicsSoftLine()).toMatch(/25% less/);
     expect(hostedCreditPackListApiUsd(100)).toBe(133);
+  });
+
+  it("keeps every hosted allowance below its price and the ladder monotonic", () => {
+    const rungs = [PRICING_CATALOG.free, PRICING_CATALOG.pro, PRICING_CATALOG.pro_plus, PRICING_CATALOG.max];
+    for (const plan of rungs) {
+      if (plan.monthlyUsd > 0) expect(plan.includedAllowanceUsd).toBeLessThan(plan.monthlyUsd);
+    }
+    for (let i = 1; i < rungs.length; i += 1) {
+      expect(rungs[i]!.monthlyUsd).toBeGreaterThan(rungs[i - 1]!.monthlyUsd);
+      expect(rungs[i]!.includedAllowanceUsd).toBeGreaterThan(rungs[i - 1]!.includedAllowanceUsd);
+    }
+  });
+
+  it("maps legacy plan codes onto the live ladder (0481 remap)", () => {
+    expect(LEGACY_PLAN_CODE_MAP).toEqual({
+      access: "pro",
+      individual_pro: "pro",
+      individual_max: "pro",
+      team_pro: "pro_plus",
+      team_max: "max",
+    });
+    expect(PRICING_CATALOG.access).toBe(PRICING_CATALOG.pro);
+    expect(PRICING_CATALOG.individual_pro).toBe(PRICING_CATALOG.pro);
+    expect(PRICING_CATALOG.individual_max).toBe(PRICING_CATALOG.pro);
+    expect(PRICING_CATALOG.team_pro).toBe(PRICING_CATALOG.pro_plus);
+    expect(PRICING_CATALOG.team_max).toBe(PRICING_CATALOG.max);
+    expect(canonicalPlanCode("TEAM_MAX")).toBe("max");
+    expect(canonicalPlanCode("pro_plus")).toBe("pro_plus");
+    expect(canonicalPlanCode(null)).toBe("free");
+    expect(canonicalPlanCode("managed_20")).toBe("free");
+  });
+
+  it("puts the every-feature + BYOK/local story on the record honestly", () => {
+    expect(everyPlanValueLine()).toMatch(/Everything is included on every plan/i);
+    expect(byokEveryPlanCopy()).toMatch(/OpenAI, Anthropic, Google AI Studio, OpenRouter, Groq, Mistral/);
+    expect(byokEveryPlanCopy()).toMatch(/Ollama, LM Studio/);
+    expect(byokEveryPlanCopy()).toMatch(/Unlimited by Vantage on every plan/i);
+    // Free's hosted allowance names only providers the sponsored/hosted path can actually route.
+    expect(freeHostedModelClassCopy()).toMatch(/Mistral Small|Llama-class|OpenRouter/);
+    expect(freeHostedModelClassCopy()).toMatch(/not frontier/i);
   });
 });
 

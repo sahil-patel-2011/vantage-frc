@@ -33,7 +33,9 @@ const completeSchema = z.object({
   city: z.string().trim().max(120).nullable().optional(),
   stateProv: z.string().trim().max(80).nullable().optional(),
   description: z.string().trim().max(2000).nullable().optional(),
+  /** Two separate consents; the server refuses the request unless BOTH are sent. */
   termsAccepted: z.literal(true),
+  privacyAccepted: z.literal(true),
   teamAffiliation: teamAffiliation.nullable().optional(),
   schoolFunded: z.boolean().optional(),
   outsideGrants: z.boolean().optional(),

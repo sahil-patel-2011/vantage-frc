@@ -226,7 +226,7 @@ export async function createFailure(
   },
 ): Promise<void> {
   let subsystemName = input.subsystemName.trim();
-  let subsystemId = input.subsystemId;
+  const subsystemId = input.subsystemId;
   let robotLabel = input.robotLabel.trim() || "competition";
 
   if (subsystemId) {
@@ -302,7 +302,7 @@ export async function updateFailure(
     inspectionItemId?: string | null;
   },
 ): Promise<void> {
-  let subsystemId = input.subsystemId;
+  const subsystemId = input.subsystemId;
   let subsystemName = input.subsystemName;
 
   if (subsystemId) {

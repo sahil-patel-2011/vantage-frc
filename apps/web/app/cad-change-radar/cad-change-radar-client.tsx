@@ -29,7 +29,7 @@ import {
   type CadChangeRadarNextAction,
   type CadChangeRadarShellKind,
 } from "../../lib/cad-change-radar/cad-change-radar-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import "./cad-change-radar.css";
 
 type LiveView = Extract<CadChangeRadarView, { status: "live" }>;
@@ -98,7 +98,7 @@ function RadarShell({
 }) {
   const actions = cadChangeRadarNextActions({ orgId, shell });
   const copy = cadChangeRadarShellCopy(shell);
-  const buildHref = hubHref("/build", "cad-change-radar", orgId);
+  const buildHref = hubWorkbenchHref("build", "cad-change-radar", orgId);
   const steps = shell === "setup" ? cadChangeRadarSetupSteps(orgId) : [];
 
   return (
@@ -227,7 +227,7 @@ export default function CadChangeRadarClient() {
   const relatedLinks = cadChangeRadarRelatedLinks(orgId, {
     include: [...CAD_CHANGE_RADAR_RELATED_INCLUDE],
   });
-  const buildHref = hubHref("/build", "cad-change-radar", orgId);
+  const buildHref = hubWorkbenchHref("build", "cad-change-radar", orgId);
   const showTiles = shouldShowCadChangeRadarSummaryTiles(snapshotCount, diffCount);
 
   const mutate = useCallback(
@@ -473,7 +473,7 @@ function DiffsPanel({
               disabled={busy}
               onClick={() => mutate({ action: "generate-summary", diffId: diff.id })}
             >
-              {diff.aiSummary ? "Regenerate summary" : "Generate AI summary"}
+              {diff.aiSummary ? "Regenerate summary" : "Generate summary (computed from the diff)"}
             </button>
           </li>
         ))}

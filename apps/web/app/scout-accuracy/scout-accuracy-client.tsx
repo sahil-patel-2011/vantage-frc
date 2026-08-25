@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { scoutAccuracyTierLabel } from "../../lib/scout-accuracy";
 import type { ScoutAccuracyView } from "../../lib/scout-accuracy/compute-scout-accuracy";
 import type { ScoutAccuracyScoutStat, ScoutAccuracyTier } from "../../lib/scout-accuracy/types";
@@ -80,6 +81,7 @@ function ScoutAccuracyShell({
   orgId,
   shell,
   error,
+  errorStatus,
   onRetry,
   children,
 }: {
@@ -87,6 +89,8 @@ function ScoutAccuracyShell({
   orgId?: string | null;
   shell: ScoutAccuracyShellKind;
   error?: string;
+  /** HTTP status of the failed load, so an expired session can offer sign-in. */
+  errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -94,6 +98,23 @@ function ScoutAccuracyShell({
   const copy = scoutAccuracyShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const steps = shell === "setup" ? scoutAccuracySetupSteps(orgId) : [];
+  const failure =
+    shell === "error"
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus ?? null,
+            message: error ?? null,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error ?? null,
+          },
+        )
+      : null;
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const coverageHref = withOrgHref("/scouting/lineup", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
@@ -125,11 +146,16 @@ function ScoutAccuracyShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : (error ?? copy.description)}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {failure?.showRetry && onRetry ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -183,12 +209,15 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
   const [view, setView] = useState<ScoutAccuracyView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
 
   const load = useCallback((eventOverride?: string) => {
     setFetchFailed(false);
+    setFailureStatus(null);
     setError("");
     const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
     const urlOrg = initialOrgId ?? params.get("orgId");
@@ -201,6 +230,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         const data = (await response.json()) as ScoutAccuracyView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setFetchFailed(true);
+          setFailureStatus(response.status);
           setError("error" in data && data.error ? data.error : "Could not load scout accuracy.");
           return;
         }
@@ -282,6 +312,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        errorStatus={failureStatus}
         onRetry={() => load()}
       />
     );

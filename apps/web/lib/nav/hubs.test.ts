@@ -6,6 +6,7 @@ import {
   hubMoreTabs,
   hubNestedTabs,
   hubPrimaryTabs,
+  hubWorkbenchHref,
   hubWorkbenchId,
   isHubTab,
   PRODUCT_HUBS,
@@ -21,7 +22,7 @@ describe("product hubs", () => {
   it("validates tabs and builds deep links", () => {
     const competition = hubById("competition");
     expect(isHubTab(competition, "scouting")).toBe(true);
-    expect(isHubTab(competition, "pit")).toBe(false);
+    expect(isHubTab(competition, "not-a-real-tab")).toBe(false);
     expect(hubHref("/business", "orders", "org-1")).toBe("/business?tab=orders&orgId=org-1");
   });
 
@@ -124,11 +125,139 @@ describe("product hubs", () => {
 
   it("pins Alliance desk, Season planning, and AI keys as featured inner tools", () => {
     expect(hubFeaturedMoreTabs(hubById("competition")).map((tab) => tab.id)).toEqual([
+      // The one pre-match briefing is the drive team's front door on event day.
+      "briefing",
       "alliance-selection-desk",
     ]);
     expect(hubFeaturedMoreTabs(hubById("team")).map((tab) => tab.id)).toContain(
       "season-planning-workspace",
     );
     expect(hubFeaturedMoreTabs(hubById("ai")).map((tab) => tab.id)).toEqual(["ai-keys"]);
+  });
+
+  it("links a nested tool back to its workbench, not to itself", () => {
+    expect(hubWorkbenchHref("competition", "pick-clock", "org-1")).toBe(
+      "/competition?tab=strategy&orgId=org-1",
+    );
+    expect(hubWorkbenchHref("build", "gearbox")).toBe("/build?tab=fmea");
+  });
+
+  it("returns a workbench root unchanged", () => {
+    expect(hubWorkbenchHref("build", "cad")).toBe("/build?tab=cad");
+    expect(hubWorkbenchHref("team", "knowledge", "org-2")).toBe("/team?tab=knowledge&orgId=org-2");
+  });
+
+  it("falls back to the hub default tab for an unknown tab id", () => {
+    expect(hubWorkbenchHref("team", "not-a-real-tab")).toBe("/team?tab=calendar");
+    expect(hubWorkbenchHref("business", "nope", "org-3")).toBe(
+      "/business?tab=overview&orgId=org-3",
+    );
+  });
+
+  it("never lists the same route twice inside one hub", () => {
+    for (const hub of PRODUCT_HUBS) {
+      const ids = hub.tabs.map((tab) => tab.id);
+      expect(new Set(ids).size, `duplicate tab id in ${hub.id}`).toBe(ids.length);
+
+      const hrefs = hub.tabs.map((tab) => tab.legacyHref).filter((href): href is string => Boolean(href));
+      expect(new Set(hrefs).size, `duplicate legacyHref in ${hub.id}`).toBe(hrefs.length);
+    }
+  });
+
+  it("points every nested tab at a real workbench root", () => {
+    for (const hub of PRODUCT_HUBS) {
+      const roots = new Set(hubPrimaryTabs(hub).map((tab) => tab.id));
+      expect(roots.has(hub.defaultTab), `${hub.id} defaultTab is not a workbench`).toBe(true);
+      for (const tab of hub.tabs.filter((entry) => entry.group)) {
+        expect(roots.has(tab.group as string), `${hub.id}:${tab.id} -> ${tab.group}`).toBe(true);
+        expect(hubWorkbenchId(hub, tab.id)).toBe(tab.group);
+      }
+    }
+  });
+
+  it("registers the previously unreachable routes so search and menus can find them", () => {
+    const competition = hubById("competition");
+    expect(hubNestedTabs(competition, "command").map((tab) => tab.id)).toEqual(
+      expect.arrayContaining(["rankings", "schedule", "briefing"]),
+    );
+    expect(hubNestedTabs(competition, "strategy").map((tab) => tab.id)).toEqual(
+      expect.arrayContaining(["intel", "dossier", "video"]),
+    );
+    expect(hubNestedTabs(competition, "match-checklist").map((tab) => tab.id)).toContain("pit");
+
+    expect(hubNestedTabs(hubById("build"), "fmea").map((tab) => tab.id)).toEqual(
+      expect.arrayContaining([
+        "subsystems",
+        "bringup",
+        "reviews",
+        "gearbox",
+        "shooter-table",
+        "weight-budget",
+        "power-budget",
+        // Distinct tools, not duplicates of their similarly-named neighbours:
+        // /wiring is the CAN-bus map, /tuning the calibration log, /spares the
+        // consumables inventory. Each was nearly redirected away as a "duplicate".
+        "wiring-map",
+        "tuning-log",
+        "consumables",
+      ]),
+    );
+
+    // …and the neighbours they were confused with keep their own distinct labels.
+    const buildRobotLabels = hubNestedTabs(hubById("build"), "fmea").map((tab) => tab.label);
+    expect(buildRobotLabels).toEqual(
+      expect.arrayContaining(["Wiring check", "CAN-bus map", "Tuning advisor", "Tuning log"]),
+    );
+
+    const team = hubById("team");
+    expect(hubNestedTabs(team, "todos").map((tab) => tab.id)).toEqual(
+      expect.arrayContaining(["safety", "goals"]),
+    );
+    expect(hubNestedTabs(team, "knowledge").map((tab) => tab.id)).toEqual(
+      expect.arrayContaining(["notebook", "risks"]),
+    );
+
+    expect(hubNestedTabs(hubById("business"), "finance").map((tab) => tab.id)).toContain("vendors");
+  });
+
+  it("registers /training and /roles under Team › People", () => {
+    const team = hubById("team");
+    const people = hubNestedTabs(team, "attendance");
+    const training = people.find((tab) => tab.id === "training");
+    expect(training?.label).toBe("Training matrix");
+    expect(training?.legacyHref).toBe("/training");
+    const roles = people.find((tab) => tab.id === "roles");
+    expect(roles?.label).toBe("Season roles");
+    expect(roles?.legacyHref).toBe("/roles");
+    expect(hubWorkbenchId(team, "training")).toBe("attendance");
+    expect(hubWorkbenchId(team, "roles")).toBe("attendance");
+  });
+
+  it("registers this wave's routes under the workbench that owns the job", () => {
+    const expected: Array<[Parameters<typeof hubById>[0], string, string, string]> = [
+      ["team", "attendance", "parents", "/parents"],
+      ["team", "attendance", "presence", "/presence"],
+      ["team", "attendance", "learning", "/learning"],
+      ["team", "knowledge", "knowledge-drafts", "/knowledge-drafts"],
+      ["build", "cad", "cad-vault", "/cad-vault"],
+      ["build", "fmea", "manufacturing", "/manufacturing"],
+      ["build", "fmea", "print-farm", "/print-farm"],
+      ["competition", "command", "event-readiness", "/event-readiness"],
+    ];
+    for (const [hubId, workbench, tabId, href] of expected) {
+      const hub = hubById(hubId);
+      const tab = hub.tabs.find((entry) => entry.id === tabId);
+      expect(tab?.legacyHref, `${hubId}:${tabId}`).toBe(href);
+      expect(hubWorkbenchId(hub, tabId), `${hubId}:${tabId} workbench`).toBe(workbench);
+      expect(hubNestedTabs(hub, workbench).map((entry) => entry.id)).toContain(tabId);
+    }
+  });
+
+  it("sends the Business outreach calendar tab to /outreach-calendar, not the content calendar", () => {
+    const business = hubById("business");
+    expect(business.tabs.find((tab) => tab.id === "outreach-calendar")?.legacyHref).toBe(
+      "/outreach-calendar",
+    );
+    expect(business.tabs.filter((tab) => tab.legacyHref === "/team/grants")).toHaveLength(1);
   });
 });

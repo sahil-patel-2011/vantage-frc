@@ -33,7 +33,7 @@ import {
   type CodeDeployLogNextAction,
   type CodeDeployLogShellKind,
 } from "../../lib/code-deploy-log/code-deploy-log-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./code-deploy-log.css";
 
@@ -107,7 +107,7 @@ function DeployShell({
 }) {
   const actions = codeDeployLogNextActions({ orgId, shell });
   const copy = codeDeployLogShellCopy(shell);
-  const buildHref = hubHref("/build", "code-deploy-log", orgId);
+  const buildHref = hubWorkbenchHref("build", "code-deploy-log", orgId);
   const steps = shell === "setup" ? codeDeployLogSetupSteps(orgId) : [];
 
   return (
@@ -236,7 +236,7 @@ export default function CodeDeployLogClient() {
   const relatedLinks = codeDeployLogRelatedLinks(orgId, {
     include: [...CODE_DEPLOY_LOG_RELATED_INCLUDE],
   });
-  const buildHref = hubHref("/build", "code-deploy-log", orgId);
+  const buildHref = hubWorkbenchHref("build", "code-deploy-log", orgId);
   const showTiles = shouldShowCodeDeployLogSummaryTiles(deployCount);
 
   const mutate = useCallback(

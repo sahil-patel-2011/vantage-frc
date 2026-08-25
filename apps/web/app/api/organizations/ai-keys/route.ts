@@ -138,7 +138,7 @@ export async function GET(request: Request) {
         await assertOrgCapability(client, orgId!, "manage_api_keys");
         canManage = true;
       } catch {
-        canManage = false;
+        // Stays false: the viewer can read keys but not manage them.
       }
 
       const rows = (
@@ -163,11 +163,33 @@ export async function GET(request: Request) {
         loadRoutingPrefs(client, orgId!),
       ]);
 
+      // The caller's own personal keys (RLS restricts rows to user_id = caller).
+      const memberRows = (
+        await client.query<{
+          provider: string;
+          baseUrl: string | null;
+          model: string | null;
+          createdAt: string | null;
+          lastUsedAt: string | null;
+        }>(
+          `SELECT provider,
+                  base_url AS "baseUrl",
+                  model,
+                  created_at::text AS "createdAt",
+                  last_used_at::text AS "lastUsedAt"
+           FROM member_llm_keys
+           WHERE org_id = $1::uuid AND user_id = $2::uuid
+           ORDER BY provider`,
+          [orgId, session.user.id],
+        )
+      ).rows;
+
       return {
         tier: membership.rows[0]?.tier ?? "free",
         role: membership.rows[0]?.role ?? null,
         canManage,
         keys: buildByokKeyStatuses(rows),
+        memberKeys: memberRows,
         localConnector,
         routing,
         modelOptions: BYOK_MODEL_OPTIONS.map((m) => ({
@@ -206,7 +228,9 @@ export async function POST(request: Request) {
         | "save_local"
         | "test_local"
         | "remove_local"
-        | "save_routing";
+        | "save_routing"
+        | "save_member_key"
+        | "remove_member_key";
       provider?: string;
       apiKey?: string;
       baseUrl?: string;
@@ -276,6 +300,88 @@ export async function POST(request: Request) {
       });
 
       return Response.json({ ok: true, provider, configured: true }, { status: 201 });
+    }
+
+    if (action === "save_member_key") {
+      // A member's own key overrides the team key for that member only.
+      // No capability check: RLS pins the row to the caller (0442).
+      const provider = parseByokProvider(body.provider);
+      if (!provider) throw new Error("Provider must be openai, anthropic, google, or openrouter");
+      const apiKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
+      if (!apiKey) throw new Error("API key is required");
+
+      const encryption = aiKeysEncryptionStatus();
+      if (!encryption.ok) {
+        return Response.json({ error: encryption.message, setupRequired: true }, { status: 503 });
+      }
+
+      // Base URL only means something on OpenAI-compatible entries (Ollama,
+      // LM Studio, Groq, Mistral, anything speaking that protocol).
+      const baseUrl =
+        provider === "openai" && typeof body.baseUrl === "string" && body.baseUrl.trim()
+          ? await validateOpenAiCompatibleBaseUrl(body.baseUrl)
+          : null;
+      const model =
+        typeof body.model === "string" && body.model.trim() ? body.model.trim() : null;
+
+      let encrypted;
+      try {
+        encrypted = await encryptSecret(apiKey, createKms());
+      } catch (error) {
+        return Response.json(
+          {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Could not encrypt API key. Encryption setup is required.",
+            setupRequired: true,
+          },
+          { status: 503 },
+        );
+      }
+
+      const meta = BYOK_PROVIDER_META[provider];
+      await withRls({ userId: session.user.id, orgId }, async (client) => {
+        await client.query(
+          `DELETE FROM member_llm_keys
+           WHERE org_id = $1::uuid AND user_id = $2::uuid AND lower(provider) = $3`,
+          [orgId, session.user.id, provider],
+        );
+        await client.query(
+          `INSERT INTO member_llm_keys
+             (org_id, user_id, provider, label, key_ciphertext, key_nonce, key_auth_tag,
+              encrypted_dek, kms_key_id, base_url, model)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          [
+            orgId,
+            session.user.id,
+            provider,
+            meta.storageLabel,
+            encrypted.ciphertext,
+            encrypted.nonce,
+            encrypted.authTag,
+            encrypted.encryptedDek,
+            encrypted.kmsKeyId,
+            baseUrl,
+            model,
+          ],
+        );
+      });
+
+      return Response.json({ ok: true, provider, scope: "member" }, { status: 201 });
+    }
+
+    if (action === "remove_member_key") {
+      const provider = parseByokProvider(body.provider);
+      if (!provider) throw new Error("Provider must be openai, anthropic, google, or openrouter");
+      await withRls({ userId: session.user.id, orgId }, async (client) => {
+        await client.query(
+          `DELETE FROM member_llm_keys
+           WHERE org_id = $1::uuid AND user_id = $2::uuid AND lower(provider) = $3`,
+          [orgId, session.user.id, provider],
+        );
+      });
+      return Response.json({ ok: true, provider, scope: "member" });
     }
 
     if (action === "save_local") {

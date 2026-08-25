@@ -19,22 +19,29 @@ import {
   resolveAuthSecret,
   resolveAuthTrustedOrigins,
   resolveSessionAuthMethod,
+  runtimeEnv,
 } from "./access-policy";
 import {
   WAITLIST_ONLY_MESSAGE,
   resolveAuthEmailAccess,
 } from "./auth-access";
+import { desktopLinkSessions } from "./desktop-link-plugin";
 
-const authBaseURL = resolveAuthBaseURL();
-const authTrustedOrigins = resolveAuthTrustedOrigins(authBaseURL);
-const authSecret = resolveAuthSecret();
+/**
+ * Auth env is resolved lazily inside buildAuth(): `next build` imports every
+ * route module during page-data collection with NODE_ENV=production, and an
+ * import-time resolveAuthSecret() would make a credential-free build
+ * impossible (the repo convention is that build and unit tests need no
+ * credentials). The first runtime request constructs — and caches — the real
+ * instance, and still fails loudly in production when the secret is missing.
+ */
 
 function googleSocialProvider() {
   if (!isGoogleAuthConfigured()) return {};
   return {
     google: {
-      clientId: process.env["GOOGLE_CLIENT_ID"]!,
-      clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
+      clientId: runtimeEnv("GOOGLE_CLIENT_ID"),
+      clientSecret: runtimeEnv("GOOGLE_CLIENT_SECRET"),
       prompt: "select_account",
       // New Google users are gated by databaseHooks.user.create.before
       // (platform owner / existing / pending invite only).
@@ -51,7 +58,11 @@ export const OTP_POLICY = {
   requestLimit: 5,
 } as const;
 
-export const auth = betterAuth({
+function buildAuth() {
+  const authBaseURL = resolveAuthBaseURL();
+  const authTrustedOrigins = resolveAuthTrustedOrigins(authBaseURL);
+  const authSecret = resolveAuthSecret();
+  return betterAuth({
   database: drizzleAdapter(authDb, {
     provider: "pg",
     schema: {
@@ -156,6 +167,9 @@ export const auth = betterAuth({
     haveIBeenPwned({
       customPasswordCompromisedMessage: "Choose a password that has not appeared in known breaches.",
     }),
+    // Server-only endpoint (never HTTP-mounted) that mints a session for the
+    // desktop shell after a browser-approved, verifier-proven code exchange.
+    desktopLinkSessions(),
   ],
   rateLimit: {
     enabled: true,
@@ -176,6 +190,21 @@ export const auth = betterAuth({
   secret: authSecret,
   baseURL: authBaseURL,
   trustedOrigins: authTrustedOrigins,
+  });
+}
+
+type AuthInstance = ReturnType<typeof buildAuth>;
+let cachedAuth: AuthInstance | null = null;
+
+export const auth: AuthInstance = new Proxy({} as AuthInstance, {
+  get(_target, prop, receiver) {
+    cachedAuth ??= buildAuth();
+    return Reflect.get(cachedAuth, prop, receiver);
+  },
+  has(_target, prop) {
+    cachedAuth ??= buildAuth();
+    return prop in cachedAuth;
+  },
 });
 
 export * from "./email";

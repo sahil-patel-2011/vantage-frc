@@ -1,18 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type DragEvent as ReactDragEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import PartnerPlacement from "../../components/partner-placement";
-import GridLayout, { useContainerWidth, verticalCompactor, type Layout, type LayoutItem } from "react-grid-layout";
 import {
   applyGridDrag,
   dropWidgetOntoLayout,
+  duplicateBoardName,
   readStoredBoardId,
   writeStoredBoardId,
 } from "../../lib/dashboard/boards";
 import {
   DASHBOARD_COLUMNS,
   DEFAULT_DASHBOARD_LAYOUT,
-  SECONDARY_WIDGET_TYPES,
   WIDGET_CATALOG,
   WIDGET_SIZE_KEYS,
   WIDGET_SIZE_LABEL,
@@ -20,17 +28,38 @@ import {
   canAccessWidget,
   catalogEntry,
   dashboardGridForWidth,
+  homeViewLayout,
   inferWidgetSize,
   packDashboardLayout,
   scaleLayoutToCols,
   type DashboardWidgetLayout,
   type DashboardWidgetType,
+  type OrgRole,
+  type WidgetCatalogEntry,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
+import {
+  DRAG_CANCEL_DISTANCE,
+  DRAG_LONG_PRESS_MS,
+  DRAG_MOUSE_INTENT_DISTANCE,
+  cellBox,
+  compactLayout,
+  describeCellMove,
+  edgeAutoScrollDelta,
+  exceedsDragCancelDistance,
+  layoutBottom,
+  layoutOrder,
+  moveItem,
+  nudgeItem,
+  pointToCell,
+  reorderLayout,
+  type GridCell,
+  type NudgeDirection,
+  type PointerPoint,
+} from "../../lib/dashboard/grid-drag";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import {
   classifyDashboardShell,
-  dashboardHubLinks,
   dashboardNextActions,
   dashboardSetupBlurb,
   dashboardSetupSteps,
@@ -46,7 +75,6 @@ import { prioritizeHomeStrip, type HomeStripItem } from "../../lib/home-workflow
 import { Badge } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
-import "react-grid-layout/css/styles.css";
 import "./dashboard-editor.css";
 import "./dashboard-dnd.css";
 
@@ -79,7 +107,7 @@ type BoardState = {
 };
 
 type SnapFeedback = {
-  mode: "Moving" | "Resizing";
+  mode: "Moving" | "Placing";
   x: number;
   y: number;
   w: number;
@@ -87,6 +115,16 @@ type SnapFeedback = {
 };
 
 const POLL_MS = 30_000;
+
+/** Below this container width the board becomes a single scrollable column. */
+const SINGLE_COLUMN_MAX = 720;
+
+const ARROW_DIRECTION: Record<string, NudgeDirection | undefined> = {
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  ArrowUp: "up",
+  ArrowDown: "down",
+};
 
 const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" | "bolt" | "bell" | "grid" | "stats" | "target" | "clipboard" | "gear" | "display" | "chat" | "pin" | "calendar">> = {
   next_match: "swords",
@@ -106,6 +144,22 @@ const WIDGET_PICKER_ICON: Partial<Record<DashboardWidgetType, "swords" | "cube" 
   subteam_upcoming: "calendar",
 };
 
+const ROLE_LABEL: Record<OrgRole, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  scout: "Scout",
+  viewer: "Viewer",
+};
+
+/** Why the catalog is holding a widget back — read straight off the entry. */
+function widgetLockReason(entry: WidgetCatalogEntry): string {
+  const roles = entry.roles ?? [];
+  if (roles.length === 0) return "Not available on this workspace";
+  const names = roles.map((role) => ROLE_LABEL[role] ?? role);
+  if (names.length === 1) return `${names[0]} only`;
+  return `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]} only`;
+}
+
 function greeting() {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -113,8 +167,91 @@ function greeting() {
   return "Good evening";
 }
 
+/** Phone/tablet/laptop grid, collapsed to one column on a narrow canvas. */
+function resolveGrid(width: number) {
+  const base = dashboardGridForWidth(width || 1280);
+  if (width > 0 && width < SINGLE_COLUMN_MAX) {
+    return { ...base, cols: 1, rowHeight: 78, margin: [12, 12] as [number, number] };
+  }
+  return base;
+}
+
+/** ResizeObserver on the grid canvas — the drag maths needs its exact box. */
+function useMeasuredCanvas() {
+  const [node, setNode] = useState<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const [measured, setMeasured] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  // Reflow motion stays off for one frame after the first measurement, so cards
+  // snap from the server-render fallback width instead of animating from it.
+  useEffect(() => {
+    if (width <= 0 || measured) return;
+    const frame = window.requestAnimationFrame(() => setMeasured(true));
+    // rAF is paused in a background tab; the timer keeps the board from being
+    // stuck without reflow motion until the tab is focused.
+    const timer = window.setTimeout(() => setMeasured(true), 150);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [width, measured]);
+
+  useEffect(() => {
+    if (!node) return;
+    setWidth(node.clientWidth);
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const next = entries[0]?.contentRect.width ?? node.clientWidth;
+      setWidth((current) => (Math.abs(current - next) < 0.5 ? current : next));
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [node]);
+
+  return { setNode, node, width, mounted, measured };
+}
+
+type DragKind = "move" | "add";
+/** immediate = dedicated handle; longpress = card body / touch; intent = mouse on the palette. */
+type DragActivation = "immediate" | "longpress" | "intent";
+
+type DragSession = {
+  kind: DragKind;
+  id: string;
+  type: DashboardWidgetType;
+  label: string;
+  pointerId: number;
+  captureTarget: Element | null;
+  activation: DragActivation;
+  active: boolean;
+  origin: PointerPoint;
+  point: PointerPoint;
+  grab: PointerPoint;
+  size: { width: number; height: number };
+  span: { w: number; h: number };
+  cell: GridCell;
+  cols: number;
+  rowHeight: number;
+  gap: number;
+  baseLayout: DashboardWidgetLayout[];
+  baseDisplay: DashboardWidgetLayout[];
+};
+
+type DragView = {
+  kind: DragKind;
+  id: string;
+  type: DashboardWidgetType;
+  label: string;
+  cell: GridCell;
+  span: { w: number; h: number };
+  size: { width: number; height: number };
+};
+
 export default function DashboardClient() {
-  const { width, containerRef, mounted } = useContainerWidth({ initialWidth: 960 });
+  const { setNode: setCanvasNode, node: canvasNode, width, mounted, measured } = useMeasuredCanvas();
   const [me, setMe] = useState<Me>({});
   const [board, setBoard] = useState<BoardState | null>(null);
   const [layout, setLayout] = useState<DashboardWidgetLayout[]>(DEFAULT_DASHBOARD_LAYOUT);
@@ -127,13 +264,14 @@ export default function DashboardClient() {
   const [role, setRole] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">("error");
-  const [moreOpen, setMoreOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [meLoaded, setMeLoaded] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [externalWidget, setExternalWidget] = useState<DashboardWidgetType | null>(null);
+  const [drag, setDrag] = useState<DragView | null>(null);
   const [snapFeedback, setSnapFeedback] = useState<SnapFeedback | null>(null);
+  const [announce, setAnnounce] = useState("");
+  const [grabbedId, setGrabbedId] = useState<string | null>(null);
   const [boards, setBoards] = useState<BoardMeta[]>([]);
   const [boardsOpen, setBoardsOpen] = useState(false);
   const [renameId, setRenameId] = useState<string | null>(null);
@@ -142,6 +280,17 @@ export default function DashboardClient() {
   const orgId = me.orgId ?? "";
   const userId = me.userId ?? "";
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId || null);
+
+  const dragRef = useRef<DragSession | null>(null);
+  const proxyRef = useRef<HTMLDivElement | null>(null);
+  const longPressRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const keyListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
+  const touchListenerRef = useRef<((event: TouchEvent) => void) | null>(null);
+  const suppressClickRef = useRef(false);
+  const layoutRef = useRef(layout);
+  const displayRef = useRef<DashboardWidgetLayout[]>([]);
+  const grabBaseRef = useRef<DashboardWidgetLayout[] | null>(null);
 
   const loadBoard = useCallback(async (id: string, preferredBoardId?: string | null) => {
     const stored = preferredBoardId === undefined ? readStoredBoardId(id, userId) : preferredBoardId;
@@ -229,6 +378,10 @@ export default function DashboardClient() {
   }, [editing]);
 
   useEffect(() => {
+    layoutRef.current = layout;
+  }, [layout]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("customize") === "1") {
       setEditing(true);
@@ -243,22 +396,23 @@ export default function DashboardClient() {
     }
   }, []);
 
-  const availableCatalog = useMemo(
-    () => WIDGET_CATALOG.filter((entry) => canAccessWidget(entry.type, role)),
-    [role],
-  );
-
-  const secondaryTypes = useMemo(
+  /** Every catalog entry with a reason it cannot be added, so nothing fails silently. */
+  const paletteEntries = useMemo(
     () =>
-      SECONDARY_WIDGET_TYPES.filter(
-        (type) => canAccessWidget(type, role) && !layout.some((item) => item.type === type),
-      ),
+      WIDGET_CATALOG.map((entry) => {
+        if (layout.some((item) => item.type === entry.type)) {
+          return { entry, status: "placed" as const, reason: null as string | null };
+        }
+        if (!canAccessWidget(entry.type, role)) {
+          return { entry, status: "locked" as const, reason: widgetLockReason(entry) };
+        }
+        return { entry, status: "add" as const, reason: null as string | null };
+      }),
     [layout, role],
   );
-
-  const addableCatalog = useMemo(
-    () => availableCatalog.filter((entry) => !layout.some((item) => item.type === entry.type)),
-    [availableCatalog, layout],
+  const addableEntries = useMemo(
+    () => paletteEntries.filter((row) => row.status === "add"),
+    [paletteEntries],
   );
 
   const personalBoards = useMemo(() => boards.filter((item) => item.scope === "personal"), [boards]);
@@ -274,20 +428,10 @@ export default function DashboardClient() {
     return ordered;
   }, [personalBoards, orgBoards, board]);
 
-  function currentGrid() {
-    return dashboardGridForWidth(width || 1280);
-  }
-
-  function onLayoutChange(next: Layout) {
-    if (!editing) return;
-    const cols = currentGrid().cols;
-    setLayout((current) => applyGridDrag(current, next, cols));
-  }
-
-  function addWidget(type: DashboardWidgetType, drop?: Pick<LayoutItem, "x" | "y">) {
-    const result = dropWidgetOntoLayout(layout, type, {
-      drop,
-      displayCols: currentGrid().cols,
+  function addWidget(type: DashboardWidgetType, drop?: GridCell, displayCols?: number) {
+    const result = dropWidgetOntoLayout(layoutRef.current, type, {
+      drop: drop ? { x: drop.col, y: drop.row } : undefined,
+      displayCols: displayCols ?? DASHBOARD_COLUMNS,
       now: Date.now(),
     });
     if (!result.ok) {
@@ -296,48 +440,18 @@ export default function DashboardClient() {
       return;
     }
     const entry = catalogEntry(type);
-    setLayout(result.layout);
+    setLayout(compactLayout(result.layout, DASHBOARD_COLUMNS));
     setMessageKind("success");
-    setMessage(`${entry?.label ?? type} snapped onto the dashboard.`);
+    setMessage(`${entry?.label ?? type} added to the board.`);
+    setAnnounce(`${entry?.label ?? type} added to the board.`);
     setLibraryOpen(false);
-  }
-
-  function beginPaletteDrag(event: ReactDragEvent<HTMLButtonElement>, type: DashboardWidgetType) {
-    const entry = catalogEntry(type);
-    if (!entry) return;
-    event.dataTransfer.effectAllowed = "copy";
-    event.dataTransfer.setData("application/vnd.vantage.dashboard-widget", type);
-    event.dataTransfer.setData("text/plain", type);
-    setExternalWidget(type);
-    setMessage("");
-  }
-
-  function finishPaletteDrag() {
-    setExternalWidget(null);
-    setSnapFeedback(null);
-  }
-
-  function dropPaletteWidget(_next: Layout, item: LayoutItem | undefined, event: Event) {
-    const transferred =
-      event instanceof DragEvent
-        ? event.dataTransfer?.getData("application/vnd.vantage.dashboard-widget")
-        : "";
-    const type = externalWidget ?? (transferred as DashboardWidgetType | "");
-    if (type && availableCatalog.some((entry) => entry.type === type)) {
-      addWidget(type, item ? { x: item.x, y: item.y } : undefined);
-    }
-    finishPaletteDrag();
-  }
-
-  function updateSnap(mode: SnapFeedback["mode"], item: LayoutItem | null) {
-    if (!item) return;
-    setSnapFeedback({ mode, x: item.x, y: item.y, w: item.w, h: item.h });
   }
 
   function tidyLayout() {
     setLayout((current) => packDashboardLayout(current));
     setMessageKind("success");
     setMessage("Widgets snapped upward into a clean, collision-free layout.");
+    setAnnounce("Board tidied. Widgets snapped upward with no gaps.");
   }
 
   function setWidgetSize(id: string, size: WidgetSizeKey) {
@@ -346,16 +460,45 @@ export default function DashboardClient() {
         if (item.i !== id) return item;
         return applyWidgetSize(item, size, catalogEntry(item.type));
       });
-      return packDashboardLayout(resized);
+      return compactLayout(resized, DASHBOARD_COLUMNS);
     });
+    const target = layoutRef.current.find((item) => item.i === id);
+    const label = target ? catalogEntry(target.type)?.label ?? target.type : "Widget";
+    setAnnounce(`${label} resized to ${WIDGET_SIZE_LABEL[size]}.`);
+  }
+
+  /** Back to the size the catalog ships this widget at — its designed shape. */
+  function resetWidgetSize(id: string) {
+    const target = layoutRef.current.find((item) => item.i === id);
+    const entry = target ? catalogEntry(target.type) : undefined;
+    if (!target || !entry) return;
+    setLayout((current) => {
+      const resized = current.map((item) =>
+        item.i === id
+          ? {
+              ...item,
+              w: entry.defaultW,
+              h: entry.defaultH,
+              minW: entry.minW,
+              minH: entry.minH,
+              x: Math.max(0, Math.min(DASHBOARD_COLUMNS - entry.defaultW, item.x)),
+            }
+          : item,
+      );
+      return compactLayout(resized, DASHBOARD_COLUMNS);
+    });
+    const label = entry.label ?? target.type;
+    setAnnounce(`${label} reset to its default size.`);
   }
 
   function removeWidget(id: string) {
-    const removed = layout.find((item) => item.i === id);
-    setLayout((current) => current.filter((item) => item.i !== id));
+    const removed = layoutRef.current.find((item) => item.i === id);
+    setLayout((current) => compactLayout(current.filter((item) => item.i !== id), DASHBOARD_COLUMNS));
     const label = removed ? catalogEntry(removed.type)?.label ?? removed.type : "Widget";
     setMessageKind("success");
     setMessage(`${label} removed. Tap Done to save, or add another from the palette.`);
+    setAnnounce(`${label} removed from the board.`);
+    if (grabbedId === id) setGrabbedId(null);
   }
 
   async function save(activateScope: "personal" | "org" = "personal") {
@@ -409,6 +552,7 @@ export default function DashboardClient() {
       setLayout(data.layout);
       setEditing(false);
       setLibraryOpen(false);
+      setGrabbedId(null);
       setMessageKind("success");
       setMessage(data.scope === "org" ? "Saved as team Home Screen." : "Personal Home Screen saved.");
       await loadBoard(orgId, data.id);
@@ -494,6 +638,51 @@ export default function DashboardClient() {
     }
   }
 
+  /**
+   * Copies any board the member can see into a new personal board. This is how a
+   * student starts from the team layout without the risk of editing the shared
+   * one — the server rejects the copy if they are already at the board cap.
+   */
+  async function duplicateBoard(targetId: string) {
+    if (!orgId || !targetId || saving || editing) return;
+    const source = boards.find((item) => item.id === targetId);
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/dashboards", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          id: targetId,
+          name: source
+            ? duplicateBoardName(
+                source.name,
+                boards.map((item) => item.name),
+              )
+            : undefined,
+          scope: "personal",
+          activate: true,
+          action: "duplicate",
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessageKind("error");
+        setMessage(data.error ?? "Could not duplicate board");
+        return;
+      }
+      writeStoredBoardId(orgId, userId, data.id);
+      setRenameId(null);
+      setBoardsOpen(false);
+      setMessageKind("success");
+      setMessage(`Duplicated to ${data.name}. It is yours to edit.`);
+      await loadBoard(orgId, data.id);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function renameBoard(targetId: string, nextName: string) {
     if (!orgId || !targetId) return;
     const name = nextName.trim().slice(0, 80);
@@ -563,6 +752,7 @@ export default function DashboardClient() {
     setLayout(board?.layout ?? DEFAULT_DASHBOARD_LAYOUT);
     setEditing(false);
     setLibraryOpen(false);
+    setGrabbedId(null);
     setMessage("");
   }
 
@@ -570,7 +760,9 @@ export default function DashboardClient() {
     setEditing(true);
     setLibraryOpen(false);
     setMessageKind("success");
-    setMessage("Edit mode — drag by the grip, tap Remove on a card, or add widgets from the palette above.");
+    setMessage(
+      "Edit mode — press and hold a card (or use its grip) to move it, arrow keys reorder from the keyboard, and Remove clears a card.",
+    );
   }
 
   async function resetDefault() {
@@ -645,7 +837,6 @@ export default function DashboardClient() {
     setupRequired,
     tbaConfigured,
   });
-  const hubLinks = dashboardHubLinks(orgId || null);
   const nextActions = dashboardNextActions({
     orgId: orgId || null,
     shell: dashShell,
@@ -661,69 +852,472 @@ export default function DashboardClient() {
     hasAiProvider,
     role,
   });
-  const grid = dashboardGridForWidth(mounted ? width : 1280);
-  const displayLayout = scaleLayoutToCols(layout, DASHBOARD_COLUMNS, grid.cols);
-  const gridLayout: Layout = displayLayout.map((item) => ({
-    i: item.i,
-    x: item.x,
-    y: item.y,
-    w: item.w,
-    h: item.h,
-    minW: 1,
-    minH: item.minH ?? 2,
-    static: !editing,
-  }));
-  const externalCatalogEntry = externalWidget ? catalogEntry(externalWidget) : null;
-  const droppingItem: LayoutItem | undefined = externalCatalogEntry
-    ? {
-        i: "__vantage_widget_drop__",
-        x: 0,
-        y: 0,
-        w: Math.max(1, Math.round((externalCatalogEntry.defaultW * grid.cols) / DASHBOARD_COLUMNS)),
-        h: externalCatalogEntry.defaultH,
-        minW: 1,
-        minH: externalCatalogEntry.minH,
+
+  const viewLayout = homeViewLayout(layout, { editing, shell: dashShell, widgets });
+  const grid = resolveGrid(mounted ? width : 1280);
+  const gap = grid.margin[0];
+  const cols = grid.cols;
+  const canvasWidth = width > 0 ? width : 960;
+
+  /** What is actually painted: the saved 12-column board scaled to this screen. */
+  const displayLayout = useMemo(
+    () => compactLayout(scaleLayoutToCols(viewLayout, DASHBOARD_COLUMNS, cols), cols),
+    // viewLayout is derived each render; keying on its shape keeps this cheap.
+    [JSON.stringify(viewLayout), cols],
+  );
+
+  useEffect(() => {
+    displayRef.current = displayLayout;
+  }, [displayLayout]);
+
+  const gridRows = Math.max(layoutBottom(displayLayout), editing ? 4 : 1);
+  const gridHeight = gridRows * grid.rowHeight + Math.max(0, gridRows - 1) * gap;
+
+  /* ------------------------------------------------------------------ *
+   * Pointer drag — one code path for mouse, touch and pen.
+   * ------------------------------------------------------------------ */
+
+  function clearLongPress() {
+    if (longPressRef.current !== null) {
+      window.clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+  }
+
+  function stopAutoScroll() {
+    if (rafRef.current !== null) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }
+
+  function detachDragListeners() {
+    if (keyListenerRef.current) {
+      window.removeEventListener("keydown", keyListenerRef.current);
+      keyListenerRef.current = null;
+    }
+    if (touchListenerRef.current) {
+      document.removeEventListener("touchmove", touchListenerRef.current);
+      touchListenerRef.current = null;
+    }
+  }
+
+  function canvasRect() {
+    if (!canvasNode) return null;
+    const rect = canvasNode.getBoundingClientRect();
+    return { left: rect.left, top: rect.top, width: rect.width, bottom: rect.bottom, right: rect.right };
+  }
+
+  function paintProxy() {
+    const session = dragRef.current;
+    const node = proxyRef.current;
+    if (!session || !node) return;
+    const x = session.point.x - session.grab.x;
+    const y = session.point.y - session.grab.y;
+    node.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+    node.style.opacity = "1";
+  }
+
+  function previewMove(session: DragSession) {
+    const nextDisplay = moveItem(session.baseDisplay, session.id, session.cell, session.cols);
+    setLayout(
+      session.cols === 1
+        ? reorderLayout(session.baseLayout, layoutOrder(nextDisplay))
+        : applyGridDrag(session.baseLayout, nextDisplay, session.cols),
+    );
+  }
+
+  function refreshDragCell() {
+    const session = dragRef.current;
+    if (!session?.active) return;
+    const rect = canvasRect();
+    if (!rect) return;
+    // Anchor on the ghost's top-left corner, nudged inside so it reads the cell
+    // the card visually covers rather than the one just before it.
+    const anchor = {
+      x: session.point.x - session.grab.x + 6,
+      y: session.point.y - session.grab.y + 6,
+    };
+    const cell = pointToCell(anchor, rect, session.cols, session.rowHeight, session.gap);
+    if (cell.col === session.cell.col && cell.row === session.cell.row) return;
+    session.cell = cell;
+    if (session.kind === "move") previewMove(session);
+    setDrag((current) => (current ? { ...current, cell } : current));
+    setSnapFeedback({
+      mode: session.kind === "move" ? "Moving" : "Placing",
+      x: cell.col,
+      y: cell.row,
+      w: session.span.w,
+      h: session.span.h,
+    });
+  }
+
+  function startAutoScroll() {
+    if (rafRef.current !== null) return;
+    const step = () => {
+      const session = dragRef.current;
+      if (!session?.active) {
+        rafRef.current = null;
+        return;
       }
-    : undefined;
-  const canvasWidth = editing ? Math.max(1, width - 20) : width;
+      const delta = edgeAutoScrollDelta(session.point.y, window.innerHeight);
+      if (delta !== 0) {
+        window.scrollBy(0, delta);
+        refreshDragCell();
+      }
+      rafRef.current = window.requestAnimationFrame(step);
+    };
+    rafRef.current = window.requestAnimationFrame(step);
+  }
+
+  function endDrag(restore: boolean) {
+    const session = dragRef.current;
+    clearLongPress();
+    stopAutoScroll();
+    detachDragListeners();
+    dragRef.current = null;
+    setDrag(null);
+    setDragging(false);
+    setSnapFeedback(null);
+    if (!session) return;
+    const target = session.captureTarget as (Element & { releasePointerCapture?: (id: number) => void }) | null;
+    try {
+      if (target?.releasePointerCapture) target.releasePointerCapture(session.pointerId);
+    } catch {
+      /* pointer already released */
+    }
+    if (restore && session.active && session.kind === "move") setLayout(session.baseLayout);
+  }
+
+  function activateDrag() {
+    clearLongPress();
+    const session = dragRef.current;
+    if (!session || session.active) return;
+    session.active = true;
+    session.baseLayout = layoutRef.current;
+    session.baseDisplay = displayRef.current;
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      endDrag(true);
+      setAnnounce(`${session.label} move cancelled.`);
+    };
+    const onTouch = (event: TouchEvent) => {
+      if (dragRef.current?.active && event.cancelable) event.preventDefault();
+    };
+    keyListenerRef.current = onKey;
+    touchListenerRef.current = onTouch;
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("touchmove", onTouch, { passive: false });
+
+    setDragging(true);
+    setDrag({
+      kind: session.kind,
+      id: session.id,
+      type: session.type,
+      label: session.label,
+      cell: session.cell,
+      span: session.span,
+      size: session.size,
+    });
+    setSnapFeedback({
+      mode: session.kind === "move" ? "Moving" : "Placing",
+      x: session.cell.col,
+      y: session.cell.row,
+      w: session.span.w,
+      h: session.span.h,
+    });
+    startAutoScroll();
+    window.requestAnimationFrame(() => {
+      paintProxy();
+      refreshDragCell();
+    });
+  }
+
+  function beginSession(
+    event: ReactPointerEvent<HTMLElement>,
+    session: Omit<DragSession, "pointerId" | "captureTarget" | "active" | "origin" | "point" | "baseLayout" | "baseDisplay">,
+  ) {
+    if (dragRef.current) endDrag(true);
+    const point = { x: event.clientX, y: event.clientY };
+    const target = event.currentTarget as HTMLElement & { setPointerCapture?: (id: number) => void };
+    try {
+      target.setPointerCapture?.(event.pointerId);
+    } catch {
+      /* capture is best-effort */
+    }
+    dragRef.current = {
+      ...session,
+      pointerId: event.pointerId,
+      captureTarget: target,
+      active: false,
+      origin: point,
+      point,
+      baseLayout: layoutRef.current,
+      baseDisplay: displayRef.current,
+    };
+    if (session.activation === "immediate") {
+      activateDrag();
+      return;
+    }
+    if (session.activation === "longpress") {
+      longPressRef.current = window.setTimeout(activateDrag, DRAG_LONG_PRESS_MS);
+    }
+  }
+
+  function beginCardDrag(
+    event: ReactPointerEvent<HTMLElement>,
+    item: DashboardWidgetLayout,
+    activation: DragActivation,
+  ) {
+    if (!editing || saving) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const card = (event.currentTarget as HTMLElement).closest(".dash-grid-item") as HTMLElement | null;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    setGrabbedId(null);
+    grabBaseRef.current = null;
+    beginSession(event, {
+      kind: "move",
+      id: item.i,
+      type: item.type,
+      label: catalogEntry(item.type)?.label ?? item.type,
+      activation,
+      grab: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+      size: { width: rect.width, height: rect.height },
+      span: { w: item.w, h: item.h },
+      cell: { col: item.x, row: item.y },
+      cols,
+      rowHeight: grid.rowHeight,
+      gap,
+    });
+  }
+
+  function beginPaletteDrag(event: ReactPointerEvent<HTMLElement>, entry: WidgetCatalogEntry) {
+    if (!editing || saving) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const span = {
+      w: Math.max(1, Math.min(cols, Math.round((entry.defaultW * cols) / DASHBOARD_COLUMNS))),
+      h: entry.defaultH,
+    };
+    const box = cellBox({ x: 0, y: 0, ...span }, canvasWidth, cols, grid.rowHeight, gap);
+    beginSession(event, {
+      kind: "add",
+      id: `add-${entry.type}`,
+      type: entry.type,
+      label: entry.label,
+      activation: event.pointerType === "mouse" ? "intent" : "longpress",
+      grab: { x: Math.min(event.clientX - rect.left, box.width / 2), y: Math.min(event.clientY - rect.top, 28) },
+      size: { width: box.width, height: box.height },
+      span,
+      cell: { col: 0, row: 0 },
+      cols,
+      rowHeight: grid.rowHeight,
+      gap,
+    });
+  }
+
+  function onDragPointerMove(event: ReactPointerEvent<HTMLElement>) {
+    const session = dragRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    session.point = { x: event.clientX, y: event.clientY };
+
+    if (!session.active) {
+      const threshold =
+        session.activation === "intent" ? DRAG_MOUSE_INTENT_DISTANCE : DRAG_CANCEL_DISTANCE;
+      if (!exceedsDragCancelDistance(session.origin, session.point, threshold)) return;
+      // Past the slop before the long press fired: that gesture was a scroll.
+      if (session.activation === "intent") activateDrag();
+      else endDrag(true);
+      return;
+    }
+
+    if (event.cancelable) event.preventDefault();
+    paintProxy();
+    refreshDragCell();
+  }
+
+  function pointerIsOverCanvas(point: PointerPoint) {
+    const rect = canvasRect();
+    if (!rect) return false;
+    const slack = 40;
+    return (
+      point.x >= rect.left - slack &&
+      point.x <= rect.right + slack &&
+      point.y >= rect.top - slack &&
+      point.y <= rect.bottom + slack
+    );
+  }
+
+  function onDragPointerUp(event: ReactPointerEvent<HTMLElement>) {
+    const session = dragRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    if (!session.active) {
+      endDrag(false);
+      return;
+    }
+    session.point = { x: event.clientX, y: event.clientY };
+    refreshDragCell();
+    const settled = dragRef.current;
+    if (!settled) return;
+
+    if (settled.kind === "add") {
+      // The browser still fires a click on the palette chip after the drag —
+      // swallow exactly one, and drop the guard again if it never arrives.
+      suppressClickRef.current = true;
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 400);
+      // An empty board renders the CTA instead of a canvas — there is nothing
+      // to miss, so any release counts as a placement.
+      if (!canvasNode || pointerIsOverCanvas(settled.point)) {
+        addWidget(settled.type, settled.cell, settled.cols);
+      } else {
+        setMessageKind("error");
+        setMessage(`${settled.label} was dropped outside the board — nothing added.`);
+      }
+      endDrag(false);
+      return;
+    }
+
+    setAnnounce(`${describeCellMove(settled.label, settled.cell)}.`);
+    endDrag(false);
+  }
+
+  function onDragPointerCancel(event: ReactPointerEvent<HTMLElement>) {
+    const session = dragRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    endDrag(true);
+  }
+
+  useEffect(
+    () => () => {
+      clearLongPress();
+      stopAutoScroll();
+      detachDragListeners();
+    },
+    // Unmount cleanup only.
+    [],
+  );
+
+  // Leaving edit mode mid-gesture must not strand a captured pointer.
+  useEffect(() => {
+    if (!editing && dragRef.current) endDrag(true);
+    if (!editing) setGrabbedId(null);
+  }, [editing]);
+
+  /* ------------------------------------------------------------------ *
+   * Keyboard reordering — space picks up, arrows move, space drops.
+   * ------------------------------------------------------------------ */
+
+  function commitNudge(item: DashboardWidgetLayout, direction: NudgeDirection) {
+    const label = catalogEntry(item.type)?.label ?? item.type;
+    const nextDisplay = nudgeItem(displayLayout, item.i, direction, cols);
+    const moved = nextDisplay.find((entry) => entry.i === item.i);
+    if (!moved || (moved.x === item.x && moved.y === item.y)) {
+      setAnnounce(`${label} is already at the ${direction === "left" || direction === "right" ? "edge" : direction === "up" ? "top" : "bottom"} of the board.`);
+      return;
+    }
+    setLayout(
+      cols === 1
+        ? reorderLayout(layoutRef.current, layoutOrder(nextDisplay))
+        : applyGridDrag(layoutRef.current, nextDisplay, cols),
+    );
+    setAnnounce(`${describeCellMove(label, { col: moved.x, row: moved.y })}.`);
+  }
+
+  function onHandleKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>, item: DashboardWidgetLayout) {
+    if (!editing) return;
+    const label = catalogEntry(item.type)?.label ?? item.type;
+
+    if (event.key === " " || event.key === "Spacebar" || event.key === "Enter") {
+      event.preventDefault();
+      if (grabbedId === item.i) {
+        setGrabbedId(null);
+        grabBaseRef.current = null;
+        setAnnounce(`${label} dropped at row ${item.y + 1}, column ${item.x + 1}.`);
+      } else {
+        setGrabbedId(item.i);
+        grabBaseRef.current = layoutRef.current;
+        setAnnounce(
+          `${label} picked up at row ${item.y + 1}, column ${item.x + 1}. Arrow keys move it, space drops it, escape cancels.`,
+        );
+      }
+      return;
+    }
+
+    if (event.key === "Escape") {
+      if (grabbedId !== item.i) return;
+      event.preventDefault();
+      if (grabBaseRef.current) setLayout(grabBaseRef.current);
+      grabBaseRef.current = null;
+      setGrabbedId(null);
+      setAnnounce(`${label} move cancelled.`);
+      return;
+    }
+
+    const direction = ARROW_DIRECTION[event.key];
+    if (!direction || grabbedId !== item.i) return;
+    event.preventDefault();
+    commitNudge(item, direction);
+  }
+
+  /* ------------------------------------------------------------------ */
+
+  // The ghost is positioned imperatively (transform is never in the style prop),
+  // so re-renders during a drag never yank it back to the last committed point.
+  useEffect(() => {
+    if (drag) paintProxy();
+  }, [drag]);
+
+  const dropBox =
+    drag && drag.kind === "add"
+      ? cellBox({ x: drag.cell.col, y: drag.cell.row, ...drag.span }, canvasWidth, cols, grid.rowHeight, gap)
+      : null;
+  const boardIsEmpty = layout.length === 0;
 
   return (
-    <main className={`dash-home${editing ? " is-editing" : ""}`} data-grid={grid.label}>
+    <main className={`dash-home${editing ? " is-editing" : ""}`} data-grid={grid.label} data-cols={cols}>
+      <p className="dash-live-region" role="status" aria-live="polite">
+        {announce}
+      </p>
+
       <header className="dash-home-header">
         <div>
           <span className="breadcrumbs">
             {me.orgName ?? "Workspace"} {me.teamNumber ? `· ${me.teamNumber}` : ""}
-            {board ? (
+            {board && !board.isDefault ? (
               <span className="dash-scope-pill" data-scope={scope}>
-                {board.isDefault ? "Default" : scope === "org" ? "Team board" : "Personal board"}
+                {scope === "org" ? "Team board" : "Personal board"}
               </span>
             ) : null}
           </span>
           <h1>
             {greeting()}, {firstName}
           </h1>
-          {orgId && board && !(board.isDefault && switcherBoards.length <= 1) ? (
+          {orgId && board && !board.isDefault && switcherBoards.length > 1 ? (
             <p className="dash-board-current">
               <strong>{board.name}</strong>
-              <span>{boards.length ? `${boards.length} board${boards.length === 1 ? "" : "s"}` : "Home Screen"}</span>
             </p>
           ) : null}
           <p>
             {!meLoaded
               ? "Loading your workspace…"
               : !orgId
-                ? "Select a team workspace to load live data. No fabricated ranks, EPA, or match times."
+                ? "Select a team workspace to load live data."
                 : tbaConfigured === false
-                  ? "TBA not configured — connect The Blue Alliance for live match/rank sync."
+                  ? "Connect The Blue Alliance for live match and rank data."
                   : setupRequired
-                    ? "Select an active event to load live competition data."
+                    ? "Select an active event to load competition data."
                     : context.eventName
                       ? String(context.eventName)
-                      : "Next match and alerts when real TBA data exists — Edit Home to rearrange."}
+                      : "Home — widgets appear when live data exists."}
           </p>
         </div>
         <div className="dash-home-actions">
-          {nextMatchData && !editing ? (
+          {nextMatchData && !editing && !viewLayout.some((item) => item.type === "next_match") ? (
             <a className="dash-next-glance" href={withOrgHref("/intel", orgId || null)}>
               <span>Next</span>
               <strong>
@@ -752,7 +1346,7 @@ export default function DashboardClient() {
           ) : null}
           {!editing ? (
             <button
-              className="app-button dash-edit-trigger"
+              className="app-button secondary dash-edit-trigger"
               type="button"
               data-testid="dash-customize"
               aria-label="Edit Home — rearrange, add, or remove widgets"
@@ -858,17 +1452,6 @@ export default function DashboardClient() {
               +
             </button>
           </div>
-          <div className="dash-board-dots" aria-hidden="true">
-            {switcherBoards.map((item) => (
-              <button
-                key={`dot-${item.id}`}
-                type="button"
-                aria-current={board?.id === item.id ? "true" : undefined}
-                disabled={saving || editing}
-                onClick={() => void switchBoard(item.id)}
-              />
-            ))}
-          </div>
           <button
             type="button"
             className="dash-board-manage"
@@ -883,16 +1466,6 @@ export default function DashboardClient() {
             Manage boards
           </button>
         </div>
-      ) : null}
-
-      {meLoaded && !editing && dashShell !== "ready" ? (
-        <nav className="dash-hub-rail" aria-label="Product hubs">
-          {hubLinks.map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
       ) : null}
 
       {meLoaded && dashShell !== "ready" ? (
@@ -928,28 +1501,14 @@ export default function DashboardClient() {
         </section>
       ) : null}
 
-      {meLoaded && dashShell === "ready" && nextActions.length > 0 ? (
-        <section
-          className="dash-next-actions app-card soft-panel edc-next-actions"
-          aria-label="Next actions"
-        >
-          <header>
-            <h2>Next</h2>
-            <p>{nextActions[0]?.detail}</p>
-          </header>
-          <ol>
-            {nextActions.slice(0, 2).map((action) => (
-              <li key={action.id} className={action.primary ? "primary" : undefined}>
-                <div>
-                  <strong>{action.label}</strong>
-                </div>
-                <a className="app-button secondary" href={action.href}>
-                  Open
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
+      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !editing ? (
+        <p className="dash-ready-cue" role="status">
+          <span>
+            <strong>{nextActions[0]?.label}</strong>
+            {nextActions[0]?.detail ? ` — ${nextActions[0].detail}` : ""}
+          </span>
+          <a href={nextActions[0]?.href}>{nextActions[0]?.label}</a>
+        </p>
       ) : null}
 
       {meLoaded && orgId && tbaConfigured !== false ? (
@@ -958,10 +1517,36 @@ export default function DashboardClient() {
 
       {editing ? (
         <section className="dash-editor-bar" role="region" aria-label="Widget catalog">
+          <div className="dash-edit-strip" role="toolbar" aria-label="Edit Home toolbar">
+            <span className="dash-edit-flag">
+              <i aria-hidden="true" />
+              Edit mode
+            </span>
+            <span className="dash-edit-meta">
+              {cols === 1 ? "Single column" : `${cols}-column grid`} · {grid.label} · {layout.length} widget
+              {layout.length === 1 ? "" : "s"}
+            </span>
+            <div className="dash-edit-strip-actions">
+              <button type="button" disabled={saving} onClick={tidyLayout}>
+                Snap &amp; tidy
+              </button>
+              <button
+                type="button"
+                aria-pressed={libraryOpen}
+                onClick={() => setLibraryOpen((open) => !open)}
+              >
+                Widget library
+              </button>
+              <button className="is-primary" type="button" disabled={saving} onClick={() => void save("personal")}>
+                {saving ? "Saving…" : "Done"}
+              </button>
+            </div>
+          </div>
           <div className="dash-editor-copy">
             <strong>Customize Home</strong>
             <span>
-              Drag widgets onto the board, move cards by the grip, resize from a corner, or tap Remove on any card.
+              Press and hold a card — or use its grip — to move it. Keyboard: focus a grip, press space, then
+              use the arrow keys.
               {orgId
                 ? canShareOrg
                   ? " Done saves your personal Home. Save for team is optional and does not overwrite teammates' layouts."
@@ -971,212 +1556,303 @@ export default function DashboardClient() {
           </div>
           <div className="dash-palette-heading">
             <span>Add widgets</span>
-            <small>{layout.length} on board · {addableCatalog.length} available</small>
+            <small>
+              {layout.length} on board · {addableEntries.length} available
+            </small>
           </div>
           <div className="dash-widget-palette" data-testid="dash-catalog-inline">
-            {addableCatalog.map((entry) => {
+            {paletteEntries.map(({ entry, status, reason }) => {
               const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
+              const isDragging = drag?.kind === "add" && drag.type === entry.type;
               return (
                 <button
-                  className={externalWidget === entry.type ? "dragging" : ""}
-                  draggable
+                  className={`${status === "add" ? "" : "is-unavailable "}${isDragging ? "dragging" : ""}`.trim()}
                   key={entry.type}
                   type="button"
-                  title={`${entry.description}. Drag onto the board or click to add.`}
-                  onClick={() => addWidget(entry.type)}
-                  onDragStart={(event) => beginPaletteDrag(event, entry.type)}
-                  onDragEnd={finishPaletteDrag}
+                  data-status={status}
+                  disabled={status !== "add"}
+                  title={
+                    status === "placed"
+                      ? `${entry.label} is already on the board.`
+                      : status === "locked"
+                        ? `${entry.label} — ${reason}`
+                        : `${entry.description}. Drag onto the board or tap to add.`
+                  }
+                  onPointerDown={(event) => {
+                    if (status !== "add") return;
+                    beginPaletteDrag(event, entry);
+                  }}
+                  onPointerMove={onDragPointerMove}
+                  onPointerUp={onDragPointerUp}
+                  onPointerCancel={onDragPointerCancel}
+                  onClick={() => {
+                    if (suppressClickRef.current) {
+                      suppressClickRef.current = false;
+                      return;
+                    }
+                    if (status !== "add") return;
+                    addWidget(entry.type);
+                  }}
                 >
-                  <i><Icon name={icon} /></i>
-                  <span><strong>{entry.label}</strong><small>{entry.description}</small></span>
-                  <em>Add</em>
+                  <i>
+                    <Icon name={icon} />
+                  </i>
+                  <span>
+                    <strong>{entry.label}</strong>
+                    <small>{status === "locked" ? reason : entry.description}</small>
+                  </span>
+                  <em>{status === "placed" ? "On board" : status === "locked" ? "Locked" : "Add"}</em>
                 </button>
               );
             })}
-            {addableCatalog.length === 0 ? <p>Every available widget is already on the board.</p> : null}
           </div>
         </section>
       ) : null}
 
       {dashShell === "ready" || editing ? (
-      <section
-        ref={containerRef}
-        className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${externalWidget ? " receiving-widget" : ""}`}
-        aria-label="Dashboard widgets"
-        data-testid="dash-widget-grid"
-        data-dash-drag={editing ? "on" : "off"}
-      >
-        {editing ? (
-          <div className="dash-grid-guide">
-            <span>{grid.cols}-column snap · {grid.label}</span>
-            <small>Drag to move · S/M/L/XL like Apple widgets · corners resize</small>
-          </div>
-        ) : null}
-        {snapFeedback ? (
-          <output className="dash-snap-hud" aria-live="polite">
-            <strong>{snapFeedback.mode}</strong>
-            <span>columns {snapFeedback.x + 1}–{snapFeedback.x + snapFeedback.w}</span>
-            <span>row {snapFeedback.y + 1}</span>
-            <b>{snapFeedback.w} × {snapFeedback.h}</b>
-          </output>
-        ) : externalCatalogEntry ? (
-          <div className="dash-drop-coach" aria-live="polite">
-            Release <strong>{externalCatalogEntry.label}</strong> on the highlighted snap cells
-          </div>
-        ) : null}
-        {mounted ? (
-          layout.length === 0 && editing && !externalWidget ? (
-            <button type="button" className="dash-empty-board" onClick={() => setLibraryOpen(true)}>
-              <span className="dash-empty-board-plus">+</span>
-              <strong>Add widgets</strong>
-              <span>Pick from the library to build your Home Screen</span>
-            </button>
-          ) : (
-            <GridLayout
-              className="dash-grid"
-              width={canvasWidth}
-              layout={gridLayout}
-              gridConfig={{
-                cols: grid.cols,
-                rowHeight: grid.rowHeight,
-                margin: grid.margin,
-                containerPadding: [0, 0],
-              }}
-              dragConfig={{
-                enabled: editing,
-                bounded: true,
-                handle: ".dash-drag-handle, .dash-widget-hit",
-                threshold: 3,
-              }}
-              resizeConfig={{ enabled: editing, handles: ["se", "sw"] }}
-              dropConfig={{
-                enabled: editing,
-                defaultItem: {
-                  w: droppingItem?.w ?? Math.max(1, Math.round((4 * grid.cols) / DASHBOARD_COLUMNS)),
-                  h: droppingItem?.h ?? 3,
-                },
-              }}
-              droppingItem={droppingItem}
-              compactor={verticalCompactor}
-              onLayoutChange={onLayoutChange}
-              onDropDragOver={() => externalCatalogEntry ? {
-                w: Math.max(1, Math.round((externalCatalogEntry.defaultW * grid.cols) / DASHBOARD_COLUMNS)),
-                h: externalCatalogEntry.defaultH,
-              } : false}
-              onDrop={dropPaletteWidget}
-              onDragStart={(_next, _old, item) => { setDragging(true); updateSnap("Moving", item); }}
-              onDrag={(_next, _old, item) => updateSnap("Moving", item)}
-              onDragStop={() => { setDragging(false); setSnapFeedback(null); }}
-              onResizeStart={(_next, _old, item) => { setDragging(true); updateSnap("Resizing", item); }}
-              onResize={(_next, _old, item) => updateSnap("Resizing", item)}
-              onResizeStop={() => { setDragging(false); setSnapFeedback(null); }}
-            >
-              {layout.map((item) => (
-                <div
-                  key={item.i}
-                  className={`dash-grid-item${editing ? " jiggling" : ""}`}
-                  data-testid="dash-grid-item"
-                  data-widget-type={item.type}
-                  data-widget-x={item.x}
-                  data-widget-y={item.y}
-                >
-                  {editing ? (
-                    <div className="dash-item-tools">
-                      <button
-                        type="button"
-                        className="dash-remove-btn"
-                        data-testid="dash-remove-widget"
-                        title="Remove widget"
-                        aria-label={`Remove ${catalogEntry(item.type)?.label ?? item.type}`}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          removeWidget(item.i);
-                        }}
-                      >
-                        <Icon name="x" />
-                        <span>Remove</span>
-                      </button>
-                      <div className="dash-item-tools-right">
-                        <div className="dash-size-chips" role="group" aria-label="Widget size">
-                          {WIDGET_SIZE_KEYS.map((size) => (
-                            <button
-                              key={size}
-                              type="button"
-                              className="dash-size-btn"
-                              data-active={inferWidgetSize(item) === size}
-                              title={`${WIDGET_SIZE_LABEL[size]} widget`}
-                              aria-pressed={inferWidgetSize(item) === size}
-                              onClick={() => setWidgetSize(item.i, size)}
-                            >
-                              {WIDGET_SIZE_LABEL[size]}
-                            </button>
-                          ))}
-                        </div>
-                        <div
-                          className="dash-drag-handle dash-drag-surface"
-                          data-testid="dash-drag-handle"
-                          aria-label={`Move ${catalogEntry(item.type)?.label ?? item.type}`}
-                          title="Drag to rearrange"
-                        >
-                          <span className="dash-drag-dots" aria-hidden="true" />
-                          <span className="dash-drag-label">Drag</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-                  <div className="dash-widget-hit">
-                    <DashboardWidgetView
-                      type={item.type}
-                      payload={widgets[item.type]}
-                      orgId={orgId}
-                      tbaConfigured={tbaConfigured}
-                    />
-                  </div>
-                </div>
-              ))}
-            </GridLayout>
-          )
-        ) : (
-          <div className="dash-more-grid">
-            {layout.slice(0, 5).map((item) => (
-              <DashboardWidgetView
-                key={item.i}
-                type={item.type}
-                payload={widgets[item.type]}
-                orgId={orgId}
-                tbaConfigured={tbaConfigured}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-      ) : null}
-
-      {!editing && dashShell === "ready" && secondaryTypes.length > 0 ? (
-        <section className="dash-more">
-          <button
-            type="button"
-            className="dash-more-toggle"
-            aria-expanded={moreOpen}
-            onClick={() => setMoreOpen((value) => !value)}
-          >
-            {moreOpen ? "Hide secondary metrics" : "Show secondary metrics"}
-          </button>
-          {moreOpen ? (
-            <div className="dash-more-grid">
-              {secondaryTypes.map((type) => (
-                <DashboardWidgetView
-                  key={type}
-                  type={type}
-                  payload={widgets[type]}
-                  orgId={orgId}
-                  tbaConfigured={tbaConfigured}
-                />
-              ))}
+        <section
+          className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${
+            drag?.kind === "add" ? " receiving-widget" : ""
+          }`}
+          aria-label="Dashboard widgets"
+          data-testid="dash-widget-grid"
+          data-dash-drag={editing ? "on" : "off"}
+        >
+          {editing ? (
+            <div className="dash-grid-guide">
+              <span>
+                {cols === 1 ? "Single column" : `${cols}-column snap`} · {grid.label}
+              </span>
+              <small>Hold to drag · S/M/L/XL resize · space + arrows from the keyboard</small>
             </div>
           ) : null}
+          {snapFeedback ? (
+            <output className="dash-snap-hud" aria-hidden="true">
+              <strong>{snapFeedback.mode}</strong>
+              <span>
+                {cols === 1
+                  ? `position ${snapFeedback.y + 1}`
+                  : `columns ${snapFeedback.x + 1}–${snapFeedback.x + snapFeedback.w}`}
+              </span>
+              <span>row {snapFeedback.y + 1}</span>
+              <b>
+                {snapFeedback.w} × {snapFeedback.h}
+              </b>
+            </output>
+          ) : null}
+
+          {mounted && boardIsEmpty && editing ? (
+            <button
+              type="button"
+              className="dash-empty-board"
+              data-testid="dash-empty-board"
+              onClick={() => setLibraryOpen(true)}
+            >
+              <span className="dash-empty-board-plus" aria-hidden="true">
+                +
+              </span>
+              <strong>Add your first widget</strong>
+              <span>
+                Pick next match, robot readiness, scouting coverage and more — then drag them into the order
+                your team reads them.
+              </span>
+            </button>
+          ) : mounted && viewLayout.length === 0 && !editing ? (
+            <div className="dash-quiet-home" role="status">
+              <strong>Nothing live yet</strong>
+              <span>
+                Home stays quiet until match, scouting, or robot data exists. Edit Home to pin widgets anyway.
+              </span>
+            </div>
+          ) : (
+            <div
+              ref={setCanvasNode}
+              className="dash-grid dash-pgrid"
+              data-editing={editing ? "true" : "false"}
+              data-measured={measured ? "true" : "false"}
+              style={
+                {
+                  height: `${Math.max(gridHeight, grid.rowHeight)}px`,
+                  "--dash-cols": cols,
+                  "--dash-row-h": `${grid.rowHeight}px`,
+                  "--dash-gap": `${gap}px`,
+                } as CSSProperties
+              }
+            >
+              {dropBox ? (
+                <div
+                  className="dash-drop-slot"
+                  aria-hidden="true"
+                  style={{
+                    transform: `translate3d(${dropBox.left}px, ${dropBox.top}px, 0)`,
+                    width: `${dropBox.width}px`,
+                    height: `${dropBox.height}px`,
+                  }}
+                >
+                  <span>{drag?.label}</span>
+                </div>
+              ) : null}
+
+              {displayLayout.map((item) => {
+                const box = cellBox(item, canvasWidth, cols, grid.rowHeight, gap);
+                const label = catalogEntry(item.type)?.label ?? item.type;
+                const isDraggingThis = drag?.kind === "move" && drag.id === item.i;
+                const isGrabbed = grabbedId === item.i;
+                // Deliberately no `jiggling` class: it animates `transform`,
+                // which is what places this card on the grid.
+                return (
+                  <article
+                    key={item.i}
+                    className={`dash-grid-item${editing ? " is-editing" : ""}${
+                      isDraggingThis ? " is-dragging" : ""
+                    }${isGrabbed ? " is-grabbed" : ""}`}
+                    data-testid="dash-grid-item"
+                    data-widget-type={item.type}
+                    data-widget-x={item.x}
+                    data-widget-y={item.y}
+                    style={{
+                      transform: `translate3d(${box.left}px, ${box.top}px, 0)`,
+                      width: `${box.width}px`,
+                      height: `${box.height}px`,
+                    }}
+                    onPointerDown={(event) => {
+                      if (!editing) return;
+                      const target = event.target as HTMLElement;
+                      if (target.closest("button, a, input, select, textarea")) return;
+                      beginCardDrag(event, item, "longpress");
+                    }}
+                    onPointerMove={onDragPointerMove}
+                    onPointerUp={onDragPointerUp}
+                    onPointerCancel={onDragPointerCancel}
+                  >
+                    {editing ? (
+                      <>
+                        <div className="dash-item-tools">
+                          <button
+                            type="button"
+                            className="dash-remove-btn"
+                            data-testid="dash-remove-widget"
+                            title="Remove widget"
+                            aria-label={`Remove ${label}`}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              removeWidget(item.i);
+                            }}
+                          >
+                            <Icon name="x" />
+                            <span>Remove</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="dash-drag-handle dash-drag-surface"
+                            data-testid="dash-drag-handle"
+                            aria-label={`Move ${label}. Press space to pick up, then use the arrow keys.`}
+                            aria-pressed={isGrabbed}
+                            title="Drag to rearrange, or press space and use arrow keys"
+                            onPointerDown={(event) => {
+                              event.stopPropagation();
+                              beginCardDrag(event, item, "immediate");
+                            }}
+                            onPointerMove={onDragPointerMove}
+                            onPointerUp={onDragPointerUp}
+                            onPointerCancel={onDragPointerCancel}
+                            onKeyDown={(event) => onHandleKeyDown(event, item)}
+                            onClick={(event) => event.preventDefault()}
+                          >
+                            <span className="dash-drag-dots" aria-hidden="true" />
+                            <span className="dash-drag-label">{isGrabbed ? "Moving" : "Drag"}</span>
+                          </button>
+                        </div>
+                        <div
+                          className="dash-item-sizes"
+                          role="group"
+                          aria-label={`Resize ${label}`}
+                          onPointerDown={(event) => event.stopPropagation()}
+                        >
+                          <span aria-hidden="true">Size</span>
+                          <div className="dash-size-chips">
+                            {WIDGET_SIZE_KEYS.map((size) => {
+                              const current = inferWidgetSize(
+                                layout.find((entry) => entry.i === item.i) ?? item,
+                              );
+                              return (
+                                <button
+                                  key={size}
+                                  type="button"
+                                  className="dash-size-btn"
+                                  data-active={current === size}
+                                  title={`${WIDGET_SIZE_LABEL[size]} widget`}
+                                  aria-label={`${label} size ${WIDGET_SIZE_LABEL[size]}`}
+                                  aria-pressed={current === size}
+                                  onClick={() => setWidgetSize(item.i, size)}
+                                >
+                                  {WIDGET_SIZE_LABEL[size]}
+                                </button>
+                              );
+                            })}
+                            {(() => {
+                              const entry = catalogEntry(item.type);
+                              const saved = layout.find((row) => row.i === item.i) ?? item;
+                              const atDefault =
+                                !entry || (saved.w === entry.defaultW && saved.h === entry.defaultH);
+                              return (
+                                <button
+                                  type="button"
+                                  className="dash-size-btn dash-size-reset"
+                                  data-testid="dash-reset-widget-size"
+                                  disabled={atDefault}
+                                  title={
+                                    atDefault
+                                      ? `${label} is already at its default size`
+                                      : `Reset ${label} to its default size`
+                                  }
+                                  aria-label={`Reset ${label} to its default size`}
+                                  onClick={() => resetWidgetSize(item.i)}
+                                >
+                                  Reset
+                                </button>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </>
+                    ) : null}
+                    <div className="dash-widget-hit">
+                      <DashboardWidgetView
+                        type={item.type}
+                        payload={widgets[item.type]}
+                        orgId={orgId}
+                        tbaConfigured={tbaConfigured}
+                      />
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </section>
+      ) : null}
+
+      {drag ? (
+        <div
+          ref={proxyRef}
+          className="dash-drag-proxy"
+          aria-hidden="true"
+          style={{ width: `${drag.size.width}px`, height: `${Math.min(drag.size.height, 220)}px` }}
+        >
+          <i>
+            <Icon name={WIDGET_PICKER_ICON[drag.type] ?? "grid"} />
+          </i>
+          <strong>{drag.label}</strong>
+          <span>
+            {cols === 1
+              ? `Position ${drag.cell.row + 1}`
+              : `Row ${drag.cell.row + 1} · Column ${drag.cell.col + 1}`}
+          </span>
+          <small>{drag.kind === "add" ? "Release to place" : "Release to drop"}</small>
+        </div>
       ) : null}
 
       {editing ? (
@@ -1185,7 +1861,7 @@ export default function DashboardClient() {
             Cancel
           </button>
           <button className="dash-dock-ghost" type="button" disabled={saving} onClick={() => void resetDefault()}>
-            Reset to standard
+            Reset
           </button>
           <button className="dash-dock-ghost dash-dock-tidy" type="button" disabled={saving} onClick={tidyLayout}>
             <span aria-hidden="true">⌗</span> Snap &amp; tidy
@@ -1231,17 +1907,17 @@ export default function DashboardClient() {
             <header>
               <div>
                 <h2 id="dash-library-title">Widget library</h2>
-                <p>Add one of each type. Drag widgets on the grid after placing them.</p>
+                <p>One of each type per board. Tap to add, then drag the card into place.</p>
               </div>
               <button type="button" className="soft-icon-btn" aria-label="Close" onClick={() => setLibraryOpen(false)}>
                 <Icon name="x" />
               </button>
             </header>
-            {addableCatalog.length === 0 ? (
-              <p className="dash-library-empty">Every available widget is already on your Home Screen.</p>
+            {addableEntries.length === 0 ? (
+              <p className="dash-library-empty">Every widget you can use is already on your Home Screen.</p>
             ) : (
               <ul className="dash-library-grid">
-                {addableCatalog.map((entry) => {
+                {addableEntries.map(({ entry }) => {
                   const icon = WIDGET_PICKER_ICON[entry.type] ?? "grid";
                   return (
                     <li key={entry.type}>
@@ -1258,15 +1934,18 @@ export default function DashboardClient() {
               </ul>
             )}
             <div className="dash-library-onboard">
-              <p>Already on board</p>
+              <p>Not addable right now</p>
               <div className="dash-catalog">
-                {availableCatalog
-                  .filter((entry) => layout.some((item) => item.type === entry.type))
-                  .map((entry) => (
-                    <button key={entry.type} type="button" disabled>
-                      On board · {entry.label}
+                {paletteEntries
+                  .filter((row) => row.status !== "add")
+                  .map(({ entry, status, reason }) => (
+                    <button key={entry.type} type="button" disabled title={reason ?? undefined}>
+                      {status === "placed" ? `On board · ${entry.label}` : `${entry.label} · ${reason}`}
                     </button>
                   ))}
+                {paletteEntries.every((row) => row.status === "add") ? (
+                  <p className="dash-library-empty">Nothing is held back — every widget is available.</p>
+                ) : null}
               </div>
             </div>
           </aside>
@@ -1354,6 +2033,14 @@ export default function DashboardClient() {
                             >
                               Rename
                             </button>
+                            <button
+                              type="button"
+                              data-testid="dash-duplicate-board"
+                              disabled={saving || editing}
+                              onClick={() => void duplicateBoard(item.id)}
+                            >
+                              Duplicate
+                            </button>
                             <button type="button" className="danger" disabled={saving} onClick={() => void deleteBoard(item.id)}>
                               Delete
                             </button>
@@ -1427,15 +2114,34 @@ export default function DashboardClient() {
                               >
                                 Rename
                               </button>
+                              <button
+                                type="button"
+                                data-testid="dash-duplicate-board"
+                                disabled={saving || editing}
+                                onClick={() => void duplicateBoard(item.id)}
+                              >
+                                Copy to mine
+                              </button>
                               <button type="button" className="danger" disabled={saving} onClick={() => void deleteBoard(item.id)}>
                                 Delete
                               </button>
                             </>
                           )
                         ) : (
-                          <button type="button" disabled={saving || editing} onClick={() => void switchBoard(item.id)}>
-                            Open
-                          </button>
+                          <>
+                            <button type="button" disabled={saving || editing} onClick={() => void switchBoard(item.id)}>
+                              Open
+                            </button>
+                            {/* Members cannot edit a shared board — but they can fork it. */}
+                            <button
+                              type="button"
+                              data-testid="dash-duplicate-board"
+                              disabled={saving || editing}
+                              onClick={() => void duplicateBoard(item.id)}
+                            >
+                              Copy to mine
+                            </button>
+                          </>
                         )}
                       </div>
                     </li>

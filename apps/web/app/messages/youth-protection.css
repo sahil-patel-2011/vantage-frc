@@ -1,0 +1,210 @@
+/* Youth-protection surfaces in chat. Design tokens only, correct in light and dark, 44px targets,
+   readable at 360px. Kept in its own file so the shared styles.css stays untouched. */
+
+.chat-supervision-banner {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  color: var(--app-ink);
+  background: color-mix(in srgb, var(--app-warning) 12%, var(--app-surface));
+  border: 1px solid color-mix(in srgb, var(--app-warning) 45%, var(--app-line));
+  border-radius: var(--app-radius);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.chat-supervision-banner span {
+  color: var(--app-warning);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.chat-supervision-banner small {
+  color: var(--app-muted);
+  font-size: 11px;
+}
+
+.chat-safety-note {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  color: var(--app-muted);
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* .chat-main is a flex column with overflow:hidden, so the panel has to own its own scroll or
+   the export form is unreachable on a short viewport. */
+.chat-main > .chat-safety-panel {
+  align-content: start;
+  min-height: 0;
+  flex: 1;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  overflow-y: auto;
+}
+
+.chat-safety-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  margin-top: 14px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius);
+}
+
+.chat-safety-panel > header {
+  display: grid;
+  gap: 6px;
+}
+
+.chat-safety-panel h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.chat-safety-panel p {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.chat-safety-modes {
+  display: grid;
+  gap: 10px;
+}
+
+.chat-safety-mode {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: start;
+  min-height: 44px;
+  padding: 12px;
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.chat-safety-mode.active {
+  border-color: var(--app-accent);
+  box-shadow: inset 0 0 0 1px var(--app-accent);
+}
+
+.chat-safety-mode input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.chat-safety-mode strong {
+  display: block;
+  font-size: 13px;
+}
+
+.chat-safety-mode small {
+  display: block;
+  margin-top: 4px;
+  color: var(--app-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.chat-safety-warning {
+  padding: 10px 12px;
+  color: var(--app-ink);
+  background: color-mix(in srgb, var(--app-critical) 10%, var(--app-surface));
+  border: 1px solid color-mix(in srgb, var(--app-critical) 40%, var(--app-line));
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.chat-export-form {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--app-line);
+}
+
+.chat-export-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chat-export-form select,
+.chat-export-form input,
+.chat-export-form textarea {
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--app-ink);
+  background: var(--app-bg);
+  border: 1px solid var(--app-line);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.chat-export-form textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.chat-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Specificity has to beat `body.has-app-shell .messages-page .chat-sidebar button`, which would
+   otherwise make this read as just another conversation in the list. It is a different kind of
+   control and needs to look like one. */
+.chat-sidebar button.chat-safety-toggle,
+body.has-app-shell .messages-page .chat-sidebar button.chat-safety-toggle,
+body.has-app-shell .chat-page .chat-sidebar button.chat-safety-toggle {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  color: var(--app-ink);
+  background: var(--app-soft);
+  border: 1px solid var(--app-line);
+  border-radius: 7px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 620px) {
+  /* The sidebar becomes a horizontal strip; keep the control from stretching to 145px min-width. */
+  .chat-sidebar button.chat-safety-toggle,
+  body.has-app-shell .messages-page .chat-sidebar button.chat-safety-toggle {
+    min-width: 120px;
+    margin-top: 0;
+    margin-left: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chat-safety-panel {
+    padding: 14px;
+  }
+  .chat-safety-mode {
+    grid-template-columns: 20px 1fr;
+    padding: 10px;
+  }
+}

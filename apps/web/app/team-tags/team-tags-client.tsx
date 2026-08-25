@@ -5,6 +5,7 @@ import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import type { TeamTagsView } from "../../lib/team-tags/compute-team-tags";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./team-tags.css";
 
 type LiveView = Extract<TeamTagsView, { status: "live" }>;
@@ -12,16 +13,20 @@ type LiveView = Extract<TeamTagsView, { status: "live" }>;
 export default function TeamTagsClient() {
   const [view, setView] = useState<TeamTagsView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead end.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const orgId = new URLSearchParams(window.location.search).get("orgId");
     const query = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+    setErrorStatus(null);
     try {
       const response = await fetch(`/api/team-tags${query}`);
       const data = (await response.json()) as TeamTagsView | { error?: string };
       if (!response.ok || !("status" in data)) {
-        setError("Could not load drive-team tags.");
+        setErrorStatus(response.status);
+        setError("error" in data && data.error ? data.error : "Could not load drive-team tags.");
         return;
       }
       setView(data);
@@ -110,7 +115,37 @@ export default function TeamTagsClient() {
         </a>
       </nav>
 
-      {error ? <p className="app-muted" role="alert">{error}</p> : null}
+      {error && view ? <p className="app-muted" role="alert">{error}</p> : null}
+      {error && !view
+        ? (() => {
+            const copy = loadFailureCopy(
+              classifyLoadFailure({
+                status: errorStatus,
+                message: error,
+                online: typeof navigator === "undefined" ? true : navigator.onLine,
+              }),
+              {
+                nextPath:
+                  typeof window === "undefined"
+                    ? null
+                    : `${window.location.pathname}${window.location.search}`,
+                message: error,
+              },
+            );
+            return (
+              <>
+                <p className="app-muted" role="alert">
+                  <strong>{copy.title}</strong> — {copy.description}
+                </p>
+                {copy.primary ? (
+                  <a className="app-button" href={copy.primary.href}>
+                    {copy.primary.label}
+                  </a>
+                ) : null}
+              </>
+            );
+          })()
+        : null}
       {!view && !error ? <p className="app-muted">Loading tags…</p> : null}
 
       {view?.status === "setup_required" ? (

@@ -114,7 +114,7 @@ function mapSnapshot(row: SnapshotRow): SeasonReportSnapshot {
   };
 }
 
-async function loadEntries(client: PoolClient, orgId: string, seasonYear: number): Promise<SeasonReportEntry[]> {
+export async function loadEntries(client: PoolClient, orgId: string, seasonYear: number): Promise<SeasonReportEntry[]> {
   const result = await client.query<EntryRow>(
     `SELECT id, season_year AS "seasonYear", category, title, detail,
             metric_label AS "metricLabel", metric_value::text AS "metricValue",

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
@@ -467,6 +468,8 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
   const [view, setView] = useState<AttendanceView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [seasonYear, setSeasonYear] = useState(defaultSeasonYear);
@@ -490,10 +493,12 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       const data = (await response.json()) as AttendanceView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load attendance.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setView(data);
       if (data.status === "ready") {
         setSeasonYear(data.seasonYear);
@@ -506,6 +511,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         );
       }
     } catch {
+      setErrorStatus(null);
       setFetchFailed(true);
     }
   }, [seasonYear]);
@@ -545,6 +551,23 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
   );
 
   if (fetchFailed || !view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message:
+              error || "Check your connection and try again. Presence is never filled with DEMO rates.",
+          },
+        )
+      : null;
     return (
       <main className={`module-page att-page${embedded ? " is-embedded" : ""}`}>
         {!embedded ? (
@@ -557,19 +580,22 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           soft
           badge={fetchFailed ? "Setup" : undefined}
           badgeTone={fetchFailed ? "setup" : undefined}
-          title={fetchFailed ? "Could not load attendance" : "Loading attendance…"}
-          description={
-            fetchFailed
-              ? error || "Check your connection and try again. Presence is never filled with DEMO rates."
-              : "Checking your workspace for real roll calls."
-          }
+          title={failure ? failure.title : "Loading attendance…"}
+          description={failure ? failure.description : "Checking your workspace for real roll calls."}
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {failure ? (
             <div className="att-empty-actions">
-              <button type="button" className="app-button secondary" onClick={() => void load()}>
-                Retry
-              </button>
+              {failure.primary ? (
+                <a className="app-button" href={failure.primary.href}>
+                  {failure.primary.label}
+                </a>
+              ) : null}
+              {failure.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => void load()}>
+                  Retry
+                </button>
+              ) : null}
               <a className="app-button secondary" href="/workspace">
                 Choose workspace
               </a>
@@ -653,7 +679,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       ) : null}
       {canManage ? (
         <button type="button" className="app-button" onClick={() => setShowCreate((v) => !v)}>
-          {showCreate ? "Close form" : "New event"}
+          {showCreate ? "Cancel" : "New"}
         </button>
       ) : null}
     </div>
@@ -743,7 +769,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           <div className="att-empty-actions">
             {canManage ? (
               <button type="button" className="app-button" onClick={() => setShowCreate(true)}>
-                Create first roll call
+                New
               </button>
             ) : (
               <a className="app-button secondary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>

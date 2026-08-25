@@ -54,14 +54,14 @@
   display:grid;gap:6px;padding:14px;text-align:left;border-radius:14px;border:1px solid var(--soft-line,var(--app-line));
   background:var(--soft-bg,var(--app-bg));color:inherit;cursor:pointer;font:inherit;
 }
-.kb-template:hover{border-color:color-mix(in srgb,var(--soft-accent,var(--app-accent)) 40%,var(--soft-line,var(--app-line)));box-shadow:0 6px 18px rgba(20,36,58,.06)}
+.kb-template:hover{border-color:color-mix(in srgb,var(--soft-accent) 40%,var(--soft-line));box-shadow:var(--soft-shadow)}
 .kb-template strong{font-size:14px}
 .kb-template span{color:var(--soft-muted,var(--app-muted));font-size:12px;line-height:1.4}
 .kb-badge{display:inline-flex;align-items:center;min-height:22px;padding:3px 8px;border-radius:999px;font:700 10px/1 inherit;letter-spacing:.04em;text-transform:uppercase;color:var(--soft-muted,var(--app-muted));background:color-mix(in srgb,var(--soft-muted,var(--app-muted)) 12%,transparent);width:fit-content}
-.kb-badge.handoff{color:#9a3412;background:#ffedd5}
-.kb-badge.onboarding{color:#1d4ed8;background:#dbeafe}
-.kb-badge.procedure{color:#166534;background:#dcfce7}
-.kb-badge.reference{color:#6b21a8;background:#f3e8ff}
+.kb-badge.handoff{color:var(--app-warning);background:color-mix(in srgb,var(--app-warning) 14%,transparent)}
+.kb-badge.onboarding{color:var(--app-accent);background:color-mix(in srgb,var(--app-accent) 14%,transparent)}
+.kb-badge.procedure{color:var(--app-positive);background:color-mix(in srgb,var(--app-positive) 14%,transparent)}
+.kb-badge.reference{color:var(--app-ink);background:color-mix(in srgb,var(--app-ink) 10%,transparent)}
 
 .kb-editor{display:grid;gap:12px}
 .kb-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
@@ -69,7 +69,8 @@
 .kb-dirty{
   display:inline-flex;align-items:center;min-height:28px;padding:4px 10px;border-radius:999px;
   font:700 11px/1 inherit;letter-spacing:.03em;text-transform:uppercase;
-  color:#9a3412;background:#ffedd5;border:1px solid #fdba74;
+  color:var(--app-warning);background:color-mix(in srgb,var(--app-warning) 14%,transparent);
+  border:1px solid color-mix(in srgb,var(--app-warning) 40%,var(--app-line));
 }
 .kb-editor-toolbar{
   display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-radius:12px;

@@ -1,9 +1,9 @@
 
-.scout-budget-banner{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,#b45309 40%,var(--soft-line));background:#fff8e8;color:#69420a;font:600 13px var(--font-source-sans),ui-sans-serif}
-.scout-budget-banner.over_budget{border-color:color-mix(in srgb,#b91c1c 45%,var(--soft-line));background:#fff0ee;color:#8f1d1d}
+.scout-budget-banner{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--app-warning) 40%,var(--soft-line));background:color-mix(in srgb,var(--app-warning) 12%,var(--soft-card));color:var(--app-warning);font:600 13px var(--font-source-sans),ui-sans-serif}
+.scout-budget-banner.over_budget{border-color:color-mix(in srgb,var(--app-critical) 45%,var(--soft-line));background:color-mix(in srgb,var(--app-critical) 12%,var(--soft-card));color:var(--app-critical)}
 .scout-field-trust{margin:4px 0 0;font:600 11px/1.35 var(--font-source-sans),ui-sans-serif;color:var(--soft-muted)}
-.scout-field-trust.warn{color:#a23a2c}.scout-field-trust.ok{color:#1f7a3d}
-.scout-field-wrap.is-history-warn{padding:8px 10px;margin:0 -4px;border-radius:12px;background:color-mix(in srgb,#fff8e8 88%,transparent);border:1px solid color-mix(in srgb,#b45309 28%,var(--soft-line))}
+.scout-field-trust.warn{color:var(--app-critical)}.scout-field-trust.ok{color:var(--app-positive)}
+.scout-field-wrap.is-history-warn{padding:8px 10px;margin:0 -4px;border-radius:12px;background:color-mix(in srgb,var(--app-warning) 10%,var(--soft-card));border:1px solid color-mix(in srgb,var(--app-warning) 28%,var(--soft-line))}
 .scout-mc-row{display:grid;gap:8px}
 .scout-mc-option{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--soft-line);background:var(--soft-bg);cursor:pointer}
 .scout-mc-option:has(input:checked){border-color:var(--soft-accent);background:var(--soft-accent-soft)}
@@ -47,7 +47,7 @@
 .scout-accuracy-mini li div{display:grid;gap:2px;min-width:0}
 .scout-accuracy-mini li b{font-size:16px;color:var(--soft-ink)}
 .scout-trust{display:grid;gap:16px}
-.scout-degraded{display:grid;gap:3px;padding:12px 15px;border:1px solid color-mix(in srgb,#b45309 45%,var(--soft-line));border-radius:14px;background:#fff8e8;color:#69420a}
+.scout-degraded{display:grid;gap:3px;padding:12px 15px;border:1px solid color-mix(in srgb,var(--app-warning) 45%,var(--soft-line));border-radius:14px;background:color-mix(in srgb,var(--app-warning) 12%,var(--soft-card));color:var(--app-warning)}
 .scout-trust-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .scout-trust-kpis article{padding:16px;border:1px solid var(--soft-line);border-radius:var(--soft-radius,16px);background:var(--soft-card);box-shadow:var(--soft-shadow);display:grid;gap:3px}
 .scout-trust-kpis span,.scout-trust-kpis small{font-size:10px;color:var(--soft-muted);text-transform:uppercase}
@@ -57,22 +57,133 @@
 .scout-trust-side{display:grid;gap:16px}
 .coverage-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px}
 .coverage-board article{display:grid;gap:2px;padding:10px;border-radius:12px;border:1px solid var(--soft-line);background:var(--soft-bg)}
-.coverage-board article.missing{border-color:#dc786f;background:#fff0ee}
-.coverage-board article.assigned{border-color:#d9a742;background:#fff8e7}
-.coverage-board article.covered{border-color:#72b48a;background:#eef9f2}
-.coverage-board article.double_covered{border-color:#6f8fcf;background:#eef3ff}
+.coverage-board article.missing{border-color:color-mix(in srgb,var(--app-critical) 55%,var(--soft-line));background:color-mix(in srgb,var(--app-critical) 10%,var(--soft-card))}
+.coverage-board article.assigned{border-color:color-mix(in srgb,var(--app-warning) 55%,var(--soft-line));background:color-mix(in srgb,var(--app-warning) 10%,var(--soft-card))}
+.coverage-board article.covered{border-color:color-mix(in srgb,var(--app-positive) 55%,var(--soft-line));background:color-mix(in srgb,var(--app-positive) 10%,var(--soft-card))}
+.coverage-board article.double_covered{border-color:color-mix(in srgb,var(--soft-accent) 55%,var(--soft-line));background:color-mix(in srgb,var(--soft-accent) 10%,var(--soft-card))}
 .schema-budget{display:grid;grid-template-columns:1fr auto;gap:5px;padding:12px 0;border-top:1px solid var(--soft-line)}
-.schema-budget>b.caution,.schema-budget>b.over_budget{color:#a15c16}
+.schema-budget>b.caution,.schema-budget>b.over_budget{color:var(--app-warning)}
 .field-trust-list article{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--soft-line)}
-.field-trust-list article>b.warn{color:#a23a2c}
+.field-trust-list article>b.warn{color:var(--app-critical)}
 .accuracy-list{list-style:none;padding:0;margin:0}
 .accuracy-list li{display:grid;grid-template-columns:1fr auto;gap:3px;padding:10px 0;border-top:1px solid var(--soft-line)}
 @media(max-width:850px){.scout-trust-kpis{grid-template-columns:1fr 1fr}.scout-trust-grid,.scout-trust-grid.lower{grid-template-columns:1fr}}
 
-.scout-draft-chip{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--soft-line,#d5dde8);background:var(--soft-bg,#f7f8fa);color:var(--soft-muted,#5a6578);font:700 11px/1 var(--font-source-sans),ui-sans-serif,system-ui,sans-serif}
-.scout-draft-chip.dirty{color:#8a4b00;border-color:color-mix(in srgb,#b45309 40%,var(--soft-line));background:#fff8e8}
-.scout-draft-chip.saved{color:#1f7a3d;border-color:color-mix(in srgb,#72b48a 45%,var(--soft-line));background:#eef9f2}
+.scout-draft-chip{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--soft-line);background:var(--soft-bg);color:var(--soft-muted);font:700 11px/1 var(--font-source-sans),ui-sans-serif,system-ui,sans-serif}
+.scout-draft-chip.dirty{color:var(--app-warning);border-color:color-mix(in srgb,var(--app-warning) 40%,var(--soft-line));background:color-mix(in srgb,var(--app-warning) 12%,var(--soft-card))}
+.scout-draft-chip.saved{color:var(--app-positive);border-color:color-mix(in srgb,var(--app-positive) 45%,var(--soft-line));background:color-mix(in srgb,var(--app-positive) 12%,var(--soft-card))}
 .scout-form-heading{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px}
+
+/* ---------------------------------------------------------------------------
+ * Scouting input studio — competition-day controls.
+ *
+ * Every tap target is >=48px because a scout's eyes are on the match, not the
+ * tablet, and the number that matters is rendered large enough to confirm with
+ * peripheral vision. Everything is token-driven so light and dark both work,
+ * and the whole block stays usable down to a 360px phone.
+ * ------------------------------------------------------------------------- */
+
+.scout-studio-section{margin:20px 0 4px;padding:0 0 8px;border-bottom:2px solid color-mix(in srgb,var(--soft-accent) 34%,var(--soft-line))}
+.scout-studio-section:first-child{margin-top:0}
+.scout-studio-section h3{margin:0;font:800 13px/1.2 var(--font-source-sans),ui-sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--soft-accent)}
+.scout-studio-section p{margin:4px 0 0;font:600 12px/1.4 var(--font-source-sans),ui-sans-serif}
+
+.scout-studio-field{display:grid;gap:10px;padding:14px;border:1px solid var(--soft-line);border-radius:16px;background:var(--soft-bg)}
+.scout-studio-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;min-height:32px}
+.scout-studio-label{font:700 13px/1.3 var(--font-source-sans),ui-sans-serif;color:var(--soft-ink)}
+.scout-studio-readout{font:800 clamp(30px,9vw,42px)/1 var(--font-source-sans),ui-sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--soft-accent)}
+.scout-studio-readout.small{font-size:clamp(15px,4.5vw,19px);color:var(--soft-ink)}
+.scout-studio-field small{font:600 11px/1.4 var(--font-source-sans),ui-sans-serif}
+.scout-studio-actions{display:flex;flex-wrap:wrap;gap:14px}
+.scout-studio-actions .text-button{min-height:44px}
+.scout-studio-actions .text-button:disabled{opacity:.42;cursor:not-allowed}
+
+/* counter + multi-counter tap pad */
+.scout-counter-pad{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:8px}
+.scout-tap{
+  min-height:60px;padding:8px 6px;border-radius:14px;cursor:pointer;
+  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-ink);
+  font:800 19px/1 var(--font-source-sans),ui-sans-serif;font-variant-numeric:tabular-nums;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  transition:transform .08s ease,background-color .12s ease,border-color .12s ease;
+}
+.scout-counter-pad.compact .scout-tap{min-height:48px;font-size:16px}
+.scout-tap:active{transform:scale(.96)}
+.scout-tap.primary{border-color:var(--soft-accent);background:var(--soft-accent-soft);color:var(--soft-accent)}
+.scout-tap.minus{color:var(--soft-muted)}
+.scout-tap:hover:not(:disabled){border-color:color-mix(in srgb,var(--soft-accent) 46%,var(--soft-line))}
+
+.scout-multi-counter{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.scout-multi-counter li{display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--soft-line)}
+.scout-multi-counter li:first-child{border-top:0;padding-top:0}
+.scout-multi-counter-label{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.scout-multi-counter-label strong{font:700 13px/1.3 var(--font-source-sans),ui-sans-serif;color:var(--soft-ink)}
+.scout-multi-counter-label output{font:800 24px/1 var(--font-source-sans),ui-sans-serif;font-variant-numeric:tabular-nums;color:var(--soft-accent)}
+
+/* timer — one giant start/stop */
+.scout-timer-toggle{
+  width:100%;min-height:72px;border-radius:16px;cursor:pointer;
+  border:1px solid var(--soft-accent);background:var(--soft-accent-soft);color:var(--soft-accent);
+  font:800 20px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.01em;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s ease;
+}
+.scout-timer-toggle:active{transform:scale(.98)}
+.scout-timer-toggle.running{border-color:var(--app-warning);background:color-mix(in srgb,var(--app-warning) 16%,var(--soft-card));color:var(--app-warning)}
+.scout-timer-laps{margin:0;font:600 12px/1.5 var(--font-source-sans),ui-sans-serif;font-variant-numeric:tabular-nums}
+
+/* rating */
+.scout-rating-row{display:flex;flex-wrap:wrap;gap:6px}
+.scout-rating-star{
+  min-width:52px;min-height:52px;border-radius:14px;cursor:pointer;
+  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-muted);
+  font-size:26px;line-height:1;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.scout-rating-star.on{border-color:var(--soft-accent);background:var(--soft-accent-soft);color:var(--app-warning)}
+
+/* multi-select chips */
+.scout-multi-select{display:flex;flex-wrap:wrap;gap:8px}
+.scout-chip{
+  min-height:48px;padding:8px 16px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-ink);
+  font:700 14px/1.2 var(--font-source-sans),ui-sans-serif;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.scout-chip.on{border-color:var(--soft-accent);background:var(--soft-accent-soft);color:var(--soft-accent)}
+
+/* slider */
+.scout-slider{width:100%;min-height:44px;accent-color:var(--soft-accent);touch-action:manipulation}
+.scout-slider-scale{display:flex;justify-content:space-between;gap:10px;font:600 11px/1.3 var(--font-source-sans),ui-sans-serif}
+
+/* field position — a neutral, labeled grid. Deliberately no game art. */
+/* Wide grids scroll sideways so every cell keeps a real (>=44px) tap target
+   instead of shrinking below what a scout can hit without looking down. */
+.scout-field-grid-scroll{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.scout-field-grid{
+  min-width:min-content;
+  display:grid;gap:4px;padding:6px;border-radius:12px;
+  border:2px solid color-mix(in srgb,var(--soft-ink) 22%,var(--soft-line));
+  background:color-mix(in srgb,var(--soft-ink) 4%,var(--soft-card));
+}
+.scout-field-cell{
+  min-height:48px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--soft-line);background:var(--soft-card);color:var(--soft-muted);
+  font:700 12px/1 var(--font-source-sans),ui-sans-serif;font-variant-numeric:tabular-nums;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color .12s ease;
+}
+.scout-field-cell.on{border-color:var(--soft-accent);background:var(--soft-accent);color:var(--soft-card)}
+.scout-field-cell:disabled{opacity:.32;cursor:not-allowed}
+
+@media(max-width:400px){
+  .scout-studio-field{padding:12px 10px}
+  .scout-counter-pad{grid-template-columns:repeat(auto-fit,minmax(56px,1fr));gap:6px}
+  .scout-tap{font-size:17px}
+  .scout-field-grid{gap:3px;padding:4px}
+  .scout-field-cell{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  .scout-tap,.scout-timer-toggle{transition:none}
+  .scout-tap:active,.scout-timer-toggle:active{transform:none}
+}
 @media print{
   .scout-page .scout-related,.scout-page .scout-header-meta .app-button,.scout-page .scout-sync-pill,.scout-page .scout-next-actions{display:none!important}
   .scout-page{max-width:none!important;padding:0!important}

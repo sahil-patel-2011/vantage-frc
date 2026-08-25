@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { bomCategoryLabel, bomSourceLabel, bomStatusLabel } from "../../lib/bom-cost-rollup";
 import type { BomCostRollupView } from "../../lib/bom-cost-rollup/compute-bom-cost-rollup";
 import type { BomCategory, BomLineItem, BomStatus } from "../../lib/bom-cost-rollup/types";
@@ -14,6 +16,25 @@ function usd(value: number): string {
   return value.toLocaleString(undefined, { style: "currency", currency: "USD" });
 }
 
+/**
+ * CSV shape of the BOM. Dollar columns are raw numbers, NOT the "$1,234.56" strings the
+ * table renders — a currency string with a thousands separator is exactly how a BOM
+ * lands in a spreadsheet as text and stops summing.
+ */
+const BOM_CSV_COLUMNS: CsvColumn<BomLineItem>[] = [
+  { key: "partName", header: "Part" },
+  { key: "subsystem", header: "Subsystem" },
+  { key: "category", header: "Category", value: (item) => bomCategoryLabel(item.category) },
+  { key: "quantity", header: "Qty", value: (item) => item.quantity },
+  { key: "unitCostUsd", header: "Unit cost USD", hint: "Raw number, no currency symbol", value: (item) => item.unitCostUsd },
+  { key: "lineTotalUsd", header: "Line total USD", hint: "Raw number, no currency symbol", value: (item) => item.lineTotalUsd },
+  { key: "source", header: "Source", hint: "Manual entry or CAD import", value: (item) => bomSourceLabel(item.source) },
+  { key: "cadReference", header: "CAD reference", value: (item) => item.cadReference },
+  { key: "seasonYear", header: "Season", value: (item) => item.seasonYear },
+  { key: "notes", header: "Notes", value: (item) => item.notes },
+  { key: "createdAt", header: "Added at", hint: "ISO-8601 UTC", value: (item) => item.createdAt },
+];
+
 function statusTone(status: BomStatus): string {
   if (status === "over") return "demo";
   if (status === "near") return "setup";
@@ -24,6 +45,9 @@ export default function BomCostRollupClient() {
   const [view, setView] = useState<BomCostRollupView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadStatus, setLoadStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -41,12 +65,18 @@ export default function BomCostRollupClient() {
       .then(async (response) => {
         const data = (await response.json()) as BomCostRollupView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
         setView(data);
       })
-      .catch(() => setFetchFailed(true));
+      .catch(() => {
+        setLoadStatus(null);
+        setLoadError("");
+        setFetchFailed(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -113,14 +143,34 @@ export default function BomCostRollupClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the BOM cost rollup"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const kind = classifyLoadFailure({
+            status: loadStatus,
+            message: loadError,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          });
+          const copy = loadFailureCopy(kind, {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: loadError || "A network or server issue prevented loading. Try again.",
+          });
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (
@@ -324,8 +374,21 @@ function ItemsTable({
   }
   return (
     <Panel>
-      <h2 style={{ marginTop: 0 }}>Line items</h2>
-      <div style={{ overflowX: "auto" }}>
+      <div
+        style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}
+      >
+        <h2 style={{ margin: 0 }}>Line items</h2>
+        <ExportButton
+          rows={view.items}
+          columns={BOM_CSV_COLUMNS}
+          feature={`BOM ${view.seasonYear}`}
+          orgLabel={view.teamNumber != null ? `team-${view.teamNumber}` : null}
+          orgId={view.orgId}
+          size="sm"
+          provenance={`Season ${view.seasonYear} line items. Costs are raw numbers so the sheet can total them.`}
+        />
+      </div>
+      <div style={{ overflowX: "auto", marginTop: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>

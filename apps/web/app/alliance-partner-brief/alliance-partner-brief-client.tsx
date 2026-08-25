@@ -15,7 +15,7 @@ import {
   type AlliancePartnerBriefShellKind,
 } from "../../lib/alliance-partner-brief/alliance-partner-brief-related";
 import type { AllianceOption, PartnerAnalysis } from "../../lib/alliance-partner-brief/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./alliance-partner-brief.css";
 
@@ -96,7 +96,7 @@ function BriefShell({
 }) {
   const actions = alliancePartnerBriefNextActions({ orgId, shell });
   const copy = alliancePartnerBriefShellCopy(shell);
-  const competitionHref = hubHref("/competition", "alliance-partner-brief", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "alliance-partner-brief", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const allianceBoardHref = withOrgHref("/strategy/draft", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
@@ -215,7 +215,7 @@ export default function AlliancePartnerBriefClient() {
   const relatedLinks = alliancePartnerBriefRelatedLinks(orgId, {
     include: [...ALLIANCE_PARTNER_BRIEF_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "alliance-partner-brief", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "alliance-partner-brief", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
   const allianceBoardHref = withOrgHref("/strategy/draft", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);

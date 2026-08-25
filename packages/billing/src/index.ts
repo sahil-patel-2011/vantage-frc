@@ -41,10 +41,15 @@ export {
 import {
   BYOK_LIST_MULTIPLIER,
   CATALOG_SERVICE_MULTIPLIER,
+  LEGACY_PLAN_CODE_MAP,
   PRICING_CATALOG,
   TEAM_TRIAL_DAYS,
+  byokEveryPlanCopy,
+  canonicalPlanCode,
   catalogDefaultsFootnote,
+  everyPlanValueLine,
   formatCatalogUsd,
+  freeHostedModelClassCopy,
   hostedApiEconomicsSoftLine,
   hostedApiSavingsCopy,
   hostedCreditPackListApiUsd,
@@ -54,15 +59,21 @@ import {
   teamCommitRangeCopy,
   type CatalogPlan,
   type CatalogPlanCode,
+  type LegacyCatalogPlanCode,
 } from "./catalog";
 
 export {
   BYOK_LIST_MULTIPLIER,
   CATALOG_SERVICE_MULTIPLIER,
+  LEGACY_PLAN_CODE_MAP,
   PRICING_CATALOG,
   TEAM_TRIAL_DAYS,
+  byokEveryPlanCopy,
+  canonicalPlanCode,
   catalogDefaultsFootnote,
+  everyPlanValueLine,
   formatCatalogUsd,
+  freeHostedModelClassCopy,
   hostedApiEconomicsSoftLine,
   hostedApiSavingsCopy,
   hostedCreditPackListApiUsd,
@@ -72,6 +83,7 @@ export {
   teamCommitRangeCopy,
   type CatalogPlan,
   type CatalogPlanCode,
+  type LegacyCatalogPlanCode,
 };
 
 export {
@@ -204,7 +216,14 @@ export type UsageReceipt<T> = {
  * Platform-billed, org BYOK, OpenAI-compatible local gateway, local CLI, or
  * platform-sponsored promo pool (`sponsored` — $0 Vantage charge).
  */
-export type MeterKeySource = "platform" | "byo" | "local" | "local_cli" | "sponsored";
+export type MeterKeySource =
+  | "platform"
+  | "byo"
+  | "local"
+  | "local_cli"
+  | "sponsored"
+  /** A paired member's Claude/ChatGPT subscription served the turn (AI bridge, 0486). */
+  | "subscription_bridge";
 
 export type MeteredAIInput<T> = {
   client: PoolClient;
@@ -287,23 +306,78 @@ export async function detectOrgByokKeySource(
 }
 
 function isExternalKeySource(source: MeterKeySource): boolean {
-  return source === "byo" || source === "local" || source === "local_cli" || source === "sponsored";
+  return (
+    source === "byo" ||
+    source === "local" ||
+    source === "local_cli" ||
+    source === "sponsored" ||
+    source === "subscription_bridge"
+  );
 }
+const ORG_BILLING_LOCK_NAMESPACE = "vantage:org_billing:";
+const UNSIGNED_64_SPAN = 1n << 64n;
+const SIGNED_64_MAX = (1n << 63n) - 1n;
+
+/**
+ * Stable advisory-lock key for one org's billing cap check.
+ * `pg_advisory_*` takes a SIGNED 64-bit bigint, so the namespaced digest is folded
+ * with BigInt arithmetic — Number loses precision above 2^53 and would collide.
+ * Returned as a decimal string so it can be passed straight to a `$1::bigint` param.
+ */
+export function orgBillingLockKey(orgId: string): string {
+  const digest = createHash("sha256").update(`${ORG_BILLING_LOCK_NAMESPACE}${orgId}`).digest();
+  let value = 0n;
+  for (let index = 0; index < 8; index += 1) value = (value << 8n) | BigInt(digest[index]!);
+  return (value > SIGNED_64_MAX ? value - UNSIGNED_64_SPAN : value).toString();
+}
+
 type LockedCreditWallet={accountId:string;included:number;purchased:number;gifted:number;serviceMultiplier:number;entitlementSnapshot:Record<string,unknown>;planCode:string};
-async function lockCreditWallet<T>(input:MeteredAIInput<T>,keySource:MeterKeySource):Promise<LockedCreditWallet|null>{
-  if(isExternalKeySource(keySource))return null;
+/**
+ * `lockRow` takes `FOR UPDATE OF w`, and is ONLY ever true at settle time — after the
+ * provider call has returned. A row lock is held until the caller's transaction
+ * commits, so taking one before `invoke()` would pin the wallet row for the whole
+ * request and stall every other metered call for that billing owner: exactly the
+ * org-wide stall this restructure exists to remove, just moved off `org_billing`.
+ * Balances are clamped to >= 0 so an overshoot from an unserialized concurrent debit
+ * can never allocate from a negative balance.
+ */
+async function readCreditWallet<T>(input:MeteredAIInput<T>,lockRow:boolean):Promise<{wallet:LockedCreditWallet;featureFlags:Record<string,boolean>}|null>{
   if(!input.billingOwner)return null;const owner=input.billingOwner;
   const result=await input.client.query<{accountId:string;included:string;purchased:string;gifted:string;serviceMultiplier:string;termsSnapshot:Record<string,unknown>;planCode:string}>(`SELECT a.id AS "accountId",w.included_balance AS included,w.purchased_balance AS purchased,w.gifted_balance AS gifted,
     v.service_multiplier AS "serviceMultiplier",s.terms_snapshot AS "termsSnapshot",s.plan_code AS "planCode"
     FROM billing_accounts a JOIN billing_subscriptions s ON s.billing_account_id=a.id AND s.status IN ('active','trialing')
     JOIN plan_entitlement_versions v ON v.id=s.entitlement_version_id JOIN credit_wallets w ON w.billing_account_id=a.id
     WHERE (($1='user' AND a.owner_user_id=$2) OR ($1='org' AND a.owner_org_id=$2))
-      AND s.current_period_start<=now() AND s.current_period_end>now() FOR UPDATE OF w`,[owner.type,owner.id]);
-  const row=result.rows[0];if(!row)return null;const featureFlags=(row.termsSnapshot.featureFlags??{}) as Record<string,boolean>;if(featureFlags[input.feature]===false)throw new Error("This feature is not included in the billing owner's entitlement snapshot");
-  const wallet={accountId:row.accountId,included:Number(row.included),purchased:Number(row.purchased),gifted:Number(row.gifted),serviceMultiplier:Number(row.serviceMultiplier),entitlementSnapshot:row.termsSnapshot,planCode:row.planCode};
+      AND s.current_period_start<=now() AND s.current_period_end>now()${lockRow?" FOR UPDATE OF w":""}`,[owner.type,owner.id]);
+  const row=result.rows[0];if(!row)return null;
+  const featureFlags=(row.termsSnapshot.featureFlags??{}) as Record<string,boolean>;
+  const wallet={accountId:row.accountId,included:Math.max(0,Number(row.included)),purchased:Math.max(0,Number(row.purchased)),gifted:Math.max(0,Number(row.gifted)),serviceMultiplier:Number(row.serviceMultiplier),entitlementSnapshot:row.termsSnapshot,planCode:row.planCode};
+  return{wallet,featureFlags};
+}
+/** Pre-call entitlement + cap check. Reads UNLOCKED: see readCreditWallet on why. */
+async function checkCreditWallet<T>(input:MeteredAIInput<T>,keySource:MeterKeySource):Promise<LockedCreditWallet|null>{
+  if(isExternalKeySource(keySource))return null;
+  const read=await readCreditWallet(input,false);if(!read)return null;
+  if(read.featureFlags[input.feature]===false)throw new Error("This feature is not included in the billing owner's entitlement snapshot");
+  const wallet=read.wallet;
   if(keySource==="platform"&&input.estimatedCostUsd*wallet.serviceMultiplier>wallet.included+wallet.purchased+wallet.gifted)throw new CreditCapExceededError();return wallet;
 }
 export function allocateCreditDebit(input:{included:number;purchased:number;gifted:number;providerCostUsd:number;serviceMultiplier:number}){let remaining=input.providerCostUsd*input.serviceMultiplier;const fromIncluded=Math.min(input.included,remaining);remaining-=fromIncluded;const fromPurchased=Math.min(input.purchased,remaining);remaining-=fromPurchased;const fromGifted=Math.min(input.gifted,remaining);remaining-=fromGifted;if(remaining>1e-9)throw new CreditCapExceededError();return{debit:input.providerCostUsd*input.serviceMultiplier,fromIncluded,fromPurchased,fromGifted,bucket:fromIncluded>0&&fromPurchased+fromGifted===0?"included":fromPurchased>0&&fromIncluded+fromGifted===0?"purchased":fromGifted>0&&fromIncluded+fromPurchased===0?"gifted":"mixed"};}
+/**
+ * Settle-time sibling of allocateCreditDebit for a call the provider has ALREADY
+ * billed. It never throws: it debits what the wallet actually holds and reports the
+ * uncovered remainder as `shortfallUsd`, which the usage event records instead of
+ * dropping the call. Pre-call denial is the inline cap check in checkCreditWallet;
+ * allocateCreditDebit below is retained for callers outside this module.
+ */
+export function settleCreditDebit(input:{included:number;purchased:number;gifted:number;providerCostUsd:number;serviceMultiplier:number}){
+  const owed=input.providerCostUsd*input.serviceMultiplier;let remaining=owed;
+  const fromIncluded=Math.min(Math.max(0,input.included),remaining);remaining-=fromIncluded;
+  const fromPurchased=Math.min(Math.max(0,input.purchased),remaining);remaining-=fromPurchased;
+  const fromGifted=Math.min(Math.max(0,input.gifted),remaining);remaining-=fromGifted;
+  const shortfallUsd=remaining>1e-9?remaining:0;
+  return{debit:owed-shortfallUsd,owedUsd:owed,shortfallUsd,fromIncluded,fromPurchased,fromGifted,bucket:fromIncluded>0&&fromPurchased+fromGifted===0?"included":fromPurchased>0&&fromIncluded+fromGifted===0?"purchased":fromGifted>0&&fromIncluded+fromPurchased===0?"gifted":"mixed"};
+}
 
 const numberOrNull = (value: unknown) =>
   value === null || value === undefined ? null : Number(value);
@@ -529,7 +603,20 @@ export function findBudgetViolation(
 
 /**
  * Must be called inside the same transaction established by withRls().
- * The billing row lock serializes the cap check, provider call, and ledger append.
+ *
+ * A transaction-scoped advisory lock on the org serializes the cap check in the
+ * common case. When another call for the same org already holds it we deliberately
+ * DO NOT block: the provider call runs inside this transaction, so waiting meant one
+ * long request (a season report can hold the AI bridge for minutes) froze every other
+ * metered call for that org. The unserialized call instead runs its cap check against
+ * committed usage only and records `meteringSerialized: false`. Overshoot is bounded:
+ * each concurrent caller can exceed the cap by at most its own estimated cost, so the
+ * worst case for a window is the sum of the in-flight estimates — never unbounded.
+ *
+ * On an autocommit connection (worker paths that wrap this in their own BEGIN/COMMIT —
+ * see apps/web/lib/parent-comms/send-digest.ts `transactionalAi`) a transaction-scoped
+ * advisory lock releases at statement end, exactly as the old row lock did: unchanged.
+ *
  * `keySource: "local_cli"` skips credit caps and always records cost_usd = 0.
  * When an org has BYOK / OpenAI-compatible keys configured, prefer that path and
  * do not consume hosted Usage Credits — even on paid tiers (0.75× hosted still
@@ -565,6 +652,12 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     return receipt.value;
   }
 
+  const lock = await input.client.query<{ locked: boolean }>(
+    `SELECT pg_try_advisory_xact_lock($1::bigint) AS locked`,
+    [orgBillingLockKey(input.orgId)],
+  );
+  const serialized = lock.rows[0]?.locked === true;
+
   const billing = await input.client.query<{
     tier: "free" | "starter" | "team" | "enterprise";
     credit_cap_usd: string;
@@ -573,7 +666,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     period_end: Date;
   }>(
     `SELECT tier, credit_cap_usd, kill_switch, period_start, period_end
-       FROM org_billing WHERE org_id = $1 FOR UPDATE`,
+       FROM org_billing WHERE org_id = $1`,
     [input.orgId]
   );
   const account = billing.rows[0];
@@ -585,6 +678,13 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     keySource = "platform";
   } else if (input.keySource === "byo" || input.keySource === "local" || input.keySource === "sponsored") {
     keySource = input.keySource;
+  } else if (input.provider === "subscription-bridge") {
+    // The resolved adapter is a paired member's subscription (AI bridge). External
+    // path: the subscription pays, no credit caps, and — crucially — an org whose ONLY
+    // AI is a bridge must not be told to configure a BYO key. Cost stays honest: the
+    // bridge reports $0; when the adapter internally fell back to a real key, settle
+    // time reclassifies from the truthful receipt.provider so the bill is enforced.
+    keySource = "subscription_bridge";
   } else {
     const detected = await detectOrgByokKeySource(input.client, input.orgId);
     if (detected) {
@@ -626,7 +726,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       throw new Error(promo.message || "Sponsored AI is not available for this organization");
     }
   }
-  const creditWallet = await lockCreditWallet(input, keySource);
+  const creditWallet = await checkCreditWallet(input, keySource);
   await enforceApiBudgets(input, account.tier, keySource);
   await enforceOrgAiGovernance({
     client: input.client,
@@ -709,7 +809,30 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
 
   const receipt = await input.invoke(keySource);
   if (receipt.costUsd < 0) throw new Error("Provider returned a negative cost");
-  const ledgerCostUsd = keySource === "local" || keySource === "sponsored" ? 0 : receipt.costUsd;
+  // The bridge adapter falls through to the resolved key chain whenever the paired
+  // subscription cannot serve the turn, and receipt.provider names who actually did.
+  // A fallback onto a hosted Vantage key must settle as platform — otherwise a real
+  // provider bill is recorded as an external $0 source and escapes credit enforcement.
+  let settledKeySource = keySource;
+  if (keySource === "subscription_bridge" && receipt.provider !== "subscription-bridge") {
+    settledKeySource = (await detectOrgByokKeySource(input.client, input.orgId)) ?? "platform";
+  }
+  // Re-read the wallet UNDER `FOR UPDATE` here and only here. The pre-call read was
+  // unlocked (it could not hold a lock across invoke), so these are the first balances
+  // that are safe to debit from, and the lock lasts only the few statements left before
+  // commit. `creditWallet` above is a cap-check snapshot, never a debit basis.
+  const settledWallet =
+    settledKeySource === "platform" ? ((await readCreditWallet(input, true))?.wallet ?? null) : null;
+  // A call the provider already billed is ALWAYS recorded. Settle-time allocation
+  // clamps to what the wallet holds and surfaces any uncovered remainder as
+  // creditShortfallUsd; throwing here would roll back the usage event for a call
+  // that really happened and hand the org unrecorded, replayable AI.
+  const settlement =
+    settledWallet && settledKeySource === "platform"
+      ? settleCreditDebit({ ...settledWallet, providerCostUsd: receipt.costUsd })
+      : null;
+  const ledgerCostUsd =
+    settledKeySource === "local" || settledKeySource === "sponsored" ? 0 : receipt.costUsd;
   await input.client.query(
     `INSERT INTO ai_usage_events
       (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
@@ -722,7 +845,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       input.feature,
       receipt.model,
       receipt.provider,
-      keySource,
+      settledKeySource,
       receipt.promptTokens,
       receipt.completionTokens,
       receipt.promptTokens + receipt.completionTokens,
@@ -730,11 +853,16 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       input.requestId,
       JSON.stringify({
         ...(input.metadata ?? {}),
-        ...(isExternalKeySource(keySource)
+        ...(serialized ? {} : { meteringSerialized: false }),
+        ...(settledKeySource === keySource ? {} : { settledFrom: keySource }),
+        ...(settlement && settlement.shortfallUsd > 0
+          ? { creditShortfallUsd: settlement.shortfallUsd }
+          : {}),
+        ...(isExternalKeySource(settledKeySource)
           ? {
               vantageChargeUsd: 0,
-              path: keySource,
-              ...(keySource === "sponsored"
+              path: settledKeySource,
+              ...(settledKeySource === "sponsored"
                 ? {
                     fundingMode: "sponsored",
                     providerCostUsd: receipt.costUsd,
@@ -749,12 +877,11 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       receipt.uncachedInputTokens ?? receipt.promptTokens,
     ]
   );
-  if(creditWallet&&keySource==="platform"){
-    const allocation=allocateCreditDebit({...creditWallet,providerCostUsd:receipt.costUsd});
-    await input.client.query(`UPDATE credit_wallets SET included_balance=included_balance-$2,purchased_balance=purchased_balance-$3,gifted_balance=gifted_balance-$4,updated_at=now() WHERE billing_account_id=$1`,[creditWallet.accountId,allocation.fromIncluded,allocation.fromPurchased,allocation.fromGifted]);
-    await input.client.query(`INSERT INTO credit_ledger(billing_account_id,kind,credits,provider_cost_usd,service_multiplier,bucket,reference_id,metadata) VALUES($1,'ai_debit',$2,$3,$4,$5,$6,$7::jsonb)`,[creditWallet.accountId,-allocation.debit,receipt.costUsd,creditWallet.serviceMultiplier,allocation.bucket,input.requestId,JSON.stringify({orgId:input.orgId,userId:input.userId,feature:input.feature,planCode:creditWallet.planCode})]);
+  if(settledWallet&&settlement){
+    await input.client.query(`UPDATE credit_wallets SET included_balance=included_balance-$2,purchased_balance=purchased_balance-$3,gifted_balance=gifted_balance-$4,updated_at=now() WHERE billing_account_id=$1`,[settledWallet.accountId,settlement.fromIncluded,settlement.fromPurchased,settlement.fromGifted]);
+    await input.client.query(`INSERT INTO credit_ledger(billing_account_id,kind,credits,provider_cost_usd,service_multiplier,bucket,reference_id,metadata) VALUES($1,'ai_debit',$2,$3,$4,$5,$6,$7::jsonb)`,[settledWallet.accountId,-settlement.debit,receipt.costUsd,settledWallet.serviceMultiplier,settlement.bucket,input.requestId,JSON.stringify({orgId:input.orgId,userId:input.userId,feature:input.feature,planCode:settledWallet.planCode,...(settlement.shortfallUsd>0?{creditShortfallUsd:settlement.shortfallUsd}:{})})]);
   }
-  if (keySource === "platform") {
+  if (settledKeySource === "platform") {
     await input.client.query(
       `UPDATE org_plan_periods SET provider_cost_used_usd=provider_cost_used_usd+$2
        WHERE org_id=$1 AND status='active' AND period_start<=now() AND period_end>now()`,
@@ -943,7 +1070,8 @@ export function evaluateManagedUsage(input: {
 }
 
 export type PlanEntitlement={
-  planCode:"free"|"access"|"individual_pro"|"individual_max"|"team_pro"|"team_max"|"team_trial"|"managed_20"|"managed_50";
+  /** Current ladder codes plus legacy codes still present in old snapshots (0481 remaps org rows). */
+  planCode:"free"|"pro"|"pro_plus"|"max"|"team_trial"|"access"|"individual_pro"|"individual_max"|"team_pro"|"team_max"|"managed_20"|"managed_50";
   managedAllowanceUsd:number;
   contextTokenLimit:number;
   agentStepLimit:number;
@@ -960,7 +1088,7 @@ export type PlanEntitlement={
  */
 export const DEFAULT_SERVICE_MULTIPLIER = CATALOG_SERVICE_MULTIPLIER;
 
-export type TrialPlanCode = "team_trial" | "team_pro" | "individual_pro" | "individual_max" | "managed_20" | "managed_50";
+export type TrialPlanCode = "team_trial" | "pro" | "pro_plus" | "max" | "team_pro" | "individual_pro" | "individual_max" | "managed_20" | "managed_50";
 export type FreeManagedPolicy={
   enabled:boolean;
   providerCommercialUseApproved:boolean;
@@ -1005,10 +1133,11 @@ export function evaluateEntitlement(input:{entitlement:PlanEntitlement;feature:s
   return{allowed:true as const,bucket:"managed_allowance" as const,remainingAllowanceUsd:remaining-input.estimatedManagedCostUsd};
 }
 
-/** Plan rank for min_plan release gates (mirrors SQL product_plan_rank). */
+/** Plan rank for min_plan release gates (mirrors SQL product_plan_rank). Legacy codes keep their old ranks. */
 export const PLAN_RANK:Record<string,number>={
   free:0,access:10,individual_pro:20,team_pro:20,team_trial:20,managed_20:20,
   individual_max:30,team_max:30,managed_50:30,
+  pro:20,pro_plus:25,max:30,
 };
 
 export function planMeetsMinPlan(planCode:string,minPlan:string|null|undefined){
@@ -1226,7 +1355,7 @@ export async function grantTrial(
   client: PoolClient,
   input: { orgId: string; planCode: TrialPlanCode; actorUserId: string; creditsCapUsd?: number },
 ) {
-  const allowed: TrialPlanCode[] = ["team_trial", "team_pro", "individual_pro", "individual_max", "managed_20", "managed_50"];
+  const allowed: TrialPlanCode[] = ["team_trial", "pro", "pro_plus", "max", "team_pro", "individual_pro", "individual_max", "managed_20", "managed_50"];
   if (!allowed.includes(input.planCode)) throw new Error("Invalid trial plan");
   const planCode = input.planCode === "managed_20" || input.planCode === "managed_50" ? "team_trial" : input.planCode;
   const creditsCap = input.creditsCapUsd ?? 30;

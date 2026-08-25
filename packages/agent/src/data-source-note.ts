@@ -85,7 +85,7 @@ export async function loadToolDataSourceNote(client: PoolClient): Promise<ToolDa
     );
     cacheHasRows = Boolean(cache.rows[0]?.ok);
   } catch {
-    cacheHasRows = false;
+    // stays false
   }
 
   let healthStatus: string | null = null;

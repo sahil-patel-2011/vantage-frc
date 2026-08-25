@@ -4,6 +4,11 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { VideoPlayer, type VideoPlayerHandle } from "../../components/video-player";
 import { EmptyState, FormRow, PageHeader, Panel, TabBar } from "../../components/ui";
 import {
+  classifyLoadFailure,
+  loadFailureCopy,
+  type LoadFailureCopy,
+} from "../../lib/ui/load-failure";
+import {
   MAX_RESCOUT_TEAMS,
   normalizeTeamKey,
   scoreCountByTeam,
@@ -91,6 +96,7 @@ function VideoRescoutShell({
   orgId,
   shell,
   error,
+  failure,
   onRetry,
   children,
 }: {
@@ -98,6 +104,8 @@ function VideoRescoutShell({
   orgId?: string | null;
   shell: VideoRescoutShellKind;
   error?: string;
+  /** Diagnosed load failure — decides the copy and the one action that fixes it. */
+  failure?: LoadFailureCopy | null;
   onRetry?: () => void;
   children?: ReactNode;
 }) {
@@ -136,11 +144,16 @@ function VideoRescoutShell({
                 : copy.badge
         }
         badgeTone="setup"
-        title={copy.title}
-        description={error ?? copy.description}
+        title={failure ? failure.title : copy.title}
+        description={failure ? failure.description : error ?? copy.description}
         aria-busy={shell === "loading"}
       >
-        {shell === "error" && onRetry ? (
+        {failure?.primary ? (
+          <a className="app-button" href={failure.primary.href}>
+            {failure.primary.label}
+          </a>
+        ) : null}
+        {shell === "error" && onRetry && (!failure || failure.showRetry) ? (
           <button type="button" className="app-button secondary" onClick={onRetry}>
             Retry
           </button>
@@ -296,6 +309,8 @@ export default function VideoRescoutClient() {
   const [view, setView] = useState<RescoutView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<DetailTab>("rescout");
@@ -319,13 +334,16 @@ export default function VideoRescoutClient() {
       const data = (await response.json()) as RescoutView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load video re-scout.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setView(data);
     } catch {
       setFetchFailed(true);
+      setErrorStatus(null);
       setError("Network error — please try again.");
     }
   }, []);
@@ -434,12 +452,27 @@ export default function VideoRescoutClient() {
   }
 
   if (shell === "error") {
+    const failure = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message: error,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath:
+          typeof window === "undefined"
+            ? null
+            : `${window.location.pathname}${window.location.search}`,
+        message: error || shellCopy.description,
+      },
+    );
     return (
       <VideoRescoutShell
         description={shellCopy.description}
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
+        failure={failure}
         onRetry={() => void load()}
       />
     );

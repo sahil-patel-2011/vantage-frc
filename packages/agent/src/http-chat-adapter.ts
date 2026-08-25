@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import type { ChatAdapter, ContextItem } from "./index";
 import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
+import { ChatUpstreamTimeoutError, resolveChatFetchTimeoutMs } from "./chat-timeout";
 import {
   applyAnthropicCacheControl,
   computeCacheAwareCost,
@@ -10,8 +11,15 @@ import {
   type PromptCachePrices,
 } from "./prompt-caching";
 
-/** Default upstream timeout for Soft-UI chat (Hobby-friendly). */
-export const DEFAULT_CHAT_FETCH_TIMEOUT_MS = 25_000;
+// Default upstream timeout lives in ./chat-timeout (50s — always shorter than the
+// route's `maxDuration = 60`, so the abort fires before the platform kills the
+// function). Override per-org-of-deployment with VANTAGE_CHAT_TIMEOUT_MS.
+export {
+  ChatUpstreamTimeoutError,
+  DEFAULT_CHAT_FETCH_TIMEOUT_MS,
+  isChatUpstreamTimeout,
+  resolveChatFetchTimeoutMs,
+} from "./chat-timeout";
 
 export type HttpChatAdapterConfig = {
   provider: "openai" | "anthropic" | "openai-compatible";
@@ -83,7 +91,9 @@ async function fetchWithTimeout(
     return await fetchImpl(url, { ...init, signal: controller.signal });
   } catch (error) {
     if (error instanceof Error && (error.name === "AbortError" || /aborted/i.test(error.message))) {
-      throw new Error(`Upstream chat request timed out after ${timeoutMs}ms`);
+      // Clean, classified timeout (name ChatUpstreamTimeoutError, status 504) —
+      // never a hang, never an opaque AbortError.
+      throw new ChatUpstreamTimeoutError(timeoutMs);
     }
     throw error;
   } finally {
@@ -95,7 +105,7 @@ export class HttpChatAdapter implements ChatAdapter {
   readonly provider: string;
   readonly model: string;
   private readonly apiKey: string;
-  private readonly baseUrl: string;
+  readonly baseUrl: string;
   private readonly kind: HttpChatAdapterConfig["provider"];
   private readonly promptCachingEnabled: boolean;
   private readonly prices: PromptCachePrices;
@@ -116,7 +126,8 @@ export class HttpChatAdapter implements ChatAdapter {
     this.prices = config.prices;
     this.fetchImpl = config.fetchImpl ?? fetch;
     this.providerLabel = config.providerLabel?.trim() || this.provider;
-    this.timeoutMs = config.timeoutMs ?? DEFAULT_CHAT_FETCH_TIMEOUT_MS;
+    this.timeoutMs =
+      config.timeoutMs ?? resolveChatFetchTimeoutMs(process.env.VANTAGE_CHAT_TIMEOUT_MS);
     this.systemPrompt = buildVantageChatSystemPrompt({ capability: config.capability ?? "chat" });
     this.extraHeaders = config.extraHeaders ?? {};
   }
@@ -259,14 +270,20 @@ function defaultBase(provider: HttpChatAdapterConfig["provider"]) {
   return "https://api.openai.com/v1";
 }
 
+/**
+ * Prompt caching is default-ON platform-wide (migration 0448). The org row is
+ * the single source of truth when it exists — an explicit false is honored —
+ * and a missing budget-policy row means the default: enabled.
+ */
 export async function getOrgPromptCachingEnabled(
   client: PoolClient,
   orgId: string,
 ): Promise<boolean> {
   const result = await client.query<{ enabled: boolean }>(
-    `SELECT COALESCE(prompt_caching_enabled, false) AS enabled
+    `SELECT prompt_caching_enabled AS enabled
      FROM org_api_budget_policies WHERE org_id = $1`,
     [orgId],
   );
-  return Boolean(result.rows[0]?.enabled);
+  const row = result.rows[0];
+  return row ? Boolean(row.enabled) : true;
 }

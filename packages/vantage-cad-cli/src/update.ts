@@ -82,7 +82,7 @@ export async function runLocalCadUpdate(options?: {
 
   const notes: string[] = [`Repo: ${repoRoot}`];
   const os = osPlatform();
-  let cliUpdated = false;
+  let cliUpdated: boolean;
   let addinUpdated = false;
 
   if (os === "win32") {

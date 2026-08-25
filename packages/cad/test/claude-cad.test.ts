@@ -42,7 +42,7 @@ describe("Onshape feature payloads", () => {
   });
 
   it("rejects nonsense dimensions", () => {
-    expect(() => rectangleSketchFeature({ widthMm: 0, heightMm: 10 })).toThrow(/millimeters/i);
+    expect(() => rectangleSketchFeature({ widthMm: 0, heightMm: 10 })).toThrow(/millimetres/i);
   });
 });
 
@@ -58,6 +58,24 @@ describe("Claude CAD tools", () => {
   it("cad_setup does not require credentials", async () => {
     const result = (await callClaudeCadTool("cad_setup")) as { instructions: string };
     expect(result.instructions).toMatch(/Claude Code/);
+  });
+
+  it("uses injected HTTP instead of env API keys", async () => {
+    const paths: string[] = [];
+    const http = async (path: string) => {
+      paths.push(path);
+      return new Response(JSON.stringify({ items: [] }), { status: 200, headers: { "content-type": "application/json" } });
+    };
+    const result = (await callClaudeCadTool("onshape_list_documents", { limit: 4 }, { http, hosted: true })) as {
+      documents: unknown[];
+    };
+    expect(result.documents).toEqual([]);
+    expect(paths[0]).toMatch(/documents\?/);
+  });
+
+  it("skips Fusion loopback when hosted", async () => {
+    const status = (await callClaudeCadTool("fusion_status", {}, { hosted: true })) as { setupRequired: boolean };
+    expect(status.setupRequired).toBe(true);
   });
 
   it("refuses Onshape calls when API keys are missing", async () => {

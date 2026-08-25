@@ -1,13 +1,13 @@
-"use client";
-
-import { useMemo, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   PRICING_CATALOG,
   TEAM_TRIAL_DAYS,
+  byokEveryPlanCopy,
+  everyPlanValueLine,
   formatCatalogUsd,
+  freeHostedModelClassCopy,
   hostedApiEconomicsSoftLine,
   hostedApiSavingsCopy,
-  teamCommitRangeCopy,
 } from "@vantage/billing/catalog";
 
 type PlanCard = {
@@ -21,88 +21,104 @@ type PlanCard = {
   features: string[];
 };
 
-const access = PRICING_CATALOG.access;
-const individualPro = PRICING_CATALOG.individual_pro;
-const individualMax = PRICING_CATALOG.individual_max;
-const teamPro = PRICING_CATALOG.team_pro;
-const teamMax = PRICING_CATALOG.team_max;
-const teamRange = teamCommitRangeCopy();
+const free = PRICING_CATALOG.free;
+const pro = PRICING_CATALOG.pro;
+const proPlus = PRICING_CATALOG.pro_plus;
+const max = PRICING_CATALOG.max;
 const creditsLine = hostedApiSavingsCopy();
 const economicsSoft = hostedApiEconomicsSoftLine();
 
-const freePlan: PlanCard = {
-  code: "free",
-  name: "Free",
-  price: "$0",
-  tagline: "Competition core · your keys or buy credits",
-  featured: true,
-  flag: "Start here",
-  features: [
-    "Scouting, strategy, Event Day, and team ops",
-    "Bring your own keys — or buy AI credits anytime",
-    "Credits go further than typical own-key rates",
-    "Hard stop when credits run out — no surprise bills",
-  ],
-};
-
-const individualPlans: PlanCard[] = [
+/**
+ * The ladder: every feature on every plan — cards list ONLY what actually differs
+ * (the hosted AI allowance). The shared feature list renders once, below.
+ */
+const ladder: PlanCard[] = [
   {
-    code: "individual_pro",
-    name: "Individual Pro",
-    price: formatCatalogUsd(individualPro.monthlyUsd),
-    tagline: "Hosted AI for one person",
-    featured: true,
-    flag: "Popular",
+    code: "free",
+    name: free.label,
+    price: formatCatalogUsd(free.monthlyUsd),
+    tagline: "Every feature · your keys or local AI",
+    flag: "Start here",
     features: [
-      "Vantage-hosted AI in the product",
-      "Private workspace with hard usage cutoffs",
-      "Buy AI credits anytime you need more",
+      free.hostedNote,
+      "Bring your own keys or run local — unlimited by Vantage",
+      "Hard stop when the allowance runs out — no surprise bills",
     ],
   },
   {
-    code: "individual_max",
-    name: "Individual Max",
-    price: formatCatalogUsd(individualMax.monthlyUsd),
-    tagline: "More capacity · higher priority",
-    features: [
-      "More hosted AI capacity than Pro",
-      "Priority features and heavier workloads",
-      "Same credit top-ups when you need more",
-    ],
-  },
-];
-
-const teamPlans: PlanCard[] = [
-  {
-    code: "team_pro",
-    name: "Team Pro",
-    price: formatCatalogUsd(teamPro.monthlyUsd),
-    tagline: "Shared hosted AI for the org",
+    code: "pro",
+    name: pro.label,
+    price: formatCatalogUsd(pro.monthlyUsd),
+    tagline: "Hosted AI without your own keys",
     featured: true,
     flag: "Most teams",
     features: [
-      "Hosted AI for the whole team",
-      "Shared Event Day, Pit, and org controls",
-      "Pooled AI credits when you need more",
+      pro.hostedNote,
+      "No provider account needed — Vantage routes and meters it",
+      "BYOK and local endpoints still unlimited",
     ],
   },
   {
-    code: "team_max",
-    name: "Team Max",
-    price: formatCatalogUsd(teamMax.monthlyUsd),
-    tagline: "Full org · highest capacity",
+    code: "pro_plus",
+    name: proPlus.label,
+    price: formatCatalogUsd(proPlus.monthlyUsd),
+    tagline: "More hosted AI for busy seasons",
     features: [
-      "Highest hosted capacity for the season",
-      "Advanced CAD, strategy, and admin tools",
-      "Credit packs when the team outgrows the plan",
+      proPlus.hostedNote,
+      "Room for scouting-night crunches and event weeks",
+      "BYOK and local endpoints still unlimited",
+    ],
+  },
+  {
+    code: "max",
+    name: max.label,
+    price: formatCatalogUsd(max.monthlyUsd),
+    tagline: "The most hosted AI we sell",
+    features: [
+      max.hostedNote,
+      "Covers heavy CAD, strategy, and code sessions all season",
+      "BYOK and local endpoints still unlimited",
     ],
   },
 ];
 
-const creditPacks = [
-  { code: "credits_100", label: "$100", detail: "Good for light hosted use" },
-  { code: "credits_250", label: "$250", detail: "Most common top-up" },
-  { code: "credits_500", label: "$500", detail: "Heavy event / season stretch" },
+/** Shown ONCE — the same product on every plan, Free included. */
+const everyPlanFeatures = [
+  "Scouting with offline sync and data trust checks",
+  "Match prediction, strategy, and alliance selection desks",
+  "Event Day, pit operations, and competition logistics",
+  "CAD agent for Onshape and Fusion, plus design review",
+  "Robot-code review and the team coding assistant",
+  "Team chat, calendar, playbook, and member management",
+  "Finance, purchasing, outreach, awards, and impact tracking",
+  "AI budgets with hard caps — an append-only usage ledger you can read",
+];
+
+const faqs: Array<{ q: string; a: string }> = [
+  {
+    q: "Is anything locked behind a paid plan?",
+    a: "No. Every feature ships on every plan, including Free. Paid plans only add hosted AI allowance so your team does not need its own provider keys.",
+  },
+  {
+    q: "What can I plug in on the free plan?",
+    a: byokEveryPlanCopy(),
+  },
+  {
+    q: "What models does Free's hosted allowance use?",
+    a: `${freeHostedModelClassCopy()} Paid plans route their allowance to frontier models.`,
+  },
+  {
+    q: "What happens when a hosted allowance runs out?",
+    a: "Hosted usage hard-stops. You can buy AI credit packs, enable pay-as-you-go with an explicit spend cap, or keep working on your own keys or local models — there is never a silent overage.",
+  },
+  {
+    q: "Can we try team hosted AI before paying?",
+    a: `Platform admins can grant a ${TEAM_TRIAL_DAYS}-day team trial with a hosted allowance for the week. Nothing auto-charges unless you subscribe.`,
+  },
+  {
+    q: "Do hosted credits cost more than using our own keys?",
+    a: economicsSoft,
+  },
 ];
 
 function Cta({ label = "Join early access", href = "/#waitlist" }: { label?: string; href?: string }) {
@@ -113,16 +129,10 @@ function Cta({ label = "Join early access", href = "/#waitlist" }: { label?: str
   );
 }
 
-function PlanArticle({
-  plan,
-  footer,
-}: {
-  plan: PlanCard;
-  footer?: ReactNode;
-}) {
+function PlanArticle({ plan, footer }: { plan: PlanCard; footer?: ReactNode }) {
   return (
     <article className={plan.featured ? "featured" : undefined}>
-      {plan.featured && plan.flag ? <em className="plan-flag">{plan.flag}</em> : null}
+      {plan.flag ? <em className="plan-flag">{plan.flag}</em> : null}
       <span className="plan-signal">{plan.tagline}</span>
       <h2>{plan.name}</h2>
       <div className="plan-price">
@@ -140,85 +150,74 @@ function PlanArticle({
 }
 
 export function PricingCatalog() {
-  const [group, setGroup] = useState<"individual" | "team">("individual");
-  const plans = useMemo(() => (group === "individual" ? individualPlans : teamPlans), [group]);
-
   return (
     <>
-      <section className="pricing-plans pricing-free-lead" aria-label="Start free">
-        <div className="pricing-grid pricing-grid-free">
-          <PlanArticle
-            plan={freePlan}
-            footer={
-              <div className="pricing-card-actions">
-                <a className="button primary" href="/team/ai-keys">
-                  Start free · add keys
-                </a>
-                <a className="button secondary" href="#credits">
-                  Buy AI credits
-                </a>
-              </div>
-            }
-          />
-        </div>
-        <p className="pricing-ladder-hint">
-          Free → Individual → Team. AI credits top up hosted usage on every plan.
+      <section className="pricing-plans" aria-label="Plans">
+        <p className="pricing-savings-callout">
+          <strong>{everyPlanValueLine()}</strong> The only thing that changes between plans is how much hosted AI
+          is included: {free.label} ${free.includedAllowanceUsd} on budget models · {pro.label} $
+          {pro.includedAllowanceUsd} · {proPlus.label} ${proPlus.includedAllowanceUsd} · {max.label} $
+          {max.includedAllowanceUsd} on frontier models.
         </p>
+        <div className="pricing-grid pricing-grid-team">
+          {ladder.map((plan) =>
+            plan.code === "free" ? (
+              <PlanArticle
+                key={plan.code}
+                plan={plan}
+                footer={
+                  <div className="pricing-card-actions">
+                    <a className="button primary" href="/team/ai-keys">
+                      Start free · add keys
+                    </a>
+                    <a className="button secondary" href="#credits">
+                      Buy AI credits
+                    </a>
+                  </div>
+                }
+              />
+            ) : (
+              <PlanArticle key={plan.code} plan={plan} />
+            ),
+          )}
+        </div>
       </section>
 
-      <section className="pricing-plans" aria-label="Paid plans">
-        <div className="pricing-plans-chrome">
-          <div className="pricing-toggle" role="tablist" aria-label="Individual or Team">
-            <button
-              id="pricing-tab-individual"
-              type="button"
-              role="tab"
-              aria-selected={group === "individual"}
-              aria-controls="pricing-plan-panel"
-              className={group === "individual" ? "active" : undefined}
-              onClick={() => setGroup("individual")}
-            >
-              Individual
-            </button>
-            <button
-              id="pricing-tab-team"
-              type="button"
-              role="tab"
-              aria-selected={group === "team"}
-              aria-controls="pricing-plan-panel"
-              className={group === "team" ? "active" : undefined}
-              onClick={() => setGroup("team")}
-            >
-              Team
-            </button>
-          </div>
-          <p className="pricing-savings-callout">
-            <strong>{creditsLine}</strong> Paid plans add hosted AI in the product. Credits work the same way
-            everywhere.
-          </p>
-        </div>
-
-        <div
-          id="pricing-plan-panel"
-          role="tabpanel"
-          aria-labelledby={group === "individual" ? "pricing-tab-individual" : "pricing-tab-team"}
-          aria-live="polite"
-        >
-          <div className="pricing-grid pricing-grid-team">
-            {plans.map((plan) => (
-              <PlanArticle key={plan.code} plan={plan} />
-            ))}
-          </div>
+      <section className="pricing-plans" aria-label="Everything included on every plan" id="included">
+        <h2>Everything below is on every plan — Free included.</h2>
+        <div className="pricing-grid pricing-grid-team">
+          <article>
+            <span className="plan-signal">The whole product</span>
+            <ul>
+              {everyPlanFeatures.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+          </article>
+          <article>
+            <span className="plan-signal">Your AI, your choice</span>
+            <h2>Bring any key. Or none.</h2>
+            <p className="pricing-card-note">{byokEveryPlanCopy()}</p>
+            <p className="pricing-card-note">
+              Hosted allowances sit on top: Vantage-routed models with metering, hard caps, and a readable
+              ledger — so a booster club card is never surprised.
+            </p>
+            <Cta label="Add AI keys" href="/team/ai-keys" />
+          </article>
         </div>
       </section>
 
       <section id="credits" className="pricing-credits">
         <h2>Buy AI credits</h2>
         <p>
-          Available on Free and every paid plan. {creditsLine} {economicsSoft}
+          Available on Free and every paid plan when you want more hosted usage. {creditsLine} {economicsSoft}
         </p>
-        <div className="pricing-grid pricing-grid-credits">
-          {creditPacks.map((pack) => (
+        <div className="pricing-grid">
+          {[
+            { code: "credits_100", label: "$100", detail: "Good for light hosted use" },
+            { code: "credits_250", label: "$250", detail: "Most common top-up" },
+            { code: "credits_500", label: "$500", detail: "Heavy event / season stretch" },
+          ].map((pack) => (
             <article key={pack.code}>
               <span className="plan-signal">Credit pack</span>
               <h2>{pack.label}</h2>
@@ -229,49 +228,25 @@ export function PricingCatalog() {
         </div>
       </section>
 
-      <section id="alternates" className="pricing-alternates">
-        <h2>Other options</h2>
+      <section className="pricing-trial">
+        <h2>Try team hosted AI for {TEAM_TRIAL_DAYS} days</h2>
         <p>
-          Prefer no {teamRange} team subscription? Access is ${access.monthlyUsd}/mo for hosted routing, or use
-          pay-as-you-go with a hard spend cap. Credits still apply.
+          Platform admins can grant a week team trial with a hosted allowance for the trial window. No surprise
+          auto-charge unless you subscribe.
         </p>
-        <div className="pricing-grid pricing-grid-team">
-          <PlanArticle
-            plan={{
-              code: "payg",
-              name: "Pay as you go",
-              price: "$0",
-              period: "subscription",
-              tagline: "Cap what you spend",
-              features: [
-                "Hosted AI with a monthly spend cap",
-                "No large team subscription",
-                "Hard stop at the cap",
-              ],
-            }}
-          />
-          <PlanArticle
-            plan={{
-              code: "access",
-              name: "Access",
-              price: formatCatalogUsd(access.monthlyUsd),
-              tagline: "Light hosted routing",
-              features: [
-                "Unlocks Vantage-hosted AI routing",
-                "Add credits or PAYG as you go",
-                "Free stays your keys; Access is managed AI",
-              ],
-            }}
-          />
-        </div>
       </section>
 
-      <section className="pricing-trial">
-        <h2>Try team AI for {TEAM_TRIAL_DAYS} days</h2>
-        <p>
-          Platform admins can grant a week team trial with hosted AI for the trial window. No surprise auto-charge
-          unless you subscribe.
-        </p>
+      <section className="pricing-faq" aria-label="Pricing questions" id="faq">
+        <h2>Questions teams ask</h2>
+        {faqs.map((faq) => (
+          <details key={faq.q} style={{ borderTop: "1px solid var(--m-line)" }}>
+            {/* padding keeps the tap target comfortably >= 44px on phones */}
+            <summary style={{ padding: "14px 0", cursor: "pointer", fontWeight: 600 }}>{faq.q}</summary>
+            <p style={{ margin: "0 0 16px", maxWidth: "70ch", color: "var(--m-muted)", lineHeight: 1.6 }}>
+              {faq.a}
+            </p>
+          </details>
+        ))}
       </section>
     </>
   );

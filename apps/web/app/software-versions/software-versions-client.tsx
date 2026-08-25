@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { COMMON_COMPONENTS, VERSION_CATEGORIES, VERSION_CATEGORY_LABEL, inspectionDsCue, inspectionRioImageCue, staleSeasonStackCue, vh109DipSwitchCue, vh109FirmwareCue, type VersionCategory, type VersionStatus } from "../../lib/software-versions";
 
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+
 type Component = {
   id: string; component: string; category: VersionCategory; installedVersion: string;
   targetVersion: string | null; notes: string; byName: string | null; updatedAt: string; status: VersionStatus;
@@ -17,12 +19,15 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a dead end.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/software-versions?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load software versions"); return; }
+    if (!response.ok) { setErrorStatus(response.status); setMessage(data.error ?? "Failed to load software versions"); return; }
+    setErrorStatus(null);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
@@ -44,7 +49,26 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
     if (view?.status === "ready") setForm({ ...EMPTY });
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading software versions…"}</p></main>;
+  if (!view) {
+    if (!message) return <main className="intel-app"><p className="telemetry-status">Loading software versions…</p></main>;
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: errorStatus,
+        message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath: typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message,
+      },
+    );
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status"><strong>{copy.title}</strong> — {copy.description}</p>
+        {copy.primary ? <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a> : null}
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / SOFTWARE</span><h1>Software versions</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }

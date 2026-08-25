@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { BRINGUP_PHASES, BRINGUP_PHASE_LABEL, BRINGUP_RESULTS, type BringupPhase, type BringupResult } from "../../lib/bringup";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type Item = { id: string; phase: BringupPhase; label: string; result: BringupResult; note: string; sortOrder: number };
 type View =
@@ -13,12 +14,18 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadError, setLoadError] = useState<{ status: number | null; message: string } | null>(null);
   const [custom, setCustom] = useState({ phase: "mechanical", label: "" });
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/bringup?seasonYear=${seasonYear}${orgId ? `&orgId=${orgId}` : ""}`);
     const data = (await response.json()) as View & { error?: string };
-    if (!response.ok) { setMessage(data.error ?? "Failed to load checklist"); return; }
+    if (!response.ok) {
+      setLoadError({ status: response.status, message: data.error ?? "Failed to load checklist" });
+      return;
+    }
+    setLoadError(null);
     setView(data);
   }, [orgId, seasonYear]);
   useEffect(() => { void load(); }, [load]);
@@ -34,7 +41,33 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
     if (response.ok) await load();
   }
 
-  if (!view) return <main className="intel-app"><p className="telemetry-status">{message || "Loading bring-up checklist…"}</p></main>;
+  if (!view) {
+    if (!loadError) return <main className="intel-app"><p className="telemetry-status">{message || "Loading bring-up checklist…"}</p></main>;
+    const copy = loadFailureCopy(
+      classifyLoadFailure({
+        status: loadError.status,
+        message: loadError.message,
+        online: typeof navigator === "undefined" ? true : navigator.onLine,
+      }),
+      {
+        nextPath: typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+        message: loadError.message,
+      },
+    );
+    return (
+      <main className="intel-app">
+        <p className="telemetry-status" role="alert">
+          <strong>{copy.title}</strong>
+          <br />
+          {copy.description}
+        </p>
+        <nav className="intel-actions">
+          {copy.primary ? <a className="app-button" href={copy.primary.href}>{copy.primary.label}</a> : null}
+          {copy.showRetry ? <button type="button" className="app-button secondary" onClick={() => void load()}>Retry</button> : null}
+        </nav>
+      </main>
+    );
+  }
   if (view.status === "setup_required") {
     return <main className="intel-app"><header className="intel-header"><div><span className="eyebrow">VANTAGE / BRING-UP</span><h1>Robot bring-up</h1></div></header><p className="telemetry-status">{view.message}</p></main>;
   }

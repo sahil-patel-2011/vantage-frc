@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { REUSE_ASSESSMENT_STATUSES, reuseRecommendationLabel, subsystemCategoryLabel } from "../../lib/reuse-advisor";
 import type { ReuseAdvisorView } from "../../lib/reuse-advisor/compute-reuse-advisor";
 import type { ReuseAssessmentStatus, ReuseCandidate, ReuseRecommendation } from "../../lib/reuse-advisor/types";
@@ -28,6 +29,9 @@ export default function ReuseAdvisorClient() {
   const [view, setView] = useState<ReuseAdvisorView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -35,6 +39,8 @@ export default function ReuseAdvisorClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setErrorStatus(null);
+    setLoadError("");
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -46,6 +52,8 @@ export default function ReuseAdvisorClient() {
       .then(async (response) => {
         const data = (await response.json()) as ReuseAdvisorView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -126,14 +134,36 @@ export default function ReuseAdvisorClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the Reuse Advisor"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

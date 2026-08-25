@@ -3,6 +3,7 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SAFETY_CATEGORIES, safetyCategoryLabel } from "../../lib/safety-training";
 import type { SafetyTrainingView } from "../../lib/safety-training/compute-safety-training";
 import type { SafetyCategory, SafetyCompletionStatus } from "../../lib/safety-training/types";
@@ -29,12 +30,17 @@ export default function SafetyTrainingClient() {
   const [view, setView] = useState<SafetyTrainingView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
+  const [failureMessage, setFailureMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
 
   const load = useCallback(() => {
     setFetchFailed(false);
+    setFailureStatus(null);
+    setFailureMessage("");
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -44,6 +50,8 @@ export default function SafetyTrainingClient() {
       .then(async (response) => {
         const data = (await response.json()) as SafetyTrainingView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setFailureStatus(response.status);
+          setFailureMessage("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -102,14 +110,37 @@ export default function SafetyTrainingClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load Safety Training"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: failureStatus,
+              message: failureMessage,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message:
+                failureMessage || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

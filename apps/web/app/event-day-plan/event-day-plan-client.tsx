@@ -29,7 +29,7 @@ import {
   type EventDayPlanNextAction,
   type EventDayPlanShellKind,
 } from "../../lib/event-day-plan/event-day-plan-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./event-day-plan.css";
 
@@ -119,7 +119,7 @@ function PlanShell({
 }) {
   const actions = eventDayPlanNextActions({ orgId, shell });
   const copy = eventDayPlanShellCopy(shell);
-  const competitionHref = hubHref("/competition", "event-day-plan", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "event-day-plan", orgId);
   const steps = shell === "setup" ? eventDayPlanSetupSteps(orgId) : [];
 
   return (
@@ -254,7 +254,7 @@ export default function EventDayPlanClient() {
   const relatedLinks = eventDayPlanRelatedLinks(orgId, {
     include: [...EVENT_DAY_PLAN_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "event-day-plan", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "event-day-plan", orgId);
   const showTiles = shouldShowEventDayPlanSummaryTiles(blockCount);
 
   const mutate = useCallback(

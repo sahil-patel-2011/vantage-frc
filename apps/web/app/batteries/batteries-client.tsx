@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
@@ -148,6 +149,8 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
   const [error, setError] = useState("");
   const [okMessage, setOkMessage] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [packForm, setPackForm] = useState({
     label: "",
@@ -176,10 +179,12 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
       const data = (await response.json()) as View & { error?: string };
       if (!response.ok || !("status" in data)) {
         setError(data.error ?? "Could not load batteries.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
       setError("");
+      setErrorStatus(null);
       setView(data);
       if (data.status === "ready") {
         setLogForm((prev) => {
@@ -188,6 +193,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
         });
       }
     } catch {
+      setErrorStatus(null);
       setFetchFailed(true);
     }
   }, []);
@@ -234,17 +240,38 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
   const crumbs = embed === "build" ? "Build / Batteries" : "Team / Batteries";
 
   if (fetchFailed || !view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || "Check your connection and try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page batt-page">
         <PageHeader breadcrumbs={crumbs} title="Batteries" />
         {!embed ? <TeamOpsNav active="batteries" /> : null}
         <EmptyState
-          title={fetchFailed ? "Could not load batteries" : "Loading batteries…"}
-          description={fetchFailed ? error || "Check your connection and try again." : undefined}
+          title={failure ? failure.title : "Loading batteries…"}
+          description={failure ? failure.description : undefined}
           soft
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {failure?.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={() => void load()}>
               Retry
             </button>

@@ -26,6 +26,7 @@ import {
   shouldShowKickoffSummaryTiles,
 } from "../../lib/kickoff-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 type ActionBody = Record<string, unknown> & { action: string; orgId: string };
 type RunFn = (body: ActionBody, key: string) => Promise<void>;
@@ -1016,11 +1017,13 @@ function RulesSection({
   );
 }
 
-export default function KickoffClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function KickoffClient(_props: { embedded?: boolean } = {}) {
   const embed = useHubEmbed();
   const [view, setView] = useState<KickoffView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
@@ -1031,6 +1034,7 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
 
   const load = useCallback(async () => {
     setFetchFailed(false);
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const orgId = params.get("orgId");
     try {
@@ -1038,6 +1042,7 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
       const data = (await response.json()) as KickoffView | { error?: string };
       if (!response.ok || !("status" in data)) {
         setError("error" in data && data.error ? data.error : "Could not load kickoff analysis.");
+        setErrorStatus(response.status);
         setFetchFailed(true);
         return;
       }
@@ -1083,16 +1088,37 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
   );
 
   if (fetchFailed || !view) {
+    const failure = fetchFailed
+      ? loadFailureCopy(
+          classifyLoadFailure({
+            status: errorStatus,
+            message: error,
+            online: typeof navigator === "undefined" ? true : navigator.onLine,
+          }),
+          {
+            nextPath:
+              typeof window === "undefined"
+                ? null
+                : `${window.location.pathname}${window.location.search}`,
+            message: error || "Check your connection and try again.",
+          },
+        )
+      : null;
     return (
       <main className="module-page kick-page">
         <PageHeader breadcrumbs={crumbs} title="Kickoff & Game Analysis" />
         <EmptyState
           soft
-          title={fetchFailed ? "Could not load kickoff analysis" : "Loading kickoff analysis…"}
-          description={fetchFailed ? error || "Check your connection and try again." : undefined}
+          title={failure ? failure.title : "Loading kickoff analysis…"}
+          description={failure ? failure.description : undefined}
           aria-busy={!fetchFailed}
         >
-          {fetchFailed ? (
+          {failure?.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure?.showRetry ? (
             <button type="button" className="app-button secondary" onClick={() => void load()}>
               Retry
             </button>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { GOAL_CATEGORIES, GOAL_STATUSES, goalCategoryLabel, goalStatusLabel } from "../../lib/goals-tracker";
 import type { GoalsTrackerView } from "../../lib/goals-tracker/compute-goals-tracker";
 import type { GoalCategory, GoalStatus } from "../../lib/goals-tracker/types";
@@ -22,6 +23,9 @@ export default function GoalsTrackerClient() {
   const [view, setView] = useState<GoalsTrackerView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [loadError, setLoadError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -30,6 +34,8 @@ export default function GoalsTrackerClient() {
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
+    setLoadError("");
+    setErrorStatus(null);
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
@@ -41,6 +47,8 @@ export default function GoalsTrackerClient() {
         const data = (await response.json()) as GoalsTrackerView | { error?: string };
         if (!response.ok || !("status" in data)) {
           setFetchFailed(true);
+          setErrorStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
           return;
         }
         setView(data);
@@ -79,6 +87,24 @@ export default function GoalsTrackerClient() {
     },
     [orgId, season, busy],
   );
+
+  // Retry cannot fix an expired session, so the failure decides its own action.
+  const failure = fetchFailed
+    ? loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message: loadError,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message: loadError || "A network or server issue prevented loading. Try again.",
+        },
+      )
+    : null;
 
   return (
     <main className="module-page">
@@ -119,11 +145,18 @@ export default function GoalsTrackerClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState title="Could not load Season Goals" description="A network or server issue prevented loading. Try again.">
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+      {failure ? (
+        <EmptyState title={failure.title} description={failure.description}>
+          {failure.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
         </EmptyState>
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />

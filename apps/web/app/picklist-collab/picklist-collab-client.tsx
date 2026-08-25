@@ -28,7 +28,7 @@ import {
   type PicklistCollabShellKind,
 } from "../../lib/picklist-collab/picklist-collab-related";
 import type { PicklistCollabEntry, PicklistCollabTier } from "../../lib/picklist-collab/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./picklist-collab.css";
 
@@ -95,7 +95,7 @@ function CollabShell({
 }) {
   const actions = picklistCollabNextActions({ orgId, shell });
   const copy = picklistCollabShellCopy(shell);
-  const competitionHref = hubHref("/competition", "picklist-collab", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "picklist-collab", orgId);
   const steps = shell === "setup" ? picklistCollabSetupSteps(orgId) : [];
 
   return (
@@ -104,10 +104,10 @@ function CollabShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Collaborative Pick List"}
+            {" / Collaborative pick list"}
           </>
         }
-        title="Collaborative Pick List"
+        title="Collaborative pick list"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -216,7 +216,7 @@ export default function PicklistCollabClient() {
   const relatedLinks = picklistCollabRelatedLinks(orgId, {
     include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
   });
-  const competitionHref = hubHref("/competition", "picklist-collab", orgId);
+  const competitionHref = hubWorkbenchHref("competition", "picklist-collab", orgId);
   const showTiles = shouldShowPicklistCollabSummaryTiles({ listCount, totalEntries });
 
   const mutate = useCallback(
@@ -293,10 +293,10 @@ export default function PicklistCollabClient() {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Collaborative Pick List"}
+            {" / Collaborative pick list"}
           </>
         }
-        title="Collaborative Pick List"
+        title="Collaborative pick list"
         description="Build the pick list together — rank teams into tiers, see FAST-style EPA roles from the cached event field, and export CSV for the drive team. Never DEMO ranks."
       >
         <div className="picklist-collab-header-actions">

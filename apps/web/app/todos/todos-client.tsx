@@ -7,6 +7,7 @@ import { TeamOpsNav } from "../../components/team-ops-nav";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   TODO_LIST_FILTERS,
   TODOS_RELATED_INCLUDE,
@@ -76,6 +77,9 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
   const [view, setView] = useState<TodosView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState<TodoListFilter>("all");
 
@@ -84,6 +88,8 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
   const load = useCallback(() => {
     setFetchFailed(false);
     setError("");
+    setErrorStatus(null);
+    setLoadErrorMessage("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const todoId = params.get("todoId");
@@ -94,6 +100,8 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
       .then(async (response) => {
         const data = (await response.json()) as TodosView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadErrorMessage("error" in data && data.error ? data.error : "");
+          setErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
@@ -139,6 +147,21 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
     [orgId, busy],
   );
 
+  const failure = fetchFailed
+    ? loadFailureCopy(
+        classifyLoadFailure({ status: errorStatus, message: loadErrorMessage, online }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message:
+            loadErrorMessage ||
+            "A network or server issue prevented loading. Select a workspace and try again.",
+        },
+      )
+    : null;
+
   return (
     <main className={`module-page todos-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
@@ -182,18 +205,25 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         </p>
       ) : null}
 
-      {fetchFailed ? (
+      {failure ? (
         <EmptyState
           soft
           badge="Setup"
           badgeTone="setup"
-          title="Could not load team todos"
-          description="A network or server issue prevented loading. Select a workspace and try again."
+          title={failure.title}
+          description={failure.description}
         >
           <div className="soft-btn-row">
-            <button type="button" className="app-button secondary" onClick={() => load()}>
-              Retry
-            </button>
+            {failure.primary ? (
+              <a className="app-button" href={failure.primary.href}>
+                {failure.primary.label}
+              </a>
+            ) : null}
+            {failure.showRetry ? (
+              <button type="button" className="app-button secondary" onClick={() => load()}>
+                Retry
+              </button>
+            ) : null}
             <a className="app-button secondary" href="/workspace">
               Choose workspace
             </a>
@@ -219,7 +249,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
-          <MetricsTiles view={view} />
+          {embedded ? null : <MetricsTiles view={view} />}
           <CreateTodoForm view={view} busy={busy} mutate={mutate} />
           <FilterBar
             filter={filter}
@@ -326,12 +356,14 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
       }}
       style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Add todo</h2>
-      <p className="todos-filter-note">Creates a real row for this workspace — no sample lists.</p>
       <FormGrid min={150}>
         <FormRow label="Title" wide>
-          <input value={form.title} onChange={set("title")} placeholder="Finish sponsor thank-you emails" required />
+          <input value={form.title} onChange={set("title")} placeholder="New reminder" required />
         </FormRow>
+      </FormGrid>
+      <details>
+        <summary className="todos-more">More</summary>
+        <FormGrid min={150}>
         <FormRow label="Assignee">
           <select value={form.assigneeUserId} onChange={set("assigneeUserId")}>
             <option value="">Unassigned</option>
@@ -360,10 +392,11 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
         <FormRow label="Notes" wide>
           <input value={form.notes} onChange={set("notes")} placeholder="Optional context" />
         </FormRow>
-      </FormGrid>
+        </FormGrid>
+      </details>
       <div>
         <button type="submit" className="app-button" disabled={busy || !form.title.trim()}>
-          Add todo
+          Add
         </button>
       </div>
     </Panel>

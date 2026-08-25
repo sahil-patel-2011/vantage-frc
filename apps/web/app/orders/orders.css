@@ -2,7 +2,10 @@
 
 .orders-page,
 .orders-embedded {
-  --orders-accent: #1f7a3d;
+  /* Approval green tracks the shared semantic token, so dark mode needs no overrides.
+     `-fill` is the darker variant used behind white text (see styles.css). */
+  --orders-accent: var(--app-positive);
+  --orders-accent-fill: var(--app-positive-fill);
   --orders-accent-soft: color-mix(in srgb, var(--orders-accent) 14%, var(--soft-card));
   --orders-accent-border: color-mix(in srgb, var(--orders-accent) 28%, var(--soft-line));
   display: grid;
@@ -28,7 +31,7 @@
 }
 
 .orders-season select {
-  min-height: 38px;
+  min-height: 44px;
   padding: 6px 12px;
   border-radius: 12px;
   border: 1px solid var(--soft-line);
@@ -37,9 +40,11 @@
   font: 600 13px var(--font-source-sans), ui-sans-serif;
 }
 
+/* Scoped: an unscoped `.soft-panel > h2` here would resize panel headings app-wide. */
 .orders-flow h2,
 .orders-next-actions h2,
-.soft-panel > h2 {
+.orders-page .soft-panel > h2,
+.orders-embedded .soft-panel > h2 {
   margin: 4px 0 0;
   font-size: 15px;
   letter-spacing: -0.01em;
@@ -60,7 +65,7 @@
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
+  background: var(--soft-card);
 }
 
 .orders-flow-steps strong {
@@ -94,7 +99,7 @@
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
+  background: var(--soft-card);
 }
 
 .orders-metric strong {
@@ -113,7 +118,7 @@
   background: linear-gradient(
     135deg,
     color-mix(in srgb, var(--orders-accent-soft) 80%, var(--soft-card)),
-    color-mix(in srgb, var(--soft-card) 92%, #fff)
+    var(--soft-card)
   );
 }
 
@@ -146,7 +151,7 @@
 .orders-admin-row input,
 .orders-admin-row select {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 12px;
   border-radius: 12px;
   border: 1px solid var(--soft-line);
@@ -173,11 +178,11 @@
 
 .orders-submit {
   justify-self: start;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 16px;
   border: 0;
   border-radius: 12px;
-  background: var(--orders-accent);
+  background: var(--orders-accent-fill);
   color: #fff;
   font: 700 13px var(--font-source-sans), ui-sans-serif;
   cursor: pointer;
@@ -203,7 +208,7 @@
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 94%, #fff);
+  background: var(--soft-card);
 }
 
 .orders-card.focused {
@@ -235,9 +240,9 @@
 }
 
 .orders-status.pending {
-  color: #9a3412;
-  background: #fff7ed;
-  border-color: #fed7aa;
+  color: var(--app-warning);
+  background: color-mix(in srgb, var(--app-warning) 14%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-warning) 38%, var(--soft-line));
 }
 
 .orders-status.approved {
@@ -247,17 +252,17 @@
 }
 
 .orders-status.rejected {
-  color: #991b1b;
-  background: #fef2f2;
-  border-color: #fecaca;
+  color: var(--app-critical);
+  background: color-mix(in srgb, var(--app-critical) 14%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--soft-line));
 }
 
 .orders-status.ordered,
 .orders-status.received,
 .orders-status.reimbursed {
-  color: #1e3a8a;
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-accent) 14%, var(--soft-card));
+  border-color: color-mix(in srgb, var(--app-accent) 38%, var(--soft-line));
 }
 
 .orders-meta {
@@ -282,7 +287,7 @@
 
 .orders-actions button,
 .orders-admin-row button {
-  min-height: 34px;
+  min-height: 44px;
   padding: 0 12px;
   border-radius: 10px;
   border: 1px solid var(--soft-line);
@@ -294,16 +299,16 @@
 
 .orders-actions button.primary,
 .orders-admin-row button.primary {
-  background: var(--orders-accent);
-  border-color: var(--orders-accent);
+  background: var(--orders-accent-fill);
+  border-color: var(--orders-accent-fill);
   color: #fff;
 }
 
 .orders-actions button.danger,
 .orders-admin-row button.danger {
-  color: #991b1b;
-  border-color: #fecaca;
-  background: #fef2f2;
+  color: var(--app-critical);
+  border-color: color-mix(in srgb, var(--app-critical) 38%, var(--soft-line));
+  background: color-mix(in srgb, var(--app-critical) 12%, var(--soft-card));
 }
 
 .orders-actions button:disabled,
@@ -353,10 +358,10 @@
   justify-self: start;
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 10px;
-  background: var(--orders-accent);
+  background: var(--orders-accent-fill);
   color: #fff !important;
   font-weight: 700;
   font-size: 13px;
@@ -384,15 +389,15 @@
 }
 
 .orders-warn {
-  background: #fff7ed;
-  color: #9a3412;
-  border: 1px solid #fed7aa;
+  background: color-mix(in srgb, var(--app-warning) 14%, var(--soft-card));
+  color: var(--app-warning);
+  border: 1px solid color-mix(in srgb, var(--app-warning) 38%, var(--soft-line));
 }
 
 .orders-error {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: color-mix(in srgb, var(--app-critical) 14%, var(--soft-card));
+  color: var(--app-critical);
+  border: 1px solid color-mix(in srgb, var(--app-critical) 38%, var(--soft-line));
 }
 
 .orders-admin-row {
@@ -442,33 +447,8 @@
   font-size: 12px;
 }
 
-html[data-theme="dark"] .orders-page,
-html[data-theme="dark"] .orders-embedded,
-[data-theme="dark"] .orders-page,
-[data-theme="dark"] .orders-embedded {
-  --orders-accent-soft: color-mix(in srgb, var(--orders-accent) 22%, #0f1a14);
-}
-
-html[data-theme="dark"] .orders-status.pending,
-[data-theme="dark"] .orders-status.pending {
-  background: #431407;
-  color: #fdba74;
-  border-color: #9a3412;
-}
-
-html[data-theme="dark"] .orders-status.rejected,
-[data-theme="dark"] .orders-status.rejected {
-  background: #450a0a;
-  color: #fca5a5;
-  border-color: #991b1b;
-}
-
-html[data-theme="dark"] .orders-warn,
-[data-theme="dark"] .orders-warn {
-  background: #431407;
-  color: #fdba74;
-  border-color: #9a3412;
-}
+/* No dark-mode overrides needed: every tone above is mixed from --app-* tokens,
+   which the theme already re-defines. */
 
 @media (max-width: 650px) {
   .orders-flow-steps {

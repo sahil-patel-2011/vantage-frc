@@ -5,6 +5,7 @@ import { EmptyState, PageHeader } from "../../../components/ui";
 import { TeamOpsNav } from "../../../components/team-ops-nav";
 import { slackNextActions, slackRelatedLinks } from "../../../lib/slack-related";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "../discord/discord.css";
 
 type SlackView = {
@@ -45,6 +46,8 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
   const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   async function load() {
     setFetchFailed(false);
@@ -53,10 +56,12 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
     if (!response.ok) {
       setOk(false);
       setStatus(data.error ?? "Unable to load Slack settings");
+      setErrorStatus(response.status);
       setView(null);
       setFetchFailed(true);
       return;
     }
+    setErrorStatus(null);
     setView(data as SlackView);
     setForm({
       webhookUrl: "",
@@ -128,6 +133,22 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
     inboundReady: view?.inboundReady,
   });
   const related = slackRelatedLinks(orgId);
+  const failure = fetchFailed
+    ? loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message: status,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message: status || "Try again from Team admin.",
+        },
+      )
+    : null;
 
   return (
     <main className="module-page team-discord-page">
@@ -145,13 +166,32 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
         ))}
       </nav>
 
-      {fetchFailed ? (
+      {failure ? (
         <EmptyState
-          title="Could not load Slack"
-          description={status || "Try again from Team admin."}
-          badge="Error"
+          title={failure.title}
+          description={failure.description}
+          badge={
+            failure.kind === "auth"
+              ? "Signed out"
+              : failure.kind === "forbidden"
+                ? "No access"
+                : failure.kind === "offline"
+                  ? "Offline"
+                  : "Error"
+          }
           badgeTone="setup"
-        />
+        >
+          {failure.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => void load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
       ) : null}
 
       {!view && !fetchFailed ? <p className="app-muted">Loading Slack settings…</p> : null}

@@ -217,7 +217,7 @@ export class SponsoredFailoverChatAdapter implements ChatAdapter {
     timeoutMs?: number;
   }) {
     const env = input?.env ?? process.env;
-    const caching = input?.promptCachingEnabled ?? false;
+    const caching = input?.promptCachingEnabled ?? true;
     this.catalog = listConfiguredSponsoredProviders(env);
     this.adapters = new Map(
       this.catalog.map((c) => [

@@ -4,19 +4,27 @@ import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../components/ui";
 import type { TrajectoryView } from "../../lib/district-trajectory-sim/compute-district-trajectory-sim";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 export default function DistrictAdvancementClient() {
   const [view, setView] = useState<TrajectoryView | null>(null);
   const [error, setError] = useState("");
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   const load = useCallback(() => {
+    setError("");
+    setErrorStatus(null);
     const orgId = new URLSearchParams(window.location.search).get("orgId");
     const query = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
     void fetch(`/api/district-advancement${query}`)
       .then(async (response) => {
         const data = (await response.json()) as TrajectoryView | { error?: string };
         if (!response.ok || !("status" in data)) {
-          setError("Could not load district advancement.");
+          setErrorStatus(response.status);
+          setError(
+            "error" in data && data.error ? data.error : "Could not load district advancement.",
+          );
           return;
         }
         setView(data);
@@ -29,6 +37,23 @@ export default function DistrictAdvancementClient() {
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  // Retry cannot fix an expired session, so the failure decides its own action.
+  const failure = error
+    ? loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message: error,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message: error,
+        },
+      )
+    : null;
 
   return (
     <main className="module-page">
@@ -42,8 +67,21 @@ export default function DistrictAdvancementClient() {
         title="District advancement"
         description="Project remaining district points from cached EPA and the remaining event list — never DEMO qualification odds."
       />
-      {error ? <p className="app-muted">{error}</p> : null}
-      {!view ? <p className="app-muted">Loading…</p> : null}
+      {failure ? (
+        <EmptyState title={failure.title} description={failure.description}>
+          {failure.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
+        </EmptyState>
+      ) : null}
+      {!view && !failure ? <p className="app-muted">Loading…</p> : null}
       {view?.status === "setup_required" ? (
         <EmptyState title="Not enough district data yet" description={view.message}>
             <ol>

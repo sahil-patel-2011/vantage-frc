@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Icon } from "../../components/app-shell";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
-import { CardGridSkeleton, EmptyState, ErrorState, PageHeader, Panel, StatRowSkeleton } from "../../components/ui";
+import { CardGridSkeleton, EmptyState, ErrorState, PageHeader, StatRowSkeleton } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { useVenueShortcuts, VenueShortcutCheatsheet } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
@@ -16,6 +16,7 @@ import {
   formatEventDayMatchCount,
   type EventDayShellKind,
 } from "../../lib/command/event-day-related";
+import NexusQueuePanel from "../../lib/command/nexus-queue-panel";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { formatMyDayWhen } from "../../lib/my-day";
 import { hubHref } from "../../lib/nav/hubs";
@@ -494,6 +495,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           </a>
         </p>
       ) : null}
+
+      <NexusQueuePanel nexus={snap?.nexus ?? null} eventKey={snap?.eventKey ?? null} />
 
       {liveActions.length ? (
         <section className="edc-next-actions soft-panel" aria-label="Next actions">

@@ -27,7 +27,7 @@ import {
   type FieldResetTimerNextAction,
   type FieldResetTimerShellKind,
 } from "../../lib/field-reset-timer/field-reset-timer-related";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./field-reset-timer.css";
 
@@ -101,7 +101,7 @@ function TimerShell({
 }) {
   const actions = fieldResetTimerNextActions({ orgId, shell });
   const copy = fieldResetTimerShellCopy(shell);
-  const teamHref = hubHref("/team", "field-reset-timer", orgId);
+  const teamHref = hubWorkbenchHref("team", "field-reset-timer", orgId);
   const steps = shell === "setup" ? fieldResetTimerSetupSteps(orgId) : [];
 
   return (
@@ -228,7 +228,7 @@ export default function FieldResetTimerClient() {
     sessionCount,
     cycleCount,
   });
-  const teamHref = hubHref("/team", "field-reset-timer", orgId);
+  const teamHref = hubWorkbenchHref("team", "field-reset-timer", orgId);
   const showTiles = shouldShowFieldResetTimerSummaryTiles(sessionCount, cycleCount);
   const loaded = view?.status === "live";
 

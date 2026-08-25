@@ -20,33 +20,25 @@ export function BrandLink({ href = "/" }: { href?: string }) {
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const nav = (mobile = false) =>
-    links.map(([href, label]) => (
-      <a
-        aria-current={
-          pathname === href || (href === "/features" && pathname.startsWith("/features/"))
-            ? "page"
-            : undefined
-        }
-        href={href}
-        key={href}
-        onClick={
-          mobile
-            ? (event) =>
-                (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute(
-                  "open",
-                )
-            : undefined
-        }
-      >
-        {label}
-      </a>
-    ));
 
   return (
     <header className="nav">
       <BrandLink />
-      <nav aria-label="Primary navigation">{nav()}</nav>
+      <nav aria-label="Primary navigation">
+        {links.map(([href, label]) => (
+          <a
+            aria-current={
+              pathname === href || (href === "/features" && pathname.startsWith("/features/"))
+                ? "page"
+                : undefined
+            }
+            href={href}
+            key={href}
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
       <div className="nav-actions">
         <a className="sign-in-link" href="/signin">
           Sign in
@@ -55,22 +47,37 @@ export function SiteHeader() {
           Join waitlist
         </a>
       </div>
-      <details className="mobile-menu">
-        <summary aria-label="Open navigation">
-          <span />
-          <span />
-          <span />
-        </summary>
-        <nav aria-label="Mobile navigation">
-          {nav(true)}
-          <a href="/for-teams">For teams</a>
-          <a href="/signin">Sign in</a>
-          <a href="/#waitlist">Join waitlist</a>
-        </nav>
-      </details>
     </header>
   );
 }
+
+const footerColumns = [
+  {
+    title: "Product",
+    links: [
+      ["/features", "Product"],
+      ["/workflow", "How it works"],
+      ["/desktop", "Desktop"],
+      ["/pricing", "Pricing"],
+      ["/for-teams", "For teams"],
+    ],
+  },
+  {
+    title: "Access",
+    links: [
+      ["/signin", "Sign in"],
+      ["/#waitlist", "Waitlist"],
+      ["mailto:hello@vantagefrc.com", "Contact"],
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      ["/privacy", "Privacy"],
+      ["/terms", "Terms"],
+    ],
+  },
+] as const;
 
 export function SiteFooter() {
   return (
@@ -79,17 +86,17 @@ export function SiteFooter() {
         <BrandLink />
         <p>Competition operations for FRC teams.</p>
       </div>
-      <nav aria-label="Footer">
-        <a href="/features">Product</a>
-        <a href="/workflow">How it works</a>
-        <a href="/desktop">Desktop</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/for-teams">For teams</a>
-        <a href="/signin">Sign in</a>
-        <a href="/#waitlist">Waitlist</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/terms">Terms</a>
-        <a href="mailto:hello@vantagefrc.com">Contact</a>
+      <nav className="marketing-footer-cols" aria-label="Footer">
+        {footerColumns.map((col) => (
+          <div className="marketing-footer-col" key={col.title}>
+            <b>{col.title}</b>
+            {col.links.map(([href, label]) => (
+              <a href={href} key={`${href}-${label}`}>
+                {label}
+              </a>
+            ))}
+          </div>
+        ))}
       </nav>
     </footer>
   );

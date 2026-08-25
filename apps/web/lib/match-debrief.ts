@@ -119,3 +119,107 @@ export function parseMatchDebriefAction(raw: unknown): MatchDebriefAction {
       throw new Error("Unsupported match debrief action");
   }
 }
+
+// ---- deterministic takeaways + optional AI coach --------------------------
+
+export const MATCH_DEBRIEF_AI_FEATURE = "match_debrief";
+
+export type DebriefForCoach = {
+  matchLabel: string;
+  result: MatchResult;
+  pointsScored: number | null;
+  cycleCount: number | null;
+  drivetrainOk: boolean;
+  mechanismsOk: boolean;
+  autoOk: boolean;
+  whatWorked: string;
+  whatBroke: string;
+  actionItems: string;
+};
+
+/**
+ * Deterministic between-matches read of the log — computed only from what was
+ * actually logged (honest empty state otherwise). This text always renders;
+ * the AI coach below is an optional metered expansion of it.
+ */
+export function debriefTakeaways(debriefs: DebriefForCoach[]): string {
+  if (debriefs.length === 0) {
+    return "No matches logged yet — log a debrief after each match to see patterns worth fixing.";
+  }
+  const summary = summarizeDebriefs(debriefs);
+  const lines: string[] = [];
+  lines.push(
+    `${summary.total} match${summary.total === 1 ? "" : "es"} logged (${summary.record}${
+      summary.avgPoints != null ? `, avg ${summary.avgPoints} pts` : ""
+    }).`,
+  );
+
+  const drivetrainIssues = debriefs.filter((d) => !d.drivetrainOk).length;
+  const mechanismIssues = debriefs.filter((d) => !d.mechanismsOk).length;
+  const autoIssues = debriefs.filter((d) => !d.autoOk).length;
+  const systems = [
+    drivetrainIssues ? `drivetrain in ${drivetrainIssues}` : "",
+    mechanismIssues ? `mechanisms in ${mechanismIssues}` : "",
+    autoIssues ? `auto in ${autoIssues}` : "",
+  ].filter(Boolean);
+  if (systems.length) {
+    lines.push(`Recurring system issues — ${systems.join(", ")} of ${summary.total} matches.`);
+  } else {
+    lines.push("No robot-system issues flagged so far.");
+  }
+
+  const breakages = debriefs.filter((d) => d.whatBroke.trim());
+  if (breakages.length) {
+    const listed = breakages
+      .slice(0, 3)
+      .map((d) => `${d.matchLabel}: ${d.whatBroke.trim()}`)
+      .join("; ");
+    lines.push(`Logged breakages — ${listed}${breakages.length > 3 ? "; …" : ""}.`);
+  }
+
+  const open = debriefs.filter((d) => d.actionItems.trim());
+  if (open.length) {
+    lines.push(
+      `${open.length} match${open.length === 1 ? " has" : "es have"} open action items — close them before the next match.`,
+    );
+  }
+  return lines.join(" ");
+}
+
+/**
+ * Grounded prompt for the optional AI coach. Returns null with no logged
+ * matches — never asks a model to invent a performance history.
+ */
+export function buildDebriefCoachPrompt(input: {
+  seasonYear: number;
+  debriefs: DebriefForCoach[];
+  takeaways: string;
+}): string | null {
+  if (input.debriefs.length === 0) return null;
+  const rows = input.debriefs.slice(0, 20).map((d) =>
+    JSON.stringify({
+      match: d.matchLabel,
+      result: d.result,
+      points: d.pointsScored,
+      cycles: d.cycleCount,
+      drivetrainOk: d.drivetrainOk,
+      mechanismsOk: d.mechanismsOk,
+      autoOk: d.autoOk,
+      worked: d.whatWorked,
+      broke: d.whatBroke,
+      actions: d.actionItems,
+    }),
+  );
+  return [
+    `You are a pit coach for an FRC team reviewing its own ${input.seasonYear} match debriefs (self-scouting of OUR robot, not other teams).`,
+    "The logged debriefs below are the ONLY source of truth.",
+    "",
+    `Computed takeaways: ${input.takeaways}`,
+    "",
+    "Logged debriefs (most recent first):",
+    ...rows,
+    "",
+    "Write one short paragraph: the single most important pattern to fix before the next match and the concrete first step, referencing only logged matches.",
+    "Rules: use only the data above; do not invent matches, scores, or failures; if the log is thin, say what to start logging instead of speculating.",
+  ].join("\n");
+}

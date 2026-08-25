@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
-import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, currentSeasonYear, diagnosticSeverityLabel } from "../../lib/wiring-diagnoser";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { STANDARD_BREAKER_AMPS, WIRE_GAUGES, diagnosticSeverityLabel } from "../../lib/wiring-diagnoser";
 import type { WiringDiagnoserView } from "../../lib/wiring-diagnoser/compute-wiring-diagnoser";
 import type {
   DiagnosticSeverity,
-  ExpectedCircuit,
-  ObservedCircuit,
   WireGauge,
   WiringMapDevice,
 } from "../../lib/wiring-diagnoser/types";
@@ -60,6 +59,9 @@ export default function WiringDiagnoserClient() {
   const [view, setView] = useState<WiringDiagnoserView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadErrorMessage, setLoadErrorMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -68,6 +70,8 @@ export default function WiringDiagnoserClient() {
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
     setError("");
+    setErrorStatus(null);
+    setLoadErrorMessage("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
     const seasonQuery = seasonOverride ?? (params.get("season") ? Number(params.get("season")) : null);
@@ -78,6 +82,8 @@ export default function WiringDiagnoserClient() {
       .then(async (response) => {
         const data = (await response.json()) as WiringDiagnoserView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setLoadErrorMessage("error" in data && data.error ? data.error : "");
+          setErrorStatus(response.status);
           setFetchFailed(true);
           return;
         }
@@ -118,6 +124,23 @@ export default function WiringDiagnoserClient() {
     [orgId, season, busy],
   );
 
+  const failure = fetchFailed
+    ? loadFailureCopy(
+        classifyLoadFailure({
+          status: errorStatus,
+          message: loadErrorMessage,
+          online: typeof navigator === "undefined" ? true : navigator.onLine,
+        }),
+        {
+          nextPath:
+            typeof window === "undefined"
+              ? null
+              : `${window.location.pathname}${window.location.search}`,
+          message: loadErrorMessage || "A network or server issue prevented loading. Try again.",
+        },
+      )
+    : null;
+
   return (
     <main className="module-page">
       <PageHeader
@@ -157,14 +180,18 @@ export default function WiringDiagnoserClient() {
         </p>
       ) : null}
 
-      {fetchFailed ? (
-        <EmptyState
-          title="Could not load the wiring diagnoser"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
+      {failure ? (
+        <EmptyState title={failure.title} description={failure.description}>
+          {failure.primary ? (
+            <a className="app-button" href={failure.primary.href}>
+              {failure.primary.label}
+            </a>
+          ) : null}
+          {failure.showRetry ? (
+            <button type="button" className="app-button secondary" onClick={() => load()}>
+              Retry
+            </button>
+          ) : null}
         </EmptyState>
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />

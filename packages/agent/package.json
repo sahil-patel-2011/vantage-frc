@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./model-tier": "./src/model-tier.ts",
     "./repository": "./src/repository.ts",
     "./coding-assistant": "./src/coding-assistant.ts",
     "./bugbot": "./src/bugbot.ts"

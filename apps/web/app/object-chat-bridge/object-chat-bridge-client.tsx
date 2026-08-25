@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
   OBJECT_CHAT_BRIDGE_OBJECT_TYPES,
   OBJECT_CHAT_BRIDGE_STATUSES,
@@ -30,6 +31,9 @@ export default function ObjectChatBridgeClient() {
   const [view, setView] = useState<ObjectChatBridgeView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
+  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [busy, setBusy] = useState(false);
   const [season, setSeason] = useState<number | null>(null);
 
@@ -37,6 +41,8 @@ export default function ObjectChatBridgeClient() {
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
+    setErrorStatus(null);
+    setLoadError("");
     setError("");
     const params = new URLSearchParams(window.location.search);
     const urlOrg = params.get("orgId");
@@ -48,6 +54,8 @@ export default function ObjectChatBridgeClient() {
       .then(async (response) => {
         const data = (await response.json()) as ObjectChatBridgeView | { error?: string };
         if (!response.ok || !("status" in data)) {
+          setErrorStatus(response.status);
+          setLoadError("error" in data && data.error ? data.error : "");
           setFetchFailed(true);
           return;
         }
@@ -128,14 +136,36 @@ export default function ObjectChatBridgeClient() {
       ) : null}
 
       {fetchFailed ? (
-        <EmptyState
-          title="Could not load the comm bridge"
-          description="A network or server issue prevented loading. Try again."
-        >
-          <button type="button" className="app-button secondary" onClick={() => load()}>
-            Retry
-          </button>
-        </EmptyState>
+        (() => {
+          const copy = loadFailureCopy(
+            classifyLoadFailure({
+              status: errorStatus,
+              message: loadError,
+              online: typeof navigator === "undefined" ? true : navigator.onLine,
+            }),
+            {
+              nextPath:
+                typeof window === "undefined"
+                  ? null
+                  : `${window.location.pathname}${window.location.search}`,
+              message: loadError || "A network or server issue prevented loading. Try again.",
+            },
+          );
+          return (
+            <EmptyState title={copy.title} description={copy.description}>
+              {copy.primary ? (
+                <a className="app-button" href={copy.primary.href}>
+                  {copy.primary.label}
+                </a>
+              ) : null}
+              {copy.showRetry ? (
+                <button type="button" className="app-button secondary" onClick={() => load()}>
+                  Retry
+                </button>
+              ) : null}
+            </EmptyState>
+          );
+        })()
       ) : view == null ? (
         <EmptyState title="Loading…" description="Checking your workspace." aria-busy />
       ) : view.status === "setup_required" ? (

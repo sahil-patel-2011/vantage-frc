@@ -2,10 +2,11 @@ import { randomUUID } from "node:crypto";
 import {
   AIOrchestrator,
   getOrgPromptCachingEnabled,
-  resolveOrgChatAdapter,
+  resolveOrgChatAdapterWithProvenance,
 } from "@vantage/agent";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { createBridgeTransport } from "../../../lib/ai-bridge/transport";
 import { headers } from "next/headers";
 import {
   WRITER_USAGE_TAG,
@@ -102,6 +103,13 @@ function grantFromBody(body: Record<string, unknown>): GrantInput {
     focus: oneOf<GrantFocus>(GRANT_FOCI, body.focus) ?? "general",
   };
 }
+
+/**
+ * AI drafts call a real upstream model: give the function a 60s budget so the
+ * adapter's own 50s timeout fires first and returns a classified error
+ * instead of the platform killing the function mid-request.
+ */
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -278,10 +286,11 @@ export async function POST(request: Request) {
           const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
           // Honest setup_required (via ChatProviderResolutionError → failMeteredAi) when no
           // provider key — never invent essays via LocalDeterministicChatAdapter.
-          const adapter = await resolveOrgChatAdapter(client, {
+          const { adapter, provenance } = await resolveOrgChatAdapterWithProvenance(client, {
             orgId,
             promptCachingEnabled,
             feature: "writer",
+            bridgeTransport: createBridgeTransport(),
           });
 
           const requestId = randomUUID();
@@ -339,6 +348,10 @@ export async function POST(request: Request) {
               runId: run.runId,
               provider: run.provider,
               model: run.model,
+              baseUrlOrigin: provenance.baseUrlOrigin,
+              // `source` above is the draft's origin (ai vs template); this is
+              // which key paid for the call, for the provenance chip.
+              keySource: provenance.source,
               usageTag: WRITER_USAGE_TAG,
               orgScoped: true,
             },

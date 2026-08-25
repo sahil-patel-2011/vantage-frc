@@ -7,11 +7,36 @@
 }
 
 .migrate-error {
+  display: grid;
+  gap: 4px;
   margin: 0;
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--app-critical, #b42318) 28%, var(--app-line));
   background: color-mix(in srgb, var(--app-critical, #b42318) 8%, var(--app-bg));
+}
+
+/* A rejected file always says what shape was expected. */
+.migrate-error small {
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.migrate-warn {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--app-warning, #b54708) 28%, var(--app-line));
+  background: color-mix(in srgb, var(--app-warning, #b54708) 8%, var(--app-bg));
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.migrate-warn code,
+.migrate-report code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .migrate-steps {
@@ -132,7 +157,7 @@
 }
 
 .migrate-actions .app-button {
-  min-height: 38px;
+  min-height: 44px;
   padding: 0 14px;
 }
 
@@ -157,6 +182,227 @@
   resize: vertical;
 }
 
+/* Source picker: grouped by what the data is, not by vendor. */
+.migrate-sources {
+  display: grid;
+  gap: 20px;
+}
+
+.migrate-sources-title {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.migrate-group {
+  display: grid;
+  gap: 10px;
+}
+
+.migrate-group h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.migrate-tile small b {
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
+/* A tool we cannot import from is shown, not hidden — with the reason. */
+.migrate-tile.unsupported {
+  cursor: default;
+  border-style: dashed;
+  background: color-mix(in srgb, var(--app-muted) 5%, var(--app-bg));
+}
+
+.migrate-tile.unsupported:hover {
+  border-color: var(--app-line);
+  box-shadow: none;
+}
+
+.migrate-tile.unsupported strong {
+  color: var(--app-muted);
+}
+
+.migrate-unsupported {
+  line-height: 1.5;
+}
+
+.migrate-tile a {
+  justify-self: start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.migrate-how {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.migrate-notes {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.migrate-notes details {
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--app-bg);
+}
+
+.migrate-notes summary {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.migrate-notes ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.migrate-notes li b {
+  color: var(--app-ink);
+}
+
+.migrate-report {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.migrate-mapping,
+.migrate-presets,
+.migrate-form-draft {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--app-muted) 4%, var(--app-bg));
+}
+
+.migrate-mapping h3,
+.migrate-presets h3,
+.migrate-form-draft h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.migrate-columns {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.migrate-columns li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 200px);
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.migrate-columns label {
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.migrate-columns select {
+  min-height: 44px;
+}
+
+.migrate-columns small {
+  grid-column: 1 / -1;
+  color: var(--app-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.migrate-confidence.likely {
+  color: var(--app-warning, #b54708);
+}
+
+.migrate-confidence.unsure {
+  color: var(--app-critical, #b42318);
+}
+
+.migrate-presets ul,
+.migrate-invites {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.migrate-presets li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.migrate-presets .app-button {
+  min-height: 44px;
+}
+
+.migrate-invites label,
+.migrate-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.migrate-invites input[type="checkbox"],
+.migrate-check input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.migrate-invites span {
+  overflow-wrap: anywhere;
+}
+
+.migrate-fields {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.migrate-fields code {
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
 @media (max-width: 700px) {
   .migrate-picker,
   .migrate-steps {
@@ -169,5 +415,9 @@
 
   .migrate-actions .app-button {
     flex: 1;
+  }
+
+  .migrate-columns li {
+    grid-template-columns: 1fr;
   }
 }

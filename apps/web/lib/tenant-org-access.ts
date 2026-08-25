@@ -1,6 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { assertSponsorsAllowed, auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
 /**

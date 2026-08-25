@@ -7,6 +7,7 @@ import {
 } from "./email";
 import { createInviteToken, type OrgRole } from "./index";
 import { assertOrgCapability } from "./capabilities";
+import { emitPreferredNotification } from "./in-app-notifications";
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
@@ -382,6 +383,162 @@ export async function listWorkspaceAccessRequests(
   return result.rows;
 }
 
+/**
+ * Access-request lifecycle notification types. Membership-critical, so they are
+ * intentionally NOT gated by `InAppNotificationPrefs` (see TYPE_PREF in
+ * in-app-notifications.ts — unmapped/null types always deliver).
+ */
+export const ACCESS_REQUEST_NOTIFICATION_TYPES = {
+  created: "team_access_request",
+  approved: "team_access_approved",
+  declined: "team_access_declined",
+} as const;
+
+function teamLabel(teamNumber: number | null | undefined) {
+  return teamNumber ? `Team ${teamNumber}` : "this team";
+}
+
+/** Pure payload builder for the owner/admin "new join request" inbox row. */
+export function accessRequestCreatedNotification(input: {
+  orgId: string;
+  requestId: string;
+  requesterName: string;
+  teamNumber: number | null;
+}) {
+  const requester = input.requesterName.trim() || "A new teammate";
+  return {
+    type: ACCESS_REQUEST_NOTIFICATION_TYPES.created,
+    payload: {
+      title: `${requester} asked to join ${teamLabel(input.teamNumber)}`,
+      body: "Review the request in Team admin — approve as scout or view-only, or decline.",
+      href: `/team?orgId=${encodeURIComponent(input.orgId)}#team-access-title`,
+      requestId: input.requestId,
+      requesterName: requester,
+    },
+  };
+}
+
+/** Pure payload builder for the requester's approval/decline inbox row. */
+export function accessRequestDecisionNotification(input: {
+  orgId: string;
+  requestId: string;
+  decision: "approved" | "declined";
+  teamNumber: number | null;
+  grantedRole?: string | null;
+}) {
+  const team = teamLabel(input.teamNumber);
+  if (input.decision === "approved") {
+    return {
+      type: ACCESS_REQUEST_NOTIFICATION_TYPES.approved,
+      payload: {
+        title: `You're in — welcome to ${team}`,
+        body: `A team leader approved your request${input.grantedRole ? ` as ${input.grantedRole}` : ""}. Open the team workspace to get started.`,
+        href: `/workspace?orgId=${encodeURIComponent(input.orgId)}`,
+        requestId: input.requestId,
+        grantedRole: input.grantedRole ?? null,
+      },
+    };
+  }
+  return {
+    type: ACCESS_REQUEST_NOTIFICATION_TYPES.declined,
+    payload: {
+      title: `Your request to join ${team} was declined`,
+      body: "If you believe this is a mistake, ask a team leader to send an email invite instead.",
+      requestId: input.requestId,
+    },
+  };
+}
+
+/**
+ * Insert one inbox row inside the caller's transaction without letting a
+ * missing cross-user RLS peer-insert policy abort the surrounding state
+ * change (approval/decline must never fail because a notification could not
+ * be written). Returns whether the row was actually inserted.
+ */
+async function emitAccessRequestNotification(
+  client: PoolClient,
+  input: { userId: string; orgId?: string; type: string; payload: Record<string, unknown> },
+): Promise<boolean> {
+  await client.query("SAVEPOINT access_request_notify");
+  try {
+    const { emitted } = await emitPreferredNotification(client, input);
+    await client.query("RELEASE SAVEPOINT access_request_notify");
+    return emitted;
+  } catch {
+    await client.query("ROLLBACK TO SAVEPOINT access_request_notify");
+    return false;
+  }
+}
+
+/**
+ * Notify every owner/admin of the org that a workspace access request was
+ * created. Call this with the SAME client/transaction that inserted the
+ * `workspace_access_requests` row. Under a plain requester session RLS hides
+ * the org roster, so this only fans out when invoked from a context that can
+ * read owner/admin memberships (SECURITY DEFINER path or worker).
+ */
+export async function notifyAccessRequestCreated(
+  client: PoolClient,
+  input: { orgId: string; requestId: string; requesterName: string },
+): Promise<{ notified: number }> {
+  const heads = await client.query<{ userId: string; teamNumber: number | null }>(
+    `SELECT m.user_id AS "userId", o.team_number AS "teamNumber"
+     FROM memberships m
+     JOIN organizations o ON o.id = m.org_id
+     WHERE m.org_id = $1::uuid AND m.role = ANY($2::org_role[])`,
+    [input.orgId, ["owner", "admin"]],
+  );
+  let notified = 0;
+  for (const head of heads.rows) {
+    const notification = accessRequestCreatedNotification({
+      orgId: input.orgId,
+      requestId: input.requestId,
+      requesterName: input.requesterName,
+      teamNumber: head.teamNumber,
+    });
+    const emitted = await emitAccessRequestNotification(client, {
+      userId: head.userId,
+      orgId: input.orgId,
+      type: notification.type,
+      payload: notification.payload,
+    });
+    if (emitted) notified += 1;
+  }
+  return { notified };
+}
+
+/**
+ * Notify the requester about the approve/decline decision, in the reviewer's
+ * transaction. Declined rows keep org_id NULL so a non-member's inbox always
+ * shows them regardless of the org filter.
+ */
+export async function notifyAccessRequestDecision(
+  client: PoolClient,
+  input: {
+    orgId: string;
+    requestId: string;
+    requesterUserId: string;
+    decision: "approved" | "declined";
+    teamNumber: number | null;
+    grantedRole?: string | null;
+  },
+): Promise<{ notified: boolean }> {
+  const notification = accessRequestDecisionNotification({
+    orgId: input.orgId,
+    requestId: input.requestId,
+    decision: input.decision,
+    teamNumber: input.teamNumber,
+    grantedRole: input.grantedRole,
+  });
+  const emitted = await emitAccessRequestNotification(client, {
+    userId: input.requesterUserId,
+    ...(input.decision === "approved" ? { orgId: input.orgId } : {}),
+    type: notification.type,
+    payload: notification.payload,
+  });
+  return { notified: emitted };
+}
+
 export async function reviewWorkspaceAccessRequest(
   client: PoolClient,
   actorUserId: string,
@@ -417,6 +574,20 @@ export async function reviewWorkspaceAccessRequest(
     throw new Error("Pending access request not found");
   }
 
+  // Same client/transaction as the decision: the inbox row commits with it.
+  const org = await client.query<{ teamNumber: number | null }>(
+    `SELECT team_number AS "teamNumber" FROM organizations WHERE id = $1::uuid`,
+    [reviewed.organizationId],
+  );
+  await notifyAccessRequestDecision(client, {
+    orgId: reviewed.organizationId,
+    requestId: reviewed.requestId,
+    requesterUserId: reviewed.applicantUserId,
+    decision: reviewed.decision,
+    teamNumber: org.rows[0]?.teamNumber ?? null,
+    grantedRole: reviewed.grantedRole,
+  });
+
   if (reviewed.decision === "approved") {
     const baseUrl = (process.env.BETTER_AUTH_URL ?? "http://localhost:3001").replace(/\/$/, "");
     const nextPath = `/workspace?orgId=${encodeURIComponent(reviewed.organizationId)}`;
@@ -443,4 +614,59 @@ export async function reviewWorkspaceAccessRequest(
     },
   });
   return reviewed;
+}
+
+export type MemberPasswordResetTarget = {
+  userId: string;
+  email: string;
+  name: string;
+  role: OrgRole;
+};
+
+/**
+ * Authorize an owner/admin-initiated password reset and resolve the target.
+ * Never touches passwords: callers trigger Better Auth's own reset email for
+ * the returned address. Owners may reset anyone; admins may not reset owners.
+ */
+export async function resolveMemberForPasswordReset(
+  client: PoolClient,
+  actorUserId: string,
+  input: { orgId: string; userId: string },
+): Promise<MemberPasswordResetTarget> {
+  await assertOrgCapability(client, input.orgId, "manage_members");
+  const actor = await client.query<{ role: OrgRole }>(
+    `SELECT role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+    [input.orgId, actorUserId],
+  );
+  if (!actor.rows[0] || !["owner", "admin"].includes(actor.rows[0].role)) {
+    throw new Error("Organization administrator access required");
+  }
+  const target = await client.query<MemberPasswordResetTarget>(
+    `SELECT m.user_id AS "userId", u.email, u.name, m.role
+     FROM memberships m
+     JOIN users u ON u.id = m.user_id
+     WHERE m.org_id = $1::uuid AND m.user_id = $2::uuid`,
+    [input.orgId, input.userId],
+  );
+  const row = target.rows[0];
+  if (!row) throw new Error("Member not found in this workspace");
+  if (row.role === "owner" && actor.rows[0].role !== "owner") {
+    throw new Error("Only an owner may send a password reset to an owner");
+  }
+  return row;
+}
+
+/** Traceable org-level audit row for an admin-initiated password reset email. */
+export async function auditMemberPasswordReset(
+  client: PoolClient,
+  actorUserId: string,
+  input: { orgId: string; targetUserId: string; email: string; delivered: boolean },
+): Promise<void> {
+  await audit(client, {
+    orgId: input.orgId,
+    actorUserId,
+    action: "member.password_reset.requested",
+    email: input.email,
+    metadata: { targetUserId: input.targetUserId, delivered: input.delivered },
+  });
 }

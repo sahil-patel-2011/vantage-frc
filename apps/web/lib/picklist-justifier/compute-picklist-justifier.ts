@@ -3,10 +3,12 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { averageConfidence, computeJustification } from ".";
 import { hubHref } from "../nav/hubs";
+import { setJustification } from "../picklist";
 import { withOrgHref } from "../nav/product-nav";
 import type {
   JustificationInput,
   JustifiedEntry,
+  PickBoardSlot,
   PickListSummary,
   PicklistJustifierSetupStep,
   PicklistJustifierView,
@@ -71,6 +73,8 @@ type EntryRow = {
   rank: number;
   tier: string | null;
   notes: string | null;
+  draftedAllianceSeed: number | null;
+  draftedPickSlot: "captain" | "first" | "second" | null;
 };
 
 type TbaRow = {
@@ -124,12 +128,23 @@ async function loadPickLists(client: PoolClient, orgId: string): Promise<PickLis
 async function loadJustificationInputs(
   client: PoolClient,
   input: { orgId: string; pickListId: string; eventKey: string },
-): Promise<Array<{ entryId: string; notes: string | null; input: JustificationInput }>> {
+): Promise<
+  Array<{
+    entryId: string;
+    notes: string | null;
+    boardSlot: PickBoardSlot | null;
+    input: JustificationInput;
+  }>
+> {
   const entryResult = await client.query<EntryRow>(
-    `SELECT pe.id, pe.team_key AS "teamKey", t.team_number AS "teamNumber", pe.rank, pe.tier, pe.notes
+    `SELECT pe.id, pe.team_key AS "teamKey",
+            COALESCE(pe.team_number, t.team_number) AS "teamNumber",
+            pe.rank, pe.tier, pe.notes,
+            pe.drafted_alliance_seed AS "draftedAllianceSeed",
+            pe.drafted_pick_slot AS "draftedPickSlot"
      FROM pick_list_entries pe
      LEFT JOIN teams_ref t ON t.team_key = pe.team_key
-     WHERE pe.pick_list_id = $1 AND pe.org_id = $2
+     WHERE pe.pick_list_id = $1::uuid AND pe.org_id = $2::uuid
      ORDER BY pe.rank`,
     [input.pickListId, input.orgId],
   );
@@ -169,6 +184,10 @@ async function loadJustificationInputs(
     return {
       entryId: entry.id,
       notes: entry.notes,
+      boardSlot:
+        entry.draftedAllianceSeed != null && entry.draftedPickSlot
+          ? { allianceSeed: entry.draftedAllianceSeed, pickSlot: entry.draftedPickSlot }
+          : null,
       input: {
         teamKey: entry.teamKey,
         teamNumber: entry.teamNumber,
@@ -221,12 +240,26 @@ export async function computePicklistJustifierView(
 
   const [justificationInputs, savedResult] = await Promise.all([
     loadJustificationInputs(client, { orgId: org.orgId, pickListId: selected.id, eventKey: selected.eventKey }),
+    // Justifications now live ON the pick-list row (migration 0454) so the rationale explains the
+    // team that is actually on the board. The legacy sidecar table is still read as a fallback for
+    // one release, for rows generated before the unification.
     client.query<SavedRow>(
-      `SELECT pick_list_entry_id AS "pickListEntryId", rationale, sources,
-              contradiction_flagged AS "contradictionFlagged", contradiction_reason AS "contradictionReason",
-              created_at::text AS "createdAt"
-       FROM picklist_justifier_justifications
-       WHERE org_id = $1 AND pick_list_id = $2`,
+      `SELECT e.id AS "pickListEntryId",
+              COALESCE(e.justification, j.rationale) AS rationale,
+              COALESCE(NULLIF(e.justification_sources, '[]'::jsonb), j.sources, '[]'::jsonb) AS sources,
+              COALESCE(
+                CASE WHEN e.justification IS NOT NULL THEN e.justification_contradiction END,
+                j.contradiction_flagged, false
+              ) AS "contradictionFlagged",
+              COALESCE(
+                CASE WHEN e.justification IS NOT NULL THEN e.justification_reason END,
+                j.contradiction_reason
+              ) AS "contradictionReason",
+              COALESCE(e.justification_generated_at, j.created_at)::text AS "createdAt"
+       FROM pick_list_entries e
+       LEFT JOIN picklist_justifier_justifications j ON j.pick_list_entry_id = e.id
+       WHERE e.org_id = $1::uuid AND e.pick_list_id = $2::uuid
+         AND (e.justification IS NOT NULL OR j.rationale IS NOT NULL)`,
       [org.orgId, selected.id],
     ),
   ]);
@@ -234,7 +267,7 @@ export async function computePicklistJustifierView(
   const savedByEntry = new Map<string, SavedRow>();
   for (const row of savedResult.rows) savedByEntry.set(row.pickListEntryId, row);
 
-  const entries: JustifiedEntry[] = justificationInputs.map(({ entryId, notes, input: ji }) => {
+  const entries: JustifiedEntry[] = justificationInputs.map(({ entryId, notes, boardSlot, input: ji }) => {
     const saved = savedByEntry.get(entryId);
     return {
       id: entryId,
@@ -249,6 +282,7 @@ export async function computePicklistJustifierView(
       sources: Array.isArray(saved?.sources) ? (saved!.sources as JustifiedEntry["sources"]) : [],
       contradiction: saved ? { flagged: saved.contradictionFlagged, reason: saved.contradictionReason } : null,
       generatedAt: saved?.createdAt ?? null,
+      boardSlot,
     };
   });
 
@@ -343,6 +377,20 @@ export async function generatePicklistJustifications(
         input.userId,
       ],
     );
+
+    // The explanation now travels ON the pick-list row itself, so the desk and Pick Clock can
+    // show the same "why" for the same team. The legacy sidecar write above stays for one
+    // release (see packages/db/migrations/0454_picklist_unify.sql).
+    await setJustification(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      pickListId: pickList.id,
+      entryId: result.entryId,
+      rationale: result.rationale,
+      sources: result.sources,
+      contradictionFlagged: result.contradiction.flagged,
+      contradictionReason: result.contradiction.reason,
+    });
   }
 
   return computePicklistJustifierView(client, {

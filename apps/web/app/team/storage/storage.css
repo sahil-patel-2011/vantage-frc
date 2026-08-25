@@ -1,0 +1,28 @@
+/* Self-hosted storage nodes — layout only; colors come from shared tokens so light and dark
+   both work. Targets stay >= 44px via the shared input/button styles; usable at 360px. */
+.stn-page{display:grid;gap:16px}
+.stn-panel{display:grid;gap:12px}
+.stn-panel h2{margin:0}
+.stn-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.stn-list{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.stn-node{display:grid;gap:8px;border:1px solid var(--soft-border,rgba(127,127,127,.28));border-radius:12px;padding:12px}
+.stn-node-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.stn-node-title{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
+.stn-node-facts{display:grid;gap:2px;font-size:.92em}
+.stn-node-manage{display:grid;gap:8px}
+.stn-node-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stn-inline-form{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.stn-inline-form label{display:grid;gap:4px;font-size:.85em;flex:1 1 220px;min-width:0}
+.stn-inline-form input{min-height:44px;width:100%}
+.stn-url-hint{flex-basis:100%}
+.stn-code{overflow-x:auto;padding:10px 12px;border-radius:10px;border:1px solid var(--soft-border,rgba(127,127,127,.28));font-size:.85em;margin:0}
+.stn-note{margin:0}
+.stn-notice{margin:0}
+.stn-missing{font-weight:600}
+.stn-item{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.stn-item-main{min-width:0;overflow-wrap:anywhere}
+.stn-sha{font-size:.9em}
+@media(max-width:560px){
+  .stn-node-head{flex-direction:column;align-items:flex-start}
+  .stn-item{flex-direction:column;gap:2px}
+}

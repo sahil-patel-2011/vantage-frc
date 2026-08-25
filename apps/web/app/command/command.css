@@ -33,7 +33,7 @@
   padding: 10px 14px;
   border-radius: 12px;
   border: 1px solid var(--soft-line);
-  background: color-mix(in srgb, var(--soft-card) 92%, #eef2f7);
+  background: color-mix(in srgb, var(--soft-card) 92%, var(--soft-line));
   color: var(--soft-muted);
   font: 600 13px/1.35 var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
 }

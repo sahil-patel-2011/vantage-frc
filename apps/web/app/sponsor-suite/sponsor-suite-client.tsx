@@ -18,7 +18,7 @@ import {
   type SponsorSuiteShellKind,
 } from "../../lib/sponsor-suite/sponsor-suite-related";
 import type { SponsorSuiteDeckKind, SponsorSuiteReminderKind } from "../../lib/sponsor-suite/types";
-import { hubHref } from "../../lib/nav/hubs";
+import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sponsor-suite.css";
 
@@ -92,7 +92,7 @@ function SponsorSuiteShell({
 }) {
   const actions = sponsorSuiteNextActions({ orgId, shell });
   const copy = sponsorSuiteShellCopy(shell);
-  const businessHref = hubHref("/business", "sponsor-suite", orgId);
+  const businessHref = hubWorkbenchHref("business", "sponsor-suite", orgId);
   const steps = shell === "setup" ? sponsorSuiteSetupSteps(orgId) : [];
 
   return (
@@ -231,7 +231,7 @@ export default function SponsorSuiteClient() {
   const relatedLinks = sponsorSuiteRelatedLinks(orgId, {
     include: [...SPONSOR_SUITE_RELATED_INCLUDE],
   });
-  const businessHref = hubHref("/business", "sponsor-suite", orgId);
+  const businessHref = hubWorkbenchHref("business", "sponsor-suite", orgId);
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {

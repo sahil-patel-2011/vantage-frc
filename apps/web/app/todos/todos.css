@@ -108,6 +108,11 @@
   color: var(--soft-muted);
   font-size: 12px;
 }
+.todos-more {
+  cursor: pointer;
+  font: 700 12px inherit;
+  color: var(--soft-muted);
+}
 .product-hub-panel .todos-page {
   max-width: none;
 }

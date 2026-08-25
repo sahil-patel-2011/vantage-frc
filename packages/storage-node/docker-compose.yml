@@ -1,0 +1,47 @@
+# Vantage storage node — compose file for NAS / home-server Docker hosts
+# (Synology Container Manager, QNAP Container Station, TrueNAS SCALE, unRAID).
+#
+# 1. Point the volume at a folder with real space (a NAS share/dataset).
+# 2. Set PUID/PGID to the owner of that folder (`id youruser` on the NAS).
+# 3. Pair once (interactive shell so you can read the pairing code):
+#      docker compose run --rm storage-node \
+#        --setup --cloud https://your-vantage-host --name shop-nas --quota-gb 500
+# 4. Start serving:  docker compose up -d
+#
+# Reachability: this exposes port 8788 on the NAS — fine for the LAN, but the
+# hosted app is https and browsers cannot call plain-http LAN addresses (mixed
+# content). Give the node an https URL with Cloudflare Tunnel or Tailscale and
+# paste it into /team/storage — docs/NAS_HOSTING.md has working configs,
+# including a cloudflared sidecar you can uncomment below.
+
+services:
+  storage-node:
+    build:
+      context: .
+      args:
+        PUID: "${PUID:-1000}"
+        PGID: "${PGID:-1000}"
+    container_name: vantage-storage-node
+    restart: unless-stopped
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "8788:8788"
+    environment:
+      VANTAGE_STORAGE_DIR: /data
+    volumes:
+      # CHANGE ME: left side = a folder on your NAS with space for team files,
+      # e.g. /volume1/vantage-storage (Synology), /share/vantage-storage (QNAP),
+      # /mnt/tank/vantage-storage (TrueNAS), /mnt/user/vantage-storage (unRAID).
+      - ./data:/data
+
+  # Optional: Cloudflare Tunnel sidecar — gives the node a stable public https
+  # URL with no port forwarding. Create the tunnel + token in the Cloudflare
+  # Zero Trust dashboard (see docs/NAS_HOSTING.md), then uncomment:
+  #
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: vantage-storage-tunnel
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+  #   depends_on:
+  #     - storage-node

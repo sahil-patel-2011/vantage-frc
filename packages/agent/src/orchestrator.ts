@@ -14,6 +14,7 @@ import {
   buildOrgSessionContextItem,
   loadOrgSessionFacts,
 } from "./org-session-context";
+import { loadOrgAgentRulesContextItem } from "./org-agent-rules";
 
 export type ClaimClassification="hard_metric"|"scout_observation"|"researched_claim"|"model_inference";
 export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact"|"github_file"|"vscode_selection";sourceUrl?:string;observedAt?:string;label?:string};
@@ -89,9 +90,15 @@ export class AIOrchestrator{
         privacyScope:request.privacyScope,
         capability:request.capability,
       });
-      const contextSourcesWithSession:ContextSource[]=sessionItem
-        ?[sessionItem,...request.contextSources]
-        :request.contextSources;
+      // Team agent rules (/team/agent-config): same rules Claude Code syncs, injected
+      // here as a labeled context source so provenance shows they were used. Scoped to
+      // this user — restricted rules (0490) stay out of everyone else's prompt.
+      const teamRulesItem=await loadOrgAgentRulesContextItem(this.client,request.orgId,request.userId);
+      const contextSourcesWithSession:ContextSource[]=[
+        ...(sessionItem?[sessionItem]:[]),
+        ...(teamRulesItem?[teamRulesItem]:[]),
+        ...request.contextSources,
+      ];
       const context=buildUnifiedContext(contextSourcesWithSession,request.tokenBudget??4000);
       await this.client.query(`INSERT INTO ai_run_steps(org_id,run_id,sequence,kind,input,output,provenance) VALUES($1,$2,$3,'context',$4::jsonb,$5::jsonb,$6::jsonb)`,[request.orgId,runId,sequence++,JSON.stringify({tokenBudget:request.tokenBudget??4000}),JSON.stringify({estimatedTokens:context.estimatedTokens}),JSON.stringify(context.provenance)]);
       const dataSourceNote=plannedToolCalls.length?await loadToolDataSourceNote(this.client):null;
@@ -115,7 +122,7 @@ export class AIOrchestrator{
         summary:item.summary,
         toolName:item.name,
       }));
-      const text=await meteredAI({client:this.client,orgId:request.orgId,userId:request.userId,feature:usageFeature,requestId:request.requestId,estimatedCostUsd:.01,estimatedPromptTokens:Math.ceil(request.message.length/4)+context.estimatedTokens+toolContext.reduce((sum,item)=>sum+Math.ceil(item.content.length/4),0),estimatedCompletionTokens:700,provider:request.adapter.provider,model:request.adapter.model,billingOwner,metadata:{runId,threadId:request.threadId,activeEventKey:active,contextSources:context.provenance,tools:annotatedTools.map((item)=>({name:item.name,status:item.status,classification:item.classification})),usageTag:annotatedTools.some((t)=>t.name.startsWith("scouting."))?"chat.scouting":annotatedTools.some((t)=>t.name.startsWith("strategy."))?"chat.strategy":annotatedTools.length?"chat.tools":"chat",promptCachingEnabled:request.promptCachingEnabled??false},invoke:async()=>{const result=await request.adapter.complete({message:request.message,context:[...context.items,...toolContext],promptCachingEnabled:request.promptCachingEnabled});return{value:result.text,...result,provider:request.adapter.provider,model:request.adapter.model};}});
+      const text=await meteredAI({client:this.client,orgId:request.orgId,userId:request.userId,feature:usageFeature,requestId:request.requestId,estimatedCostUsd:.01,estimatedPromptTokens:Math.ceil(request.message.length/4)+context.estimatedTokens+toolContext.reduce((sum,item)=>sum+Math.ceil(item.content.length/4),0),estimatedCompletionTokens:700,provider:request.adapter.provider,model:request.adapter.model,billingOwner,metadata:{runId,threadId:request.threadId,activeEventKey:active,contextSources:context.provenance,tools:annotatedTools.map((item)=>({name:item.name,status:item.status,classification:item.classification})),usageTag:annotatedTools.some((t)=>t.name.startsWith("scouting."))?"chat.scouting":annotatedTools.some((t)=>t.name.startsWith("strategy."))?"chat.strategy":annotatedTools.length?"chat.tools":"chat",promptCachingEnabled:request.promptCachingEnabled??true},invoke:async()=>{const result=await request.adapter.complete({message:request.message,context:[...context.items,...toolContext],promptCachingEnabled:request.promptCachingEnabled});return{value:result.text,...result,provider:request.adapter.provider,model:request.adapter.model};}});
       const usage=(await this.client.query<{id:string;cost_usd:string;key_source:string}>(`SELECT id,cost_usd,key_source FROM ai_usage_events WHERE request_id=$1`,[request.requestId])).rows[0];const credit=(await this.client.query<{credits:string;bucket:string}>(`SELECT credits,bucket FROM credit_ledger WHERE reference_id=$1 ORDER BY created_at DESC LIMIT 1`,[request.requestId])).rows[0];
       const allProvenance=[...context.provenance,...toolProvenance];
       await this.client.query(`UPDATE ai_runs SET status='completed',provider=$2,model=$3,output=$4::jsonb,context_sources=$5::jsonb,usage_event_id=$6,provider_cost_usd=$7,credit_debit=$8,allowance_bucket=$9,routing_decision=$10::jsonb,completed_at=now() WHERE id=$1`,[runId,request.adapter.provider,request.adapter.model,JSON.stringify({text,tools:annotatedTools.map(({name,status,summary,classification})=>({name,status,summary,classification}))}),JSON.stringify(allProvenance),usage?.id??null,usage?.cost_usd??null,credit?Math.abs(Number(credit.credits)):0,credit?.bucket??usage?.key_source??null,JSON.stringify({provider:request.adapter.provider,model:request.adapter.model,billingOwner,tools:annotatedTools.map((t)=>t.name)})]);
