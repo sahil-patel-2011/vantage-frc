@@ -43,6 +43,11 @@ export default function Home() {
                   See how it works
                 </a>
               </div>
+              <ul className="mk-hero-proof">
+                <li>Invite-only</li>
+                <li>Empty until real data</li>
+                <li>CAD and code stay human-gated</li>
+              </ul>
               <p className="lux-hero-note">
                 Nothing on this page is live team data. Every surface stays empty until your team connects its own.
               </p>
