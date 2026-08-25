@@ -83,7 +83,11 @@
   font:600 13px var(--m-sans);
 }
 .mk-hub-jump a:hover{border-color:#b9b9c0;box-shadow:var(--m-shadow)}
-.mk-hub-catalog{display:grid;gap:clamp(18px,2.4vw,28px)}
+.mk-hub-catalog{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:clamp(16px,2vw,22px);
+}
+@media(max-width:800px){.mk-hub-catalog{grid-template-columns:1fr}}
 .mk-hub-detail{
   padding:clamp(22px,2.8vw,34px);
   border:1px solid var(--m-line);border-radius:var(--m-radius);

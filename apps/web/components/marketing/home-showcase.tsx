@@ -89,13 +89,19 @@ export function HomeShowcase() {
           <ul className="mk-pillars" data-reveal>
             {MARKETING_HUBS.map((hub) => (
               <li key={hub.id}>
-                <span className="lux-card-icon">
-                  <MIcon name={hub.icon} />
-                </span>
-                <span className="mk-tag">{hub.route}</span>
-                <strong>{hub.title}</strong>
-                <span className="mk-pillar-copy">{hub.promise}</span>
-                <span className="mk-pillar-copy">{hub.modules.join(" · ")}</span>
+                <a className="mk-pillar-link" href={hub.href}>
+                  <span className="lux-card-icon">
+                    <MIcon name={hub.icon} />
+                  </span>
+                  <span className="mk-tag">{hub.route}</span>
+                  <strong>{hub.title}</strong>
+                  <span className="mk-pillar-copy">{hub.promise}</span>
+                  <span className="mk-pillar-mods">
+                    {hub.modules.map((mod) => (
+                      <span key={mod}>{mod}</span>
+                    ))}
+                  </span>
+                </a>
               </li>
             ))}
           </ul>
