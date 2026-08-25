@@ -7,7 +7,13 @@ import { track } from "../../lib/marketing/analytics";
 
 type FormState = "idle" | "sending" | "success" | "error";
 
-export function WaitlistForm({ idPrefix = "waitlist" }: { idPrefix?: string }) {
+export function WaitlistForm({
+  idPrefix = "waitlist",
+  compact = false,
+}: {
+  idPrefix?: string;
+  compact?: boolean;
+}) {
   const reactId = useId();
   const prefix = idPrefix || reactId.replace(/:/g, "");
   const [state, setState] = useState<FormState>("idle");
@@ -65,7 +71,7 @@ export function WaitlistForm({ idPrefix = "waitlist" }: { idPrefix?: string }) {
 
   if (state === "success") {
     return (
-      <div className="confirmation" role="status" aria-live="polite">
+      <div className="confirmation waitlist-confirmation" role="status" aria-live="polite">
         <h3>You’re on the list.</h3>
         <p>We&apos;ll email when access opens. Joining the waitlist does not create a Vantage account.</p>
       </div>
@@ -73,7 +79,11 @@ export function WaitlistForm({ idPrefix = "waitlist" }: { idPrefix?: string }) {
   }
 
   return (
-    <form className="waitlist-form" onSubmit={submit} aria-label="Join the Vantage waitlist">
+    <form
+      className={`waitlist-form soft-waitlist-form ${compact ? "compact-form" : ""}`}
+      onSubmit={submit}
+      aria-label="Join the Vantage waitlist"
+    >
       <div className="field">
         <label htmlFor={`${prefix}-email`}>Email</label>
         <input
